@@ -591,6 +591,120 @@ def avg_psf():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/projects_by_district", methods=["GET"])
+def projects_by_district():
+    """Get project-level volume and quantity breakdown for a specific district."""
+    start = time.time()
+
+    from data_processor import get_project_aggregation_by_district
+
+    district = request.args.get("district")
+    bedroom_param = request.args.get("bedroom", "2,3,4")
+
+    if not district:
+        return jsonify({"error": "district parameter is required"}), 400
+
+    try:
+        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
+    except ValueError:
+        return jsonify({"error": "Invalid bedroom parameter"}), 400
+
+    try:
+        data = get_project_aggregation_by_district(district, bedroom_types)
+        elapsed = time.time() - start
+        print(f"GET /api/projects_by_district took: {elapsed:.4f} seconds")
+        return jsonify(data)
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/projects_by_district ERROR (took {elapsed:.4f}s): {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/price_projects_by_district", methods=["GET"])
+def price_projects_by_district():
+    """
+    Project-level price / PSF quartiles for a given district and timeframe.
+    Query params:
+      - district: e.g. D10
+      - bedroom: comma-separated bedroom counts, e.g. 2,3,4
+      - months: timeframe length (default 15)
+    """
+    from data_processor import get_price_project_stats_by_district
+
+    district = request.args.get("district")
+    if not district:
+        return jsonify({"error": "district parameter is required"}), 400
+
+    bedroom_param = request.args.get("bedroom", "2,3,4")
+    try:
+        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
+    except ValueError:
+        return jsonify({"error": "Invalid bedroom parameter"}), 400
+
+    months_param = request.args.get("months", "15")
+    try:
+        months = int(months_param)
+    except ValueError:
+        months = 15
+
+    try:
+        data = get_price_project_stats_by_district(
+            district=district,
+            bedroom_types=bedroom_types,
+            months=months,
+        )
+        return jsonify(data)
+    except Exception as e:
+        print(f"GET /api/price_projects_by_district ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/comparable_value_analysis", methods=["GET"])
+def comparable_value_analysis():
+    """
+    Comparable Value Analysis (Buy Box) endpoint.
+    Query params:
+      - target_price: center of price band
+      - band: +/- band around target (default 100000)
+      - bedroom: comma-separated bedroom counts (default 2,3,4)
+      - districts: optional comma-separated list of districts
+    """
+    from data_processor import get_comparable_value_analysis
+
+    try:
+        target_price = float(request.args.get("target_price", "2500000"))
+    except ValueError:
+        target_price = 2500000.0
+
+    try:
+        band = float(request.args.get("band", "100000"))
+    except ValueError:
+        band = 100000.0
+
+    bedroom_param = request.args.get("bedroom", "2,3,4")
+    try:
+        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
+    except ValueError:
+        return jsonify({"error": "Invalid bedroom parameter"}), 400
+
+    districts_param = request.args.get("districts", "").strip()
+    districts = None
+    if districts_param:
+        districts = [d.strip() for d in districts_param.split(",") if d.strip()]
+
+    try:
+        data = get_comparable_value_analysis(
+            target_price=target_price,
+            price_band=band,
+            bedroom_types=bedroom_types,
+            districts=districts,
+        )
+        return jsonify(data)
+    except Exception as e:
+        print(f"GET /api/comparable_value_analysis ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/districts", methods=["GET"])
 def get_districts():
     """Get list of all districts with transactions."""

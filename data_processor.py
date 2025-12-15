@@ -9,6 +9,7 @@ All analysis is performed on the clean, consolidated master_transactions table.
 """
 
 import sqlite3
+import re
 import pandas as pd
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -18,17 +19,81 @@ from classifier import get_bedroom_label
 DB_PATH = "condo_master.db"
 MASTER_TABLE = "master_transactions"
 
-# Global DataFrame - set by app.py if CSV data is loaded into memory
-GLOBAL_DF = None
+GLOBAL_DF = None  # Global DataFrame - set by app.py if CSV data is loaded into memory
 
-def set_global_dataframe(df):
+
+def _add_lease_columns(df: pd.DataFrame) -> None:
+    """
+    Add lease-related columns derived from the Tenure text, in-place.
+    
+    - lease_start_year: 4-digit year the lease commenced (NaN if Freehold/unknown)
+    - remaining_lease: 99 - (current_year - lease_start_year), or 999 for Freehold
+    """
+    if "Tenure" not in df.columns:
+        return
+
+    current_year = datetime.now().year
+
+    def parse_lease_start(tenure: str):
+        if not isinstance(tenure, str):
+            return None, None
+
+        text = tenure.strip().lower()
+
+        # Freehold or equivalent → treat as 999-year pseudo-lease
+        if "freehold" in text or "estate in perpetuity" in text:
+            return None, 999
+
+        # Look for explicit year after "from" or "commencing"
+        match = re.search(r"(?:from|commencing)\s+(\d{4})", text)
+        year = None
+        if match:
+            try:
+                year = int(match.group(1))
+            except ValueError:
+                year = None
+
+        # Fallback: first 4-digit year anywhere in the string
+        if year is None:
+            fallback = re.search(r"(\d{4})", text)
+            if fallback:
+                try:
+                    year = int(fallback.group(1))
+                except ValueError:
+                    year = None
+
+        if year is None:
+            return None, None
+
+        remaining = 99 - (current_year - year)
+        if remaining < 0:
+            remaining = 0
+        return year, remaining
+
+    lease_years = []
+    remaining_leases = []
+
+    for tenure in df["Tenure"]:
+        start_year, remaining = parse_lease_start(tenure)
+        lease_years.append(start_year)
+        remaining_leases.append(remaining)
+
+    df["lease_start_year"] = lease_years
+    df["remaining_lease"] = remaining_leases
+
+
+def set_global_dataframe(df: pd.DataFrame) -> None:
     """Set the global DataFrame for in-memory queries. Called by app.py at startup."""
     global GLOBAL_DF
     GLOBAL_DF = df
+
     if df is not None:
         # Ensure parsed_date column exists for fast filtering
-        if 'parsed_date' not in df.columns and 'transaction_date' in df.columns:
-            df['parsed_date'] = pd.to_datetime(df['transaction_date'], errors='coerce')
+        if "parsed_date" not in df.columns and "transaction_date" in df.columns:
+            df["parsed_date"] = pd.to_datetime(df["transaction_date"], errors="coerce")
+
+        # Add lease information if Tenure is available
+        _add_lease_columns(df)
 
 
 def parse_contract_date(date_str: str) -> Optional[str]:
@@ -245,15 +310,20 @@ def get_transaction_details(
     
     # Format output - convert parsed_date to string for JSON serialization
     transactions = []
+
+    has_remaining_lease = "remaining_lease" in df.columns
+    has_sale_type = "sale_type" in df.columns
+
     for _, row in df.iterrows():
         date_str = None
         if pd.notna(row["parsed_date"]):
             if isinstance(row["parsed_date"], pd.Timestamp):
                 date_str = row["parsed_date"].strftime("%Y-%m-%d")
             else:
-                date_str = str(row["parsed_date"])[:10]  # Take first 10 chars (YYYY-MM-DD)
-        
-        transactions.append({
+                # Take first 10 chars (YYYY-MM-DD)
+                date_str = str(row["parsed_date"])[:10]
+
+        txn = {
             "project_name": row["project_name"],
             "transaction_date": date_str,
             "price": float(row["price"]) if pd.notna(row["price"]) else None,
@@ -261,7 +331,16 @@ def get_transaction_details(
             "psf": round(float(row["psf"]), 2) if pd.notna(row["psf"]) else None,
             "district": row["district"],
             "bedroom_type": get_bedroom_label(row["bedroom_count"])
-        })
+        }
+
+        if has_remaining_lease:
+            remaining = row.get("remaining_lease")
+            txn["remaining_lease"] = int(remaining) if pd.notna(remaining) else None
+
+        if has_sale_type:
+            txn["sale_type"] = row.get("sale_type")
+        
+        transactions.append(txn)
     
     return transactions
 
@@ -739,6 +818,95 @@ def get_total_volume_by_district(bedroom_types: list = [2, 3, 4], districts: Opt
     return {"data": result}
 
 
+def get_project_aggregation_by_district(district: str, bedroom_types: list = [2, 3, 4]) -> dict:
+    """
+    Get project-level aggregation for a specific district.
+    Aggregates transactions by project_name showing volume and quantity by bedroom type.
+    
+    Args:
+        district: District code (e.g., "D10")
+        bedroom_types: List of bedroom counts to include (default: [2, 3, 4])
+    
+    Returns:
+        Dictionary with project-level aggregations sorted by total volume
+    """
+    df = get_filtered_transactions(districts=[district])
+    
+    if df.empty:
+        return {"projects": []}
+    
+    df = df[df["bedroom_count"].isin(bedroom_types)]
+    
+    if df.empty:
+        return {"projects": []}
+    
+    # Group by project_name and bedroom_count
+    volume = df.groupby(["project_name", "bedroom_count"])["price"].sum().reset_index()
+    counts = df.groupby(["project_name", "bedroom_count"]).size().reset_index(name="count")
+
+    # Sale type mix per project (for New Launch / Resale labels)
+    if "sale_type" in df.columns:
+        sale_mix = (
+            df.groupby(["project_name", "sale_type"])
+            .size()
+            .reset_index(name="count")
+        )
+    else:
+        sale_mix = None
+    
+    # Get unique projects
+    projects = sorted(df["project_name"].unique())
+    result = []
+    
+    for project in projects:
+        project_data = {
+            "project_name": project,
+            "district": district,
+            "total": 0,
+            "total_quantity": 0
+        }
+
+        # Derive a simple New Launch / Resale label based on dominant sale_type
+        if sale_mix is not None:
+            mix_rows = sale_mix[sale_mix["project_name"] == project]
+            label = None
+            if not mix_rows.empty:
+                # Get counts by sale_type
+                new_sale_count = int(
+                    mix_rows[mix_rows["sale_type"] == "New Sale"]["count"].sum()
+                )
+                resale_count = int(
+                    mix_rows[mix_rows["sale_type"] == "Resale"]["count"].sum()
+                )
+                if new_sale_count > resale_count:
+                    label = "New Launch"
+                else:
+                    label = "Resale"
+            project_data["sale_type_label"] = label
+        else:
+            project_data["sale_type_label"] = None
+        
+        for bed in bedroom_types:
+            bed_label = f"{bed}b"
+            volume_row = volume[(volume["project_name"] == project) & (volume["bedroom_count"] == bed)]
+            count_row = counts[(counts["project_name"] == project) & (counts["bedroom_count"] == bed)]
+            
+            amount = float(volume_row["price"].iloc[0]) if len(volume_row) > 0 else 0
+            count = int(count_row["count"].iloc[0]) if len(count_row) > 0 else 0
+            
+            project_data[bed_label] = amount
+            project_data[f"{bed_label}_count"] = count
+            project_data["total"] += amount
+            project_data["total_quantity"] += count
+        
+        result.append(project_data)
+    
+    # Sort by total volume descending
+    result.sort(key=lambda x: x["total"], reverse=True)
+    
+    return {"projects": result}
+
+
 def get_avg_psf_by_district(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None) -> dict:
     """
     Get average PSF by district, broken down by bedroom type.
@@ -790,6 +958,45 @@ def get_avg_psf_by_district(bedroom_types: list = [2, 3, 4], districts: Optional
     # Sort by average PSF descending
     result.sort(key=lambda x: x["avg_psf"] or 0, reverse=True)
     
+    return {"data": result}
+
+
+def get_project_price_stats_by_district(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None) -> dict:
+    """
+    Get price and psf quartiles by project, grouped within each district.
+    Returns 25th, median, 75th for price and psf.
+    """
+    df = get_filtered_transactions(districts=districts)
+    if df.empty:
+        return {"data": {}}
+    df = df[df["bedroom_count"].isin(bedroom_types)]
+    if df.empty:
+        return {"data": {}}
+
+    # Ensure numeric
+    df["price"] = pd.to_numeric(df["price"], errors="coerce")
+    df["psf"] = pd.to_numeric(df["psf"], errors="coerce")
+    df = df.dropna(subset=["price", "psf"])
+
+    result = {}
+    for district in sorted(df["district"].unique()):
+        ddf = df[df["district"] == district]
+        projects = []
+        for project in sorted(ddf["project_name"].unique()):
+            pdf = ddf[ddf["project_name"] == project]
+            price_q = pdf["price"].quantile([0.25, 0.5, 0.75]).to_dict()
+            psf_q = pdf["psf"].quantile([0.25, 0.5, 0.75]).to_dict()
+            projects.append({
+                "project_name": project,
+                "price_25th": float(price_q.get(0.25, 0)),
+                "price_median": float(price_q.get(0.5, 0)),
+                "price_75th": float(price_q.get(0.75, 0)),
+                "psf_25th": float(psf_q.get(0.25, 0)),
+                "psf_median": float(psf_q.get(0.5, 0)),
+                "psf_75th": float(psf_q.get(0.75, 0))
+            })
+        result[district] = projects
+
     return {"data": result}
 
 
@@ -880,9 +1087,9 @@ def get_price_trends_by_district(bedroom_types: list = [2, 3, 4], top_n_district
     }
 
 
-def get_market_stats() -> Dict[str, Any]:
+def get_market_stats(short_months: int = 3, long_months: int = 15) -> Dict[str, Any]:
     """
-    Get dual-view market analysis: Short-Term (6 months) vs Long-Term (12 months).
+    Get dual-view market analysis: Pulse vs Baseline (Last X months).
     
     Calculates 25th percentile, Median, and 75th percentile for:
     - Total Price ($)
@@ -899,32 +1106,45 @@ def get_market_stats() -> Dict[str, Any]:
     if df.empty:
         return {
             "short_term": {
-                "label": "Last 6 Months",
+                "label": f"Last {short_months} Months (Pulse)",
                 "overall": {"price": {"25th": None, "median": None, "75th": None}, "psf": {"25th": None, "median": None, "75th": None}},
                 "by_bedroom": {}
             },
             "long_term": {
-                "label": "Last 12 Months",
+                "label": f"Last {long_months} Months (Baseline)",
                 "overall": {"price": {"25th": None, "median": None, "75th": None}, "psf": {"25th": None, "median": None, "75th": None}},
                 "by_bedroom": {}
             }
         }
     
     # Ensure parsed_date is datetime
-    df["parsed_date"] = pd.to_datetime(df["parsed_date"])
+    if not pd.api.types.is_datetime64_any_dtype(df["parsed_date"]):
+        df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors="coerce")
+    df = df.dropna(subset=["parsed_date"])
     
     # Find max_date (latest transaction)
     max_date = df["parsed_date"].max()
     
     # Calculate date ranges
-    short_term_start = max_date - timedelta(days=180)  # 6 months
-    long_term_start = max_date - timedelta(days=365)   # 12 months
+    short_term_start = max_date - pd.DateOffset(months=short_months)
+    long_term_start = max_date - pd.DateOffset(months=long_months)
     
-    # Filter for short-term (last 6 months)
-    short_term_df = df[df["parsed_date"] >= short_term_start].copy()
+    # Filter for short-term (last X months)
+    arr = df["parsed_date"].values
+    short_term_df = df[arr >= short_term_start.to_pydatetime()].copy()
     
-    # Filter for long-term (last 12 months)
-    long_term_df = df[df["parsed_date"] >= long_term_start].copy()
+    # Filter for long-term (last Y months)
+    long_term_df = df[arr >= long_term_start.to_pydatetime()].copy()
+
+    # Debug logging: date range and row counts
+    print(f"[market_stats] short_term range: {short_term_start.date()} to {max_date.date()} | rows={len(short_term_df)}")
+    print(f"[market_stats] long_term  range: {long_term_start.date()} to {max_date.date()} | rows={len(long_term_df)}")
+
+    # Data quality check for price column
+    for label, frame in [("short_term", short_term_df), ("long_term", long_term_df)]:
+        price_non_numeric = frame["price"].apply(lambda x: pd.to_numeric(x, errors="coerce")).isna().sum()
+        nan_price = frame["price"].isna().sum()
+        print(f"[market_stats] {label}: non-numeric price={price_non_numeric}, NaN price={nan_price}, total rows={len(frame)}")
     
     def calculate_stats(dataframe: pd.DataFrame) -> Dict[str, Any]:
         """Calculate statistics for a given dataframe."""
@@ -982,21 +1202,21 @@ def get_market_stats() -> Dict[str, Any]:
     
     return {
         "short_term": {
-            "label": "Last 6 Months",
+            "label": f"Last {short_months} Months (Pulse)",
             "overall": short_term_stats["overall"],
             "by_bedroom": short_term_stats["by_bedroom"]
         },
         "long_term": {
-            "label": "Last 12 Months",
+            "label": f"Last {long_months} Months (Baseline)",
             "overall": long_term_stats["overall"],
             "by_bedroom": long_term_stats["by_bedroom"]
         }
     }
 
 
-def get_market_stats_by_district(bedroom_types: Optional[list] = None) -> Dict[str, Any]:
+def get_market_stats_by_district(bedroom_types: Optional[list] = None, districts: Optional[list] = None, short_months: int = 3, long_months: int = 15) -> Dict[str, Any]:
     """
-    Get dual-view market analysis by district: Short-Term (6 months) vs Long-Term (12 months).
+    Get dual-view market analysis by district: Pulse (Last 3) vs Baseline (Last 15) months.
     
     Calculates 25th percentile, Median, and 75th percentile for:
     - Total Price ($)
@@ -1006,12 +1226,13 @@ def get_market_stats_by_district(bedroom_types: Optional[list] = None) -> Dict[s
     
     Args:
         bedroom_types: Optional list of bedroom types to filter (e.g., [2, 3, 4])
+        districts: Optional list of districts to filter by (e.g., ["D09", "D10"])
     
     Returns:
         JSON structure with short_term and long_term statistics by district
     """
-    # Get all transactions
-    df = get_filtered_transactions()
+    # Get filtered transactions (with district filter if provided)
+    df = get_filtered_transactions(districts=districts)
     
     # Filter by bedroom type if specified
     if bedroom_types and "bedroom_count" in df.columns:
@@ -1030,20 +1251,35 @@ def get_market_stats_by_district(bedroom_types: Optional[list] = None) -> Dict[s
         }
     
     # Ensure parsed_date is datetime
-    df["parsed_date"] = pd.to_datetime(df["parsed_date"])
+    if not pd.api.types.is_datetime64_any_dtype(df["parsed_date"]):
+        df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors="coerce")
+    df = df.dropna(subset=["parsed_date"])
     
     # Find max_date (latest transaction)
     max_date = df["parsed_date"].max()
     
     # Calculate date ranges
-    short_term_start = max_date - timedelta(days=180)  # 6 months
-    long_term_start = max_date - timedelta(days=365)   # 12 months
+    short_term_start = max_date - pd.DateOffset(months=short_months)
+    long_term_start = max_date - pd.DateOffset(months=long_months)
     
-    # Filter for short-term (last 6 months)
-    short_term_df = df[df["parsed_date"] >= short_term_start].copy()
+    # Use boolean masks on the datetime column to avoid type issues
+    short_term_mask = df["parsed_date"] >= short_term_start
+    long_term_mask = df["parsed_date"] >= long_term_start
     
-    # Filter for long-term (last 12 months)
-    long_term_df = df[df["parsed_date"] >= long_term_start].copy()
+    # Filter for short-term (last X months)
+    short_term_df = df[short_term_mask].copy()
+    
+    # Filter for long-term (last Y months)
+    long_term_df = df[long_term_mask].copy()
+
+    print(f"[market_stats_by_district] short_term range: {short_term_start.date()} to {max_date.date()} | rows={len(short_term_df)} (district filter: {districts})")
+    print(f"[market_stats_by_district] long_term  range: {long_term_start.date()} to {max_date.date()} | rows={len(long_term_df)} (district filter: {districts})")
+
+    # Data quality check for price column
+    for label, frame in [("short_term", short_term_df), ("long_term", long_term_df)]:
+        price_non_numeric = frame["price"].apply(lambda x: pd.to_numeric(x, errors="coerce")).isna().sum()
+        nan_price = frame["price"].isna().sum()
+        print(f"[market_stats_by_district] {label}: non-numeric price={price_non_numeric}, NaN price={nan_price}, total rows={len(frame)}")
     
     def calculate_stats_by_district(dataframe: pd.DataFrame) -> Dict[str, Any]:
         """Calculate statistics grouped by district."""
@@ -1058,7 +1294,7 @@ def get_market_stats_by_district(bedroom_types: Optional[list] = None) -> Dict[s
         for district in districts:
             district_df = dataframe[dataframe["district"] == district].copy()
             
-            if len(district_df) >= 5:
+            if len(district_df) >= 3:
                 result["by_district"][district] = {
                     "price": {
                         "25th": float(district_df["price"].quantile(0.25)),
@@ -1071,10 +1307,16 @@ def get_market_stats_by_district(bedroom_types: Optional[list] = None) -> Dict[s
                         "75th": float(district_df["psf"].quantile(0.75))
                     }
                 }
+            elif len(district_df) > 0:
+                # Flag insufficient data (e.g., <3 transactions)
+                result["by_district"][district] = {
+                    "price": {"25th": None, "median": None, "75th": None, "insufficient": True, "count": int(len(district_df))},
+                    "psf": {"25th": None, "median": None, "75th": None, "insufficient": True, "count": int(len(district_df))}
+                }
             else:
                 result["by_district"][district] = {
-                    "price": {"25th": None, "median": None, "75th": None},
-                    "psf": {"25th": None, "median": None, "75th": None}
+                    "price": {"25th": None, "median": None, "75th": None, "insufficient": True, "count": 0},
+                    "psf": {"25th": None, "median": None, "75th": None, "insufficient": True, "count": 0}
                 }
         
         return result
@@ -1085,11 +1327,220 @@ def get_market_stats_by_district(bedroom_types: Optional[list] = None) -> Dict[s
     
     return {
         "short_term": {
-            "label": "Last 6 Months",
+            "label": f"Last {short_months} Months (Pulse)",
             "by_district": short_term_stats["by_district"]
         },
         "long_term": {
-            "label": "Last 12 Months",
+            "label": f"Last {long_months} Months (Baseline)",
             "by_district": long_term_stats["by_district"]
         }
+    }
+
+
+def get_price_project_stats_by_district(
+    district: str,
+    bedroom_types: list = [2, 3, 4],
+    months: int = 15
+) -> dict:
+    """
+    Get project-level price and PSF quartiles for a specific district and timeframe.
+    
+    Aggregates transactions by project_name and returns 25th / median / 75th
+    for both price and psf, across the selected bedroom types.
+    """
+    df = get_filtered_transactions(districts=[district])
+
+    if df.empty:
+        return {"projects": []}
+
+    # Filter by bedroom types
+    df = df[df["bedroom_count"].isin(bedroom_types)]
+    if df.empty:
+        return {"projects": []}
+
+    # Ensure parsed_date exists
+    if "parsed_date" not in df.columns:
+        if "transaction_date" in df.columns:
+            df["parsed_date"] = pd.to_datetime(df["transaction_date"], errors="coerce")
+        else:
+            df["parsed_date"] = pd.to_datetime(df["contract_date"].apply(parse_contract_date), errors="coerce")
+    else:
+        df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors="coerce")
+
+    df = df.dropna(subset=["parsed_date"])
+    if df.empty:
+        return {"projects": []}
+
+    # Time window: last `months` months from latest transaction in this district
+    max_date = df["parsed_date"].max()
+    start_date = max_date - pd.DateOffset(months=months)
+    df = df[df["parsed_date"] >= start_date]
+
+    if df.empty:
+        return {"projects": []}
+
+    # Compute sale type label per project (New Launch / Resale)
+    sale_label = {}
+    if "sale_type" in df.columns:
+        mix = df.groupby(["project_name", "sale_type"]).size().reset_index(name="count")
+        for project_name in df["project_name"].unique():
+            rows = mix[mix["project_name"] == project_name]
+            if rows.empty:
+                sale_label[project_name] = None
+            else:
+                new_sale_count = int(rows[rows["sale_type"] == "New Sale"]["count"].sum())
+                resale_count = int(rows[rows["sale_type"] == "Resale"]["count"].sum())
+                sale_label[project_name] = "New Launch" if new_sale_count > resale_count else "Resale"
+    else:
+        for project_name in df["project_name"].unique():
+            sale_label[project_name] = None
+
+    projects = []
+    for project_name, group in df.groupby("project_name"):
+        txn_count = len(group)
+        if txn_count < 5:
+            # Enforce minimum volume: only show projects with >=5 transactions
+            continue
+
+        # Use all selected bedrooms together for quartiles
+        price_25 = float(group["price"].quantile(0.25))
+        price_med = float(group["price"].median())
+        price_75 = float(group["price"].quantile(0.75))
+
+        psf_25 = float(group["psf"].quantile(0.25))
+        psf_med = float(group["psf"].median())
+        psf_75 = float(group["psf"].quantile(0.75))
+
+        projects.append({
+            "project_name": project_name,
+            "district": district,
+            "price": {
+                "25th": price_25,
+                "median": price_med,
+                "75th": price_75
+            },
+            "psf": {
+                "25th": psf_25,
+                "median": psf_med,
+                "75th": psf_75
+            },
+            "count": int(txn_count),
+            "sale_type_label": sale_label.get(project_name)
+        })
+
+    # Sort by median price descending
+    projects.sort(key=lambda x: x["price"]["median"], reverse=True)
+
+    return {"projects": projects}
+
+
+def get_comparable_value_analysis(
+    target_price: float,
+    price_band: float = 100000.0,
+    bedroom_types: list = [2, 3, 4],
+    districts: Optional[list] = None
+) -> Dict[str, Any]:
+    """
+    Build a Comparable Value Analysis around a target price.
+    
+    Filters transactions into a buy box of [target_price - price_band, target_price + price_band],
+    then aggregates by (district, project_name, bedroom_count) to provide:
+      - scatter points (area vs. price) with bedroom colour coding
+      - competitor table with min/max price and max area
+      - summary of smallest and largest units in the band
+    """
+    lower = max(target_price - price_band, 0)
+    upper = target_price + price_band
+
+    df = get_filtered_transactions(districts=districts)
+
+    if df.empty:
+        return {"points": [], "competitors": [], "summary": {}}
+
+    # Filter by bedroom and price band
+    df = df[df["bedroom_count"].isin(bedroom_types)]
+    df = df[(df["price"] >= lower) & (df["price"] <= upper)]
+
+    if df.empty:
+        return {"points": [], "competitors": [], "summary": {}}
+
+    # Remaining lease may be absent
+    has_remaining = "remaining_lease" in df.columns
+
+    # Aggregate by (district, project_name, bedroom_count)
+    group_cols = ["district", "project_name", "bedroom_count"]
+    agg_dict = {
+        "price": ["min", "max"],
+        "area_sqft": "max"
+    }
+    if has_remaining:
+        agg_dict["remaining_lease"] = "max"
+
+    grouped = df.groupby(group_cols).agg(agg_dict)
+    # Flatten MultiIndex columns
+    grouped.columns = ["_".join(col) if isinstance(col, tuple) else col for col in grouped.columns]
+    grouped = grouped.reset_index()
+
+    points = []
+    competitors = []
+
+    for _, row in grouped.iterrows():
+        district = row["district"]
+        project = row["project_name"]
+        bed = int(row["bedroom_count"])
+
+        min_price = float(row["price_min"])
+        max_price = float(row["price_max"])
+        max_area = float(row["area_sqft_max"]) if not pd.isna(row["area_sqft_max"]) else None
+
+        remaining_lease = None
+        if has_remaining:
+            remaining_val = row.get("remaining_lease_max")
+            if pd.notna(remaining_val):
+                remaining_lease = int(remaining_val)
+
+        # Midpoint price for plotting
+        mid_price = (min_price + max_price) / 2.0
+
+        points.append({
+            "district": district,
+            "project_name": project,
+            "bedroom_count": bed,
+            "area_sqft": max_area,
+            "price_mid": mid_price,
+            "price_min": min_price,
+            "price_max": max_price,
+            "remaining_lease": remaining_lease
+        })
+
+        competitors.append({
+            "district": district,
+            "project_name": project,
+            "bedroom_count": bed,
+            "max_area_sqft": max_area,
+            "min_price": min_price,
+            "max_price": max_price,
+            "remaining_lease": remaining_lease
+        })
+
+    # Summary: smallest and largest units by area
+    valid_areas = [p for p in points if p["area_sqft"] is not None]
+    if valid_areas:
+        smallest = min(valid_areas, key=lambda x: x["area_sqft"])
+        largest = max(valid_areas, key=lambda x: x["area_sqft"])
+        summary = {
+            "smallest_area_sqft": smallest["area_sqft"],
+            "smallest_project": smallest["project_name"],
+            "smallest_district": smallest["district"],
+            "largest_area_sqft": largest["area_sqft"],
+            "largest_project": largest["project_name"],
+            "largest_district": largest["district"],
+        }
+    else:
+        summary = {}
+
+    return {
+        "points": points,
+        "competitors": competitors,
+        "summary": summary
     }

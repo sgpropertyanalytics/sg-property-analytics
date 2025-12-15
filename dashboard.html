@@ -230,6 +230,7 @@
       '2b': '#3B82F6',
       '3b': '#10B981',
       '4b': '#F59E0B',
+      'young': '#111827'
     };
 
     const BEDROOM_LABELS = {
@@ -276,6 +277,7 @@
 
     const formatPrice = (value) => {
       if (!value) return '-';
+      if (value >= 1000000000) return `$${(value / 1000000000).toFixed(2)}B`;  // Billions with 2 decimals
       if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
       return `$${(value / 1000).toFixed(0)}K`;
     };
@@ -287,6 +289,13 @@
     };
 
     const formatPSF = (value) => value ? `$${Math.round(value).toLocaleString()}` : '-';
+
+    const renderStat = (obj, key, formatter) => {
+      if (!obj) return '-';
+      if (obj.insufficient) return 'Insufficient Data';
+      const val = obj[key];
+      return val ? formatter(val) : '-';
+    };
 
     // Format date as "Dec 2025" (URA format)
     const formatDate = (dateStr) => {
@@ -793,7 +802,7 @@
       const [psfData, setPsfData] = useState([]);
       const [latestTransactions, setLatestTransactions] = useState([]);
       const [expandedDistricts, setExpandedDistricts] = useState({});
-      const [districtTransactions, setDistrictTransactions] = useState({});
+      const [districtProjects, setDistrictProjects] = useState({});
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState(null);
       const [currentPage, setCurrentPage] = useState(1);
@@ -806,14 +815,28 @@
         qty: true
       });
       const [marketStatsByDistrict, setMarketStatsByDistrict] = useState(null);
-      const [priceStatsBedrooms, setPriceStatsBedrooms] = useState(['2b', '3b', '4b']);
+      // Isolated bedroom filter for District Summary (Price) section - independent from global filter
+      // Default: all bedrooms checked
+      const [priceSectionBedrooms, setPriceSectionBedrooms] = useState(['2b', '3b', '4b']);
       const [sqftRange, setSqftRange] = useState({ min: null, max: null });
-      const [priceSortBy, setPriceSortBy] = useState('none'); // 'none', 'median_price', 'median_psf'
+      const [priceSectionLoading, setPriceSectionLoading] = useState(false);
+      const [priceSortBy, setPriceSortBy] = useState('median_price'); // 'none', 'median_price', 'median_psf'
       const [priceSortTimeframe, setPriceSortTimeframe] = useState('short_term'); // 'short_term' or 'long_term'
+      const [priceDistrictProjects, setPriceDistrictProjects] = useState({});
+      const [priceExpandedDistricts, setPriceExpandedDistricts] = useState({});
       const [saleTypeTrends, setSaleTypeTrends] = useState([]);
       const [priceTrendsBySaleType, setPriceTrendsBySaleType] = useState({});
       const [availableDistricts, setAvailableDistricts] = useState([]);
       const [selectedDistrict, setSelectedDistrict] = useState('all'); // 'all' means no filter
+
+      // Comparable Value Analysis (Buy Box)
+      const BUY_BOX_MIN = 1000000;
+      const BUY_BOX_MAX = 4000000;
+      const BUY_BOX_STEP = 250000;
+      const PRICE_BAND = 100000;
+      const [buyBoxTargetPrice, setBuyBoxTargetPrice] = useState(2500000);
+      const [buyBoxData, setBuyBoxData] = useState({ points: [], competitors: [], summary: {} });
+      const [buyBoxLoading, setBuyBoxLoading] = useState(false);
       
       // Memoize transaction count chart data to prevent re-renders
       const transactionCountData = useMemo(() => {
@@ -825,6 +848,113 @@
           '4b_count': d['4b_count'] || 0
         }));
       }, [priceTrends]);
+
+      // Scatter component for Comparable Value Analysis
+      const BuyBoxScatter = ({ data, targetPrice, priceBand }) => {
+        const canvasRef = useRef(null);
+        const chartRef = useRef(null);
+
+        useEffect(() => {
+          if (!canvasRef.current) return;
+          if (typeof Chart === 'undefined') return;
+
+          const ctx = canvasRef.current.getContext('2d');
+
+          if (chartRef.current) {
+            chartRef.current.destroy();
+            chartRef.current = null;
+          }
+
+          const points = (data || []).map(p => {
+            const bedKey = `${p.bedroom_count}b`;
+            const color =
+              bedKey === '2b' ? COLORS['2b'] :
+              bedKey === '3b' ? COLORS['3b'] :
+              bedKey === '4b' ? COLORS['4b'] :
+              '#6B7280';
+
+            const isYoung = p.remaining_lease != null && p.remaining_lease >= 90;
+
+            return {
+              x: p.area_sqft || 0,
+              y: p.price_mid || 0,
+              bedroom: bedKey,
+              district: p.district,
+              project: p.project_name,
+              minPrice: p.price_min,
+              maxPrice: p.price_max,
+              remaining_lease: p.remaining_lease,
+              backgroundColor: color,
+              borderColor: isYoung ? COLORS['young'] : color,
+              radius: isYoung ? 7 : 5,
+              borderWidth: isYoung ? 2 : 1.5
+            };
+          });
+
+          chartRef.current = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+              datasets: [
+                {
+                  label: 'Projects',
+                  data: points,
+                  parsing: false,
+                  pointBackgroundColor: points.map(p => p.backgroundColor),
+                  pointBorderColor: points.map(p => p.borderColor),
+                  pointRadius: points.map(p => p.radius),
+                  pointBorderWidth: points.map(p => p.borderWidth)
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: (ctx) => {
+                      const d = ctx.raw;
+                      if (!d) return '';
+                      const range = `$${Math.round(d.minPrice / 1000).toLocaleString()}k - $${Math.round(d.maxPrice / 1000).toLocaleString()}k`;
+                      const lease = d.remaining_lease != null ? `, Remaining lease: ${d.remaining_lease} yrs` : '';
+                      return `${d.project} (${d.district}, ${d.bedroom.toUpperCase()}): ${Math.round(d.x).toLocaleString()} sqft, ${range}${lease}`;
+                    }
+                  }
+                }
+              },
+              layout: {
+                padding: { top: 24, right: 16, bottom: 16, left: 8 }
+              },
+              scales: {
+                x: {
+                  title: { display: true, text: 'Area (sqft)' },
+                  ticks: { callback: (v) => v.toLocaleString() }
+                },
+                y: {
+                  title: { display: true, text: 'Transacted Price ($)' },
+                  ticks: { callback: (v) => '$' + (v / 1000000).toFixed(2) + 'M' }
+                }
+              }
+            }
+          });
+
+          return () => {
+            if (chartRef.current) {
+              chartRef.current.destroy();
+            }
+          };
+        }, [data, targetPrice, priceBand]);
+
+        return (
+          <div style={{ height: '320px', position: 'relative' }}>
+            <canvas ref={canvasRef}></canvas>
+            <div style={{ marginTop: '8px', fontSize: '11px', color: '#6B7280' }}>
+              Dot colour encodes bedroom size (2B / 3B / 4B). Dark-bordered dots indicate young properties (remaining lease ≥ 90 years).
+            </div>
+          </div>
+        );
+      };
 
       // Fetch available districts on mount
       useEffect(() => {
@@ -900,25 +1030,35 @@
         fetchData();
       }, [selectedBedrooms, selectedDistrict]);
 
-      // Separate effect for market stats by district (doesn't reload entire page)
+      // Separate effect for market stats by district (uses isolated priceSectionBedrooms filter)
       useEffect(() => {
+        const emptyStats = {
+          short_term: { by_district: {} },
+          long_term: { by_district: {} }
+        };
+
         const fetchMarketStats = async () => {
-          if (priceStatsBedrooms.length === 0) {
-            setMarketStatsByDistrict(null);
+          if (priceSectionBedrooms.length === 0) {
+            setMarketStatsByDistrict(emptyStats);
             setSqftRange({ min: null, max: null });
+            setPriceSectionLoading(false);
             return;
           }
           
+          setPriceSectionLoading(true);
           try {
-            const bedroomParamForPrice = priceStatsBedrooms.map(b => b.replace('b', '')).join(',');
+            const bedroomParamForPrice = priceSectionBedrooms.map(b => b.replace('b', '')).join(',');
+            const districtQuery = selectedDistrict !== 'all' ? `&districts=${selectedDistrict}` : '';
             const [marketStatsRes, transactionsRes] = await Promise.all([
-              fetch(`${API_BASE}/market_stats_by_district?bedroom=${bedroomParamForPrice}`),
-              fetch(`${API_BASE}/transactions?bedroom=${bedroomParamForPrice}`)
+              fetch(`${API_BASE}/market_stats_by_district?bedroom=${bedroomParamForPrice}${districtQuery}&short_months=3&long_months=15`),
+              fetch(`${API_BASE}/transactions?bedroom=${bedroomParamForPrice}&limit=200000${districtQuery}`)
             ]);
             
             if (marketStatsRes.ok) {
               const marketStats = await marketStatsRes.json();
               setMarketStatsByDistrict(marketStats);
+            } else {
+              setMarketStatsByDistrict(emptyStats);
             }
             
             // Calculate sqft range
@@ -942,28 +1082,99 @@
             }
           } catch (err) {
             console.error('Error fetching market stats by district:', err);
+            setMarketStatsByDistrict(emptyStats);
+          } finally {
+            setPriceSectionLoading(false);
           }
         };
         
         fetchMarketStats();
-      }, [priceStatsBedrooms]);
+      }, [priceSectionBedrooms, selectedDistrict]);
 
-      // Fetch transactions for a specific district when expanded
-      const fetchDistrictTransactions = async (district) => {
-        if (districtTransactions[district]) return; // Already loaded
+      // Fetch Comparable Value Analysis whenever target price or filters change
+      useEffect(() => {
+        const fetchBuyBox = async () => {
+          setBuyBoxLoading(true);
+          try {
+            const bedroomParam = selectedBedrooms.map(b => b.replace('b', '')).join(',');
+            const districtParam = selectedDistrict !== 'all' ? `&districts=${selectedDistrict}` : '';
+            const url = `${API_BASE}/comparable_value_analysis?target_price=${buyBoxTargetPrice}&band=${PRICE_BAND}&bedroom=${bedroomParam}${districtParam}`;
+            const res = await fetch(url);
+            if (res.ok) {
+              const data = await res.json();
+              setBuyBoxData({
+                points: data.points || [],
+                competitors: data.competitors || [],
+                summary: data.summary || {}
+              });
+            } else {
+              setBuyBoxData({ points: [], competitors: [], summary: {} });
+            }
+          } catch (err) {
+            console.error('Error fetching comparable value analysis:', err);
+            setBuyBoxData({ points: [], competitors: [], summary: {} });
+          } finally {
+            setBuyBoxLoading(false);
+          }
+        };
+
+        fetchBuyBox();
+      }, [buyBoxTargetPrice, selectedBedrooms, selectedDistrict]);
+
+
+      // Fetch project aggregations for a specific district when expanded (Volume & Liquidity)
+      const fetchDistrictProjects = async (district) => {
+        if (districtProjects[district]) return; // Already loaded
         
         const bedroomParam = selectedBedrooms.map(b => b.replace('b', '')).join(',');
         try {
-          const res = await fetch(`${API_BASE}/transactions?districts=${district}&bedroom=${bedroomParam}`);
+          const res = await fetch(`${API_BASE}/projects_by_district?district=${district}&bedroom=${bedroomParam}`);
           if (res.ok) {
             const data = await res.json();
-            setDistrictTransactions(prev => ({
+            setDistrictProjects(prev => ({
               ...prev,
-              [district]: data.transactions || []
+              [district]: data.projects || []
             }));
           }
         } catch (err) {
-          console.error('Error fetching district transactions:', err);
+          console.error('Error fetching district projects:', err);
+        }
+      };
+
+      // Fetch price project breakdown for a specific district (Price section)
+      const fetchPriceDistrictProjects = async (district, monthsForView) => {
+        // Normalise cache key to match viewKey used in the table ('short_term' | 'long_term')
+        const viewKey = monthsForView === 3 ? 'short_term' : 'long_term';
+        const key = `${district}_${viewKey}`;
+        if (priceDistrictProjects[key]) return;
+
+        const bedroomParam = priceSectionBedrooms.map(b => b.replace('b', '')).join(',');
+        try {
+          const res = await fetch(
+            `${API_BASE}/price_projects_by_district?district=${district}&bedroom=${bedroomParam}&months=${monthsForView}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            setPriceDistrictProjects(prev => ({
+              ...prev,
+              [key]: data.projects || []
+            }));
+          }
+        } catch (err) {
+          console.error('Error fetching price projects by district:', err);
+        }
+      };
+
+      const togglePriceDistrict = (district) => {
+        const isExpanded = !!priceExpandedDistricts[district];
+        setPriceExpandedDistricts(prev => ({
+          ...prev,
+          [district]: !isExpanded
+        }));
+
+        if (!isExpanded) {
+          const monthsForView = priceSortTimeframe === 'short_term' ? 3 : 15;
+          fetchPriceDistrictProjects(district, monthsForView);
         }
       };
 
@@ -974,8 +1185,8 @@
           [district]: !isExpanded
         }));
         
-        if (!isExpanded && !districtTransactions[district]) {
-          fetchDistrictTransactions(district);
+        if (!isExpanded && !districtProjects[district]) {
+          fetchDistrictProjects(district);
         }
       };
 
@@ -1045,7 +1256,7 @@
                 color: '#374151',
                 minWidth: '120px'
               }}>
-                Postal District:
+                Filter by District:
               </label>
               <select
                 value={selectedDistrict}
@@ -1159,8 +1370,15 @@
                           }
 
                           const labels = bedroomData.map(d => d.quarter || '');
-                          const newSaleData = bedroomData.map(d => d.new_sale);
-                          const resaleData = bedroomData.map(d => d.resale);
+                          // Convert null/undefined to NaN for Chart.js to properly show gaps
+                          const newSaleData = bedroomData.map(d => {
+                            const val = d.new_sale;
+                            return (val == null || val === undefined) ? NaN : val;
+                          });
+                          const resaleData = bedroomData.map(d => {
+                            const val = d.resale;
+                            return (val == null || val === undefined) ? NaN : val;
+                          });
 
                           chartRef.current = new Chart(ctx, {
                             type: 'line',
@@ -1173,7 +1391,7 @@
                                   borderColor: '#10B981',
                                   backgroundColor: '#10B981' + '20',
                                   tension: 0.4,
-                                  spanGaps: true,
+                                  spanGaps: false,  // Show gaps for missing data
                                   pointRadius: 4,
                                   pointHoverRadius: 6,
                                   pointHitRadius: 10,
@@ -1185,7 +1403,7 @@
                                   borderColor: '#3B82F6',
                                   backgroundColor: '#3B82F6' + '20',
                                   tension: 0.4,
-                                  spanGaps: true,
+                                  spanGaps: false,  // Show gaps for missing data
                                   pointRadius: 4,
                                   pointHoverRadius: 6,
                                   pointHitRadius: 10,
@@ -1226,7 +1444,8 @@
                                 x: {
                                   ticks: {
                                     maxRotation: 45,
-                                    minRotation: 45
+                                    minRotation: 45,
+                                    autoSkip: false  // Show all quarter labels
                                   }
                                 }
                               }
@@ -1466,7 +1685,7 @@
                         .map((row, i) => {
                         const psfRow = psfData.find(p => p.district === row.district) || {};
                         const isExpanded = expandedDistricts[row.district];
-                        const transactions = districtTransactions[row.district] || [];
+                        const projects = districtProjects[row.district] || [];
                         return (
                           <React.Fragment key={row.district}>
                             <tr style={{ 
@@ -1492,7 +1711,7 @@
                                 {selectedMetrics.volume && <td style={{ padding: '12px', textAlign: 'right' }}>{formatPrice(row['2b'])}</td>}
                                 {selectedMetrics.qty && (
                                   <td style={{ padding: '12px', textAlign: 'right', color: '#6B7280' }}>
-                                    {row['2b_count'] || 0}
+                                    {(row['2b_count'] || 0).toLocaleString()}
                                   </td>
                                 )}
                               </>
@@ -1502,7 +1721,7 @@
                                 {selectedMetrics.volume && <td style={{ padding: '12px', textAlign: 'right' }}>{formatPrice(row['3b'])}</td>}
                                 {selectedMetrics.qty && (
                                   <td style={{ padding: '12px', textAlign: 'right', color: '#6B7280' }}>
-                                    {row['3b_count'] || 0}
+                                    {(row['3b_count'] || 0).toLocaleString()}
                                   </td>
                                 )}
                               </>
@@ -1512,7 +1731,7 @@
                                 {selectedMetrics.volume && <td style={{ padding: '12px', textAlign: 'right' }}>{formatPrice(row['4b'])}</td>}
                                 {selectedMetrics.qty && (
                                   <td style={{ padding: '12px', textAlign: 'right', color: '#6B7280' }}>
-                                    {row['4b_count'] || 0}
+                                    {(row['4b_count'] || 0).toLocaleString()}
                                   </td>
                                 )}
                               </>
@@ -1528,54 +1747,89 @@
                             <tr>
                               <td colSpan={1 + (selectedBedrooms.length * 2) + 2} style={{ padding: '0', background: '#F9FAFB' }}>
                                 <div style={{ padding: '20px', borderTop: '2px solid #E5E7EB' }}>
-                                  <h4 style={{ marginBottom: '16px', color: '#374151', fontSize: '16px', fontWeight: 600 }}>
-                                    Transaction Details for {row.district}
-                                  </h4>
-                                  {transactions.length === 0 ? (
-                                    <div style={{ textAlign: 'center', padding: '20px', color: '#6B7280' }}>Loading transactions...</div>
+                                  {projects.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '20px', color: '#6B7280' }}>Loading projects...</div>
                                   ) : (
                                     <div style={{ overflowX: 'auto' }}>
                                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                         <thead>
-                                          <tr style={{ borderBottom: '1px solid #E5E7EB', background: 'white' }}>
-                                            <th style={{ padding: '10px', textAlign: 'left' }}>Project</th>
-                                            <th style={{ padding: '10px', textAlign: 'center' }}>Date</th>
-                                            <th style={{ padding: '10px', textAlign: 'right' }}>Price</th>
-                                            <th style={{ padding: '10px', textAlign: 'right' }}>Area (sqft)</th>
-                                            <th style={{ padding: '10px', textAlign: 'right' }}>PSF</th>
-                                            <th style={{ padding: '10px', textAlign: 'center' }}>Bedroom</th>
+                                          <tr style={{ borderBottom: '2px solid #E5E7EB', background: 'white' }}>
+                                            <th style={{ padding: '10px', textAlign: 'left', fontWeight: 600 }}>Project Name</th>
+                                            {selectedBedrooms.includes('2b') && (
+                                              <>
+                                                {selectedMetrics.volume && <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600, color: COLORS['2b'] }}>2B Volume</th>}
+                                                {selectedMetrics.qty && <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600, color: COLORS['2b'] }}>2B Qty</th>}
+                                              </>
+                                            )}
+                                            {selectedBedrooms.includes('3b') && (
+                                              <>
+                                                {selectedMetrics.volume && <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600, color: COLORS['3b'] }}>3B Volume</th>}
+                                                {selectedMetrics.qty && <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600, color: COLORS['3b'] }}>3B Qty</th>}
+                                              </>
+                                            )}
+                                            {selectedBedrooms.includes('4b') && (
+                                              <>
+                                                {selectedMetrics.volume && <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600, color: COLORS['4b'] }}>4B Volume</th>}
+                                                {selectedMetrics.qty && <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600, color: COLORS['4b'] }}>4B Qty</th>}
+                                              </>
+                                            )}
+                                            <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600 }}>Total Qty</th>
+                                            <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600 }}>Total Volume</th>
                                           </tr>
                                         </thead>
                                         <tbody>
-                                          {transactions.map((txn, idx) => (
+                                          {projects.map((project, idx) => (
                                             <tr key={idx} style={{ 
                                               borderBottom: '1px solid #F3F4F6',
                                               background: idx % 2 === 0 ? 'white' : '#FAFAFA'
                                             }}>
-                                              <td style={{ padding: '10px', fontWeight: 500 }}>{txn.project_name}</td>
-                                              <td style={{ padding: '10px', textAlign: 'center', color: '#6B7280' }}>
-                                                {formatDate(txn.transaction_date)}
+                                              <td style={{ padding: '10px', fontWeight: 500 }}>
+                                                <span>{project.project_name}</span>
+                                                {project.sale_type_label && (
+                                                  <span
+                                                    style={{
+                                                      marginLeft: '8px',
+                                                      padding: '2px 8px',
+                                                      borderRadius: '999px',
+                                                      fontSize: '10px',
+                                                      fontWeight: 600,
+                                                      background:
+                                                        project.sale_type_label === 'New Launch'
+                                                          ? 'rgba(37, 99, 235, 0.1)'
+                                                          : 'rgba(16, 185, 129, 0.1)',
+                                                      color:
+                                                        project.sale_type_label === 'New Launch'
+                                                          ? '#2563EB'
+                                                          : '#059669'
+                                                    }}
+                                                  >
+                                                    {project.sale_type_label}
+                                                  </span>
+                                                )}
                                               </td>
-                                              <td style={{ padding: '10px', textAlign: 'right', fontWeight: 500 }}>
-                                                {formatPrice(txn.price)}
+                                              {selectedBedrooms.includes('2b') && (
+                                                <>
+                                                  {selectedMetrics.volume && <td style={{ padding: '10px', textAlign: 'right' }}>{formatPrice(project['2b'] || 0)}</td>}
+                                                  {selectedMetrics.qty && <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280' }}>{(project['2b_count'] || 0).toLocaleString()}</td>}
+                                                </>
+                                              )}
+                                              {selectedBedrooms.includes('3b') && (
+                                                <>
+                                                  {selectedMetrics.volume && <td style={{ padding: '10px', textAlign: 'right' }}>{formatPrice(project['3b'] || 0)}</td>}
+                                                  {selectedMetrics.qty && <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280' }}>{(project['3b_count'] || 0).toLocaleString()}</td>}
+                                                </>
+                                              )}
+                                              {selectedBedrooms.includes('4b') && (
+                                                <>
+                                                  {selectedMetrics.volume && <td style={{ padding: '10px', textAlign: 'right' }}>{formatPrice(project['4b'] || 0)}</td>}
+                                                  {selectedMetrics.qty && <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280' }}>{(project['4b_count'] || 0).toLocaleString()}</td>}
+                                                </>
+                                              )}
+                                              <td style={{ padding: '10px', textAlign: 'right', fontWeight: 600, color: '#374151' }}>
+                                                {(project.total_quantity || 0).toLocaleString()}
                                               </td>
-                                              <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280' }}>
-                                                {txn.area_sqft ? Math.round(txn.area_sqft).toLocaleString() : '-'}
-                                              </td>
-                                              <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280' }}>
-                                                {formatPSF(txn.psf)}
-                                              </td>
-                                              <td style={{ padding: '10px', textAlign: 'center' }}>
-                                                <span style={{
-                                                  padding: '4px 8px',
-                                                  borderRadius: '4px',
-                                                  background: (txn.bedroom_type && COLORS[txn.bedroom_type.replace('-Bedroom', 'b')]) ? COLORS[txn.bedroom_type.replace('-Bedroom', 'b')] + '20' : '#E5E7EB',
-                                                  color: (txn.bedroom_type && COLORS[txn.bedroom_type.replace('-Bedroom', 'b')]) ? COLORS[txn.bedroom_type.replace('-Bedroom', 'b')] : '#6B7280',
-                                                  fontWeight: 500,
-                                                  fontSize: '12px'
-                                                }}>
-                                                  {txn.bedroom_type || 'N/A'}
-                                                </span>
+                                              <td style={{ padding: '10px', textAlign: 'right', fontWeight: 600 }}>
+                                                {formatPrice(project.total || 0)}
                                               </td>
                                             </tr>
                                           ))}
@@ -1624,13 +1878,13 @@
                     >
                       <input
                         type="checkbox"
-                        checked={priceStatsBedrooms.includes(opt)}
+                        checked={priceSectionBedrooms.includes(opt)}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setPriceStatsBedrooms([...priceStatsBedrooms, opt]);
+                            setPriceSectionBedrooms([...priceSectionBedrooms, opt]);
                           } else {
-                            if (priceStatsBedrooms.length > 1) {
-                              setPriceStatsBedrooms(priceStatsBedrooms.filter(b => b !== opt));
+                            if (priceSectionBedrooms.length > 1) {
+                              setPriceSectionBedrooms(priceSectionBedrooms.filter(b => b !== opt));
                             }
                           }
                         }}
@@ -1714,7 +1968,7 @@
                         transition: 'all 0.2s'
                       }}
                     >
-                      6M
+                      Last 3 Months (Pulse)
                     </button>
                     <button
                       onClick={() => setPriceSortTimeframe('long_term')}
@@ -1730,7 +1984,7 @@
                         transition: 'all 0.2s'
                       }}
                     >
-                      12M
+                      Last 15 Months (Baseline)
                     </button>
                   </div>
                 </div>
@@ -1745,203 +1999,260 @@
                     {sqftRange.min} sqft (min) - {sqftRange.max} sqft (max)
                   </div>
                 )}
-                {marketStatsByDistrict ? (
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr 1fr', 
-                    gap: '24px',
-                    overflowX: 'auto'
-                  }}>
-                    {/* Short-Term (Left) */}
-                    <div>
-                      <h3 style={{ 
-                        fontSize: '16px', 
-                        fontWeight: priceSortTimeframe === 'short_term' ? 700 : 600, 
-                        color: priceSortTimeframe === 'short_term' ? '#F3F4F6' : '#111827', 
-                        marginBottom: '16px',
+                {priceSectionLoading ? (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>
+                    <div style={{ fontSize: '16px', marginBottom: '8px' }}>⏳</div>
+                    Updating price data...
+                  </div>
+                ) : marketStatsByDistrict ? (
+                  <div style={{ overflowX: 'auto' }}>
+                    <div
+                      style={{
                         textAlign: 'center',
-                        padding: '8px',
-                        background: priceSortTimeframe === 'short_term' ? '#4B5563' : '#F3F4F6',
+                        marginBottom: '8px',
+                        padding: '10px',
                         borderRadius: '6px',
-                        transition: 'all 0.2s',
-                        border: 'none'
-                      }}>
-                        Last 6 months (short-term)
-                      </h3>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '2px solid #E5E7EB', background: '#F9FAFB' }}>
-                              <th style={{ padding: '10px', textAlign: 'left', fontWeight: 600 }}>District</th>
-                              <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600, borderRight: '2px dotted #D1D5DB' }} colSpan="3">Price ($)</th>
-                              <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600 }} colSpan="3">PSF ($)</th>
-                            </tr>
-                            <tr style={{ borderBottom: '1px solid #E5E7EB', background: '#F9FAFB' }}>
-                              <th style={{ padding: '8px', textAlign: 'left', fontSize: '11px', color: '#6B7280' }}></th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280' }}>25th</th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280' }}>Median</th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280', borderRight: '2px dotted #D1D5DB' }}>75th</th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280' }}>25th</th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280' }}>Median</th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280' }}>75th</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(() => {
-                              const districts = Object.keys(marketStatsByDistrict.short_term?.by_district || {});
-                              let sortedDistricts = [...districts];
-                              
-                              if (priceSortBy === 'median_price' && priceSortTimeframe === 'short_term') {
-                                sortedDistricts.sort((a, b) => {
-                                  const statsA = marketStatsByDistrict.short_term.by_district[a];
-                                  const statsB = marketStatsByDistrict.short_term.by_district[b];
-                                  const medianA = statsA?.price?.median || 0;
-                                  const medianB = statsB?.price?.median || 0;
-                                  return medianB - medianA; // Descending
-                                });
-                              } else if (priceSortBy === 'median_psf' && priceSortTimeframe === 'short_term') {
-                                sortedDistricts.sort((a, b) => {
-                                  const statsA = marketStatsByDistrict.short_term.by_district[a];
-                                  const statsB = marketStatsByDistrict.short_term.by_district[b];
-                                  const medianA = statsA?.psf?.median || 0;
-                                  const medianB = statsB?.psf?.median || 0;
-                                  return medianB - medianA; // Descending
-                                });
-                              } else {
-                                sortedDistricts.sort(); // Alphabetical by default
-                              }
-                              
-                              return sortedDistricts.map((district, i) => {
-                                const stats = marketStatsByDistrict.short_term.by_district[district];
-                                return (
-                                  <tr key={district} style={{ 
-                                    borderBottom: '1px solid #E5E7EB',
-                                    background: i % 2 === 0 ? '#F9FAFB' : 'white'
-                                  }}>
-                                    <td style={{ padding: '10px', fontWeight: 500, fontSize: '12px' }}>
-                                      {getDistrictLabel(district)}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280', fontSize: '12px' }}>
-                                      {stats.price['25th'] ? formatPriceMedian(stats.price['25th']) : '-'}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', fontWeight: 600, fontSize: '12px' }}>
-                                      {stats.price.median ? formatPriceMedian(stats.price.median) : '-'}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280', fontSize: '12px', borderRight: '2px dotted #D1D5DB' }}>
-                                      {stats.price['75th'] ? formatPriceMedian(stats.price['75th']) : '-'}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280', fontSize: '12px' }}>
-                                      {stats.psf['25th'] ? formatPSF(stats.psf['25th']) : '-'}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', fontWeight: 600, fontSize: '12px' }}>
-                                      {stats.psf.median ? formatPSF(stats.psf.median) : '-'}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280', fontSize: '12px' }}>
-                                      {stats.psf['75th'] ? formatPSF(stats.psf['75th']) : '-'}
-                                    </td>
-                                  </tr>
-                                );
-                              });
-                            })()}
-                          </tbody>
-                        </table>
-                      </div>
+                        background: '#4B5563',
+                        color: '#F9FAFB',
+                        fontWeight: 600,
+                        fontSize: '14px'
+                      }}
+                    >
+                      {priceSortTimeframe === 'short_term'
+                        ? 'Last 3 months (Short-term)'
+                        : 'Last 15 months (Long-term)'}
                     </div>
-
-                    {/* Long-Term (Right) */}
-                    <div>
-                      <h3 style={{ 
-                        fontSize: '16px', 
-                        fontWeight: priceSortTimeframe === 'long_term' ? 700 : 600, 
-                        color: priceSortTimeframe === 'long_term' ? '#F3F4F6' : '#111827', 
-                        marginBottom: '16px',
+                    <div
+                      style={{
                         textAlign: 'center',
-                        padding: '8px',
-                        background: priceSortTimeframe === 'long_term' ? '#4B5563' : '#F3F4F6',
-                        borderRadius: '6px',
-                        transition: 'all 0.2s',
-                        border: 'none'
-                      }}>
-                        Last 12 months (long-term)
-                      </h3>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '2px solid #E5E7EB', background: '#F9FAFB' }}>
-                              <th style={{ padding: '10px', textAlign: 'left', fontWeight: 600 }}>District</th>
-                              <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600, borderRight: '2px dotted #D1D5DB' }} colSpan="3">Price ($)</th>
-                              <th style={{ padding: '10px', textAlign: 'right', fontWeight: 600 }} colSpan="3">PSF ($)</th>
-                            </tr>
-                            <tr style={{ borderBottom: '1px solid #E5E7EB', background: '#F9FAFB' }}>
-                              <th style={{ padding: '8px', textAlign: 'left', fontSize: '11px', color: '#6B7280' }}></th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280' }}>25th</th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280' }}>Median</th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280', borderRight: '2px dotted #D1D5DB' }}>75th</th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280' }}>25th</th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280' }}>Median</th>
-                              <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', color: '#6B7280' }}>75th</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(() => {
-                              const districts = Object.keys(marketStatsByDistrict.long_term?.by_district || {});
-                              let sortedDistricts = [...districts];
-                              
-                              if (priceSortBy === 'median_price' && priceSortTimeframe === 'long_term') {
-                                sortedDistricts.sort((a, b) => {
-                                  const statsA = marketStatsByDistrict.long_term.by_district[a];
-                                  const statsB = marketStatsByDistrict.long_term.by_district[b];
-                                  const medianA = statsA?.price?.median || 0;
-                                  const medianB = statsB?.price?.median || 0;
-                                  return medianB - medianA; // Descending
-                                });
-                              } else if (priceSortBy === 'median_psf' && priceSortTimeframe === 'long_term') {
-                                sortedDistricts.sort((a, b) => {
-                                  const statsA = marketStatsByDistrict.long_term.by_district[a];
-                                  const statsB = marketStatsByDistrict.long_term.by_district[b];
-                                  const medianA = statsA?.psf?.median || 0;
-                                  const medianB = statsB?.psf?.median || 0;
-                                  return medianB - medianA; // Descending
-                                });
-                              } else {
-                                sortedDistricts.sort(); // Alphabetical by default
-                              }
-                              
-                              return sortedDistricts.map((district, i) => {
-                                const stats = marketStatsByDistrict.long_term.by_district[district];
-                                return (
-                                  <tr key={district} style={{ 
+                        fontSize: '11px',
+                        color: '#6B7280',
+                        marginBottom: '12px'
+                      }}
+                    >
+                      *Only projects with at least 5 transactions in this timeframe are shown in the breakdown.
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid #E5E7EB', background: '#F9FAFB' }}>
+                          <th style={{ padding: '10px', textAlign: 'center', fontWeight: 600, width: '40px' }}></th>
+                          <th style={{ padding: '10px', textAlign: 'left', fontWeight: 600 }}>District</th>
+                          <th style={{ padding: '10px', textAlign: 'center', fontWeight: 600, borderRight: '2px dotted #D1D5DB' }} colSpan="3">Price ($)</th>
+                          <th style={{ padding: '10px', textAlign: 'center', fontWeight: 600 }} colSpan="3">PSF ($)</th>
+                        </tr>
+                        <tr style={{ borderBottom: '1px solid #E5E7EB', background: '#F9FAFB' }}>
+                          <th style={{ padding: '8px' }}></th>
+                          <th style={{ padding: '8px', textAlign: 'left', fontSize: '11px', color: '#6B7280' }}></th>
+                          <th style={{ padding: '8px', textAlign: 'center', fontSize: '11px', color: '#6B7280' }}>25th percentile</th>
+                          <th style={{ padding: '8px', textAlign: 'center', fontSize: '11px', color: '#6B7280' }}>Median</th>
+                          <th style={{ padding: '8px', textAlign: 'center', fontSize: '11px', color: '#6B7280', borderRight: '2px dotted #D1D5DB' }}>75th percentile</th>
+                          <th style={{ padding: '8px', textAlign: 'center', fontSize: '11px', color: '#6B7280' }}>25th percentile</th>
+                          <th style={{ padding: '8px', textAlign: 'center', fontSize: '11px', color: '#6B7280' }}>Median</th>
+                          <th style={{ padding: '8px', textAlign: 'center', fontSize: '11px', color: '#6B7280' }}>75th percentile</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const viewKey = priceSortTimeframe === 'short_term' ? 'short_term' : 'long_term';
+                          const byDistrict = marketStatsByDistrict[viewKey]?.by_district || {};
+                          const districts = Object.keys(byDistrict);
+                          let sortedDistricts = [...districts];
+
+                          if (priceSortBy === 'median_price') {
+                            sortedDistricts.sort((a, b) => {
+                              const statsA = byDistrict[a];
+                              const statsB = byDistrict[b];
+                              const medianA = statsA?.price?.median || 0;
+                              const medianB = statsB?.price?.median || 0;
+                              return medianB - medianA;
+                            });
+                          } else if (priceSortBy === 'median_psf') {
+                            sortedDistricts.sort((a, b) => {
+                              const statsA = byDistrict[a];
+                              const statsB = byDistrict[b];
+                              const medianA = statsA?.psf?.median || 0;
+                              const medianB = statsB?.psf?.median || 0;
+                              return medianB - medianA;
+                            });
+                          } else {
+                            sortedDistricts.sort();
+                          }
+
+                          return sortedDistricts.map((districtCode, i) => {
+                            const stats = byDistrict[districtCode];
+                            const ins = stats?.price?.insufficient || stats?.psf?.insufficient;
+                            const key = `${districtCode}_${viewKey}`;
+                            const isExpanded = !!priceExpandedDistricts[districtCode];
+                            const projects = priceDistrictProjects[key] || [];
+
+                            const renderCell = (obj, field, formatter, alignCenter) => {
+                              if (!obj) return '-';
+                              if (obj.insufficient) return 'NA*';
+                              const val = obj[field];
+                              if (val == null) return '-';
+                              return formatter(val);
+                            };
+
+                            return (
+                              <React.Fragment key={districtCode}>
+                                <tr
+                                  style={{
                                     borderBottom: '1px solid #E5E7EB',
-                                    background: i % 2 === 0 ? '#F9FAFB' : 'white'
-                                  }}>
-                                    <td style={{ padding: '10px', fontWeight: 500, fontSize: '12px' }}>
-                                      {getDistrictLabel(district)}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280', fontSize: '12px' }}>
-                                      {stats.price['25th'] ? formatPriceMedian(stats.price['25th']) : '-'}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', fontWeight: 600, fontSize: '12px' }}>
-                                      {stats.price.median ? formatPriceMedian(stats.price.median) : '-'}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280', fontSize: '12px', borderRight: '2px dotted #D1D5DB' }}>
-                                      {stats.price['75th'] ? formatPriceMedian(stats.price['75th']) : '-'}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280', fontSize: '12px' }}>
-                                      {stats.psf['25th'] ? formatPSF(stats.psf['25th']) : '-'}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', fontWeight: 600, fontSize: '12px' }}>
-                                      {stats.psf.median ? formatPSF(stats.psf.median) : '-'}
-                                    </td>
-                                    <td style={{ padding: '10px', textAlign: 'right', color: '#6B7280', fontSize: '12px' }}>
-                                      {stats.psf['75th'] ? formatPSF(stats.psf['75th']) : '-'}
+                                    background: i % 2 === 0 ? '#F9FAFB' : 'white',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() => togglePriceDistrict(districtCode)}
+                                >
+                                  <td style={{ padding: '10px', textAlign: 'center' }}>
+                                    <span
+                                      style={{
+                                        display: 'inline-block',
+                                        transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                                        transition: 'transform 0.2s',
+                                        fontSize: '12px'
+                                      }}
+                                    >
+                                      ▶
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '10px', fontWeight: 500, fontSize: '12px' }}>
+                                    {getDistrictLabel(districtCode)}{ins ? ' *' : ''}
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center', color: '#6B7280', fontSize: '12px' }}>
+                                    {renderCell(stats.price, '25th', formatPriceMedian)}
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center', fontWeight: 600, fontSize: '12px' }}>
+                                    {renderCell(stats.price, 'median', formatPriceMedian)}
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center', color: '#6B7280', fontSize: '12px', borderRight: '2px dotted #D1D5DB' }}>
+                                    {renderCell(stats.price, '75th', formatPriceMedian)}
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center', color: '#6B7280', fontSize: '12px' }}>
+                                    {renderCell(stats.psf, '25th', formatPSF)}
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center', fontWeight: 600, fontSize: '12px' }}>
+                                    {renderCell(stats.psf, 'median', formatPSF)}
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center', color: '#6B7280', fontSize: '12px' }}>
+                                    {renderCell(stats.psf, '75th', formatPSF)}
+                                  </td>
+                                </tr>
+                                {isExpanded && (
+                                  <tr>
+                                    <td colSpan={8} style={{ padding: 0, background: '#F9FAFB' }}>
+                                      <div style={{ padding: '16px 20px', borderTop: '2px solid #E5E7EB' }}>
+                                        {projects.length === 0 ? (
+                                          <div style={{ textAlign: 'center', padding: '16px', color: '#6B7280' }}>
+                                            No projects in this timeframe.
+                                          </div>
+                                        ) : (
+                                          <div style={{ overflowX: 'auto' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                                              <thead>
+                                                <tr style={{ borderBottom: '2px solid #E5E7EB', background: 'white' }}>
+                                                  <th style={{ padding: '8px', textAlign: 'left', fontWeight: 600 }}>
+                                                    Project breakdown ({projects.length} projects)
+                                                  </th>
+                                                  <th style={{ padding: '8px', textAlign: 'center', fontWeight: 600 }} colSpan="3">
+                                                    Price ($)
+                                                  </th>
+                                                  <th style={{ padding: '8px', textAlign: 'center', fontWeight: 600 }} colSpan="3">
+                                                    PSF ($)
+                                                  </th>
+                                                  <th style={{ padding: '8px', textAlign: 'center', fontWeight: 600 }}>
+                                                    Count
+                                                  </th>
+                                                </tr>
+                                                <tr style={{ borderBottom: '1px solid #E5E7EB', background: '#F9FAFB' }}>
+                                                  <th style={{ padding: '6px', textAlign: 'left', fontSize: '11px', color: '#6B7280' }}></th>
+                                                  <th style={{ padding: '6px', textAlign: 'center', fontSize: '11px', color: '#6B7280' }}>25th</th>
+                                                  <th style={{ padding: '6px', textAlign: 'center', fontSize: '11px', color: '#6B7280' }}>Median</th>
+                                                  <th style={{ padding: '6px', textAlign: 'center', fontSize: '11px', color: '#6B7280', borderRight: '2px dotted #D1D5DB' }}>75th</th>
+                                                  <th style={{ padding: '6px', textAlign: 'center', fontSize: '11px', color: '#6B7280' }}>25th</th>
+                                                  <th style={{ padding: '6px', textAlign: 'center', fontSize: '11px', color: '#6B7280' }}>Median</th>
+                                                  <th style={{ padding: '6px', textAlign: 'center', fontSize: '11px', color: '#6B7280' }}>75th</th>
+                                                  <th style={{ padding: '6px', textAlign: 'center', fontSize: '11px', color: '#6B7280' }}>Count</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                {projects.map((p, idx) => (
+                                                  <tr
+                                                    key={idx}
+                                                    style={{
+                                                      borderBottom: '1px solid #F3F4F6',
+                                                      background: idx % 2 === 0 ? 'white' : '#FAFAFA'
+                                                    }}
+                                                  >
+                                                    <td style={{ padding: '8px', fontWeight: 500 }}>
+                                                      <span>{p.project_name}</span>
+                                                      {p.sale_type_label && (
+                                                        <span
+                                                          style={{
+                                                            marginLeft: '8px',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '999px',
+                                                            fontSize: '10px',
+                                                            fontWeight: 600,
+                                                            background:
+                                                              p.sale_type_label === 'New Launch'
+                                                                ? 'rgba(37, 99, 235, 0.1)'
+                                                                : 'rgba(16, 185, 129, 0.1)',
+                                                            color:
+                                                              p.sale_type_label === 'New Launch'
+                                                                ? '#2563EB'
+                                                                : '#059669'
+                                                          }}
+                                                        >
+                                                          {p.sale_type_label}
+                                                        </span>
+                                                      )}
+                                                    </td>
+                                                    <td style={{ padding: '8px', textAlign: 'center', color: '#6B7280' }}>
+                                                      {formatPriceMedian(p.price['25th'])}
+                                                    </td>
+                                                    <td style={{ padding: '8px', textAlign: 'center', fontWeight: 600 }}>
+                                                      {formatPriceMedian(p.price['median'])}
+                                                    </td>
+                                                    <td
+                                                      style={{
+                                                        padding: '8px',
+                                                        textAlign: 'center',
+                                                        color: '#6B7280',
+                                                        borderRight: '2px dotted #D1D5DB'
+                                                      }}
+                                                    >
+                                                      {formatPriceMedian(p.price['75th'])}
+                                                    </td>
+                                                    <td style={{ padding: '8px', textAlign: 'center', color: '#6B7280' }}>
+                                                      {formatPSF(p.psf['25th'])}
+                                                    </td>
+                                                    <td style={{ padding: '8px', textAlign: 'center', fontWeight: 600 }}>
+                                                      {formatPSF(p.psf['median'])}
+                                                    </td>
+                                                    <td style={{ padding: '8px', textAlign: 'center', color: '#6B7280' }}>
+                                                      {formatPSF(p.psf['75th'])}
+                                                    </td>
+                                                    <td style={{ padding: '8px', textAlign: 'center', color: '#4B5563' }}>
+                                                      {p.count != null ? p.count.toLocaleString() : '-'}
+                                                    </td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        )}
+                                      </div>
                                     </td>
                                   </tr>
-                                );
-                              });
-                            })()}
-                          </tbody>
-                        </table>
-                      </div>
+                                )}
+                              </React.Fragment>
+                            );
+                          });
+                        })()}
+                      </tbody>
+                    </table>
+                    <div style={{ marginTop: '8px', fontSize: '11px', color: '#6B7280' }}>
+                      * NA indicates insufficient data (&lt;3 transactions in the selected short-term window)
                     </div>
                   </div>
                 ) : (
@@ -1951,8 +2262,130 @@
                 )}
               </Card>
 
+              {/* Comparable Value Analysis (Buy Box) */}
+              <Card title="🎯 Comparable Value Analysis (Buy Box)">
+                <div style={{ marginBottom: '16px', padding: '12px', background: '#F9FAFB', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 500, color: '#374151' }}>Target Budget:</span>
+                    <input
+                      type="range"
+                      min={BUY_BOX_MIN}
+                      max={BUY_BOX_MAX}
+                      step={BUY_BOX_STEP}
+                      value={buyBoxTargetPrice}
+                      onChange={(e) => setBuyBoxTargetPrice(Number(e.target.value))}
+                      style={{ flex: 1 }}
+                    />
+                    <span style={{ fontWeight: 600, color: '#111827' }}>
+                      ${ (buyBoxTargetPrice / 1000000).toFixed(2) }M
+                    </span>
+                  </div>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#6B7280' }}>
+                    Trade-off Analysis: What you get for ${ (buyBoxTargetPrice / 1000000).toFixed(2) }M (+/- { (PRICE_BAND/1000).toFixed(0) }k)
+                  </div>
+                </div>
+
+                {buyBoxLoading ? (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>
+                    <div style={{ fontSize: '16px', marginBottom: '8px' }}>⏳</div>
+                    Calculating comparable value...
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2fr) minmax(0,1.5fr)', gap: '24px', alignItems: 'stretch' }}>
+                      {/* Scatter Plot */}
+                      <div style={{ minHeight: '320px' }}>
+                        <BuyBoxScatter
+                          data={buyBoxData.points}
+                          targetPrice={buyBoxTargetPrice}
+                          priceBand={PRICE_BAND}
+                        />
+                      </div>
+
+                      {/* Competitor Table */}
+                      <div style={{ maxHeight: '360px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '8px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                          <thead>
+                            <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                              <th style={{ padding: '8px', textAlign: 'left' }}>District</th>
+                              <th style={{ padding: '8px', textAlign: 'left' }}>Project</th>
+                              <th style={{ padding: '8px', textAlign: 'center' }}>Bedrooms</th>
+                              <th style={{ padding: '8px', textAlign: 'right' }}>Max Area (sqft)</th>
+                              <th style={{ padding: '8px', textAlign: 'right' }}>Price Range ($)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {buyBoxData.competitors.length === 0 ? (
+                              <tr>
+                                <td colSpan="5" style={{ padding: '16px', textAlign: 'center', color: '#6B7280' }}>
+                                  No transactions found in this price band.
+                                </td>
+                              </tr>
+                            ) : (
+                              buyBoxData.competitors
+                                .slice()
+                                .sort((a, b) => (b.max_area_sqft || 0) - (a.max_area_sqft || 0))
+                                .map((c, idx) => (
+                                  <tr key={idx} style={{ borderBottom: '1px solid #F3F4F6', background: idx % 2 === 0 ? 'white' : '#FAFAFA' }}>
+                                    <td style={{ padding: '8px', color: '#4B5563' }}>{c.district}</td>
+                                    <td style={{ padding: '8px', fontWeight: 500 }}>{c.project_name}</td>
+                                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                                      <span
+                                        style={{
+                                          padding: '2px 8px',
+                                          borderRadius: '999px',
+                                          fontSize: '11px',
+                                          fontWeight: 600,
+                                          background:
+                                            c.bedroom_count === 2
+                                              ? 'rgba(59,130,246,0.1)'
+                                              : c.bedroom_count === 3
+                                              ? 'rgba(16,185,129,0.1)'
+                                              : c.bedroom_count === 4
+                                              ? 'rgba(245,158,11,0.1)'
+                                              : '#E5E7EB',
+                                          color:
+                                            c.bedroom_count === 2
+                                              ? '#3B82F6'
+                                              : c.bedroom_count === 3
+                                              ? '#059669'
+                                              : c.bedroom_count === 4
+                                              ? '#D97706'
+                                              : '#4B5563'
+                                        }}
+                                      >
+                                        {c.bedroom_count}B
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: '8px', textAlign: 'right', color: '#4B5563' }}>
+                                      {c.max_area_sqft ? Math.round(c.max_area_sqft).toLocaleString() : '-'}
+                                    </td>
+                                    <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }}>
+                                      ${Math.round(c.min_price / 1000).toLocaleString()}k - ${Math.round(c.max_price / 1000).toLocaleString()}k
+                                    </td>
+                                  </tr>
+                                ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Summary */}
+                    {buyBoxData.summary && Object.keys(buyBoxData.summary).length > 0 && (
+                      <div style={{ marginTop: '12px', fontSize: '13px', color: '#4B5563' }}>
+                        In this price range, the smallest unit is <strong>{Math.round(buyBoxData.summary.smallest_area_sqft).toLocaleString()} sqft</strong>
+                        {' '}at <strong>{buyBoxData.summary.smallest_project}</strong> ({buyBoxData.summary.smallest_district}), and the largest is
+                        {' '}<strong>{Math.round(buyBoxData.summary.largest_area_sqft).toLocaleString()} sqft</strong>
+                        {' '}at <strong>{buyBoxData.summary.largest_project}</strong> ({buyBoxData.summary.largest_district}).
+                      </div>
+                    )}
+                  </>
+                )}
+              </Card>
+
               {/* Latest Transactions */}
-              <Card title={`📝 Latest Transactions (${latestTransactions.length} total resale transactions, sorted by date descending)`}>
+              <Card title={`📝 Latest Transactions (${latestTransactions.length.toLocaleString()} total resale transactions, sorted by date descending)`}>
                 <div style={{ overflowX: 'auto' }}>
                   {latestTransactions.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>No transactions found</div>
@@ -2117,7 +2550,121 @@
             paddingTop: '24px',
             borderTop: '1px solid #E5E7EB'
           }}>
-            Data Source: URA Data Service • Bedroom classification: 1-Bedroom (&lt; 580 sqft), 2-Bedroom (580-800 sqft), 3-Bedroom (800-1,150 sqft), 4-Bedroom (&gt; 1,150 sqft)
+            <div style={{ marginBottom: '16px' }}>
+              Data Source: URA Data Service
+            </div>
+            <div style={{ 
+              display: 'inline-block',
+              marginTop: '16px',
+              fontSize: '12px'
+            }}>
+              <div style={{ 
+                marginBottom: '8px', 
+                fontWeight: 600, 
+                color: '#6B7280' 
+              }}>
+                Bedroom Classification Calculations (Max Sqft for 2B / 3B / 4B)
+              </div>
+              <table style={{ 
+                margin: '0 auto',
+                borderCollapse: 'collapse',
+                fontSize: '11px',
+                color: '#6B7280'
+              }}>
+                <thead>
+                  <tr>
+                    <th style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'left', 
+                      borderBottom: '1px solid #E5E7EB',
+                      fontWeight: 600
+                    }}>Category</th>
+                    <th style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center', 
+                      borderBottom: '1px solid #E5E7EB',
+                      fontWeight: 600
+                    }}>2B Max</th>
+                    <th style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center', 
+                      borderBottom: '1px solid #E5E7EB',
+                      fontWeight: 600
+                    }}>3B Max</th>
+                    <th style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center', 
+                      borderBottom: '1px solid #E5E7EB',
+                      fontWeight: 600
+                    }}>4B Max</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'left',
+                      borderBottom: '1px solid #F3F4F6'
+                    }}>Pre-Harmonization (New Sale &lt; Jun '23)</td>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center',
+                      borderBottom: '1px solid #F3F4F6'
+                    }}>850</td>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center',
+                      borderBottom: '1px solid #F3F4F6'
+                    }}>1,200</td>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center',
+                      borderBottom: '1px solid #F3F4F6'
+                    }}>&gt;1,200</td>
+                  </tr>
+                  <tr>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'left',
+                      borderBottom: '1px solid #F3F4F6'
+                    }}>Post-Harmonization (New Sale ≥ Jun '23)</td>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center',
+                      borderBottom: '1px solid #F3F4F6'
+                    }}>780</td>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center',
+                      borderBottom: '1px solid #F3F4F6'
+                    }}>1,150</td>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center',
+                      borderBottom: '1px solid #F3F4F6'
+                    }}>&gt;1,150</td>
+                  </tr>
+                  <tr>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'left'
+                    }}>Resale (Legacy)</td>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center'
+                    }}>950</td>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center'
+                    }}>1,350</td>
+                    <td style={{ 
+                      padding: '6px 12px', 
+                      textAlign: 'center'
+                    }}>&gt;1,350</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       );
