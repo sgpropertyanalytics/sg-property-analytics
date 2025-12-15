@@ -1068,7 +1068,8 @@
               if (transactions.length > 0) {
                 const areas = transactions
                   .map(t => t.area_sqft)
-                  .filter(area => area != null && area > 0);
+                  // Guard against corrupted or outlier values (e.g. mis-keyed 619834 sqft)
+                  .filter(area => area != null && area > 0 && area <= 10000);
                 if (areas.length > 0) {
                   const min = Math.min(...areas);
                   const max = Math.max(...areas);
@@ -2084,6 +2085,13 @@
                             const key = `${districtCode}_${viewKey}`;
                             const isExpanded = !!priceExpandedDistricts[districtCode];
                             const projects = priceDistrictProjects[key] || [];
+
+                            // If we've already loaded the project breakdown for this district
+                            // and there are no qualifying projects (>=5 transactions),
+                            // hide the entire district row from the table.
+                            if (key in priceDistrictProjects && projects.length === 0) {
+                              return null;
+                            }
 
                             const renderCell = (obj, field, formatter, alignCenter) => {
                               if (!obj) return '-';
