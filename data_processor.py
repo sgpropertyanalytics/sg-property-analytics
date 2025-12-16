@@ -621,6 +621,178 @@ def get_price_trends_by_sale_type(bedroom_types: list = [2, 3, 4], districts: Op
     return {"trends": trends_by_bedroom}
 
 
+def get_price_trends_by_region(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None) -> Dict[str, Any]:
+    """
+    Get median price trends by region (CCR, RCR, OCR) over time by quarter.
+    
+    Args:
+        bedroom_types: List of bedroom counts to include (default: [2, 3, 4])
+        districts: Optional list of districts to filter by (ignored for region analysis)
+        
+    Returns:
+        Dictionary with quarterly median prices for CCR, RCR, and OCR
+    """
+    # Get all transactions (don't filter by districts for region analysis)
+    df = get_filtered_transactions(districts=None, segment=None)
+    
+    if df.empty:
+        return {"trends": {}}
+    
+    # Parse dates if not already parsed
+    if "parsed_date" not in df.columns:
+        if "transaction_date" in df.columns:
+            df["parsed_date"] = pd.to_datetime(df["transaction_date"], errors='coerce')
+        else:
+            df["parsed_date"] = df["contract_date"].apply(parse_contract_date)
+            df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors='coerce')
+    
+    df = df.dropna(subset=["parsed_date"])
+    
+    if df.empty:
+        return {"trends": {}}
+    
+    # Filter by bedroom types
+    df = df[df["bedroom_count"].isin(bedroom_types)]
+    
+    if df.empty:
+        return {"trends": {}}
+    
+    # Add market segment column
+    df["market_segment"] = df["district"].apply(_get_market_segment)
+    # Filter out rows where market_segment is None
+    df = df[df["market_segment"].notna()].copy()
+    
+    if df.empty:
+        return {"trends": {}}
+    
+    # Extract year-quarter
+    df["year_quarter"] = df["parsed_date"].dt.to_period("Q").astype(str)
+    df["year_quarter"] = df["year_quarter"].str.replace("Q", "-Q")
+    
+    # Get date range
+    min_date = df["parsed_date"].min()
+    max_date = df["parsed_date"].max()
+    start_quarter = pd.Timestamp(min_date).to_period("Q").start_time
+    end_quarter = pd.Timestamp(max_date).to_period("Q").end_time
+    
+    # Generate all quarters
+    all_quarters = []
+    current = pd.Timestamp(start_quarter)
+    end = pd.Timestamp(end_quarter)
+    while current <= end:
+        quarter_period = pd.Timestamp(current).to_period("Q")
+        quarter_str = str(quarter_period).replace("Q", "-Q")
+        all_quarters.append(quarter_str)
+        current = (quarter_period + 1).start_time
+    
+    # Calculate median price by quarter and region
+    price_trends = df.groupby(["year_quarter", "market_segment"])["price"].median().reset_index()
+    
+    # Build trends data structure
+    trends_data = []
+    for quarter in all_quarters:
+        quarter_data = {"quarter": quarter}
+        
+        # Get median price for each region
+        for region in ["CCR", "RCR", "OCR"]:
+            region_data = price_trends[
+                (price_trends["year_quarter"] == quarter) & 
+                (price_trends["market_segment"] == region)
+            ]
+            region_price = float(region_data["price"].iloc[0]) if not region_data.empty else None
+            quarter_data[region.lower()] = region_price
+        
+        trends_data.append(quarter_data)
+    
+    return {"trends": trends_data}
+
+
+def get_psf_trends_by_region(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None) -> Dict[str, Any]:
+    """
+    Get median PSF trends by region (CCR, RCR, OCR) over time by quarter.
+    
+    Args:
+        bedroom_types: List of bedroom counts to include (default: [2, 3, 4])
+        districts: Optional list of districts to filter by (ignored for region analysis)
+        
+    Returns:
+        Dictionary with quarterly median PSF for CCR, RCR, and OCR
+    """
+    # Get all transactions (don't filter by districts for region analysis)
+    df = get_filtered_transactions(districts=None, segment=None)
+    
+    if df.empty:
+        return {"trends": []}
+    
+    # Parse dates if not already parsed
+    if "parsed_date" not in df.columns:
+        if "transaction_date" in df.columns:
+            df["parsed_date"] = pd.to_datetime(df["transaction_date"], errors='coerce')
+        else:
+            df["parsed_date"] = df["contract_date"].apply(parse_contract_date)
+            df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors='coerce')
+    
+    df = df.dropna(subset=["parsed_date"])
+    
+    if df.empty:
+        return {"trends": []}
+    
+    # Filter by bedroom types
+    df = df[df["bedroom_count"].isin(bedroom_types)]
+    
+    if df.empty:
+        return {"trends": []}
+    
+    # Add market segment column
+    df["market_segment"] = df["district"].apply(_get_market_segment)
+    # Filter out rows where market_segment is None
+    df = df[df["market_segment"].notna()].copy()
+    
+    if df.empty:
+        return {"trends": []}
+    
+    # Extract year-quarter
+    df["year_quarter"] = df["parsed_date"].dt.to_period("Q").astype(str)
+    df["year_quarter"] = df["year_quarter"].str.replace("Q", "-Q")
+    
+    # Get date range
+    min_date = df["parsed_date"].min()
+    max_date = df["parsed_date"].max()
+    start_quarter = pd.Timestamp(min_date).to_period("Q").start_time
+    end_quarter = pd.Timestamp(max_date).to_period("Q").end_time
+    
+    # Generate all quarters
+    all_quarters = []
+    current = pd.Timestamp(start_quarter)
+    end = pd.Timestamp(end_quarter)
+    while current <= end:
+        quarter_period = pd.Timestamp(current).to_period("Q")
+        quarter_str = str(quarter_period).replace("Q", "-Q")
+        all_quarters.append(quarter_str)
+        current = (quarter_period + 1).start_time
+    
+    # Calculate median PSF by quarter and region
+    psf_trends = df.groupby(["year_quarter", "market_segment"])["psf"].median().reset_index()
+    
+    # Build trends data structure
+    trends_data = []
+    for quarter in all_quarters:
+        quarter_data = {"quarter": quarter}
+        
+        # Get median PSF for each region
+        for region in ["CCR", "RCR", "OCR"]:
+            region_data = psf_trends[
+                (psf_trends["year_quarter"] == quarter) & 
+                (psf_trends["market_segment"] == region)
+            ]
+            region_psf = float(region_data["psf"].iloc[0]) if not region_data.empty else None
+            quarter_data[region.lower()] = region_psf
+        
+        trends_data.append(quarter_data)
+    
+    return {"trends": trends_data}
+
+
 def get_price_trends(
     districts: Optional[list] = None,
     bedroom_types: list = [2, 3, 4],

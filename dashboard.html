@@ -846,6 +846,10 @@
       const [priceExpandedDistricts, setPriceExpandedDistricts] = useState({});
       const [saleTypeTrends, setSaleTypeTrends] = useState([]);
       const [priceTrendsBySaleType, setPriceTrendsBySaleType] = useState({});
+      const [priceTrendsByRegion, setPriceTrendsByRegion] = useState([]);
+      const [psfTrendsByRegion, setPsfTrendsByRegion] = useState([]);
+      // Local market segment filter for the \"Median Price: New Sale vs Resale by Bedroom Type\" charts only
+      const [saleTypeSegment, setSaleTypeSegment] = useState(null); // null = all, 'CCR', 'RCR', 'OCR'
       const [availableDistricts, setAvailableDistricts] = useState([]);
       const [selectedDistrict, setSelectedDistrict] = useState('all'); // 'all' means no filter
 
@@ -868,6 +872,24 @@
           '2b_count': d['2b_count'] || 0,
           '3b_count': d['3b_count'] || 0,
           '4b_count': d['4b_count'] || 0
+        }));
+      }, [priceTrends]);
+
+      // Memoize PSF trends data to prevent re-renders
+      const psfTrendsData = useMemo(() => {
+        if (!priceTrends || priceTrends.length === 0) return [];
+        return priceTrends.map(d => ({
+          month: d.month || d.quarter || '',
+          // Reuse LineChartComponent by mapping PSF values into *_price fields
+          '2b_price': d['2b_psf'] != null ? d['2b_psf'] : null,
+          '3b_price': d['3b_psf'] != null ? d['3b_psf'] : null,
+          '4b_price': d['4b_psf'] != null ? d['4b_psf'] : null,
+          '2b_count': d['2b_count'] || 0,
+          '3b_count': d['3b_count'] || 0,
+          '4b_count': d['4b_count'] || 0,
+          '2b_low_sample': d['2b_low_sample'] || false,
+          '3b_low_sample': d['3b_low_sample'] || false,
+          '4b_low_sample': d['4b_low_sample'] || false
         }));
       }, [priceTrends]);
 
@@ -1088,33 +1110,36 @@
             const districtQuery = districtParam ? `&districts=${districtParam}` : '';
             
             // Fetch core data (required) - limit transactions to 200000 to include all New Sale + Resale
-            const [trendsRes, volumeRes, psfRes, transactionsRes, saleTypeRes, priceTrendsBySaleTypeRes] = await Promise.all([
+            const [trendsRes, volumeRes, psfRes, transactionsRes, saleTypeRes, priceTrendsByRegionRes, psfTrendsByRegionRes] = await Promise.all([
               fetch(`${API_BASE}/price_trends?${baseParams}${districtQuery}${segmentQuery}`),
               fetch(`${API_BASE}/total_volume?${baseParams}${districtQuery}${segmentQuery}`),
               fetch(`${API_BASE}/avg_psf?${baseParams}${segmentQuery}`),
               fetch(`${API_BASE}/transactions?${baseParams}&limit=200000${districtQuery}${segmentQuery}`),
               fetch(`${API_BASE}/sale_type_trends${districtQuery}${segmentQuery}`).catch(() => null), // Optional, don't fail if missing
-              fetch(`${API_BASE}/price_trends_by_sale_type?${baseParams}${districtQuery}${segmentQuery}`).catch(() => null) // Optional, don't fail if missing
+              fetch(`${API_BASE}/price_trends_by_region?${baseParams}${districtQuery}`).catch(() => null), // Optional, don't fail if missing
+              fetch(`${API_BASE}/psf_trends_by_region?${baseParams}${districtQuery}`).catch(() => null) // Optional, don't fail if missing
             ]);
             
             if (!trendsRes.ok || !volumeRes.ok || !psfRes.ok) {
               throw new Error('API request failed');
             }
             
-            const [trends, volume, psf, transactions, saleTypeData, priceTrendsBySaleTypeData] = await Promise.all([
+            const [trends, volume, psf, transactions, saleTypeData, priceTrendsByRegionData, psfTrendsByRegionData] = await Promise.all([
               trendsRes.json(), 
               volumeRes.json(), 
               psfRes.json(),
               transactionsRes.ok ? transactionsRes.json() : { transactions: [] },
               saleTypeRes && saleTypeRes.ok ? saleTypeRes.json() : { trends: [] },
-              priceTrendsBySaleTypeRes && priceTrendsBySaleTypeRes.ok ? priceTrendsBySaleTypeRes.json() : { trends: {} }
+              priceTrendsByRegionRes && priceTrendsByRegionRes.ok ? priceTrendsByRegionRes.json() : { trends: [] },
+              psfTrendsByRegionRes && psfTrendsByRegionRes.ok ? psfTrendsByRegionRes.json() : { trends: [] }
             ]);
             
             setPriceTrends(trends.trends || []);
             setVolumeData(volume.data || []);
             setPsfData(psf.data || []);
             setSaleTypeTrends(saleTypeData.trends || []);
-            setPriceTrendsBySaleType(priceTrendsBySaleTypeData.trends || {});
+            setPriceTrendsByRegion(priceTrendsByRegionData.trends || []);
+            setPsfTrendsByRegion(psfTrendsByRegionData.trends || []);
             // Sort by transaction_date descending (newest first) - limit to 20 for display
             const sorted = (transactions.transactions || []).sort((a, b) => {
               const dateA = a.transaction_date ? new Date(a.transaction_date) : new Date(0);
@@ -1132,6 +1157,35 @@
         };
         fetchData();
       }, [selectedBedrooms, selectedDistrict, selectedSegment]);
+
+      // Fetch price trends by sale type separately so only the local market segment filter
+      // impacts these charts (and does not trigger a full data refresh for the page)
+      useEffect(() => {
+        const fetchSaleTypePriceTrends = async () => {
+          const bedroomParam = selectedBedrooms.map(b => b.replace('b', '')).join(',');
+          const districtParam = selectedDistrict !== 'all' ? selectedDistrict : '';
+          const baseParams = `bedroom=${bedroomParam}`;
+          const districtQuery = districtParam ? `&districts=${districtParam}` : '';
+          const saleTypeSegmentQuery = saleTypeSegment ? `&segment=${saleTypeSegment}` : '';
+
+          try {
+            const res = await fetch(
+              `${API_BASE}/price_trends_by_sale_type?${baseParams}${districtQuery}${saleTypeSegmentQuery}`
+            );
+            if (res.ok) {
+              const data = await res.json();
+              setPriceTrendsBySaleType(data.trends || {});
+            } else {
+              setPriceTrendsBySaleType({});
+            }
+          } catch (err) {
+            console.error('Error fetching price trends by sale type:', err);
+            setPriceTrendsBySaleType({});
+          }
+        };
+
+        fetchSaleTypePriceTrends();
+      }, [selectedBedrooms, selectedDistrict, saleTypeSegment]);
 
       // Separate effect for market stats by district (uses isolated priceSectionBedrooms filter)
       useEffect(() => {
@@ -1475,7 +1529,7 @@
           ) : (
             <>
               {/* Chart 1: Price Trends */}
-              <Card title="📈 Price Trend by Quarter (Median Price & Transaction Count)">
+              <Card title="📈 Price Trend by Quarter (Median Price & Median Price by Region)">
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
                   <LineChartComponent 
                     data={priceTrends} 
@@ -1483,18 +1537,346 @@
                     valueFormatter={formatPrice}
                     title="Median Price"
                   />
-                  <BarChartComponent 
-                    data={transactionCountData}
-                    selectedBedrooms={selectedBedrooms}
-                    title="Transaction Count"
-                    beginAtZero={false}
-                  />
+                  {priceTrendsByRegion && priceTrendsByRegion.length > 0 && (() => {
+                    const RegionPriceChart = () => {
+                      const canvasRef = useRef(null);
+                      const chartRef = useRef(null);
+
+                      useEffect(() => {
+                        if (!canvasRef.current || !priceTrendsByRegion || priceTrendsByRegion.length === 0) {
+                          return;
+                        }
+
+                        if (typeof Chart === 'undefined') {
+                          console.error('RegionPriceChart: Chart.js not loaded');
+                          return;
+                        }
+
+                        const ctx = canvasRef.current.getContext('2d');
+                        
+                        if (chartRef.current) {
+                          chartRef.current.destroy();
+                          chartRef.current = null;
+                        }
+
+                        const labels = priceTrendsByRegion.map(d => d.quarter || '');
+                        // Convert null/undefined to NaN for Chart.js to properly show gaps
+                        const ccrData = priceTrendsByRegion.map(d => {
+                          const val = d.ccr;
+                          return (val == null || val === undefined) ? NaN : val;
+                        });
+                        const rcrData = priceTrendsByRegion.map(d => {
+                          const val = d.rcr;
+                          return (val == null || val === undefined) ? NaN : val;
+                        });
+                        const ocrData = priceTrendsByRegion.map(d => {
+                          const val = d.ocr;
+                          return (val == null || val === undefined) ? NaN : val;
+                        });
+
+                        chartRef.current = new Chart(ctx, {
+                          type: 'line',
+                          data: {
+                            labels: labels,
+                            datasets: [
+                              {
+                                label: 'CCR',
+                                data: ccrData,
+                                borderColor: '#EF4444',
+                                backgroundColor: '#EF4444' + '20',
+                                tension: 0.4,
+                                spanGaps: false,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                pointHitRadius: 10,
+                                fill: false
+                              },
+                              {
+                                label: 'RCR',
+                                data: rcrData,
+                                borderColor: '#F59E0B',
+                                backgroundColor: '#F59E0B' + '20',
+                                tension: 0.4,
+                                spanGaps: false,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                pointHitRadius: 10,
+                                fill: false
+                              },
+                              {
+                                label: 'OCR',
+                                data: ocrData,
+                                borderColor: '#10B981',
+                                backgroundColor: '#10B981' + '20',
+                                tension: 0.4,
+                                spanGaps: false,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                pointHitRadius: 10,
+                                fill: false
+                              }
+                            ]
+                          },
+                          options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                              intersect: false,
+                              mode: 'index'
+                            },
+                            plugins: {
+                              legend: { display: true, position: 'top' },
+                              tooltip: {
+                                callbacks: {
+                                  label: function(context) {
+                                    const value = context.parsed.y;
+                                    if (value == null || isNaN(value)) {
+                                      return context.dataset.label + ': No data';
+                                    }
+                                    return context.dataset.label + ': ' + formatPrice(value);
+                                  }
+                                }
+                              }
+                            },
+                            scales: {
+                              y: {
+                                beginAtZero: false,
+                                ticks: {
+                                  callback: function(value) {
+                                    return formatPrice(value);
+                                  }
+                                }
+                              },
+                              x: {
+                                ticks: {
+                                  maxRotation: 45,
+                                  minRotation: 45,
+                                  autoSkip: false
+                                }
+                              }
+                            }
+                          }
+                        });
+
+                        return () => {
+                          if (chartRef.current) {
+                            chartRef.current.destroy();
+                          }
+                        };
+                      }, [priceTrendsByRegion]);
+
+                      return (
+                        <div>
+                          <h3 style={{ fontSize: '14px', color: '#6B7280', marginBottom: '12px' }}>
+                            Median Price by Region
+                          </h3>
+                          <div style={{ height: '300px', position: 'relative' }}>
+                            <canvas ref={canvasRef}></canvas>
+                          </div>
+                        </div>
+                      );
+                    };
+
+                    return <RegionPriceChart />;
+                  })()}
                   </div>
+              </Card>
+
+              {/* Chart 2: PSF Trends */}
+              <Card title="📊 PSF Trend by Quarter (Median PSF & Median PSF by Region)">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+                  <LineChartComponent 
+                    data={psfTrendsData} 
+                    selectedBedrooms={selectedBedrooms}
+                    valueFormatter={formatPSF}
+                    title="Median PSF"
+                  />
+                  {psfTrendsByRegion && psfTrendsByRegion.length > 0 && (() => {
+                          const RegionPSFChart = () => {
+                            const canvasRef = useRef(null);
+                            const chartRef = useRef(null);
+
+                            useEffect(() => {
+                              if (!canvasRef.current || !psfTrendsByRegion || psfTrendsByRegion.length === 0) {
+                                return;
+                              }
+
+                              if (typeof Chart === 'undefined') {
+                                console.error('RegionPSFChart: Chart.js not loaded');
+                                return;
+                              }
+
+                              const ctx = canvasRef.current.getContext('2d');
+                              
+                              if (chartRef.current) {
+                                chartRef.current.destroy();
+                                chartRef.current = null;
+                              }
+
+                              const labels = psfTrendsByRegion.map(d => d.quarter || '');
+                              // Convert null/undefined to NaN for Chart.js to properly show gaps
+                              const ccrData = psfTrendsByRegion.map(d => {
+                                const val = d.ccr;
+                                return (val == null || val === undefined) ? NaN : val;
+                              });
+                              const rcrData = psfTrendsByRegion.map(d => {
+                                const val = d.rcr;
+                                return (val == null || val === undefined) ? NaN : val;
+                              });
+                              const ocrData = psfTrendsByRegion.map(d => {
+                                const val = d.ocr;
+                                return (val == null || val === undefined) ? NaN : val;
+                              });
+
+                              chartRef.current = new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                  labels: labels,
+                                  datasets: [
+                                    {
+                                      label: 'CCR',
+                                      data: ccrData,
+                                      borderColor: '#EF4444',
+                                      backgroundColor: '#EF4444' + '20',
+                                      tension: 0.4,
+                                      spanGaps: false,
+                                      pointRadius: 4,
+                                      pointHoverRadius: 6,
+                                      pointHitRadius: 10,
+                                      fill: false
+                                    },
+                                    {
+                                      label: 'RCR',
+                                      data: rcrData,
+                                      borderColor: '#F59E0B',
+                                      backgroundColor: '#F59E0B' + '20',
+                                      tension: 0.4,
+                                      spanGaps: false,
+                                      pointRadius: 4,
+                                      pointHoverRadius: 6,
+                                      pointHitRadius: 10,
+                                      fill: false
+                                    },
+                                    {
+                                      label: 'OCR',
+                                      data: ocrData,
+                                      borderColor: '#10B981',
+                                      backgroundColor: '#10B981' + '20',
+                                      tension: 0.4,
+                                      spanGaps: false,
+                                      pointRadius: 4,
+                                      pointHoverRadius: 6,
+                                      pointHitRadius: 10,
+                                      fill: false
+                                    }
+                                  ]
+                                },
+                                options: {
+                                  responsive: true,
+                                  maintainAspectRatio: false,
+                                  interaction: {
+                                    intersect: false,
+                                    mode: 'index'
+                                  },
+                                  plugins: {
+                                    legend: { display: true, position: 'top' },
+                                    tooltip: {
+                                      callbacks: {
+                                        label: function(context) {
+                                          const value = context.parsed.y;
+                                          if (value == null || isNaN(value)) {
+                                            return context.dataset.label + ': No data';
+                                          }
+                                          return context.dataset.label + ': ' + formatPSF(value);
+                                        }
+                                      }
+                                    }
+                                  },
+                                  scales: {
+                                    y: {
+                                      beginAtZero: false,
+                                      ticks: {
+                                        callback: function(value) {
+                                          return formatPSF(value);
+                                        }
+                                      }
+                                    },
+                                    x: {
+                                      ticks: {
+                                        maxRotation: 45,
+                                        minRotation: 45,
+                                        autoSkip: false
+                                      }
+                                    }
+                                  }
+                                }
+                              });
+
+                              return () => {
+                                if (chartRef.current) {
+                                  chartRef.current.destroy();
+                                }
+                              };
+                            }, [psfTrendsByRegion]);
+
+                            return (
+                              <div>
+                                <h3 style={{ fontSize: '14px', color: '#6B7280', marginBottom: '12px' }}>
+                                  Median PSF by Region
+                                </h3>
+                                <div style={{ height: '300px', position: 'relative' }}>
+                                  <canvas ref={canvasRef}></canvas>
+                                </div>
+                              </div>
+                            );
+                          };
+
+                          return <RegionPSFChart />;
+                        })()}
+                </div>
               </Card>
 
               {/* Chart: Price Comparison by Sale Type (New Sale vs Resale) */}
               {priceTrendsBySaleType && Object.keys(priceTrendsBySaleType).length > 0 && (
                 <Card title="💰 Median Price: New Sale vs Resale by Bedroom Type">
+                  {/* Local Market Segment Filter (affects only this card) */}
+                  <div style={{ 
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '8px'
+                  }}>
+                    <span style={{ fontWeight: 500, color: '#374151', marginRight: '8px' }}>
+                      Market Segment:
+                    </span>
+                    {[
+                      { value: null, label: 'All' },
+                      { value: 'CCR', label: 'CCR' },
+                      { value: 'RCR', label: 'RCR' },
+                      { value: 'OCR', label: 'OCR' }
+                    ].map(opt => {
+                      const isActive = saleTypeSegment === opt.value;
+                      return (
+                        <button
+                          key={opt.label}
+                          onClick={() => setSaleTypeSegment(opt.value)}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '999px',
+                            border: isActive ? '1px solid #2563EB' : '1px solid #D1D5DB',
+                            background: isActive ? '#DBEAFE' : '#FFFFFF',
+                            color: isActive ? '#1D4ED8' : '#374151',
+                            fontSize: '12px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
                     {['2b', '3b', '4b'].map(bedroomKey => {
                       const bedroomData = priceTrendsBySaleType[bedroomKey];
@@ -1742,6 +2124,18 @@
                     return <SaleTypeChart />;
                   })()}
               </Card>
+              )}
+
+              {/* Chart: Transaction Count by Bedroom Type */}
+              {transactionCountData && transactionCountData.length > 0 && (
+                <Card title="📊 Transaction Count by Bedroom Type">
+                  <BarChartComponent 
+                    data={transactionCountData}
+                    selectedBedrooms={selectedBedrooms}
+                    title="Transaction Count"
+                    beginAtZero={false}
+                  />
+                </Card>
               )}
 
               {/* Summary Table */}

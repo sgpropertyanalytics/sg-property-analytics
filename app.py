@@ -879,6 +879,66 @@ def price_trends_by_sale_type():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/price_trends_by_region", methods=["GET"])
+def price_trends_by_region():
+    """Get median price trends by region (CCR, RCR, OCR) over time by quarter."""
+    start = time.time()
+    
+    from data_processor import get_price_trends_by_region
+    
+    bedroom_param = request.args.get("bedroom", "2,3,4")
+    districts_param = request.args.get("districts")
+    
+    try:
+        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
+    except ValueError:
+        return jsonify({"error": "Invalid bedroom parameter"}), 400
+    
+    districts = None
+    if districts_param:
+        districts = [d.strip() for d in districts_param.split(",") if d.strip()]
+    
+    try:
+        trends = get_price_trends_by_region(bedroom_types, districts=districts)
+        elapsed = time.time() - start
+        print(f"GET /api/price_trends_by_region took: {elapsed:.4f} seconds")
+        return jsonify(trends)
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/price_trends_by_region ERROR (took {elapsed:.4f}s): {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/psf_trends_by_region", methods=["GET"])
+def psf_trends_by_region():
+    """Get median PSF trends by region (CCR, RCR, OCR) over time by quarter."""
+    start = time.time()
+    
+    from data_processor import get_psf_trends_by_region
+    
+    bedroom_param = request.args.get("bedroom", "2,3,4")
+    districts_param = request.args.get("districts")
+    
+    try:
+        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
+    except ValueError:
+        return jsonify({"error": "Invalid bedroom parameter"}), 400
+    
+    districts = None
+    if districts_param:
+        districts = [d.strip() for d in districts_param.split(",") if d.strip()]
+    
+    try:
+        trends = get_psf_trends_by_region(bedroom_types, districts=districts)
+        elapsed = time.time() - start
+        print(f"GET /api/psf_trends_by_region took: {elapsed:.4f} seconds")
+        return jsonify(trends)
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/psf_trends_by_region ERROR (took {elapsed:.4f}s): {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/", methods=["GET"])
 def index():
     """Serve the dashboard or API documentation."""
