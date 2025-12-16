@@ -301,7 +301,7 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
     df['bedroom_count'] = df.apply(classify_bedroom_final, axis=1)
     
     # Prepare final result
-    result = pd.DataFrame({
+    result_dict = {
         'project_name': df['Project Name'],
         'transaction_date': df['transaction_date'],
         'contract_date': df['contract_date'],
@@ -313,7 +313,13 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
         'property_type': df.get('Property Type', 'Condominium'),
         'source': 'csv_offline',
         'sale_type': None  # Will be set based on folder
-    })
+    }
+    
+    # Preserve Tenure column if it exists (needed for lease calculations)
+    if 'Tenure' in df.columns:
+        result_dict['Tenure'] = df['Tenure']
+    
+    result = pd.DataFrame(result_dict)
     
     return result
 
@@ -453,13 +459,14 @@ def resale_stats():
     start_date = request.args.get("start_date")
     end_date = request.args.get("end_date")
     districts_param = request.args.get("districts")
+    segment = request.args.get("segment")
     
     districts = None
     if districts_param:
         districts = [d.strip() for d in districts_param.split(",") if d.strip()]
     
     try:
-        stats = get_resale_stats(start_date, end_date, districts)
+        stats = get_resale_stats(start_date, end_date, districts, segment)
         elapsed = time.time() - start
         print(f"GET /api/resale_stats took: {elapsed:.4f} seconds")
         return jsonify(stats)
@@ -481,6 +488,7 @@ def transactions():
     districts_param = request.args.get("districts")
     bedroom_param = request.args.get("bedroom", "2,3,4")
     limit_param = request.args.get("limit", "200000")
+    segment = request.args.get("segment")
     
     districts = None
     if districts_param:
@@ -493,7 +501,7 @@ def transactions():
         return jsonify({"error": "Invalid parameter"}), 400
     
     try:
-        transactions = get_transaction_details(start_date, end_date, districts, bedroom_types, limit=limit)
+        transactions = get_transaction_details(start_date, end_date, districts, bedroom_types, segment, limit)
         elapsed = time.time() - start
         print(f"GET /api/transactions took: {elapsed:.4f} seconds (returned {len(transactions)} rows)")
         return jsonify({
@@ -515,6 +523,7 @@ def price_trends():
     
     districts_param = request.args.get("districts")
     bedroom_param = request.args.get("bedroom", "2,3,4")
+    segment = request.args.get("segment")
     
     districts = None
     if districts_param:
@@ -526,7 +535,7 @@ def price_trends():
         return jsonify({"error": "Invalid bedroom parameter"}), 400
     
     try:
-        data = get_price_trends(districts, bedroom_types)
+        data = get_price_trends(districts, bedroom_types, segment)
         elapsed = time.time() - start
         print(f"GET /api/price_trends took: {elapsed:.4f} seconds")
         return jsonify(data)
@@ -545,6 +554,7 @@ def total_volume():
     
     bedroom_param = request.args.get("bedroom", "2,3,4")
     districts_param = request.args.get("districts")
+    segment = request.args.get("segment")
     
     try:
         bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
@@ -556,7 +566,7 @@ def total_volume():
         districts = [d.strip() for d in districts_param.split(",") if d.strip()]
     
     try:
-        data = get_total_volume_by_district(bedroom_types, districts=districts)
+        data = get_total_volume_by_district(bedroom_types, districts=districts, segment=segment)
         elapsed = time.time() - start
         print(f"GET /api/total_volume took: {elapsed:.4f} seconds")
         return jsonify(data)
@@ -574,6 +584,7 @@ def avg_psf():
     from data_processor import get_avg_psf_by_district
     
     bedroom_param = request.args.get("bedroom", "2,3,4")
+    segment = request.args.get("segment")
     
     try:
         bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
@@ -581,7 +592,7 @@ def avg_psf():
         return jsonify({"error": "Invalid bedroom parameter"}), 400
     
     try:
-        data = get_avg_psf_by_district(bedroom_types)
+        data = get_avg_psf_by_district(bedroom_types, segment=segment)
         elapsed = time.time() - start
         print(f"GET /api/avg_psf took: {elapsed:.4f} seconds")
         return jsonify(data)
@@ -636,6 +647,7 @@ def price_projects_by_district():
         return jsonify({"error": "district parameter is required"}), 400
 
     bedroom_param = request.args.get("bedroom", "2,3,4")
+    segment = request.args.get("segment")
     try:
         bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
     except ValueError:
@@ -652,6 +664,7 @@ def price_projects_by_district():
             district=district,
             bedroom_types=bedroom_types,
             months=months,
+            segment=segment,
         )
         return jsonify(data)
     except Exception as e:
@@ -682,6 +695,7 @@ def comparable_value_analysis():
         band = 100000.0
 
     bedroom_param = request.args.get("bedroom", "2,3,4")
+    segment = request.args.get("segment")
     try:
         bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
     except ValueError:
@@ -692,12 +706,25 @@ def comparable_value_analysis():
     if districts_param:
         districts = [d.strip() for d in districts_param.split(",") if d.strip()]
 
+    min_lease_param = request.args.get("min_lease")
+    min_lease = None
+    if min_lease_param:
+        try:
+            min_lease = int(min_lease_param)
+        except ValueError:
+            min_lease = None
+
+    sale_type = request.args.get("sale_type")  # "New Launch" or "Resale"
+
     try:
         data = get_comparable_value_analysis(
             target_price=target_price,
             price_band=band,
             bedroom_types=bedroom_types,
             districts=districts,
+            segment=segment,
+            min_lease=min_lease,
+            sale_type=sale_type,
         )
         return jsonify(data)
     except Exception as e:
@@ -730,8 +757,10 @@ def market_stats():
     
     from data_processor import get_market_stats
     
+    segment = request.args.get("segment")
+    
     try:
-        stats = get_market_stats()
+        stats = get_market_stats(segment=segment)
         elapsed = time.time() - start
         print(f"GET /api/market_stats took: {elapsed:.4f} seconds")
         return jsonify(stats)
@@ -750,6 +779,7 @@ def price_trends_by_district():
     
     bedroom_param = request.args.get("bedroom", "2,3,4")
     top_n = request.args.get("top_n", "10")
+    segment = request.args.get("segment")
     
     try:
         bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
@@ -758,7 +788,7 @@ def price_trends_by_district():
         return jsonify({"error": "Invalid parameter"}), 400
     
     try:
-        data = get_price_trends_by_district(bedroom_types, top_n_int)
+        data = get_price_trends_by_district(bedroom_types, top_n_int, segment)
         elapsed = time.time() - start
         print(f"GET /api/price_trends_by_district took: {elapsed:.4f} seconds")
         return jsonify(data)
@@ -776,6 +806,7 @@ def market_stats_by_district():
     from data_processor import get_market_stats_by_district
     
     bedroom_param = request.args.get("bedroom", "2,3,4")
+    segment = request.args.get("segment")
     
     try:
         bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
@@ -783,7 +814,7 @@ def market_stats_by_district():
         return jsonify({"error": "Invalid bedroom parameter"}), 400
     
     try:
-        stats = get_market_stats_by_district(bedroom_types)
+        stats = get_market_stats_by_district(bedroom_types, segment=segment)
         elapsed = time.time() - start
         print(f"GET /api/market_stats_by_district took: {elapsed:.4f} seconds")
         return jsonify(stats)
@@ -801,12 +832,13 @@ def sale_type_trends():
     from data_processor import get_sale_type_trends
     
     districts_param = request.args.get("districts")
+    segment = request.args.get("segment")
     districts = None
     if districts_param:
         districts = [d.strip() for d in districts_param.split(",") if d.strip()]
     
     try:
-        trends = get_sale_type_trends(districts=districts)
+        trends = get_sale_type_trends(districts=districts, segment=segment)
         elapsed = time.time() - start
         print(f"GET /api/sale_type_trends took: {elapsed:.4f} seconds")
         return jsonify(trends)
@@ -825,6 +857,7 @@ def price_trends_by_sale_type():
     
     bedroom_param = request.args.get("bedroom", "2,3,4")
     districts_param = request.args.get("districts")
+    segment = request.args.get("segment")
     
     try:
         bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
@@ -836,7 +869,7 @@ def price_trends_by_sale_type():
         districts = [d.strip() for d in districts_param.split(",") if d.strip()]
     
     try:
-        trends = get_price_trends_by_sale_type(bedroom_types, districts=districts)
+        trends = get_price_trends_by_sale_type(bedroom_types, districts=districts, segment=segment)
         elapsed = time.time() - start
         print(f"GET /api/price_trends_by_sale_type took: {elapsed:.4f} seconds")
         return jsonify(trends)

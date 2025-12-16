@@ -148,6 +148,25 @@
   
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js" onerror="console.warn('Chart.js CDN failed, trying fallback...'); this.src='https://unpkg.com/chart.js@3.9.1/dist/chart.min.js';"></script>
+  
+  <!-- Leaflet CSS and JS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Custom styles for map tooltip -->
+  <style>
+    .custom-tooltip {
+      background: white !important;
+      border: 1px solid #E5E7EB !important;
+      border-radius: 6px !important;
+      padding: 8px !important;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+      font-size: 13px !important;
+    }
+    .leaflet-tooltip-top:before {
+      border-top-color: #E5E7EB !important;
+    }
+  </style>
   <script>
     // Wait for all dependencies to be available with better error handling
     (function checkDependencies() {
@@ -797,6 +816,7 @@
     // Main Dashboard
     function Dashboard() {
       const [selectedBedrooms, setSelectedBedrooms] = useState(['2b', '3b', '4b']);
+      const [selectedSegment, setSelectedSegment] = useState(null); // null = all, 'CCR', 'RCR', 'OCR'
       const [priceTrends, setPriceTrends] = useState([]);
       const [volumeData, setVolumeData] = useState([]);
       const [psfData, setPsfData] = useState([]);
@@ -833,10 +853,12 @@
       const BUY_BOX_MIN = 1000000;
       const BUY_BOX_MAX = 4000000;
       const BUY_BOX_STEP = 250000;
-      const PRICE_BAND = 100000;
+      const PRICE_BAND = 50000;
       const [buyBoxTargetPrice, setBuyBoxTargetPrice] = useState(2500000);
       const [buyBoxData, setBuyBoxData] = useState({ points: [], competitors: [], summary: {} });
       const [buyBoxLoading, setBuyBoxLoading] = useState(false);
+      const [buyBoxLeaseFilter, setBuyBoxLeaseFilter] = useState(false); // Filter for >= 85 years lease
+      const [buyBoxSaleType, setBuyBoxSaleType] = useState(null); // null = all, 'New Launch' or 'Resale'
       
       // Memoize transaction count chart data to prevent re-renders
       const transactionCountData = useMemo(() => {
@@ -849,23 +871,73 @@
         }));
       }, [priceTrends]);
 
-      // Scatter component for Comparable Value Analysis
-      const BuyBoxScatter = ({ data, targetPrice, priceBand }) => {
-        const canvasRef = useRef(null);
-        const chartRef = useRef(null);
+      // District to approximate center coordinates mapping for Singapore
+      const DISTRICT_COORDS = {
+        'D01': [1.2806, 103.8506], // Boat Quay / Raffles Place / Marina Downtown
+        'D02': [1.2770, 103.8450], // Shenton Way / Tanjong Pagar
+        'D03': [1.2930, 103.8000], // Queenstown / Alexandra / Tiong Bahru
+        'D04': [1.2700, 103.8200], // Harbourfront / Keppel / Telok Blangah
+        'D05': [1.3070, 103.7900], // Buona Vista / Dover / Pasir Panjang
+        'D06': [1.2920, 103.8500], // City Hall / Fort Canning
+        'D07': [1.3000, 103.8550], // Bugis / Rochor
+        'D08': [1.3100, 103.8500], // Little India / Farrer Park
+        'D09': [1.3050, 103.8350], // Orchard / Somerset / River Valley
+        'D10': [1.3200, 103.8000], // Tanglin / Bukit Timah / Holland
+        'D11': [1.3300, 103.8300], // Newton / Novena / Dunearn / Watten
+        'D12': [1.3200, 103.8600], // Balestier / Whampoa / Toa Payoh
+        'D13': [1.3400, 103.8700], // Potong Pasir / Bidadari / MacPherson
+        'D14': [1.3200, 103.9000], // Geylang / Dakota / Paya Lebar
+        'D15': [1.3000, 103.9000], // Tanjong Rhu / Amber / Meyer / Katong
+        'D16': [1.3300, 103.9400], // Bedok / Upper East Coast
+        'D17': [1.3500, 103.9800], // Loyang / Changi
+        'D18': [1.3600, 103.9400], // Tampines / Pasir Ris
+        'D19': [1.3800, 103.8900], // Serangoon Garden / Hougang / Sengkang
+        'D20': [1.3700, 103.8500], // Bishan / Ang Mo Kio
+        'D21': [1.3400, 103.7700], // Upper Bukit Timah / Clementi Park
+        'D22': [1.3300, 103.7200], // Jurong / Boon Lay / Tuas
+        'D23': [1.3800, 103.7600], // Bukit Batok / Bukit Panjang / Choa Chu Kang
+        'D24': [1.4000, 103.7200], // Lim Chu Kang / Tengah
+        'D25': [1.4300, 103.7800], // Kranji / Woodlands
+        'D26': [1.4000, 103.8200], // Upper Thomson / Springleaf
+        'D27': [1.4200, 103.8400], // Yishun / Sembawang
+        'D28': [1.4000, 103.8700]  // Seletar / Yio Chu Kang
+      };
+
+      // Property Map component for Comparable Value Analysis
+      const PropertyMap = ({ data, targetPrice, priceBand }) => {
+        const mapRef = useRef(null);
+        const mapInstanceRef = useRef(null);
+        const markersRef = useRef([]);
 
         useEffect(() => {
-          if (!canvasRef.current) return;
-          if (typeof Chart === 'undefined') return;
+          if (!mapRef.current || typeof L === 'undefined') return;
 
-          const ctx = canvasRef.current.getContext('2d');
-
-          if (chartRef.current) {
-            chartRef.current.destroy();
-            chartRef.current = null;
+          // Initialize map centered on Singapore
+          if (!mapInstanceRef.current) {
+            mapInstanceRef.current = L.map(mapRef.current).setView([1.3521, 103.8198], 11);
+            
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '© OpenStreetMap contributors',
+              maxZoom: 19
+            }).addTo(mapInstanceRef.current);
           }
 
-          const points = (data || []).map(p => {
+          const map = mapInstanceRef.current;
+
+          // Clear existing markers
+          markersRef.current.forEach(marker => map.removeLayer(marker));
+          markersRef.current = [];
+
+          if (!data || data.length === 0) return;
+
+          // Create markers for each property
+          data.forEach(p => {
+            const district = p.district;
+            const coords = DISTRICT_COORDS[district];
+            
+            if (!coords) return; // Skip if district not found
+
             const bedKey = `${p.bedroom_count}b`;
             const color =
               bedKey === '2b' ? COLORS['2b'] :
@@ -873,84 +945,114 @@
               bedKey === '4b' ? COLORS['4b'] :
               '#6B7280';
 
-            const isYoung = p.remaining_lease != null && p.remaining_lease >= 90;
+            // Create custom circle marker - fixed size, no border effects
+            const circle = L.circleMarker(coords, {
+              radius: 12, // Fixed size for all markers
+              fillColor: color,
+              color: color,
+              weight: 2,
+              opacity: 0.8,
+              fillOpacity: 0.6
+            });
 
-            return {
-              x: p.area_sqft || 0,
-              y: p.price_mid || 0,
-              bedroom: bedKey,
-              district: p.district,
-              project: p.project_name,
-              minPrice: p.price_min,
-              maxPrice: p.price_max,
-              remaining_lease: p.remaining_lease,
-              backgroundColor: color,
-              borderColor: isYoung ? COLORS['young'] : color,
-              radius: isYoung ? 7 : 5,
-              borderWidth: isYoung ? 2 : 1.5
-            };
+            // Tooltip content
+            const priceRange = `$${(p.price_min / 1000000).toFixed(2)}M - $${(p.price_max / 1000000).toFixed(2)}M`;
+            const leaseText = p.remaining_lease != null ? `<br>Remaining lease: ${p.remaining_lease} yrs` : '';
+            const tooltipContent = `
+              <div style="font-weight: 600; margin-bottom: 4px;">${p.project_name}</div>
+              <div style="font-size: 12px; color: #6B7280;">
+                ${p.district} • ${p.bedroom_count}-Bedroom<br>
+                Area: ${Math.round(p.area_sqft || 0).toLocaleString()} sqft<br>
+                Price: ${priceRange}${leaseText}
+              </div>
+            `;
+
+            circle.bindTooltip(tooltipContent, {
+              permanent: false,
+              direction: 'top',
+              className: 'custom-tooltip'
+            });
+
+            // Click handler
+            circle.on('click', () => {
+              // You can add click functionality here, e.g., highlight or show details
+              console.log('Clicked property:', p);
+            });
+
+            circle.addTo(map);
+            markersRef.current.push(circle);
           });
 
-          chartRef.current = new Chart(ctx, {
-            type: 'scatter',
-            data: {
-              datasets: [
-                {
-                  label: 'Projects',
-                  data: points,
-                  parsing: false,
-                  pointBackgroundColor: points.map(p => p.backgroundColor),
-                  pointBorderColor: points.map(p => p.borderColor),
-                  pointRadius: points.map(p => p.radius),
-                  pointBorderWidth: points.map(p => p.borderWidth)
-                }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { display: false },
-                tooltip: {
-                  callbacks: {
-                    label: (ctx) => {
-                      const d = ctx.raw;
-                      if (!d) return '';
-                      const range = `$${Math.round(d.minPrice / 1000).toLocaleString()}k - $${Math.round(d.maxPrice / 1000).toLocaleString()}k`;
-                      const lease = d.remaining_lease != null ? `, Remaining lease: ${d.remaining_lease} yrs` : '';
-                      return `${d.project} (${d.district}, ${d.bedroom.toUpperCase()}): ${Math.round(d.x).toLocaleString()} sqft, ${range}${lease}`;
-                    }
-                  }
-                }
-              },
-              layout: {
-                padding: { top: 24, right: 16, bottom: 16, left: 8 }
-              },
-              scales: {
-                x: {
-                  title: { display: true, text: 'Area (sqft)' },
-                  ticks: { callback: (v) => v.toLocaleString() }
-                },
-                y: {
-                  title: { display: true, text: 'Transacted Price ($)' },
-                  ticks: { callback: (v) => '$' + (v / 1000000).toFixed(2) + 'M' }
-                }
-              }
-            }
-          });
+          // Fit map to show all markers
+          if (markersRef.current.length > 0) {
+            const group = L.featureGroup(markersRef.current);
+            map.fitBounds(group.getBounds().pad(0.1));
+          }
 
+          // Cleanup function
           return () => {
-            if (chartRef.current) {
-              chartRef.current.destroy();
-            }
+            // Clear markers on unmount or data change
+            markersRef.current.forEach(marker => {
+              if (map.hasLayer(marker)) {
+                map.removeLayer(marker);
+              }
+            });
+            markersRef.current = [];
           };
         }, [data, targetPrice, priceBand]);
 
         return (
-          <div style={{ height: '320px', position: 'relative' }}>
-            <canvas ref={canvasRef}></canvas>
-            <div style={{ marginTop: '8px', fontSize: '11px', color: '#6B7280' }}>
-              Dot colour encodes bedroom size (2B / 3B / 4B). Dark-bordered dots indicate young properties (remaining lease ≥ 90 years).
+          <div style={{ width: '100%' }}>
+            {/* Legend - Outside map, on top, in one row */}
+            {data && data.length > 0 && (
+              <div style={{
+                background: 'white',
+                padding: '10px 16px',
+                borderRadius: '8px 8px 0 0',
+                border: '1px solid #E5E7EB',
+                borderBottom: 'none',
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '20px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ fontWeight: 600, color: '#111827', marginRight: '8px' }}>Legend:</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: COLORS['2b'] }}></div>
+                  <span>2-Bedroom</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: COLORS['3b'] }}></div>
+                  <span>3-Bedroom</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: COLORS['4b'] }}></div>
+                  <span>4-Bedroom</span>
+                </div>
+              </div>
+            )}
+            
+            <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '500px', borderRadius: data && data.length > 0 ? '0 0 8px 8px' : '8px', overflow: 'hidden', border: '1px solid #E5E7EB' }}>
+              <div ref={mapRef} style={{ width: '100%', height: '100%', minHeight: '500px' }}></div>
+              
+              {(!data || data.length === 0) && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '50%', 
+                  left: '50%', 
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center',
+                  color: '#6B7280',
+                  background: 'white',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  zIndex: 1000
+                }}>
+                  No properties found in this price range
+                </div>
+              )}
             </div>
           </div>
         );
@@ -978,6 +1080,7 @@
           setError(null);
           const bedroomParam = selectedBedrooms.map(b => b.replace('b', '')).join(',');
           const districtParam = selectedDistrict !== 'all' ? selectedDistrict : '';
+          const segmentQuery = selectedSegment ? `&segment=${selectedSegment}` : '';
           
           try {
             // Build query parameters
@@ -986,12 +1089,12 @@
             
             // Fetch core data (required) - limit transactions to 200000 to include all New Sale + Resale
             const [trendsRes, volumeRes, psfRes, transactionsRes, saleTypeRes, priceTrendsBySaleTypeRes] = await Promise.all([
-              fetch(`${API_BASE}/price_trends?${baseParams}${districtQuery}`),
-              fetch(`${API_BASE}/total_volume?${baseParams}${districtQuery}`),
-              fetch(`${API_BASE}/avg_psf?${baseParams}${districtQuery}`),
-              fetch(`${API_BASE}/transactions?${baseParams}&limit=200000${districtQuery}`),
-              fetch(`${API_BASE}/sale_type_trends${districtQuery}`).catch(() => null), // Optional, don't fail if missing
-              fetch(`${API_BASE}/price_trends_by_sale_type?${baseParams}${districtQuery}`).catch(() => null) // Optional, don't fail if missing
+              fetch(`${API_BASE}/price_trends?${baseParams}${districtQuery}${segmentQuery}`),
+              fetch(`${API_BASE}/total_volume?${baseParams}${districtQuery}${segmentQuery}`),
+              fetch(`${API_BASE}/avg_psf?${baseParams}${segmentQuery}`),
+              fetch(`${API_BASE}/transactions?${baseParams}&limit=200000${districtQuery}${segmentQuery}`),
+              fetch(`${API_BASE}/sale_type_trends${districtQuery}${segmentQuery}`).catch(() => null), // Optional, don't fail if missing
+              fetch(`${API_BASE}/price_trends_by_sale_type?${baseParams}${districtQuery}${segmentQuery}`).catch(() => null) // Optional, don't fail if missing
             ]);
             
             if (!trendsRes.ok || !volumeRes.ok || !psfRes.ok) {
@@ -1028,7 +1131,7 @@
           }
         };
         fetchData();
-      }, [selectedBedrooms, selectedDistrict]);
+      }, [selectedBedrooms, selectedDistrict, selectedSegment]);
 
       // Separate effect for market stats by district (uses isolated priceSectionBedrooms filter)
       useEffect(() => {
@@ -1049,9 +1152,10 @@
           try {
             const bedroomParamForPrice = priceSectionBedrooms.map(b => b.replace('b', '')).join(',');
             const districtQuery = selectedDistrict !== 'all' ? `&districts=${selectedDistrict}` : '';
+            const segmentQuery = selectedSegment ? `&segment=${selectedSegment}` : '';
             const [marketStatsRes, transactionsRes] = await Promise.all([
-              fetch(`${API_BASE}/market_stats_by_district?bedroom=${bedroomParamForPrice}${districtQuery}&short_months=3&long_months=15`),
-              fetch(`${API_BASE}/transactions?bedroom=${bedroomParamForPrice}&limit=200000${districtQuery}`)
+              fetch(`${API_BASE}/market_stats_by_district?bedroom=${bedroomParamForPrice}${districtQuery}${segmentQuery}&short_months=3&long_months=15`),
+              fetch(`${API_BASE}/transactions?bedroom=${bedroomParamForPrice}&limit=200000${districtQuery}${segmentQuery}`)
             ]);
             
             if (marketStatsRes.ok) {
@@ -1090,7 +1194,7 @@
         };
         
         fetchMarketStats();
-      }, [priceSectionBedrooms, selectedDistrict]);
+      }, [priceSectionBedrooms, selectedDistrict, selectedSegment]);
 
       // Fetch Comparable Value Analysis whenever target price or filters change
       useEffect(() => {
@@ -1099,7 +1203,10 @@
           try {
             const bedroomParam = selectedBedrooms.map(b => b.replace('b', '')).join(',');
             const districtParam = selectedDistrict !== 'all' ? `&districts=${selectedDistrict}` : '';
-            const url = `${API_BASE}/comparable_value_analysis?target_price=${buyBoxTargetPrice}&band=${PRICE_BAND}&bedroom=${bedroomParam}${districtParam}`;
+            const segmentQuery = selectedSegment ? `&segment=${selectedSegment}` : '';
+            const leaseFilterQuery = buyBoxLeaseFilter ? `&min_lease=85` : '';
+            const saleTypeQuery = buyBoxSaleType ? `&sale_type=${encodeURIComponent(buyBoxSaleType)}` : '';
+            const url = `${API_BASE}/comparable_value_analysis?target_price=${buyBoxTargetPrice}&band=${PRICE_BAND}&bedroom=${bedroomParam}${districtParam}${segmentQuery}${leaseFilterQuery}${saleTypeQuery}`;
             const res = await fetch(url);
             if (res.ok) {
               const data = await res.json();
@@ -1120,7 +1227,7 @@
         };
 
         fetchBuyBox();
-      }, [buyBoxTargetPrice, selectedBedrooms, selectedDistrict]);
+      }, [buyBoxTargetPrice, selectedBedrooms, selectedDistrict, selectedSegment, buyBoxLeaseFilter, buyBoxSaleType]);
 
 
       // Fetch project aggregations for a specific district when expanded (Volume & Liquidity)
@@ -1128,8 +1235,9 @@
         if (districtProjects[district]) return; // Already loaded
         
         const bedroomParam = selectedBedrooms.map(b => b.replace('b', '')).join(',');
+        const segmentQuery = selectedSegment ? `&segment=${selectedSegment}` : '';
         try {
-          const res = await fetch(`${API_BASE}/projects_by_district?district=${district}&bedroom=${bedroomParam}`);
+          const res = await fetch(`${API_BASE}/projects_by_district?district=${district}&bedroom=${bedroomParam}${segmentQuery}`);
           if (res.ok) {
             const data = await res.json();
             setDistrictProjects(prev => ({
@@ -1150,9 +1258,10 @@
         if (priceDistrictProjects[key]) return;
 
         const bedroomParam = priceSectionBedrooms.map(b => b.replace('b', '')).join(',');
+        const segmentQuery = selectedSegment ? `&segment=${selectedSegment}` : '';
         try {
           const res = await fetch(
-            `${API_BASE}/price_projects_by_district?district=${district}&bedroom=${bedroomParam}&months=${monthsForView}`
+            `${API_BASE}/price_projects_by_district?district=${district}&bedroom=${bedroomParam}&months=${monthsForView}${segmentQuery}`
           );
           if (res.ok) {
             const data = await res.json();
@@ -1243,6 +1352,48 @@
             gap: '16px'
           }}>
             <BedroomFilter selected={selectedBedrooms} onChange={setSelectedBedrooms} />
+            
+            {/* Market Segment Filter */}
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '12px',
+              flexWrap: 'wrap'
+            }}>
+              <label style={{ 
+                fontSize: '14px', 
+                fontWeight: 500, 
+                color: '#374151',
+                minWidth: '120px'
+              }}>
+                Market Segment:
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {[
+                  { value: null, label: 'All' },
+                  { value: 'CCR', label: 'CCR (Core Central Region)' },
+                  { value: 'RCR', label: 'RCR (Rest of Core Central Region)' },
+                  { value: 'OCR', label: 'OCR (Outside Core Central Region)' }
+                ].map(opt => (
+                  <button
+                    key={opt.value || 'all'}
+                    onClick={() => setSelectedSegment(opt.value)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontWeight: 500,
+                      transition: 'all 0.2s',
+                      background: selectedSegment === opt.value ? '#3B82F6' : '#E5E7EB',
+                      color: selectedSegment === opt.value ? 'white' : '#6B7280',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             
             {/* District Filter */}
             <div style={{ 
@@ -2289,7 +2440,69 @@
                     </span>
                   </div>
                   <div style={{ marginTop: '8px', fontSize: '12px', color: '#6B7280' }}>
-                    Trade-off Analysis: What you get for ${ (buyBoxTargetPrice / 1000000).toFixed(2) }M (+/- { (PRICE_BAND/1000).toFixed(0) }k)
+                    Trade-off Analysis: What you get for ${ ((buyBoxTargetPrice - PRICE_BAND) / 1000000).toFixed(2) }M - ${ ((buyBoxTargetPrice + PRICE_BAND) / 1000000).toFixed(2) }M
+                  </div>
+                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="checkbox"
+                        id="leaseFilter"
+                        checked={buyBoxLeaseFilter}
+                        onChange={(e) => setBuyBoxLeaseFilter(e.target.checked)}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="leaseFilter" style={{ fontSize: '13px', color: '#374151', cursor: 'pointer', userSelect: 'none' }}>
+                        Only Filter Properties ≥ 85 years lease
+                      </label>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px' }}>
+                      <span style={{ fontSize: '13px', color: '#374151', fontWeight: 500 }}>Sale Type:</span>
+                      <button
+                        onClick={() => setBuyBoxSaleType(null)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #D1D5DB',
+                          background: buyBoxSaleType === null ? '#3B82F6' : 'white',
+                          color: buyBoxSaleType === null ? 'white' : '#374151',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: 500
+                        }}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => setBuyBoxSaleType('New Launch')}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #D1D5DB',
+                          background: buyBoxSaleType === 'New Launch' ? '#3B82F6' : 'white',
+                          color: buyBoxSaleType === 'New Launch' ? 'white' : '#374151',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: 500
+                        }}
+                      >
+                        New Launch
+                      </button>
+                      <button
+                        onClick={() => setBuyBoxSaleType('Resale')}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #D1D5DB',
+                          background: buyBoxSaleType === 'Resale' ? '#3B82F6' : 'white',
+                          color: buyBoxSaleType === 'Resale' ? 'white' : '#374151',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: 500
+                        }}
+                      >
+                        Resale
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -2300,25 +2513,39 @@
                   </div>
                 ) : (
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2fr) minmax(0,1.5fr)', gap: '24px', alignItems: 'stretch' }}>
-                      {/* Scatter Plot */}
-                      <div style={{ minHeight: '320px' }}>
-                        <BuyBoxScatter
-                          data={buyBoxData.points}
-                          targetPrice={buyBoxTargetPrice}
-                          priceBand={PRICE_BAND}
-                        />
+                    {/* Property Count Note */}
+                    <div style={{ marginBottom: '12px', padding: '10px 16px', background: '#F0F9FF', borderRadius: '8px', border: '1px solid #BAE6FD' }}>
+                      <div style={{ fontSize: '14px', color: '#0369A1', fontWeight: 500 }}>
+                        {buyBoxData.points && buyBoxData.points.length > 0 ? (
+                          <>
+                            <strong>{buyBoxData.points.length.toLocaleString()}</strong> {buyBoxData.points.length === 1 ? 'property' : 'properties'} available within your budget
+                            {buyBoxLeaseFilter && ' (≥85 years lease)'}
+                            {buyBoxSaleType && ` (${buyBoxSaleType})`}
+                          </>
+                        ) : (
+                          'No properties found in this price range'
+                        )}
                       </div>
+                    </div>
 
-                      {/* Competitor Table */}
-                      <div style={{ maxHeight: '360px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '8px' }}>
+                    {/* Property Map - Full width, bigger */}
+                    <div style={{ marginBottom: '24px' }}>
+                      <PropertyMap
+                        data={buyBoxData.points}
+                        targetPrice={buyBoxTargetPrice}
+                        priceBand={PRICE_BAND}
+                      />
+                    </div>
+
+                    {/* Competitor Table - Below the map */}
+                    <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: '8px' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                           <thead>
                             <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
                               <th style={{ padding: '8px', textAlign: 'left' }}>District</th>
                               <th style={{ padding: '8px', textAlign: 'left' }}>Project</th>
                               <th style={{ padding: '8px', textAlign: 'center' }}>Bedrooms</th>
-                              <th style={{ padding: '8px', textAlign: 'right' }}>Max Area (sqft)</th>
+                              <th style={{ padding: '8px', textAlign: 'right' }}>Area Range (sqft)</th>
                               <th style={{ padding: '8px', textAlign: 'right' }}>Price Range ($)</th>
                             </tr>
                           </thead>
@@ -2366,10 +2593,14 @@
                                       </span>
                                     </td>
                                     <td style={{ padding: '8px', textAlign: 'right', color: '#4B5563' }}>
-                                      {c.max_area_sqft ? Math.round(c.max_area_sqft).toLocaleString() : '-'}
+                                      {c.min_area_sqft && c.max_area_sqft ? (
+                                        c.min_area_sqft === c.max_area_sqft 
+                                          ? Math.round(c.max_area_sqft).toLocaleString()
+                                          : `${Math.round(c.min_area_sqft).toLocaleString()} - ${Math.round(c.max_area_sqft).toLocaleString()}`
+                                      ) : '-'}
                                     </td>
                                     <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }}>
-                                      ${Math.round(c.min_price / 1000).toLocaleString()}k - ${Math.round(c.max_price / 1000).toLocaleString()}k
+                                      ${(c.min_price / 1000000).toFixed(2)}M - ${(c.max_price / 1000000).toFixed(2)}M
                                     </td>
                                   </tr>
                                 ))
@@ -2377,7 +2608,6 @@
                           </tbody>
                         </table>
                       </div>
-                    </div>
 
                     {/* Summary */}
                     {buyBoxData.summary && Object.keys(buyBoxData.summary).length > 0 && (

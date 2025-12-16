@@ -82,6 +82,42 @@ def _add_lease_columns(df: pd.DataFrame) -> None:
     df["remaining_lease"] = remaining_leases
 
 
+def _get_market_segment(district: str) -> Optional[str]:
+    """
+    Map Singapore postal district to Market Segment.
+    
+    Args:
+        district: District code (e.g., "D01", "D09")
+        
+    Returns:
+        "CCR", "RCR", "OCR", or None if unknown
+    """
+    if not district:
+        return None
+    
+    # Normalize district format
+    d = str(district).strip().upper()
+    if not d.startswith("D"):
+        d = f"D{d.zfill(2)}"
+    
+    # Core Central Region (CCR)
+    ccr_districts = ["D01", "D02", "D06", "D07", "D09", "D10", "D11"]
+    if d in ccr_districts:
+        return "CCR"
+    
+    # Rest of Core Central Region (RCR)
+    rcr_districts = ["D03", "D04", "D05", "D08", "D12", "D13", "D14", "D15", "D20"]
+    if d in rcr_districts:
+        return "RCR"
+    
+    # Outside Core Central Region (OCR)
+    ocr_districts = ["D16", "D17", "D18", "D19", "D21", "D22", "D23", "D24", "D25", "D26", "D27", "D28"]
+    if d in ocr_districts:
+        return "OCR"
+    
+    return None
+
+
 def set_global_dataframe(df: pd.DataFrame) -> None:
     """Set the global DataFrame for in-memory queries. Called by app.py at startup."""
     global GLOBAL_DF
@@ -125,6 +161,7 @@ def get_filtered_transactions(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     districts: Optional[list] = None,
+    segment: Optional[str] = None,
     limit: Optional[int] = None
 ) -> pd.DataFrame:
     """
@@ -135,6 +172,7 @@ def get_filtered_transactions(
         start_date: Start date in YYYY-MM format (e.g., "2024-01")
         end_date: End date in YYYY-MM format (e.g., "2024-06")
         districts: List of districts (e.g., ["D09", "D10", "D11"])
+        segment: Market segment filter ("CCR", "RCR", or "OCR")
         limit: Maximum number of rows to return (optional)
         
     Returns:
@@ -145,6 +183,15 @@ def get_filtered_transactions(
     # Use in-memory DataFrame if available (much faster)
     if GLOBAL_DF is not None and not GLOBAL_DF.empty:
         df = GLOBAL_DF.copy()
+        
+        # Apply segment filter (before district filter for efficiency)
+        if segment:
+            segment_upper = segment.strip().upper()
+            if segment_upper in ["CCR", "RCR", "OCR"]:
+                # Map districts to segments and filter
+                df["_market_segment"] = df["district"].apply(_get_market_segment)
+                df = df[df["_market_segment"] == segment_upper]
+                df = df.drop(columns=["_market_segment"])
         
         # Apply district filter
         if districts:
@@ -198,6 +245,14 @@ def get_filtered_transactions(
     
     if df.empty:
         return df
+    
+    # Apply segment filter (for database fallback)
+    if segment:
+        segment_upper = segment.strip().upper()
+        if segment_upper in ["CCR", "RCR", "OCR"]:
+            df["_market_segment"] = df["district"].apply(_get_market_segment)
+            df = df[df["_market_segment"] == segment_upper]
+            df = df.drop(columns=["_market_segment"])
     
     # Use transaction_date if available (from scraped data with exact dates), otherwise parse contract_date
     if "transaction_date" in df.columns:
@@ -273,6 +328,7 @@ def get_transaction_details(
     end_date: Optional[str] = None,
     districts: Optional[list] = None,
     bedroom_types: list = [2, 3, 4],
+    segment: Optional[str] = None,
     limit: int = 200000  # Increased to include all transactions (New Sale + Resale)
 ) -> list:
     """
@@ -284,6 +340,7 @@ def get_transaction_details(
         end_date: End date in YYYY-MM format
         districts: List of districts
         bedroom_types: List of bedroom counts to include
+        segment: Market segment filter ("CCR", "RCR", or "OCR")
         limit: Maximum number of transactions to return (default: 10000 to include all years)
         
     Returns:
@@ -291,7 +348,7 @@ def get_transaction_details(
     """
     # Get filtered data - optimize by filtering bedroom types in SQL if possible
     # For now, get all data and filter in memory (bedroom filter is fast)
-    df = get_filtered_transactions(start_date, end_date, districts, limit=None)
+    df = get_filtered_transactions(start_date, end_date, districts, segment, limit=None)
     
     if df.empty:
         return []
@@ -348,7 +405,8 @@ def get_transaction_details(
 def get_resale_stats(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    districts: Optional[list] = None
+    districts: Optional[list] = None,
+    segment: Optional[str] = None
 ) -> dict:
     """
     Main function to get resale statistics.
@@ -357,11 +415,12 @@ def get_resale_stats(
         start_date: Start date in YYYY-MM format (e.g., "2024-01")
         end_date: End date in YYYY-MM format (e.g., "2024-06")
         districts: List of districts (e.g., ["D09", "D10"])
+        segment: Market segment filter ("CCR", "RCR", or "OCR")
         
     Returns:
         Dictionary with statistics and metadata
     """
-    df = get_filtered_transactions(start_date, end_date, districts)
+    df = get_filtered_transactions(start_date, end_date, districts, segment)
     
     # Calculate statistics for 2, 3, 4 bedroom only
     stats = calculate_statistics(df, bedroom_types=[2, 3, 4])
@@ -395,31 +454,24 @@ def get_available_districts() -> list:
     return df["district"].tolist()
 
 
-def get_sale_type_trends(districts: Optional[list] = None) -> Dict[str, Any]:
+def get_sale_type_trends(districts: Optional[list] = None, segment: Optional[str] = None) -> Dict[str, Any]:
     """
     Get transaction counts by sale type (New Sale vs Resale) over time by quarter.
     
     Args:
         districts: Optional list of districts to filter by (e.g., ["D09", "D10"])
+        segment: Market segment filter ("CCR", "RCR", or "OCR")
     
     Returns:
         Dictionary with quarterly transaction counts for New Sale and Resale
     """
-    global GLOBAL_DF
+    df = get_filtered_transactions(districts=districts, segment=segment)
     
-    # Use in-memory DataFrame if available
-    if GLOBAL_DF is not None and not GLOBAL_DF.empty:
-        df = GLOBAL_DF.copy()
-    else:
-        # Fallback to database
-        conn = sqlite3.connect(DB_PATH)
-        df = pd.read_sql_query(f"SELECT * FROM {MASTER_TABLE}", conn)
-        conn.close()
-        
-        if df.empty:
-            return {"trends": []}
-        
-        # Parse dates
+    if df.empty:
+        return {"trends": []}
+    
+    # Parse dates if not already parsed
+    if "parsed_date" not in df.columns:
         if "transaction_date" in df.columns:
             df["parsed_date"] = pd.to_datetime(df["transaction_date"], errors='coerce')
         else:
@@ -427,16 +479,6 @@ def get_sale_type_trends(districts: Optional[list] = None) -> Dict[str, Any]:
             df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors='coerce')
     
     df = df.dropna(subset=["parsed_date"])
-    
-    # Apply district filter if provided
-    if districts:
-        normalized_districts = []
-        for d in districts:
-            d = d.strip().upper()
-            if not d.startswith("D"):
-                d = f"D{d.zfill(2)}"
-            normalized_districts.append(d)
-        df = df[df["district"].isin(normalized_districts)]
     
     if df.empty:
         return {"trends": []}
@@ -483,32 +525,25 @@ def get_sale_type_trends(districts: Optional[list] = None) -> Dict[str, Any]:
     return {"trends": trends_data}
 
 
-def get_price_trends_by_sale_type(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None) -> Dict[str, Any]:
+def get_price_trends_by_sale_type(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None, segment: Optional[str] = None) -> Dict[str, Any]:
     """
     Get median price trends by sale type (New Sale vs Resale) over time by quarter.
     Returns separate trends for each bedroom type.
     
     Args:
         bedroom_types: List of bedroom counts to include (default: [2, 3, 4])
+        segment: Market segment filter ("CCR", "RCR", or "OCR")
         
     Returns:
         Dictionary with quarterly median prices for New Sale and Resale by bedroom type
     """
-    global GLOBAL_DF
+    df = get_filtered_transactions(districts=districts, segment=segment)
     
-    # Use in-memory DataFrame if available
-    if GLOBAL_DF is not None and not GLOBAL_DF.empty:
-        df = GLOBAL_DF.copy()
-    else:
-        # Fallback to database
-        conn = sqlite3.connect(DB_PATH)
-        df = pd.read_sql_query(f"SELECT * FROM {MASTER_TABLE}", conn)
-        conn.close()
-        
-        if df.empty:
-            return {"trends": {}}
-        
-        # Parse dates
+    if df.empty:
+        return {"trends": {}}
+    
+    # Parse dates if not already parsed
+    if "parsed_date" not in df.columns:
         if "transaction_date" in df.columns:
             df["parsed_date"] = pd.to_datetime(df["transaction_date"], errors='coerce')
         else:
@@ -516,19 +551,6 @@ def get_price_trends_by_sale_type(bedroom_types: list = [2, 3, 4], districts: Op
             df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors='coerce')
     
     df = df.dropna(subset=["parsed_date"])
-    
-    if df.empty:
-        return {"trends": {}}
-    
-    # Apply district filter if provided
-    if districts:
-        normalized_districts = []
-        for d in districts:
-            d = d.strip().upper()
-            if not d.startswith("D"):
-                d = f"D{d.zfill(2)}"
-            normalized_districts.append(d)
-        df = df[df["district"].isin(normalized_districts)]
     
     # Filter by bedroom types
     df = df[df["bedroom_count"].isin(bedroom_types)]
@@ -601,7 +623,8 @@ def get_price_trends_by_sale_type(bedroom_types: list = [2, 3, 4], districts: Op
 
 def get_price_trends(
     districts: Optional[list] = None,
-    bedroom_types: list = [2, 3, 4]
+    bedroom_types: list = [2, 3, 4],
+    segment: Optional[str] = None
 ) -> dict:
     """
     Get price trends over time by district and bedroom type.
@@ -611,7 +634,7 @@ def get_price_trends(
     - Transaction count per quarter by bedroom type
     """
     # Get all transactions first to see what date range we have
-    df_all = get_filtered_transactions(districts=districts)
+    df_all = get_filtered_transactions(districts=districts, segment=segment)
     
     if df_all.empty:
         return {"trends": [], "transaction_counts": []}
@@ -770,7 +793,7 @@ def get_price_trends(
     }
 
 
-def get_total_volume_by_district(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None) -> dict:
+def get_total_volume_by_district(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None, segment: Optional[str] = None) -> dict:
     """
     Get total transacted amount by district, broken down by bedroom type.
     Also includes transaction counts and average prices.
@@ -778,8 +801,9 @@ def get_total_volume_by_district(bedroom_types: list = [2, 3, 4], districts: Opt
     Args:
         bedroom_types: List of bedroom counts to include
         districts: Optional list of districts to filter by
+        segment: Market segment filter ("CCR", "RCR", or "OCR")
     """
-    df = get_filtered_transactions(districts=districts)
+    df = get_filtered_transactions(districts=districts, segment=segment)
     
     if df.empty:
         return {"data": []}
@@ -907,15 +931,16 @@ def get_project_aggregation_by_district(district: str, bedroom_types: list = [2,
     return {"projects": result}
 
 
-def get_avg_psf_by_district(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None) -> dict:
+def get_avg_psf_by_district(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None, segment: Optional[str] = None) -> dict:
     """
     Get average PSF by district, broken down by bedroom type.
     
     Args:
         bedroom_types: List of bedroom counts to include
         districts: Optional list of districts to filter by
+        segment: Market segment filter ("CCR", "RCR", or "OCR")
     """
-    df = get_filtered_transactions(districts=districts)
+    df = get_filtered_transactions(districts=districts, segment=segment)
     
     if df.empty:
         return {"data": []}
@@ -961,12 +986,12 @@ def get_avg_psf_by_district(bedroom_types: list = [2, 3, 4], districts: Optional
     return {"data": result}
 
 
-def get_project_price_stats_by_district(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None) -> dict:
+def get_project_price_stats_by_district(bedroom_types: list = [2, 3, 4], districts: Optional[list] = None, segment: Optional[str] = None) -> dict:
     """
     Get price and psf quartiles by project, grouped within each district.
     Returns 25th, median, 75th for price and psf.
     """
-    df = get_filtered_transactions(districts=districts)
+    df = get_filtered_transactions(districts=districts, segment=segment)
     if df.empty:
         return {"data": {}}
     df = df[df["bedroom_count"].isin(bedroom_types)]
@@ -1000,13 +1025,13 @@ def get_project_price_stats_by_district(bedroom_types: list = [2, 3, 4], distric
     return {"data": result}
 
 
-def get_price_trends_by_district(bedroom_types: list = [2, 3, 4], top_n_districts: int = 10) -> dict:
+def get_price_trends_by_district(bedroom_types: list = [2, 3, 4], top_n_districts: int = 10, segment: Optional[str] = None) -> dict:
     """
     Get median price trends over time by district (top N districts by transaction volume).
     
     Returns median price per quarter for each district, grouped by bedroom type.
     """
-    df = get_filtered_transactions()
+    df = get_filtered_transactions(segment=segment)
     
     if df.empty:
         return {"trends": []}
@@ -1087,7 +1112,7 @@ def get_price_trends_by_district(bedroom_types: list = [2, 3, 4], top_n_district
     }
 
 
-def get_market_stats(short_months: int = 3, long_months: int = 15) -> Dict[str, Any]:
+def get_market_stats(short_months: int = 3, long_months: int = 15, segment: Optional[str] = None) -> Dict[str, Any]:
     """
     Get dual-view market analysis: Pulse vs Baseline (Last X months).
     
@@ -1097,11 +1122,14 @@ def get_market_stats(short_months: int = 3, long_months: int = 15) -> Dict[str, 
     
     For both Overall Market and by Bedroom Type.
     
+    Args:
+        segment: Market segment filter ("CCR", "RCR", or "OCR")
+    
     Returns:
         JSON structure with short_term and long_term statistics
     """
     # Get all transactions
-    df = get_filtered_transactions()
+    df = get_filtered_transactions(segment=segment)
     
     if df.empty:
         return {
@@ -1214,7 +1242,7 @@ def get_market_stats(short_months: int = 3, long_months: int = 15) -> Dict[str, 
     }
 
 
-def get_market_stats_by_district(bedroom_types: Optional[list] = None, districts: Optional[list] = None, short_months: int = 3, long_months: int = 15) -> Dict[str, Any]:
+def get_market_stats_by_district(bedroom_types: Optional[list] = None, districts: Optional[list] = None, short_months: int = 3, long_months: int = 15, segment: Optional[str] = None) -> Dict[str, Any]:
     """
     Get dual-view market analysis by district: Pulse (Last 3) vs Baseline (Last 15) months.
     
@@ -1227,12 +1255,13 @@ def get_market_stats_by_district(bedroom_types: Optional[list] = None, districts
     Args:
         bedroom_types: Optional list of bedroom types to filter (e.g., [2, 3, 4])
         districts: Optional list of districts to filter by (e.g., ["D09", "D10"])
+        segment: Market segment filter ("CCR", "RCR", or "OCR")
     
     Returns:
         JSON structure with short_term and long_term statistics by district
     """
     # Get filtered transactions (with district filter if provided)
-    df = get_filtered_transactions(districts=districts)
+    df = get_filtered_transactions(districts=districts, segment=segment)
     
     # Filter by bedroom type if specified
     if bedroom_types and "bedroom_count" in df.columns:
@@ -1340,7 +1369,8 @@ def get_market_stats_by_district(bedroom_types: Optional[list] = None, districts
 def get_price_project_stats_by_district(
     district: str,
     bedroom_types: list = [2, 3, 4],
-    months: int = 15
+    months: int = 15,
+    segment: Optional[str] = None
 ) -> dict:
     """
     Get project-level price and PSF quartiles for a specific district and timeframe.
@@ -1348,7 +1378,7 @@ def get_price_project_stats_by_district(
     Aggregates transactions by project_name and returns 25th / median / 75th
     for both price and psf, across the selected bedroom types.
     """
-    df = get_filtered_transactions(districts=[district])
+    df = get_filtered_transactions(districts=[district], segment=segment)
 
     if df.empty:
         return {"projects": []}
@@ -1438,7 +1468,10 @@ def get_comparable_value_analysis(
     target_price: float,
     price_band: float = 100000.0,
     bedroom_types: list = [2, 3, 4],
-    districts: Optional[list] = None
+    districts: Optional[list] = None,
+    segment: Optional[str] = None,
+    min_lease: Optional[int] = None,
+    sale_type: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Build a Comparable Value Analysis around a target price.
@@ -1452,7 +1485,7 @@ def get_comparable_value_analysis(
     lower = max(target_price - price_band, 0)
     upper = target_price + price_band
 
-    df = get_filtered_transactions(districts=districts)
+    df = get_filtered_transactions(districts=districts, segment=segment)
 
     if df.empty:
         return {"points": [], "competitors": [], "summary": {}}
@@ -1464,14 +1497,45 @@ def get_comparable_value_analysis(
     if df.empty:
         return {"points": [], "competitors": [], "summary": {}}
 
+    # Filter by sale type if specified
+    if sale_type:
+        if "sale_type" in df.columns:
+            # Map filter values to actual sale_type values
+            # Handle both "New Launch" and "New Sale" as the same
+            if sale_type.lower() == "new launch" or sale_type.lower() == "new sale":
+                # Filter for New Sale transactions
+                df = df[df["sale_type"].notna() & df["sale_type"].astype(str).str.contains("New Sale", case=False, na=False)].copy()
+            elif sale_type.lower() == "resale":
+                # Filter for Resale transactions
+                df = df[df["sale_type"].notna() & df["sale_type"].astype(str).str.contains("Resale", case=False, na=False)].copy()
+        else:
+            # If sale_type column doesn't exist, can't filter - but don't return empty, just continue without filter
+            pass
+    
+    if df.empty:
+        return {"points": [], "competitors": [], "summary": {}}
+
     # Remaining lease may be absent
     has_remaining = "remaining_lease" in df.columns
 
+    # Filter by minimum lease if specified (BEFORE aggregation)
+    if min_lease is not None:
+        if has_remaining:
+            # Filter out NaN values and apply lease filter
+            lease_mask = df["remaining_lease"].notna() & (df["remaining_lease"] >= min_lease)
+            df = df[lease_mask].copy()
+            if df.empty:
+                return {"points": [], "competitors": [], "summary": {}}
+        else:
+            # If remaining_lease column doesn't exist, return empty (can't filter)
+            return {"points": [], "competitors": [], "summary": {}}
+
     # Aggregate by (district, project_name, bedroom_count)
+    # Note: sale_type is filtered BEFORE aggregation, so we don't need to include it in grouping
     group_cols = ["district", "project_name", "bedroom_count"]
     agg_dict = {
         "price": ["min", "max"],
-        "area_sqft": "max"
+        "area_sqft": ["min", "max"]
     }
     if has_remaining:
         agg_dict["remaining_lease"] = "max"
@@ -1491,6 +1555,7 @@ def get_comparable_value_analysis(
 
         min_price = float(row["price_min"])
         max_price = float(row["price_max"])
+        min_area = float(row["area_sqft_min"]) if not pd.isna(row["area_sqft_min"]) else None
         max_area = float(row["area_sqft_max"]) if not pd.isna(row["area_sqft_max"]) else None
 
         remaining_lease = None
@@ -1499,14 +1564,16 @@ def get_comparable_value_analysis(
             if pd.notna(remaining_val):
                 remaining_lease = int(remaining_val)
 
-        # Midpoint price for plotting
+        # Midpoint price for plotting (use max area for scatter plot positioning)
         mid_price = (min_price + max_price) / 2.0
 
         points.append({
             "district": district,
             "project_name": project,
             "bedroom_count": bed,
-            "area_sqft": max_area,
+            "area_sqft": max_area,  # Keep max for map positioning
+            "area_sqft_min": min_area,
+            "area_sqft_max": max_area,
             "price_mid": mid_price,
             "price_min": min_price,
             "price_max": max_price,
@@ -1517,6 +1584,7 @@ def get_comparable_value_analysis(
             "district": district,
             "project_name": project,
             "bedroom_count": bed,
+            "min_area_sqft": min_area,
             "max_area_sqft": max_area,
             "min_price": min_price,
             "max_price": max_price,
