@@ -10,13 +10,14 @@ All analysis is performed on the clean, consolidated master_transactions table.
 
 import sqlite3
 import re
+import os
 import pandas as pd
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
-from classifier import get_bedroom_label
+from services.classifier import get_bedroom_label
 
 # Master database - Single Source of Truth (fallback if CSV not loaded)
-DB_PATH = "condo_master.db"
+DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'condo_master.db')
 MASTER_TABLE = "master_transactions"
 
 GLOBAL_DF = None  # Global DataFrame - set by app.py if CSV data is loaded into memory
@@ -957,11 +958,15 @@ def get_price_trends(
                     district_data[f"{bed_label}_median_price"] = float(bed_df["price"].median()) if len(bed_df) > 0 else None
                 district_breakdown.append(district_data)
     
+    # Convert start_date and max_date to strings for JSON serialization
+    start_date_str = start_date.strftime("%Y-%m") if isinstance(start_date, (pd.Timestamp, datetime)) else str(start_date)[:7]
+    end_date_str = max_date.strftime("%Y-%m") if isinstance(max_date, pd.Timestamp) else str(max_date)[:7]
+    
     return {
         "trends": trends_data,
         "district_breakdown": district_breakdown,
-        "start_date": start_date,
-        "end_date": max_date.strftime("%Y-%m") if isinstance(max_date, pd.Timestamp) else str(max_date)[:7]
+        "start_date": start_date_str,
+        "end_date": end_date_str
     }
 
 
@@ -1330,11 +1335,13 @@ def get_market_stats(short_months: int = 3, long_months: int = 15, segment: Opti
     long_term_start = max_date - pd.DateOffset(months=long_months)
     
     # Filter for short-term (last X months)
-    arr = df["parsed_date"].values
-    short_term_df = df[arr >= short_term_start.to_pydatetime()].copy()
+    # Convert to pandas Timestamp for proper comparison
+    short_term_start_ts = pd.Timestamp(short_term_start)
+    long_term_start_ts = pd.Timestamp(long_term_start)
+    short_term_df = df[df["parsed_date"] >= short_term_start_ts].copy()
     
     # Filter for long-term (last Y months)
-    long_term_df = df[arr >= long_term_start.to_pydatetime()].copy()
+    long_term_df = df[df["parsed_date"] >= long_term_start_ts].copy()
 
     # Debug logging: date range and row counts
     print(f"[market_stats] short_term range: {short_term_start.date()} to {max_date.date()} | rows={len(short_term_df)}")
