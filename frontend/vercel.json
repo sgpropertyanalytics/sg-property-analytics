@@ -1,5 +1,4 @@
 {
-  "//": "Ensure all routes in the SPA (e.g. /dashboard) are served by index.html so refreshes and direct links work, including on mobile.",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -7,5 +6,6 @@
     }
   ]
 }
+
 
 
