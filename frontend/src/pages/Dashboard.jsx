@@ -4,11 +4,11 @@ import {
   getPriceTrends,
   getTotalVolume,
   getAvgPsf,
-  getTransactions,
   getSaleTypeTrends,
   getPriceTrendsBySaleType,
   getPriceTrendsByRegion,
   getPsfTrendsByRegion,
+  getMarketStats,
   getMarketStatsByDistrict,
   getComparableValueAnalysis,
   getProjectsByDistrict
@@ -113,6 +113,10 @@ function Dashboard() {
   const [priceTrendsByRegion, setPriceTrendsByRegion] = useState([]);
   const [psfTrendsByRegion, setPsfTrendsByRegion] = useState([]);
   const [saleTypeSegment, setSaleTypeSegment] = useState(null);
+  const [marketStats, setMarketStats] = useState(null);
+  const [marketStatsByDistrict, setMarketStatsByDistrict] = useState(null);
+  const [buyBoxResult, setBuyBoxResult] = useState(null);
+  const [buyBoxLoading, setBuyBoxLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -185,6 +189,23 @@ function Dashboard() {
     fetchData();
   }, [selectedBedrooms, selectedDistrict, selectedSegment]);
 
+  // Fetch market-wide stats once (pre-computed dual-view analytics)
+  useEffect(() => {
+    const fetchMarketStats = async () => {
+      try {
+        const [marketRes, marketDistRes] = await Promise.all([
+          getMarketStats().catch(() => ({ data: null })),
+          getMarketStatsByDistrict().catch(() => ({ data: null }))
+        ]);
+        setMarketStats(marketRes.data || null);
+        setMarketStatsByDistrict(marketDistRes.data || null);
+      } catch (err) {
+        console.error('Error fetching market stats:', err);
+      }
+    };
+    fetchMarketStats();
+  }, []);
+
   // Fetch price trends by sale type separately
   useEffect(() => {
     const fetchSaleTypePriceTrends = async () => {
@@ -205,6 +226,25 @@ function Dashboard() {
     };
     fetchSaleTypePriceTrends();
   }, [selectedBedrooms, selectedDistrict, saleTypeSegment]);
+
+  const runBuyBoxAnalysis = async () => {
+    setBuyBoxLoading(true);
+    try {
+      const params = {
+        target_price: 2500000,
+        band: 100000,
+        bedroom: selectedBedrooms.map(b => b.replace('b', '')).join(','),
+        districts: selectedDistrict !== 'all' ? selectedDistrict : undefined
+      };
+      const res = await getComparableValueAnalysis(params);
+      setBuyBoxResult(res.data || null);
+    } catch (err) {
+      console.error('Error running comparable value analysis:', err);
+      setBuyBoxResult(null);
+    } finally {
+      setBuyBoxLoading(false);
+    }
+  };
 
   if (error) {
     return (
@@ -244,6 +284,12 @@ function Dashboard() {
         <p style={{ color: '#6B7280', fontSize: '16px' }}>
           Transaction data breakdown by postal district and bedroom type
         </p>
+        {apiMetadata && (
+          <p style={{ color: '#9CA3AF', fontSize: '13px', marginTop: '4px' }}>
+            {apiMetadata.row_count?.toLocaleString?.() || apiMetadata.row_count} transactions ·
+            {' '}last updated {apiMetadata.last_updated || 'n/a'}
+          </p>
+        )}
       </div>
 
       {/* Filters */}
@@ -446,6 +492,180 @@ function Dashboard() {
               </div>
             </Card>
           )}
+
+          {/* Market Overview - Pulse vs Baseline */}
+          {marketStats && marketStats.short_term && marketStats.long_term && (
+            <Card title="📊 Market Overview: Pulse vs Baseline">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+                {['short_term', 'long_term'].map(key => {
+                  const block = marketStats[key];
+                  if (!block) return null;
+                  const overallPrice = block.overall?.price || {};
+                  const overallPsf = block.overall?.psf || {};
+                  return (
+                    <div key={key} style={{ padding: '12px 16px', borderRadius: '8px', background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#111827', marginBottom: '8px' }}>
+                        {block.label || (key === 'short_term' ? 'Pulse (Last Few Months)' : 'Baseline (Longer Term)')}
+                      </h3>
+                      <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '8px' }}>Overall Market (all bedroom types)</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px', fontSize: '13px', color: '#374151' }}>
+                        <div>
+                          <div style={{ fontWeight: 500, marginBottom: '4px' }}>Median Price</div>
+                          <div>{overallPrice.median ? formatPrice(overallPrice.median) : '-'}</div>
+                          <div style={{ color: '#9CA3AF', marginTop: '2px' }}>
+                            25th: {overallPrice['25th'] ? formatPrice(overallPrice['25th']) : '-'} ·
+                            {' '}75th: {overallPrice['75th'] ? formatPrice(overallPrice['75th']) : '-'}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 500, marginBottom: '4px' }}>Median PSF</div>
+                          <div>{overallPsf.median ? formatPSF(overallPsf.median) : '-'}</div>
+                          <div style={{ color: '#9CA3AF', marginTop: '2px' }}>
+                            25th: {overallPsf['25th'] ? formatPSF(overallPsf['25th']) : '-'} ·
+                            {' '}75th: {overallPsf['75th'] ? formatPSF(overallPsf['75th']) : '-'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+
+          {/* Market Stats by District (Top 10 by Median PSF - Short Term) */}
+          {marketStatsByDistrict && marketStatsByDistrict.short_term && marketStatsByDistrict.short_term.by_district && (
+            <Card title="🏙 District Market Snapshot (Short-Term Median PSF)">
+              <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '12px' }}>
+                Short-term view by district (Pulse). Sorted by median PSF, top 10 districts.
+              </p>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ background: '#F3F4F6' }}>
+                      <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>District</th>
+                      <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>Median Price</th>
+                      <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>Median PSF</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(marketStatsByDistrict.short_term.by_district)
+                      .map(([district, stats]) => ({
+                        district,
+                        priceMedian: stats.price?.median || null,
+                        psfMedian: stats.psf?.median || null
+                      }))
+                      .sort((a, b) => (b.psfMedian || 0) - (a.psfMedian || 0))
+                      .slice(0, 10)
+                      .map(row => (
+                        <tr key={row.district}>
+                          <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB' }}>{row.district}</td>
+                          <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>
+                            {row.priceMedian ? formatPrice(row.priceMedian) : '-'}
+                          </td>
+                          <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>
+                            {row.psfMedian ? formatPSF(row.psfMedian) : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+
+          {/* Comparable Value Analysis (Buy Box) */}
+          <Card title="🎯 Comparable Value Analysis (Buy Box)">
+            <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '12px' }}>
+              Find transactions around a target price band for the selected bedroom types and (optionally) district.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end', marginBottom: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500, color: '#374151' }}>
+                  Target Price (SGD)
+                </label>
+                <input
+                  type="number"
+                  defaultValue={2500000}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value || '0');
+                    setBuyBoxResult(prev => prev ? { ...prev, _target_price: value } : prev);
+                  }}
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px', minWidth: '160px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500, color: '#374151' }}>
+                  Band (± SGD)
+                </label>
+                <input
+                  type="number"
+                  defaultValue={100000}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value || '0');
+                    setBuyBoxResult(prev => prev ? { ...prev, _band: value } : prev);
+                  }}
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px', minWidth: '140px' }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={runBuyBoxAnalysis}
+                disabled={buyBoxLoading}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: '#2563EB',
+                  color: 'white',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  cursor: buyBoxLoading ? 'default' : 'pointer',
+                  opacity: buyBoxLoading ? 0.7 : 1
+                }}
+              >
+                {buyBoxLoading ? 'Running analysis...' : 'Run Analysis'}
+              </button>
+            </div>
+
+            {buyBoxResult && (
+              <>
+                <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '8px' }}>
+                  Found <strong>{buyBoxResult.summary?.count ?? 0}</strong> comparable transactions.
+                </p>
+                {buyBoxResult.points && buyBoxResult.points.length > 0 && (
+                  <div style={{ maxHeight: '320px', overflowY: 'auto', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead>
+                        <tr style={{ background: '#F3F4F6' }}>
+                          <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>Project</th>
+                          <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>District</th>
+                          <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>Price</th>
+                          <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>PSF</th>
+                          <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>Bedrooms</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {buyBoxResult.points.slice(0, 50).map((p, idx) => (
+                          <tr key={idx}>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB' }}>{p.project_name}</td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>{p.district}</td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>
+                              {p.price ? formatPrice(p.price) : '-'}
+                            </td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>
+                              {p.psf ? formatPSF(p.psf) : '-'}
+                            </td>
+                            <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>{p.bedroom_count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </Card>
         </>
       )}
     </div>
