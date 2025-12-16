@@ -76,7 +76,7 @@ const formatPSF = (value) => {
 
 function Card({ title, children }) {
   return (
-    <div className="bg-white rounded-xl p-4 md:p-6 mb-6 shadow-sm">
+    <div className="bg-white rounded-xl p-4 md:p-6 mb-6 shadow-md">
       {title && (
         <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4 md:mb-5">
           {title}
@@ -250,7 +250,7 @@ function Dashboard() {
   }
 
   return (
-    <div className="p-4 md:p-8 lg:p-8 max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 lg:p-8 max-w-7xl mx-auto overflow-x-hidden">
       {/* Header */}
       <div className="mb-6 md:mb-8">
         <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
@@ -342,8 +342,8 @@ function Dashboard() {
         <>
           {/* Chart 1: Price Trends */}
           <Card title="📈 Price Trend by Quarter (Median Price & Median Price by Region)">
-            <div className="w-full overflow-x-auto">
-              <div className="min-w-[600px] md:min-w-0 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:snap-none">
+              <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
                 <div className="bg-white p-2 md:p-4 rounded-lg">
                   <LineChart
                     data={priceTrends}
@@ -352,7 +352,9 @@ function Dashboard() {
                     title="Median Price"
                   />
                 </div>
-                {priceTrendsByRegion && priceTrendsByRegion.length > 0 && (
+              </div>
+              {priceTrendsByRegion && priceTrendsByRegion.length > 0 && (
+                <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
                   <div className="bg-white p-2 md:p-4 rounded-lg">
                     <RegionChart
                       data={priceTrendsByRegion}
@@ -360,15 +362,15 @@ function Dashboard() {
                       title="Median Price by Region"
                     />
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </Card>
 
           {/* Chart 2: PSF Trends */}
           <Card title="📊 PSF Trend by Quarter (Median PSF & Median PSF by Region)">
-            <div className="w-full overflow-x-auto">
-              <div className="min-w-[600px] md:min-w-0 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:snap-none">
+              <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
                 <div className="bg-white p-2 md:p-4 rounded-lg">
                   <LineChart
                     data={psfTrendsData}
@@ -377,7 +379,9 @@ function Dashboard() {
                     title="Median PSF"
                   />
                 </div>
-                {psfTrendsByRegion && psfTrendsByRegion.length > 0 && (
+              </div>
+              {psfTrendsByRegion && psfTrendsByRegion.length > 0 && (
+                <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
                   <div className="bg-white p-2 md:p-4 rounded-lg">
                     <RegionChart
                       data={psfTrendsByRegion}
@@ -386,22 +390,24 @@ function Dashboard() {
                       isPSF={true}
                     />
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </Card>
 
           {/* Chart: Transaction Count by Bedroom Type */}
           {transactionCountData && transactionCountData.length > 0 && (
             <Card title="📊 Transaction Count by Bedroom Type">
-              <div className="w-full overflow-x-auto">
-                <div className="min-w-[400px] md:min-w-0">
-                  <BarChart
-                    data={transactionCountData}
-                    selectedBedrooms={selectedBedrooms}
-                    title="Transaction Count"
-                    beginAtZero={true}
-                  />
+              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:block md:overflow-visible md:snap-none">
+                <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
+                  <div className="min-w-[400px] md:min-w-0">
+                    <BarChart
+                      data={transactionCountData}
+                      selectedBedrooms={selectedBedrooms}
+                      title="Transaction Count"
+                      beginAtZero={true}
+                    />
+                  </div>
                 </div>
               </div>
             </Card>
@@ -410,9 +416,11 @@ function Dashboard() {
           {/* Chart: New Sale vs Resale Transaction Count */}
           {saleTypeTrends.length > 0 && (
             <Card title="📊 Transaction Count: New Sale vs Resale">
-              <div className="w-full overflow-x-auto">
-                <div className="min-w-[400px] md:min-w-0">
-                  <SaleTypeChart data={saleTypeTrends} />
+              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:block md:overflow-visible md:snap-none">
+                <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
+                  <div className="min-w-[400px] md:min-w-0">
+                    <SaleTypeChart data={saleTypeTrends} />
+                  </div>
                 </div>
               </div>
             </Card>
@@ -436,15 +444,15 @@ function Dashboard() {
                   <option value="OCR">OCR</option>
                 </select>
               </div>
-              <div className="w-full overflow-x-auto">
-                <div className="min-w-[600px] md:min-w-0 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-                  {selectedBedrooms.map(bedroom => {
-                    const bedroomKey = bedroom.replace('b', '');
-                    const saleTypeData = priceTrendsBySaleType[bedroomKey];
-                    if (!saleTypeData || !saleTypeData.trends || saleTypeData.trends.length === 0) return null;
-                    
-                    return (
-                      <div key={bedroom} className="bg-white p-2 md:p-4 rounded-lg">
+              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:snap-none">
+                {selectedBedrooms.map(bedroom => {
+                  const bedroomKey = bedroom.replace('b', '');
+                  const saleTypeData = priceTrendsBySaleType[bedroomKey];
+                  if (!saleTypeData || !saleTypeData.trends || saleTypeData.trends.length === 0) return null;
+                  
+                  return (
+                    <div key={bedroom} className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
+                      <div className="bg-white p-2 md:p-4 rounded-lg">
                         <h3 className="text-xs md:text-sm text-gray-600 mb-3">
                           {BEDROOM_LABELS[bedroom]}
                         </h3>
@@ -460,9 +468,9 @@ function Dashboard() {
                           title=""
                         />
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             </Card>
           )}

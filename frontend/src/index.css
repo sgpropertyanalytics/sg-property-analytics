@@ -1,4 +1,23 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* Force modern sans-serif font instead of Times New Roman */
+:root {
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Make chart canvases responsive */
+canvas {
+  max-width: 100%;
+}
 
