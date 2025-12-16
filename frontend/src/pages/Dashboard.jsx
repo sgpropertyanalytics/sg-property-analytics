@@ -76,20 +76,9 @@ const formatPSF = (value) => {
 
 function Card({ title, children }) {
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: '12px',
-      padding: '24px',
-      marginBottom: '24px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-    }}>
+    <div className="bg-white rounded-xl p-4 md:p-6 mb-6 shadow-sm">
       {title && (
-        <h2 style={{
-          fontSize: '18px',
-          fontWeight: 600,
-          color: '#111827',
-          marginBottom: '20px'
-        }}>
+        <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4 md:mb-5">
           {title}
         </h2>
       )}
@@ -147,8 +136,6 @@ function Dashboard() {
       '4b_low_sample': d['4b_low_sample'] || false
     }));
   }, [priceTrends]);
-
-  // Districts are now provided by DataContext - no need to fetch here
 
   // Fetch main data
   useEffect(() => {
@@ -248,25 +235,13 @@ function Dashboard() {
 
   if (error) {
     return (
-      <div style={{ padding: '32px', maxWidth: '800px', margin: '0 auto' }}>
-        <div style={{
-          background: '#FEE2E2',
-          border: '1px solid #FCA5A5',
-          borderRadius: '12px',
-          padding: '24px',
-          textAlign: 'center'
-        }}>
-          <h2 style={{ color: '#DC2626', marginBottom: '12px' }}>⚠️ Connection Error</h2>
-          <p style={{ color: '#7F1D1D', marginBottom: '16px' }}>
+      <div className="p-4 md:p-8 max-w-2xl mx-auto">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <h2 className="text-red-600 font-semibold mb-3 text-lg">⚠️ Connection Error</h2>
+          <p className="text-red-800 mb-4 text-sm md:text-base">
             Cannot connect to API. Please start the Flask backend:
           </p>
-          <code style={{
-            display: 'block',
-            background: '#FEF2F2',
-            padding: '12px',
-            borderRadius: '6px',
-            color: '#991B1B'
-          }}>
+          <code className="block bg-red-100 p-3 rounded-md text-red-900 text-xs md:text-sm">
             cd backend && python app.py
           </code>
         </div>
@@ -275,17 +250,17 @@ function Dashboard() {
   }
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div className="p-4 md:p-8 lg:p-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
           Singapore Private Condo Resale Statistics
         </h1>
-        <p style={{ color: '#6B7280', fontSize: '16px' }}>
+        <p className="text-sm md:text-base text-gray-600">
           Transaction data breakdown by postal district and bedroom type
         </p>
         {apiMetadata && (
-          <p style={{ color: '#9CA3AF', fontSize: '13px', marginTop: '4px' }}>
+          <p className="text-xs md:text-sm text-gray-400 mt-1">
             {apiMetadata.row_count?.toLocaleString?.() || apiMetadata.row_count} transactions ·
             {' '}last updated {apiMetadata.last_updated || 'n/a'}
           </p>
@@ -294,12 +269,12 @@ function Dashboard() {
 
       {/* Filters */}
       <Card>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: '#374151' }}>
+        <div className="flex flex-col md:flex-row flex-wrap gap-4 md:gap-4 items-start md:items-center">
+          <div className="w-full md:w-auto">
+            <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
               Bedroom Types
             </label>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="flex flex-wrap gap-2">
               {['2b', '3b', '4b'].map(bedroom => (
                 <button
                   key={bedroom}
@@ -310,16 +285,11 @@ function Dashboard() {
                       setSelectedBedrooms([...selectedBedrooms, bedroom]);
                     }
                   }}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    background: selectedBedrooms.includes(bedroom) ? COLORS[bedroom] : '#E5E7EB',
-                    color: selectedBedrooms.includes(bedroom) ? 'white' : '#6B7280',
-                    cursor: 'pointer',
-                    fontWeight: 500,
-                    fontSize: '14px'
-                  }}
+                  className={`px-3 md:px-4 py-2 rounded-md border-none font-medium text-xs md:text-sm cursor-pointer transition-colors ${
+                    selectedBedrooms.includes(bedroom)
+                      ? `text-white ${bedroom === '2b' ? 'bg-blue-500' : bedroom === '3b' ? 'bg-green-500' : 'bg-amber-500'}`
+                      : 'bg-gray-200 text-gray-600'
+                  }`}
                 >
                   {BEDROOM_LABELS[bedroom]}
                 </button>
@@ -327,20 +297,14 @@ function Dashboard() {
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: '#374151' }}>
+          <div className="w-full md:w-auto">
+            <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
               Market Segment
             </label>
             <select
               value={selectedSegment || 'all'}
               onChange={(e) => setSelectedSegment(e.target.value === 'all' ? null : e.target.value)}
-              style={{
-                padding: '8px 12px',
-                borderRadius: '6px',
-                border: '1px solid #D1D5DB',
-                fontSize: '14px',
-                minWidth: '150px'
-              }}
+              className="w-full md:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[120px] md:min-w-[150px]"
             >
               <option value="all">All Segments</option>
               <option value="CCR">CCR</option>
@@ -349,20 +313,14 @@ function Dashboard() {
             </select>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: '#374151' }}>
+          <div className="w-full md:w-auto">
+            <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
               District
             </label>
             <select
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
-              style={{
-                padding: '8px 12px',
-                borderRadius: '6px',
-                border: '1px solid #D1D5DB',
-                fontSize: '14px',
-                minWidth: '200px'
-              }}
+              className="w-full md:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[120px] md:min-w-[200px]"
             >
               <option value="all">All Districts</option>
               {availableDistricts.map(district => (
@@ -376,87 +334,101 @@ function Dashboard() {
       </Card>
 
       {(loading || contextLoading) ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#6B7280' }}>
-          <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
-          Loading data...
+        <div className="text-center py-12 md:py-16 text-gray-500">
+          <div className="text-3xl md:text-4xl mb-3">⏳</div>
+          <div className="text-sm md:text-base">Loading data...</div>
         </div>
       ) : (
         <>
           {/* Chart 1: Price Trends */}
           <Card title="📈 Price Trend by Quarter (Median Price & Median Price by Region)">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-              <LineChart
-                data={priceTrends}
-                selectedBedrooms={selectedBedrooms}
-                valueFormatter={formatPrice}
-                title="Median Price"
-              />
-              {priceTrendsByRegion && priceTrendsByRegion.length > 0 && (
-                <RegionChart
-                  data={priceTrendsByRegion}
-                  valueFormatter={formatPrice}
-                  title="Median Price by Region"
-                />
-              )}
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-[600px] md:min-w-0 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                <div className="bg-white p-2 md:p-4 rounded-lg">
+                  <LineChart
+                    data={priceTrends}
+                    selectedBedrooms={selectedBedrooms}
+                    valueFormatter={formatPrice}
+                    title="Median Price"
+                  />
+                </div>
+                {priceTrendsByRegion && priceTrendsByRegion.length > 0 && (
+                  <div className="bg-white p-2 md:p-4 rounded-lg">
+                    <RegionChart
+                      data={priceTrendsByRegion}
+                      valueFormatter={formatPrice}
+                      title="Median Price by Region"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
 
           {/* Chart 2: PSF Trends */}
           <Card title="📊 PSF Trend by Quarter (Median PSF & Median PSF by Region)">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-              <LineChart
-                data={psfTrendsData}
-                selectedBedrooms={selectedBedrooms}
-                valueFormatter={formatPSF}
-                title="Median PSF"
-              />
-              {psfTrendsByRegion && psfTrendsByRegion.length > 0 && (
-                <RegionChart
-                  data={psfTrendsByRegion}
-                  valueFormatter={formatPSF}
-                  title="Median PSF by Region"
-                  isPSF={true}
-                />
-              )}
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-[600px] md:min-w-0 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                <div className="bg-white p-2 md:p-4 rounded-lg">
+                  <LineChart
+                    data={psfTrendsData}
+                    selectedBedrooms={selectedBedrooms}
+                    valueFormatter={formatPSF}
+                    title="Median PSF"
+                  />
+                </div>
+                {psfTrendsByRegion && psfTrendsByRegion.length > 0 && (
+                  <div className="bg-white p-2 md:p-4 rounded-lg">
+                    <RegionChart
+                      data={psfTrendsByRegion}
+                      valueFormatter={formatPSF}
+                      title="Median PSF by Region"
+                      isPSF={true}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
 
           {/* Chart: Transaction Count by Bedroom Type */}
           {transactionCountData && transactionCountData.length > 0 && (
             <Card title="📊 Transaction Count by Bedroom Type">
-              <BarChart
-                data={transactionCountData}
-                selectedBedrooms={selectedBedrooms}
-                title="Transaction Count"
-                beginAtZero={true}
-              />
+              <div className="w-full overflow-x-auto">
+                <div className="min-w-[400px] md:min-w-0">
+                  <BarChart
+                    data={transactionCountData}
+                    selectedBedrooms={selectedBedrooms}
+                    title="Transaction Count"
+                    beginAtZero={true}
+                  />
+                </div>
+              </div>
             </Card>
           )}
 
           {/* Chart: New Sale vs Resale Transaction Count */}
           {saleTypeTrends.length > 0 && (
             <Card title="📊 Transaction Count: New Sale vs Resale">
-              <SaleTypeChart data={saleTypeTrends} />
+              <div className="w-full overflow-x-auto">
+                <div className="min-w-[400px] md:min-w-0">
+                  <SaleTypeChart data={saleTypeTrends} />
+                </div>
+              </div>
             </Card>
           )}
 
           {/* Chart: Median Price by Sale Type */}
           {Object.keys(priceTrendsBySaleType).length > 0 && (
             <Card title="📈 Median Price: New Sale vs Resale by Bedroom Type">
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: '#374151' }}>
+              <div className="mb-4">
+                <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
                   Market Segment (for this chart only)
                 </label>
                 <select
                   value={saleTypeSegment || 'all'}
                   onChange={(e) => setSaleTypeSegment(e.target.value === 'all' ? null : e.target.value)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '14px',
-                    minWidth: '150px'
-                  }}
+                  className="w-full md:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[120px] md:min-w-[150px]"
                 >
                   <option value="all">All Segments</option>
                   <option value="CCR">CCR</option>
@@ -464,31 +436,33 @@ function Dashboard() {
                   <option value="OCR">OCR</option>
                 </select>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-                {selectedBedrooms.map(bedroom => {
-                  const bedroomKey = bedroom.replace('b', '');
-                  const saleTypeData = priceTrendsBySaleType[bedroomKey];
-                  if (!saleTypeData || !saleTypeData.trends || saleTypeData.trends.length === 0) return null;
-                  
-                  return (
-                    <div key={bedroom}>
-                      <h3 style={{ fontSize: '14px', color: '#6B7280', marginBottom: '12px' }}>
-                        {BEDROOM_LABELS[bedroom]}
-                      </h3>
-                      <LineChart
-                        data={saleTypeData.trends.map(d => ({
-                          month: d.quarter,
-                          '2b_price': d.new_sale_price,
-                          '3b_price': d.resale_price,
-                          '4b_price': null
-                        }))}
-                        selectedBedrooms={['2b', '3b']}
-                        valueFormatter={formatPrice}
-                        title=""
-                      />
-                    </div>
-                  );
-                })}
+              <div className="w-full overflow-x-auto">
+                <div className="min-w-[600px] md:min-w-0 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                  {selectedBedrooms.map(bedroom => {
+                    const bedroomKey = bedroom.replace('b', '');
+                    const saleTypeData = priceTrendsBySaleType[bedroomKey];
+                    if (!saleTypeData || !saleTypeData.trends || saleTypeData.trends.length === 0) return null;
+                    
+                    return (
+                      <div key={bedroom} className="bg-white p-2 md:p-4 rounded-lg">
+                        <h3 className="text-xs md:text-sm text-gray-600 mb-3">
+                          {BEDROOM_LABELS[bedroom]}
+                        </h3>
+                        <LineChart
+                          data={saleTypeData.trends.map(d => ({
+                            month: d.quarter,
+                            '2b_price': d.new_sale_price,
+                            '3b_price': d.resale_price,
+                            '4b_price': null
+                          }))}
+                          selectedBedrooms={['2b', '3b']}
+                          valueFormatter={formatPrice}
+                          title=""
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </Card>
           )}
@@ -496,31 +470,31 @@ function Dashboard() {
           {/* Market Overview - Pulse vs Baseline */}
           {marketStats && marketStats.short_term && marketStats.long_term && (
             <Card title="📊 Market Overview: Pulse vs Baseline">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {['short_term', 'long_term'].map(key => {
                   const block = marketStats[key];
                   if (!block) return null;
                   const overallPrice = block.overall?.price || {};
                   const overallPsf = block.overall?.psf || {};
                   return (
-                    <div key={key} style={{ padding: '12px 16px', borderRadius: '8px', background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
-                      <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#111827', marginBottom: '8px' }}>
+                    <div key={key} className="p-3 md:p-4 rounded-lg bg-gray-50 border border-gray-200">
+                      <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">
                         {block.label || (key === 'short_term' ? 'Pulse (Last Few Months)' : 'Baseline (Longer Term)')}
                       </h3>
-                      <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '8px' }}>Overall Market (all bedroom types)</p>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px', fontSize: '13px', color: '#374151' }}>
+                      <p className="text-xs md:text-sm text-gray-600 mb-2">Overall Market (all bedroom types)</p>
+                      <div className="grid grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm text-gray-700">
                         <div>
-                          <div style={{ fontWeight: 500, marginBottom: '4px' }}>Median Price</div>
+                          <div className="font-medium mb-1">Median Price</div>
                           <div>{overallPrice.median ? formatPrice(overallPrice.median) : '-'}</div>
-                          <div style={{ color: '#9CA3AF', marginTop: '2px' }}>
+                          <div className="text-gray-500 mt-1 text-xs">
                             25th: {overallPrice['25th'] ? formatPrice(overallPrice['25th']) : '-'} ·
                             {' '}75th: {overallPrice['75th'] ? formatPrice(overallPrice['75th']) : '-'}
                           </div>
                         </div>
                         <div>
-                          <div style={{ fontWeight: 500, marginBottom: '4px' }}>Median PSF</div>
+                          <div className="font-medium mb-1">Median PSF</div>
                           <div>{overallPsf.median ? formatPSF(overallPsf.median) : '-'}</div>
-                          <div style={{ color: '#9CA3AF', marginTop: '2px' }}>
+                          <div className="text-gray-500 mt-1 text-xs">
                             25th: {overallPsf['25th'] ? formatPSF(overallPsf['25th']) : '-'} ·
                             {' '}75th: {overallPsf['75th'] ? formatPSF(overallPsf['75th']) : '-'}
                           </div>
@@ -536,16 +510,16 @@ function Dashboard() {
           {/* Market Stats by District (Top 10 by Median PSF - Short Term) */}
           {marketStatsByDistrict && marketStatsByDistrict.short_term && marketStatsByDistrict.short_term.by_district && (
             <Card title="🏙 District Market Snapshot (Short-Term Median PSF)">
-              <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '12px' }}>
+              <p className="text-xs md:text-sm text-gray-600 mb-3">
                 Short-term view by district (Pulse). Sorted by median PSF, top 10 districts.
               </p>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-xs md:text-sm">
                   <thead>
-                    <tr style={{ background: '#F3F4F6' }}>
-                      <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>District</th>
-                      <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>Median Price</th>
-                      <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>Median PSF</th>
+                    <tr className="bg-gray-100">
+                      <th className="text-left p-2 border-b border-gray-200">District</th>
+                      <th className="text-right p-2 border-b border-gray-200">Median Price</th>
+                      <th className="text-right p-2 border-b border-gray-200">Median PSF</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -559,11 +533,11 @@ function Dashboard() {
                       .slice(0, 10)
                       .map(row => (
                         <tr key={row.district}>
-                          <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB' }}>{row.district}</td>
-                          <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>
+                          <td className="p-2 border-b border-gray-200">{row.district}</td>
+                          <td className="p-2 border-b border-gray-200 text-right">
                             {row.priceMedian ? formatPrice(row.priceMedian) : '-'}
                           </td>
-                          <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>
+                          <td className="p-2 border-b border-gray-200 text-right">
                             {row.psfMedian ? formatPSF(row.psfMedian) : '-'}
                           </td>
                         </tr>
@@ -576,12 +550,12 @@ function Dashboard() {
 
           {/* Comparable Value Analysis (Buy Box) */}
           <Card title="🎯 Comparable Value Analysis (Buy Box)">
-            <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '12px' }}>
+            <p className="text-xs md:text-sm text-gray-600 mb-3">
               Find transactions around a target price band for the selected bedroom types and (optionally) district.
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end', marginBottom: '16px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500, color: '#374151' }}>
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4 items-end mb-4">
+              <div className="w-full sm:w-auto">
+                <label className="block mb-1 text-xs md:text-sm font-medium text-gray-700">
                   Target Price (SGD)
                 </label>
                 <input
@@ -591,11 +565,11 @@ function Dashboard() {
                     const value = parseFloat(e.target.value || '0');
                     setBuyBoxResult(prev => prev ? { ...prev, _target_price: value } : prev);
                   }}
-                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px', minWidth: '160px' }}
+                  className="w-full sm:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[140px] md:min-w-[160px]"
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500, color: '#374151' }}>
+              <div className="w-full sm:w-auto">
+                <label className="block mb-1 text-xs md:text-sm font-medium text-gray-700">
                   Band (± SGD)
                 </label>
                 <input
@@ -605,24 +579,16 @@ function Dashboard() {
                     const value = parseFloat(e.target.value || '0');
                     setBuyBoxResult(prev => prev ? { ...prev, _band: value } : prev);
                   }}
-                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '14px', minWidth: '140px' }}
+                  className="w-full sm:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[120px] md:min-w-[140px]"
                 />
               </div>
               <button
                 type="button"
                 onClick={runBuyBoxAnalysis}
                 disabled={buyBoxLoading}
-                style={{
-                  padding: '10px 18px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: '#2563EB',
-                  color: 'white',
-                  fontWeight: 500,
-                  fontSize: '14px',
-                  cursor: buyBoxLoading ? 'default' : 'pointer',
-                  opacity: buyBoxLoading ? 0.7 : 1
-                }}
+                className={`w-full sm:w-auto px-4 md:px-5 py-2 md:py-2.5 rounded-md border-none bg-blue-600 text-white font-medium text-xs md:text-sm cursor-pointer transition-opacity ${
+                  buyBoxLoading ? 'opacity-70 cursor-default' : 'hover:bg-blue-700'
+                }`}
               >
                 {buyBoxLoading ? 'Running analysis...' : 'Run Analysis'}
               </button>
@@ -630,37 +596,39 @@ function Dashboard() {
 
             {buyBoxResult && (
               <>
-                <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '8px' }}>
+                <p className="text-xs md:text-sm text-gray-600 mb-2">
                   Found <strong>{buyBoxResult.summary?.count ?? 0}</strong> comparable transactions.
                 </p>
                 {buyBoxResult.points && buyBoxResult.points.length > 0 && (
-                  <div style={{ maxHeight: '320px', overflowY: 'auto', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                      <thead>
-                        <tr style={{ background: '#F3F4F6' }}>
-                          <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>Project</th>
-                          <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>District</th>
-                          <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>Price</th>
-                          <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>PSF</th>
-                          <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #E5E7EB' }}>Bedrooms</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {buyBoxResult.points.slice(0, 50).map((p, idx) => (
-                          <tr key={idx}>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB' }}>{p.project_name}</td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>{p.district}</td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>
-                              {p.price ? formatPrice(p.price) : '-'}
-                            </td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>
-                              {p.psf ? formatPSF(p.psf) : '-'}
-                            </td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid #E5E7EB', textAlign: 'right' }}>{p.bedroom_count}</td>
+                  <div className="max-h-80 overflow-y-auto rounded-lg border border-gray-200">
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse text-xs md:text-sm min-w-[500px]">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="text-left p-2 border-b border-gray-200">Project</th>
+                            <th className="text-right p-2 border-b border-gray-200">District</th>
+                            <th className="text-right p-2 border-b border-gray-200">Price</th>
+                            <th className="text-right p-2 border-b border-gray-200">PSF</th>
+                            <th className="text-right p-2 border-b border-gray-200">Bedrooms</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {buyBoxResult.points.slice(0, 50).map((p, idx) => (
+                            <tr key={idx}>
+                              <td className="p-2 border-b border-gray-200">{p.project_name}</td>
+                              <td className="p-2 border-b border-gray-200 text-right">{p.district}</td>
+                              <td className="p-2 border-b border-gray-200 text-right">
+                                {p.price ? formatPrice(p.price) : '-'}
+                              </td>
+                              <td className="p-2 border-b border-gray-200 text-right">
+                                {p.psf ? formatPSF(p.psf) : '-'}
+                              </td>
+                              <td className="p-2 border-b border-gray-200 text-right">{p.bedroom_count}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </>
@@ -673,4 +641,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-
