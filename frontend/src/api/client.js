@@ -143,7 +143,18 @@ export const getProjectsByDistrict = (district, params = {}) => {
   const queryParams = new URLSearchParams();
   queryParams.append('district', district);
   if (params.bedroom) queryParams.append('bedroom', params.bedroom);
+  if (params.segment) queryParams.append('segment', params.segment);
   return apiClient.get(`/projects_by_district?${queryParams}`);
+};
+
+// Project-level price/psf breakdown by district (used for District Summary - Price expansion)
+export const getPriceProjectsByDistrict = (district, params = {}) => {
+  const queryParams = new URLSearchParams();
+  queryParams.append('district', district);
+  if (params.bedroom) queryParams.append('bedroom', params.bedroom);
+  if (params.months) queryParams.append('months', params.months);
+  if (params.segment) queryParams.append('segment', params.segment);
+  return apiClient.get(`/price_projects_by_district?${queryParams}`);
 };
 
 export const getComparableValueAnalysis = (params = {}) => {

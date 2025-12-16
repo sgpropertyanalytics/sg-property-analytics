@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import {
   getPriceTrends,
@@ -11,7 +11,8 @@ import {
   getMarketStats,
   getMarketStatsByDistrict,
   getComparableValueAnalysis,
-  getProjectsByDistrict
+  getProjectsByDistrict,
+  getPriceProjectsByDistrict,
 } from '../api/client';
 import LineChart from '../components/LineChart';
 import BarChart from '../components/BarChart';
@@ -84,6 +85,983 @@ function Card({ title, children }) {
       )}
       {children}
     </div>
+  );
+}
+
+// District Summary (Volume & Liquidity) - global filters + expandable per-district breakdown
+function DistrictSummaryVolumeLiquidity({
+  selectedBedrooms,
+  selectedSegment,
+  volumeData,
+}) {
+  const [sortBy, setSortBy] = useState('total'); // 'total' | 'quantity' | 'district'
+  const [expandedDistricts, setExpandedDistricts] = useState({});
+  const [districtProjects, setDistrictProjects] = useState({});
+
+  const toggleDistrict = (district) => {
+    const isExpanded = !!expandedDistricts[district];
+    setExpandedDistricts((prev) => ({
+      ...prev,
+      [district]: !isExpanded,
+    }));
+
+    if (!isExpanded && !districtProjects[district]) {
+      fetchDistrictProjects(district);
+    }
+  };
+
+  const fetchDistrictProjects = async (district) => {
+    if (districtProjects[district]) return;
+    try {
+      const bedroomParam = selectedBedrooms.map((b) => b.replace('b', '')).join(',');
+      const res = await getProjectsByDistrict(district, {
+        bedroom: bedroomParam,
+        segment: selectedSegment || undefined,
+      });
+      
+      // Data validation and completeness check
+      const projects = res.data?.projects || [];
+      
+      // Validate each project has required fields
+      const validatedProjects = projects.filter((project) => {
+        if (!project.project_name) {
+          console.warn(`Skipping project with missing name in district ${district}`);
+          return false;
+        }
+        return true;
+      });
+      
+      // Log completeness metrics
+      if (validatedProjects.length !== projects.length) {
+        console.warn(
+          `District ${district}: Filtered out ${projects.length - validatedProjects.length} invalid projects`
+        );
+      }
+      
+      console.log(
+        `District ${district}: Loaded ${validatedProjects.length} projects (bedrooms: ${bedroomParam}, segment: ${selectedSegment || 'all'})`
+      );
+      
+      setDistrictProjects((prev) => ({
+        ...prev,
+        [district]: validatedProjects,
+      }));
+    } catch (err) {
+      console.error('Error fetching district projects (volume & liquidity):', err);
+      setDistrictProjects((prev) => ({
+        ...prev,
+        [district]: [],
+      }));
+    }
+  };
+
+  // Helper to label district with description
+  const getDistrictLabel = (district) =>
+    DISTRICT_NAMES[district] ? `${district}: ${DISTRICT_NAMES[district]}` : district;
+
+  if (!volumeData || volumeData.length === 0) {
+    return null;
+  }
+
+  // Exclude districts with fewer than 5 transactions (data integrity guardrail)
+  const excludedVolumeDistricts = [];
+
+  const filteredVolumeData = [...volumeData].filter((row) => {
+    const totalQty = row.total_quantity || 0;
+    if (totalQty < 5) {
+      excludedVolumeDistricts.push(row.district);
+      return false;
+    }
+    return true;
+  });
+
+  return (
+    <Card title="📋 District Summary (Volume & Liquidity)">
+      {/* Sort controls */}
+      <div className="mb-4 p-3 md:p-4 bg-gray-50 rounded-lg flex flex-wrap items-center gap-3 md:gap-4">
+        <span className="text-xs md:text-sm font-medium text-gray-700">
+          Sort by:
+        </span>
+        <button
+          type="button"
+          onClick={() => setSortBy('total')}
+          className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium border-none cursor-pointer transition-colors ${
+            sortBy === 'total' ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-600'
+          }`}
+        >
+          Total Volume
+        </button>
+        <button
+          type="button"
+          onClick={() => setSortBy('quantity')}
+          className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium border-none cursor-pointer transition-colors ${
+            sortBy === 'quantity'
+              ? 'bg-emerald-500 text-white'
+              : 'bg-gray-200 text-gray-600'
+          }`}
+        >
+          Quantity
+        </button>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-[11px] md:text-xs lg:text-sm min-w-[720px]">
+          <thead>
+            <tr className="border-b-2 border-gray-200 bg-gray-50">
+              <th className="p-2 text-left w-8" />
+              <th className="p-2 text-left font-semibold">District</th>
+              {selectedBedrooms.includes('2b') && (
+                <>
+                  <th className="p-2 text-right font-semibold text-blue-500">2B Volume</th>
+                  <th className="p-2 text-right font-semibold text-blue-500">2B Qty</th>
+                </>
+              )}
+              {selectedBedrooms.includes('3b') && (
+                <>
+                  <th className="p-2 text-right font-semibold text-emerald-500">3B Volume</th>
+                  <th className="p-2 text-right font-semibold text-emerald-500">3B Qty</th>
+                </>
+              )}
+              {selectedBedrooms.includes('4b') && (
+                <>
+                  <th className="p-2 text-right font-semibold text-amber-500">4B Volume</th>
+                  <th className="p-2 text-right font-semibold text-amber-500">4B Qty</th>
+                </>
+              )}
+              <th className="p-2 text-right font-semibold">Total Qty</th>
+              <th className="p-2 text-right font-semibold">Total Volume</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredVolumeData
+              .sort((a, b) => {
+                if (sortBy === 'total') {
+                  return (b.total || 0) - (a.total || 0);
+                }
+                if (sortBy === 'quantity') {
+                  return (b.total_quantity || 0) - (a.total_quantity || 0);
+                }
+                return a.district.localeCompare(b.district);
+              })
+              .map((row, idx) => {
+                const district = row.district;
+                const isExpanded = !!expandedDistricts[district];
+                const projects = districtProjects[district] || [];
+
+                return (
+                  <React.Fragment key={district}>
+                    <tr
+                      className={`border-b border-gray-200 ${
+                        idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                      } cursor-pointer`}
+                      onClick={() => toggleDistrict(district)}
+                    >
+                      <td className="p-2 text-center text-gray-500">
+                        <span
+                          className={`inline-block transform text-xs transition-transform ${
+                            isExpanded ? 'rotate-90' : 'rotate-0'
+                          }`}
+                        >
+                          ▶
+                        </span>
+                      </td>
+                      <td className="p-2 font-medium text-[11px] md:text-xs text-gray-800">
+                        {getDistrictLabel(district)}
+                      </td>
+                      {selectedBedrooms.includes('2b') && (
+                        <>
+                          <td className="p-2 text-right text-gray-800">
+                            {row['2b'] != null ? formatPrice(row['2b']) : '-'}
+                          </td>
+                          <td className="p-2 text-right text-gray-500">
+                            {(row['2b_count'] || 0).toLocaleString()}
+                          </td>
+                        </>
+                      )}
+                      {selectedBedrooms.includes('3b') && (
+                        <>
+                          <td className="p-2 text-right text-gray-800">
+                            {row['3b'] != null ? formatPrice(row['3b']) : '-'}
+                          </td>
+                          <td className="p-2 text-right text-gray-500">
+                            {(row['3b_count'] || 0).toLocaleString()}
+                          </td>
+                        </>
+                      )}
+                      {selectedBedrooms.includes('4b') && (
+                        <>
+                          <td className="p-2 text-right text-gray-800">
+                            {row['4b'] != null ? formatPrice(row['4b']) : '-'}
+                          </td>
+                          <td className="p-2 text-right text-gray-500">
+                            {(row['4b_count'] || 0).toLocaleString()}
+                          </td>
+                        </>
+                      )}
+                      <td className="p-2 text-right font-semibold text-gray-800">
+                        {(row.total_quantity || 0).toLocaleString()}
+                      </td>
+                      <td className="p-2 text-right font-semibold text-gray-900">
+                        {row.total != null ? formatPrice(row.total) : '-'}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td
+                          className="p-0 bg-gray-50"
+                          colSpan={
+                            2 + selectedBedrooms.length * 2 + 2
+                          }
+                        >
+                          <div className="px-3 py-4 md:px-5 md:py-5 border-t border-gray-200">
+                            {projects.length === 0 ? (
+                              <div className="text-center text-gray-500 text-xs md:text-sm py-4">
+                                Loading projects...
+                              </div>
+                            ) : (
+                              <div className="overflow-x-auto">
+                                <table className="w-full border-collapse text-[11px] md:text-xs lg:text-sm min-w-[640px]">
+                                  <thead>
+                                    <tr className="border-b-2 border-gray-200 bg-white">
+                                      <th className="p-2 text-left font-semibold">
+                                        Project Name
+                                      </th>
+                                      {selectedBedrooms.includes('2b') && (
+                                        <>
+                                          <th className="p-2 text-right font-semibold text-blue-500">
+                                            2B Volume
+                                          </th>
+                                          <th className="p-2 text-right font-semibold text-blue-500">
+                                            2B Qty
+                                          </th>
+                                        </>
+                                      )}
+                                      {selectedBedrooms.includes('3b') && (
+                                        <>
+                                          <th className="p-2 text-right font-semibold text-emerald-500">
+                                            3B Volume
+                                          </th>
+                                          <th className="p-2 text-right font-semibold text-emerald-500">
+                                            3B Qty
+                                          </th>
+                                        </>
+                                      )}
+                                      {selectedBedrooms.includes('4b') && (
+                                        <>
+                                          <th className="p-2 text-right font-semibold text-amber-500">
+                                            4B Volume
+                                          </th>
+                                          <th className="p-2 text-right font-semibold text-amber-500">
+                                            4B Qty
+                                          </th>
+                                        </>
+                                      )}
+                                      <th className="p-2 text-right font-semibold">
+                                        Total Qty
+                                      </th>
+                                      <th className="p-2 text-right font-semibold">
+                                        Total Volume
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {projects.map((project, idx2) => (
+                                      <tr
+                                        key={idx2}
+                                        className={`border-b border-gray-100 ${
+                                          idx2 % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                                        }`}
+                                      >
+                                        <td className="p-2 font-medium text-[11px] md:text-xs text-gray-800">
+                                          {project.project_name}
+                                          {project.sale_type_label && (
+                                            <span
+                                              className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                                project.sale_type_label === 'New Launch'
+                                                  ? 'bg-blue-100 text-blue-700'
+                                                  : 'bg-emerald-100 text-emerald-700'
+                                              }`}
+                                            >
+                                              {project.sale_type_label}
+                                            </span>
+                                          )}
+                                        </td>
+                                        {selectedBedrooms.includes('2b') && (
+                                          <>
+                                            <td className="p-2 text-right text-gray-800">
+                                              {project['2b'] != null
+                                                ? formatPrice(project['2b'])
+                                                : '-'}
+                                            </td>
+                                            <td className="p-2 text-right text-gray-500">
+                                              {(project['2b_count'] || 0).toLocaleString()}
+                                            </td>
+                                          </>
+                                        )}
+                                        {selectedBedrooms.includes('3b') && (
+                                          <>
+                                            <td className="p-2 text-right text-gray-800">
+                                              {project['3b'] != null
+                                                ? formatPrice(project['3b'])
+                                                : '-'}
+                                            </td>
+                                            <td className="p-2 text-right text-gray-500">
+                                              {(project['3b_count'] || 0).toLocaleString()}
+                                            </td>
+                                          </>
+                                        )}
+                                        {selectedBedrooms.includes('4b') && (
+                                          <>
+                                            <td className="p-2 text-right text-gray-800">
+                                              {project['4b'] != null
+                                                ? formatPrice(project['4b'])
+                                                : '-'}
+                                            </td>
+                                            <td className="p-2 text-right text-gray-500">
+                                              {(project['4b_count'] || 0).toLocaleString()}
+                                            </td>
+                                          </>
+                                        )}
+                                        <td className="p-2 text-right font-semibold text-gray-800">
+                                          {(project.total_quantity || 0).toLocaleString()}
+                                        </td>
+                                        <td className="p-2 text-right font-semibold text-gray-900">
+                                          {project.total != null
+                                            ? formatPrice(project.total)
+                                            : '-'}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+      {/* Note about excluded districts due to low transaction counts */}
+      {excludedVolumeDistricts.length > 0 && (
+        <p className="mt-3 text-[11px] md:text-xs text-gray-500">
+          The following districts were excluded from this table due to fewer than 5
+          transactions in the underlying data:{' '}
+          {excludedVolumeDistricts
+            .sort()
+            .map((d, i) => {
+              const name = DISTRICT_NAMES[d]
+                ? `${d}: ${DISTRICT_NAMES[d]}`
+                : d;
+              return (
+                <span key={d}>
+                  {i > 0 ? ', ' : ''}
+                  {name}
+                </span>
+              );
+            })}
+          .
+        </p>
+      )}
+    </Card>
+  );
+}
+// Global filter bar (page-level filters)
+function GlobalFilterBar({
+  selectedBedrooms,
+  setSelectedBedrooms,
+  selectedSegment,
+  setSelectedSegment,
+  selectedDistrict,
+  setSelectedDistrict,
+  availableDistricts,
+}) {
+  return (
+    <div className="flex flex-col md:flex-row flex-wrap gap-4 md:gap-4 items-start md:items-center">
+      {/* Bedroom Types (multi-select) */}
+      <div className="w-full md:w-auto">
+        <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
+          Bedroom Types
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {['2b', '3b', '4b'].map((bedroom) => (
+            <button
+              key={bedroom}
+              type="button"
+              onClick={() => {
+                if (selectedBedrooms.includes(bedroom)) {
+                  // Ensure at least one bedroom remains selected
+                  if (selectedBedrooms.length > 1) {
+                    setSelectedBedrooms(selectedBedrooms.filter((b) => b !== bedroom));
+                  }
+                } else {
+                  setSelectedBedrooms([...selectedBedrooms, bedroom]);
+                }
+              }}
+              className={`px-3 md:px-4 py-2 rounded-md border-none font-medium text-xs md:text-sm cursor-pointer transition-colors ${
+                selectedBedrooms.includes(bedroom)
+                  ? `text-white ${
+                      bedroom === '2b'
+                        ? 'bg-blue-500'
+                        : bedroom === '3b'
+                        ? 'bg-green-500'
+                        : 'bg-amber-500'
+                    }`
+                  : 'bg-gray-200 text-gray-600'
+              }`}
+            >
+              {BEDROOM_LABELS[bedroom]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Market Segment (global) */}
+      <div className="w-full md:w-auto">
+        <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
+          Market Segment
+        </label>
+        <select
+          value={selectedSegment || 'all'}
+          onChange={(e) =>
+            setSelectedSegment(e.target.value === 'all' ? null : e.target.value)
+          }
+          className="w-full md:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[120px] md:min-w-[150px]"
+        >
+          <option value="all">All Segments</option>
+          <option value="CCR">CCR</option>
+          <option value="RCR">RCR</option>
+          <option value="OCR">OCR</option>
+        </select>
+      </div>
+
+      {/* District (global) */}
+      <div className="w-full md:w-auto">
+        <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
+          District
+        </label>
+        <select
+          value={selectedDistrict}
+          onChange={(e) => setSelectedDistrict(e.target.value)}
+          className="w-full md:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[120px] md:min-w-[200px]"
+        >
+          <option value="all">All Districts</option>
+          {availableDistricts.map((district) => (
+            <option key={district} value={district}>
+              {district}: {DISTRICT_NAMES[district] ? `(${DISTRICT_NAMES[district]})` : ''}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+// District Summary (Price) - local filters & table view
+function DistrictSummaryPrice({ selectedSegment, selectedDistrict }) {
+  const [priceSectionBedrooms, setPriceSectionBedrooms] = useState(['2b', '3b', '4b']);
+  const [priceSortBy, setPriceSortBy] = useState('median_price'); // 'none' | 'median_price' | 'median_psf'
+  const [priceSortTimeframe, setPriceSortTimeframe] = useState('short_term'); // 'short_term' | 'long_term'
+  const [priceSectionLoading, setPriceSectionLoading] = useState(false);
+  const [priceStatsByDistrict, setPriceStatsByDistrict] = useState({
+    short_term: { by_district: {} },
+    long_term: { by_district: {} },
+  });
+  const [priceDistrictProjects, setPriceDistrictProjects] = useState({});
+  const [priceExpandedDistricts, setPriceExpandedDistricts] = useState({});
+  const [excludedDistricts, setExcludedDistricts] = useState({});
+
+  // Localized market stats by district – independent bedroom filter
+  useEffect(() => {
+    const emptyStats = {
+      short_term: { by_district: {} },
+      long_term: { by_district: {} },
+    };
+
+    const fetchMarketStats = async () => {
+      if (priceSectionBedrooms.length === 0) {
+        setPriceStatsByDistrict(emptyStats);
+        setPriceSectionLoading(false);
+        return;
+      }
+
+      setPriceSectionLoading(true);
+      try {
+        const bedroomParam = priceSectionBedrooms.map((b) => b.replace('b', '')).join(',');
+
+        const params = {
+          bedroom: bedroomParam,
+          districts: selectedDistrict !== 'all' ? selectedDistrict : undefined,
+          segment: selectedSegment || undefined,
+          short_months: 3,
+          long_months: 15,
+        };
+
+        const res = await getMarketStatsByDistrict(params);
+        setPriceStatsByDistrict(res.data || emptyStats);
+      } catch (err) {
+        console.error('Error fetching market stats by district (price section):', err);
+        setPriceStatsByDistrict(emptyStats);
+      } finally {
+        setPriceSectionLoading(false);
+      }
+    };
+
+    fetchMarketStats();
+  }, [priceSectionBedrooms, selectedDistrict, selectedSegment]);
+
+  // Fetch project-level price/psf stats for a district when expanded
+  const fetchPriceDistrictProjects = async (district, monthsForView) => {
+    const viewKey = monthsForView === 3 ? 'short_term' : 'long_term';
+    const key = `${district}_${viewKey}`;
+    if (priceDistrictProjects[key]) return;
+
+    try {
+      const bedroomParam = priceSectionBedrooms.map((b) => b.replace('b', '')).join(',');
+      const params = {
+        bedroom: bedroomParam,
+        months: monthsForView,
+        segment: selectedSegment || undefined,
+      };
+      const res = await getPriceProjectsByDistrict(district, params);
+      const projects = res.data?.projects || [];
+
+      // Data validation and completeness check
+      const validatedProjects = projects.filter((project) => {
+        if (!project || !project.project_name) {
+          console.warn(`Skipping price project with missing name in district ${district}`);
+          return false;
+        }
+        if (!project.count || project.count < 3) {
+          console.warn(
+            `Skipping project ${project.project_name} in district ${district}: insufficient sample (count: ${project.count})`
+          );
+          return false;
+        }
+        return true;
+      });
+
+      // Log completeness metrics
+      if (validatedProjects.length !== projects.length) {
+        console.warn(
+          `District ${district} (${viewKey}): Filtered out ${projects.length - validatedProjects.length} projects with insufficient data`
+        );
+      }
+
+      console.log(
+        `District ${district} (${viewKey}): Loaded ${validatedProjects.length} valid projects (bedrooms: ${bedroomParam}, segment: ${selectedSegment || 'all'})`
+      );
+
+      // Sum transactions across projects for this district/timeframe
+      const totalCount = validatedProjects.reduce(
+        (sum, p) => sum + (p.count || 0),
+        0
+      );
+
+      // If fewer than 5 transactions, mark district as excluded
+      if (totalCount < 5) {
+        setExcludedDistricts((prev) => ({
+          ...prev,
+          [district]: true,
+        }));
+        setPriceDistrictProjects((prev) => ({
+          ...prev,
+          [key]: [],
+        }));
+      } else {
+        setPriceDistrictProjects((prev) => ({
+          ...prev,
+          [key]: validatedProjects,
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching price projects by district:', err);
+      const viewKey = monthsForView === 3 ? 'short_term' : 'long_term';
+      const key = `${district}_${viewKey}`;
+      setPriceDistrictProjects((prev) => ({
+        ...prev,
+        [key]: [],
+      }));
+    }
+  };
+
+  const togglePriceDistrict = (district) => {
+    const isExpanded = !!priceExpandedDistricts[district];
+    setPriceExpandedDistricts((prev) => ({
+      ...prev,
+      [district]: !isExpanded,
+    }));
+
+    if (!isExpanded) {
+      const monthsForView = priceSortTimeframe === 'short_term' ? 3 : 15;
+      fetchPriceDistrictProjects(district, monthsForView);
+    }
+  };
+
+  const viewKey = priceSortTimeframe === 'short_term' ? 'short_term' : 'long_term';
+  const byDistrict = priceStatsByDistrict?.[viewKey]?.by_district || {};
+  const districts = Object.keys(byDistrict);
+
+  let sortedDistricts = [...districts];
+  if (priceSortBy === 'median_price') {
+    sortedDistricts.sort((a, b) => {
+      const statsA = byDistrict[a];
+      const statsB = byDistrict[b];
+      const medianA = statsA?.price?.median || 0;
+      const medianB = statsB?.price?.median || 0;
+      return medianB - medianA;
+    });
+  } else if (priceSortBy === 'median_psf') {
+    sortedDistricts.sort((a, b) => {
+      const statsA = byDistrict[a];
+      const statsB = byDistrict[b];
+      const medianA = statsA?.psf?.median || 0;
+      const medianB = statsB?.psf?.median || 0;
+      return medianB - medianA;
+    });
+  } else {
+    sortedDistricts.sort();
+  }
+
+  const renderCell = (obj, field, formatter) => {
+    if (!obj) return '-';
+    if (obj.insufficient) return 'NA*';
+    const val = obj[field];
+    if (val == null) return '-';
+    return formatter(val);
+  };
+
+  return (
+    <Card title="📊 District Summary (Price)">
+      {/* Local bedroom filter (for this section only) */}
+      <div className="mb-4 p-3 md:p-4 bg-gray-50 rounded-lg flex flex-wrap items-center gap-3 md:gap-4">
+        <span className="text-xs md:text-sm font-medium text-gray-700">
+          Filter by Bedroom (this section only):
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {['2b', '3b', '4b'].map((opt) => (
+            <label
+              key={opt}
+              className="inline-flex items-center gap-2 text-xs md:text-sm text-gray-700 cursor-pointer select-none"
+            >
+              <input
+                type="checkbox"
+                checked={priceSectionBedrooms.includes(opt)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setPriceSectionBedrooms([...priceSectionBedrooms, opt]);
+                  } else {
+                    // keep at least one bedroom selected
+                    if (priceSectionBedrooms.length > 1) {
+                      setPriceSectionBedrooms(
+                        priceSectionBedrooms.filter((b) => b !== opt)
+                      );
+                    }
+                  }
+                }}
+                className="w-4 h-4 cursor-pointer"
+              />
+              {BEDROOM_LABELS[opt]}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Sort controls */}
+      <div className="mb-4 p-3 md:p-4 bg-gray-50 rounded-lg flex flex-wrap items-center gap-3 md:gap-4">
+        <span className="text-xs md:text-sm font-medium text-gray-700">
+          Sort by:
+        </span>
+        <button
+          type="button"
+          onClick={() =>
+            setPriceSortBy((prev) => (prev === 'median_price' ? 'none' : 'median_price'))
+          }
+          className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium border-none cursor-pointer transition-colors ${
+            priceSortBy === 'median_price'
+              ? 'bg-emerald-500 text-white'
+              : 'bg-gray-200 text-gray-600'
+          }`}
+        >
+          Median Price
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            setPriceSortBy((prev) => (prev === 'median_psf' ? 'none' : 'median_psf'))
+          }
+          className={`px-3 py-1.5 rounded-md text-xs md:text-sm font-medium border-none cursor-pointer transition-colors ${
+            priceSortBy === 'median_psf'
+              ? 'bg-emerald-500 text-white'
+              : 'bg-gray-200 text-gray-600'
+          }`}
+        >
+          Median PSF
+        </button>
+
+        <div className="ml-auto flex flex-wrap items-center gap-2 md:gap-3">
+          <span className="text-[11px] md:text-xs text-gray-500">
+            Sort timeframe:
+          </span>
+          <button
+            type="button"
+            onClick={() => setPriceSortTimeframe('short_term')}
+            className={`px-2.5 py-1 rounded-md text-[11px] md:text-xs font-medium border-none cursor-pointer transition-colors ${
+              priceSortTimeframe === 'short_term'
+                ? 'bg-gray-700 text-gray-100'
+                : 'bg-gray-200 text-gray-500'
+            }`}
+          >
+            Last 3 Months (Pulse)
+          </button>
+          <button
+            type="button"
+            onClick={() => setPriceSortTimeframe('long_term')}
+            className={`px-2.5 py-1 rounded-md text-[11px] md:text-xs font-medium border-none cursor-pointer transition-colors ${
+              priceSortTimeframe === 'long_term'
+                ? 'bg-gray-700 text-gray-100'
+                : 'bg-gray-200 text-gray-500'
+            }`}
+          >
+            Last 15 Months (Baseline)
+          </button>
+        </div>
+      </div>
+
+      {priceSectionLoading ? (
+        <div className="text-center py-10 text-gray-500 text-sm md:text-base">
+          <div className="text-2xl md:text-3xl mb-2">⏳</div>
+          Updating district price data...
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <div className="text-center mb-2 px-3 py-2 rounded-md bg-gray-800 text-gray-50 text-xs md:text-sm font-semibold">
+            {priceSortTimeframe === 'short_term'
+              ? 'Last 3 months (Short-term view)'
+              : 'Last 15 months (Long-term view)'}
+          </div>
+          <p className="text-[11px] md:text-xs text-gray-500 mb-3 text-center">
+            *NA indicates insufficient sample size for reliable statistics.
+          </p>
+
+          <table className="w-full border-collapse text-[11px] md:text-xs lg:text-sm min-w-[640px]">
+            <thead>
+              <tr className="border-b-2 border-gray-200 bg-gray-50">
+                <th className="p-2 text-left font-semibold" />
+                <th className="p-2 text-left font-semibold">District</th>
+                <th className="p-2 text-center font-semibold border-r border-dotted border-gray-300" colSpan={3}>
+                  Price (SGD)
+                </th>
+                <th className="p-2 text-center font-semibold" colSpan={3}>
+                  PSF (SGD)
+                </th>
+              </tr>
+              <tr className="border-b border-gray-200 bg-gray-50 text-[10px] md:text-[11px] text-gray-500">
+                <th className="p-2 text-left" />
+                <th className="p-2 text-left" />
+                <th className="p-2 text-center">25th</th>
+                <th className="p-2 text-center">Median</th>
+                <th className="p-2 text-center border-r border-dotted border-gray-300">75th</th>
+                <th className="p-2 text-center">25th</th>
+                <th className="p-2 text-center">Median</th>
+                <th className="p-2 text-center">75th</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedDistricts.map((districtCode, idx) => {
+                // Skip districts that have been flagged as having insufficient data
+                if (excludedDistricts[districtCode]) {
+                  return null;
+                }
+                const stats = byDistrict[districtCode];
+                if (!stats) return null;
+
+                const viewKey = priceSortTimeframe === 'short_term' ? 'short_term' : 'long_term';
+                const key = `${districtCode}_${viewKey}`;
+                const isExpanded = !!priceExpandedDistricts[districtCode];
+                const projects = priceDistrictProjects[key] || [];
+
+                const label =
+                  DISTRICT_NAMES[districtCode]
+                    ? `${districtCode}: ${DISTRICT_NAMES[districtCode]}`
+                    : districtCode;
+
+                return (
+                  <React.Fragment key={districtCode}>
+                    <tr
+                      className={`border-b border-gray-200 ${
+                        idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                      } cursor-pointer`}
+                      onClick={() => togglePriceDistrict(districtCode)}
+                    >
+                      <td className="p-2 text-center text-gray-500">
+                        <span
+                          className={`inline-block transform text-xs transition-transform ${
+                            isExpanded ? 'rotate-90' : 'rotate-0'
+                          }`}
+                        >
+                          ▶
+                        </span>
+                      </td>
+                      <td className="p-2 font-medium text-[11px] md:text-xs text-gray-800">
+                        {label}
+                      </td>
+                      <td className="p-2 text-center text-gray-600">
+                        {renderCell(stats.price, '25th', formatPrice)}
+                      </td>
+                      <td className="p-2 text-center font-semibold text-gray-800">
+                        {renderCell(stats.price, 'median', formatPrice)}
+                      </td>
+                      <td className="p-2 text-center text-gray-600 border-r border-dotted border-gray-300">
+                        {renderCell(stats.price, '75th', formatPrice)}
+                      </td>
+                      <td className="p-2 text-center text-gray-600">
+                        {renderCell(stats.psf, '25th', formatPSF)}
+                      </td>
+                      <td className="p-2 text-center font-semibold text-gray-800">
+                        {renderCell(stats.psf, 'median', formatPSF)}
+                      </td>
+                      <td className="p-2 text-center text-gray-600">
+                        {renderCell(stats.psf, '75th', formatPSF)}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td
+                          className="p-0 bg-gray-50"
+                          colSpan={8}
+                        >
+                          <div className="px-3 py-4 md:px-5 md:py-5 border-t border-gray-200">
+                            {projects.length === 0 ? (
+                              <div className="text-center text-gray-500 text-xs md:text-sm py-4">
+                                Loading project breakdown...
+                              </div>
+                            ) : (
+                              <div className="overflow-x-auto">
+                                <table className="w-full border-collapse text-[11px] md:text-xs lg:text-sm min-w-[640px]">
+                                  <thead>
+                                    <tr className="border-b-2 border-gray-200 bg-white">
+                                      <th className="p-2 text-left font-semibold">
+                                        Project
+                                      </th>
+                                      <th className="p-2 text-center font-semibold" colSpan={3}>
+                                        Price (SGD)
+                                      </th>
+                                      <th className="p-2 text-center font-semibold" colSpan={3}>
+                                        PSF (SGD)
+                                      </th>
+                                      <th className="p-2 text-center font-semibold">
+                                        Count
+                                      </th>
+                                    </tr>
+                                    <tr className="border-b border-gray-200 bg-gray-50 text-[10px] md:text-[11px] text-gray-500">
+                                      <th className="p-2 text-left" />
+                                      <th className="p-2 text-center">25th</th>
+                                      <th className="p-2 text-center">Median</th>
+                                      <th className="p-2 text-center">75th</th>
+                                      <th className="p-2 text-center">25th</th>
+                                      <th className="p-2 text-center">Median</th>
+                                      <th className="p-2 text-center">75th</th>
+                                      <th className="p-2 text-center">Txn</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {projects.map((project, idx2) => {
+                                      // API returns: price_25th, price_median, price_75th, psf_25th, psf_median, psf_75th, count
+                                      const price25th = project.price_25th;
+                                      const priceMedian = project.price_median;
+                                      const price75th = project.price_75th;
+                                      const psf25th = project.psf_25th;
+                                      const psfMedian = project.psf_median;
+                                      const psf75th = project.psf_75th;
+                                      const count = project.count || 0;
+
+                                      return (
+                                        <tr
+                                          key={idx2}
+                                          className={`border-b border-gray-100 ${
+                                            idx2 % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                                          }`}
+                                        >
+                                          <td className="p-2 font-medium text-[11px] md:text-xs text-gray-800">
+                                            {project.project_name}
+                                            {project.sale_type_label && (
+                                              <span
+                                                className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                                  project.sale_type_label === 'New Launch'
+                                                    ? 'bg-blue-100 text-blue-700'
+                                                    : 'bg-emerald-100 text-emerald-700'
+                                                }`}
+                                              >
+                                                {project.sale_type_label}
+                                              </span>
+                                            )}
+                                          </td>
+                                          <td className="p-2 text-center text-gray-600">
+                                            {price25th != null ? formatPrice(price25th) : '-'}
+                                          </td>
+                                          <td className="p-2 text-center font-semibold text-gray-800">
+                                            {priceMedian != null ? formatPrice(priceMedian) : '-'}
+                                          </td>
+                                          <td className="p-2 text-center text-gray-600">
+                                            {price75th != null ? formatPrice(price75th) : '-'}
+                                          </td>
+                                          <td className="p-2 text-center text-gray-600">
+                                            {psf25th != null ? formatPSF(psf25th) : '-'}
+                                          </td>
+                                          <td className="p-2 text-center font-semibold text-gray-800">
+                                            {psfMedian != null ? formatPSF(psfMedian) : '-'}
+                                          </td>
+                                          <td className="p-2 text-center text-gray-600">
+                                            {psf75th != null ? formatPSF(psf75th) : '-'}
+                                          </td>
+                                          <td className="p-2 text-center text-gray-700">
+                                            {count ? count.toLocaleString() : '-'}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+          {/* Note about excluded districts */}
+          {Object.keys(excludedDistricts).length > 0 && (
+            <p className="mt-3 text-[11px] md:text-xs text-gray-500">
+              The following districts were excluded from this view due to fewer than
+              5 transactions in the selected timeframe:{' '}
+              {Object.keys(excludedDistricts)
+                .sort()
+                .map((d, i) => {
+                  const name = DISTRICT_NAMES[d]
+                    ? `${d}: ${DISTRICT_NAMES[d]}`
+                    : d;
+                  return (
+                    <span key={d}>
+                      {i > 0 ? ', ' : ''}
+                      {name}
+                    </span>
+                  );
+                })}
+              .
+            </p>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -269,68 +1247,15 @@ function Dashboard() {
 
       {/* Filters */}
       <Card>
-        <div className="flex flex-col md:flex-row flex-wrap gap-4 md:gap-4 items-start md:items-center">
-          <div className="w-full md:w-auto">
-            <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
-              Bedroom Types
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {['2b', '3b', '4b'].map(bedroom => (
-                <button
-                  key={bedroom}
-                  onClick={() => {
-                    if (selectedBedrooms.includes(bedroom)) {
-                      setSelectedBedrooms(selectedBedrooms.filter(b => b !== bedroom));
-                    } else {
-                      setSelectedBedrooms([...selectedBedrooms, bedroom]);
-                    }
-                  }}
-                  className={`px-3 md:px-4 py-2 rounded-md border-none font-medium text-xs md:text-sm cursor-pointer transition-colors ${
-                    selectedBedrooms.includes(bedroom)
-                      ? `text-white ${bedroom === '2b' ? 'bg-blue-500' : bedroom === '3b' ? 'bg-green-500' : 'bg-amber-500'}`
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  {BEDROOM_LABELS[bedroom]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="w-full md:w-auto">
-            <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
-              Market Segment
-            </label>
-            <select
-              value={selectedSegment || 'all'}
-              onChange={(e) => setSelectedSegment(e.target.value === 'all' ? null : e.target.value)}
-              className="w-full md:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[120px] md:min-w-[150px]"
-            >
-              <option value="all">All Segments</option>
-              <option value="CCR">CCR</option>
-              <option value="RCR">RCR</option>
-              <option value="OCR">OCR</option>
-            </select>
-          </div>
-
-          <div className="w-full md:w-auto">
-            <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
-              District
-            </label>
-            <select
-              value={selectedDistrict}
-              onChange={(e) => setSelectedDistrict(e.target.value)}
-              className="w-full md:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[120px] md:min-w-[200px]"
-            >
-              <option value="all">All Districts</option>
-              {availableDistricts.map(district => (
-                <option key={district} value={district}>
-                  {district}: {DISTRICT_NAMES[district] ? `(${DISTRICT_NAMES[district]})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <GlobalFilterBar
+          selectedBedrooms={selectedBedrooms}
+          setSelectedBedrooms={setSelectedBedrooms}
+          selectedSegment={selectedSegment}
+          setSelectedSegment={setSelectedSegment}
+          selectedDistrict={selectedDistrict}
+          setSelectedDistrict={setSelectedDistrict}
+          availableDistricts={availableDistricts}
+        />
       </Card>
 
       {(loading || contextLoading) ? (
@@ -426,6 +1351,13 @@ function Dashboard() {
             </Card>
           )}
 
+          {/* District Summary (Volume & Liquidity) */}
+          <DistrictSummaryVolumeLiquidity
+            selectedBedrooms={selectedBedrooms}
+            selectedSegment={selectedSegment}
+            volumeData={volumeData}
+          />
+
           {/* Chart: Median Price by Sale Type */}
           {Object.keys(priceTrendsBySaleType).length > 0 && (
             <Card title="📈 Median Price: New Sale vs Resale by Bedroom Type">
@@ -446,10 +1378,15 @@ function Dashboard() {
               </div>
               <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:snap-none">
                 {selectedBedrooms.map(bedroom => {
-                  const bedroomKey = bedroom.replace('b', '');
-                  const saleTypeData = priceTrendsBySaleType[bedroomKey];
-                  if (!saleTypeData || !saleTypeData.trends || saleTypeData.trends.length === 0) return null;
-                  
+                  // Backend keys are '2b', '3b', '4b', so use the bedroom code directly
+                  const saleTypeData = priceTrendsBySaleType[bedroom];
+
+                  // Backend returns: { trends: { '2b': [ { quarter, new_sale, resale }, ... ], ... } }
+                  // After API call we store res.data.trends directly, so saleTypeData is an array of points.
+                  if (!saleTypeData || !Array.isArray(saleTypeData) || saleTypeData.length === 0) {
+                    return null;
+                  }
+
                   return (
                     <div key={bedroom} className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
                       <div className="bg-white p-2 md:p-4 rounded-lg">
@@ -457,11 +1394,12 @@ function Dashboard() {
                           {BEDROOM_LABELS[bedroom]}
                         </h3>
                         <LineChart
-                          data={saleTypeData.trends.map(d => ({
+                          data={saleTypeData.map(d => ({
                             month: d.quarter,
-                            '2b_price': d.new_sale_price,
-                            '3b_price': d.resale_price,
-                            '4b_price': null
+                            // Map New Sale to "2b" line and Resale to "3b" line for legend consistency
+                            '2b_price': d.new_sale,
+                            '3b_price': d.resale,
+                            '4b_price': null,
                           }))}
                           selectedBedrooms={['2b', '3b']}
                           valueFormatter={formatPrice}
@@ -475,86 +1413,11 @@ function Dashboard() {
             </Card>
           )}
 
-          {/* Market Overview - Pulse vs Baseline */}
-          {marketStats && marketStats.short_term && marketStats.long_term && (
-            <Card title="📊 Market Overview: Pulse vs Baseline">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                {['short_term', 'long_term'].map(key => {
-                  const block = marketStats[key];
-                  if (!block) return null;
-                  const overallPrice = block.overall?.price || {};
-                  const overallPsf = block.overall?.psf || {};
-                  return (
-                    <div key={key} className="p-3 md:p-4 rounded-lg bg-gray-50 border border-gray-200">
-                      <h3 className="text-sm md:text-base font-semibold text-gray-900 mb-2">
-                        {block.label || (key === 'short_term' ? 'Pulse (Last Few Months)' : 'Baseline (Longer Term)')}
-                      </h3>
-                      <p className="text-xs md:text-sm text-gray-600 mb-2">Overall Market (all bedroom types)</p>
-                      <div className="grid grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm text-gray-700">
-                        <div>
-                          <div className="font-medium mb-1">Median Price</div>
-                          <div>{overallPrice.median ? formatPrice(overallPrice.median) : '-'}</div>
-                          <div className="text-gray-500 mt-1 text-xs">
-                            25th: {overallPrice['25th'] ? formatPrice(overallPrice['25th']) : '-'} ·
-                            {' '}75th: {overallPrice['75th'] ? formatPrice(overallPrice['75th']) : '-'}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="font-medium mb-1">Median PSF</div>
-                          <div>{overallPsf.median ? formatPSF(overallPsf.median) : '-'}</div>
-                          <div className="text-gray-500 mt-1 text-xs">
-                            25th: {overallPsf['25th'] ? formatPSF(overallPsf['25th']) : '-'} ·
-                            {' '}75th: {overallPsf['75th'] ? formatPSF(overallPsf['75th']) : '-'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          )}
-
-          {/* Market Stats by District (Top 10 by Median PSF - Short Term) */}
-          {marketStatsByDistrict && marketStatsByDistrict.short_term && marketStatsByDistrict.short_term.by_district && (
-            <Card title="🏙 District Market Snapshot (Short-Term Median PSF)">
-              <p className="text-xs md:text-sm text-gray-600 mb-3">
-                Short-term view by district (Pulse). Sorted by median PSF, top 10 districts.
-              </p>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-xs md:text-sm">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="text-left p-2 border-b border-gray-200">District</th>
-                      <th className="text-right p-2 border-b border-gray-200">Median Price</th>
-                      <th className="text-right p-2 border-b border-gray-200">Median PSF</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(marketStatsByDistrict.short_term.by_district)
-                      .map(([district, stats]) => ({
-                        district,
-                        priceMedian: stats.price?.median || null,
-                        psfMedian: stats.psf?.median || null
-                      }))
-                      .sort((a, b) => (b.psfMedian || 0) - (a.psfMedian || 0))
-                      .slice(0, 10)
-                      .map(row => (
-                        <tr key={row.district}>
-                          <td className="p-2 border-b border-gray-200">{row.district}</td>
-                          <td className="p-2 border-b border-gray-200 text-right">
-                            {row.priceMedian ? formatPrice(row.priceMedian) : '-'}
-                          </td>
-                          <td className="p-2 border-b border-gray-200 text-right">
-                            {row.psfMedian ? formatPSF(row.psfMedian) : '-'}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          )}
+          {/* District Summary (Price) with local filters */}
+          <DistrictSummaryPrice
+            selectedSegment={selectedSegment}
+            selectedDistrict={selectedDistrict}
+          />
 
           {/* Comparable Value Analysis (Buy Box) */}
           <Card title="🎯 Comparable Value Analysis (Buy Box)">
@@ -624,7 +1487,15 @@ function Dashboard() {
                           {buyBoxResult.points.slice(0, 50).map((p, idx) => (
                             <tr key={idx}>
                               <td className="p-2 border-b border-gray-200">{p.project_name}</td>
-                              <td className="p-2 border-b border-gray-200 text-right">{p.district}</td>
+                              <td className="p-2 border-b border-gray-200 text-right">
+                                {p.district
+                                  ? `${p.district}${
+                                      DISTRICT_NAMES[p.district]
+                                        ? `: ${DISTRICT_NAMES[p.district]}`
+                                        : ''
+                                    }`
+                                  : '-'}
+                              </td>
                               <td className="p-2 border-b border-gray-200 text-right">
                                 {p.price ? formatPrice(p.price) : '-'}
                               </td>

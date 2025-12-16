@@ -180,51 +180,84 @@ def avg_psf():
 def projects_by_district():
     """Get project-level volume and quantity breakdown for a specific district."""
     start = time.time()
-    
-    from models.transaction import Transaction
-    from models.database import db
-    from sqlalchemy import func
-    
+
+    from services.data_processor import get_project_aggregation_by_district
+
     district = request.args.get("district")
     bedroom_param = request.args.get("bedroom", "2,3,4")
-    
+    segment = request.args.get("segment")  # Optional: CCR, RCR, OCR
+
     if not district:
         return jsonify({"error": "district parameter is required"}), 400
-    
+
     try:
         bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
     except ValueError:
         return jsonify({"error": "Invalid bedroom parameter"}), 400
-    
+
     # Normalize district
     d = str(district).strip().upper()
     if not d.startswith("D"):
         d = f"D{d.zfill(2)}"
-    
+
     try:
-        # Query projects for this district
-        results = db.session.query(
-            Transaction.project_name,
-            func.sum(Transaction.price).label('total'),
-            func.count(Transaction.id).label('count')
-        ).filter(
-            Transaction.district == d,
-            Transaction.bedroom_count.in_(bedroom_types)
-        ).group_by(Transaction.project_name).all()
+        data = get_project_aggregation_by_district(district=d, bedroom_types=bedroom_types, segment=segment)
         
-        projects = []
-        for row in results:
-            projects.append({
-                'project_name': row.project_name,
-                'total': float(row.total),
-                'count': int(row.count)
-            })
+        # Data validation: Ensure all projects have required fields
+        if "projects" in data:
+            validated_projects = []
+            total_project_volume = 0
+            total_project_quantity = 0
+            
+            for project in data["projects"]:
+                # Validate required fields exist
+                if "project_name" not in project or not project["project_name"]:
+                    continue  # Skip invalid projects
+                
+                # Ensure numeric fields are present (default to 0 if missing)
+                for bed in bedroom_types:
+                    bed_label = f"{bed}b"
+                    if bed_label not in project:
+                        project[bed_label] = 0
+                    if f"{bed_label}_count" not in project:
+                        project[f"{bed_label}_count"] = 0
+                
+                # Ensure totals are calculated if missing
+                if "total" not in project or project["total"] is None:
+                    project["total"] = sum(project.get(f"{bed}b", 0) for bed in bedroom_types)
+                if "total_quantity" not in project or project["total_quantity"] is None:
+                    project["total_quantity"] = sum(project.get(f"{bed}b_count", 0) for bed in bedroom_types)
+                
+                total_project_volume += project["total"]
+                total_project_quantity += project["total_quantity"]
+                validated_projects.append(project)
+            
+            data["projects"] = validated_projects
+            data["project_count"] = len(validated_projects)
+            
+            # Validation: Sum of all project totals should match district total
+            # Get district total from total_volume endpoint for comparison
+            from services.data_processor import get_total_volume_by_district
+            district_data = get_total_volume_by_district(bedroom_types=bedroom_types, districts=[d], segment=segment)
+            district_row = None
+            if "data" in district_data and len(district_data["data"]) > 0:
+                district_row = next((row for row in district_data["data"] if row.get("district") == d), None)
+            
+            if district_row:
+                district_total = district_row.get("total", 0)
+                district_qty = district_row.get("total_quantity", 0)
+                volume_diff = abs(district_total - total_project_volume)
+                qty_diff = abs(district_qty - total_project_quantity)
+                
+                # Log warning if there's a significant discrepancy (> 1% or > $1000)
+                if volume_diff > max(1000, district_total * 0.01) or qty_diff > max(1, district_qty * 0.01):
+                    print(f"WARNING: District {d} aggregation mismatch - District total: ${district_total:,.0f}, Project sum: ${total_project_volume:,.0f}, Diff: ${volume_diff:,.0f}")
+                    print(f"         District qty: {district_qty}, Project sum: {total_project_quantity}, Diff: {qty_diff}")
+                else:
+                    print(f"District {d} validation passed - Volume: ${total_project_volume:,.0f}, Qty: {total_project_quantity}")
         
-        projects.sort(key=lambda x: x['total'], reverse=True)
-        
-        data = {"projects": projects}
         elapsed = time.time() - start
-        print(f"GET /api/projects_by_district took: {elapsed:.4f} seconds")
+        print(f"GET /api/projects_by_district took: {elapsed:.4f} seconds (returned {data.get('project_count', 0)} projects)")
         return jsonify(data)
     except Exception as e:
         elapsed = time.time() - start
@@ -280,11 +313,13 @@ def price_projects_by_district():
         
         # Group by project and calculate quartiles
         from collections import defaultdict
-        project_data = defaultdict(lambda: {'prices': [], 'psfs': []})
+        project_data = defaultdict(lambda: {'prices': [], 'psfs': [], 'sale_types': []})
         
         for txn in transactions:
             project_data[txn.project_name]['prices'].append(txn.price)
             project_data[txn.project_name]['psfs'].append(txn.psf)
+            if hasattr(txn, 'sale_type') and txn.sale_type:
+                project_data[txn.project_name]['sale_types'].append(txn.sale_type)
         
         projects = []
         for project_name, data in project_data.items():
@@ -298,6 +333,16 @@ def price_projects_by_district():
                 idx = int(len(arr) * q)
                 return arr[idx] if idx < len(arr) else arr[-1]
             
+            # Determine sale_type_label (New Launch vs Resale)
+            sale_type_label = None
+            if data['sale_types']:
+                new_sale_count = sum(1 for st in data['sale_types'] if st == 'New Sale')
+                resale_count = sum(1 for st in data['sale_types'] if st == 'Resale')
+                if new_sale_count > resale_count:
+                    sale_type_label = 'New Launch'
+                elif resale_count > 0:
+                    sale_type_label = 'Resale'
+            
             projects.append({
                 'project_name': project_name,
                 'price_25th': quartile(prices, 0.25),
@@ -306,7 +351,8 @@ def price_projects_by_district():
                 'psf_25th': quartile(psfs, 0.25),
                 'psf_median': quartile(psfs, 0.5),
                 'psf_75th': quartile(psfs, 0.75),
-                'count': len(data['prices'])
+                'count': len(data['prices']),
+                'sale_type_label': sale_type_label
             })
         
         projects.sort(key=lambda x: x['count'], reverse=True)

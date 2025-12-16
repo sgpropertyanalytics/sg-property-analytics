@@ -1019,19 +1019,36 @@ def get_total_volume_by_district(bedroom_types: list = [2, 3, 4], districts: Opt
     return {"data": result}
 
 
-def get_project_aggregation_by_district(district: str, bedroom_types: list = [2, 3, 4]) -> dict:
+def normalize_project_name(name: str) -> str:
+    """
+    Normalize project name to handle case sensitivity, whitespace, and duplicates.
+    Converts to uppercase, strips whitespace, and normalizes common variations.
+    """
+    if not name or pd.isna(name):
+        return ""
+    # Convert to string, strip whitespace, convert to uppercase
+    normalized = str(name).strip().upper()
+    # Normalize common variations
+    normalized = normalized.replace("'", "'")  # Normalize apostrophes
+    normalized = normalized.replace("  ", " ")  # Multiple spaces to single
+    return normalized
+
+
+def get_project_aggregation_by_district(district: str, bedroom_types: list = [2, 3, 4], segment: Optional[str] = None) -> dict:
     """
     Get project-level aggregation for a specific district.
     Aggregates transactions by project_name showing volume and quantity by bedroom type.
+    Project names are normalized to handle case sensitivity and duplicates.
     
     Args:
         district: District code (e.g., "D10")
         bedroom_types: List of bedroom counts to include (default: [2, 3, 4])
+        segment: Market segment filter ("CCR", "RCR", or "OCR")
     
     Returns:
         Dictionary with project-level aggregations sorted by total volume
     """
-    df = get_filtered_transactions(districts=[district])
+    df = get_filtered_transactions(districts=[district], segment=segment)
     
     if df.empty:
         return {"projects": []}
@@ -1041,27 +1058,37 @@ def get_project_aggregation_by_district(district: str, bedroom_types: list = [2,
     if df.empty:
         return {"projects": []}
     
-    # Group by project_name and bedroom_count
-    volume = df.groupby(["project_name", "bedroom_count"])["price"].sum().reset_index()
-    counts = df.groupby(["project_name", "bedroom_count"]).size().reset_index(name="count")
+    # Normalize project names to handle case sensitivity and duplicates
+    df["project_name_normalized"] = df["project_name"].apply(normalize_project_name)
+    
+    # Use the original project_name for display (prefer the most common variant)
+    # But group by normalized name to aggregate duplicates
+    name_mapping = df.groupby("project_name_normalized")["project_name"].agg(lambda x: x.mode().iloc[0] if len(x.mode()) > 0 else x.iloc[0]).to_dict()
+    
+    # Group by normalized project_name and bedroom_count
+    volume = df.groupby(["project_name_normalized", "bedroom_count"])["price"].sum().reset_index()
+    counts = df.groupby(["project_name_normalized", "bedroom_count"]).size().reset_index(name="count")
 
-    # Sale type mix per project (for New Launch / Resale labels)
+    # Sale type mix per project (for New Launch / Resale labels) - use normalized names
     if "sale_type" in df.columns:
         sale_mix = (
-            df.groupby(["project_name", "sale_type"])
+            df.groupby(["project_name_normalized", "sale_type"])
             .size()
             .reset_index(name="count")
         )
     else:
         sale_mix = None
     
-    # Get unique projects
-    projects = sorted(df["project_name"].unique())
+    # Get unique normalized projects
+    normalized_projects = sorted(df["project_name_normalized"].unique())
     result = []
     
-    for project in projects:
+    for normalized_project in normalized_projects:
+        # Use the most common original name for display
+        display_name = name_mapping.get(normalized_project, normalized_project)
+        
         project_data = {
-            "project_name": project,
+            "project_name": display_name,
             "district": district,
             "total": 0,
             "total_quantity": 0
@@ -1069,7 +1096,7 @@ def get_project_aggregation_by_district(district: str, bedroom_types: list = [2,
 
         # Derive a simple New Launch / Resale label based on dominant sale_type
         if sale_mix is not None:
-            mix_rows = sale_mix[sale_mix["project_name"] == project]
+            mix_rows = sale_mix[sale_mix["project_name_normalized"] == normalized_project]
             label = None
             if not mix_rows.empty:
                 # Get counts by sale_type
@@ -1089,8 +1116,8 @@ def get_project_aggregation_by_district(district: str, bedroom_types: list = [2,
         
         for bed in bedroom_types:
             bed_label = f"{bed}b"
-            volume_row = volume[(volume["project_name"] == project) & (volume["bedroom_count"] == bed)]
-            count_row = counts[(counts["project_name"] == project) & (counts["bedroom_count"] == bed)]
+            volume_row = volume[(volume["project_name_normalized"] == normalized_project) & (volume["bedroom_count"] == bed)]
+            count_row = counts[(counts["project_name_normalized"] == normalized_project) & (counts["bedroom_count"] == bed)]
             
             amount = float(volume_row["price"].iloc[0]) if len(volume_row) > 0 else 0
             count = int(count_row["count"].iloc[0]) if len(count_row) > 0 else 0
