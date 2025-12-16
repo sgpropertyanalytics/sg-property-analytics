@@ -1,5 +1,7 @@
 flask
 flask-sqlalchemy
+flask-migrate
 pandas
 python-dotenv
+pyjwt
 

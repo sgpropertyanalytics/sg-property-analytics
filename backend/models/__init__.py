@@ -5,6 +5,7 @@ from models.database import db
 from models.transaction import Transaction
 from models.precomputed_stats import PreComputedStats
 from models.user import User
+from models.ad_placement import AdPlacement
 
-__all__ = ['db', 'Transaction', 'PreComputedStats', 'User']
+__all__ = ['db', 'Transaction', 'PreComputedStats', 'User', 'AdPlacement']
 

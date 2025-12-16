@@ -3,12 +3,21 @@ Flask Application Factory - Pre-computed Analytics Architecture
 
 All analytics are pre-computed and stored in PreComputedStats table.
 API routes are lightweight and read-only.
+
+SaaS Features:
+- User authentication (JWT-based)
+- Ad serving and tracking
+- Analytics API remains public (no authentication required)
 """
 
 from flask import Flask, jsonify
 import os
 from config import Config
 from models.database import db
+from flask_migrate import Migrate
+
+# Initialize Flask-Migrate (will be initialized in create_app)
+migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
@@ -17,12 +26,15 @@ def create_app():
     # Initialize SQLAlchemy
     db.init_app(app)
     
+    # Initialize Flask-Migrate for database migrations
+    migrate.init_app(app, db)
+    
     # CORS - keep the existing after_request approach
     @app.after_request
     def after_request(response):
         response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE')
         return response
     
     # Create database tables
@@ -30,8 +42,17 @@ def create_app():
         db.create_all()
     
     # Register routes
+    # Analytics routes (PUBLIC - no authentication required)
     from routes.analytics import analytics_bp
     app.register_blueprint(analytics_bp, url_prefix='/api')
+    
+    # Auth routes (JWT-based authentication)
+    from routes.auth import auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    
+    # Ad serving routes
+    from routes.ads import ads_bp
+    app.register_blueprint(ads_bp, url_prefix='/api/ads')
     
     # Serve dashboard.html at root
     @app.route("/", methods=["GET"])
