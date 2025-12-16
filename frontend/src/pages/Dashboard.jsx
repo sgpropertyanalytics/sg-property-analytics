@@ -97,6 +97,7 @@ function DistrictSummaryVolumeLiquidity({
   const [sortBy, setSortBy] = useState('total'); // 'total' | 'quantity' | 'district'
   const [expandedDistricts, setExpandedDistricts] = useState({});
   const [districtProjects, setDistrictProjects] = useState({});
+  const [loadingDistricts, setLoadingDistricts] = useState({}); // Track loading state per district
 
   const toggleDistrict = (district) => {
     const isExpanded = !!expandedDistricts[district];
@@ -112,6 +113,10 @@ function DistrictSummaryVolumeLiquidity({
 
   const fetchDistrictProjects = async (district) => {
     if (districtProjects[district]) return;
+    
+    // Set loading state
+    setLoadingDistricts((prev) => ({ ...prev, [district]: true }));
+    
     try {
       const bedroomParam = selectedBedrooms.map((b) => b.replace('b', '')).join(',');
       const res = await getProjectsByDistrict(district, {
@@ -184,10 +189,14 @@ function DistrictSummaryVolumeLiquidity({
       }));
     } catch (err) {
       console.error('Error fetching district projects (volume & liquidity):', err);
+      console.error('Error details:', err.response?.data || err.message);
       setDistrictProjects((prev) => ({
         ...prev,
         [district]: [],
       }));
+    } finally {
+      // Clear loading state
+      setLoadingDistricts((prev) => ({ ...prev, [district]: false }));
     }
   };
 
@@ -350,9 +359,14 @@ function DistrictSummaryVolumeLiquidity({
                           }
                         >
                           <div className="px-3 py-4 md:px-5 md:py-5 border-t border-gray-200">
-                            {projects.length === 0 ? (
+                            {loadingDistricts[district] ? (
                               <div className="text-center text-gray-500 text-xs md:text-sm py-4">
+                                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600 mr-2"></div>
                                 Loading projects...
+                              </div>
+                            ) : projects.length === 0 ? (
+                              <div className="text-center text-gray-500 text-xs md:text-sm py-4">
+                                No project data available
                               </div>
                             ) : (
                               <div className="overflow-x-auto">
@@ -641,6 +655,7 @@ function DistrictSummaryPrice({ selectedSegment, selectedDistrict }) {
   });
   const [priceDistrictProjects, setPriceDistrictProjects] = useState({});
   const [priceExpandedDistricts, setPriceExpandedDistricts] = useState({});
+  const [priceLoadingDistricts, setPriceLoadingDistricts] = useState({}); // Track loading state per district
   const [excludedDistricts, setExcludedDistricts] = useState({});
 
   // Localized market stats by district – independent bedroom filter
@@ -687,6 +702,9 @@ function DistrictSummaryPrice({ selectedSegment, selectedDistrict }) {
     const viewKey = monthsForView === 3 ? 'short_term' : 'long_term';
     const key = `${district}_${viewKey}`;
     if (priceDistrictProjects[key]) return;
+
+    // Set loading state
+    setPriceLoadingDistricts((prev) => ({ ...prev, [key]: true }));
 
     try {
       const bedroomParam = priceSectionBedrooms.map((b) => b.replace('b', '')).join(',');
@@ -748,12 +766,18 @@ function DistrictSummaryPrice({ selectedSegment, selectedDistrict }) {
       }
     } catch (err) {
       console.error('Error fetching price projects by district:', err);
+      console.error('Error details:', err.response?.data || err.message);
       const viewKey = monthsForView === 3 ? 'short_term' : 'long_term';
       const key = `${district}_${viewKey}`;
       setPriceDistrictProjects((prev) => ({
         ...prev,
         [key]: [],
       }));
+    } finally {
+      // Clear loading state
+      const viewKey = monthsForView === 3 ? 'short_term' : 'long_term';
+      const key = `${district}_${viewKey}`;
+      setPriceLoadingDistricts((prev) => ({ ...prev, [key]: false }));
     }
   };
 
@@ -1004,9 +1028,14 @@ function DistrictSummaryPrice({ selectedSegment, selectedDistrict }) {
                           colSpan={8}
                         >
                           <div className="px-3 py-4 md:px-5 md:py-5 border-t border-gray-200">
-                            {projects.length === 0 ? (
+                            {priceLoadingDistricts[key] ? (
                               <div className="text-center text-gray-500 text-xs md:text-sm py-4">
+                                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600 mr-2"></div>
                                 Loading project breakdown...
+                              </div>
+                            ) : projects.length === 0 ? (
+                              <div className="text-center text-gray-500 text-xs md:text-sm py-4">
+                                No project data available
                               </div>
                             ) : (
                               <div className="overflow-x-auto">
