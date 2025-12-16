@@ -1,7 +1,9 @@
 flask
+flask-cors
 flask-sqlalchemy
-flask-migrate
-pandas
 python-dotenv
 pyjwt
+werkzeug
+psycopg2-binary
+gunicorn
 
