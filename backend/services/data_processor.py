@@ -18,7 +18,7 @@ from services.classifier import get_bedroom_label
 
 # Master database - Single Source of Truth (fallback if CSV not loaded)
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'condo_master.db')
-MASTER_TABLE = "master_transactions"
+MASTER_TABLE = "transactions"  # Use SQLAlchemy transactions table (not legacy master_transactions)
 
 GLOBAL_DF = None  # Global DataFrame - set by app.py if CSV data is loaded into memory
 

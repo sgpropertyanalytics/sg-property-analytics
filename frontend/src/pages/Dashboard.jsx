@@ -120,13 +120,49 @@ function DistrictSummaryVolumeLiquidity({
       });
       
       // Data validation and completeness check
+      // Axios wraps responses, so res.data is the actual response body from Flask
+      // Flask returns { projects: [...] }, so res.data.projects should be the array
       const projects = res.data?.projects || [];
       
-      // Validate each project has required fields
+      // Debug: Log the raw response structure
+      console.log(`[DEBUG] District ${district} API response:`, {
+        hasData: !!res.data,
+        dataKeys: res.data ? Object.keys(res.data) : [],
+        hasProjects: !!res.data?.projects,
+        projectCount: projects.length,
+        firstProject: projects[0] || null,
+        firstProjectKeys: projects[0] ? Object.keys(projects[0]) : [],
+      });
+      
+      if (!Array.isArray(projects)) {
+        console.error(`[ERROR] District ${district}: Expected projects array, got:`, typeof projects, projects);
+        setDistrictProjects((prev) => ({
+          ...prev,
+          [district]: [],
+        }));
+        return;
+      }
+      
+      // Validate each project has required fields and log sample data
       const validatedProjects = projects.filter((project) => {
         if (!project.project_name) {
           console.warn(`Skipping project with missing name in district ${district}`);
           return false;
+        }
+        // Debug: Log first project's data structure
+        if (projects.indexOf(project) === 0) {
+          console.log(`[DEBUG] Sample project data for ${district}:`, {
+            name: project.project_name,
+            '2b': project['2b'],
+            '2b_count': project['2b_count'],
+            '3b': project['3b'],
+            '3b_count': project['3b_count'],
+            '4b': project['4b'],
+            '4b_count': project['4b_count'],
+            total: project.total,
+            total_quantity: project.total_quantity,
+            allKeys: Object.keys(project),
+          });
         }
         return true;
       });
@@ -365,7 +401,30 @@ function DistrictSummaryVolumeLiquidity({
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {projects.map((project, idx2) => (
+                                    {projects.length === 0 && (
+                                      <tr>
+                                        <td colSpan={2 + selectedBedrooms.length * 2 + 2} className="p-4 text-center text-gray-500 text-xs md:text-sm">
+                                          No project data available
+                                        </td>
+                                      </tr>
+                                    )}
+                                    {projects.map((project, idx2) => {
+                                      // Debug: Log first project's data structure when rendering
+                                      if (idx2 === 0) {
+                                        console.log(`[DEBUG RENDER] First project in ${district}:`, {
+                                          name: project.project_name,
+                                          '2b': project['2b'],
+                                          '2b_count': project['2b_count'],
+                                          '3b': project['3b'],
+                                          '3b_count': project['3b_count'],
+                                          '4b': project['4b'],
+                                          '4b_count': project['4b_count'],
+                                          total: project.total,
+                                          total_quantity: project.total_quantity,
+                                          allKeys: Object.keys(project),
+                                        });
+                                      }
+                                      return (
                                       <tr
                                         key={idx2}
                                         className={`border-b border-gray-100 ${
@@ -389,49 +448,58 @@ function DistrictSummaryVolumeLiquidity({
                                         {selectedBedrooms.includes('2b') && (
                                           <>
                                             <td className="p-2 text-right text-gray-800">
-                                              {project['2b'] != null
+                                              {project['2b'] != null && project['2b'] !== undefined
                                                 ? formatPrice(project['2b'])
                                                 : '-'}
                                             </td>
                                             <td className="p-2 text-right text-gray-500">
-                                              {(project['2b_count'] || 0).toLocaleString()}
+                                              {project['2b_count'] != null && project['2b_count'] !== undefined
+                                                ? project['2b_count'].toLocaleString()
+                                                : '0'}
                                             </td>
                                           </>
                                         )}
                                         {selectedBedrooms.includes('3b') && (
                                           <>
                                             <td className="p-2 text-right text-gray-800">
-                                              {project['3b'] != null
+                                              {project['3b'] != null && project['3b'] !== undefined
                                                 ? formatPrice(project['3b'])
                                                 : '-'}
                                             </td>
                                             <td className="p-2 text-right text-gray-500">
-                                              {(project['3b_count'] || 0).toLocaleString()}
+                                              {project['3b_count'] != null && project['3b_count'] !== undefined
+                                                ? project['3b_count'].toLocaleString()
+                                                : '0'}
                                             </td>
                                           </>
                                         )}
                                         {selectedBedrooms.includes('4b') && (
                                           <>
                                             <td className="p-2 text-right text-gray-800">
-                                              {project['4b'] != null
+                                              {project['4b'] != null && project['4b'] !== undefined
                                                 ? formatPrice(project['4b'])
                                                 : '-'}
                                             </td>
                                             <td className="p-2 text-right text-gray-500">
-                                              {(project['4b_count'] || 0).toLocaleString()}
+                                              {project['4b_count'] != null && project['4b_count'] !== undefined
+                                                ? project['4b_count'].toLocaleString()
+                                                : '0'}
                                             </td>
                                           </>
                                         )}
                                         <td className="p-2 text-right font-semibold text-gray-800">
-                                          {(project.total_quantity || 0).toLocaleString()}
+                                          {project.total_quantity != null && project.total_quantity !== undefined
+                                            ? project.total_quantity.toLocaleString()
+                                            : '0'}
                                         </td>
                                         <td className="p-2 text-right font-semibold text-gray-900">
-                                          {project.total != null
+                                          {project.total != null && project.total !== undefined
                                             ? formatPrice(project.total)
                                             : '-'}
                                         </td>
                                       </tr>
-                                    ))}
+                                    );
+                                    })}
                                   </tbody>
                                 </table>
                               </div>
