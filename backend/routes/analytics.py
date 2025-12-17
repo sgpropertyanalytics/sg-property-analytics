@@ -773,6 +773,502 @@ def price_trends_by_region():
         return jsonify({"error": str(e)}), 500
 
 
+@analytics_bp.route("/aggregate", methods=["GET"])
+def aggregate():
+    """
+    Flexible aggregation endpoint for Power BI-style dynamic filtering.
+
+    Query params:
+      - group_by: comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region)
+      - metrics: comma-separated metrics (count, median_psf, avg_psf, total_value, median_price, avg_price, min_psf, max_psf)
+      - district: comma-separated districts (D01,D02,...)
+      - bedroom: comma-separated bedroom counts (2,3,4)
+      - segment: CCR, RCR, OCR
+      - sale_type: New Sale, Resale
+      - date_from: YYYY-MM-DD
+      - date_to: YYYY-MM-DD
+      - psf_min: minimum PSF
+      - psf_max: maximum PSF
+      - size_min: minimum sqft
+      - size_max: maximum sqft
+      - tenure: Freehold, 99-year, 999-year
+      - project: project name filter (partial match)
+
+    Returns:
+      {
+        "data": [...aggregated results...],
+        "meta": {
+          "total_records": N,
+          "filters_applied": {...},
+          "group_by": [...],
+          "metrics": [...]
+        }
+      }
+    """
+    import time
+    from datetime import datetime
+    from models.transaction import Transaction
+    from models.database import db
+    from sqlalchemy import func, and_, or_, case
+    import numpy as np
+
+    start = time.time()
+
+    # Parse parameters
+    group_by_param = request.args.get("group_by", "month")
+    metrics_param = request.args.get("metrics", "count,median_psf")
+
+    group_by = [g.strip() for g in group_by_param.split(",") if g.strip()]
+    metrics = [m.strip() for m in metrics_param.split(",") if m.strip()]
+
+    # Build base query
+    query = db.session.query(Transaction)
+    filters_applied = {}
+
+    # District filter
+    districts_param = request.args.get("district")
+    if districts_param:
+        districts = [d.strip().upper() for d in districts_param.split(",") if d.strip()]
+        normalized = []
+        for d in districts:
+            if not d.startswith("D"):
+                d = f"D{d.zfill(2)}"
+            normalized.append(d)
+        query = query.filter(Transaction.district.in_(normalized))
+        filters_applied["district"] = normalized
+
+    # Bedroom filter
+    bedroom_param = request.args.get("bedroom")
+    if bedroom_param:
+        bedrooms = [int(b.strip()) for b in bedroom_param.split(",") if b.strip()]
+        query = query.filter(Transaction.bedroom_count.in_(bedrooms))
+        filters_applied["bedroom"] = bedrooms
+
+    # Segment filter (market segment based on district)
+    segment = request.args.get("segment")
+    if segment:
+        from services.data_processor import _get_market_segment
+        all_districts = db.session.query(Transaction.district).distinct().all()
+        segment_districts = [
+            d[0] for d in all_districts
+            if _get_market_segment(d[0]) == segment.strip().upper()
+        ]
+        query = query.filter(Transaction.district.in_(segment_districts))
+        filters_applied["segment"] = segment.upper()
+
+    # Sale type filter
+    sale_type = request.args.get("sale_type")
+    if sale_type:
+        query = query.filter(Transaction.sale_type == sale_type)
+        filters_applied["sale_type"] = sale_type
+
+    # Date range filter
+    date_from = request.args.get("date_from")
+    date_to = request.args.get("date_to")
+    if date_from:
+        try:
+            from_dt = datetime.strptime(date_from, "%Y-%m-%d")
+            query = query.filter(Transaction.transaction_date >= from_dt)
+            filters_applied["date_from"] = date_from
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            to_dt = datetime.strptime(date_to, "%Y-%m-%d")
+            query = query.filter(Transaction.transaction_date <= to_dt)
+            filters_applied["date_to"] = date_to
+        except ValueError:
+            pass
+
+    # PSF range filter
+    psf_min = request.args.get("psf_min")
+    psf_max = request.args.get("psf_max")
+    if psf_min:
+        query = query.filter(Transaction.psf >= float(psf_min))
+        filters_applied["psf_min"] = float(psf_min)
+    if psf_max:
+        query = query.filter(Transaction.psf <= float(psf_max))
+        filters_applied["psf_max"] = float(psf_max)
+
+    # Size range filter
+    size_min = request.args.get("size_min")
+    size_max = request.args.get("size_max")
+    if size_min:
+        query = query.filter(Transaction.area_sqft >= float(size_min))
+        filters_applied["size_min"] = float(size_min)
+    if size_max:
+        query = query.filter(Transaction.area_sqft <= float(size_max))
+        filters_applied["size_max"] = float(size_max)
+
+    # Tenure filter
+    tenure = request.args.get("tenure")
+    if tenure:
+        tenure_lower = tenure.lower()
+        if tenure_lower == "freehold":
+            query = query.filter(or_(
+                Transaction.tenure.ilike("%freehold%"),
+                Transaction.remaining_lease == 999
+            ))
+        elif tenure_lower in ["99-year", "99"]:
+            query = query.filter(and_(
+                Transaction.remaining_lease < 999,
+                Transaction.remaining_lease > 0
+            ))
+        elif tenure_lower in ["999-year", "999"]:
+            query = query.filter(Transaction.remaining_lease == 999)
+        filters_applied["tenure"] = tenure
+
+    # Project filter (partial match)
+    project = request.args.get("project")
+    if project:
+        query = query.filter(Transaction.project_name.ilike(f"%{project}%"))
+        filters_applied["project"] = project
+
+    # Fetch all filtered transactions
+    transactions = query.all()
+    total_records = len(transactions)
+
+    if total_records == 0:
+        elapsed = time.time() - start
+        return jsonify({
+            "data": [],
+            "meta": {
+                "total_records": 0,
+                "filters_applied": filters_applied,
+                "group_by": group_by,
+                "metrics": metrics,
+                "elapsed_ms": int(elapsed * 1000)
+            }
+        })
+
+    # Convert to list of dicts for easier processing
+    import pandas as pd
+    from services.data_processor import _get_market_segment
+
+    records = []
+    for t in transactions:
+        record = {
+            "district": t.district,
+            "bedroom": t.bedroom_count,
+            "sale_type": t.sale_type,
+            "project": t.project_name,
+            "price": t.price,
+            "psf": t.psf,
+            "area_sqft": t.area_sqft,
+            "transaction_date": t.transaction_date,
+            "tenure": t.tenure,
+            "remaining_lease": t.remaining_lease
+        }
+        # Derived fields
+        if t.transaction_date:
+            record["year"] = t.transaction_date.year
+            record["month"] = t.transaction_date.strftime("%Y-%m")
+            record["quarter"] = f"{t.transaction_date.year}-Q{(t.transaction_date.month - 1) // 3 + 1}"
+        record["region"] = _get_market_segment(t.district)
+        records.append(record)
+
+    df = pd.DataFrame(records)
+
+    # Perform groupby aggregation
+    if group_by:
+        # Validate group_by columns exist
+        valid_group_cols = [g for g in group_by if g in df.columns]
+        if not valid_group_cols:
+            valid_group_cols = ["month"]  # fallback
+
+        grouped = df.groupby(valid_group_cols, dropna=False)
+
+        # Calculate requested metrics
+        agg_result = {}
+
+        if "count" in metrics:
+            agg_result["count"] = grouped.size()
+        if "median_psf" in metrics:
+            agg_result["median_psf"] = grouped["psf"].median()
+        if "avg_psf" in metrics:
+            agg_result["avg_psf"] = grouped["psf"].mean()
+        if "total_value" in metrics:
+            agg_result["total_value"] = grouped["price"].sum()
+        if "median_price" in metrics:
+            agg_result["median_price"] = grouped["price"].median()
+        if "avg_price" in metrics:
+            agg_result["avg_price"] = grouped["price"].mean()
+        if "min_psf" in metrics:
+            agg_result["min_psf"] = grouped["psf"].min()
+        if "max_psf" in metrics:
+            agg_result["max_psf"] = grouped["psf"].max()
+        if "min_price" in metrics:
+            agg_result["min_price"] = grouped["price"].min()
+        if "max_price" in metrics:
+            agg_result["max_price"] = grouped["price"].max()
+        if "avg_size" in metrics:
+            agg_result["avg_size"] = grouped["area_sqft"].mean()
+        if "total_sqft" in metrics:
+            agg_result["total_sqft"] = grouped["area_sqft"].sum()
+
+        # Combine results into DataFrame
+        result_df = pd.DataFrame(agg_result)
+        result_df = result_df.reset_index()
+
+        # Convert to list of dicts
+        data = result_df.to_dict(orient="records")
+
+        # Clean up NaN values
+        for row in data:
+            for key, value in row.items():
+                if pd.isna(value):
+                    row[key] = None
+                elif isinstance(value, (np.integer, np.floating)):
+                    row[key] = float(value) if isinstance(value, np.floating) else int(value)
+    else:
+        # No grouping - return overall metrics
+        data = [{
+            "count": len(df),
+            "median_psf": float(df["psf"].median()) if "median_psf" in metrics else None,
+            "avg_psf": float(df["psf"].mean()) if "avg_psf" in metrics else None,
+            "total_value": float(df["price"].sum()) if "total_value" in metrics else None,
+            "median_price": float(df["price"].median()) if "median_price" in metrics else None,
+        }]
+
+    elapsed = time.time() - start
+    print(f"GET /api/aggregate took: {elapsed:.4f} seconds (returned {len(data)} groups from {total_records} records)")
+
+    return jsonify({
+        "data": data,
+        "meta": {
+            "total_records": total_records,
+            "filters_applied": filters_applied,
+            "group_by": group_by,
+            "metrics": metrics,
+            "elapsed_ms": int(elapsed * 1000)
+        }
+    })
+
+
+@analytics_bp.route("/transactions/list", methods=["GET"])
+def transactions_list():
+    """
+    Paginated transaction list endpoint for drill-through.
+
+    Query params:
+      - Same filters as /aggregate
+      - page: page number (default 1)
+      - limit: records per page (default 50, max 200)
+      - sort_by: column to sort (default transaction_date)
+      - sort_order: asc or desc (default desc)
+
+    Returns:
+      {
+        "transactions": [...],
+        "pagination": {
+          "page": N,
+          "limit": N,
+          "total_records": N,
+          "total_pages": N
+        }
+      }
+    """
+    import time
+    from datetime import datetime
+    from models.transaction import Transaction
+    from models.database import db
+    from sqlalchemy import desc, asc
+
+    start = time.time()
+
+    # Pagination params
+    page = int(request.args.get("page", 1))
+    limit = min(int(request.args.get("limit", 50)), 200)
+    sort_by = request.args.get("sort_by", "transaction_date")
+    sort_order = request.args.get("sort_order", "desc")
+
+    # Build query with same filters as aggregate
+    query = db.session.query(Transaction)
+
+    # District filter
+    districts_param = request.args.get("district")
+    if districts_param:
+        districts = [d.strip().upper() for d in districts_param.split(",") if d.strip()]
+        normalized = []
+        for d in districts:
+            if not d.startswith("D"):
+                d = f"D{d.zfill(2)}"
+            normalized.append(d)
+        query = query.filter(Transaction.district.in_(normalized))
+
+    # Bedroom filter
+    bedroom_param = request.args.get("bedroom")
+    if bedroom_param:
+        bedrooms = [int(b.strip()) for b in bedroom_param.split(",") if b.strip()]
+        query = query.filter(Transaction.bedroom_count.in_(bedrooms))
+
+    # Segment filter
+    segment = request.args.get("segment")
+    if segment:
+        from services.data_processor import _get_market_segment
+        all_districts = db.session.query(Transaction.district).distinct().all()
+        segment_districts = [
+            d[0] for d in all_districts
+            if _get_market_segment(d[0]) == segment.strip().upper()
+        ]
+        query = query.filter(Transaction.district.in_(segment_districts))
+
+    # Sale type filter
+    sale_type = request.args.get("sale_type")
+    if sale_type:
+        query = query.filter(Transaction.sale_type == sale_type)
+
+    # Date range filter
+    date_from = request.args.get("date_from")
+    date_to = request.args.get("date_to")
+    if date_from:
+        try:
+            from_dt = datetime.strptime(date_from, "%Y-%m-%d")
+            query = query.filter(Transaction.transaction_date >= from_dt)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            to_dt = datetime.strptime(date_to, "%Y-%m-%d")
+            query = query.filter(Transaction.transaction_date <= to_dt)
+        except ValueError:
+            pass
+
+    # PSF range filter
+    psf_min = request.args.get("psf_min")
+    psf_max = request.args.get("psf_max")
+    if psf_min:
+        query = query.filter(Transaction.psf >= float(psf_min))
+    if psf_max:
+        query = query.filter(Transaction.psf <= float(psf_max))
+
+    # Size range filter
+    size_min = request.args.get("size_min")
+    size_max = request.args.get("size_max")
+    if size_min:
+        query = query.filter(Transaction.area_sqft >= float(size_min))
+    if size_max:
+        query = query.filter(Transaction.area_sqft <= float(size_max))
+
+    # Tenure filter
+    tenure = request.args.get("tenure")
+    if tenure:
+        from sqlalchemy import or_, and_
+        tenure_lower = tenure.lower()
+        if tenure_lower == "freehold":
+            query = query.filter(or_(
+                Transaction.tenure.ilike("%freehold%"),
+                Transaction.remaining_lease == 999
+            ))
+        elif tenure_lower in ["99-year", "99"]:
+            query = query.filter(and_(
+                Transaction.remaining_lease < 999,
+                Transaction.remaining_lease > 0
+            ))
+
+    # Project filter
+    project = request.args.get("project")
+    if project:
+        query = query.filter(Transaction.project_name.ilike(f"%{project}%"))
+
+    # Get total count before pagination
+    total_records = query.count()
+    total_pages = (total_records + limit - 1) // limit
+
+    # Apply sorting
+    sort_col = getattr(Transaction, sort_by, Transaction.transaction_date)
+    if sort_order == "asc":
+        query = query.order_by(asc(sort_col))
+    else:
+        query = query.order_by(desc(sort_col))
+
+    # Apply pagination
+    offset = (page - 1) * limit
+    transactions = query.offset(offset).limit(limit).all()
+
+    elapsed = time.time() - start
+    print(f"GET /api/transactions/list took: {elapsed:.4f} seconds (page {page}, {len(transactions)} records)")
+
+    return jsonify({
+        "transactions": [t.to_dict() for t in transactions],
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total_records": total_records,
+            "total_pages": total_pages
+        }
+    })
+
+
+@analytics_bp.route("/filter-options", methods=["GET"])
+def filter_options():
+    """
+    Get available filter options based on current data.
+    Returns unique values for each filterable dimension.
+    """
+    from models.transaction import Transaction
+    from models.database import db
+    from sqlalchemy import func, distinct
+    from services.data_processor import _get_market_segment
+
+    try:
+        # Get distinct values for each dimension
+        districts = [d[0] for d in db.session.query(distinct(Transaction.district)).order_by(Transaction.district).all()]
+        bedrooms = [b[0] for b in db.session.query(distinct(Transaction.bedroom_count)).order_by(Transaction.bedroom_count).all() if b[0]]
+        sale_types = [s[0] for s in db.session.query(distinct(Transaction.sale_type)).all() if s[0]]
+        projects = [p[0] for p in db.session.query(distinct(Transaction.project_name)).order_by(Transaction.project_name).limit(500).all() if p[0]]
+
+        # Get date range
+        min_date = db.session.query(func.min(Transaction.transaction_date)).scalar()
+        max_date = db.session.query(func.max(Transaction.transaction_date)).scalar()
+
+        # Get PSF range
+        psf_stats = db.session.query(
+            func.min(Transaction.psf),
+            func.max(Transaction.psf)
+        ).first()
+
+        # Get size range
+        size_stats = db.session.query(
+            func.min(Transaction.area_sqft),
+            func.max(Transaction.area_sqft)
+        ).first()
+
+        # Get tenure options
+        tenures = [t[0] for t in db.session.query(distinct(Transaction.tenure)).all() if t[0]]
+
+        # Group districts by region
+        regions = {"CCR": [], "RCR": [], "OCR": []}
+        for d in districts:
+            region = _get_market_segment(d)
+            if region in regions:
+                regions[region].append(d)
+
+        return jsonify({
+            "districts": districts,
+            "regions": regions,
+            "bedrooms": bedrooms,
+            "sale_types": sale_types,
+            "projects": projects[:100],  # Limit project list
+            "date_range": {
+                "min": min_date.isoformat() if min_date else None,
+                "max": max_date.isoformat() if max_date else None
+            },
+            "psf_range": {
+                "min": psf_stats[0] if psf_stats else None,
+                "max": psf_stats[1] if psf_stats else None
+            },
+            "size_range": {
+                "min": size_stats[0] if size_stats else None,
+                "max": size_stats[1] if size_stats else None
+            },
+            "tenures": tenures
+        })
+    except Exception as e:
+        print(f"GET /api/filter-options ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @analytics_bp.route("/psf_trends_by_region", methods=["GET"])
 def psf_trends_by_region():
     """
