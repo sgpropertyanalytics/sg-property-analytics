@@ -3,64 +3,20 @@ import { useData } from '../context/DataContext';
 import {
   getPriceTrends,
   getTotalVolume,
-  getAvgPsf,
   getSaleTypeTrends,
   getPriceTrendsBySaleType,
   getPriceTrendsByRegion,
   getPsfTrendsByRegion,
-  getMarketStats,
   getMarketStatsByDistrict,
   getComparableValueAnalysis,
   getProjectsByDistrict,
   getPriceProjectsByDistrict,
 } from '../api/client';
+import { COLORS, BEDROOM_LABELS, DISTRICT_NAMES } from '../constants';
 import LineChart from '../components/LineChart';
 import BarChart from '../components/BarChart';
 import RegionChart from '../components/RegionChart';
 import SaleTypeChart from '../components/SaleTypeChart';
-
-const COLORS = {
-  '2b': '#3B82F6',
-  '3b': '#10B981',
-  '4b': '#F59E0B',
-};
-
-const BEDROOM_LABELS = {
-  '2b': '2-Bedroom',
-  '3b': '3-Bedroom',
-  '4b': '4-Bedroom',
-};
-
-const DISTRICT_NAMES = {
-  'D01': 'Boat Quay / Raffles Place / Marina Downtown / Suntec City',
-  'D02': 'Shenton Way / Tanjong Pagar',
-  'D03': 'Queenstown / Alexandra / Tiong Bahru',
-  'D04': 'Harbourfront / Keppel / Telok Blangah',
-  'D05': 'Buona Vista / Dover / Pasir Panjang',
-  'D06': 'City Hall / Fort Canning',
-  'D07': 'Bugis / Rochor',
-  'D08': 'Little India / Farrer Park',
-  'D09': 'Orchard / Somerset / River Valley',
-  'D10': 'Tanglin / Bukit Timah / Holland',
-  'D11': 'Newton / Novena / Dunearn / Watten',
-  'D12': 'Balestier / Whampoa / Toa Payoh / Boon Keng / Bendemeer / Kampong Bugis',
-  'D13': 'Potong Pasir / Bidadari / MacPherson / Upper Aljunied',
-  'D14': 'Geylang / Dakota / Paya Lebar Central / Eunos / Ubi / Aljunied',
-  'D15': 'Tanjong Rhu / Amber / Meyer / Katong / Dunman / Joo Chiat / Marine Parade',
-  'D16': 'Bedok / Upper East Coast / Eastwood / Kew Drive',
-  'D17': 'Loyang / Changi',
-  'D18': 'Tampines / Pasir Ris',
-  'D19': 'Serangoon Garden / Hougang / Sengkang / Punggol',
-  'D20': 'Bishan / Ang Mo Kio',
-  'D21': 'Upper Bukit Timah / Clementi Park / Ulu Pandan',
-  'D22': 'Jurong / Boon Lay / Tuas',
-  'D23': 'Bukit Batok / Bukit Panjang / Choa Chu Kang',
-  'D24': 'Lim Chu Kang / Tengah',
-  'D25': 'Kranji / Woodlands',
-  'D26': 'Upper Thomson / Springleaf',
-  'D27': 'Yishun / Sembawang',
-  'D28': 'Seletar / Yio Chu Kang',
-};
 
 const formatPrice = (value) => {
   if (!value) return '-';
@@ -124,72 +80,27 @@ function DistrictSummaryVolumeLiquidity({
         segment: selectedSegment || undefined,
       });
       
-      // Data validation and completeness check
-      // Axios wraps responses, so res.data is the actual response body from Flask
-      // Flask returns { projects: [...] }, so res.data.projects should be the array
       const projects = res.data?.projects || [];
-      
-      // Debug: Log the raw response structure
-      console.log(`[DEBUG] District ${district} API response:`, {
-        hasData: !!res.data,
-        dataKeys: res.data ? Object.keys(res.data) : [],
-        hasProjects: !!res.data?.projects,
-        projectCount: projects.length,
-        firstProject: projects[0] || null,
-        firstProjectKeys: projects[0] ? Object.keys(projects[0]) : [],
-      });
-      
+
       if (!Array.isArray(projects)) {
-        console.error(`[ERROR] District ${district}: Expected projects array, got:`, typeof projects, projects);
         setDistrictProjects((prev) => ({
           ...prev,
           [district]: [],
         }));
         return;
       }
-      
-      // Validate each project has required fields and log sample data
+
+      // Validate each project has required fields
       const validatedProjects = projects.filter((project) => {
-        if (!project.project_name) {
-          console.warn(`Skipping project with missing name in district ${district}`);
-          return false;
-        }
-        // Debug: Log first project's data structure
-        if (projects.indexOf(project) === 0) {
-          console.log(`[DEBUG] Sample project data for ${district}:`, {
-            name: project.project_name,
-            '2b': project['2b'],
-            '2b_count': project['2b_count'],
-            '3b': project['3b'],
-            '3b_count': project['3b_count'],
-            '4b': project['4b'],
-            '4b_count': project['4b_count'],
-            total: project.total,
-            total_quantity: project.total_quantity,
-            allKeys: Object.keys(project),
-          });
-        }
-        return true;
+        return !!project.project_name;
       });
-      
-      // Log completeness metrics
-      if (validatedProjects.length !== projects.length) {
-        console.warn(
-          `District ${district}: Filtered out ${projects.length - validatedProjects.length} invalid projects`
-        );
-      }
-      
-      console.log(
-        `District ${district}: Loaded ${validatedProjects.length} projects (bedrooms: ${bedroomParam}, segment: ${selectedSegment || 'all'})`
-      );
       
       setDistrictProjects((prev) => ({
         ...prev,
         [district]: validatedProjects,
       }));
     } catch (err) {
-      console.error('Error fetching district projects (volume & liquidity):', err);
-      console.error('Error details:', err.response?.data || err.message);
+      console.error('Error fetching district projects:', err);
       setDistrictProjects((prev) => ({
         ...prev,
         [district]: [],
@@ -422,23 +333,7 @@ function DistrictSummaryVolumeLiquidity({
                                         </td>
                                       </tr>
                                     )}
-                                    {projects.map((project, idx2) => {
-                                      // Debug: Log first project's data structure when rendering
-                                      if (idx2 === 0) {
-                                        console.log(`[DEBUG RENDER] First project in ${district}:`, {
-                                          name: project.project_name,
-                                          '2b': project['2b'],
-                                          '2b_count': project['2b_count'],
-                                          '3b': project['3b'],
-                                          '3b_count': project['3b_count'],
-                                          '4b': project['4b'],
-                                          '4b_count': project['4b_count'],
-                                          total: project.total,
-                                          total_quantity: project.total_quantity,
-                                          allKeys: Object.keys(project),
-                                        });
-                                      }
-                                      return (
+                                    {projects.map((project, idx2) => (
                                       <tr
                                         key={idx2}
                                         className={`border-b border-gray-100 ${
@@ -512,8 +407,7 @@ function DistrictSummaryVolumeLiquidity({
                                             : '-'}
                                         </td>
                                       </tr>
-                                    );
-                                    })}
+                                    ))}
                                   </tbody>
                                 </table>
                               </div>
@@ -716,31 +610,12 @@ function DistrictSummaryPrice({ selectedSegment, selectedDistrict }) {
       const res = await getPriceProjectsByDistrict(district, params);
       const projects = res.data?.projects || [];
 
-      // Data validation and completeness check
+      // Filter projects with valid data and sufficient sample size
       const validatedProjects = projects.filter((project) => {
-        if (!project || !project.project_name) {
-          console.warn(`Skipping price project with missing name in district ${district}`);
-          return false;
-        }
-        if (!project.count || project.count < 3) {
-          console.warn(
-            `Skipping project ${project.project_name} in district ${district}: insufficient sample (count: ${project.count})`
-          );
-          return false;
-        }
+        if (!project || !project.project_name) return false;
+        if (!project.count || project.count < 3) return false;
         return true;
       });
-
-      // Log completeness metrics
-      if (validatedProjects.length !== projects.length) {
-        console.warn(
-          `District ${district} (${viewKey}): Filtered out ${projects.length - validatedProjects.length} projects with insufficient data`
-        );
-      }
-
-      console.log(
-        `District ${district} (${viewKey}): Loaded ${validatedProjects.length} valid projects (bedrooms: ${bedroomParam}, segment: ${selectedSegment || 'all'})`
-      );
 
       // Sum transactions across projects for this district/timeframe
       const totalCount = validatedProjects.reduce(
@@ -766,7 +641,6 @@ function DistrictSummaryPrice({ selectedSegment, selectedDistrict }) {
       }
     } catch (err) {
       console.error('Error fetching price projects by district:', err);
-      console.error('Error details:', err.response?.data || err.message);
       const viewKey = monthsForView === 3 ? 'short_term' : 'long_term';
       const key = `${district}_${viewKey}`;
       setPriceDistrictProjects((prev) => ({
@@ -1171,14 +1045,11 @@ function Dashboard() {
   const [selectedDistrict, setSelectedDistrict] = useState('all');
   const [priceTrends, setPriceTrends] = useState([]);
   const [volumeData, setVolumeData] = useState([]);
-  const [psfData, setPsfData] = useState([]);
   const [saleTypeTrends, setSaleTypeTrends] = useState([]);
   const [priceTrendsBySaleType, setPriceTrendsBySaleType] = useState({});
   const [priceTrendsByRegion, setPriceTrendsByRegion] = useState([]);
   const [psfTrendsByRegion, setPsfTrendsByRegion] = useState([]);
   const [saleTypeSegment, setSaleTypeSegment] = useState(null);
-  const [marketStats, setMarketStats] = useState(null);
-  const [marketStatsByDistrict, setMarketStatsByDistrict] = useState(null);
   const [buyBoxResult, setBuyBoxResult] = useState(null);
   const [buyBoxLoading, setBuyBoxLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -1226,10 +1097,9 @@ function Dashboard() {
       };
 
       try {
-        const [trendsRes, volumeRes, psfRes, saleTypeRes, priceRegionRes, psfRegionRes] = await Promise.all([
+        const [trendsRes, volumeRes, saleTypeRes, priceRegionRes, psfRegionRes] = await Promise.all([
           getPriceTrends(params),
           getTotalVolume(params),
-          getAvgPsf(params),
           getSaleTypeTrends(params).catch(() => ({ data: { trends: [] } })),
           getPriceTrendsByRegion(params).catch(() => ({ data: { trends: [] } })),
           getPsfTrendsByRegion(params).catch(() => ({ data: { trends: [] } }))
@@ -1237,7 +1107,6 @@ function Dashboard() {
 
         setPriceTrends(trendsRes.data.trends || []);
         setVolumeData(volumeRes.data.data || []);
-        setPsfData(psfRes.data.data || []);
         setSaleTypeTrends(saleTypeRes.data.trends || []);
         setPriceTrendsByRegion(priceRegionRes.data.trends || []);
         setPsfTrendsByRegion(psfRegionRes.data.trends || []);
@@ -1250,23 +1119,6 @@ function Dashboard() {
     };
     fetchData();
   }, [selectedBedrooms, selectedDistrict, selectedSegment]);
-
-  // Fetch market-wide stats once (pre-computed dual-view analytics)
-  useEffect(() => {
-    const fetchMarketStats = async () => {
-      try {
-        const [marketRes, marketDistRes] = await Promise.all([
-          getMarketStats().catch(() => ({ data: null })),
-          getMarketStatsByDistrict().catch(() => ({ data: null }))
-        ]);
-        setMarketStats(marketRes.data || null);
-        setMarketStatsByDistrict(marketDistRes.data || null);
-      } catch (err) {
-        console.error('Error fetching market stats:', err);
-      }
-    };
-    fetchMarketStats();
-  }, []);
 
   // Fetch price trends by sale type separately
   useEffect(() => {
@@ -1409,7 +1261,6 @@ function Dashboard() {
                       data={psfTrendsByRegion}
                       valueFormatter={formatPSF}
                       title="Median PSF by Region"
-                      isPSF={true}
                     />
                   </div>
                 </div>

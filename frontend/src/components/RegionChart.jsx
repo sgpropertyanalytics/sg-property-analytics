@@ -20,7 +20,7 @@ ChartJS.register(
   Legend
 );
 
-function RegionChart({ data, valueFormatter, title, isPSF = false }) {
+function RegionChart({ data, valueFormatter, title }) {
   if (!data || data.length === 0) {
     return <div>No data available</div>;
   }

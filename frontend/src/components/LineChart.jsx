@@ -1,4 +1,3 @@
-import { useRef, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,9 +7,9 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { COLORS, BEDROOM_LABELS } from '../constants';
 
 ChartJS.register(
   CategoryScale,
@@ -19,21 +18,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend,
-  Filler
+  Legend
 );
-
-const COLORS = {
-  '2b': '#3B82F6',
-  '3b': '#10B981',
-  '4b': '#F59E0B',
-};
-
-const BEDROOM_LABELS = {
-  '2b': '2-Bedroom',
-  '3b': '3-Bedroom',
-  '4b': '4-Bedroom',
-};
 
 function LineChart({ data, selectedBedrooms, valueFormatter, title }) {
   if (!data || data.length === 0) {

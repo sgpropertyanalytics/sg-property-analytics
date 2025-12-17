@@ -8,6 +8,7 @@ import {
   Legend
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { COLORS, BEDROOM_LABELS } from '../constants';
 
 ChartJS.register(
   CategoryScale,
@@ -18,19 +19,7 @@ ChartJS.register(
   Legend
 );
 
-const COLORS = {
-  '2b': '#3B82F6',
-  '3b': '#10B981',
-  '4b': '#F59E0B',
-};
-
-const BEDROOM_LABELS = {
-  '2b': '2-Bedroom',
-  '3b': '3-Bedroom',
-  '4b': '4-Bedroom',
-};
-
-function BarChart({ data, selectedBedrooms, valueFormatter, title, horizontal = false, stacked = false, showCountLabels = false, beginAtZero = true }) {
+function BarChart({ data, selectedBedrooms, valueFormatter, title, horizontal = false, stacked = false, beginAtZero = true }) {
   if (!data || data.length === 0) {
     return <div>No data available</div>;
   }
