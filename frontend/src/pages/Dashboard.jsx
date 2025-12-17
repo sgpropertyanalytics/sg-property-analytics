@@ -8,7 +8,6 @@ import {
   getMarketStatsByDistrict,
   getComparableValueAnalysis,
 } from '../api/client';
-import { FilterBar } from '../components/dashboard/FilterBar';
 import { KPICards } from '../components/dashboard/KPICards';
 import { TopDistricts } from '../components/dashboard/TopDistricts';
 import { DistrictSummaryTable } from '../components/dashboard/DistrictSummaryTable';
@@ -119,9 +118,8 @@ function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 pb-8">
       {/* Header Section */}
-      {/* Added mb-6 to separate title from filters */}
       <div className="flex flex-col gap-1 px-6" id="overview-macro">
         <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
           Market Overview
@@ -158,157 +156,26 @@ function Dashboard() {
         )}
       </div>
 
-      {/* Filter Bar + main dashboard content, aligned with charts via shared padding */}
+      {/* Main dashboard content, aligned with charts via shared padding */}
       <div className="px-6 space-y-6">
-        <FilterBar />
-
-        {(loading || contextLoading) ? (
-          <div className="text-center py-12 md:py-16 text-gray-500">
-            <div className="text-3xl md:text-4xl mb-3">⏳</div>
-            <div className="text-sm md:text-base">Loading data...</div>
-          </div>
-        ) : (
-          <>
+      {(loading || contextLoading) ? (
+        <div className="text-center py-12 md:py-16 text-gray-500">
+          <div className="text-3xl md:text-4xl mb-3">⏳</div>
+          <div className="text-sm md:text-base">Loading data...</div>
+        </div>
+      ) : (
+        <>
             {/* 1. Macro Overview Section - KPI Cards Only */}
             <div id="overview-macro" className="scroll-mt-32">
               <KPICards
                 marketStats={marketStats}
                 priceTrends={priceTrends}
-                volumeData={volumeData}
-              />
-            </div>
-
-            {/* Analyze by Districts Section */}
-            <div id="district-analysis" className="scroll-mt-32">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <h2 className="text-xl font-bold text-slate-800">Analyze by Districts</h2>
+            volumeData={volumeData}
+          />
               </div>
-              
-              <div className="space-y-6">
-                {/* Top Districts Widget */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-1">
-                    <TopDistricts marketStatsByDistrict={marketStatsByDistrict} />
-                  </div>
-                </div>
 
-                {/* District Summary Table */}
-                <Card 
-                  title="District Summary" 
-                  subtitle="Detailed view of volume and pricing by district"
-                >
-                  <DistrictSummaryTable
-                    marketStatsByDistrict={marketStatsByDistrict}
-                    onDistrictClick={(district) => {
-                      setSelectedDistrict(district);
-                    }}
-                  />
-                </Card>
-
-              </div>
-            </div>
-
-            {/* 7. Budget Comparison Section */}
-            <div id="budget-comparison" className="scroll-mt-32">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <h2 className="text-xl font-bold text-slate-800">Budget Comparison</h2>
-              </div>
-              <Card 
-                title="Comparable Value Analysis (Buy Box)" 
-                subtitle="Find transactions around a target price band for the selected bedroom types and district"
-              >
-            <div className="flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4 items-end mb-4">
-              <div className="w-full sm:w-auto">
-                <label className="block mb-1 text-xs md:text-sm font-medium text-gray-700">
-                  Target Price (SGD)
-                </label>
-                <input
-                  type="number"
-                  defaultValue={2500000}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value || '0');
-                    setBuyBoxResult(prev => prev ? { ...prev, _target_price: value } : prev);
-                  }}
-                  className="w-full sm:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[140px] md:min-w-[160px]"
-                />
-              </div>
-              <div className="w-full sm:w-auto">
-                <label className="block mb-1 text-xs md:text-sm font-medium text-gray-700">
-                  Band (± SGD)
-                </label>
-                <input
-                  type="number"
-                  defaultValue={100000}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value || '0');
-                    setBuyBoxResult(prev => prev ? { ...prev, _band: value } : prev);
-                  }}
-                  className="w-full sm:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[120px] md:min-w-[140px]"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={runBuyBoxAnalysis}
-                disabled={buyBoxLoading}
-                className={`w-full sm:w-auto px-4 md:px-5 py-2 md:py-2.5 rounded-md border-none bg-[#FF6B4A] text-white font-medium text-xs md:text-sm cursor-pointer transition-opacity ${
-                  buyBoxLoading ? 'opacity-70 cursor-default' : 'hover:bg-[#FF8C69]'
-                }`}
-              >
-                {buyBoxLoading ? 'Running analysis...' : 'Run Analysis'}
-              </button>
-            </div>
-
-            {buyBoxResult && (
-              <>
-                <p className="text-xs md:text-sm text-gray-600 mb-2">
-                  Found <strong>{buyBoxResult.summary?.count ?? 0}</strong> comparable transactions.
-                </p>
-                {buyBoxResult.points && buyBoxResult.points.length > 0 && (
-                  <div className="max-h-80 overflow-y-auto rounded-lg border border-gray-200">
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse text-xs md:text-sm min-w-[500px]">
-                        <thead>
-                          <tr className="bg-gray-100">
-                            <th className="text-left p-2 border-b border-gray-200">Project</th>
-                            <th className="text-right p-2 border-b border-gray-200">District</th>
-                            <th className="text-right p-2 border-b border-gray-200">Price</th>
-                            <th className="text-right p-2 border-b border-gray-200">PSF</th>
-                            <th className="text-right p-2 border-b border-gray-200">Bedrooms</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {buyBoxResult.points.slice(0, 50).map((p, idx) => (
-                            <tr key={idx}>
-                              <td className="p-2 border-b border-gray-200">{p.project_name}</td>
-                              <td className="p-2 border-b border-gray-200 text-right">
-                                {p.district
-                                  ? `${p.district}${
-                                      DISTRICT_NAMES[p.district]
-                                        ? `: ${DISTRICT_NAMES[p.district]}`
-                                        : ''
-                                    }`
-                                  : '-'}
-                              </td>
-                              <td className="p-2 border-b border-gray-200 text-right">
-                                {p.price ? formatPrice(p.price) : '-'}
-                              </td>
-                              <td className="p-2 border-b border-gray-200 text-right">
-                                {p.psf ? formatPSF(p.psf) : '-'}
-                              </td>
-                              <td className="p-2 border-b border-gray-200 text-right">{p.bedroom_count}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-              </Card>
-            </div>
-          </>
-        )}
+        </>
+      )}
       </div>
     </div>
   );

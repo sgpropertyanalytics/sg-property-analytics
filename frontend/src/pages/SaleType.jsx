@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useFilters } from '../context/FilterContext';
-import { FilterBar } from '../components/dashboard/FilterBar';
 import SaleTypeChart from '../components/SaleTypeChart';
 import LineChart from '../components/LineChart';
 import { getSaleTypeTrends, getPriceTrendsBySaleType } from '../api/client';
@@ -99,24 +98,16 @@ export function SaleType() {
 
   if (error) {
     return (
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
+      <div className="space-y-4 pb-8">
+        <div className="flex flex-col gap-1 px-6 pt-6">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight mb-2">
             New Sale vs Resale
           </h1>
-          <p className="text-slate-500 text-base font-medium">
+          <p className="text-slate-500 text-base font-medium mb-4">
             Compare new sale and resale market trends.
           </p>
         </div>
-
-        {/* Filter */}
-        <div className="px-6 pb-4">
-          <FilterBar isSticky={false} />
-        </div>
-
-        {/* Scrollable main container for visuals */}
-        <div className="px-6 pb-8 flex-1 overflow-y-auto">
+        <div className="px-6">
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 md:p-8 text-center">
             <h2 className="text-red-600 font-semibold mb-3 text-lg">⚠️ Connection Error</h2>
             <p className="text-red-800 mb-4 text-sm md:text-base">
@@ -132,9 +123,8 @@ export function SaleType() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="px-6 pt-6 pb-4">
+    <div className="space-y-4 pb-8">
+      <div className="flex flex-col gap-1 px-6 pt-6">
         <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
           New Sale vs Resale
         </h1>
@@ -143,82 +133,62 @@ export function SaleType() {
         </p>
       </div>
 
-      {/* Filter */}
-      <div className="px-6 pb-4">
-        <FilterBar isSticky={false} />
-      </div>
-
-      {/* Scrollable main container for visuals */}
-      <div className="px-6 pb-8 flex-1 overflow-y-auto">
+      <div className="px-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 space-y-6">
-          {loading ? (
-            <div className="text-center py-12 md:py-16 text-gray-500">
-              <div className="text-3xl md:text-4xl mb-3">⏳</div>
-              <div className="text-sm md:text-base">Loading data...</div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* New Sale vs Resale Transaction Count */}
-              {saleTypeTrends.length > 0 && (
-                <Card 
-                  title="New Sale vs Resale Transaction Count" 
-                  subtitle="Market Composition"
-                >
-                  <SaleTypeChart data={saleTypeTrends} />
-                </Card>
-              )}
+        {loading ? (
+          <div className="text-center py-12 md:py-16 text-gray-500">
+            <div className="text-3xl md:text-4xl mb-3">⏳</div>
+            <div className="text-sm md:text-base">Loading data...</div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* New Sale vs Resale Transaction Count */}
+            {saleTypeTrends.length > 0 && (
+              <Card 
+                title="New Sale vs Resale Transaction Count" 
+                subtitle="Market Composition"
+              >
+                <SaleTypeChart data={saleTypeTrends} />
+              </Card>
+            )}
 
-              {/* Price Trends by Sale Type (New Sale vs Resale) */}
-              {Object.keys(priceTrendsBySaleType).length > 0 && (
-                <Card title="Price Trends: New Sale vs Resale by Bedroom Type">
-                  <div className="mb-4">
-                    <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
-                      Market Segment (for this chart only)
-                    </label>
-                    <select
-                      value={saleTypeSegment || 'all'}
-                      onChange={(e) => setSaleTypeSegment(e.target.value === 'all' ? null : e.target.value)}
-                      className="w-full md:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[120px] md:min-w-[150px]"
-                    >
-                      <option value="all">All Segments</option>
-                      <option value="CCR">CCR</option>
-                      <option value="RCR">RCR</option>
-                      <option value="OCR">OCR</option>
-                    </select>
-                  </div>
-                  <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:snap-none">
-                    {selectedBedrooms.map(bedroom => {
-                      const saleTypeData = priceTrendsBySaleType[bedroom];
-                      if (!saleTypeData || !Array.isArray(saleTypeData) || saleTypeData.length === 0) {
-                        return null;
-                      }
-                      return (
-                        <div key={bedroom} className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
-                          <div className="bg-white p-2 md:p-4 rounded-lg">
-                            <h3 className="text-xs md:text-sm text-gray-600 mb-3">
-                              {BEDROOM_LABELS[bedroom]}
-                            </h3>
-                            <LineChart
-                              data={saleTypeData.map(d => ({
-                                month: d.quarter,
-                                '2b_price': d.new_sale,
-                                '3b_price': d.resale,
-                                '4b_price': null,
-                              }))}
-                              selectedBedrooms={['2b', '3b']}
-                              valueFormatter={formatPrice}
-                              title=""
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+            {/* Price Trends by Sale Type (New Sale vs Resale) – single chart */}
+            {Object.keys(priceTrendsBySaleType).length > 0 && (() => {
+              // Prefer 3BR, then 2BR, then 4BR, else first available
+              const keys = Object.keys(priceTrendsBySaleType);
+              const preferredOrder = ['3b', '2b', '4b'];
+              const bedroom =
+                preferredOrder.find(b => keys.includes(b) && Array.isArray(priceTrendsBySaleType[b]) && saleTypeTrends.length > 0) ||
+                keys[0];
+              const saleTypeData = priceTrendsBySaleType[bedroom];
+
+              if (!saleTypeData || !Array.isArray(saleTypeData) || saleTypeData.length === 0) {
+                return null;
+              }
+
+              return (
+                <Card title="Price Trends: New Sale vs Resale">
+                  <div className="bg-white p-2 md:p-4 rounded-lg">
+                    <h3 className="text-xs md:text-sm text-gray-600 mb-3">
+                      {BEDROOM_LABELS[bedroom] || 'All Bedrooms'}
+                    </h3>
+                    <LineChart
+                      data={saleTypeData.map(d => ({
+                        month: d.quarter,
+                        '2b_price': d.new_sale,
+                        '3b_price': d.resale,
+                        '4b_price': null,
+                      }))}
+                      selectedBedrooms={['2b', '3b']}
+                      valueFormatter={formatPrice}
+                      title=""
+                    />
                   </div>
                 </Card>
-              )}
-            </div>
-          )}
-        </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
     </div>
   );

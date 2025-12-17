@@ -9,6 +9,10 @@ export function FilterProvider({ children }) {
     district: 'All Districts',
   });
 
+  const setBedrooms = useCallback((bedrooms) => {
+    setFilters((prev) => ({ ...prev, bedrooms }));
+  }, []);
+
   const toggleBedroom = useCallback((bedroom) => {
     setFilters((prev) => {
       const bedrooms = [...prev.bedrooms];
@@ -37,7 +41,7 @@ export function FilterProvider({ children }) {
   }, []);
 
   return (
-    <FilterContext.Provider value={{ filters, toggleBedroom, setSegment, setDistrict }}>
+    <FilterContext.Provider value={{ filters, setBedrooms, toggleBedroom, setSegment, setDistrict }}>
       {children}
     </FilterContext.Provider>
   );

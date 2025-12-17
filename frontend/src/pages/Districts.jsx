@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { FilterBar } from '../components/dashboard/FilterBar';
 import { useFilters } from '../context/FilterContext';
 import { getMarketStatsByDistrict, getPriceProjectsByDistrict, getTotalVolume } from '../api/client';
 import { DISTRICT_NAMES, formatPrice, formatPSF } from '../constants';
@@ -399,7 +398,6 @@ export function Districts() {
       </div>
 
       <div className="px-6 space-y-6">
-        <FilterBar />
         <DistrictVolumeAnalysis />
         <DistrictPriceAnalysis />
       </div>

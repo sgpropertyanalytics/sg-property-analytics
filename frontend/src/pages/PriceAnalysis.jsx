@@ -7,7 +7,6 @@ import {
 } from '../api/client';
 import LineChart from '../components/LineChart';
 import RegionChart from '../components/RegionChart';
-import { FilterBar } from '../components/dashboard/FilterBar';
 import { formatPrice, formatPSF } from '../constants';
 import { Card } from '../components/ui/Card';
 
@@ -75,24 +74,16 @@ export function PriceAnalysis() {
 
   if (error) {
     return (
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
+      <div className="space-y-4 pb-8">
+        <div className="flex flex-col gap-1 px-6 pt-6">
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight mb-2">
             Price/PSF Analysis
           </h1>
-          <p className="text-slate-500 text-base font-medium">
+          <p className="text-slate-500 text-base font-medium mb-4">
             Analyze price trends and price per square foot across different segments and regions.
           </p>
         </div>
-
-        {/* Filter (non-sticky here because container handles scroll) */}
-        <div className="px-6 pb-4">
-          <FilterBar isSticky={false} />
-        </div>
-
-        {/* Scrollable main container for visuals */}
-        <div className="px-6 pb-8 flex-1 overflow-y-auto">
+        <div className="px-6">
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 md:p-8 text-center">
             <h2 className="text-red-600 font-semibold mb-3 text-lg">⚠️ Connection Error</h2>
             <p className="text-red-800 mb-4 text-sm md:text-base">
@@ -108,9 +99,8 @@ export function PriceAnalysis() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="px-6 pt-6 pb-4">
+    <div className="space-y-4 pb-8">
+      <div className="flex flex-col gap-1 px-6 pt-6">
         <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
           Price/PSF Analysis
         </h1>
@@ -119,86 +109,79 @@ export function PriceAnalysis() {
         </p>
       </div>
 
-      {/* Filter */}
-      <div className="px-6 pb-4">
-        <FilterBar isSticky={false} />
-      </div>
-
-      {/* Scrollable main container for visuals (header + filter stay fixed within page) */}
-      <div className="px-6 pb-8 flex-1 overflow-y-auto">
+      <div className="px-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 space-y-6">
-          {loading ? (
-            <div className="text-center py-12 md:py-16 text-gray-500">
-              <div className="text-3xl md:text-4xl mb-3">⏳</div>
-              <div className="text-sm md:text-base">Loading data...</div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Price Trend Chart */}
+        {loading ? (
+          <div className="text-center py-12 md:py-16 text-gray-500">
+            <div className="text-3xl md:text-4xl mb-3">⏳</div>
+            <div className="text-sm md:text-base">Loading data...</div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Price Trend Chart */}
+            <Card 
+              title="Price Trend by Quarter" 
+              subtitle={`Median Price for ${selectedSegment || 'All Segments'} • ${selectedBedrooms.map(b => b.replace('b', 'BR')).join(', ')}`}
+            >
+              {priceTrends && priceTrends.length > 0 ? (
+                <LineChart
+                  data={priceTrends}
+                  selectedBedrooms={selectedBedrooms}
+                  valueFormatter={formatPrice}
+                  title=""
+                />
+              ) : (
+                <div className="h-[350px] bg-slate-50/50 rounded-xl flex items-center justify-center border border-dashed border-slate-200 text-slate-400">
+                  No data available
+                </div>
+              )}
+            </Card>
+
+            {/* PSF Trend Chart */}
+            {psfTrendsData && psfTrendsData.length > 0 && (
               <Card 
-                title="Price Trend by Quarter" 
-                subtitle={`Median Price for ${selectedSegment || 'All Segments'} • ${selectedBedrooms.map(b => b.replace('b', 'BR')).join(', ')}`}
+                title="PSF Trend by Quarter" 
+                subtitle={`Median PSF for ${selectedSegment || 'All Segments'} • ${selectedBedrooms.map(b => b.replace('b', 'BR')).join(', ')}`}
               >
-                {priceTrends && priceTrends.length > 0 ? (
-                  <LineChart
-                    data={priceTrends}
-                    selectedBedrooms={selectedBedrooms}
-                    valueFormatter={formatPrice}
-                    title=""
-                  />
-                ) : (
-                  <div className="h-[350px] bg-slate-50/50 rounded-xl flex items-center justify-center border border-dashed border-slate-200 text-slate-400">
-                    No data available
-                  </div>
-                )}
+                <LineChart
+                  data={psfTrendsData}
+                  selectedBedrooms={selectedBedrooms}
+                  valueFormatter={formatPSF}
+                  title=""
+                />
               </Card>
+            )}
 
-              {/* PSF Trend Chart */}
-              {psfTrendsData && psfTrendsData.length > 0 && (
-                <Card 
-                  title="PSF Trend by Quarter" 
-                  subtitle={`Median PSF for ${selectedSegment || 'All Segments'} • ${selectedBedrooms.map(b => b.replace('b', 'BR')).join(', ')}`}
-                >
-                  <LineChart
-                    data={psfTrendsData}
-                    selectedBedrooms={selectedBedrooms}
-                    valueFormatter={formatPSF}
-                    title=""
-                  />
-                </Card>
-              )}
+            {/* Price Trends by Region */}
+            {priceTrendsByRegion && priceTrendsByRegion.length > 0 && (
+              <Card 
+                title="Price Trends by Region" 
+                subtitle="Median Price by CCR, RCR, and OCR"
+              >
+                <RegionChart
+                  data={priceTrendsByRegion}
+                  valueFormatter={formatPrice}
+                  title=""
+                />
+              </Card>
+            )}
 
-              {/* Price Trends by Region */}
-              {priceTrendsByRegion && priceTrendsByRegion.length > 0 && (
-                <Card 
-                  title="Price Trends by Region" 
-                  subtitle="Median Price by CCR, RCR, and OCR"
-                >
-                  <RegionChart
-                    data={priceTrendsByRegion}
-                    valueFormatter={formatPrice}
-                    title=""
-                  />
-                </Card>
-              )}
-
-              {/* PSF Trends by Region */}
-              {psfTrendsByRegion && psfTrendsByRegion.length > 0 && (
-                <Card 
-                  title="PSF Trends by Region" 
-                  subtitle="Median PSF by CCR, RCR, and OCR"
-                >
-                  <RegionChart
-                    data={psfTrendsByRegion}
-                    valueFormatter={formatPSF}
-                    title=""
-                    isPSF={true}
-                  />
-                </Card>
-              )}
-            </div>
-          )}
-        </div>
+            {/* PSF Trends by Region */}
+            {psfTrendsByRegion && psfTrendsByRegion.length > 0 && (
+              <Card 
+                title="PSF Trends by Region" 
+                subtitle="Median PSF by CCR, RCR, and OCR"
+              >
+                <RegionChart
+                  data={psfTrendsByRegion}
+                  valueFormatter={formatPSF}
+                  title=""
+                  isPSF={true}
+                />
+              </Card>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

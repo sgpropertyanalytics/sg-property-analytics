@@ -17,6 +17,14 @@ from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 from calendar import monthrange
 from services.classifier import get_bedroom_label
+from services.classifier_extended import (
+    classify_tenure,
+    extract_lease_start_year,
+    calculate_property_age,
+    calculate_remaining_lease,
+    classify_property_age_band,
+    classify_remaining_lease_band,
+)
 
 # Table name constant for reference
 MASTER_TABLE = "transactions"  # Use SQLAlchemy transactions table
@@ -26,62 +34,63 @@ GLOBAL_DF = None  # Global DataFrame - set by app.py if CSV data is loaded into 
 
 def _add_lease_columns(df: pd.DataFrame) -> None:
     """
-    Add lease-related columns derived from the Tenure text, in-place.
+    Add lease- and age-related columns derived from Tenure text, in-place.
     
-    - lease_start_year: 4-digit year the lease commenced (NaN if Freehold/unknown)
-    - remaining_lease: 99 - (current_year - lease_start_year), or 999 for Freehold
+    Added columns:
+    - tenure_type:      Normalized tenure (Freehold / 99-year / 999-year / Other / Unknown)
+    - lease_start_year: 4-digit year lease commenced (NaN if unknown)
+    - property_age:     Age in years at transaction date (or current year fallback)
+    - age_band:         Banded age label (e.g. "New (0-5 yrs)")
+    - remaining_lease:  Remaining lease years (Freehold treated as 999 for compatibility)
+    - lease_band:       Remaining lease band (e.g. "75+ yrs (Full CPF)", "Freehold")
     """
-    if "Tenure" not in df.columns:
+    if "Tenure" not in df.columns and "tenure" not in df.columns:
         return
 
-    current_year = datetime.now().year
+    # Normalize column name we read from
+    tenure_col = "Tenure" if "Tenure" in df.columns else "tenure"
 
-    def parse_lease_start(tenure: str):
-        if not isinstance(tenure, str):
-            return None, None
+    tenure_types = []
+    lease_start_years = []
+    ages = []
+    age_bands = []
+    remaining_years = []
+    lease_bands = []
 
-        text = tenure.strip().lower()
+    # We prefer parsed_date / transaction_date as the reference for age
+    has_parsed_date = "parsed_date" in df.columns
+    has_txn_date = "transaction_date" in df.columns
 
-        # Freehold or equivalent → treat as 999-year pseudo-lease
-        if "freehold" in text or "estate in perpetuity" in text:
-            return None, 999
+    for _, row in df.iterrows():
+        tenure_str = row.get(tenure_col)
 
-        # Look for explicit year after "from" or "commencing"
-        match = re.search(r"(?:from|commencing)\s+(\d{4})", text)
-        year = None
-        if match:
-            try:
-                year = int(match.group(1))
-            except ValueError:
-                year = None
+        # Reference date for age calculations
+        ref_date = None
+        if has_parsed_date and pd.notna(row.get("parsed_date")):
+            ref_date = row.get("parsed_date")
+        elif has_txn_date and pd.notna(row.get("transaction_date")):
+            ref_date = row.get("transaction_date")
 
-        # Fallback: first 4-digit year anywhere in the string
-        if year is None:
-            fallback = re.search(r"(\d{4})", text)
-            if fallback:
-                try:
-                    year = int(fallback.group(1))
-                except ValueError:
-                    year = None
+        t_type = classify_tenure(tenure_str)
+        start_year = extract_lease_start_year(tenure_str)
+        age = calculate_property_age(tenure_str, ref_date)
+        remaining = calculate_remaining_lease(tenure_str, ref_date)
+        age_band = classify_property_age_band(age)
+        lease_band = classify_remaining_lease_band(tenure_str, remaining)
 
-        if year is None:
-            return None, None
+        tenure_types.append(t_type)
+        lease_start_years.append(start_year)
+        ages.append(age)
+        age_bands.append(age_band)
+        remaining_years.append(remaining)
+        lease_bands.append(lease_band)
 
-        remaining = 99 - (current_year - year)
-        if remaining < 0:
-            remaining = 0
-        return year, remaining
-
-    lease_years = []
-    remaining_leases = []
-
-    for tenure in df["Tenure"]:
-        start_year, remaining = parse_lease_start(tenure)
-        lease_years.append(start_year)
-        remaining_leases.append(remaining)
-
-    df["lease_start_year"] = lease_years
-    df["remaining_lease"] = remaining_leases
+    df["tenure_type"] = tenure_types
+    df["lease_start_year"] = lease_start_years
+    df["property_age"] = ages
+    df["age_band"] = age_bands
+    df["remaining_lease"] = remaining_years
+    df["lease_band"] = lease_bands
 
 
 def _get_market_segment(district: str) -> Optional[str]:

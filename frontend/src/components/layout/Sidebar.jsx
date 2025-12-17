@@ -10,9 +10,11 @@ import {
   Wallet,
   ChevronRight,
   LogOut,
-  TrendingUp
+  TrendingUp,
+  SlidersHorizontal
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { FilterBar } from '../dashboard/FilterBar';
 
 // Navigation config
 // Only Macro Overview scrolls to a section on Dashboard
@@ -33,7 +35,6 @@ export function Sidebar({ collapsed, onCollapse, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeSection, setActiveSection] = useState(null);
-  const [hoveredItem, setHoveredItem] = useState(null);
 
   // Track scroll position to update active menu item (only on Dashboard page)
   useEffect(() => {
@@ -126,10 +127,9 @@ export function Sidebar({ collapsed, onCollapse, onClose }) {
         )}
       </div>
 
-      {/* --- MAIN MENU --- */}
+      {/* --- MAIN MENU + GLOBAL FILTERS --- */}
       <div 
-        className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar"
-        onMouseLeave={() => setHoveredItem(null)}
+        className="flex-1 px-4 py-2"
       >
         {!collapsed && (
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 px-2">
@@ -144,35 +144,41 @@ export function Sidebar({ collapsed, onCollapse, onClose }) {
             const isActive = item.type === 'scroll' 
               ? activeSection === item.id
               : location.pathname === item.path;
-            // Show hover effect when hovering
-            const itemKey = item.id || item.path;
-            const isHovered = hoveredItem === itemKey;
-            // Show active style on hovered item, or active item when nothing is hovered
-            const showActiveStyle = isHovered || (isActive && hoveredItem === null);
 
             return (
               <button
                 key={item.name}
                 onClick={() => handleNavClick(item)}
-                onMouseEnter={() => setHoveredItem(itemKey)}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 group relative',
-                  // ACTIVE/HOVER STATE: White bg, shadow, dark text
-                  showActiveStyle
+                  // ACTIVE STATE: White bg, shadow, dark text
+                  isActive
                     ? 'bg-white text-slate-900 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)]' 
-                    : 'text-slate-500',
+                    : 'text-slate-500 hover:text-slate-100 hover:bg-slate-800/70',
                   collapsed && 'justify-center px-2'
                 )}
               >
                 <item.icon className={cn(
                   "w-5 h-5 flex-shrink-0 transition-colors",
-                  showActiveStyle ? "text-slate-900" : "text-slate-400"
+                  isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-200"
                 )} />
                 
                 {!collapsed && <span>{item.name}</span>}
               </button>
             );
           })}
+        </div>
+
+        {/* Main Filter heading */}
+        {!collapsed && (
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mt-6 mb-3 px-2">
+            <SlidersHorizontal className="w-4 h-4 text-slate-500" />
+            <span>Main Filter</span>
+          </div>
+        )}
+        {/* Global filter panel (was on each page; now lives in sidebar) */}
+        <div className="mb-4">
+          <FilterBar isSticky={false} variant="sidebar" />
         </div>
       </div>
 

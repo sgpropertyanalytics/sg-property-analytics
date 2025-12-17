@@ -1,5 +1,3 @@
-import { FilterBar } from '../components/dashboard/FilterBar';
-
 export function Projects() {
   return (
     <div className="space-y-6">
@@ -11,8 +9,6 @@ export function Projects() {
           Search and compare property projects across Singapore.
         </p>
       </div>
-
-      <FilterBar />
 
       <div className="px-6">
         <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
