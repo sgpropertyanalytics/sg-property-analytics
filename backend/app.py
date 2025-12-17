@@ -10,7 +10,7 @@ SaaS Features:
 - Analytics API remains public (no authentication required)
 """
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 from config import Config
@@ -24,14 +24,21 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
-    # Initialize CORS - allow all origins for now (can be restricted to specific domains in production)
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": ["https://sg-property-analyzer.vercel.app", "http://localhost:5173", "http://localhost:3000"],
-            "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-            "allow_headers": ["Content-Type", "Authorization"]
-        }
-    })
+    # Initialize CORS - allow all origins to ensure it works (can restrict later)
+    CORS(app, 
+         resources={r"/api/*": {"origins": "*"}},
+         methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+         allow_headers=["Content-Type", "Authorization"],
+         supports_credentials=False)
+    
+    # Also add after_request handler to ensure CORS headers are always set, even on errors
+    @app.after_request
+    def after_request(response):
+        # Always set CORS headers, even for error responses
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE')
+        return response
     
     # Initialize SQLAlchemy
     db.init_app(app)
