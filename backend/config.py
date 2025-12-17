@@ -9,14 +9,15 @@ class Config:
     JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
     JWT_EXPIRATION_HOURS = int(os.getenv('JWT_EXPIRATION_HOURS', '24'))
     
-    DB_PATH = os.getenv('DB_PATH', 'condo_master.db')
     CSV_FOLDER = os.getenv('CSV_FOLDER', 'rawdata')
     DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
     
     # SQLAlchemy configuration
+    # Production (Render) must set DATABASE_URL to PostgreSQL connection string
+    # Local development falls back to SQLite
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'DATABASE_URL',
-        f'sqlite:///{os.path.join(os.path.dirname(__file__), os.getenv("DB_PATH", "condo_master.db"))}'
+        f'sqlite:///{os.path.join(os.path.dirname(__file__), "condo_master.db")}'
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

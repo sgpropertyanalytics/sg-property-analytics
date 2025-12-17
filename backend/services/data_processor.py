@@ -1,24 +1,25 @@
 """
 Analysis Layer: Data Processor Module
 
-Queries the master_transactions table (Single Source of Truth) and performs
-statistical calculations. This module ONLY reads from the master table - it
-never writes or modifies data.
+Queries the transactions table (Single Source of Truth) via SQLAlchemy and performs
+statistical calculations. This module ONLY reads from the database - it never writes
+or modifies data.
 
-All analysis is performed on the clean, consolidated master_transactions table.
+All analysis is performed on the clean, consolidated transactions table.
+Uses in-memory DataFrame (GLOBAL_DF) for performance when available, with SQLAlchemy
+fallback for database queries (supports both PostgreSQL and SQLite).
 """
 
-import sqlite3
 import re
 import os
 import pandas as pd
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
+from calendar import monthrange
 from services.classifier import get_bedroom_label
 
-# Master database - Single Source of Truth (fallback if CSV not loaded)
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'condo_master.db')
-MASTER_TABLE = "transactions"  # Use SQLAlchemy transactions table (not legacy master_transactions)
+# Table name constant for reference
+MASTER_TABLE = "transactions"  # Use SQLAlchemy transactions table
 
 GLOBAL_DF = None  # Global DataFrame - set by app.py if CSV data is loaded into memory
 
@@ -221,14 +222,14 @@ def get_filtered_transactions(
         
         return df
     
-    # Fallback to database (for backward compatibility)
-    conn = sqlite3.connect(DB_PATH)
+    # Fallback to SQLAlchemy database query (PostgreSQL/SQLite via SQLAlchemy)
+    from models.database import db
+    from models.transaction import Transaction
     
-    # Build SQL query with WHERE clauses for better performance
-    query = f"SELECT * FROM {MASTER_TABLE} WHERE 1=1"
-    params = []
+    # Build query using SQLAlchemy
+    query = db.session.query(Transaction)
     
-    # Apply district filter in SQL if provided
+    # Normalize districts if provided
     if districts:
         normalized_districts = []
         for d in districts:
@@ -236,18 +237,34 @@ def get_filtered_transactions(
             if not d.startswith("D"):
                 d = f"D{d.zfill(2)}"
             normalized_districts.append(d)
-        placeholders = ','.join(['?'] * len(normalized_districts))
-        query += f" AND district IN ({placeholders})"
-        params.extend(normalized_districts)
+        query = query.filter(Transaction.district.in_(normalized_districts))
     
-    # Load data and parse dates
-    df = pd.read_sql_query(query, conn, params=params)
-    conn.close()
+    # Apply date range filters in SQL (more efficient than pandas filtering)
+    if start_date:
+        start_filter = f"{start_date}-01" if len(start_date) == 7 else start_date
+        start_dt = datetime.strptime(start_filter, "%Y-%m-%d")
+        query = query.filter(Transaction.transaction_date >= start_dt)
+    
+    if end_date:
+        # Get last day of month for end_date
+        end_filter = f"{end_date}-01" if len(end_date) == 7 else end_date
+        year, month = map(int, end_filter.split("-")[:2])
+        last_day = monthrange(year, month)[1]
+        end_dt = datetime(year, month, last_day)
+        query = query.filter(Transaction.transaction_date <= end_dt)
+    
+    # Apply limit at database level if specified
+    if limit:
+        query = query.limit(limit)
+    
+    # Convert SQLAlchemy query to DataFrame
+    from sqlalchemy import text
+    df = pd.read_sql(query.statement, db.engine)
     
     if df.empty:
         return df
     
-    # Apply segment filter (for database fallback)
+    # Apply segment filter in pandas (after loading, since segment is computed)
     if segment:
         segment_upper = segment.strip().upper()
         if segment_upper in ["CCR", "RCR", "OCR"]:
@@ -255,38 +272,28 @@ def get_filtered_transactions(
             df = df[df["_market_segment"] == segment_upper]
             df = df.drop(columns=["_market_segment"])
     
-    # Use transaction_date if available (from scraped data with exact dates), otherwise parse contract_date
+    # Add parsed_date column (for consistency with GLOBAL_DF path)
     if "transaction_date" in df.columns:
-        # Use transaction_date where available, fallback to parsed contract_date
         df["parsed_date"] = pd.to_datetime(df["transaction_date"], errors='coerce')
-        # Fill missing dates by parsing contract_date
+        # Fill missing dates by parsing contract_date if available
         mask = df["parsed_date"].isna()
-        if mask.any():
+        if mask.any() and "contract_date" in df.columns:
             df.loc[mask, "parsed_date"] = df.loc[mask, "contract_date"].apply(parse_contract_date)
             df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors='coerce')
-    else:
-        # Convert contract_date (MMYY) to proper date for filtering
+    elif "contract_date" in df.columns:
+        # Fallback to contract_date if transaction_date not available
         df["parsed_date"] = df["contract_date"].apply(parse_contract_date)
         df["parsed_date"] = pd.to_datetime(df["parsed_date"], errors='coerce')
+    else:
+        # If no date columns, return empty
+        return pd.DataFrame()
     
+    # Remove rows with invalid dates
     df = df.dropna(subset=["parsed_date"])
     
-    # Apply date range filter
-    if start_date:
-        # Convert start_date to first day of month
-        start_filter = f"{start_date}-01" if len(start_date) == 7 else start_date
-        start_ts = pd.to_datetime(start_filter)
-        df = df[df["parsed_date"] >= start_ts]
-    
-    if end_date:
-        # Convert end_date to last day of month (approximate with first of next month)
-        end_filter = f"{end_date}-31" if len(end_date) == 7 else end_date
-        end_ts = pd.to_datetime(end_filter)
-        df = df[df["parsed_date"] <= end_ts]
-    
-    # Apply limit if specified (but only if we have enough data)
-    if limit and len(df) > limit:
-        df = df.head(limit)
+    # Add Tenure column mapping if needed (for lease parsing compatibility)
+    if "tenure" in df.columns and "Tenure" not in df.columns:
+        df["Tenure"] = df["tenure"]
     
     return df
 
@@ -448,11 +455,12 @@ def get_available_districts() -> list:
     if GLOBAL_DF is not None and not GLOBAL_DF.empty:
         return sorted(GLOBAL_DF["district"].unique().tolist())
     
-    # Fallback to database
-    conn = sqlite3.connect(DB_PATH)
-    df = pd.read_sql_query(f"SELECT DISTINCT district FROM {MASTER_TABLE} ORDER BY district", conn)
-    conn.close()
-    return df["district"].tolist()
+    # Fallback to SQLAlchemy database query
+    from models.database import db
+    from models.transaction import Transaction
+    
+    districts = db.session.query(Transaction.district).distinct().order_by(Transaction.district).all()
+    return [d[0] for d in districts]  # Extract district from tuple results
 
 
 def get_sale_type_trends(districts: Optional[list] = None, segment: Optional[str] = None) -> Dict[str, Any]:
