@@ -11,6 +11,7 @@ SaaS Features:
 """
 
 from flask import Flask, jsonify
+from flask_cors import CORS
 import os
 from config import Config
 from models.database import db
@@ -23,19 +24,20 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
+    # Initialize CORS - allow all origins for now (can be restricted to specific domains in production)
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": ["https://sg-property-analyzer.vercel.app", "http://localhost:5173", "http://localhost:3000"],
+            "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
+    })
+    
     # Initialize SQLAlchemy
     db.init_app(app)
     
     # Initialize Flask-Migrate for database migrations
     migrate.init_app(app, db)
-    
-    # CORS - keep the existing after_request approach
-    @app.after_request
-    def after_request(response):
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE')
-        return response
     
     # Create database tables
     with app.app_context():
