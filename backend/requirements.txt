@@ -7,4 +7,5 @@ pyjwt
 werkzeug
 psycopg2-binary
 gunicorn
+pandas
 

@@ -13,12 +13,60 @@ SaaS Features:
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
+import pandas as pd
 from config import Config
 from models.database import db
 from flask_migrate import Migrate
 
 # Initialize Flask-Migrate (will be initialized in create_app)
 migrate = Migrate()
+
+
+def initialize_global_dataframe(app):
+    """
+    Load all transactions from database into GLOBAL_DF for fast in-memory queries.
+    This is called at app startup to ensure GLOBAL_DF is populated.
+    """
+    try:
+        with app.app_context():
+            from models.transaction import Transaction
+            from services.data_processor import set_global_dataframe
+            
+            print("Loading transactions from database into GLOBAL_DF...")
+            
+            # Query all transactions
+            transactions = db.session.query(Transaction).all()
+            
+            if not transactions:
+                print("⚠️  No transactions found in database. GLOBAL_DF will remain None.")
+                return
+            
+            # Convert to list of dicts
+            data = [t.to_dict() for t in transactions]
+            
+            # Convert to DataFrame
+            df = pd.DataFrame(data)
+            
+            # Ensure transaction_date is datetime
+            if 'transaction_date' in df.columns:
+                df['transaction_date'] = pd.to_datetime(df['transaction_date'], errors='coerce')
+            
+            # Add parsed_date column (expected by get_filtered_transactions)
+            df['parsed_date'] = pd.to_datetime(df['transaction_date'], errors='coerce')
+            
+            # Rename 'tenure' to 'Tenure' if needed (for lease parsing)
+            if 'tenure' in df.columns and 'Tenure' not in df.columns:
+                df['Tenure'] = df['tenure']
+            
+            # Set GLOBAL_DF
+            set_global_dataframe(df)
+            
+            print(f"✓ Loaded {len(df):,} transactions into GLOBAL_DF")
+            print(f"  Date range: {df['parsed_date'].min()} to {df['parsed_date'].max()}")
+            
+    except Exception as e:
+        print(f"⚠️  Error loading GLOBAL_DF: {e}")
+        print("   Will fallback to database queries (slower)")
 
 def create_app():
     app = Flask(__name__)
@@ -49,6 +97,9 @@ def create_app():
     # Create database tables
     with app.app_context():
         db.create_all()
+        
+        # Initialize GLOBAL_DF from database (for fast in-memory queries)
+        initialize_global_dataframe(app)
     
     # Register routes
     # Analytics routes (PUBLIC - no authentication required)
