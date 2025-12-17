@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -7,9 +8,9 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { COLORS, BEDROOM_LABELS } from '../constants';
 
 ChartJS.register(
   CategoryScale,
@@ -18,8 +19,23 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
+
+// Slate blue palette – lighter for smaller bedrooms, darker for larger
+// 2BR: light slate blue, 3BR: medium, 4BR: deepest navy
+const COLORS = {
+  '2b': '#4f81bd', // light/medium slate blue
+  '3b': '#28527a', // medium-deep slate blue
+  '4b': '#112B3C', // darkest navy
+};
+
+const BEDROOM_LABELS = {
+  '2b': '2-Bedroom',
+  '3b': '3-Bedroom',
+  '4b': '4-Bedroom',
+};
 
 function LineChart({ data, selectedBedrooms, valueFormatter, title }) {
   if (!data || data.length === 0) {
@@ -51,7 +67,7 @@ function LineChart({ data, selectedBedrooms, valueFormatter, title }) {
       pointHitRadius: 10,
       pointBackgroundColor: data.map((d, idx) => {
         const isLowSample = d[lowSampleKey] || false;
-        return isLowSample ? '#F59E0B' : COLORS[bedroom] || '#6B7280';
+        return isLowSample ? '#fbbf24' : COLORS[bedroom] || '#6B7280';
       }),
       fill: false,
     };

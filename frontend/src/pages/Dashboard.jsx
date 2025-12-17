@@ -1,22 +1,68 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from '../context/DataContext';
+import { useFilters } from '../context/FilterContext';
 import {
   getPriceTrends,
   getTotalVolume,
+  getAvgPsf,
   getSaleTypeTrends,
   getPriceTrendsBySaleType,
-  getPriceTrendsByRegion,
-  getPsfTrendsByRegion,
+  getMarketStats,
   getMarketStatsByDistrict,
   getComparableValueAnalysis,
   getProjectsByDistrict,
   getPriceProjectsByDistrict,
 } from '../api/client';
-import { COLORS, BEDROOM_LABELS, DISTRICT_NAMES } from '../constants';
 import LineChart from '../components/LineChart';
 import BarChart from '../components/BarChart';
-import RegionChart from '../components/RegionChart';
 import SaleTypeChart from '../components/SaleTypeChart';
+import { FilterBar } from '../components/dashboard/FilterBar';
+import { KPICards } from '../components/dashboard/KPICards';
+import { TopDistricts } from '../components/dashboard/TopDistricts';
+import { DistrictSummaryTable } from '../components/dashboard/DistrictSummaryTable';
+
+const COLORS = {
+  '2b': '#FF6B4A', // Orange Accent
+  '3b': '#FF6B4A', // Orange Accent
+  '4b': '#FF6B4A', // Orange Accent
+};
+
+const BEDROOM_LABELS = {
+  '2b': '2-Bedroom',
+  '3b': '3-Bedroom',
+  '4b': '4-Bedroom',
+};
+
+const DISTRICT_NAMES = {
+  'D01': 'Boat Quay / Raffles Place / Marina Downtown / Suntec City',
+  'D02': 'Shenton Way / Tanjong Pagar',
+  'D03': 'Queenstown / Alexandra / Tiong Bahru',
+  'D04': 'Harbourfront / Keppel / Telok Blangah',
+  'D05': 'Buona Vista / Dover / Pasir Panjang',
+  'D06': 'City Hall / Fort Canning',
+  'D07': 'Bugis / Rochor',
+  'D08': 'Little India / Farrer Park',
+  'D09': 'Orchard / Somerset / River Valley',
+  'D10': 'Tanglin / Bukit Timah / Holland',
+  'D11': 'Newton / Novena / Dunearn / Watten',
+  'D12': 'Balestier / Whampoa / Toa Payoh / Boon Keng / Bendemeer / Kampong Bugis',
+  'D13': 'Potong Pasir / Bidadari / MacPherson / Upper Aljunied',
+  'D14': 'Geylang / Dakota / Paya Lebar Central / Eunos / Ubi / Aljunied',
+  'D15': 'Tanjong Rhu / Amber / Meyer / Katong / Dunman / Joo Chiat / Marine Parade',
+  'D16': 'Bedok / Upper East Coast / Eastwood / Kew Drive',
+  'D17': 'Loyang / Changi',
+  'D18': 'Tampines / Pasir Ris',
+  'D19': 'Serangoon Garden / Hougang / Sengkang / Punggol',
+  'D20': 'Bishan / Ang Mo Kio',
+  'D21': 'Upper Bukit Timah / Clementi Park / Ulu Pandan',
+  'D22': 'Jurong / Boon Lay / Tuas',
+  'D23': 'Bukit Batok / Bukit Panjang / Choa Chu Kang',
+  'D24': 'Lim Chu Kang / Tengah',
+  'D25': 'Kranji / Woodlands',
+  'D26': 'Upper Thomson / Springleaf',
+  'D27': 'Yishun / Sembawang',
+  'D28': 'Seletar / Yio Chu Kang',
+};
 
 const formatPrice = (value) => {
   if (!value) return '-';
@@ -31,13 +77,18 @@ const formatPSF = (value) => {
   return `$${value.toLocaleString()}`;
 };
 
-function Card({ title, children }) {
+function Card({ title, children, subtitle, className }) {
   return (
-    <div className="bg-white rounded-xl p-4 md:p-6 mb-6 shadow-md">
+    <div className={`bg-white rounded-xl p-4 md:p-6 mb-6 shadow-md ${className || ''}`}>
       {title && (
-        <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4 md:mb-5">
-          {title}
-        </h2>
+        <div className="mb-4">
+          <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-1">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="text-sm text-gray-500">{subtitle}</p>
+          )}
+        </div>
       )}
       {children}
     </div>
@@ -80,27 +131,72 @@ function DistrictSummaryVolumeLiquidity({
         segment: selectedSegment || undefined,
       });
       
+      // Data validation and completeness check
+      // Axios wraps responses, so res.data is the actual response body from Flask
+      // Flask returns { projects: [...] }, so res.data.projects should be the array
       const projects = res.data?.projects || [];
-
+      
+      // Debug: Log the raw response structure
+      console.log(`[DEBUG] District ${district} API response:`, {
+        hasData: !!res.data,
+        dataKeys: res.data ? Object.keys(res.data) : [],
+        hasProjects: !!res.data?.projects,
+        projectCount: projects.length,
+        firstProject: projects[0] || null,
+        firstProjectKeys: projects[0] ? Object.keys(projects[0]) : [],
+      });
+      
       if (!Array.isArray(projects)) {
+        console.error(`[ERROR] District ${district}: Expected projects array, got:`, typeof projects, projects);
         setDistrictProjects((prev) => ({
           ...prev,
           [district]: [],
         }));
         return;
       }
-
-      // Validate each project has required fields
+      
+      // Validate each project has required fields and log sample data
       const validatedProjects = projects.filter((project) => {
-        return !!project.project_name;
+        if (!project.project_name) {
+          console.warn(`Skipping project with missing name in district ${district}`);
+          return false;
+        }
+        // Debug: Log first project's data structure
+        if (projects.indexOf(project) === 0) {
+          console.log(`[DEBUG] Sample project data for ${district}:`, {
+            name: project.project_name,
+            '2b': project['2b'],
+            '2b_count': project['2b_count'],
+            '3b': project['3b'],
+            '3b_count': project['3b_count'],
+            '4b': project['4b'],
+            '4b_count': project['4b_count'],
+            total: project.total,
+            total_quantity: project.total_quantity,
+            allKeys: Object.keys(project),
+          });
+        }
+        return true;
       });
+      
+      // Log completeness metrics
+      if (validatedProjects.length !== projects.length) {
+        console.warn(
+          `District ${district}: Filtered out ${projects.length - validatedProjects.length} invalid projects`
+        );
+      }
+      
+      console.log(
+        `District ${district}: Loaded ${validatedProjects.length} projects (bedrooms: ${bedroomParam}, segment: ${selectedSegment || 'all'})`
+      );
       
       setDistrictProjects((prev) => ({
         ...prev,
         [district]: validatedProjects,
       }));
     } catch (err) {
-      console.error('Error fetching district projects:', err);
+      console.error('Error fetching district projects (volume & liquidity):', err);
+      console.error('Error details:', err.response?.data || err.message);
       setDistrictProjects((prev) => ({
         ...prev,
         [district]: [],
@@ -333,7 +429,23 @@ function DistrictSummaryVolumeLiquidity({
                                         </td>
                                       </tr>
                                     )}
-                                    {projects.map((project, idx2) => (
+                                    {projects.map((project, idx2) => {
+                                      // Debug: Log first project's data structure when rendering
+                                      if (idx2 === 0) {
+                                        console.log(`[DEBUG RENDER] First project in ${district}:`, {
+                                          name: project.project_name,
+                                          '2b': project['2b'],
+                                          '2b_count': project['2b_count'],
+                                          '3b': project['3b'],
+                                          '3b_count': project['3b_count'],
+                                          '4b': project['4b'],
+                                          '4b_count': project['4b_count'],
+                                          total: project.total,
+                                          total_quantity: project.total_quantity,
+                                          allKeys: Object.keys(project),
+                                        });
+                                      }
+                                      return (
                                       <tr
                                         key={idx2}
                                         className={`border-b border-gray-100 ${
@@ -407,7 +519,8 @@ function DistrictSummaryVolumeLiquidity({
                                             : '-'}
                                         </td>
                                       </tr>
-                                    ))}
+                                    );
+                                    })}
                                   </tbody>
                                 </table>
                               </div>
@@ -610,12 +723,31 @@ function DistrictSummaryPrice({ selectedSegment, selectedDistrict }) {
       const res = await getPriceProjectsByDistrict(district, params);
       const projects = res.data?.projects || [];
 
-      // Filter projects with valid data and sufficient sample size
+      // Data validation and completeness check
       const validatedProjects = projects.filter((project) => {
-        if (!project || !project.project_name) return false;
-        if (!project.count || project.count < 3) return false;
+        if (!project || !project.project_name) {
+          console.warn(`Skipping price project with missing name in district ${district}`);
+          return false;
+        }
+        if (!project.count || project.count < 3) {
+          console.warn(
+            `Skipping project ${project.project_name} in district ${district}: insufficient sample (count: ${project.count})`
+          );
+          return false;
+        }
         return true;
       });
+
+      // Log completeness metrics
+      if (validatedProjects.length !== projects.length) {
+        console.warn(
+          `District ${district} (${viewKey}): Filtered out ${projects.length - validatedProjects.length} projects with insufficient data`
+        );
+      }
+
+      console.log(
+        `District ${district} (${viewKey}): Loaded ${validatedProjects.length} valid projects (bedrooms: ${bedroomParam}, segment: ${selectedSegment || 'all'})`
+      );
 
       // Sum transactions across projects for this district/timeframe
       const totalCount = validatedProjects.reduce(
@@ -641,6 +773,7 @@ function DistrictSummaryPrice({ selectedSegment, selectedDistrict }) {
       }
     } catch (err) {
       console.error('Error fetching price projects by district:', err);
+      console.error('Error details:', err.response?.data || err.message);
       const viewKey = monthsForView === 3 ? 'short_term' : 'long_term';
       const key = `${district}_${viewKey}`;
       setPriceDistrictProjects((prev) => ({
@@ -1040,48 +1173,26 @@ function Dashboard() {
   // Get centralized data from context (districts, metadata)
   const { availableDistricts, apiMetadata, loading: contextLoading } = useData();
   
-  const [selectedBedrooms, setSelectedBedrooms] = useState(['2b', '3b', '4b']);
-  const [selectedSegment, setSelectedSegment] = useState(null);
-  const [selectedDistrict, setSelectedDistrict] = useState('all');
+  // Use FilterContext for filter state
+  const { filters } = useFilters();
+  
+  // Convert FilterContext format to Dashboard format
+  const selectedBedrooms = filters.bedrooms || ['2b', '3b', '4b'];
+  const selectedSegment = filters.segment === 'All Segments' ? null : filters.segment;
+  const selectedDistrict = filters.district === 'All Districts' ? 'all' : filters.district;
   const [priceTrends, setPriceTrends] = useState([]);
   const [volumeData, setVolumeData] = useState([]);
+  const [psfData, setPsfData] = useState([]);
   const [saleTypeTrends, setSaleTypeTrends] = useState([]);
   const [priceTrendsBySaleType, setPriceTrendsBySaleType] = useState({});
-  const [priceTrendsByRegion, setPriceTrendsByRegion] = useState([]);
-  const [psfTrendsByRegion, setPsfTrendsByRegion] = useState([]);
   const [saleTypeSegment, setSaleTypeSegment] = useState(null);
+  const [marketStats, setMarketStats] = useState(null);
+  const [marketStatsByDistrict, setMarketStatsByDistrict] = useState(null);
   const [buyBoxResult, setBuyBoxResult] = useState(null);
   const [buyBoxLoading, setBuyBoxLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Memoize transaction count chart data
-  const transactionCountData = useMemo(() => {
-    if (!priceTrends || priceTrends.length === 0) return [];
-    return priceTrends.map(d => ({
-      month: d.month,
-      '2b_count': d['2b_count'] || 0,
-      '3b_count': d['3b_count'] || 0,
-      '4b_count': d['4b_count'] || 0
-    }));
-  }, [priceTrends]);
-
-  // Memoize PSF trends data
-  const psfTrendsData = useMemo(() => {
-    if (!priceTrends || priceTrends.length === 0) return [];
-    return priceTrends.map(d => ({
-      month: d.month || d.quarter || '',
-      '2b_price': d['2b_psf'] != null ? d['2b_psf'] : null,
-      '3b_price': d['3b_psf'] != null ? d['3b_psf'] : null,
-      '4b_price': d['4b_psf'] != null ? d['4b_psf'] : null,
-      '2b_count': d['2b_count'] || 0,
-      '3b_count': d['3b_count'] || 0,
-      '4b_count': d['4b_count'] || 0,
-      '2b_low_sample': d['2b_low_sample'] || false,
-      '3b_low_sample': d['3b_low_sample'] || false,
-      '4b_low_sample': d['4b_low_sample'] || false
-    }));
-  }, [priceTrends]);
 
   // Fetch main data
   useEffect(() => {
@@ -1097,19 +1208,17 @@ function Dashboard() {
       };
 
       try {
-        const [trendsRes, volumeRes, saleTypeRes, priceRegionRes, psfRegionRes] = await Promise.all([
+        const [trendsRes, volumeRes, psfRes, saleTypeRes] = await Promise.all([
           getPriceTrends(params),
           getTotalVolume(params),
-          getSaleTypeTrends(params).catch(() => ({ data: { trends: [] } })),
-          getPriceTrendsByRegion(params).catch(() => ({ data: { trends: [] } })),
-          getPsfTrendsByRegion(params).catch(() => ({ data: { trends: [] } }))
+          getAvgPsf(params),
+          getSaleTypeTrends(params).catch(() => ({ data: { trends: [] } }))
         ]);
 
         setPriceTrends(trendsRes.data.trends || []);
         setVolumeData(volumeRes.data.data || []);
+        setPsfData(psfRes.data.data || []);
         setSaleTypeTrends(saleTypeRes.data.trends || []);
-        setPriceTrendsByRegion(priceRegionRes.data.trends || []);
-        setPsfTrendsByRegion(psfRegionRes.data.trends || []);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err.message);
@@ -1119,6 +1228,23 @@ function Dashboard() {
     };
     fetchData();
   }, [selectedBedrooms, selectedDistrict, selectedSegment]);
+
+  // Fetch market-wide stats once (pre-computed dual-view analytics)
+  useEffect(() => {
+    const fetchMarketStats = async () => {
+      try {
+        const [marketRes, marketDistRes] = await Promise.all([
+          getMarketStats().catch(() => ({ data: null })),
+          getMarketStatsByDistrict().catch(() => ({ data: null }))
+        ]);
+        setMarketStats(marketRes.data || null);
+        setMarketStatsByDistrict(marketDistRes.data || null);
+      } catch (err) {
+        console.error('Error fetching market stats:', err);
+      }
+    };
+    fetchMarketStats();
+  }, []);
 
   // Fetch price trends by sale type separately
   useEffect(() => {
@@ -1177,201 +1303,104 @@ function Dashboard() {
   }
 
   return (
-    <div className="p-4 md:p-8 lg:p-8 max-w-7xl mx-auto overflow-x-hidden">
-      {/* Header */}
-      <div className="mb-6 md:mb-8">
-        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-          Singapore Private Condo Resale Statistics
+    <div className="space-y-8">
+      {/* Header Section */}
+      {/* Added mb-6 to separate title from filters */}
+      <div className="flex flex-col gap-1 px-6" id="overview-macro">
+        <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
+          Market Overview
         </h1>
-        <p className="text-sm md:text-base text-gray-600">
-          Transaction data breakdown by postal district and bedroom type
+        <p className="text-slate-500 text-base font-medium">
+          Real-time analysis of the Singapore private condo market.
         </p>
         {apiMetadata && (
-          <p className="text-xs md:text-sm text-gray-400 mt-1">
-            {apiMetadata.row_count?.toLocaleString?.() || apiMetadata.row_count} transactions ·
-            {' '}last updated {apiMetadata.last_updated || 'n/a'}
+          <p className="mt-2 text-xs text-slate-500 italic">
+            Data source from URA | {apiMetadata.row_count?.toLocaleString() || '0'} transactions records found
+            {apiMetadata.min_date && apiMetadata.max_date && (
+              <> from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short'
+              })} to {new Date(apiMetadata.max_date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short'
+              })}
+              </>
+            )}
+            {apiMetadata.last_updated && (
+              <> | Database last updated at {new Date(apiMetadata.last_updated).toLocaleString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+              })}
+              </>
+            )}
           </p>
         )}
       </div>
 
-      {/* Filters */}
-      <Card>
-        <GlobalFilterBar
-          selectedBedrooms={selectedBedrooms}
-          setSelectedBedrooms={setSelectedBedrooms}
-          selectedSegment={selectedSegment}
-          setSelectedSegment={setSelectedSegment}
-          selectedDistrict={selectedDistrict}
-          setSelectedDistrict={setSelectedDistrict}
-          availableDistricts={availableDistricts}
-        />
-      </Card>
+      {/* Filter Bar + main dashboard content, aligned with charts via shared padding */}
+      <div className="px-6 space-y-6">
+        <FilterBar />
 
-      {(loading || contextLoading) ? (
-        <div className="text-center py-12 md:py-16 text-gray-500">
-          <div className="text-3xl md:text-4xl mb-3">⏳</div>
-          <div className="text-sm md:text-base">Loading data...</div>
-        </div>
-      ) : (
-        <>
-          {/* Chart 1: Price Trends */}
-          <Card title="📈 Price Trend by Quarter (Median Price & Median Price by Region)">
-            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:snap-none">
-              <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
-                <div className="bg-white p-2 md:p-4 rounded-lg">
-                  <LineChart
-                    data={priceTrends}
-                    selectedBedrooms={selectedBedrooms}
-                    valueFormatter={formatPrice}
-                    title="Median Price"
-                  />
-                </div>
-              </div>
-              {priceTrendsByRegion && priceTrendsByRegion.length > 0 && (
-                <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
-                  <div className="bg-white p-2 md:p-4 rounded-lg">
-                    <RegionChart
-                      data={priceTrendsByRegion}
-                      valueFormatter={formatPrice}
-                      title="Median Price by Region"
-                    />
-                  </div>
-                </div>
-              )}
+        {(loading || contextLoading) ? (
+          <div className="text-center py-12 md:py-16 text-gray-500">
+            <div className="text-3xl md:text-4xl mb-3">⏳</div>
+            <div className="text-sm md:text-base">Loading data...</div>
+          </div>
+        ) : (
+          <>
+            {/* 1. Macro Overview Section - KPI Cards Only */}
+            <div id="overview-macro" className="scroll-mt-32">
+              <KPICards
+                marketStats={marketStats}
+                priceTrends={priceTrends}
+                volumeData={volumeData}
+              />
             </div>
-          </Card>
 
-          {/* Chart 2: PSF Trends */}
-          <Card title="📊 PSF Trend by Quarter (Median PSF & Median PSF by Region)">
-            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:snap-none">
-              <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
-                <div className="bg-white p-2 md:p-4 rounded-lg">
-                  <LineChart
-                    data={psfTrendsData}
-                    selectedBedrooms={selectedBedrooms}
-                    valueFormatter={formatPSF}
-                    title="Median PSF"
-                  />
-                </div>
+            {/* Analyze by Districts Section */}
+            <div id="district-analysis" className="scroll-mt-32">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <h2 className="text-xl font-bold text-slate-800">Analyze by Districts</h2>
               </div>
-              {psfTrendsByRegion && psfTrendsByRegion.length > 0 && (
-                <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
-                  <div className="bg-white p-2 md:p-4 rounded-lg">
-                    <RegionChart
-                      data={psfTrendsByRegion}
-                      valueFormatter={formatPSF}
-                      title="Median PSF by Region"
-                    />
+              
+              <div className="space-y-6">
+                {/* Top Districts Widget */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-1">
+                    <TopDistricts marketStatsByDistrict={marketStatsByDistrict} />
                   </div>
                 </div>
-              )}
-            </div>
-          </Card>
 
-          {/* Chart: Transaction Count by Bedroom Type */}
-          {transactionCountData && transactionCountData.length > 0 && (
-            <Card title="📊 Transaction Count by Bedroom Type">
-              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:block md:overflow-visible md:snap-none">
-                <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
-                  <div className="min-w-[400px] md:min-w-0">
-                    <BarChart
-                      data={transactionCountData}
-                      selectedBedrooms={selectedBedrooms}
-                      title="Transaction Count"
-                      beginAtZero={true}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Chart: New Sale vs Resale Transaction Count */}
-          {saleTypeTrends.length > 0 && (
-            <Card title="📊 Transaction Count: New Sale vs Resale">
-              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:block md:overflow-visible md:snap-none">
-                <div className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
-                  <div className="min-w-[400px] md:min-w-0">
-                    <SaleTypeChart data={saleTypeTrends} />
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* District Summary (Volume & Liquidity) */}
-          <DistrictSummaryVolumeLiquidity
-            selectedBedrooms={selectedBedrooms}
-            selectedSegment={selectedSegment}
-            volumeData={volumeData}
-          />
-
-          {/* Chart: Median Price by Sale Type */}
-          {Object.keys(priceTrendsBySaleType).length > 0 && (
-            <Card title="📈 Median Price: New Sale vs Resale by Bedroom Type">
-              <div className="mb-4">
-                <label className="block mb-2 text-xs md:text-sm font-medium text-gray-700">
-                  Market Segment (for this chart only)
-                </label>
-                <select
-                  value={saleTypeSegment || 'all'}
-                  onChange={(e) => setSaleTypeSegment(e.target.value === 'all' ? null : e.target.value)}
-                  className="w-full md:w-auto px-3 py-2 rounded-md border border-gray-300 text-xs md:text-sm min-w-[120px] md:min-w-[150px]"
+                {/* District Summary Table */}
+                <Card 
+                  title="District Summary" 
+                  subtitle="Detailed view of volume and pricing by district"
                 >
-                  <option value="all">All Segments</option>
-                  <option value="CCR">CCR</option>
-                  <option value="RCR">RCR</option>
-                  <option value="OCR">OCR</option>
-                </select>
+                  <DistrictSummaryTable
+                    marketStatsByDistrict={marketStatsByDistrict}
+                    onDistrictClick={(district) => {
+                      setSelectedDistrict(district);
+                    }}
+                  />
+                </Card>
+
               </div>
-              <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory md:grid md:grid-cols-2 md:overflow-visible md:snap-none">
-                {selectedBedrooms.map(bedroom => {
-                  // Backend keys are '2b', '3b', '4b', so use the bedroom code directly
-                  const saleTypeData = priceTrendsBySaleType[bedroom];
+            </div>
 
-                  // Backend returns: { trends: { '2b': [ { quarter, new_sale, resale }, ... ], ... } }
-                  // After API call we store res.data.trends directly, so saleTypeData is an array of points.
-                  if (!saleTypeData || !Array.isArray(saleTypeData) || saleTypeData.length === 0) {
-                    return null;
-                  }
-
-                  return (
-                    <div key={bedroom} className="snap-center min-w-[90vw] md:min-w-0 md:snap-none">
-                      <div className="bg-white p-2 md:p-4 rounded-lg">
-                        <h3 className="text-xs md:text-sm text-gray-600 mb-3">
-                          {BEDROOM_LABELS[bedroom]}
-                        </h3>
-                        <LineChart
-                          data={saleTypeData.map(d => ({
-                            month: d.quarter,
-                            // Map New Sale to "2b" line and Resale to "3b" line for legend consistency
-                            '2b_price': d.new_sale,
-                            '3b_price': d.resale,
-                            '4b_price': null,
-                          }))}
-                          selectedBedrooms={['2b', '3b']}
-                          valueFormatter={formatPrice}
-                          title=""
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+            {/* 7. Budget Comparison Section */}
+            <div id="budget-comparison" className="scroll-mt-32">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <h2 className="text-xl font-bold text-slate-800">Budget Comparison</h2>
               </div>
-            </Card>
-          )}
-
-          {/* District Summary (Price) with local filters */}
-          <DistrictSummaryPrice
-            selectedSegment={selectedSegment}
-            selectedDistrict={selectedDistrict}
-          />
-
-          {/* Comparable Value Analysis (Buy Box) */}
-          <Card title="🎯 Comparable Value Analysis (Buy Box)">
-            <p className="text-xs md:text-sm text-gray-600 mb-3">
-              Find transactions around a target price band for the selected bedroom types and (optionally) district.
-            </p>
+              <Card 
+                title="Comparable Value Analysis (Buy Box)" 
+                subtitle="Find transactions around a target price band for the selected bedroom types and district"
+              >
             <div className="flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4 items-end mb-4">
               <div className="w-full sm:w-auto">
                 <label className="block mb-1 text-xs md:text-sm font-medium text-gray-700">
@@ -1405,8 +1434,8 @@ function Dashboard() {
                 type="button"
                 onClick={runBuyBoxAnalysis}
                 disabled={buyBoxLoading}
-                className={`w-full sm:w-auto px-4 md:px-5 py-2 md:py-2.5 rounded-md border-none bg-blue-600 text-white font-medium text-xs md:text-sm cursor-pointer transition-opacity ${
-                  buyBoxLoading ? 'opacity-70 cursor-default' : 'hover:bg-blue-700'
+                className={`w-full sm:w-auto px-4 md:px-5 py-2 md:py-2.5 rounded-md border-none bg-[#FF6B4A] text-white font-medium text-xs md:text-sm cursor-pointer transition-opacity ${
+                  buyBoxLoading ? 'opacity-70 cursor-default' : 'hover:bg-[#FF8C69]'
                 }`}
               >
                 {buyBoxLoading ? 'Running analysis...' : 'Run Analysis'}
@@ -1460,9 +1489,11 @@ function Dashboard() {
                 )}
               </>
             )}
-          </Card>
-        </>
-      )}
+              </Card>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -18,16 +18,30 @@ def health():
     """Health check endpoint."""
     from models.transaction import Transaction
     from models.database import db
+    from sqlalchemy import func
     
     try:
         count = db.session.query(Transaction).count()
         metadata = reader.get_metadata()
+        
+        # Get min and max transaction dates from database
+        min_date_result = db.session.query(func.min(Transaction.transaction_date)).scalar()
+        max_date_result = db.session.query(func.max(Transaction.transaction_date)).scalar()
+        
+        # If transaction_date is None, try contract_date
+        if min_date_result is None:
+            min_date_result = db.session.query(func.min(Transaction.contract_date)).scalar()
+        if max_date_result is None:
+            max_date_result = db.session.query(func.max(Transaction.contract_date)).scalar()
+        
         return jsonify({
             "status": "healthy",
             "data_loaded": count > 0,
             "row_count": count,
             "stats_computed": metadata.get("last_updated") is not None,
-            "last_updated": metadata.get("last_updated")
+            "last_updated": metadata.get("last_updated"),
+            "min_date": min_date_result.isoformat() if min_date_result else None,
+            "max_date": max_date_result.isoformat() if max_date_result else None
         })
     except Exception as e:
         return jsonify({

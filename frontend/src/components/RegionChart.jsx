@@ -20,7 +20,7 @@ ChartJS.register(
   Legend
 );
 
-function RegionChart({ data, valueFormatter, title }) {
+function RegionChart({ data, valueFormatter, title, isPSF = false }) {
   if (!data || data.length === 0) {
     return <div>No data available</div>;
   }
@@ -41,12 +41,13 @@ function RegionChart({ data, valueFormatter, title }) {
     return (val == null || val === undefined) ? NaN : val;
   });
 
+  const OCEAN_BLUE = '#0ea5e9';
   const datasets = [
     {
       label: 'CCR',
       data: ccrData,
-      borderColor: '#EF4444',
-      backgroundColor: '#EF444420',
+      borderColor: OCEAN_BLUE,
+      backgroundColor: OCEAN_BLUE + '20',
       tension: 0.4,
       spanGaps: false,
       pointRadius: 4,
@@ -57,8 +58,8 @@ function RegionChart({ data, valueFormatter, title }) {
     {
       label: 'RCR',
       data: rcrData,
-      borderColor: '#F59E0B',
-      backgroundColor: '#F59E0B20',
+      borderColor: OCEAN_BLUE,
+      backgroundColor: OCEAN_BLUE + '20',
       tension: 0.4,
       spanGaps: false,
       pointRadius: 4,
@@ -69,8 +70,8 @@ function RegionChart({ data, valueFormatter, title }) {
     {
       label: 'OCR',
       data: ocrData,
-      borderColor: '#10B981',
-      backgroundColor: '#10B98120',
+      borderColor: '#0284c7', // Darker blue variant
+      backgroundColor: '#0284c720',
       tension: 0.4,
       spanGaps: false,
       pointRadius: 4,
