@@ -514,17 +514,71 @@ def price_trends_by_district():
 
 @analytics_bp.route("/market_stats_by_district", methods=["GET"])
 def market_stats_by_district():
-    """Get dual-view market analysis by district: Short-Term (6 months) vs Long-Term (12 months)."""
+    """
+    Get dual-view market analysis by district: Short-Term vs Long-Term months.
+    
+    Query params:
+      - bedroom: comma-separated bedroom counts, e.g. 2,3,4 (default: 2,3,4)
+      - districts: comma-separated districts to filter (optional)
+      - segment: Market segment filter ("CCR", "RCR", or "OCR") (optional)
+      - short_months: Short-term period in months (default: 3)
+      - long_months: Long-term period in months (default: 15)
+    """
     start = time.time()
     
+    # Parse bedroom parameter
+    bedroom_param = request.args.get("bedroom", "2,3,4")
     try:
-        stats = reader.get_market_stats_by_district()
+        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
+    except ValueError:
+        return jsonify({"error": "Invalid bedroom parameter"}), 400
+    
+    # Parse districts parameter (optional)
+    districts_param = request.args.get("districts")
+    districts = None
+    if districts_param:
+        districts = [d.strip() for d in districts_param.split(",") if d.strip()]
+        # Normalize districts
+        normalized = []
+        for d in districts:
+            d = str(d).strip().upper()
+            if not d.startswith("D"):
+                d = f"D{d.zfill(2)}"
+            normalized.append(d)
+        districts = normalized
+    
+    # Parse segment parameter (optional)
+    segment = request.args.get("segment")
+    
+    # Parse month parameters
+    short_months_param = request.args.get("short_months", "3")
+    long_months_param = request.args.get("long_months", "15")
+    try:
+        short_months = int(short_months_param)
+        long_months = int(long_months_param)
+    except ValueError:
+        return jsonify({"error": "Invalid short_months or long_months parameter"}), 400
+    
+    try:
+        # Use data_processor function which supports bedroom filtering
+        from services.data_processor import get_market_stats_by_district
+        
+        stats = get_market_stats_by_district(
+            bedroom_types=bedroom_types,
+            districts=districts,
+            short_months=short_months,
+            long_months=long_months,
+            segment=segment
+        )
+        
         elapsed = time.time() - start
-        print(f"GET /api/market_stats_by_district took: {elapsed:.4f} seconds")
+        print(f"GET /api/market_stats_by_district took: {elapsed:.4f} seconds (bedrooms: {bedroom_types})")
         return jsonify(stats)
     except Exception as e:
         elapsed = time.time() - start
         print(f"GET /api/market_stats_by_district ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
