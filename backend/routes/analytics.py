@@ -38,13 +38,25 @@ def health():
 
 @analytics_bp.route("/resale_stats", methods=["GET"])
 def resale_stats():
-    """Get resale statistics for 2, 3, 4-Bedroom condos."""
+    """
+    Get resale statistics for 2, 3, 4-Bedroom condos.
+    
+    Query params:
+      - districts: comma-separated districts to filter (optional)
+      - segment: Market segment filter ("CCR", "RCR", or "OCR") (optional)
+    
+    Note: Currently returns pre-computed stats. Filtering by districts/segment
+    is accepted but may not be fully applied if pre-computed stats don't have variants.
+    For full filtering support, consider switching to live computation.
+    """
     start = time.time()
     
     districts_param = request.args.get("districts")
     segment = request.args.get("segment")
     
-    # For now, return pre-computed stats (filtering can be added later)
+    # Note: reader.get_resale_stats() accepts these params but pre-computed stats
+    # may not have filtered variants. For now, return what's available.
+    # TODO: Consider switching to live computation for full filtering support
     try:
         stats = reader.get_resale_stats(districts=districts_param, segment=segment)
         elapsed = time.time() - start
@@ -482,17 +494,42 @@ def get_districts():
 
 @analytics_bp.route("/market_stats", methods=["GET"])
 def market_stats():
-    """Get dual-view market analysis: Short-Term (6 months) vs Long-Term (12 months)."""
+    """
+    Get dual-view market analysis: Short-Term vs Long-Term months.
+    
+    Query params:
+      - segment: Market segment filter ("CCR", "RCR", or "OCR") (optional)
+      - short_months: Short-term period in months (default: 3)
+      - long_months: Long-term period in months (default: 15)
+    """
     start = time.time()
     
+    # Parse segment parameter (optional)
+    segment = request.args.get("segment")
+    
+    # Parse month parameters
+    short_months_param = request.args.get("short_months", "3")
+    long_months_param = request.args.get("long_months", "15")
     try:
-        stats = reader.get_market_stats()
+        short_months = int(short_months_param)
+        long_months = int(long_months_param)
+    except ValueError:
+        return jsonify({"error": "Invalid short_months or long_months parameter"}), 400
+    
+    try:
+        # Use data_processor function which supports segment and months filtering
+        from services.data_processor import get_market_stats
+        
+        stats = get_market_stats(segment=segment, short_months=short_months, long_months=long_months)
+        
         elapsed = time.time() - start
         print(f"GET /api/market_stats took: {elapsed:.4f} seconds")
         return jsonify(stats)
     except Exception as e:
         elapsed = time.time() - start
         print(f"GET /api/market_stats ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
@@ -584,63 +621,177 @@ def market_stats_by_district():
 
 @analytics_bp.route("/sale_type_trends", methods=["GET"])
 def sale_type_trends():
-    """Get transaction counts by sale type (New Sale vs Resale) over time by quarter."""
+    """
+    Get transaction counts by sale type (New Sale vs Resale) over time by quarter.
+    
+    Query params:
+      - districts: comma-separated districts to filter (optional)
+      - segment: Market segment filter ("CCR", "RCR", or "OCR") (optional)
+    """
     start = time.time()
     
+    # Parse districts parameter (optional)
+    districts_param = request.args.get("districts")
+    districts = None
+    if districts_param:
+        districts = [d.strip() for d in districts_param.split(",") if d.strip()]
+        # Normalize districts
+        normalized = []
+        for d in districts:
+            d = str(d).strip().upper()
+            if not d.startswith("D"):
+                d = f"D{d.zfill(2)}"
+            normalized.append(d)
+        districts = normalized
+    
+    # Parse segment parameter (optional)
+    segment = request.args.get("segment")
+    
     try:
-        trends = reader.get_sale_type_trends()
+        # Use data_processor function which supports filtering
+        from services.data_processor import get_sale_type_trends
+        
+        trends = get_sale_type_trends(districts=districts, segment=segment)
+        
         elapsed = time.time() - start
         print(f"GET /api/sale_type_trends took: {elapsed:.4f} seconds")
         return jsonify(trends)
     except Exception as e:
         elapsed = time.time() - start
         print(f"GET /api/sale_type_trends ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
 @analytics_bp.route("/price_trends_by_sale_type", methods=["GET"])
 def price_trends_by_sale_type():
-    """Get median price trends by sale type (New Sale vs Resale) over time by quarter, separated by bedroom type."""
+    """
+    Get median price trends by sale type (New Sale vs Resale) over time by quarter, separated by bedroom type.
+    
+    Query params:
+      - bedroom: comma-separated bedroom counts, e.g. 2,3,4 (default: 2,3,4)
+      - districts: comma-separated districts to filter (optional)
+      - segment: Market segment filter ("CCR", "RCR", or "OCR") (optional)
+    """
     start = time.time()
     
+    # Parse bedroom parameter
+    bedroom_param = request.args.get("bedroom", "2,3,4")
     try:
-        trends = reader.get_price_trends_by_sale_type()
+        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
+    except ValueError:
+        return jsonify({"error": "Invalid bedroom parameter"}), 400
+    
+    # Parse districts parameter (optional)
+    districts_param = request.args.get("districts")
+    districts = None
+    if districts_param:
+        districts = [d.strip() for d in districts_param.split(",") if d.strip()]
+        # Normalize districts
+        normalized = []
+        for d in districts:
+            d = str(d).strip().upper()
+            if not d.startswith("D"):
+                d = f"D{d.zfill(2)}"
+            normalized.append(d)
+        districts = normalized
+    
+    # Parse segment parameter (optional)
+    segment = request.args.get("segment")
+    
+    try:
+        # Use data_processor function which supports filtering
+        from services.data_processor import get_price_trends_by_sale_type
+        
+        trends = get_price_trends_by_sale_type(
+            bedroom_types=bedroom_types,
+            districts=districts,
+            segment=segment
+        )
+        
         elapsed = time.time() - start
-        print(f"GET /api/price_trends_by_sale_type took: {elapsed:.4f} seconds")
+        print(f"GET /api/price_trends_by_sale_type took: {elapsed:.4f} seconds (bedrooms: {bedroom_types})")
         return jsonify(trends)
     except Exception as e:
         elapsed = time.time() - start
         print(f"GET /api/price_trends_by_sale_type ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
 @analytics_bp.route("/price_trends_by_region", methods=["GET"])
 def price_trends_by_region():
-    """Get median price trends by region (CCR, RCR, OCR) over time by quarter."""
+    """
+    Get median price trends by region (CCR, RCR, OCR) over time by quarter.
+    
+    Query params:
+      - bedroom: comma-separated bedroom counts, e.g. 2,3,4 (default: 2,3,4)
+      - districts: comma-separated districts to filter (optional, but ignored for region analysis)
+    """
     start = time.time()
     
+    # Parse bedroom parameter
+    bedroom_param = request.args.get("bedroom", "2,3,4")
     try:
-        trends = reader.get_price_trends_by_region()
+        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
+    except ValueError:
+        return jsonify({"error": "Invalid bedroom parameter"}), 400
+    
+    # Note: districts parameter is accepted but ignored for region analysis
+    # (region analysis needs all districts to calculate CCR/RCR/OCR)
+    
+    try:
+        # Use data_processor function which supports bedroom filtering
+        from services.data_processor import get_price_trends_by_region
+        
+        trends = get_price_trends_by_region(bedroom_types=bedroom_types, districts=None)
+        
         elapsed = time.time() - start
-        print(f"GET /api/price_trends_by_region took: {elapsed:.4f} seconds")
+        print(f"GET /api/price_trends_by_region took: {elapsed:.4f} seconds (bedrooms: {bedroom_types})")
         return jsonify(trends)
     except Exception as e:
         elapsed = time.time() - start
         print(f"GET /api/price_trends_by_region ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
 @analytics_bp.route("/psf_trends_by_region", methods=["GET"])
 def psf_trends_by_region():
-    """Get median PSF trends by region (CCR, RCR, OCR) over time by quarter."""
+    """
+    Get median PSF trends by region (CCR, RCR, OCR) over time by quarter.
+    
+    Query params:
+      - bedroom: comma-separated bedroom counts, e.g. 2,3,4 (default: 2,3,4)
+      - districts: comma-separated districts to filter (optional, but ignored for region analysis)
+    """
     start = time.time()
     
+    # Parse bedroom parameter
+    bedroom_param = request.args.get("bedroom", "2,3,4")
     try:
-        trends = reader.get_psf_trends_by_region()
+        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
+    except ValueError:
+        return jsonify({"error": "Invalid bedroom parameter"}), 400
+    
+    # Note: districts parameter is accepted but ignored for region analysis
+    # (region analysis needs all districts to calculate CCR/RCR/OCR)
+    
+    try:
+        # Use data_processor function which supports bedroom filtering
+        from services.data_processor import get_psf_trends_by_region
+        
+        trends = get_psf_trends_by_region(bedroom_types=bedroom_types, districts=None)
+        
         elapsed = time.time() - start
-        print(f"GET /api/psf_trends_by_region took: {elapsed:.4f} seconds")
+        print(f"GET /api/psf_trends_by_region took: {elapsed:.4f} seconds (bedrooms: {bedroom_types})")
         return jsonify(trends)
     except Exception as e:
         elapsed = time.time() - start
         print(f"GET /api/psf_trends_by_region ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
