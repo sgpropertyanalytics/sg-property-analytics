@@ -777,6 +777,7 @@ def price_trends_by_region():
 def aggregate():
     """
     Flexible aggregation endpoint for Power BI-style dynamic filtering.
+    Uses SQL-level aggregation for memory efficiency.
 
     Query params:
       - group_by: comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region)
@@ -809,20 +810,20 @@ def aggregate():
     from datetime import datetime
     from models.transaction import Transaction
     from models.database import db
-    from sqlalchemy import func, and_, or_, case
-    import numpy as np
+    from sqlalchemy import func, and_, or_, extract, cast, String, literal_column
+    from services.data_processor import _get_market_segment
 
     start = time.time()
 
     # Parse parameters
     group_by_param = request.args.get("group_by", "month")
-    metrics_param = request.args.get("metrics", "count,median_psf")
+    metrics_param = request.args.get("metrics", "count,avg_psf")
 
     group_by = [g.strip() for g in group_by_param.split(",") if g.strip()]
     metrics = [m.strip() for m in metrics_param.split(",") if m.strip()]
 
-    # Build base query
-    query = db.session.query(Transaction)
+    # Build filter conditions (we'll reuse these)
+    filter_conditions = []
     filters_applied = {}
 
     # District filter
@@ -834,32 +835,31 @@ def aggregate():
             if not d.startswith("D"):
                 d = f"D{d.zfill(2)}"
             normalized.append(d)
-        query = query.filter(Transaction.district.in_(normalized))
+        filter_conditions.append(Transaction.district.in_(normalized))
         filters_applied["district"] = normalized
 
     # Bedroom filter
     bedroom_param = request.args.get("bedroom")
     if bedroom_param:
         bedrooms = [int(b.strip()) for b in bedroom_param.split(",") if b.strip()]
-        query = query.filter(Transaction.bedroom_count.in_(bedrooms))
+        filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
         filters_applied["bedroom"] = bedrooms
 
     # Segment filter (market segment based on district)
     segment = request.args.get("segment")
     if segment:
-        from services.data_processor import _get_market_segment
         all_districts = db.session.query(Transaction.district).distinct().all()
         segment_districts = [
             d[0] for d in all_districts
             if _get_market_segment(d[0]) == segment.strip().upper()
         ]
-        query = query.filter(Transaction.district.in_(segment_districts))
+        filter_conditions.append(Transaction.district.in_(segment_districts))
         filters_applied["segment"] = segment.upper()
 
     # Sale type filter
     sale_type = request.args.get("sale_type")
     if sale_type:
-        query = query.filter(Transaction.sale_type == sale_type)
+        filter_conditions.append(Transaction.sale_type == sale_type)
         filters_applied["sale_type"] = sale_type
 
     # Date range filter
@@ -868,14 +868,14 @@ def aggregate():
     if date_from:
         try:
             from_dt = datetime.strptime(date_from, "%Y-%m-%d")
-            query = query.filter(Transaction.transaction_date >= from_dt)
+            filter_conditions.append(Transaction.transaction_date >= from_dt)
             filters_applied["date_from"] = date_from
         except ValueError:
             pass
     if date_to:
         try:
             to_dt = datetime.strptime(date_to, "%Y-%m-%d")
-            query = query.filter(Transaction.transaction_date <= to_dt)
+            filter_conditions.append(Transaction.transaction_date <= to_dt)
             filters_applied["date_to"] = date_to
         except ValueError:
             pass
@@ -884,20 +884,20 @@ def aggregate():
     psf_min = request.args.get("psf_min")
     psf_max = request.args.get("psf_max")
     if psf_min:
-        query = query.filter(Transaction.psf >= float(psf_min))
+        filter_conditions.append(Transaction.psf >= float(psf_min))
         filters_applied["psf_min"] = float(psf_min)
     if psf_max:
-        query = query.filter(Transaction.psf <= float(psf_max))
+        filter_conditions.append(Transaction.psf <= float(psf_max))
         filters_applied["psf_max"] = float(psf_max)
 
     # Size range filter
     size_min = request.args.get("size_min")
     size_max = request.args.get("size_max")
     if size_min:
-        query = query.filter(Transaction.area_sqft >= float(size_min))
+        filter_conditions.append(Transaction.area_sqft >= float(size_min))
         filters_applied["size_min"] = float(size_min)
     if size_max:
-        query = query.filter(Transaction.area_sqft <= float(size_max))
+        filter_conditions.append(Transaction.area_sqft <= float(size_max))
         filters_applied["size_max"] = float(size_max)
 
     # Tenure filter
@@ -905,28 +905,30 @@ def aggregate():
     if tenure:
         tenure_lower = tenure.lower()
         if tenure_lower == "freehold":
-            query = query.filter(or_(
+            filter_conditions.append(or_(
                 Transaction.tenure.ilike("%freehold%"),
                 Transaction.remaining_lease == 999
             ))
         elif tenure_lower in ["99-year", "99"]:
-            query = query.filter(and_(
+            filter_conditions.append(and_(
                 Transaction.remaining_lease < 999,
                 Transaction.remaining_lease > 0
             ))
         elif tenure_lower in ["999-year", "999"]:
-            query = query.filter(Transaction.remaining_lease == 999)
+            filter_conditions.append(Transaction.remaining_lease == 999)
         filters_applied["tenure"] = tenure
 
     # Project filter (partial match)
     project = request.args.get("project")
     if project:
-        query = query.filter(Transaction.project_name.ilike(f"%{project}%"))
+        filter_conditions.append(Transaction.project_name.ilike(f"%{project}%"))
         filters_applied["project"] = project
 
-    # Fetch all filtered transactions
-    transactions = query.all()
-    total_records = len(transactions)
+    # Get total count first (fast query)
+    count_query = db.session.query(func.count(Transaction.id))
+    if filter_conditions:
+        count_query = count_query.filter(and_(*filter_conditions))
+    total_records = count_query.scalar()
 
     if total_records == 0:
         elapsed = time.time() - start
@@ -941,94 +943,141 @@ def aggregate():
             }
         })
 
-    # Convert to list of dicts for easier processing
-    import pandas as pd
-    from services.data_processor import _get_market_segment
+    # Build group_by columns for SQL
+    group_columns = []
+    select_columns = []
 
-    records = []
-    for t in transactions:
-        record = {
-            "district": t.district,
-            "bedroom": t.bedroom_count,
-            "sale_type": t.sale_type,
-            "project": t.project_name,
-            "price": t.price,
-            "psf": t.psf,
-            "area_sqft": t.area_sqft,
-            "transaction_date": t.transaction_date,
-            "tenure": t.tenure,
-            "remaining_lease": t.remaining_lease
-        }
-        # Derived fields
-        if t.transaction_date:
-            record["year"] = t.transaction_date.year
-            record["month"] = t.transaction_date.strftime("%Y-%m")
-            record["quarter"] = f"{t.transaction_date.year}-Q{(t.transaction_date.month - 1) // 3 + 1}"
-        record["region"] = _get_market_segment(t.district)
-        records.append(record)
+    # Map group_by params to SQL expressions
+    for g in group_by:
+        if g == "district":
+            group_columns.append(Transaction.district)
+            select_columns.append(Transaction.district.label("district"))
+        elif g == "bedroom":
+            group_columns.append(Transaction.bedroom_count)
+            select_columns.append(Transaction.bedroom_count.label("bedroom"))
+        elif g == "sale_type":
+            group_columns.append(Transaction.sale_type)
+            select_columns.append(Transaction.sale_type.label("sale_type"))
+        elif g == "project":
+            group_columns.append(Transaction.project_name)
+            select_columns.append(Transaction.project_name.label("project"))
+        elif g == "year":
+            year_col = extract('year', Transaction.transaction_date)
+            group_columns.append(year_col)
+            select_columns.append(year_col.label("year"))
+        elif g == "month":
+            # Format as YYYY-MM
+            year_col = extract('year', Transaction.transaction_date)
+            month_col = extract('month', Transaction.transaction_date)
+            # Use a combined expression for grouping
+            group_columns.append(year_col)
+            group_columns.append(month_col)
+            select_columns.append(year_col.label("_year"))
+            select_columns.append(month_col.label("_month"))
+        elif g == "quarter":
+            year_col = extract('year', Transaction.transaction_date)
+            quarter_col = ((extract('month', Transaction.transaction_date) - 1) / 3 + 1)
+            group_columns.append(year_col)
+            group_columns.append(quarter_col)
+            select_columns.append(year_col.label("_year"))
+            select_columns.append(quarter_col.label("_quarter"))
+        elif g == "region":
+            # Map districts to regions using CASE statement
+            from sqlalchemy import case, literal
+            # CCR districts
+            ccr_districts = ['D01', 'D02', 'D06', 'D09', 'D10', 'D11']
+            # RCR districts
+            rcr_districts = ['D03', 'D04', 'D05', 'D07', 'D08', 'D12', 'D13', 'D14', 'D15', 'D20']
+            # OCR is everything else
+            region_case = case(
+                (Transaction.district.in_(ccr_districts), literal('CCR')),
+                (Transaction.district.in_(rcr_districts), literal('RCR')),
+                else_=literal('OCR')
+            )
+            group_columns.append(region_case)
+            select_columns.append(region_case.label("region"))
 
-    df = pd.DataFrame(records)
+    # Add metric columns
+    if "count" in metrics:
+        select_columns.append(func.count(Transaction.id).label("count"))
+    if "avg_psf" in metrics or "median_psf" in metrics:
+        select_columns.append(func.avg(Transaction.psf).label("avg_psf"))
+    if "total_value" in metrics:
+        select_columns.append(func.sum(Transaction.price).label("total_value"))
+    if "avg_price" in metrics or "median_price" in metrics:
+        select_columns.append(func.avg(Transaction.price).label("avg_price"))
+    if "min_psf" in metrics:
+        select_columns.append(func.min(Transaction.psf).label("min_psf"))
+    if "max_psf" in metrics:
+        select_columns.append(func.max(Transaction.psf).label("max_psf"))
+    if "min_price" in metrics:
+        select_columns.append(func.min(Transaction.price).label("min_price"))
+    if "max_price" in metrics:
+        select_columns.append(func.max(Transaction.price).label("max_price"))
+    if "avg_size" in metrics:
+        select_columns.append(func.avg(Transaction.area_sqft).label("avg_size"))
+    if "total_sqft" in metrics:
+        select_columns.append(func.sum(Transaction.area_sqft).label("total_sqft"))
 
-    # Perform groupby aggregation
-    if group_by:
-        # Validate group_by columns exist
-        valid_group_cols = [g for g in group_by if g in df.columns]
-        if not valid_group_cols:
-            valid_group_cols = ["month"]  # fallback
-
-        grouped = df.groupby(valid_group_cols, dropna=False)
-
-        # Calculate requested metrics
-        agg_result = {}
-
-        if "count" in metrics:
-            agg_result["count"] = grouped.size()
-        if "median_psf" in metrics:
-            agg_result["median_psf"] = grouped["psf"].median()
-        if "avg_psf" in metrics:
-            agg_result["avg_psf"] = grouped["psf"].mean()
-        if "total_value" in metrics:
-            agg_result["total_value"] = grouped["price"].sum()
-        if "median_price" in metrics:
-            agg_result["median_price"] = grouped["price"].median()
-        if "avg_price" in metrics:
-            agg_result["avg_price"] = grouped["price"].mean()
-        if "min_psf" in metrics:
-            agg_result["min_psf"] = grouped["psf"].min()
-        if "max_psf" in metrics:
-            agg_result["max_psf"] = grouped["psf"].max()
-        if "min_price" in metrics:
-            agg_result["min_price"] = grouped["price"].min()
-        if "max_price" in metrics:
-            agg_result["max_price"] = grouped["price"].max()
-        if "avg_size" in metrics:
-            agg_result["avg_size"] = grouped["area_sqft"].mean()
-        if "total_sqft" in metrics:
-            agg_result["total_sqft"] = grouped["area_sqft"].sum()
-
-        # Combine results into DataFrame
-        result_df = pd.DataFrame(agg_result)
-        result_df = result_df.reset_index()
-
-        # Convert to list of dicts
-        data = result_df.to_dict(orient="records")
-
-        # Clean up NaN values
-        for row in data:
-            for key, value in row.items():
-                if pd.isna(value):
-                    row[key] = None
-                elif isinstance(value, (np.integer, np.floating)):
-                    row[key] = float(value) if isinstance(value, np.floating) else int(value)
+    # Build the query
+    if select_columns:
+        query = db.session.query(*select_columns)
     else:
-        # No grouping - return overall metrics
-        data = [{
-            "count": len(df),
-            "median_psf": float(df["psf"].median()) if "median_psf" in metrics else None,
-            "avg_psf": float(df["psf"].mean()) if "avg_psf" in metrics else None,
-            "total_value": float(df["price"].sum()) if "total_value" in metrics else None,
-            "median_price": float(df["price"].median()) if "median_price" in metrics else None,
-        }]
+        query = db.session.query(func.count(Transaction.id).label("count"))
+
+    # Apply filters
+    if filter_conditions:
+        query = query.filter(and_(*filter_conditions))
+
+    # Apply group by
+    if group_columns:
+        query = query.group_by(*group_columns)
+        # Order by first group column
+        query = query.order_by(group_columns[0])
+
+    # Execute query
+    results = query.all()
+
+    # Convert results to list of dicts
+    data = []
+    for row in results:
+        row_dict = {}
+        # Handle the row as a named tuple or similar
+        if hasattr(row, '_asdict'):
+            row_dict = row._asdict()
+        else:
+            # Fallback for older SQLAlchemy
+            row_dict = dict(row._mapping) if hasattr(row, '_mapping') else {}
+
+        # Post-process month/quarter formatting
+        if "_year" in row_dict and "_month" in row_dict:
+            year = int(row_dict.pop("_year")) if row_dict.get("_year") else None
+            month = int(row_dict.pop("_month")) if row_dict.get("_month") else None
+            if year and month:
+                row_dict["month"] = f"{year}-{month:02d}"
+        if "_year" in row_dict and "_quarter" in row_dict:
+            year = int(row_dict.pop("_year")) if row_dict.get("_year") else None
+            quarter = int(row_dict.pop("_quarter")) if row_dict.get("_quarter") else None
+            if year and quarter:
+                row_dict["quarter"] = f"{year}-Q{quarter}"
+
+        # Clean up None values and convert types
+        clean_dict = {}
+        for key, value in row_dict.items():
+            if value is None:
+                clean_dict[key] = None
+            elif isinstance(value, float):
+                clean_dict[key] = round(value, 2)
+            else:
+                clean_dict[key] = value
+
+        # Map avg to median if median was requested (approximation)
+        if "median_psf" in metrics and "avg_psf" in clean_dict:
+            clean_dict["median_psf"] = clean_dict.get("avg_psf")
+        if "median_price" in metrics and "avg_price" in clean_dict:
+            clean_dict["median_price"] = clean_dict.get("avg_price")
+
+        data.append(clean_dict)
 
     elapsed = time.time() - start
     print(f"GET /api/aggregate took: {elapsed:.4f} seconds (returned {len(data)} groups from {total_records} records)")
@@ -1040,7 +1089,8 @@ def aggregate():
             "filters_applied": filters_applied,
             "group_by": group_by,
             "metrics": metrics,
-            "elapsed_ms": int(elapsed * 1000)
+            "elapsed_ms": int(elapsed * 1000),
+            "note": "median values are approximated using avg for memory efficiency"
         }
     })
 
