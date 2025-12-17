@@ -111,77 +111,78 @@ export function PriceAnalysis() {
 
       <div className="px-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 space-y-6">
-        {loading ? (
-          <div className="text-center py-12 md:py-16 text-gray-500">
-            <div className="text-3xl md:text-4xl mb-3">⏳</div>
-            <div className="text-sm md:text-base">Loading data...</div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Price Trend Chart */}
-            <Card 
-              title="Price Trend by Quarter" 
-              subtitle={`Median Price for ${selectedSegment || 'All Segments'} • ${selectedBedrooms.map(b => b.replace('b', 'BR')).join(', ')}`}
-            >
-              {priceTrends && priceTrends.length > 0 ? (
-                <LineChart
-                  data={priceTrends}
-                  selectedBedrooms={selectedBedrooms}
-                  valueFormatter={formatPrice}
-                  title=""
-                />
-              ) : (
-                <div className="h-[350px] bg-slate-50/50 rounded-xl flex items-center justify-center border border-dashed border-slate-200 text-slate-400">
-                  No data available
-                </div>
+          {loading ? (
+            <div className="text-center py-12 md:py-16 text-gray-500">
+              <div className="text-3xl md:text-4xl mb-3">⏳</div>
+              <div className="text-sm md:text-base">Loading data...</div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Price Trend Chart */}
+              <Card 
+                title="Price Trend by Quarter" 
+                subtitle={`Median Price for ${selectedSegment || 'All Segments'} • ${selectedBedrooms.map(b => b.replace('b', 'BR')).join(', ')}`}
+              >
+                {priceTrends && priceTrends.length > 0 ? (
+                  <LineChart
+                    data={priceTrends}
+                    selectedBedrooms={selectedBedrooms}
+                    valueFormatter={formatPrice}
+                    title=""
+                  />
+                ) : (
+                  <div className="h-[350px] bg-slate-50/50 rounded-xl flex items-center justify-center border border-dashed border-slate-200 text-slate-400">
+                    No data available
+                  </div>
+                )}
+              </Card>
+
+              {/* PSF Trend Chart */}
+              {psfTrendsData && psfTrendsData.length > 0 && (
+                <Card 
+                  title="PSF Trend by Quarter" 
+                  subtitle={`Median PSF for ${selectedSegment || 'All Segments'} • ${selectedBedrooms.map(b => b.replace('b', 'BR')).join(', ')}`}
+                >
+                  <LineChart
+                    data={psfTrendsData}
+                    selectedBedrooms={selectedBedrooms}
+                    valueFormatter={formatPSF}
+                    title=""
+                  />
+                </Card>
               )}
-            </Card>
 
-            {/* PSF Trend Chart */}
-            {psfTrendsData && psfTrendsData.length > 0 && (
-              <Card 
-                title="PSF Trend by Quarter" 
-                subtitle={`Median PSF for ${selectedSegment || 'All Segments'} • ${selectedBedrooms.map(b => b.replace('b', 'BR')).join(', ')}`}
-              >
-                <LineChart
-                  data={psfTrendsData}
-                  selectedBedrooms={selectedBedrooms}
-                  valueFormatter={formatPSF}
-                  title=""
-                />
-              </Card>
-            )}
+              {/* Price Trends by Region */}
+              {priceTrendsByRegion && priceTrendsByRegion.length > 0 && (
+                <Card 
+                  title="Price Trends by Region" 
+                  subtitle="Median Price by CCR, RCR, and OCR"
+                >
+                  <RegionChart
+                    data={priceTrendsByRegion}
+                    valueFormatter={formatPrice}
+                    title=""
+                  />
+                </Card>
+              )}
 
-            {/* Price Trends by Region */}
-            {priceTrendsByRegion && priceTrendsByRegion.length > 0 && (
-              <Card 
-                title="Price Trends by Region" 
-                subtitle="Median Price by CCR, RCR, and OCR"
-              >
-                <RegionChart
-                  data={priceTrendsByRegion}
-                  valueFormatter={formatPrice}
-                  title=""
-                />
-              </Card>
-            )}
-
-            {/* PSF Trends by Region */}
-            {psfTrendsByRegion && psfTrendsByRegion.length > 0 && (
-              <Card 
-                title="PSF Trends by Region" 
-                subtitle="Median PSF by CCR, RCR, and OCR"
-              >
-                <RegionChart
-                  data={psfTrendsByRegion}
-                  valueFormatter={formatPSF}
-                  title=""
-                  isPSF={true}
-                />
-              </Card>
-            )}
-          </div>
-        )}
+              {/* PSF Trends by Region */}
+              {psfTrendsByRegion && psfTrendsByRegion.length > 0 && (
+                <Card 
+                  title="PSF Trends by Region" 
+                  subtitle="Median PSF by CCR, RCR, and OCR"
+                >
+                  <RegionChart
+                    data={psfTrendsByRegion}
+                    valueFormatter={formatPSF}
+                    title=""
+                    isPSF={true}
+                  />
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

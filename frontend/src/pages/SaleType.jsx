@@ -44,7 +44,6 @@ export function SaleType() {
 
   const [saleTypeTrends, setSaleTypeTrends] = useState([]);
   const [priceTrendsBySaleType, setPriceTrendsBySaleType] = useState({});
-  const [saleTypeSegment, setSaleTypeSegment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -60,16 +59,10 @@ export function SaleType() {
         segment: selectedSegment || undefined,
       };
 
-      const paramsForPriceTrends = {
-        bedroom: bedroomParam,
-        districts: selectedDistrict !== 'all' ? selectedDistrict : undefined,
-        segment: saleTypeSegment || undefined,
-      };
-
       try {
         const [trendsRes, priceTrendsRes] = await Promise.all([
           getSaleTypeTrends(paramsForTrends).catch(() => ({ data: { trends: [] } })),
-          getPriceTrendsBySaleType(paramsForPriceTrends).catch(() => ({ data: { trends: {} } })),
+          getPriceTrendsBySaleType(paramsForTrends).catch(() => ({ data: { trends: {} } })),
         ]);
 
         setSaleTypeTrends(trendsRes.data.trends || []);
@@ -83,18 +76,18 @@ export function SaleType() {
     };
 
     fetchData();
-  }, [selectedBedrooms, selectedDistrict, selectedSegment, saleTypeSegment]);
+  }, [selectedBedrooms, selectedDistrict, selectedSegment]);
 
-  const header = (
-    <div className="px-6 pt-6 pb-4">
-      <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
-        New Sale vs Resale
-      </h1>
-      <p className="text-slate-500 text-base font-medium">
-        Compare new sale and resale market trends.
-      </p>
-    </div>
-  );
+  // Choose a primary bedroom key for the price trends chart
+  const bedroomKeys = Object.keys(priceTrendsBySaleType || {});
+  const preferredOrder = ['3b', '2b', '4b'];
+  const primaryBedroom =
+    preferredOrder.find(
+      (b) => bedroomKeys.includes(b) && Array.isArray(priceTrendsBySaleType[b]) && priceTrendsBySaleType[b].length > 0
+    ) || bedroomKeys[0];
+  const primarySaleTypeData = primaryBedroom ? priceTrendsBySaleType[primaryBedroom] : null;
+  const hasPrimaryChart =
+    primarySaleTypeData && Array.isArray(primarySaleTypeData) && primarySaleTypeData.length > 0;
 
   if (error) {
     return (
@@ -135,45 +128,32 @@ export function SaleType() {
 
       <div className="px-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 space-y-6">
-        {loading ? (
-          <div className="text-center py-12 md:py-16 text-gray-500">
-            <div className="text-3xl md:text-4xl mb-3">⏳</div>
-            <div className="text-sm md:text-base">Loading data...</div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* New Sale vs Resale Transaction Count */}
-            {saleTypeTrends.length > 0 && (
-              <Card 
-                title="New Sale vs Resale Transaction Count" 
-                subtitle="Market Composition"
-              >
-                <SaleTypeChart data={saleTypeTrends} />
-              </Card>
-            )}
+          {loading ? (
+            <div className="text-center py-12 md:py-16 text-gray-500">
+              <div className="text-3xl md:text-4xl mb-3">⏳</div>
+              <div className="text-sm md:text-base">Loading data...</div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* New Sale vs Resale Transaction Count */}
+              {saleTypeTrends.length > 0 && (
+                <Card 
+                  title="New Sale vs Resale Transaction Count" 
+                  subtitle="Market Composition"
+                >
+                  <SaleTypeChart data={saleTypeTrends} />
+                </Card>
+              )}
 
-            {/* Price Trends by Sale Type (New Sale vs Resale) – single chart */}
-            {Object.keys(priceTrendsBySaleType).length > 0 && (() => {
-              // Prefer 3BR, then 2BR, then 4BR, else first available
-              const keys = Object.keys(priceTrendsBySaleType);
-              const preferredOrder = ['3b', '2b', '4b'];
-              const bedroom =
-                preferredOrder.find(b => keys.includes(b) && Array.isArray(priceTrendsBySaleType[b]) && saleTypeTrends.length > 0) ||
-                keys[0];
-              const saleTypeData = priceTrendsBySaleType[bedroom];
-
-              if (!saleTypeData || !Array.isArray(saleTypeData) || saleTypeData.length === 0) {
-                return null;
-              }
-
-              return (
+              {/* Price Trends by Sale Type (New Sale vs Resale) – single chart */}
+              {hasPrimaryChart && (
                 <Card title="Price Trends: New Sale vs Resale">
                   <div className="bg-white p-2 md:p-4 rounded-lg">
                     <h3 className="text-xs md:text-sm text-gray-600 mb-3">
-                      {BEDROOM_LABELS[bedroom] || 'All Bedrooms'}
+                      {BEDROOM_LABELS[primaryBedroom] || 'All Bedrooms'}
                     </h3>
                     <LineChart
-                      data={saleTypeData.map(d => ({
+                      data={primarySaleTypeData.map((d) => ({
                         month: d.quarter,
                         '2b_price': d.new_sale,
                         '3b_price': d.resale,
@@ -185,10 +165,10 @@ export function SaleType() {
                     />
                   </div>
                 </Card>
-              );
-            })()}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
