@@ -66,103 +66,62 @@ apiClient.interceptors.response.use(
   }
 );
 
+// ===== Helper Functions =====
+
+/**
+ * Build query string from params object, filtering out null/undefined values
+ */
+const buildQueryString = (params) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.append(key, value);
+    }
+  });
+  return query.toString();
+};
+
 // ===== Analytics API Functions =====
 
 export const getHealth = () => apiClient.get('/health');
 
-export const getPriceTrends = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.districts) queryParams.append('districts', params.districts);
-  if (params.segment) queryParams.append('segment', params.segment);
-  return apiClient.get(`/price_trends?${queryParams}`);
-};
+export const getPriceTrends = (params = {}) =>
+  apiClient.get(`/price_trends?${buildQueryString(params)}`);
 
-export const getTotalVolume = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.districts) queryParams.append('districts', params.districts);
-  if (params.segment) queryParams.append('segment', params.segment);
-  return apiClient.get(`/total_volume?${queryParams}`);
-};
+export const getTotalVolume = (params = {}) =>
+  apiClient.get(`/total_volume?${buildQueryString(params)}`);
 
-export const getAvgPsf = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.districts) queryParams.append('districts', params.districts);
-  if (params.segment) queryParams.append('segment', params.segment);
-  return apiClient.get(`/avg_psf?${queryParams}`);
-};
+export const getAvgPsf = (params = {}) =>
+  apiClient.get(`/avg_psf?${buildQueryString(params)}`);
 
 export const getDistricts = () => apiClient.get('/districts');
 
-export const getSaleTypeTrends = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.districts) queryParams.append('districts', params.districts);
-  if (params.segment) queryParams.append('segment', params.segment);
-  return apiClient.get(`/sale_type_trends?${queryParams}`);
-};
+export const getSaleTypeTrends = (params = {}) =>
+  apiClient.get(`/sale_type_trends?${buildQueryString(params)}`);
 
-export const getPriceTrendsBySaleType = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.districts) queryParams.append('districts', params.districts);
-  if (params.segment) queryParams.append('segment', params.segment);
-  return apiClient.get(`/price_trends_by_sale_type?${queryParams}`);
-};
+export const getPriceTrendsBySaleType = (params = {}) =>
+  apiClient.get(`/price_trends_by_sale_type?${buildQueryString(params)}`);
 
-export const getPriceTrendsByRegion = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.districts) queryParams.append('districts', params.districts);
-  return apiClient.get(`/price_trends_by_region?${queryParams}`);
-};
+export const getPriceTrendsByRegion = (params = {}) =>
+  apiClient.get(`/price_trends_by_region?${buildQueryString(params)}`);
 
-export const getPsfTrendsByRegion = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.districts) queryParams.append('districts', params.districts);
-  return apiClient.get(`/psf_trends_by_region?${queryParams}`);
-};
+export const getPsfTrendsByRegion = (params = {}) =>
+  apiClient.get(`/psf_trends_by_region?${buildQueryString(params)}`);
 
-export const getMarketStats = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.segment) queryParams.append('segment', params.segment);
-  return apiClient.get(`/market_stats?${queryParams}`);
-};
+export const getMarketStats = (params = {}) =>
+  apiClient.get(`/market_stats?${buildQueryString(params)}`);
 
-export const getMarketStatsByDistrict = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.districts) queryParams.append('districts', params.districts);
-  if (params.bedroom) queryParams.append('bedroom', params.bedroom);
-  if (params.segment) queryParams.append('segment', params.segment);
-  if (params.short_months) queryParams.append('short_months', params.short_months);
-  if (params.long_months) queryParams.append('long_months', params.long_months);
-  return apiClient.get(`/market_stats_by_district?${queryParams}`);
-};
+export const getMarketStatsByDistrict = (params = {}) =>
+  apiClient.get(`/market_stats_by_district?${buildQueryString(params)}`);
 
-export const getProjectsByDistrict = (district, params = {}) => {
-  const queryParams = new URLSearchParams();
-  queryParams.append('district', district);
-  if (params.bedroom) queryParams.append('bedroom', params.bedroom);
-  if (params.segment) queryParams.append('segment', params.segment);
-  return apiClient.get(`/projects_by_district?${queryParams}`);
-};
+export const getProjectsByDistrict = (district, params = {}) =>
+  apiClient.get(`/projects_by_district?${buildQueryString({ district, ...params })}`);
 
-// Project-level price/psf breakdown by district (used for District Summary - Price expansion)
-export const getPriceProjectsByDistrict = (district, params = {}) => {
-  const queryParams = new URLSearchParams();
-  queryParams.append('district', district);
-  if (params.bedroom) queryParams.append('bedroom', params.bedroom);
-  if (params.months) queryParams.append('months', params.months);
-  if (params.segment) queryParams.append('segment', params.segment);
-  return apiClient.get(`/price_projects_by_district?${queryParams}`);
-};
+export const getPriceProjectsByDistrict = (district, params = {}) =>
+  apiClient.get(`/price_projects_by_district?${buildQueryString({ district, ...params })}`);
 
-export const getComparableValueAnalysis = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.target_price) queryParams.append('target_price', params.target_price);
-  if (params.band) queryParams.append('band', params.band);
-  if (params.bedroom) queryParams.append('bedroom', params.bedroom);
-  if (params.districts) queryParams.append('districts', params.districts);
-  if (params.min_lease) queryParams.append('min_lease', params.min_lease);
-  if (params.sale_type) queryParams.append('sale_type', params.sale_type);
-  return apiClient.get(`/comparable_value_analysis?${queryParams}`);
-};
+export const getComparableValueAnalysis = (params = {}) =>
+  apiClient.get(`/comparable_value_analysis?${buildQueryString(params)}`);
 
 // ===== Auth API Functions =====
 

@@ -9,24 +9,7 @@ import LineChart from '../components/LineChart';
 import RegionChart from '../components/RegionChart';
 import { FilterBar } from '../components/dashboard/FilterBar';
 import { formatPrice, formatPSF } from '../constants';
-
-function Card({ title, children, subtitle, className }) {
-  return (
-    <div className={`bg-white rounded-xl p-4 md:p-6 mb-6 shadow-md ${className || ''}`}>
-      {title && (
-        <div className="mb-4">
-          <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-1">
-            {title}
-          </h2>
-          {subtitle && (
-            <p className="text-sm text-gray-500">{subtitle}</p>
-          )}
-        </div>
-      )}
-      {children}
-    </div>
-  );
-}
+import { Card } from '../components/ui/Card';
 
 export function PriceAnalysis() {
   const { filters } = useFilters();
