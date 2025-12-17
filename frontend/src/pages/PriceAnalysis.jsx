@@ -8,19 +8,7 @@ import {
 import LineChart from '../components/LineChart';
 import RegionChart from '../components/RegionChart';
 import { FilterBar } from '../components/dashboard/FilterBar';
-
-const formatPrice = (value) => {
-  if (!value) return '-';
-  if (value >= 1000000000) return `$${(value / 1000000000).toFixed(2)}B`;
-  if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
-  if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
-  return `$${value.toFixed(0)}`;
-};
-
-const formatPSF = (value) => {
-  if (!value) return '-';
-  return `$${value.toLocaleString()}`;
-};
+import { formatPrice, formatPSF } from '../constants';
 
 function Card({ title, children, subtitle, className }) {
   return (

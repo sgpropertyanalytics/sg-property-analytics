@@ -70,15 +70,6 @@ apiClient.interceptors.response.use(
 
 export const getHealth = () => apiClient.get('/health');
 
-export const getResaleStats = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.districts) queryParams.append('districts', params.districts);
-  if (params.segment) queryParams.append('segment', params.segment);
-  if (params.start_date) queryParams.append('start_date', params.start_date);
-  if (params.end_date) queryParams.append('end_date', params.end_date);
-  return apiClient.get(`/resale_stats?${queryParams}`);
-};
-
 export const getPriceTrends = (params = {}) => {
   const queryParams = new URLSearchParams();
   if (params.districts) queryParams.append('districts', params.districts);
@@ -98,17 +89,6 @@ export const getAvgPsf = (params = {}) => {
   if (params.districts) queryParams.append('districts', params.districts);
   if (params.segment) queryParams.append('segment', params.segment);
   return apiClient.get(`/avg_psf?${queryParams}`);
-};
-
-export const getTransactions = (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.districts) queryParams.append('districts', params.districts);
-  if (params.bedroom) queryParams.append('bedroom', params.bedroom);
-  if (params.segment) queryParams.append('segment', params.segment);
-  if (params.limit) queryParams.append('limit', params.limit);
-  if (params.start_date) queryParams.append('start_date', params.start_date);
-  if (params.end_date) queryParams.append('end_date', params.end_date);
-  return apiClient.get(`/transactions?${queryParams}`);
 };
 
 export const getDistricts = () => apiClient.get('/districts');

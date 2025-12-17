@@ -1,19 +1,8 @@
 /**
- * Shared constants used across the application
+ * Shared constants and utility functions for the SG Property Analyzer frontend
  */
 
-export const COLORS = {
-  '2b': '#3B82F6',
-  '3b': '#10B981',
-  '4b': '#F59E0B',
-};
-
-export const BEDROOM_LABELS = {
-  '2b': '2-Bedroom',
-  '3b': '3-Bedroom',
-  '4b': '4-Bedroom',
-};
-
+// District names mapping (D01-D28)
 export const DISTRICT_NAMES = {
   'D01': 'Boat Quay / Raffles Place / Marina Downtown / Suntec City',
   'D02': 'Shenton Way / Tanjong Pagar',
@@ -43,4 +32,34 @@ export const DISTRICT_NAMES = {
   'D26': 'Upper Thomson / Springleaf',
   'D27': 'Yishun / Sembawang',
   'D28': 'Seletar / Yio Chu Kang',
+};
+
+// Bedroom labels for display
+export const BEDROOM_LABELS = {
+  '2b': '2-Bedroom',
+  '3b': '3-Bedroom',
+  '4b': '4-Bedroom',
+};
+
+/**
+ * Format a price value for display
+ * @param {number} value - The price value
+ * @returns {string} Formatted price string (e.g., "$2.41M", "$500K")
+ */
+export const formatPrice = (value) => {
+  if (!value) return '-';
+  if (value >= 1000000000) return `$${(value / 1000000000).toFixed(2)}B`;
+  if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
+  if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+  return `$${value.toFixed(0)}`;
+};
+
+/**
+ * Format a PSF (price per square foot) value for display
+ * @param {number} value - The PSF value
+ * @returns {string} Formatted PSF string (e.g., "$1,823")
+ */
+export const formatPSF = (value) => {
+  if (!value) return '-';
+  return `$${value.toLocaleString()}`;
 };

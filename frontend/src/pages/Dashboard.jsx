@@ -20,62 +20,7 @@ import { FilterBar } from '../components/dashboard/FilterBar';
 import { KPICards } from '../components/dashboard/KPICards';
 import { TopDistricts } from '../components/dashboard/TopDistricts';
 import { DistrictSummaryTable } from '../components/dashboard/DistrictSummaryTable';
-
-const COLORS = {
-  '2b': '#FF6B4A', // Orange Accent
-  '3b': '#FF6B4A', // Orange Accent
-  '4b': '#FF6B4A', // Orange Accent
-};
-
-const BEDROOM_LABELS = {
-  '2b': '2-Bedroom',
-  '3b': '3-Bedroom',
-  '4b': '4-Bedroom',
-};
-
-const DISTRICT_NAMES = {
-  'D01': 'Boat Quay / Raffles Place / Marina Downtown / Suntec City',
-  'D02': 'Shenton Way / Tanjong Pagar',
-  'D03': 'Queenstown / Alexandra / Tiong Bahru',
-  'D04': 'Harbourfront / Keppel / Telok Blangah',
-  'D05': 'Buona Vista / Dover / Pasir Panjang',
-  'D06': 'City Hall / Fort Canning',
-  'D07': 'Bugis / Rochor',
-  'D08': 'Little India / Farrer Park',
-  'D09': 'Orchard / Somerset / River Valley',
-  'D10': 'Tanglin / Bukit Timah / Holland',
-  'D11': 'Newton / Novena / Dunearn / Watten',
-  'D12': 'Balestier / Whampoa / Toa Payoh / Boon Keng / Bendemeer / Kampong Bugis',
-  'D13': 'Potong Pasir / Bidadari / MacPherson / Upper Aljunied',
-  'D14': 'Geylang / Dakota / Paya Lebar Central / Eunos / Ubi / Aljunied',
-  'D15': 'Tanjong Rhu / Amber / Meyer / Katong / Dunman / Joo Chiat / Marine Parade',
-  'D16': 'Bedok / Upper East Coast / Eastwood / Kew Drive',
-  'D17': 'Loyang / Changi',
-  'D18': 'Tampines / Pasir Ris',
-  'D19': 'Serangoon Garden / Hougang / Sengkang / Punggol',
-  'D20': 'Bishan / Ang Mo Kio',
-  'D21': 'Upper Bukit Timah / Clementi Park / Ulu Pandan',
-  'D22': 'Jurong / Boon Lay / Tuas',
-  'D23': 'Bukit Batok / Bukit Panjang / Choa Chu Kang',
-  'D24': 'Lim Chu Kang / Tengah',
-  'D25': 'Kranji / Woodlands',
-  'D26': 'Upper Thomson / Springleaf',
-  'D27': 'Yishun / Sembawang',
-  'D28': 'Seletar / Yio Chu Kang',
-};
-
-const formatPrice = (value) => {
-  if (!value) return '-';
-  if (value >= 1000000000) return `$${(value / 1000000000).toFixed(2)}B`;
-  if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
-  if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
-  return `$${value.toFixed(0)}`;
-};
-
-const formatPSF = (value) => {
-  if (!value) return '-';
-  return `$${value.toLocaleString()}`;
-};
+import { DISTRICT_NAMES, BEDROOM_LABELS, formatPrice, formatPSF } from '../constants';
 
 function Card({ title, children, subtitle, className }) {
   return (
@@ -135,17 +80,7 @@ function DistrictSummaryVolumeLiquidity({
       // Axios wraps responses, so res.data is the actual response body from Flask
       // Flask returns { projects: [...] }, so res.data.projects should be the array
       const projects = res.data?.projects || [];
-      
-      // Debug: Log the raw response structure
-      console.log(`[DEBUG] District ${district} API response:`, {
-        hasData: !!res.data,
-        dataKeys: res.data ? Object.keys(res.data) : [],
-        hasProjects: !!res.data?.projects,
-        projectCount: projects.length,
-        firstProject: projects[0] || null,
-        firstProjectKeys: projects[0] ? Object.keys(projects[0]) : [],
-      });
-      
+
       if (!Array.isArray(projects)) {
         console.error(`[ERROR] District ${district}: Expected projects array, got:`, typeof projects, projects);
         setDistrictProjects((prev) => ({
@@ -155,40 +90,14 @@ function DistrictSummaryVolumeLiquidity({
         return;
       }
       
-      // Validate each project has required fields and log sample data
+      // Validate each project has required fields
       const validatedProjects = projects.filter((project) => {
         if (!project.project_name) {
           console.warn(`Skipping project with missing name in district ${district}`);
           return false;
         }
-        // Debug: Log first project's data structure
-        if (projects.indexOf(project) === 0) {
-          console.log(`[DEBUG] Sample project data for ${district}:`, {
-            name: project.project_name,
-            '2b': project['2b'],
-            '2b_count': project['2b_count'],
-            '3b': project['3b'],
-            '3b_count': project['3b_count'],
-            '4b': project['4b'],
-            '4b_count': project['4b_count'],
-            total: project.total,
-            total_quantity: project.total_quantity,
-            allKeys: Object.keys(project),
-          });
-        }
         return true;
       });
-      
-      // Log completeness metrics
-      if (validatedProjects.length !== projects.length) {
-        console.warn(
-          `District ${district}: Filtered out ${projects.length - validatedProjects.length} invalid projects`
-        );
-      }
-      
-      console.log(
-        `District ${district}: Loaded ${validatedProjects.length} projects (bedrooms: ${bedroomParam}, segment: ${selectedSegment || 'all'})`
-      );
       
       setDistrictProjects((prev) => ({
         ...prev,
@@ -429,23 +338,7 @@ function DistrictSummaryVolumeLiquidity({
                                         </td>
                                       </tr>
                                     )}
-                                    {projects.map((project, idx2) => {
-                                      // Debug: Log first project's data structure when rendering
-                                      if (idx2 === 0) {
-                                        console.log(`[DEBUG RENDER] First project in ${district}:`, {
-                                          name: project.project_name,
-                                          '2b': project['2b'],
-                                          '2b_count': project['2b_count'],
-                                          '3b': project['3b'],
-                                          '3b_count': project['3b_count'],
-                                          '4b': project['4b'],
-                                          '4b_count': project['4b_count'],
-                                          total: project.total,
-                                          total_quantity: project.total_quantity,
-                                          allKeys: Object.keys(project),
-                                        });
-                                      }
-                                      return (
+                                    {projects.map((project, idx2) => (
                                       <tr
                                         key={idx2}
                                         className={`border-b border-gray-100 ${
@@ -519,8 +412,7 @@ function DistrictSummaryVolumeLiquidity({
                                             : '-'}
                                         </td>
                                       </tr>
-                                    );
-                                    })}
+                                    ))}
                                   </tbody>
                                 </table>
                               </div>
@@ -737,17 +629,6 @@ function DistrictSummaryPrice({ selectedSegment, selectedDistrict }) {
         }
         return true;
       });
-
-      // Log completeness metrics
-      if (validatedProjects.length !== projects.length) {
-        console.warn(
-          `District ${district} (${viewKey}): Filtered out ${projects.length - validatedProjects.length} projects with insufficient data`
-        );
-      }
-
-      console.log(
-        `District ${district} (${viewKey}): Loaded ${validatedProjects.length} valid projects (bedrooms: ${bedroomParam}, segment: ${selectedSegment || 'all'})`
-      );
 
       // Sum transactions across projects for this district/timeframe
       const totalCount = validatedProjects.reduce(
