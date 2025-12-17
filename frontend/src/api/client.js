@@ -123,6 +123,45 @@ export const getPriceProjectsByDistrict = (district, params = {}) =>
 export const getComparableValueAnalysis = (params = {}) =>
   apiClient.get(`/comparable_value_analysis?${buildQueryString(params)}`);
 
+// ===== PowerBI-style Aggregation API Functions =====
+
+/**
+ * Flexible aggregation endpoint for dynamic filtering
+ * @param {Object} params - Query parameters
+ * @param {string} params.group_by - Comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region)
+ * @param {string} params.metrics - Comma-separated metrics (count, median_psf, avg_psf, total_value, median_price)
+ * @param {string} params.district - Comma-separated districts (D01,D02,...)
+ * @param {string} params.bedroom - Comma-separated bedroom counts (2,3,4)
+ * @param {string} params.segment - CCR, RCR, OCR
+ * @param {string} params.sale_type - New Sale, Resale
+ * @param {string} params.date_from - YYYY-MM-DD
+ * @param {string} params.date_to - YYYY-MM-DD
+ * @param {number} params.psf_min - Minimum PSF
+ * @param {number} params.psf_max - Maximum PSF
+ * @param {number} params.size_min - Minimum sqft
+ * @param {number} params.size_max - Maximum sqft
+ * @param {string} params.tenure - Freehold, 99-year, 999-year
+ */
+export const getAggregate = (params = {}) =>
+  apiClient.get(`/aggregate?${buildQueryString(params)}`);
+
+/**
+ * Paginated transaction list for drill-through
+ * @param {Object} params - Same filters as aggregate, plus pagination
+ * @param {number} params.page - Page number (default 1)
+ * @param {number} params.limit - Records per page (default 50, max 200)
+ * @param {string} params.sort_by - Column to sort (default transaction_date)
+ * @param {string} params.sort_order - asc or desc (default desc)
+ */
+export const getTransactionsList = (params = {}) =>
+  apiClient.get(`/transactions/list?${buildQueryString(params)}`);
+
+/**
+ * Get available filter options based on current data
+ */
+export const getFilterOptions = () =>
+  apiClient.get('/filter-options');
+
 // ===== Auth API Functions =====
 
 export const register = (email, password) => {

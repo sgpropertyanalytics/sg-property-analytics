@@ -4,6 +4,7 @@ import { FilterProvider } from './context/FilterContext';
 import { Layout } from './components/layout/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import MacroOverview from './pages/MacroOverview';
 import { PriceAnalysis } from './pages/PriceAnalysis';
 import { VolumeAnalysis } from './pages/VolumeAnalysis';
 import { Projects } from './pages/Projects';
@@ -18,13 +19,17 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route 
-              path="/dashboard" 
+            <Route
+              path="/dashboard"
               element={
                 <Layout>
                   <Dashboard />
                 </Layout>
-              } 
+              }
+            />
+            <Route
+              path="/macro-overview"
+              element={<MacroOverview />}
             />
             <Route 
               path="/price-analysis" 

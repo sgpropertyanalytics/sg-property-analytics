@@ -11,7 +11,8 @@ import {
   ChevronRight,
   LogOut,
   TrendingUp,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Filter
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { FilterBar } from '../dashboard/FilterBar';
@@ -22,6 +23,8 @@ import { FilterBar } from '../dashboard/FilterBar';
 const NAVIGATION = [
   // Only this one scrolls to a section on /dashboard
   { name: 'Macro Overview', icon: LayoutDashboard, id: 'overview-macro', type: 'scroll' },
+  // Power BI-style dashboard with dynamic filtering
+  { name: 'Dynamic Filtering', icon: Filter, path: '/macro-overview', type: 'route', badge: 'NEW' },
   // All others navigate to separate pages
   { name: 'Price/PSF Analysis', icon: LineChart, path: '/price-analysis', type: 'route' },
   { name: 'Volume/Liquidity Analysis', icon: BarChart3, path: '/volume-analysis', type: 'route' },
@@ -162,8 +165,17 @@ export function Sidebar({ collapsed, onCollapse, onClose }) {
                   "w-5 h-5 flex-shrink-0 transition-colors",
                   isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-200"
                 )} />
-                
-                {!collapsed && <span>{item.name}</span>}
+
+                {!collapsed && (
+                  <span className="flex items-center gap-2">
+                    {item.name}
+                    {item.badge && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-sky-500 text-white rounded">
+                        {item.badge}
+                      </span>
+                    )}
+                  </span>
+                )}
               </button>
             );
           })}
