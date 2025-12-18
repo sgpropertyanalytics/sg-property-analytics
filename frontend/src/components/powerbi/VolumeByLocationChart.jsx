@@ -87,27 +87,18 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       if (clickedItem) {
         const locationValue = clickedItem[drillPath.location];
 
-        // Apply cross-filter
-        if (onCrossFilter) {
-          onCrossFilter('location', drillPath.location, locationValue);
+        // At region or district level: clicking drills down
+        // At project level: clicking applies cross-filter
+        if (drillPath.location === 'region' || drillPath.location === 'district') {
+          drillDown('location', locationValue, locationValue);
         } else {
-          applyCrossFilter('location', drillPath.location, locationValue);
+          // At project level - apply cross-filter
+          if (onCrossFilter) {
+            onCrossFilter('location', drillPath.location, locationValue);
+          } else {
+            applyCrossFilter('location', drillPath.location, locationValue);
+          }
         }
-      }
-    }
-  };
-
-  const handleDoubleClick = (event) => {
-    const chart = chartRef.current;
-    if (!chart) return;
-
-    const elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
-    if (elements.length > 0) {
-      const index = elements[0].index;
-      const clickedItem = data[index];
-      if (clickedItem) {
-        const locationValue = clickedItem[drillPath.location];
-        drillDown('location', locationValue);
       }
     }
   };
@@ -123,18 +114,19 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       return colors[location] || `rgba(128, 128, 128, ${alpha})`;
     }
 
-    // For district level, color by region
+    // For district level, color by region based on district number
     if (drillPath.location === 'district') {
       const districtNum = parseInt(location?.replace('D', '') || '0');
-      if (districtNum >= 1 && districtNum <= 9) {
+      if (districtNum >= 1 && districtNum <= 11) {
         return `rgba(33, 52, 72, ${alpha})`;   // CCR - #213448
-      } else if (districtNum >= 10 && districtNum <= 16) {
+      } else if ([12, 13, 14, 15, 20, 21].includes(districtNum)) {
         return `rgba(84, 119, 146, ${alpha})`;  // RCR - #547792
       } else {
         return `rgba(148, 180, 193, ${alpha})`; // OCR - #94B4C1
       }
     }
 
+    // For project level, use consistent color
     return `rgba(84, 119, 146, ${alpha})`;
   };
 
@@ -163,11 +155,15 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
     if (drillPath.location === 'district') {
       const areaName = DISTRICT_NAMES[value];
       if (areaName) {
-        // Truncate area name if too long (keep first part before comma or limit to 20 chars)
+        // Truncate area name if too long
         const shortName = areaName.split(',')[0].substring(0, 20);
         return `${value} (${shortName}${shortName !== areaName.split(',')[0] ? '...' : ''})`;
       }
       return value;
+    }
+    // For project level, truncate long names
+    if (drillPath.location === 'project' && value && value.length > 30) {
+      return value.substring(0, 27) + '...';
     }
     return value || 'Unknown';
   };

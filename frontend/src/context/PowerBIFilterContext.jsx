@@ -48,9 +48,10 @@ export function PowerBIFilterProvider({ children }) {
 
   // ===== Drill State =====
   // Current granularity level for hierarchical dimensions
+  // Location hierarchy: region (CCR/RCR/OCR) -> district -> project
   const [drillPath, setDrillPath] = useState({
     time: 'month',       // 'year' | 'quarter' | 'month'
-    location: 'district' // 'region' | 'district' | 'project'
+    location: 'region'   // 'region' | 'district' | 'project'
   });
 
   // ===== Breadcrumb Path =====
@@ -267,6 +268,7 @@ export function PowerBIFilterProvider({ children }) {
         }));
       }
     } else if (type === 'location') {
+      // Location hierarchy: region -> district -> project
       const levels = ['region', 'district', 'project'];
       setDrillPath(prev => {
         const currentIndex = levels.indexOf(prev.location);
@@ -300,6 +302,7 @@ export function PowerBIFilterProvider({ children }) {
         time: prev.time.length > 0 ? prev.time.slice(0, -1) : []
       }));
     } else if (type === 'location') {
+      // Location hierarchy: region -> district -> project
       const levels = ['region', 'district', 'project'];
       setDrillPath(prev => {
         const currentIndex = levels.indexOf(prev.location);
@@ -312,6 +315,8 @@ export function PowerBIFilterProvider({ children }) {
         ...prev,
         location: prev.location.length > 0 ? prev.location.slice(0, -1) : []
       }));
+      // Also clear any cross-filter on location when drilling up
+      setCrossFilter({ source: null, dimension: null, value: null });
     }
   }, []);
 
@@ -324,12 +329,15 @@ export function PowerBIFilterProvider({ children }) {
         time: prev.time.slice(0, index)
       }));
     } else if (type === 'location') {
+      // Location hierarchy: region -> district -> project
       const levels = ['region', 'district', 'project'];
       setDrillPath(prev => ({ ...prev, location: levels[index] }));
       setBreadcrumbs(prev => ({
         ...prev,
         location: prev.location.slice(0, index)
       }));
+      // Clear cross-filter when navigating breadcrumbs
+      setCrossFilter({ source: null, dimension: null, value: null });
     }
   }, []);
 
@@ -406,24 +414,34 @@ export function PowerBIFilterProvider({ children }) {
       }
     }
 
-    // Apply breadcrumb filters
+    // Apply time breadcrumb filters
+    // Breadcrumbs track drill-down path for time: year -> quarter -> month
     if (breadcrumbs.time.length > 0) {
       const lastTime = breadcrumbs.time[breadcrumbs.time.length - 1];
       if (lastTime && lastTime.value) {
-        // Apply date filter from breadcrumb
-        if (drillPath.time === 'quarter' && breadcrumbs.time.length === 1) {
-          // Year selected, filter to that year
-          const yearStr = String(lastTime.value);
+        if (drillPath.time === 'quarter') {
+          // At quarter level - first breadcrumb is year
+          const yearStr = String(breadcrumbs.time[0].value);
           combined.dateRange = {
             start: `${yearStr}-01-01`,
             end: `${yearStr}-12-31`
           };
-        } else if (drillPath.time === 'month' && breadcrumbs.time.length === 2) {
-          // Quarter selected - parse quarter from format like "2024-Q3" or just "Q3"
-          const year = String(breadcrumbs.time[0].value);
-          const quarterValue = String(lastTime.value);
+        } else if (drillPath.time === 'month') {
+          // At month level - last breadcrumb is quarter
+          const lastValue = String(lastTime.value);
+
+          // Get year: either from first breadcrumb or parse from quarter value
+          let year;
+          if (breadcrumbs.time.length >= 2) {
+            year = String(breadcrumbs.time[0].value);
+          } else {
+            // Quarter value might contain year (e.g., "2024-Q3")
+            const yearMatch = lastValue.match(/^(\d{4})/);
+            year = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
+          }
+
           // Extract quarter number from "2024-Q3" or "Q3" format
-          const qMatch = quarterValue.match(/Q(\d)/);
+          const qMatch = lastValue.match(/Q(\d)/);
           const q = qMatch ? parseInt(qMatch[1]) : 1;
           const quarterMonth = (q - 1) * 3 + 1;
           combined.dateRange = {
@@ -434,17 +452,32 @@ export function PowerBIFilterProvider({ children }) {
       }
     }
 
+    // Apply location breadcrumb filters
+    // Hierarchy: region -> district -> project
+    // Breadcrumbs: [region] at district level, [region, district] at project level
     if (breadcrumbs.location.length > 0) {
-      const lastLoc = breadcrumbs.location[breadcrumbs.location.length - 1];
-      if (lastLoc && lastLoc.value) {
-        if (drillPath.location === 'district' && breadcrumbs.location.length === 1) {
-          // Region selected
-          combined.segment = String(lastLoc.value);
-        } else if (drillPath.location === 'project' && breadcrumbs.location.length === 2) {
-          // District selected
-          combined.districts = [String(lastLoc.value)];
+      if (drillPath.location === 'district') {
+        // At district level - filter by the region (segment) we drilled into
+        const regionBreadcrumb = breadcrumbs.location[0];
+        if (regionBreadcrumb?.value) {
+          combined.segment = String(regionBreadcrumb.value);
+        }
+      } else if (drillPath.location === 'project') {
+        // At project level - filter by region and district
+        if (breadcrumbs.location.length >= 1) {
+          const regionBreadcrumb = breadcrumbs.location[0];
+          if (regionBreadcrumb?.value) {
+            combined.segment = String(regionBreadcrumb.value);
+          }
+        }
+        if (breadcrumbs.location.length >= 2) {
+          const districtBreadcrumb = breadcrumbs.location[1];
+          if (districtBreadcrumb?.value) {
+            combined.districts = [String(districtBreadcrumb.value)];
+          }
         }
       }
+      // At 'region' level - no location filters from breadcrumbs (showing all regions)
     }
 
     return combined;
