@@ -31,10 +31,10 @@ ChartJS.register(
  * Uses individual transaction prices for accurate distribution analysis.
  * Helps users understand if they overpaid or underpaid compared to others.
  *
- * Dynamic binning: Automatically calculates bin intervals to fit exactly
+ * Dynamic binning: Automatically calculates bin intervals to fit approximately
  * the specified number of bins based on the filtered data range.
  */
-export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, numBins = 20 }) {
+export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, numBins = 30 }) {
   const { buildApiParams, crossFilter, applyCrossFilter } = usePowerBIFilters();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,9 +53,10 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       }
       setError(null);
       try {
-        // Get individual transactions with prices (limit to reasonable amount for histogram)
+        // Get individual transactions with prices for accurate histogram
+        // Higher limit ensures we capture the full distribution
         const params = buildApiParams({
-          limit: 5000, // Get enough for good distribution
+          limit: 10000, // Get enough for comprehensive distribution
           sort_by: 'price',
           sort_order: 'asc'
         });
@@ -82,14 +83,29 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
   };
 
   // Helper to round to a "nice" bucket size for readability
+  // Uses CLOSEST nice number to maintain approximately the target number of bins
   const getNiceBucketSize = (rawSize) => {
-    // Round to nearest "nice" number (e.g., 50K, 100K, 200K, 500K, 1M)
-    const niceNumbers = [10000, 25000, 50000, 100000, 200000, 250000, 500000, 1000000, 2000000, 5000000];
+    // Nice numbers for Singapore property prices (more granular options)
+    const niceNumbers = [5000, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 100000, 150000, 200000, 250000, 500000, 1000000];
+
+    // Find the closest nice number (not just next one up)
+    let closest = niceNumbers[0];
+    let minDiff = Math.abs(rawSize - closest);
+
     for (const nice of niceNumbers) {
-      if (rawSize <= nice) return nice;
+      const diff = Math.abs(rawSize - nice);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = nice;
+      }
     }
-    // For very large ranges, round to nearest million
-    return Math.ceil(rawSize / 1000000) * 1000000;
+
+    // For very large ranges, round to nearest 500K or 1M
+    if (rawSize > 1000000) {
+      return Math.ceil(rawSize / 500000) * 500000;
+    }
+
+    return closest;
   };
 
   // Create histogram buckets from individual transaction prices
