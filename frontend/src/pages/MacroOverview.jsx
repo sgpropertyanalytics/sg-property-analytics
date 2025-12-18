@@ -7,7 +7,7 @@ import { PriceDistributionChart } from '../components/powerbi/PriceDistributionC
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
-import { getAggregate, getFilterOptions } from '../api/client';
+import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
 
 /**
@@ -24,7 +24,6 @@ function MacroOverviewContent() {
   const {
     crossFilter,
     highlight,
-    buildApiParams,
     clearCrossFilter,
     clearHighlight,
   } = usePowerBIFilters();
@@ -34,29 +33,51 @@ function MacroOverviewContent() {
   const [modalTitle, setModalTitle] = useState('');
   const [modalFilters, setModalFilters] = useState({});
 
-  // Summary KPIs
+  // Summary KPIs - Last 30 days snapshot (ignores sidebar filters for market overview)
   const [kpis, setKpis] = useState({
-    totalTransactions: 0,
-    medianPsf: 0,
-    totalValue: 0,
+    newSalesCount: 0,
+    resalesCount: 0,
+    totalQuantum: 0,
     loading: true,
   });
 
-  // Fetch KPIs when filters change
+  // Fetch KPIs for last 30 days (fixed time window, not affected by sidebar filters)
   useEffect(() => {
     const fetchKpis = async () => {
       try {
-        const params = buildApiParams({
-          group_by: '',
-          metrics: 'count,median_psf,total_value,median_price'
-        });
-        const response = await getAggregate(params);
-        const data = response.data.data?.[0] || {};
+        // Calculate last 30 days from today
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+
+        const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
+        const dateTo = today.toISOString().split('T')[0];
+
+        // Fetch New Sales and Resales in parallel
+        const [newSalesRes, resalesRes] = await Promise.all([
+          getAggregate({
+            group_by: '',
+            metrics: 'count,total_value',
+            sale_type: 'New Sale',
+            date_from: dateFrom,
+            date_to: dateTo,
+          }),
+          getAggregate({
+            group_by: '',
+            metrics: 'count,total_value',
+            sale_type: 'Resale',
+            date_from: dateFrom,
+            date_to: dateTo,
+          }),
+        ]);
+
+        const newSalesData = newSalesRes.data.data?.[0] || {};
+        const resalesData = resalesRes.data.data?.[0] || {};
+
         setKpis({
-          totalTransactions: data.count || 0,
-          medianPsf: data.median_psf || 0,
-          medianPrice: data.median_price || 0,
-          totalValue: data.total_value || 0,
+          newSalesCount: newSalesData.count || 0,
+          resalesCount: resalesData.count || 0,
+          totalQuantum: (newSalesData.total_value || 0) + (resalesData.total_value || 0),
           loading: false,
         });
       } catch (err) {
@@ -65,7 +86,7 @@ function MacroOverviewContent() {
       }
     };
     fetchKpis();
-  }, [buildApiParams]);
+  }, []); // Only fetch once on mount - these are market snapshot KPIs
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
     setModalTitle(title);
@@ -144,46 +165,38 @@ function MacroOverviewContent() {
             <DrillBreadcrumb />
           </div>
 
-          {/* KPI Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {/* KPI Summary Cards - Last 30 Days Market Snapshot */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <KPICard
-              title="Total Transactions"
-              value={kpis.totalTransactions.toLocaleString()}
+              title="Total New Sales"
+              subtitle="past 30 days"
+              value={kpis.newSalesCount.toLocaleString()}
               loading={kpis.loading}
               icon={
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               }
-              onClick={() => handleDrillThrough('All Transactions')}
             />
             <KPICard
-              title="Median PSF"
-              value={`$${kpis.medianPsf.toLocaleString()}`}
+              title="Total Resales"
+              subtitle="past 30 days"
+              value={kpis.resalesCount.toLocaleString()}
+              loading={kpis.loading}
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              }
+            />
+            <KPICard
+              title="Total Quantum Value"
+              subtitle="past 30 days"
+              value={`$${(kpis.totalQuantum / 1000000000).toFixed(2)}B`}
               loading={kpis.loading}
               icon={
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              }
-            />
-            <KPICard
-              title="Median Price"
-              value={`$${(kpis.medianPrice / 1000000).toFixed(2)}M`}
-              loading={kpis.loading}
-              icon={
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              }
-            />
-            <KPICard
-              title="Total Value"
-              value={`$${(kpis.totalValue / 1000000000).toFixed(2)}B`}
-              loading={kpis.loading}
-              icon={
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               }
             />
@@ -232,7 +245,7 @@ function MacroOverviewContent() {
 }
 
 // KPI Card Component
-function KPICard({ title, value, loading, icon, onClick }) {
+function KPICard({ title, subtitle, value, loading, icon, onClick }) {
   return (
     <div
       className={`bg-white rounded-lg border border-[#94B4C1]/50 p-4 ${
@@ -241,7 +254,12 @@ function KPICard({ title, value, loading, icon, onClick }) {
       onClick={onClick}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[#547792] text-sm">{title}</span>
+        <div>
+          <span className="text-[#547792] text-sm">{title}</span>
+          {subtitle && (
+            <span className="text-[#94B4C1] text-xs italic ml-2">{subtitle}</span>
+          )}
+        </div>
         <span className="text-[#94B4C1]">{icon}</span>
       </div>
       {loading ? (
