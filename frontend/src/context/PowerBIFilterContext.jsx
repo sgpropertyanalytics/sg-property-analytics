@@ -48,9 +48,10 @@ export function PowerBIFilterProvider({ children }) {
 
   // ===== Drill State =====
   // Current granularity level for hierarchical dimensions
+  // Location hierarchy: region (CCR/RCR/OCR) -> district -> project
   const [drillPath, setDrillPath] = useState({
     time: 'month',       // 'year' | 'quarter' | 'month'
-    location: 'district' // 'region' | 'district' | 'project'
+    location: 'region'   // 'region' | 'district' | 'project'
   });
 
   // ===== Breadcrumb Path =====
@@ -267,6 +268,7 @@ export function PowerBIFilterProvider({ children }) {
         }));
       }
     } else if (type === 'location') {
+      // Location hierarchy: region -> district -> project
       const levels = ['region', 'district', 'project'];
       setDrillPath(prev => {
         const currentIndex = levels.indexOf(prev.location);
@@ -300,6 +302,7 @@ export function PowerBIFilterProvider({ children }) {
         time: prev.time.length > 0 ? prev.time.slice(0, -1) : []
       }));
     } else if (type === 'location') {
+      // Location hierarchy: region -> district -> project
       const levels = ['region', 'district', 'project'];
       setDrillPath(prev => {
         const currentIndex = levels.indexOf(prev.location);
@@ -312,6 +315,8 @@ export function PowerBIFilterProvider({ children }) {
         ...prev,
         location: prev.location.length > 0 ? prev.location.slice(0, -1) : []
       }));
+      // Also clear any cross-filter on location when drilling up
+      setCrossFilter({ source: null, dimension: null, value: null });
     }
   }, []);
 
@@ -324,12 +329,15 @@ export function PowerBIFilterProvider({ children }) {
         time: prev.time.slice(0, index)
       }));
     } else if (type === 'location') {
+      // Location hierarchy: region -> district -> project
       const levels = ['region', 'district', 'project'];
       setDrillPath(prev => ({ ...prev, location: levels[index] }));
       setBreadcrumbs(prev => ({
         ...prev,
         location: prev.location.slice(0, index)
       }));
+      // Clear cross-filter when navigating breadcrumbs
+      setCrossFilter({ source: null, dimension: null, value: null });
     }
   }, []);
 
@@ -445,38 +453,31 @@ export function PowerBIFilterProvider({ children }) {
     }
 
     // Apply location breadcrumb filters
-    // Breadcrumbs track drill-down path - each entry represents what was clicked at that level
-    // The meaning depends on the current drillPath level and breadcrumb count
+    // Hierarchy: region -> district -> project
+    // Breadcrumbs: [region] at district level, [region, district] at project level
     if (breadcrumbs.location.length > 0) {
-      // Determine what filters to apply based on drill hierarchy
-      // Levels: region -> district -> project
-      // When at 'district' level with breadcrumbs: first breadcrumb is region/segment
-      // When at 'project' level with breadcrumbs: last breadcrumb is always district
-
       if (drillPath.location === 'district') {
-        // At district level - breadcrumbs contain region(s) we drilled through
+        // At district level - filter by the region (segment) we drilled into
         const regionBreadcrumb = breadcrumbs.location[0];
         if (regionBreadcrumb?.value) {
           combined.segment = String(regionBreadcrumb.value);
         }
       } else if (drillPath.location === 'project') {
-        // At project level - need to apply district filter
-        // Last breadcrumb is always the district we drilled into
-        const lastBreadcrumb = breadcrumbs.location[breadcrumbs.location.length - 1];
-        if (lastBreadcrumb?.value) {
-          combined.districts = [String(lastBreadcrumb.value)];
-        }
-        // If we have 2+ breadcrumbs, first is region
-        if (breadcrumbs.location.length >= 2) {
+        // At project level - filter by region and district
+        if (breadcrumbs.location.length >= 1) {
           const regionBreadcrumb = breadcrumbs.location[0];
           if (regionBreadcrumb?.value) {
             combined.segment = String(regionBreadcrumb.value);
           }
         }
-      } else if (drillPath.location === 'region') {
-        // At region level - no location filters from breadcrumbs (showing all regions)
-        // But might have filters from sidebar
+        if (breadcrumbs.location.length >= 2) {
+          const districtBreadcrumb = breadcrumbs.location[1];
+          if (districtBreadcrumb?.value) {
+            combined.districts = [String(districtBreadcrumb.value)];
+          }
+        }
       }
+      // At 'region' level - no location filters from breadcrumbs (showing all regions)
     }
 
     return combined;

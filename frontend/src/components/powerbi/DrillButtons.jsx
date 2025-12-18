@@ -41,6 +41,7 @@ export function DrillButtons({
         levelLabels: { year: 'Year', quarter: 'Quarter', month: 'Month' }
       };
     } else if (hierarchyType === 'location') {
+      // Location hierarchy: region -> district -> project
       const levels = ['region', 'district', 'project'];
       const currentIndex = levels.indexOf(drillPath.location);
       return {
