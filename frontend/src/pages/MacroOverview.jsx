@@ -208,7 +208,7 @@ function MacroOverviewContent() {
             <PriceDistributionChart
               onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
               height={350}
-              bucketSize={200}
+              bucketSize={200000}
             />
           </div>
 
