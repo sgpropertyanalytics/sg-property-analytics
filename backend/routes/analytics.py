@@ -223,6 +223,7 @@ def health():
             "status": "healthy",
             "data_loaded": count > 0,
             "row_count": count,
+            "outliers_excluded": metadata.get("outliers_excluded", 0),
             "stats_computed": metadata.get("last_updated") is not None,
             "last_updated": metadata.get("last_updated"),
             "min_date": min_date_result.isoformat() if min_date_result else None,

@@ -103,6 +103,9 @@ function MacroOverviewContent() {
                       })}
                       </>
                     )}
+                    {apiMetadata.outliers_excluded > 0 && (
+                      <> | {apiMetadata.outliers_excluded?.toLocaleString()} outlier records excluded</>
+                    )}
                   </p>
                 )}
               </div>

@@ -17,7 +17,7 @@ from flask import Flask
 from config import Config
 from models.database import db
 from models.transaction import Transaction
-from services.data_loader import clean_csv_data, parse_date_flexible
+from services.data_loader import clean_csv_data, parse_date_flexible, filter_outliers_iqr
 from services.classifier import classify_bedroom
 from services.data_processor import _add_lease_columns, _get_market_segment
 from services.aggregation_service import recompute_all_stats
@@ -272,10 +272,16 @@ def main():
             combined_df = combined_df.drop_duplicates(subset=dedup_cols, keep='first')
         else:
             print("  ⚠️  Could not find columns for deduplication, skipping...")
-        
+
         after_dedup = len(combined_df)
         print(f"  Removed {before_dedup - after_dedup:,} duplicates")
-        
+
+        # Apply IQR-based outlier filtering on price
+        print("\n🔍 Filtering outliers using IQR method...")
+        combined_df, outliers_excluded = filter_outliers_iqr(combined_df, column='price')
+        after_outlier_filter = len(combined_df)
+        print(f"  Final clean records: {after_outlier_filter:,}")
+
         # Save to database
         print("\n💾 Saving to database...")
         saved_count = save_dataframe_to_db(combined_df, app)
@@ -284,11 +290,11 @@ def main():
         final_count = db.session.query(Transaction).count()
         print(f"\n✓ Upload complete! Total transactions in database: {final_count:,}")
         
-        # Trigger aggregation
+        # Trigger aggregation (pass outlier count for metadata)
         print("\n" + "=" * 60)
         print("Triggering aggregation service...")
         print("=" * 60)
-        recompute_all_stats()
+        recompute_all_stats(outliers_excluded=outliers_excluded)
         
         print("\n" + "=" * 60)
         print("✓ All done! Data loaded and analytics pre-computed.")

@@ -14,8 +14,53 @@ import pandas as pd
 import os
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 from services.classifier import classify_bedroom, classify_bedroom_three_tier
+
+
+def filter_outliers_iqr(df: pd.DataFrame, column: str = 'price') -> Tuple[pd.DataFrame, int]:
+    """
+    Filter outliers using the IQR (Interquartile Range) method.
+
+    In a boxplot, an outlier is a data point that falls far outside the whiskers,
+    typically identified as any value more than 1.5 times the IQR below Q1 or above Q3.
+
+    Args:
+        df: DataFrame containing the data
+        column: Column name to filter outliers on (default: 'price')
+
+    Returns:
+        Tuple of (filtered DataFrame, count of outliers excluded)
+    """
+    if df.empty or column not in df.columns:
+        return df, 0
+
+    # Calculate Q1, Q3, and IQR
+    Q1 = df[column].quantile(0.25)
+    Q3 = df[column].quantile(0.75)
+    IQR = Q3 - Q1
+
+    # Define outlier bounds
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+
+    # Count outliers
+    outlier_mask = (df[column] < lower_bound) | (df[column] > upper_bound)
+    outliers_count = outlier_mask.sum()
+
+    # Filter out outliers
+    filtered_df = df[~outlier_mask].copy()
+
+    if outliers_count > 0:
+        print(f"  📊 IQR Outlier Filtering:")
+        print(f"     Q1 (25th percentile): ${Q1:,.0f}")
+        print(f"     Q3 (75th percentile): ${Q3:,.0f}")
+        print(f"     IQR: ${IQR:,.0f}")
+        print(f"     Lower bound: ${lower_bound:,.0f}")
+        print(f"     Upper bound: ${upper_bound:,.0f}")
+        print(f"     Outliers excluded: {outliers_count:,}")
+
+    return filtered_df, outliers_count
 
 # Month name to number mapping
 MONTH_MAP = {
