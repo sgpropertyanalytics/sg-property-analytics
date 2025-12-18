@@ -136,18 +136,24 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
             (filters.districts.length > 0 ? 1 : 0)
           }
         >
-          {/* Market Segment */}
+          {/* Market Segment Buttons */}
           <FilterGroup label="Market Segment">
-            <select
-              value={filters.segment || ''}
-              onChange={(e) => setSegment(e.target.value || null)}
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="">All Segments</option>
-              <option value="CCR">CCR (Core Central)</option>
-              <option value="RCR">RCR (Rest of Central)</option>
-              <option value="OCR">OCR (Outside Central)</option>
-            </select>
+            <div className="grid grid-cols-3 gap-2">
+              {['CCR', 'RCR', 'OCR'].map(seg => (
+                <button
+                  type="button"
+                  key={seg}
+                  onClick={(e) => { e.preventDefault(); setSegment(filters.segment === seg ? null : seg); }}
+                  className={`py-2 text-sm rounded-md border transition-colors ${
+                    filters.segment === seg
+                      ? 'bg-[#547792] text-white border-[#547792]'
+                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+                  }`}
+                >
+                  {seg}
+                </button>
+              ))}
+            </div>
           </FilterGroup>
 
           {/* Districts Multi-select */}
@@ -169,54 +175,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           </FilterGroup>
         </FilterSection>
 
-        {/* Date Section */}
+        {/* Bedroom Size Section */}
         <FilterSection
-          title="Date"
-          icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          }
-          expanded={expandedSections.date}
-          onToggle={() => toggleSection('date')}
-          activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
-        >
-          <FilterGroup label="Date Range">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 w-10">From</span>
-                <input
-                  type="month"
-                  value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
-                  onChange={(e) => setDateRange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
-                  className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
-                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 w-10">To</span>
-                <input
-                  type="month"
-                  value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
-                  onChange={(e) => setDateRange(filters.dateRange.start, e.target.value ? `${e.target.value}-01` : null)}
-                  className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
-                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
-                />
-              </div>
-            </div>
-            {filterOptions.dateRange.min && filterOptions.dateRange.max && (
-              <div className="text-xs text-slate-500 mt-2">
-                Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
-              </div>
-            )}
-          </FilterGroup>
-        </FilterSection>
-
-        {/* Room Size Section */}
-        <FilterSection
-          title="Room Size"
+          title="Bedroom Size"
           icon={
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -224,41 +185,49 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           }
           expanded={expandedSections.roomSize}
           onToggle={() => toggleSection('roomSize')}
-          activeCount={filters.bedroomTypes.length > 0 ? 1 : 0}
+          activeCount={
+            (filters.bedroomTypes.length > 0 ? 1 : 0) +
+            (filters.saleType ? 1 : 0)
+          }
         >
-          {/* Bedroom Type Pills */}
-          <FilterGroup label="Bedrooms">
-            <div className="flex flex-wrap gap-2">
-              {[1, 2, 3, 4].map(br => (
+          {/* Bedroom Type Buttons - centered with consistent width */}
+          <div className="grid grid-cols-4 gap-2">
+            {[1, 2, 3, 4].map(br => (
+              <button
+                type="button"
+                key={br}
+                onClick={(e) => { e.preventDefault(); toggleBedroomType(br); }}
+                className={`py-2 text-sm rounded-md border transition-colors ${
+                  filters.bedroomTypes.includes(br)
+                    ? 'bg-[#547792] text-white border-[#547792]'
+                    : filters.bedroomTypes.length === 0
+                      ? 'bg-white text-[#213448] border-[#94B4C1]'
+                      : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
+                }`}
+              >
+                {br === 4 ? '4B+' : `${br}B`}
+              </button>
+            ))}
+          </div>
+
+          {/* Sale Type Buttons */}
+          <FilterGroup label="Sale Type">
+            <div className="grid grid-cols-2 gap-2">
+              {[{ value: 'New Sale', label: 'New Sale' }, { value: 'Resale', label: 'Resale' }].map(type => (
                 <button
                   type="button"
-                  key={br}
-                  onClick={(e) => { e.preventDefault(); toggleBedroomType(br); }}
-                  className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
-                    filters.bedroomTypes.includes(br)
+                  key={type.value}
+                  onClick={(e) => { e.preventDefault(); setSaleType(filters.saleType === type.value ? null : type.value); }}
+                  className={`py-2 text-sm rounded-md border transition-colors ${
+                    filters.saleType === type.value
                       ? 'bg-[#547792] text-white border-[#547792]'
-                      : filters.bedroomTypes.length === 0
-                        ? 'bg-white text-[#213448] border-[#94B4C1]'
-                        : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
+                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
                   }`}
                 >
-                  {br === 4 ? '4B+' : `${br}B`}
+                  {type.label}
                 </button>
               ))}
             </div>
-          </FilterGroup>
-
-          {/* Sale Type */}
-          <FilterGroup label="Sale Type">
-            <select
-              value={filters.saleType || ''}
-              onChange={(e) => setSaleType(e.target.value || null)}
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="">All Types</option>
-              <option value="New Sale">New Sale</option>
-              <option value="Resale">Resale</option>
-            </select>
           </FilterGroup>
 
           {/* Classification Tiers Info */}
@@ -302,6 +271,51 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
               Post-harm: after AC ledge removal | Pre-harm: before
             </div>
           </div>
+        </FilterSection>
+
+        {/* Date Section - moved after Bedroom Size */}
+        <FilterSection
+          title="Date"
+          icon={
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          }
+          expanded={expandedSections.date}
+          onToggle={() => toggleSection('date')}
+          activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
+        >
+          <FilterGroup label="Date Range">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 w-10">From</span>
+                <input
+                  type="month"
+                  value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
+                  onChange={(e) => setDateRange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
+                  className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
+                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 w-10">To</span>
+                <input
+                  type="month"
+                  value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
+                  onChange={(e) => setDateRange(filters.dateRange.start, e.target.value ? `${e.target.value}-01` : null)}
+                  className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
+                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
+                />
+              </div>
+            </div>
+            {filterOptions.dateRange.min && filterOptions.dateRange.max && (
+              <div className="text-xs text-slate-500 mt-2">
+                Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+              </div>
+            )}
+          </FilterGroup>
         </FilterSection>
       </div>
 
