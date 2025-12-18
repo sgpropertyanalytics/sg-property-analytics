@@ -125,10 +125,10 @@ function MacroOverviewContent() {
               </div>
             </div>
 
-            {/* Data source info */}
+            {/* Data source info - show filtered count, not raw DB count */}
             {apiMetadata && (
               <p className="text-xs text-slate-500 italic">
-                Data source from URA | {apiMetadata.row_count?.toLocaleString() || '0'} records
+                Data source from URA | {kpis.loading ? '...' : kpis.totalTransactions.toLocaleString()} transactions
                 {apiMetadata.min_date && apiMetadata.max_date && (
                   <> from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -139,6 +139,7 @@ function MacroOverviewContent() {
                   })}
                   </>
                 )}
+                {' '}(filtered from {apiMetadata.row_count?.toLocaleString() || '0'} total)
               </p>
             )}
 
