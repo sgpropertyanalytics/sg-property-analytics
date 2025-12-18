@@ -11,6 +11,8 @@ A Power BI-style analytics dashboard for Singapore condo resale transactions. Bu
 
 ## Color Palette Theme
 
+**Source**: https://colorhunt.co/palette/21344854779294b4c1eae0cf
+
 ### Primary Colors (Navy/Blue Family)
 
 | Color | Hex | RGB | Usage |
