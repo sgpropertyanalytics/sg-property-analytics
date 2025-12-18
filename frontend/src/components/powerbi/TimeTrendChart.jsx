@@ -162,11 +162,8 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   const avgCount = counts.reduce((sum, c) => sum + c, 0) / counts.length;
   const peakThreshold = avgCount + (maxCount - avgCount) * 0.5; // 50% above average towards max
 
-  // Calculate y1 axis range to push the line higher above the bars
-  const maxTotalValue = Math.max(...totalValues);
-  const minTotalValue = Math.min(...totalValues);
-  // Extend the axis 40% below the min value to lift the line visually above bars
-  const y1Min = minTotalValue - (maxTotalValue - minTotalValue) * 0.6;
+  // Extend y axis (count) to push bars lower, making room for line above
+  const yAxisMax = maxCount * 2.2; // Bars occupy ~45% of chart height
 
   // Determine which bars should be highlighted based on highlight state
   const highlightedIndex = highlight.source === 'time' && highlight.value
@@ -214,11 +211,13 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         type: 'line',
         label: 'Total Quantum',
         data: totalValues,
-        borderColor: 'rgba(33, 52, 72, 1)',  // #213448
-        backgroundColor: 'rgba(33, 52, 72, 0.1)',
-        borderWidth: 2,
-        pointRadius: 3,
-        pointBackgroundColor: 'rgba(33, 52, 72, 1)',
+        borderColor: '#EAE0CF',  // Sand/Cream - contrasts with blue bars
+        backgroundColor: 'rgba(234, 224, 207, 0.1)',
+        borderWidth: 3,
+        pointRadius: 5,
+        pointBackgroundColor: '#EAE0CF',
+        pointBorderColor: '#213448',  // Deep Navy outline for visibility
+        pointBorderWidth: 2,
         fill: false,
         yAxisID: 'y1',
         order: 1,
@@ -274,6 +273,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         type: 'linear',
         display: true,
         position: 'left',
+        max: yAxisMax, // Extended max to push bars lower, leaving room for line above
         title: {
           display: true,
           text: 'Transaction Count',
@@ -286,7 +286,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         type: 'linear',
         display: true,
         position: 'right',
-        min: y1Min, // Push the line higher above the bars
+        min: 0, // Grounded at $0M
         title: {
           display: true,
           text: 'Total Quantum ($)',
@@ -296,8 +296,6 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         },
         ticks: {
           callback: (value) => {
-            // Don't show negative tick labels
-            if (value < 0) return '';
             if (value >= 1000000000) {
               return `$${(value / 1000000000).toFixed(1)}B`;
             }
