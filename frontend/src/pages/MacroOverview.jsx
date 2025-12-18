@@ -92,17 +92,16 @@ function MacroOverviewContent() {
                 {/* Data source info - shows raw database count and date range */}
                 {apiMetadata && (
                   <p className="text-[#547792] text-sm italic">
-                    Data source from URA | {apiMetadata.row_count?.toLocaleString() || '0'} records
+                    Data source from URA (Total of {apiMetadata.row_count?.toLocaleString() || '0'} transaction records
                     {apiMetadata.min_date && apiMetadata.max_date && (
-                      <> from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
+                      <> found from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short'
                       })} to {new Date(apiMetadata.max_date).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short'
-                      })}
-                      </>
-                    )}
+                      })}</>
+                    )})
                     {apiMetadata.outliers_excluded > 0 && (
                       <> | {apiMetadata.outliers_excluded?.toLocaleString()} outlier records excluded</>
                     )}

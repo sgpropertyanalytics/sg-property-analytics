@@ -340,6 +340,12 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
     if filters.get('psf_max') is not None:
         conditions.append(Transaction.psf <= float(filters['psf_max']))
 
+    # Price range (for cross-filter from price distribution chart)
+    if filters.get('price_min') is not None:
+        conditions.append(Transaction.price >= float(filters['price_min']))
+    if filters.get('price_max') is not None:
+        conditions.append(Transaction.price <= float(filters['price_max']))
+
     # Size range
     if filters.get('size_min') is not None:
         conditions.append(Transaction.area_sqft >= float(filters['size_min']))

@@ -119,9 +119,9 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
     if (elements.length > 0) {
       const index = elements[0].index;
       const clickedBucket = bucketedData.buckets[index];
-      if (clickedBucket && onCrossFilter) {
-        // Apply price range cross-filter
-        onCrossFilter('price', 'price_range', `${clickedBucket.start}-${clickedBucket.end}`);
+      if (clickedBucket) {
+        // Apply price range cross-filter directly via context
+        applyCrossFilter('price', 'price_range', `${clickedBucket.start}-${clickedBucket.end}`);
       }
     }
   };

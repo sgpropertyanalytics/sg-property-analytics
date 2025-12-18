@@ -269,37 +269,37 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           {/* Classification Tiers Info */}
           <div className="text-xs text-gray-400 mt-3 space-y-1.5">
             <div className="font-medium text-gray-500">Bedroom Classification (sqft):</div>
-            <table className="w-full text-[10px] border-collapse">
+            <table className="w-full text-[10px] border-collapse border border-dotted border-gray-300">
               <thead>
-                <tr className="text-gray-500">
-                  <th className="text-left font-medium pr-1">Type</th>
-                  <th className="text-center font-medium px-1">1B</th>
-                  <th className="text-center font-medium px-1">2B</th>
-                  <th className="text-center font-medium px-1">3B</th>
-                  <th className="text-center font-medium pl-1">4B+</th>
+                <tr className="text-gray-500 bg-gray-50/50">
+                  <th className="text-left font-medium p-1.5 border border-dotted border-gray-300">Type</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-300">1B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-300">2B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-300">3B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-300">4B+</th>
                 </tr>
               </thead>
               <tbody className="text-gray-400">
                 <tr title="Post-harmonization: AC ledge rules changed">
-                  <td className="text-left pr-1">New ≥Jun'23</td>
-                  <td className="text-center px-1">&lt;580</td>
-                  <td className="text-center px-1">&lt;780</td>
-                  <td className="text-center px-1">&lt;1150</td>
-                  <td className="text-center pl-1">≥1150</td>
+                  <td className="text-left p-1.5 border border-dotted border-gray-300">New ≥Jun'23</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;580</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;780</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;1150</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">≥1150</td>
                 </tr>
                 <tr title="Pre-harmonization: Before AC ledge rule changes">
-                  <td className="text-left pr-1">New &lt;Jun'23</td>
-                  <td className="text-center px-1">&lt;600</td>
-                  <td className="text-center px-1">&lt;850</td>
-                  <td className="text-center px-1">&lt;1200</td>
-                  <td className="text-center pl-1">≥1200</td>
+                  <td className="text-left p-1.5 border border-dotted border-gray-300">New &lt;Jun'23</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;600</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;850</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;1200</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">≥1200</td>
                 </tr>
                 <tr title="Resale units: Legacy larger sizes">
-                  <td className="text-left pr-1">Resale</td>
-                  <td className="text-center px-1">&lt;600</td>
-                  <td className="text-center px-1">&lt;950</td>
-                  <td className="text-center px-1">&lt;1350</td>
-                  <td className="text-center pl-1">≥1350</td>
+                  <td className="text-left p-1.5 border border-dotted border-gray-300">Resale</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;600</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;950</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;1350</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-300">≥1350</td>
                 </tr>
               </tbody>
             </table>

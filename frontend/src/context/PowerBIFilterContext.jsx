@@ -23,6 +23,7 @@ export function PowerBIFilterProvider({ children }) {
     saleType: null,                          // null = all, 'New Sale' | 'Resale'
     psfRange: { min: null, max: null },      // null = no restriction
     sizeRange: { min: null, max: null },     // null = no restriction
+    priceRange: { min: null, max: null },    // null = no restriction (for price distribution cross-filter)
     tenure: null,                            // null = all, 'Freehold' | '99-year' | '999-year'
     project: null,                           // null = all, project name filter
   });
@@ -177,6 +178,13 @@ export function PowerBIFilterProvider({ children }) {
     }));
   }, []);
 
+  const setPriceRange = useCallback((min, max) => {
+    setFilters(prev => ({
+      ...prev,
+      priceRange: { min, max }
+    }));
+  }, []);
+
   const setTenure = useCallback((tenure) => {
     setFilters(prev => ({ ...prev, tenure }));
   }, []);
@@ -207,6 +215,19 @@ export function PowerBIFilterProvider({ children }) {
   // This filters data - other charts recalculate
 
   const applyCrossFilter = useCallback((source, dimension, value) => {
+    // Handle price range cross-filter specially
+    if (dimension === 'price_range') {
+      // value is "min-max" string like "1000000-2000000"
+      const [min, max] = value.split('-').map(Number);
+      setFilters(prev => ({
+        ...prev,
+        priceRange: { min, max }
+      }));
+      setCrossFilter({ source, dimension, value });
+      setHighlight({ source: null, dimension: null, value: null });
+      return;
+    }
+
     // Only apply cross-filter for categorical dimensions
     // Time dimensions should use highlight instead
     const categoricalDimensions = ['district', 'region', 'bedroom', 'sale_type', 'project'];
@@ -222,6 +243,11 @@ export function PowerBIFilterProvider({ children }) {
 
   const clearCrossFilter = useCallback(() => {
     setCrossFilter({ source: null, dimension: null, value: null });
+    // Also clear price range if it was set by cross-filter
+    setFilters(prev => ({
+      ...prev,
+      priceRange: { min: null, max: null }
+    }));
   }, []);
 
   // ===== Highlight Management =====
@@ -537,6 +563,12 @@ export function PowerBIFilterProvider({ children }) {
     if (activeFilters.sizeRange.max !== null) {
       params.size_max = activeFilters.sizeRange.max;
     }
+    if (activeFilters.priceRange?.min !== null) {
+      params.price_min = activeFilters.priceRange.min;
+    }
+    if (activeFilters.priceRange?.max !== null) {
+      params.price_max = activeFilters.priceRange.max;
+    }
     if (activeFilters.tenure) {
       params.tenure = activeFilters.tenure;
     }
@@ -585,6 +617,7 @@ export function PowerBIFilterProvider({ children }) {
     setSaleType,
     setPsfRange,
     setSizeRange,
+    setPriceRange,
     setTenure,
     setProject,
     resetFilters,
