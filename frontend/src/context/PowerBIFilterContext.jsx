@@ -317,35 +317,11 @@ export function PowerBIFilterProvider({ children }) {
   const activeFilters = useMemo(() => {
     const combined = { ...filters };
 
-    // Apply cross-filter if set
+    // Apply cross-filter if set (for categorical dimensions)
     if (crossFilter.dimension && crossFilter.value) {
       switch (crossFilter.dimension) {
         case 'district':
           combined.districts = [crossFilter.value];
-          break;
-        case 'month':
-        case 'quarter':
-        case 'year':
-          // Apply date filter based on cross-filter
-          if (crossFilter.dimension === 'month') {
-            combined.dateRange = {
-              start: `${crossFilter.value}-01`,
-              end: `${crossFilter.value}-31`
-            };
-          } else if (crossFilter.dimension === 'quarter') {
-            // Parse quarter (e.g., "2024-Q3" -> start: 2024-07-01, end: 2024-09-30)
-            const [year, q] = crossFilter.value.split('-Q');
-            const quarterMonth = (parseInt(q) - 1) * 3 + 1;
-            combined.dateRange = {
-              start: `${year}-${String(quarterMonth).padStart(2, '0')}-01`,
-              end: `${year}-${String(quarterMonth + 2).padStart(2, '0')}-31`
-            };
-          } else if (crossFilter.dimension === 'year') {
-            combined.dateRange = {
-              start: `${crossFilter.value}-01-01`,
-              end: `${crossFilter.value}-12-31`
-            };
-          }
           break;
         case 'bedroom':
           combined.bedroomTypes = [parseInt(crossFilter.value)];
@@ -356,6 +332,30 @@ export function PowerBIFilterProvider({ children }) {
         case 'region':
           combined.segment = crossFilter.value;
           break;
+      }
+    }
+
+    // Apply highlight filter if set (for time dimensions)
+    // This filters OTHER charts while the source chart keeps full context
+    if (highlight.dimension && highlight.value) {
+      if (highlight.dimension === 'month') {
+        combined.dateRange = {
+          start: `${highlight.value}-01`,
+          end: `${highlight.value}-31`
+        };
+      } else if (highlight.dimension === 'quarter') {
+        // Parse quarter (e.g., "2024-Q3" -> start: 2024-07-01, end: 2024-09-30)
+        const [year, q] = highlight.value.split('-Q');
+        const quarterMonth = (parseInt(q) - 1) * 3 + 1;
+        combined.dateRange = {
+          start: `${year}-${String(quarterMonth).padStart(2, '0')}-01`,
+          end: `${year}-${String(quarterMonth + 2).padStart(2, '0')}-31`
+        };
+      } else if (highlight.dimension === 'year') {
+        combined.dateRange = {
+          start: `${highlight.value}-01-01`,
+          end: `${highlight.value}-12-31`
+        };
       }
     }
 
@@ -401,18 +401,36 @@ export function PowerBIFilterProvider({ children }) {
     }
 
     return combined;
-  }, [filters, crossFilter, breadcrumbs, drillPath]);
+  }, [filters, crossFilter, highlight, breadcrumbs, drillPath]);
 
   // ===== Build API query params from active filters =====
-  const buildApiParams = useCallback((additionalParams = {}) => {
+  // Options:
+  //   excludeHighlight: true - excludes time highlight filter (for time chart to show all periods)
+  const buildApiParams = useCallback((additionalParams = {}, options = {}) => {
     const params = { ...additionalParams };
+    const { excludeHighlight = false } = options;
 
-    if (activeFilters.dateRange.start) {
-      params.date_from = activeFilters.dateRange.start;
+    // Apply date range - but skip if excludeHighlight and the date comes from highlight
+    const highlightApplied = highlight.dimension && highlight.value;
+    const dateFromHighlight = highlightApplied && !filters.dateRange.start && !filters.dateRange.end;
+
+    if (!excludeHighlight || !dateFromHighlight) {
+      if (activeFilters.dateRange.start) {
+        params.date_from = activeFilters.dateRange.start;
+      }
+      if (activeFilters.dateRange.end) {
+        params.date_to = activeFilters.dateRange.end;
+      }
+    } else if (excludeHighlight && dateFromHighlight) {
+      // Use original sidebar date filters if any, ignoring highlight
+      if (filters.dateRange.start) {
+        params.date_from = filters.dateRange.start;
+      }
+      if (filters.dateRange.end) {
+        params.date_to = filters.dateRange.end;
+      }
     }
-    if (activeFilters.dateRange.end) {
-      params.date_to = activeFilters.dateRange.end;
-    }
+
     if (activeFilters.districts.length > 0) {
       params.district = activeFilters.districts.join(',');
     }
@@ -448,7 +466,7 @@ export function PowerBIFilterProvider({ children }) {
     }
 
     return params;
-  }, [activeFilters]);
+  }, [activeFilters, filters, highlight]);
 
   // ===== Count active filters =====
   const activeFilterCount = useMemo(() => {
