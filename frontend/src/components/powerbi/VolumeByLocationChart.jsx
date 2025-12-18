@@ -112,13 +112,13 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
     }
   };
 
-  // Get region color
+  // Get region color using theme palette
   const getRegionColor = (location, alpha = 0.8) => {
     if (drillPath.location === 'region') {
       const colors = {
-        CCR: `rgba(192, 80, 77, ${alpha})`,  // Red
-        RCR: `rgba(79, 129, 189, ${alpha})`, // Blue
-        OCR: `rgba(155, 187, 89, ${alpha})`, // Green
+        CCR: `rgba(33, 52, 72, ${alpha})`,   // #213448 - Dark navy
+        RCR: `rgba(84, 119, 146, ${alpha})`, // #547792 - Medium blue
+        OCR: `rgba(148, 180, 193, ${alpha})`, // #94B4C1 - Light blue
       };
       return colors[location] || `rgba(128, 128, 128, ${alpha})`;
     }
@@ -127,22 +127,22 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
     if (drillPath.location === 'district') {
       const districtNum = parseInt(location?.replace('D', '') || '0');
       if (districtNum >= 1 && districtNum <= 9) {
-        return `rgba(192, 80, 77, ${alpha})`; // CCR - Red
+        return `rgba(33, 52, 72, ${alpha})`;   // CCR - #213448
       } else if (districtNum >= 10 && districtNum <= 16) {
-        return `rgba(79, 129, 189, ${alpha})`; // RCR - Blue
+        return `rgba(84, 119, 146, ${alpha})`;  // RCR - #547792
       } else {
-        return `rgba(155, 187, 89, ${alpha})`; // OCR - Green
+        return `rgba(148, 180, 193, ${alpha})`; // OCR - #94B4C1
       }
     }
 
-    return `rgba(79, 129, 189, ${alpha})`;
+    return `rgba(84, 119, 146, ${alpha})`;
   };
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-4" style={{ height }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
         <div className="flex items-center justify-center h-full">
-          <div className="text-slate-500">Loading...</div>
+          <div className="text-[#547792]">Loading...</div>
         </div>
       </div>
     );
@@ -150,7 +150,7 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-4" style={{ height }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
         <div className="flex items-center justify-center h-full">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -161,7 +161,13 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
   const getLabel = (item) => {
     const value = item[drillPath.location];
     if (drillPath.location === 'district') {
-      return `${value} - ${DISTRICT_NAMES[value] || value}`;
+      const areaName = DISTRICT_NAMES[value];
+      if (areaName) {
+        // Truncate area name if too long (keep first part before comma or limit to 20 chars)
+        const shortName = areaName.split(',')[0].substring(0, 20);
+        return `${value} (${shortName}${shortName !== areaName.split(',')[0] ? '...' : ''})`;
+      }
+      return value;
     }
     return value || 'Unknown';
   };
@@ -253,36 +259,36 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
   const totalCount = data.reduce((sum, d) => sum + (d.count || 0), 0);
 
   return (
-    <div className={`bg-white rounded-lg border border-slate-200 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
-      <div className="px-4 py-3 border-b border-slate-200">
+    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-slate-800">Volume by {locationLabels[drillPath.location]}</h3>
+            <h3 className="font-semibold text-[#213448]">Volume by {locationLabels[drillPath.location]}</h3>
             {updating && (
-              <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
             )}
           </div>
           <DrillButtons hierarchyType="location" />
         </div>
         <div className="flex items-center justify-between mt-1">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-[#547792]">
             Top {data.length} by transaction count
             {drillPath.location !== 'project' && (
-              <span className="text-blue-500 ml-1">(click to drill down)</span>
+              <span className="text-[#547792] font-medium ml-1">(click to drill down)</span>
             )}
           </p>
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[rgba(192,80,77,0.8)]"></span>
-              <span className="text-slate-500">CCR</span>
+              <span className="w-2.5 h-2.5 rounded-sm bg-[#213448]"></span>
+              <span className="text-[#547792]">CCR</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[rgba(79,129,189,0.8)]"></span>
-              <span className="text-slate-500">RCR</span>
+              <span className="w-2.5 h-2.5 rounded-sm bg-[#547792]"></span>
+              <span className="text-[#547792]">RCR</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[rgba(155,187,89,0.8)]"></span>
-              <span className="text-slate-500">OCR</span>
+              <span className="w-2.5 h-2.5 rounded-sm bg-[#94B4C1]"></span>
+              <span className="text-[#547792]">OCR</span>
             </div>
           </div>
         </div>
@@ -290,7 +296,7 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       <div className="p-4" style={{ height }}>
         <Bar ref={chartRef} data={chartData} options={options} />
       </div>
-      <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 text-xs text-slate-600">
+      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
         Total: {totalCount.toLocaleString()} transactions across {data.length} {locationLabels[drillPath.location].toLowerCase()}s
       </div>
     </div>

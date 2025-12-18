@@ -28,11 +28,22 @@ export function PowerBIFilterProvider({ children }) {
   });
 
   // ===== Cross-Filter State =====
-  // Applied when user clicks on a chart element
+  // Applied when user clicks on a CATEGORICAL chart element (district, bedroom, etc.)
+  // This FILTERS data - other charts recalculate with only matching data
   const [crossFilter, setCrossFilter] = useState({
-    source: null,        // which chart applied it ('district', 'time', 'bedroom', 'price')
-    dimension: null,     // 'district', 'month', 'quarter', 'year', 'bedroom', 'sale_type'
-    value: null,         // 'D09', '2024-03', '3', etc.
+    source: null,        // which chart applied it ('location', 'bedroom', 'price')
+    dimension: null,     // 'district', 'region', 'bedroom', 'sale_type'
+    value: null,         // 'D09', 'CCR', '3', etc.
+  });
+
+  // ===== Highlight State =====
+  // Applied when user clicks on a TIME chart element (year, quarter, month)
+  // This HIGHLIGHTS visually - other charts dim non-matching but keep ALL data
+  // Non-destructive: preserves full context while emphasizing selection
+  const [highlight, setHighlight] = useState({
+    source: null,        // which chart applied it ('time')
+    dimension: null,     // 'year', 'quarter', 'month'
+    value: null,         // '2024', '2024-Q3', '2024-03', etc.
   });
 
   // ===== Drill State =====
@@ -186,17 +197,48 @@ export function PowerBIFilterProvider({ children }) {
       project: null,
     });
     setCrossFilter({ source: null, dimension: null, value: null });
+    setHighlight({ source: null, dimension: null, value: null });
     setBreadcrumbs({ time: [], location: [] });
   }, []);
 
   // ===== Cross-Filter Management =====
+  // Use for CATEGORICAL dimensions only (district, region, bedroom, sale_type)
+  // This filters data - other charts recalculate
 
   const applyCrossFilter = useCallback((source, dimension, value) => {
-    setCrossFilter({ source, dimension, value });
+    // Only apply cross-filter for categorical dimensions
+    // Time dimensions should use highlight instead
+    const categoricalDimensions = ['district', 'region', 'bedroom', 'sale_type', 'project'];
+    if (categoricalDimensions.includes(dimension)) {
+      setCrossFilter({ source, dimension, value });
+      // Clear any existing highlight when applying cross-filter
+      setHighlight({ source: null, dimension: null, value: null });
+    } else {
+      // For time dimensions, use highlight instead
+      console.warn(`applyCrossFilter called with time dimension '${dimension}'. Use applyHighlight instead.`);
+    }
   }, []);
 
   const clearCrossFilter = useCallback(() => {
     setCrossFilter({ source: null, dimension: null, value: null });
+  }, []);
+
+  // ===== Highlight Management =====
+  // Use for TIME dimensions (year, quarter, month)
+  // This highlights visually - charts dim non-matching but keep ALL data
+
+  const applyHighlight = useCallback((source, dimension, value) => {
+    // Toggle highlight - if same value clicked again, clear it
+    setHighlight(prev => {
+      if (prev.source === source && prev.dimension === dimension && prev.value === value) {
+        return { source: null, dimension: null, value: null };
+      }
+      return { source, dimension, value };
+    });
+  }, []);
+
+  const clearHighlight = useCallback(() => {
+    setHighlight({ source: null, dimension: null, value: null });
   }, []);
 
   // ===== Drill Navigation =====
@@ -428,6 +470,7 @@ export function PowerBIFilterProvider({ children }) {
     // State
     filters,
     crossFilter,
+    highlight,         // NEW: for non-filtering visual emphasis
     drillPath,
     breadcrumbs,
     filterOptions,
@@ -448,9 +491,13 @@ export function PowerBIFilterProvider({ children }) {
     setProject,
     resetFilters,
 
-    // Cross-filter
+    // Cross-filter (for categorical dimensions - filters data)
     applyCrossFilter,
     clearCrossFilter,
+
+    // Highlight (for time dimensions - visual only, preserves context)
+    applyHighlight,
+    clearHighlight,
 
     // Drill navigation
     drillDown,

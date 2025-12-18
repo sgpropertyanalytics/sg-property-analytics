@@ -44,19 +44,19 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
 
   if (collapsed) {
     return (
-      <div className="w-12 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4">
+      <div className="w-12 bg-[#EAE0CF] border-r border-[#94B4C1] flex flex-col items-center py-4">
         <button
           type="button"
           onClick={(e) => { e.preventDefault(); onToggle(); }}
-          className="p-2 rounded-lg hover:bg-slate-200 transition-colors"
+          className="p-2 rounded-lg hover:bg-[#94B4C1]/30 transition-colors"
           title="Expand filters"
         >
-          <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
         </button>
         {activeFilterCount > 0 && (
-          <span className="mt-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+          <span className="mt-2 bg-[#547792] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
             {activeFilterCount}
           </span>
         )}
@@ -65,16 +65,16 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
   }
 
   return (
-    <div className="w-72 bg-slate-50 border-r border-slate-200 flex flex-col h-full overflow-hidden">
+    <div className="w-72 bg-[#EAE0CF] border-r border-[#94B4C1] flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-white">
+      <div className="px-4 py-3 border-b border-[#94B4C1] flex items-center justify-between bg-[#213448]">
         <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
-          <span className="font-semibold text-slate-800">Filters</span>
+          <span className="font-semibold text-white">Filters</span>
           {activeFilterCount > 0 && (
-            <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+            <span className="bg-[#547792] text-white text-xs px-2 py-0.5 rounded-full">
               {activeFilterCount}
             </span>
           )}
@@ -84,7 +84,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); resetFilters(); }}
-              className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50"
+              className="text-xs text-[#94B4C1] hover:text-white px-2 py-1 rounded hover:bg-[#547792]/30"
             >
               Clear all
             </button>
@@ -92,10 +92,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); onToggle(); }}
-            className="p-1.5 rounded hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded hover:bg-[#547792]/30 transition-colors"
             title="Collapse filters"
           >
-            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
             </svg>
           </button>
@@ -104,15 +104,15 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
 
       {/* Cross-filter indicator */}
       {crossFilter.value && (
-        <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
+        <div className="px-4 py-2 bg-[#547792]/20 border-b border-[#547792]/30 flex items-center justify-between">
           <div className="text-xs">
-            <span className="text-amber-700">Cross-filter: </span>
-            <span className="font-medium text-amber-900">{crossFilter.value}</span>
+            <span className="text-[#547792]">Cross-filter: </span>
+            <span className="font-medium text-[#213448]">{crossFilter.value}</span>
           </div>
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); clearCrossFilter(); }}
-            className="text-amber-600 hover:text-amber-800 p-1"
+            className="text-[#547792] hover:text-[#213448] p-1"
             title="Clear selection"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,10 +157,14 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           {/* Districts Multi-select */}
           <FilterGroup label="Districts">
             <MultiSelectDropdown
-              options={filterOptions.districts.map(d => ({
-                value: d,
-                label: `${d} - ${DISTRICT_NAMES[d] || d}`
-              }))}
+              options={filterOptions.districts.map(d => {
+                const areaName = DISTRICT_NAMES[d];
+                const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
+                return {
+                  value: d,
+                  label: areaName ? `${d} (${shortName})` : d
+                };
+              })}
               selected={filters.districts}
               onChange={setDistricts}
               placeholder="All Districts"
@@ -182,28 +186,33 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
         >
           <FilterGroup label="Date Range">
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={filters.dateRange.start || ''}
-                onChange={(e) => setDateRange(e.target.value || null, filters.dateRange.end)}
-                className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min={filterOptions.dateRange.min || undefined}
-                max={filterOptions.dateRange.max || undefined}
-              />
-              <span className="text-slate-400 self-center">-</span>
-              <input
-                type="date"
-                value={filters.dateRange.end || ''}
-                onChange={(e) => setDateRange(filters.dateRange.start, e.target.value || null)}
-                className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min={filterOptions.dateRange.min || undefined}
-                max={filterOptions.dateRange.max || undefined}
-              />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 w-10">From</span>
+                <input
+                  type="month"
+                  value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
+                  onChange={(e) => setDateRange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
+                  className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
+                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 w-10">To</span>
+                <input
+                  type="month"
+                  value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
+                  onChange={(e) => setDateRange(filters.dateRange.start, e.target.value ? `${e.target.value}-01` : null)}
+                  className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
+                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
+                />
+              </div>
             </div>
             {filterOptions.dateRange.min && filterOptions.dateRange.max && (
-              <div className="text-xs text-slate-500 mt-1">
-                Data: {filterOptions.dateRange.min} to {filterOptions.dateRange.max}
+              <div className="text-xs text-slate-500 mt-2">
+                Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
               </div>
             )}
           </FilterGroup>
@@ -234,17 +243,17 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                   onClick={(e) => { e.preventDefault(); toggleBedroomType(br); }}
                   className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                     filters.bedroomTypes.includes(br)
-                      ? 'bg-blue-500 text-white border-blue-500'
+                      ? 'bg-[#547792] text-white border-[#547792]'
                       : filters.bedroomTypes.length === 0
-                        ? 'bg-slate-100 text-slate-600 border-slate-200'
-                        : 'bg-white text-slate-500 border-slate-300 hover:border-blue-400'
+                        ? 'bg-white text-[#213448] border-[#94B4C1]'
+                        : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
                   }`}
                 >
                   {br === 5 ? '5+' : br} BR
                 </button>
               ))}
             </div>
-            <div className="text-xs text-slate-500 mt-1">
+            <div className="text-xs text-[#547792] mt-1">
               {filters.bedroomTypes.length === 0 ? 'Default: 2-4 BR' : `${filters.bedroomTypes.length} selected`}
             </div>
           </FilterGroup>
@@ -320,15 +329,15 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-slate-200 bg-white">
+      <div className="px-4 py-3 border-t border-[#94B4C1] bg-[#EAE0CF]">
         <button
           type="button"
           onClick={(e) => { e.preventDefault(); resetFilters(); }}
           disabled={activeFilterCount === 0}
           className={`w-full py-2 text-sm rounded-md transition-colors ${
             activeFilterCount > 0
-              ? 'bg-slate-800 text-white hover:bg-slate-700'
-              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              ? 'bg-[#213448] text-white hover:bg-[#547792]'
+              : 'bg-[#94B4C1]/30 text-[#547792] cursor-not-allowed'
           }`}
         >
           Reset All Filters
@@ -342,23 +351,23 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
 
 function FilterSection({ title, icon, expanded, onToggle, activeCount, children }) {
   return (
-    <div className="border-b border-slate-200">
+    <div className="border-b border-[#94B4C1]/50">
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); onToggle(); }}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-100 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#94B4C1]/20 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-slate-500">{icon}</span>
-          <span className="font-medium text-slate-700">{title}</span>
+          <span className="text-[#547792]">{icon}</span>
+          <span className="font-medium text-[#213448]">{title}</span>
           {activeCount > 0 && (
-            <span className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded">
+            <span className="bg-[#547792]/20 text-[#213448] text-xs px-1.5 py-0.5 rounded">
               {activeCount}
             </span>
           )}
         </div>
         <svg
-          className={`w-4 h-4 text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-[#547792] transition-transform ${expanded ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -378,7 +387,7 @@ function FilterSection({ title, icon, expanded, onToggle, activeCount, children 
 function FilterGroup({ label, children }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-500 mb-1.5">{label}</label>
+      <label className="block text-xs font-medium text-[#547792] mb-1.5">{label}</label>
       {children}
     </div>
   );

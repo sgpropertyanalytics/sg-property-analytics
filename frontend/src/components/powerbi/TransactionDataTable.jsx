@@ -79,14 +79,13 @@ export function TransactionDataTable({ height = 400 }) {
     }
   };
 
-  // Format date
+  // Format date - show only month and year (raw data doesn't have actual days)
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-SG', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
     });
   };
 
@@ -118,7 +117,7 @@ export function TransactionDataTable({ height = 400 }) {
 
   // Column definitions
   const columns = [
-    { key: 'transaction_date', label: 'Date', sortable: true, width: 'w-24' },
+    { key: 'transaction_date', label: 'Month', sortable: true, width: 'w-20' },
     { key: 'project_name', label: 'Project', sortable: true, width: 'w-48' },
     { key: 'district', label: 'District', sortable: true, width: 'w-16' },
     { key: 'bedroom_count', label: 'BR', sortable: true, width: 'w-12' },
@@ -129,21 +128,21 @@ export function TransactionDataTable({ height = 400 }) {
   ];
 
   return (
-    <div id="transaction-data-table" className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+    <div id="transaction-data-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-slate-800">Transaction Details</h3>
-          <p className="text-xs text-slate-500">
+          <h3 className="font-semibold text-[#213448]">Transaction Details</h3>
+          <p className="text-xs text-[#547792]">
             {loading ? 'Loading...' : `${pagination.totalRecords.toLocaleString()} transactions`}
-            {activeFilterCount > 0 && <span className="text-blue-600 ml-1">({activeFilterCount} filters applied)</span>}
+            {activeFilterCount > 0 && <span className="text-[#547792] font-medium ml-1">({activeFilterCount} filters applied)</span>}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={pagination.limit}
             onChange={(e) => setPagination(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }))}
-            className="text-xs border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="text-xs border border-[#94B4C1] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
           >
             <option value={10}>10 rows</option>
             <option value={25}>25 rows</option>
@@ -153,7 +152,7 @@ export function TransactionDataTable({ height = 400 }) {
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); fetchData(); }}
-            className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+            className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
             title="Refresh data"
           >
             <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,8 +251,8 @@ export function TransactionDataTable({ height = 400 }) {
       </div>
 
       {/* Pagination Footer */}
-      <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
-        <div className="text-xs text-slate-500">
+      <div className="px-4 py-3 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30 flex items-center justify-between">
+        <div className="text-xs text-[#547792]">
           {!loading && data.length > 0 && (
             <>
               Showing {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.totalRecords)} of {pagination.totalRecords.toLocaleString()}
@@ -265,7 +264,7 @@ export function TransactionDataTable({ height = 400 }) {
             type="button"
             onClick={(e) => { e.preventDefault(); handlePageChange(1); }}
             disabled={pagination.page === 1 || loading}
-            className="p-1.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
             title="First page"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,21 +275,21 @@ export function TransactionDataTable({ height = 400 }) {
             type="button"
             onClick={(e) => { e.preventDefault(); handlePageChange(pagination.page - 1); }}
             disabled={pagination.page === 1 || loading}
-            className="p-1.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Previous page"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <span className="px-3 py-1 text-sm text-slate-600">
+          <span className="px-3 py-1 text-sm text-[#213448]">
             Page {pagination.page} of {pagination.totalPages || 1}
           </span>
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); handlePageChange(pagination.page + 1); }}
             disabled={pagination.page >= pagination.totalPages || loading}
-            className="p-1.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Next page"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,7 +300,7 @@ export function TransactionDataTable({ height = 400 }) {
             type="button"
             onClick={(e) => { e.preventDefault(); handlePageChange(pagination.totalPages); }}
             disabled={pagination.page >= pagination.totalPages || loading}
-            className="p-1.5 rounded border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Last page"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

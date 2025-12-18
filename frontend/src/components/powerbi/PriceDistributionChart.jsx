@@ -136,9 +136,9 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-4" style={{ height }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
         <div className="flex items-center justify-center h-full">
-          <div className="text-slate-500">Loading...</div>
+          <div className="text-[#547792]">Loading...</div>
         </div>
       </div>
     );
@@ -146,7 +146,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-4" style={{ height }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
         <div className="flex items-center justify-center h-full">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -156,9 +156,9 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
 
   if (bucketedData.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-4" style={{ height }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
         <div className="flex items-center justify-center h-full">
-          <div className="text-slate-500">No data available</div>
+          <div className="text-[#547792]">No data available</div>
         </div>
       </div>
     );
@@ -173,11 +173,11 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
   const modeIndex = counts.indexOf(maxCount);
   const modeBucket = bucketedData[modeIndex];
 
-  // Determine color gradient based on count
+  // Determine color gradient based on count using theme colors
   const maxValue = Math.max(...counts);
   const getBarColor = (count, alpha = 0.8) => {
     const intensity = 0.3 + (count / maxValue) * 0.7;
-    return `rgba(79, 129, 189, ${alpha * intensity})`;
+    return `rgba(84, 119, 146, ${alpha * intensity})`;  // #547792
   };
 
   const chartData = {
@@ -242,22 +242,22 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
   };
 
   return (
-    <div className={`bg-white rounded-lg border border-slate-200 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
-      <div className="px-4 py-3 border-b border-slate-200">
+    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-slate-800">Price Distribution</h3>
+            <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
             {updating && (
-              <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
             )}
           </div>
           <DrillButtons hierarchyType="price" />
         </div>
         <div className="flex items-center justify-between mt-1">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-[#547792]">
             PSF distribution (${bucketSize} buckets)
           </p>
-          <div className="text-xs text-slate-600">
+          <div className="text-xs text-[#213448]">
             Mode: {modeBucket?.label || 'N/A'}
           </div>
         </div>
@@ -265,7 +265,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       <div className="p-4" style={{ height }}>
         <Bar ref={chartRef} data={chartData} options={options} />
       </div>
-      <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 text-xs text-slate-600 flex justify-between">
+      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] flex justify-between">
         <span>Total: {totalCount.toLocaleString()} transactions</span>
         <span>Click a bar to filter by PSF range</span>
       </div>
