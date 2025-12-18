@@ -810,7 +810,7 @@ def aggregate():
     from datetime import datetime
     from models.transaction import Transaction
     from models.database import db
-    from sqlalchemy import func, and_, or_, extract, cast, String, literal_column
+    from sqlalchemy import func, and_, or_, extract, cast, String, Integer, literal_column
     from services.data_processor import _get_market_segment
 
     start = time.time()
@@ -962,21 +962,24 @@ def aggregate():
             group_columns.append(Transaction.project_name)
             select_columns.append(Transaction.project_name.label("project"))
         elif g == "year":
-            year_col = extract('year', Transaction.transaction_date)
+            year_col = cast(extract('year', Transaction.transaction_date), Integer)
             group_columns.append(year_col)
             select_columns.append(year_col.label("year"))
         elif g == "month":
-            # Format as YYYY-MM
-            year_col = extract('year', Transaction.transaction_date)
-            month_col = extract('month', Transaction.transaction_date)
+            # Format as YYYY-MM - cast to integers for proper grouping
+            year_col = cast(extract('year', Transaction.transaction_date), Integer)
+            month_col = cast(extract('month', Transaction.transaction_date), Integer)
             # Use a combined expression for grouping
             group_columns.append(year_col)
             group_columns.append(month_col)
             select_columns.append(year_col.label("_year"))
             select_columns.append(month_col.label("_month"))
         elif g == "quarter":
-            year_col = extract('year', Transaction.transaction_date)
-            quarter_col = ((extract('month', Transaction.transaction_date) - 1) / 3 + 1)
+            # Cast year to integer for proper grouping
+            year_col = cast(extract('year', Transaction.transaction_date), Integer)
+            # Use FLOOR and CAST for proper integer division to calculate quarter
+            month_col = extract('month', Transaction.transaction_date)
+            quarter_col = cast(func.floor((month_col - 1) / 3) + 1, Integer)
             group_columns.append(year_col)
             group_columns.append(quarter_col)
             select_columns.append(year_col.label("_year"))
