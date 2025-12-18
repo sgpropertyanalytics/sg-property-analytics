@@ -7,6 +7,7 @@ import { PriceDistributionChart } from '../components/powerbi/PriceDistributionC
 import { BedroomMixChart } from '../components/powerbi/BedroomMixChart';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
+import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
 import { getAggregate, getFilterOptions } from '../api/client';
 import { useData } from '../context/DataContext';
 
@@ -198,7 +199,7 @@ function MacroOverviewContent() {
           </div>
 
           {/* Second row */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             {/* Bedroom Mix - 1 column */}
             <BedroomMixChart
               onDrillThrough={(value) => handleDrillThrough(`${value} Transactions`)}
@@ -235,6 +236,11 @@ function MacroOverviewContent() {
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Transaction Data Table */}
+          <div className="mb-6">
+            <TransactionDataTable height={400} />
           </div>
         </div>
       </div>
