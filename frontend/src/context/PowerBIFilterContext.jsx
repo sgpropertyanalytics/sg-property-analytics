@@ -454,11 +454,10 @@ export function PowerBIFilterProvider({ children }) {
     if (activeFilters.districts.length > 0) {
       params.district = activeFilters.districts.join(',');
     }
+    // Only filter by bedroom if user explicitly selects bedrooms
+    // No default - show all bedroom types when none selected
     if (activeFilters.bedroomTypes.length > 0) {
       params.bedroom = activeFilters.bedroomTypes.join(',');
-    } else {
-      // Default to 2,3,4 BR if none selected
-      params.bedroom = '2,3,4';
     }
     if (activeFilters.segment) {
       params.segment = activeFilters.segment;
