@@ -34,11 +34,11 @@ ChartJS.register(
  * Y2 (line): Median PSF
  *
  * Supports:
- * - Cross-filtering: clicking a bar filters all other charts
- * - Drill-down: click to drill into finer time granularity
+ * - Cross-highlighting: clicking a bar highlights it and dims others (no data filtering)
+ * - Drill-down: double-click to drill into finer time granularity
  */
 export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) {
-  const { buildApiParams, drillPath, crossFilter, applyCrossFilter, drillDown } = usePowerBIFilters();
+  const { buildApiParams, drillPath, highlight, applyHighlight, drillDown } = usePowerBIFilters();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -99,12 +99,9 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
       if (clickedItem) {
         const timeValue = clickedItem[drillPath.time];
 
-        // Apply cross-filter
-        if (onCrossFilter) {
-          onCrossFilter('time', drillPath.time, timeValue);
-        } else {
-          applyCrossFilter('time', drillPath.time, timeValue);
-        }
+        // Apply highlight (visual only, doesn't filter data)
+        // This preserves context while emphasizing the selection
+        applyHighlight('time', drillPath.time, timeValue);
       }
     }
   };
@@ -149,9 +146,9 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   const counts = data.map(d => d.count || 0);
   const medianPsfs = data.map(d => d.median_psf || 0);
 
-  // Determine which bars should be highlighted based on cross-filter
-  const highlightedIndex = crossFilter.source === 'time' && crossFilter.value
-    ? labels.indexOf(crossFilter.value)
+  // Determine which bars should be highlighted based on highlight state
+  const highlightedIndex = highlight.source === 'time' && highlight.value
+    ? labels.indexOf(highlight.value)
     : -1;
 
   const chartData = {
