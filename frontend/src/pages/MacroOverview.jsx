@@ -9,6 +9,8 @@ import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
 import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
+// Standardized responsive UI components (layout wrappers only)
+import { KPICard } from '../components/ui';
 
 /**
  * Macro Overview Page - Power BI-style Dashboard
@@ -29,6 +31,7 @@ function MacroOverviewContent() {
   } = usePowerBIFilters();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false); // Separate state for mobile drawer
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalFilters, setModalFilters] = useState({});
@@ -96,24 +99,54 @@ function MacroOverviewContent() {
 
   return (
     <div className="flex h-screen bg-[#EAE0CF]/30">
-      {/* Filter Sidebar */}
-      <PowerBIFilterSidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
+      {/* Filter Sidebar - Hidden on mobile, shown on lg+ */}
+      <div className="hidden lg:block">
+        <PowerBIFilterSidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+      </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="p-6">
+        {/* Mobile Filter Toggle - Shows on mobile/tablet only */}
+        <div className="lg:hidden sticky top-0 z-40 bg-[#213448] px-3 py-2 flex items-center justify-between">
+          <button
+            onClick={() => setMobileDrawerOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-[#547792]/30 text-white rounded-lg text-sm min-h-[44px]"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            <span>Filters</span>
+          </button>
+          <h1 className="text-white font-semibold text-sm truncate ml-3">SG Property Analytics</h1>
+        </div>
+
+        {/* Mobile Sidebar Drawer - uses separate state, closed by default */}
+        {mobileDrawerOpen && (
+          <div className="lg:hidden fixed inset-0 z-50">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileDrawerOpen(false)} />
+            <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] animate-slide-in-left">
+              <PowerBIFilterSidebar
+                collapsed={false}
+                onToggle={() => setMobileDrawerOpen(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="p-3 md:p-4 lg:p-6">
           {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h1 className="text-2xl font-bold text-[#213448]">Singapore Property Market Analytics</h1>
+          <div className="mb-4 md:mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-2">
+              <div className="min-w-0">
+                <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">Singapore Property Market Analytics</h1>
                 {/* Data source info - shows raw database count and date range */}
                 {apiMetadata && (
-                  <p className="text-[#547792] text-sm italic">
+                  <p className="text-[#547792] text-xs md:text-sm italic truncate">
                     Data source from URA (Total of {((apiMetadata.row_count || 0) + (apiMetadata.total_records_removed || apiMetadata.outliers_excluded || 0)).toLocaleString()} transaction records
+                    <span className="hidden md:inline">
                     {apiMetadata.min_date && apiMetadata.max_date && (
                       <> found from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -126,10 +159,11 @@ function MacroOverviewContent() {
                     {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded) > 0 && (
                       <> | {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded)?.toLocaleString()} outlier records excluded</>
                     )}
+                    </span>
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {/* Highlight indicator (visual emphasis on time, no filtering) */}
                 {highlight.value && (
                   <button
@@ -166,14 +200,14 @@ function MacroOverviewContent() {
           </div>
 
           {/* KPI Summary Cards - Last 30 Days Market Snapshot */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
             <KPICard
               title="Total New Sales"
               subtitle="past 30 days"
               value={kpis.newSalesCount.toLocaleString()}
               loading={kpis.loading}
               icon={
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               }
@@ -184,7 +218,7 @@ function MacroOverviewContent() {
               value={kpis.resalesCount.toLocaleString()}
               loading={kpis.loading}
               icon={
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               }
@@ -197,40 +231,42 @@ function MacroOverviewContent() {
                 : `$${(kpis.totalQuantum / 1000000).toFixed(0)}M`
               }
               loading={kpis.loading}
+              className="col-span-2 md:col-span-1"
               icon={
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               }
             />
           </div>
 
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Time Trend Chart - Full width */}
+          {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+            {/* Time Trend Chart - Full width on all screens */}
             <div className="lg:col-span-2">
+              {/* Chart component - DO NOT MODIFY PROPS (ui-freeze) */}
               <TimeTrendChart
                 onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
                 height={280}
               />
             </div>
 
-            {/* Volume by Location */}
+            {/* Volume by Location - Chart component unchanged */}
             <VolumeByLocationChart
               onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
               height={350}
               maxBars={12}
             />
 
-            {/* Price Distribution - 20 bins with dynamic intervals */}
+            {/* Price Distribution - Chart component unchanged */}
             <PriceDistributionChart
               onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
               height={350}
             />
           </div>
 
-          {/* Transaction Data Table */}
-          <div className="mb-6">
+          {/* Transaction Data Table - Component unchanged */}
+          <div className="mb-4 md:mb-6">
             <TransactionDataTable height={400} />
           </div>
         </div>
@@ -246,34 +282,6 @@ function MacroOverviewContent() {
     </div>
   );
 }
-
-// KPI Card Component
-function KPICard({ title, subtitle, value, loading, icon, onClick }) {
-  return (
-    <div
-      className={`bg-white rounded-lg border border-[#94B4C1]/50 p-4 ${
-        onClick ? 'cursor-pointer hover:shadow-md hover:border-[#547792] transition-all' : ''
-      }`}
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <span className="text-[#547792] text-sm">{title}</span>
-          {subtitle && (
-            <span className="text-[#94B4C1] text-xs italic ml-2">{subtitle}</span>
-          )}
-        </div>
-        <span className="text-[#94B4C1]">{icon}</span>
-      </div>
-      {loading ? (
-        <div className="h-8 bg-[#94B4C1]/30 rounded animate-pulse"></div>
-      ) : (
-        <div className="text-2xl font-bold text-[#213448]">{value}</div>
-      )}
-    </div>
-  );
-}
-
 
 // Export wrapped with provider
 export default function MacroOverview() {
