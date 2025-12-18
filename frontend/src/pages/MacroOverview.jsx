@@ -192,7 +192,10 @@ function MacroOverviewContent() {
             <KPICard
               title="Total Quantum Value"
               subtitle="past 30 days"
-              value={`$${(kpis.totalQuantum / 1000000000).toFixed(2)}B`}
+              value={kpis.totalQuantum >= 1000000000
+                ? `$${(kpis.totalQuantum / 1000000000).toFixed(2)}B`
+                : `$${(kpis.totalQuantum / 1000000).toFixed(0)}M`
+              }
               loading={kpis.loading}
               icon={
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

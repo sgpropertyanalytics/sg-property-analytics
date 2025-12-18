@@ -44,6 +44,7 @@ ChartJS.register(
 export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) {
   const { buildApiParams, drillPath, highlight, applyHighlight, drillDown } = usePowerBIFilters();
   const [data, setData] = useState([]);
+  const [dataTimeGrain, setDataTimeGrain] = useState(null); // Track which time grain the data is for
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
@@ -82,6 +83,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
           return String(aKey).localeCompare(String(bKey));
         });
         setData(sortedData);
+        setDataTimeGrain(drillPath.time); // Store which time grain this data is for
         isInitialLoad.current = false;
       } catch (err) {
         console.error('Error fetching time trend data:', err);
@@ -148,7 +150,10 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
     );
   }
 
-  const labels = data.map(d => d[drillPath.time] || 'Unknown');
+  // Use the time grain that matches the current data to avoid "Unknown" labels during drill transitions
+  // If data doesn't match current drillPath.time, use dataTimeGrain (which matches the data)
+  const displayTimeGrain = dataTimeGrain || drillPath.time;
+  const labels = data.map(d => d[displayTimeGrain] ?? '');
   const counts = data.map(d => d.count || 0);
   const medianPsfs = data.map(d => d.median_psf || 0);
 
