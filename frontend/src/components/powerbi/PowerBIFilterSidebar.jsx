@@ -236,7 +236,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           {/* Bedroom Type Pills */}
           <FilterGroup label="Bedrooms">
             <div className="flex flex-wrap gap-2">
-              {[1, 2, 3, 4, 5].map(br => (
+              {[1, 2, 3, 4].map(br => (
                 <button
                   type="button"
                   key={br}
@@ -249,12 +249,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                         : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
                   }`}
                 >
-                  {br === 5 ? '5+' : br} BR
+                  {br === 4 ? '4B+' : `${br}B`}
                 </button>
               ))}
-            </div>
-            <div className="text-xs text-[#547792] mt-1">
-              {filters.bedroomTypes.length === 0 ? 'Default: 2-4 BR' : `${filters.bedroomTypes.length} selected`}
             </div>
           </FilterGroup>
 
@@ -266,9 +263,14 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
               value={[filters.sizeRange.min, filters.sizeRange.max]}
               onChange={(min, max) => setSizeRange(min, max)}
               step={50}
-              formatValue={(v) => v?.toLocaleString() || 'Any'}
             />
           </FilterGroup>
+
+          {/* Classification Tiers Info */}
+          <div className="text-xs text-gray-400 italic mt-2 space-y-0.5">
+            <div>1B: &lt;580 sqft | 2B: 580-950 sqft</div>
+            <div>3B: 950-1350 sqft | 4B+: &gt;1350 sqft</div>
+          </div>
         </FilterSection>
 
         {/* Other Filters Section */}
@@ -322,7 +324,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
               value={[filters.psfRange.min, filters.psfRange.max]}
               onChange={(min, max) => setPsfRange(min, max)}
               step={100}
-              formatValue={(v) => v ? `$${v.toLocaleString()}` : 'Any'}
             />
           </FilterGroup>
         </FilterSection>
@@ -488,7 +489,7 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
   );
 }
 
-function RangeSlider({ min, max, value, onChange, step = 1, formatValue }) {
+function RangeSlider({ min, max, value, onChange, step = 1 }) {
   const [localMin, localMax] = value;
 
   const handleMinChange = (e) => {
@@ -525,11 +526,6 @@ function RangeSlider({ min, max, value, onChange, step = 1, formatValue }) {
           step={step}
           className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-      </div>
-      <div className="text-xs text-slate-500 flex justify-between">
-        <span>{formatValue(localMin)}</span>
-        <span>to</span>
-        <span>{formatValue(localMax)}</span>
       </div>
     </div>
   );
