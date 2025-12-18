@@ -36,13 +36,19 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
   const { buildApiParams, crossFilter, applyCrossFilter, setPsfRange } = usePowerBIFilters();
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
+  const isInitialLoad = useRef(true);
 
   // Fetch data - we need individual PSF values to bucket
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      if (isInitialLoad.current) {
+        setLoading(true);
+      } else {
+        setUpdating(true);
+      }
       setError(null);
       try {
         // Get data grouped by PSF to create histogram
@@ -54,11 +60,13 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
         });
         const response = await getAggregate(params);
         setRawData(response.data.data || []);
+        isInitialLoad.current = false;
       } catch (err) {
         console.error('Error fetching price distribution data:', err);
         setError(err.message);
       } finally {
         setLoading(false);
+        setUpdating(false);
       }
     };
     fetchData();
@@ -234,10 +242,15 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
   };
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+    <div className={`bg-white rounded-lg border border-slate-200 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
       <div className="px-4 py-3 border-b border-slate-200">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-slate-800">Price Distribution</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-slate-800">Price Distribution</h3>
+            {updating && (
+              <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            )}
+          </div>
           <DrillButtons hierarchyType="price" />
         </div>
         <div className="flex items-center justify-between mt-1">
