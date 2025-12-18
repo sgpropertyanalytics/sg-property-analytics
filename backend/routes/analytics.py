@@ -391,15 +391,6 @@ def avg_psf():
 def projects_by_district():
     """Get project-level volume and quantity breakdown for a specific district."""
     start = time.time()
-
-    # DEBUG: Check if GLOBAL_DF is initialized
-    from services.data_processor import GLOBAL_DF
-    print(f"DEBUG: GLOBAL_DF is None: {GLOBAL_DF is None}")
-    if GLOBAL_DF is not None:
-        print(f"DEBUG: GLOBAL_DF shape: {GLOBAL_DF.shape}")
-    else:
-        print("DEBUG: GLOBAL_DF is None - will fallback to database")
-
     from services.data_processor import get_project_aggregation_by_district
 
     district = request.args.get("district")

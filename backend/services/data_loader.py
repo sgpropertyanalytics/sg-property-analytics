@@ -1,11 +1,13 @@
 """
-Data Loading Service - Extracted from app.py
+Data Loading Service - CSV Processing Utilities
 
-Loads CSV data into memory at startup using "Load Once, Serve Many" pattern.
 PRESERVES all existing logic for:
 - Three-tier bedroom classification (New Sale Post/Pre Harmonization, Resale)
 - Flexible date parsing (Dec-20, Mar-21, Oct 2023, etc.)
 - Property type filtering (Condo/Apartment only, exclude EC/HDB)
+
+Note: This module provides CSV processing utilities. The main application
+uses SQL-only architecture for memory efficiency (Render 512MB limit).
 """
 
 import pandas as pd
@@ -14,9 +16,6 @@ import time
 from datetime import datetime
 from typing import Optional
 from services.classifier import classify_bedroom, classify_bedroom_three_tier
-
-# Global DataFrame - loaded once at startup
-GLOBAL_DF = None
 
 # Month name to number mapping
 MONTH_MAP = {
@@ -284,24 +283,23 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
 def load_all_csv_data():
     """
     Load all CSV files from rawdata/Resale/ and rawdata/New Sale/ folders.
-    This runs once at startup.
-    
-    KEEP THIS FUNCTION EXACTLY AS-IS FROM app.py (lines 327-430)
+    Returns a DataFrame with all transactions for upload to database.
+
+    Note: This function is used by upload scripts. The main application
+    uses SQL-only architecture and doesn't load CSVs into memory at runtime.
     """
-    global GLOBAL_DF
-    
     csv_folder = "../rawdata"  # Updated path for backend/ folder structure
     if not os.path.exists(csv_folder):
         csv_folder = "rawdata"  # Fallback to same directory
         if not os.path.exists(csv_folder):
-            print(f"⚠️  Warning: {csv_folder} folder not found. Using database fallback.")
+            print(f"⚠️  Warning: {csv_folder} folder not found.")
             return None
-    
-    print("🔄 Loading CSV data into memory...")
+
+    print("🔄 Loading CSV data...")
     start_time = time.time()
-    
+
     all_dataframes = []
-    
+
     # Load Resale transactions
     resale_folder = os.path.join(csv_folder, "Resale")
     if os.path.exists(resale_folder):
@@ -317,11 +315,11 @@ def load_all_csv_data():
                         break
                     except UnicodeDecodeError:
                         continue
-                
+
                 if df is None:
                     print(f"  ✗ Error loading Resale/{csv_file}: Could not decode with any encoding")
                     continue
-                
+
                 cleaned = clean_csv_data(df)
                 if not cleaned.empty:
                     cleaned['sale_type'] = 'Resale'
@@ -329,7 +327,7 @@ def load_all_csv_data():
                     print(f"  ✓ Loaded Resale/{csv_file}: {len(cleaned)} rows")
             except Exception as e:
                 print(f"  ✗ Error loading Resale/{csv_file}: {e}")
-    
+
     # Load New Sale transactions
     new_sale_folder = os.path.join(csv_folder, "New Sale")
     if os.path.exists(new_sale_folder):
@@ -345,11 +343,11 @@ def load_all_csv_data():
                         break
                     except UnicodeDecodeError:
                         continue
-                
+
                 if df is None:
                     print(f"  ✗ Error loading New Sale/{csv_file}: Could not decode with any encoding")
                     continue
-                
+
                 cleaned = clean_csv_data(df)
                 if not cleaned.empty:
                     # Set sale_type column
@@ -361,37 +359,28 @@ def load_all_csv_data():
                     print(f"  ✓ Loaded New Sale/{csv_file}: {len(cleaned)} rows")
             except Exception as e:
                 print(f"  ✗ Error loading New Sale/{csv_file}: {e}")
-    
+
     if not all_dataframes:
-        print("⚠️  Warning: No valid data loaded. Using database fallback.")
+        print("⚠️  Warning: No valid data loaded.")
         return None
-    
+
     # Combine all dataframes
-    GLOBAL_DF = pd.concat(all_dataframes, ignore_index=True)
-    
-    # Convert transaction_date to datetime for faster filtering
-    GLOBAL_DF['parsed_date'] = pd.to_datetime(GLOBAL_DF['transaction_date'], errors='coerce')
-    GLOBAL_DF = GLOBAL_DF.dropna(subset=['parsed_date'])
-    
-    # Set global DataFrame in data_processor module for fast queries
-    from .data_processor import set_global_dataframe
-    set_global_dataframe(GLOBAL_DF)
-    
+    result_df = pd.concat(all_dataframes, ignore_index=True)
+
+    # Convert transaction_date to datetime for filtering
+    result_df['parsed_date'] = pd.to_datetime(result_df['transaction_date'], errors='coerce')
+    result_df = result_df.dropna(subset=['parsed_date'])
+
     elapsed = time.time() - start_time
-    print(f"✓ Loaded {len(GLOBAL_DF):,} total transactions in {elapsed:.2f} seconds")
-    print(f"  Date range: {GLOBAL_DF['parsed_date'].min()} to {GLOBAL_DF['parsed_date'].max()}")
-    
+    print(f"✓ Loaded {len(result_df):,} total transactions in {elapsed:.2f} seconds")
+    print(f"  Date range: {result_df['parsed_date'].min()} to {result_df['parsed_date'].max()}")
+
     # Show breakdown by sale type
-    if 'sale_type' in GLOBAL_DF.columns:
-        sale_type_counts = GLOBAL_DF['sale_type'].value_counts()
+    if 'sale_type' in result_df.columns:
+        sale_type_counts = result_df['sale_type'].value_counts()
         print(f"  Sale type breakdown:")
         for sale_type, count in sale_type_counts.items():
             print(f"    {sale_type}: {count:,} transactions")
-    
-    return GLOBAL_DF
 
-
-def get_global_df():
-    """Get the global DataFrame for use in other modules."""
-    return GLOBAL_DF
+    return result_df
 
