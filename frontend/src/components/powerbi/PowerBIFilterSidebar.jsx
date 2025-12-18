@@ -267,9 +267,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           </FilterGroup>
 
           {/* Classification Tiers Info */}
-          <div className="text-xs text-gray-400 italic mt-2 space-y-0.5">
-            <div>1B: &lt;580 sqft | 2B: 580-950 sqft</div>
-            <div>3B: 950-1350 sqft | 4B+: &gt;1350 sqft</div>
+          <div className="text-xs text-gray-400 italic mt-3 space-y-1">
+            <div className="font-medium text-gray-500 not-italic">Size Classification (sqft):</div>
+            <div>New Sale ≥Jun'23: 1B&lt;580 | 2B&lt;780 | 3B&lt;1150 | 4B+</div>
+            <div>New Sale &lt;Jun'23: 1B&lt;600 | 2B&lt;850 | 3B&lt;1200 | 4B+</div>
+            <div>Resale: 1B&lt;600 | 2B&lt;950 | 3B&lt;1350 | 4B+</div>
           </div>
         </FilterSection>
 
