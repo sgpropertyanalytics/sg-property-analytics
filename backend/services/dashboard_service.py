@@ -586,6 +586,7 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
         results = db.session.execute(sql, params).fetchall()
 
         if not results:
+            logger.warning(f"Histogram query returned no results. Filters: {filters}")
             return []
 
         # Get min_price and bin_width from first row (same for all rows)
@@ -607,9 +608,13 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
         return histogram
 
     except Exception as e:
-        logger.error(f"Histogram query failed: {e}")
+        logger.error(f"Histogram CTE query failed: {e}, trying fallback...")
         # Fallback to original method if CTE fails (e.g., SQLite)
-        return _query_price_histogram_fallback(filters, options)
+        try:
+            return _query_price_histogram_fallback(filters, options)
+        except Exception as e2:
+            logger.error(f"Histogram fallback also failed: {e2}")
+            return []
 
 
 def _query_price_histogram_fallback(filters: Dict[str, Any], options: Dict[str, Any]) -> List[Dict]:
@@ -617,17 +622,23 @@ def _query_price_histogram_fallback(filters: Dict[str, Any], options: Dict[str, 
     num_bins = options.get('histogram_bins', DEFAULT_HISTOGRAM_BINS)
     conditions = build_filter_conditions(filters)
 
+    # Add price > 0 filter
+    price_filter = Transaction.price > 0
+    if conditions:
+        conditions = conditions + [price_filter]
+    else:
+        conditions = [price_filter]
+
     # First get the price range
     range_query = db.session.query(
         func.min(Transaction.price).label('min_price'),
         func.max(Transaction.price).label('max_price')
-    )
-    if conditions:
-        range_query = range_query.filter(and_(*conditions))
+    ).filter(and_(*conditions))
 
     price_range = range_query.first()
 
-    if not price_range.min_price or not price_range.max_price:
+    if not price_range or not price_range.min_price or not price_range.max_price:
+        logger.warning(f"Fallback histogram: No price range found. Conditions: {len(conditions)}")
         return []
 
     min_price = float(price_range.min_price)

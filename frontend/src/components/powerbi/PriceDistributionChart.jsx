@@ -60,14 +60,15 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
         });
         console.log('PriceDistribution API params:', params);
         const response = await getDashboard(params);
-        const data = response.data || {};
+        const responseData = response.data || {};
+        const data = responseData.data || {};
         const histogram = data.price_histogram || [];
         const summary = data.summary || {};
 
         console.log('PriceDistribution API response:', {
           bins: histogram.length,
           total_records: summary.total_count,
-          cache_hit: data.meta?.cache_hit
+          cache_hit: responseData.meta?.cache_hit
         });
 
         setHistogramData(histogram);
