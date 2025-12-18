@@ -46,7 +46,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     return (
       <div className="w-12 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4">
         <button
-          onClick={onToggle}
+          type="button"
+          onClick={(e) => { e.preventDefault(); onToggle(); }}
           className="p-2 rounded-lg hover:bg-slate-200 transition-colors"
           title="Expand filters"
         >
@@ -81,14 +82,16 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
         <div className="flex items-center gap-1">
           {activeFilterCount > 0 && (
             <button
-              onClick={resetFilters}
+              type="button"
+              onClick={(e) => { e.preventDefault(); resetFilters(); }}
               className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50"
             >
               Clear all
             </button>
           )}
           <button
-            onClick={onToggle}
+            type="button"
+            onClick={(e) => { e.preventDefault(); onToggle(); }}
             className="p-1.5 rounded hover:bg-slate-100 transition-colors"
             title="Collapse filters"
           >
@@ -107,7 +110,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
             <span className="font-medium text-amber-900">{crossFilter.value}</span>
           </div>
           <button
-            onClick={clearCrossFilter}
+            type="button"
+            onClick={(e) => { e.preventDefault(); clearCrossFilter(); }}
             className="text-amber-600 hover:text-amber-800 p-1"
             title="Clear selection"
           >
@@ -225,8 +229,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
             <div className="flex flex-wrap gap-2">
               {[1, 2, 3, 4, 5].map(br => (
                 <button
+                  type="button"
                   key={br}
-                  onClick={() => toggleBedroomType(br)}
+                  onClick={(e) => { e.preventDefault(); toggleBedroomType(br); }}
                   className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                     filters.bedroomTypes.includes(br)
                       ? 'bg-blue-500 text-white border-blue-500'
@@ -317,7 +322,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
       {/* Footer */}
       <div className="px-4 py-3 border-t border-slate-200 bg-white">
         <button
-          onClick={resetFilters}
+          type="button"
+          onClick={(e) => { e.preventDefault(); resetFilters(); }}
           disabled={activeFilterCount === 0}
           className={`w-full py-2 text-sm rounded-md transition-colors ${
             activeFilterCount > 0
@@ -338,7 +344,8 @@ function FilterSection({ title, icon, expanded, onToggle, activeCount, children 
   return (
     <div className="border-b border-slate-200">
       <button
-        onClick={onToggle}
+        type="button"
+        onClick={(e) => { e.preventDefault(); onToggle(); }}
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-100 transition-colors"
       >
         <div className="flex items-center gap-2">
@@ -388,7 +395,8 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
       )
     : options;
 
-  const handleToggle = (value) => {
+  const handleToggle = (value, e) => {
+    if (e) e.stopPropagation();
     if (selected.includes(value)) {
       onChange(selected.filter(v => v !== value));
     } else {
@@ -399,7 +407,8 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        type="button"
+        onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
         className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <span className={selected.length > 0 ? 'text-slate-800' : 'text-slate-500'}>
@@ -431,7 +440,8 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
           <div className="max-h-48 overflow-y-auto">
             {selected.length > 0 && (
               <button
-                onClick={() => onChange([])}
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange([]); }}
                 className="w-full px-3 py-2 text-xs text-left text-blue-600 hover:bg-blue-50 border-b border-slate-100"
               >
                 Clear selection
@@ -441,11 +451,12 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
               <label
                 key={opt.value}
                 className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
+                onClick={(e) => e.stopPropagation()}
               >
                 <input
                   type="checkbox"
                   checked={selected.includes(opt.value)}
-                  onChange={() => handleToggle(opt.value)}
+                  onChange={(e) => handleToggle(opt.value, e)}
                   className="mr-2 rounded border-slate-300 text-blue-500 focus:ring-blue-500"
                 />
                 <span className="text-sm text-slate-700">{opt.label}</span>
