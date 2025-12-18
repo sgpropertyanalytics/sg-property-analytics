@@ -21,9 +21,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     toggleBedroomType,
     setSegment,
     setSaleType,
-    setPsfRange,
-    setSizeRange,
-    setTenure,
     resetFilters,
     clearCrossFilter,
   } = usePowerBIFilters();
@@ -32,7 +29,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     location: true,
     date: true,
     roomSize: true,
-    other: false,
   });
 
   const toggleSection = (section) => {
@@ -228,10 +224,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           }
           expanded={expandedSections.roomSize}
           onToggle={() => toggleSection('roomSize')}
-          activeCount={
-            (filters.bedroomTypes.length > 0 ? 1 : 0) +
-            (filters.sizeRange.min !== null || filters.sizeRange.max !== null ? 1 : 0)
-          }
+          activeCount={filters.bedroomTypes.length > 0 ? 1 : 0}
         >
           {/* Bedroom Type Pills */}
           <FilterGroup label="Bedrooms">
@@ -255,76 +248,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
             </div>
           </FilterGroup>
 
-          {/* Size Range Slider */}
-          <FilterGroup label="Unit Size (sqft)">
-            <RangeSlider
-              min={filterOptions.sizeRange.min || 0}
-              max={filterOptions.sizeRange.max || 5000}
-              value={[filters.sizeRange.min, filters.sizeRange.max]}
-              onChange={(min, max) => setSizeRange(min, max)}
-              step={50}
-            />
-          </FilterGroup>
-
-          {/* Classification Tiers Info */}
-          <div className="text-xs text-gray-400 mt-3 space-y-1.5">
-            <div className="font-medium text-gray-500">Bedroom Classification (sqft):</div>
-            <table className="w-full text-[10px] border-collapse border border-dotted border-gray-300">
-              <thead>
-                <tr className="text-gray-500 bg-gray-50/50">
-                  <th className="text-left font-medium p-1.5 border border-dotted border-gray-300">Type</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-300">1B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-300">2B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-300">3B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-300">4B+</th>
-                </tr>
-              </thead>
-              <tbody className="text-gray-400">
-                <tr title="Post-harmonization: AC ledge rules changed">
-                  <td className="text-left p-1.5 border border-dotted border-gray-300">New ≥Jun'23</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;580</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;780</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;1150</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">≥1150</td>
-                </tr>
-                <tr title="Pre-harmonization: Before AC ledge rule changes">
-                  <td className="text-left p-1.5 border border-dotted border-gray-300">New &lt;Jun'23</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;600</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;850</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;1200</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">≥1200</td>
-                </tr>
-                <tr title="Resale units: Legacy larger sizes">
-                  <td className="text-left p-1.5 border border-dotted border-gray-300">Resale</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;600</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;950</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">&lt;1350</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-300">≥1350</td>
-                </tr>
-              </tbody>
-            </table>
-            <div className="text-[9px] text-gray-400 italic">
-              Post-harm: after AC ledge removal | Pre-harm: before
-            </div>
-          </div>
-        </FilterSection>
-
-        {/* Other Filters Section */}
-        <FilterSection
-          title="Other Filters"
-          icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-            </svg>
-          }
-          expanded={expandedSections.other}
-          onToggle={() => toggleSection('other')}
-          activeCount={
-            (filters.saleType ? 1 : 0) +
-            (filters.tenure ? 1 : 0) +
-            (filters.psfRange.min !== null || filters.psfRange.max !== null ? 1 : 0)
-          }
-        >
           {/* Sale Type */}
           <FilterGroup label="Sale Type">
             <select
@@ -338,30 +261,47 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
             </select>
           </FilterGroup>
 
-          {/* Tenure */}
-          <FilterGroup label="Tenure">
-            <select
-              value={filters.tenure || ''}
-              onChange={(e) => setTenure(e.target.value || null)}
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="">All Tenures</option>
-              <option value="Freehold">Freehold</option>
-              <option value="999-year">999-year</option>
-              <option value="99-year">99-year Leasehold</option>
-            </select>
-          </FilterGroup>
-
-          {/* PSF Range */}
-          <FilterGroup label="PSF Range ($)">
-            <RangeSlider
-              min={filterOptions.psfRange.min || 0}
-              max={filterOptions.psfRange.max || 5000}
-              value={[filters.psfRange.min, filters.psfRange.max]}
-              onChange={(min, max) => setPsfRange(min, max)}
-              step={100}
-            />
-          </FilterGroup>
+          {/* Classification Tiers Info */}
+          <div className="text-xs text-gray-500 mt-3 space-y-1.5">
+            <div className="font-medium text-gray-600">Bedroom Classification (sqft):</div>
+            <table className="w-full text-[10px] border-collapse border border-dotted border-gray-400">
+              <thead>
+                <tr className="text-gray-600 bg-gray-50/50">
+                  <th className="text-left font-medium p-1.5 border border-dotted border-gray-400">Type</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">1B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">2B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">3B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">4B+</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-500">
+                <tr title="Post-harmonization: AC ledge rules changed">
+                  <td className="text-left p-1.5 border border-dotted border-gray-400">New ≥Jun'23</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;580</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;780</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;1150</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">≥1150</td>
+                </tr>
+                <tr title="Pre-harmonization: Before AC ledge rule changes">
+                  <td className="text-left p-1.5 border border-dotted border-gray-400">New &lt;Jun'23</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;600</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;850</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;1200</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">≥1200</td>
+                </tr>
+                <tr title="Resale units: Legacy larger sizes">
+                  <td className="text-left p-1.5 border border-dotted border-gray-400">Resale</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;600</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;950</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;1350</td>
+                  <td className="text-center p-1.5 border border-dotted border-gray-400">≥1350</td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="text-[9px] text-gray-500 italic">
+              Post-harm: after AC ledge removal | Pre-harm: before
+            </div>
+          </div>
         </FilterSection>
       </div>
 

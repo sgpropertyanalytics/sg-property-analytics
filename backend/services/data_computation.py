@@ -40,7 +40,7 @@ from services.data_processor import (
 )
 
 
-def recompute_all_stats(outliers_excluded: int = 0):
+def recompute_all_stats(validation_results: dict = None):
     """
     Recompute all analytics and store in PreComputedStats.
 
@@ -48,8 +48,23 @@ def recompute_all_stats(outliers_excluded: int = 0):
     their results to the database.
 
     Args:
-        outliers_excluded: Number of outlier records filtered out during data validation
+        validation_results: Dict with validation counts:
+            - invalid_removed: records with null/zero values
+            - duplicates_removed: duplicate records
+            - outliers_removed: outlier records (IQR method)
     """
+    # Handle legacy calls and defaults
+    if validation_results is None:
+        validation_results = {}
+
+    # Support legacy single-value argument
+    if isinstance(validation_results, int):
+        validation_results = {'outliers_removed': validation_results}
+
+    invalid_removed = validation_results.get('invalid_removed', 0)
+    duplicates_removed = validation_results.get('duplicates_removed', 0)
+    outliers_removed = validation_results.get('outliers_removed', 0)
+    total_records_removed = invalid_removed + duplicates_removed + outliers_removed
     print("=" * 60)
     print("Starting data computation - computing all analytics...")
     print("=" * 60)
@@ -188,11 +203,14 @@ def recompute_all_stats(outliers_excluded: int = 0):
     metadata = {
         'last_updated': datetime.utcnow().isoformat(),
         'row_count': total_count,
-        'outliers_excluded': outliers_excluded,
+        'invalid_removed': invalid_removed,
+        'duplicates_removed': duplicates_removed,
+        'outliers_excluded': outliers_removed,
+        'total_records_removed': total_records_removed,
         'computed_at': datetime.utcnow().isoformat()
     }
     PreComputedStats.set_stat('_metadata', metadata, total_count)
-    print(f"    ✓ _metadata (outliers_excluded: {outliers_excluded:,})")
+    print(f"    ✓ _metadata (total removed: {total_records_removed:,} = {invalid_removed:,} invalid + {duplicates_removed:,} duplicates + {outliers_removed:,} outliers)")
 
     print("\n" + "=" * 60)
     print("✓ Data computation complete! All stats pre-computed and saved.")
@@ -204,11 +222,21 @@ def get_metadata() -> dict:
     Get metadata about the current computation state.
 
     Returns:
-        Dictionary with last_updated, row_count, outliers_excluded, etc.
+        Dictionary with last_updated, row_count, total_records_removed, etc.
     """
     metadata = PreComputedStats.get_stat('_metadata')
     if metadata is None:
-        return {'last_updated': None, 'row_count': 0, 'outliers_excluded': 0}
+        return {
+            'last_updated': None,
+            'row_count': 0,
+            'invalid_removed': 0,
+            'duplicates_removed': 0,
+            'outliers_excluded': 0,
+            'total_records_removed': 0
+        }
+    # Ensure backward compatibility for older metadata
+    if 'total_records_removed' not in metadata:
+        metadata['total_records_removed'] = metadata.get('outliers_excluded', 0)
     return metadata
 
 

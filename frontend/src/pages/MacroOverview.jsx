@@ -113,7 +113,7 @@ function MacroOverviewContent() {
                 {/* Data source info - shows raw database count and date range */}
                 {apiMetadata && (
                   <p className="text-[#547792] text-sm italic">
-                    Data source from URA (Total of {apiMetadata.row_count?.toLocaleString() || '0'} transaction records
+                    Data source from URA (Total of {((apiMetadata.row_count || 0) + (apiMetadata.total_records_removed || apiMetadata.outliers_excluded || 0)).toLocaleString()} transaction records
                     {apiMetadata.min_date && apiMetadata.max_date && (
                       <> found from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -123,8 +123,8 @@ function MacroOverviewContent() {
                         month: 'short'
                       })}</>
                     )})
-                    {apiMetadata.outliers_excluded > 0 && (
-                      <> | {apiMetadata.outliers_excluded?.toLocaleString()} outlier records excluded</>
+                    {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded) > 0 && (
+                      <> | {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded)?.toLocaleString()} outlier records excluded</>
                     )}
                   </p>
                 )}

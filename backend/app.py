@@ -42,12 +42,17 @@ def _run_startup_validation():
 
         # If any data was cleaned, recompute stats
         if results['total_cleaned'] > 0:
+            # Accumulate with previous validation counts
             existing_metadata = get_metadata()
-            previous_outliers = existing_metadata.get('outliers_excluded', 0)
-            total_outliers = previous_outliers + results['outliers_removed']
+            validation_results = {
+                'invalid_removed': existing_metadata.get('invalid_removed', 0) + results['invalid_removed'],
+                'duplicates_removed': existing_metadata.get('duplicates_removed', 0) + results['duplicates_removed'],
+                'outliers_removed': existing_metadata.get('outliers_excluded', 0) + results['outliers_removed'],
+            }
 
-            print(f"   Recomputing stats (total outliers excluded: {total_outliers:,})...")
-            recompute_all_stats(outliers_excluded=total_outliers)
+            total_removed = validation_results['invalid_removed'] + validation_results['duplicates_removed'] + validation_results['outliers_removed']
+            print(f"   Recomputing stats (total records removed: {total_removed:,})...")
+            recompute_all_stats(validation_results)
             print(f"   ✓ Stats recomputed")
 
     except Exception as e:
