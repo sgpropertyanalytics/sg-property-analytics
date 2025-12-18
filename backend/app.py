@@ -108,6 +108,10 @@ def create_app():
     from routes.ads import ads_bp
     app.register_blueprint(ads_bp, url_prefix='/api/ads')
 
+    # GLS (Government Land Sales) routes
+    from routes.gls import gls_bp
+    app.register_blueprint(gls_bp, url_prefix='/api/gls')
+
     # Serve dashboard.html at root
     @app.route("/", methods=["GET"])
     def index():
