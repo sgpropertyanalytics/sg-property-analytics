@@ -79,14 +79,13 @@ export function TransactionDataTable({ height = 400 }) {
     }
   };
 
-  // Format date
+  // Format date - show only month and year (raw data doesn't have actual days)
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-SG', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
     });
   };
 
@@ -118,7 +117,7 @@ export function TransactionDataTable({ height = 400 }) {
 
   // Column definitions
   const columns = [
-    { key: 'transaction_date', label: 'Date', sortable: true, width: 'w-24' },
+    { key: 'transaction_date', label: 'Month', sortable: true, width: 'w-20' },
     { key: 'project_name', label: 'Project', sortable: true, width: 'w-48' },
     { key: 'district', label: 'District', sortable: true, width: 'w-16' },
     { key: 'bedroom_count', label: 'BR', sortable: true, width: 'w-12' },

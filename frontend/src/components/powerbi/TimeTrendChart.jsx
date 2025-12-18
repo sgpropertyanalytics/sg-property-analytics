@@ -29,7 +29,7 @@ ChartJS.register(
 /**
  * Time Trend Chart - Line + Bar Combo
  *
- * X-axis: Month (drillable to Week, or up to Quarter/Year)
+ * X-axis: Month (drillable up to Quarter/Year)
  * Y1 (bars): Transaction Count
  * Y2 (line): Median PSF
  *
