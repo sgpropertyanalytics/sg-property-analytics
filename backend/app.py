@@ -74,10 +74,13 @@ def create_app():
     # Also add after_request handler to ensure CORS headers are always set, even on errors
     @app.after_request
     def after_request(response):
-        # Always set CORS headers, even for error responses
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE')
+        # Only set CORS headers if not already set by Flask-CORS (avoid duplicates)
+        if 'Access-Control-Allow-Origin' not in response.headers:
+            response.headers['Access-Control-Allow-Origin'] = '*'
+        if 'Access-Control-Allow-Headers' not in response.headers:
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        if 'Access-Control-Allow-Methods' not in response.headers:
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
         return response
 
     # Initialize SQLAlchemy
