@@ -285,4 +285,4 @@ export function ResponsiveLayout({
   );
 }
 
-export default DashboardGrid;
+// All components are named exports - no default export needed
