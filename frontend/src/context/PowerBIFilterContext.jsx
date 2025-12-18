@@ -406,24 +406,34 @@ export function PowerBIFilterProvider({ children }) {
       }
     }
 
-    // Apply breadcrumb filters
+    // Apply time breadcrumb filters
+    // Breadcrumbs track drill-down path for time: year -> quarter -> month
     if (breadcrumbs.time.length > 0) {
       const lastTime = breadcrumbs.time[breadcrumbs.time.length - 1];
       if (lastTime && lastTime.value) {
-        // Apply date filter from breadcrumb
-        if (drillPath.time === 'quarter' && breadcrumbs.time.length === 1) {
-          // Year selected, filter to that year
-          const yearStr = String(lastTime.value);
+        if (drillPath.time === 'quarter') {
+          // At quarter level - first breadcrumb is year
+          const yearStr = String(breadcrumbs.time[0].value);
           combined.dateRange = {
             start: `${yearStr}-01-01`,
             end: `${yearStr}-12-31`
           };
-        } else if (drillPath.time === 'month' && breadcrumbs.time.length === 2) {
-          // Quarter selected - parse quarter from format like "2024-Q3" or just "Q3"
-          const year = String(breadcrumbs.time[0].value);
-          const quarterValue = String(lastTime.value);
+        } else if (drillPath.time === 'month') {
+          // At month level - last breadcrumb is quarter
+          const lastValue = String(lastTime.value);
+
+          // Get year: either from first breadcrumb or parse from quarter value
+          let year;
+          if (breadcrumbs.time.length >= 2) {
+            year = String(breadcrumbs.time[0].value);
+          } else {
+            // Quarter value might contain year (e.g., "2024-Q3")
+            const yearMatch = lastValue.match(/^(\d{4})/);
+            year = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
+          }
+
           // Extract quarter number from "2024-Q3" or "Q3" format
-          const qMatch = quarterValue.match(/Q(\d)/);
+          const qMatch = lastValue.match(/Q(\d)/);
           const q = qMatch ? parseInt(qMatch[1]) : 1;
           const quarterMonth = (q - 1) * 3 + 1;
           combined.dateRange = {
@@ -434,16 +444,38 @@ export function PowerBIFilterProvider({ children }) {
       }
     }
 
+    // Apply location breadcrumb filters
+    // Breadcrumbs track drill-down path - each entry represents what was clicked at that level
+    // The meaning depends on the current drillPath level and breadcrumb count
     if (breadcrumbs.location.length > 0) {
-      const lastLoc = breadcrumbs.location[breadcrumbs.location.length - 1];
-      if (lastLoc && lastLoc.value) {
-        if (drillPath.location === 'district' && breadcrumbs.location.length === 1) {
-          // Region selected
-          combined.segment = String(lastLoc.value);
-        } else if (drillPath.location === 'project' && breadcrumbs.location.length === 2) {
-          // District selected
-          combined.districts = [String(lastLoc.value)];
+      // Determine what filters to apply based on drill hierarchy
+      // Levels: region -> district -> project
+      // When at 'district' level with breadcrumbs: first breadcrumb is region/segment
+      // When at 'project' level with breadcrumbs: last breadcrumb is always district
+
+      if (drillPath.location === 'district') {
+        // At district level - breadcrumbs contain region(s) we drilled through
+        const regionBreadcrumb = breadcrumbs.location[0];
+        if (regionBreadcrumb?.value) {
+          combined.segment = String(regionBreadcrumb.value);
         }
+      } else if (drillPath.location === 'project') {
+        // At project level - need to apply district filter
+        // Last breadcrumb is always the district we drilled into
+        const lastBreadcrumb = breadcrumbs.location[breadcrumbs.location.length - 1];
+        if (lastBreadcrumb?.value) {
+          combined.districts = [String(lastBreadcrumb.value)];
+        }
+        // If we have 2+ breadcrumbs, first is region
+        if (breadcrumbs.location.length >= 2) {
+          const regionBreadcrumb = breadcrumbs.location[0];
+          if (regionBreadcrumb?.value) {
+            combined.segment = String(regionBreadcrumb.value);
+          }
+        }
+      } else if (drillPath.location === 'region') {
+        // At region level - no location filters from breadcrumbs (showing all regions)
+        // But might have filters from sidebar
       }
     }
 
