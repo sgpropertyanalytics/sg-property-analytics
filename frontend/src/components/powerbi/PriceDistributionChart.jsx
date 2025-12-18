@@ -30,8 +30,11 @@ ChartJS.register(
  *
  * Uses individual transaction prices for accurate distribution analysis.
  * Helps users understand if they overpaid or underpaid compared to others.
+ *
+ * Dynamic binning: Automatically calculates bin intervals to fit exactly
+ * the specified number of bins based on the filtered data range.
  */
-export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, bucketSize = 200000 }) {
+export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, numBins = 20 }) {
   const { buildApiParams, crossFilter, applyCrossFilter } = usePowerBIFilters();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -78,16 +81,36 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
     return `$${(value / 1000).toFixed(0)}K`;
   };
 
+  // Helper to round to a "nice" bucket size for readability
+  const getNiceBucketSize = (rawSize) => {
+    // Round to nearest "nice" number (e.g., 50K, 100K, 200K, 500K, 1M)
+    const niceNumbers = [10000, 25000, 50000, 100000, 200000, 250000, 500000, 1000000, 2000000, 5000000];
+    for (const nice of niceNumbers) {
+      if (rawSize <= nice) return nice;
+    }
+    // For very large ranges, round to nearest million
+    return Math.ceil(rawSize / 1000000) * 1000000;
+  };
+
   // Create histogram buckets from individual transaction prices
   const bucketedData = useMemo(() => {
-    if (!transactions.length) return [];
+    if (!transactions.length) return { buckets: [], bucketSize: 0 };
 
     // Get actual price range from individual transactions
     const prices = transactions.map(t => t.price).filter(p => p > 0);
-    if (prices.length === 0) return [];
+    if (prices.length === 0) return { buckets: [], bucketSize: 0 };
 
-    const minPrice = Math.floor(Math.min(...prices) / bucketSize) * bucketSize;
-    const maxPrice = Math.ceil(Math.max(...prices) / bucketSize) * bucketSize;
+    const dataMin = Math.min(...prices);
+    const dataMax = Math.max(...prices);
+    const range = dataMax - dataMin;
+
+    // Calculate bucket size to fit exactly numBins
+    const rawBucketSize = range / numBins;
+    const bucketSize = getNiceBucketSize(rawBucketSize);
+
+    // Adjust min/max to align with bucket boundaries
+    const minPrice = Math.floor(dataMin / bucketSize) * bucketSize;
+    const maxPrice = Math.ceil(dataMax / bucketSize) * bucketSize;
 
     // Create buckets
     const buckets = [];
@@ -114,8 +137,8 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
     while (startIdx < buckets.length && buckets[startIdx].count === 0) startIdx++;
     while (endIdx >= 0 && buckets[endIdx].count === 0) endIdx--;
 
-    return buckets.slice(startIdx, endIdx + 1);
-  }, [transactions, bucketSize]);
+    return { buckets: buckets.slice(startIdx, endIdx + 1), bucketSize };
+  }, [transactions, numBins]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;
@@ -124,7 +147,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
     const elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
     if (elements.length > 0) {
       const index = elements[0].index;
-      const clickedBucket = bucketedData[index];
+      const clickedBucket = bucketedData.buckets[index];
       if (clickedBucket && onCrossFilter) {
         // Apply price range cross-filter
         onCrossFilter('price', 'price_range', `${clickedBucket.start}-${clickedBucket.end}`);
@@ -152,7 +175,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
     );
   }
 
-  if (bucketedData.length === 0) {
+  if (bucketedData.buckets.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
         <div className="flex items-center justify-center h-full">
@@ -162,14 +185,15 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
     );
   }
 
-  const labels = bucketedData.map(b => b.label);
-  const counts = bucketedData.map(b => b.count);
+  const { buckets, bucketSize } = bucketedData;
+  const labels = buckets.map(b => b.label);
+  const counts = buckets.map(b => b.count);
 
   // Calculate statistics
   const totalCount = counts.reduce((sum, c) => sum + c, 0);
   const maxCount = Math.max(...counts);
   const modeIndex = counts.indexOf(maxCount);
-  const modeBucket = bucketedData[modeIndex];
+  const modeBucket = buckets[modeIndex];
 
   // Calculate price statistics from actual transactions
   const prices = transactions.map(t => t.price).filter(p => p > 0);
@@ -207,7 +231,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       tooltip: {
         callbacks: {
           title: (items) => {
-            const bucket = bucketedData[items[0].dataIndex];
+            const bucket = buckets[items[0].dataIndex];
             return `Price: ${formatPriceLabel(bucket.start)} - ${formatPriceLabel(bucket.end)}`;
           },
           label: (context) => {
@@ -258,7 +282,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
         </div>
         <div className="flex items-center justify-between mt-1">
           <p className="text-xs text-[#547792]">
-            {formatPriceLabel(minPrice)} - {formatPriceLabel(maxPrice)} ({formatPriceLabel(bucketSize)} buckets)
+            {formatPriceLabel(minPrice)} - {formatPriceLabel(maxPrice)} ({buckets.length} bins @ {formatPriceLabel(bucketSize)})
           </p>
           <div className="text-xs text-[#213448]">
             Mode: {modeBucket?.label || 'N/A'}
