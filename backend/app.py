@@ -97,6 +97,51 @@ def create_app():
     return app
 
 
+def auto_filter_outliers(app):
+    """
+    Auto-filter outliers on startup.
+
+    This ensures the database is clean on every deploy.
+    Safe to run repeatedly - if no outliers exist, does nothing.
+    """
+    with app.app_context():
+        from models.transaction import Transaction
+        from services.data_validation import filter_outliers_sql, count_outliers, calculate_iqr_bounds
+        from services.data_computation import recompute_all_stats, get_metadata
+
+        count = db.session.query(Transaction).count()
+        if count == 0:
+            return  # No data to filter
+
+        try:
+            # Check if outliers exist
+            lower_bound, upper_bound, stats = calculate_iqr_bounds()
+            outlier_count = count_outliers(lower_bound, upper_bound)
+
+            if outlier_count > 0:
+                print(f"\n🔍 Auto-filtering {outlier_count:,} outliers on startup...")
+                print(f"   IQR bounds: ${stats['lower_bound']:,.0f} - ${stats['upper_bound']:,.0f}")
+
+                # Filter outliers
+                outliers_removed, _ = filter_outliers_sql()
+                print(f"   ✓ Removed {outliers_removed:,} outliers")
+
+                # Recompute stats with new outlier count
+                existing_metadata = get_metadata()
+                previous_outliers = existing_metadata.get('outliers_excluded', 0)
+                total_outliers = previous_outliers + outliers_removed
+
+                print(f"   Recomputing stats (total outliers excluded: {total_outliers:,})...")
+                recompute_all_stats(outliers_excluded=total_outliers)
+                print(f"   ✓ Stats recomputed")
+            else:
+                print(f"\n✓ Data is clean - no outliers detected")
+
+        except Exception as e:
+            print(f"\n⚠️  Auto-filter skipped: {e}")
+            # Don't fail startup if filtering fails
+
+
 def run_app():
     """Main entry point - starts server with SQL-only analytics."""
     print("=" * 60)
@@ -105,6 +150,9 @@ def run_app():
 
     # Create app
     app = create_app()
+
+    # Auto-filter outliers on startup (self-healing)
+    auto_filter_outliers(app)
 
     with app.app_context():
         from models.transaction import Transaction
@@ -115,6 +163,8 @@ def run_app():
 
         print(f"\n📊 Database Status:")
         print(f"   Transactions: {count:,}")
+        if metadata.get("outliers_excluded", 0) > 0:
+            print(f"   Outliers excluded: {metadata.get('outliers_excluded'):,}")
         if metadata.get("last_updated"):
             print(f"   Stats last computed: {metadata.get('last_updated')}")
             print(f"   ✓ Pre-computed analytics ready")
