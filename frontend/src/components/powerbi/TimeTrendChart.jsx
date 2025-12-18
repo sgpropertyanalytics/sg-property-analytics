@@ -209,14 +209,14 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
       },
       {
         type: 'line',
-        label: 'Total Quantum',
+        label: 'Total Quantum Value',
         data: totalValues,
-        borderColor: '#C4B8A5',  // Darker beige for line
-        backgroundColor: 'rgba(196, 184, 165, 0.1)',
+        borderColor: '#8B7355',  // Dark tan/brown for better visibility
+        backgroundColor: 'rgba(139, 115, 85, 0.1)',
         borderWidth: 2,
         pointRadius: 4,
-        pointBackgroundColor: '#EAE0CF',  // Sand/Cream fill
-        pointBorderColor: '#C4B8A5',  // Darker beige border (no black)
+        pointBackgroundColor: '#A89078',  // Medium tan fill
+        pointBorderColor: '#8B7355',  // Dark tan border
         pointBorderWidth: 1,
         fill: false,
         yAxisID: 'y1',
@@ -247,7 +247,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
           label: (context) => {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-            if (label === 'Total Quantum') {
+            if (label === 'Total Quantum Value') {
               // Format in millions or billions
               if (value >= 1000000000) {
                 return `${label}: $${(value / 1000000000).toFixed(2)}B`;
