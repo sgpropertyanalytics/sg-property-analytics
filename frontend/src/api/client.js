@@ -181,6 +181,82 @@ export const getComparableValueAnalysis = (params = {}) =>
 // ===== PowerBI-style Aggregation API Functions =====
 
 /**
+ * Unified dashboard endpoint - returns all chart datasets in one response.
+ *
+ * This is the recommended endpoint for the Power BI-style dashboard.
+ * Uses SQL CTEs for efficient aggregation without loading data into memory.
+ *
+ * @param {Object} params - Filter and option parameters
+ * @param {string} params.district - Comma-separated districts (D01,D02,...)
+ * @param {string} params.bedroom - Comma-separated bedroom counts (2,3,4)
+ * @param {string} params.segment - CCR, RCR, OCR
+ * @param {string} params.sale_type - New Sale, Resale
+ * @param {string} params.date_from - YYYY-MM-DD
+ * @param {string} params.date_to - YYYY-MM-DD
+ * @param {number} params.psf_min - Minimum PSF
+ * @param {number} params.psf_max - Maximum PSF
+ * @param {number} params.size_min - Minimum sqft
+ * @param {number} params.size_max - Maximum sqft
+ * @param {string} params.tenure - Freehold, 99-year, 999-year
+ * @param {string} params.project - Project name filter (partial match)
+ * @param {string} params.panels - Comma-separated panels to return
+ *        (time_series, volume_by_location, price_histogram, bedroom_mix, summary)
+ * @param {string} params.time_grain - year, quarter, month (default: month)
+ * @param {string} params.location_grain - region, district, project (default: region)
+ * @param {number} params.histogram_bins - Number of bins for price histogram (default: 20, max: 50)
+ * @param {Object} options - Request options
+ * @param {boolean} options.skipCache - Skip cache and fetch fresh data
+ *
+ * @returns {Promise<{
+ *   data: {
+ *     time_series: Array,
+ *     volume_by_location: Array,
+ *     price_histogram: Array,
+ *     bedroom_mix: Array,
+ *     summary: Object
+ *   },
+ *   meta: {
+ *     cache_hit: boolean,
+ *     elapsed_ms: number,
+ *     filters_applied: Object,
+ *     total_records_matched: number
+ *   }
+ * }>}
+ *
+ * @example
+ * // Get all panels with default options
+ * const dashboard = await getDashboard({ district: 'D09,D10', bedroom: '2,3,4' });
+ *
+ * // Get specific panels
+ * const dashboard = await getDashboard({
+ *   segment: 'CCR',
+ *   panels: 'time_series,summary',
+ *   time_grain: 'quarter'
+ * });
+ */
+export const getDashboard = (params = {}, options = {}) => {
+  const queryString = buildQueryString(params);
+  const cacheKey = `dashboard:${queryString}`;
+  return cachedFetch(
+    cacheKey,
+    () => apiClient.get(`/dashboard?${queryString}`),
+    { forceRefresh: options.skipCache }
+  );
+};
+
+/**
+ * Get dashboard cache statistics
+ * @returns {Promise<{size: number, maxsize: number, ttl: number}>}
+ */
+export const getDashboardCacheStats = () => apiClient.get('/dashboard/cache');
+
+/**
+ * Clear dashboard cache
+ * @returns {Promise<{status: string}>}
+ */
+export const clearDashboardCache = () => apiClient.delete('/dashboard/cache');
+
+/**
  * Flexible aggregation endpoint for dynamic filtering
  * Uses caching for instant drill navigation
  * @param {Object} params - Query parameters

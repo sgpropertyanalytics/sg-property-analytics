@@ -3,6 +3,8 @@ Analytics API Routes - Lightweight read-only endpoints
 
 All routes now read from PreComputedStats table - no calculations, no Pandas.
 Fast and efficient.
+
+New unified dashboard endpoint uses SQL CTEs for high-performance aggregation.
 """
 
 from flask import Blueprint, request, jsonify
@@ -11,6 +13,189 @@ from services.analytics_reader import get_reader
 
 analytics_bp = Blueprint('analytics', __name__)
 reader = get_reader()
+
+
+# ============================================================================
+# UNIFIED DASHBOARD ENDPOINT (HIGH-PERFORMANCE)
+# ============================================================================
+
+@analytics_bp.route("/dashboard", methods=["GET", "POST"])
+def dashboard():
+    """
+    Unified dashboard endpoint - returns all chart datasets in one response.
+
+    This is the recommended endpoint for the Power BI-style dashboard.
+    Uses SQL CTEs for efficient aggregation without loading data into memory.
+
+    Supports both GET (query params) and POST (JSON body).
+
+    Query params / JSON body:
+      Filters:
+        - date_from: YYYY-MM-DD
+        - date_to: YYYY-MM-DD
+        - district: comma-separated districts (D01,D02,...)
+        - bedroom: comma-separated bedroom counts (2,3,4)
+        - segment: CCR, RCR, OCR
+        - sale_type: 'New Sale' or 'Resale'
+        - psf_min, psf_max: PSF range
+        - size_min, size_max: sqft range
+        - tenure: Freehold, 99-year, 999-year
+        - project: project name filter (partial match)
+
+      Options:
+        - panels: comma-separated panels to return
+                  (time_series, volume_by_location, price_histogram, bedroom_mix,
+                   sale_type_breakdown, summary)
+        - time_grain: year, quarter, month (default: month)
+        - location_grain: region, district, project (default: region)
+        - histogram_bins: number of bins for price histogram (default: 20, max: 50)
+        - skip_cache: if 'true', bypass cache
+
+    Returns:
+      {
+        "data": {
+          "time_series": [...],
+          "volume_by_location": [...],
+          "price_histogram": [...],
+          "bedroom_mix": [...],
+          "summary": {...}
+        },
+        "meta": {
+          "cache_hit": bool,
+          "elapsed_ms": float,
+          "filters_applied": {...},
+          "total_records_matched": int
+        }
+      }
+
+    Example:
+      GET /api/dashboard?district=D09,D10&bedroom=2,3,4&time_grain=quarter
+      GET /api/dashboard?segment=CCR&panels=time_series,summary
+    """
+    from services.dashboard_service import get_dashboard_data, ValidationError, get_cache_stats
+
+    start = time.time()
+
+    try:
+        # Parse parameters from GET query string or POST JSON body
+        if request.method == 'POST' and request.is_json:
+            body = request.get_json()
+            filters = body.get('filters', {})
+            panels_param = body.get('panels', [])
+            options = body.get('options', {})
+            skip_cache = body.get('skip_cache', False)
+        else:
+            # Parse from query params
+            filters = {}
+            options = {}
+
+            # Date filters
+            if request.args.get('date_from'):
+                filters['date_from'] = request.args.get('date_from')
+            if request.args.get('date_to'):
+                filters['date_to'] = request.args.get('date_to')
+
+            # District filter
+            if request.args.get('district'):
+                districts = [d.strip() for d in request.args.get('district').split(',') if d.strip()]
+                filters['districts'] = districts
+
+            # Bedroom filter
+            if request.args.get('bedroom'):
+                bedrooms = [int(b.strip()) for b in request.args.get('bedroom').split(',') if b.strip()]
+                filters['bedrooms'] = bedrooms
+
+            # Segment filter
+            if request.args.get('segment'):
+                filters['segment'] = request.args.get('segment').strip().upper()
+
+            # Sale type filter
+            if request.args.get('sale_type'):
+                filters['sale_type'] = request.args.get('sale_type')
+
+            # PSF range
+            if request.args.get('psf_min'):
+                filters['psf_min'] = float(request.args.get('psf_min'))
+            if request.args.get('psf_max'):
+                filters['psf_max'] = float(request.args.get('psf_max'))
+
+            # Size range
+            if request.args.get('size_min'):
+                filters['size_min'] = float(request.args.get('size_min'))
+            if request.args.get('size_max'):
+                filters['size_max'] = float(request.args.get('size_max'))
+
+            # Tenure filter
+            if request.args.get('tenure'):
+                filters['tenure'] = request.args.get('tenure')
+
+            # Project filter
+            if request.args.get('project'):
+                filters['project'] = request.args.get('project')
+
+            # Panels
+            panels_param = request.args.get('panels', '')
+            if panels_param:
+                panels_param = [p.strip() for p in panels_param.split(',') if p.strip()]
+            else:
+                panels_param = None  # Will use default
+
+            # Options
+            if request.args.get('time_grain'):
+                options['time_grain'] = request.args.get('time_grain')
+            if request.args.get('location_grain'):
+                options['location_grain'] = request.args.get('location_grain')
+            if request.args.get('histogram_bins'):
+                options['histogram_bins'] = int(request.args.get('histogram_bins'))
+
+            skip_cache = request.args.get('skip_cache', '').lower() == 'true'
+
+        # Get dashboard data
+        result = get_dashboard_data(
+            filters=filters,
+            panels=panels_param if panels_param else None,
+            options=options if options else None,
+            skip_cache=skip_cache
+        )
+
+        elapsed = time.time() - start
+        print(f"GET /api/dashboard took: {elapsed:.4f} seconds (cache_hit: {result['meta'].get('cache_hit', False)})")
+
+        return jsonify(result)
+
+    except ValidationError as e:
+        elapsed = time.time() - start
+        print(f"GET /api/dashboard validation error (took {elapsed:.4f}s): {e}")
+        return jsonify({
+            "error": "Validation error",
+            "details": e.args[0] if e.args else str(e)
+        }), 400
+
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/dashboard ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+
+@analytics_bp.route("/dashboard/cache", methods=["GET", "DELETE"])
+def dashboard_cache():
+    """
+    Dashboard cache management endpoint.
+
+    GET: Return cache statistics
+    DELETE: Clear cache
+    """
+    from services.dashboard_service import get_cache_stats, clear_dashboard_cache
+
+    if request.method == 'DELETE':
+        clear_dashboard_cache()
+        return jsonify({"status": "cache cleared"})
+
+    return jsonify(get_cache_stats())
 
 
 @analytics_bp.route("/health", methods=["GET"])
