@@ -57,10 +57,12 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
       }
       setError(null);
       try {
+        // Use excludeHighlight: true so time chart shows ALL periods
+        // even when a specific time period is highlighted
         const params = buildApiParams({
           group_by: drillPath.time,
           metrics: 'count,median_psf,avg_psf'
-        });
+        }, { excludeHighlight: true });
         const response = await getAggregate(params);
         // Sort by time - handle both string and numeric values
         const sortedData = (response.data.data || []).sort((a, b) => {
