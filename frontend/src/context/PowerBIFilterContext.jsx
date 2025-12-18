@@ -23,7 +23,6 @@ export function PowerBIFilterProvider({ children }) {
     saleType: null,                          // null = all, 'New Sale' | 'Resale'
     psfRange: { min: null, max: null },      // null = no restriction
     sizeRange: { min: null, max: null },     // null = no restriction
-    priceRange: { min: null, max: null },    // null = no restriction (for price distribution cross-filter)
     tenure: null,                            // null = all, 'Freehold' | '99-year' | '999-year'
     project: null,                           // null = all, project name filter
   });
@@ -35,6 +34,14 @@ export function PowerBIFilterProvider({ children }) {
     source: null,        // which chart applied it ('location', 'bedroom', 'price')
     dimension: null,     // 'district', 'region', 'bedroom', 'sale_type'
     value: null,         // 'D09', 'CCR', '3', etc.
+  });
+
+  // ===== Fact Filter State =====
+  // Filters that only apply to FACT tables (Transaction Data Table)
+  // Dimension charts ignore these - follows Power BI best practice:
+  // Dimension → Fact (one-way filtering)
+  const [factFilter, setFactFilter] = useState({
+    priceRange: { min: null, max: null },  // from Price Distribution chart click
   });
 
   // ===== Highlight State =====
@@ -178,13 +185,6 @@ export function PowerBIFilterProvider({ children }) {
     }));
   }, []);
 
-  const setPriceRange = useCallback((min, max) => {
-    setFilters(prev => ({
-      ...prev,
-      priceRange: { min, max }
-    }));
-  }, []);
-
   const setTenure = useCallback((tenure) => {
     setFilters(prev => ({ ...prev, tenure }));
   }, []);
@@ -215,14 +215,18 @@ export function PowerBIFilterProvider({ children }) {
   // This filters data - other charts recalculate
 
   const applyCrossFilter = useCallback((source, dimension, value) => {
-    // Handle price range cross-filter specially
+    // Handle price range cross-filter specially - goes to factFilter only
+    // This follows Power BI best practice: Dimension → Fact (one-way)
+    // Price Distribution is a dimension chart, Transaction Table is fact
     if (dimension === 'price_range') {
       // value is "min-max" string like "1000000-2000000"
       const [min, max] = value.split('-').map(Number);
-      setFilters(prev => ({
+      // Set in factFilter (only affects Transaction Data Table)
+      setFactFilter(prev => ({
         ...prev,
         priceRange: { min, max }
       }));
+      // Also set crossFilter for UI display (badge showing "Filter: $1M-$2M")
       setCrossFilter({ source, dimension, value });
       setHighlight({ source: null, dimension: null, value: null });
       return;
@@ -243,11 +247,10 @@ export function PowerBIFilterProvider({ children }) {
 
   const clearCrossFilter = useCallback(() => {
     setCrossFilter({ source: null, dimension: null, value: null });
-    // Also clear price range if it was set by cross-filter
-    setFilters(prev => ({
-      ...prev,
+    // Also clear factFilter (price range from dimension chart click)
+    setFactFilter({
       priceRange: { min: null, max: null }
-    }));
+    });
   }, []);
 
   // ===== Highlight Management =====
@@ -512,9 +515,10 @@ export function PowerBIFilterProvider({ children }) {
   // ===== Build API query params from active filters =====
   // Options:
   //   excludeHighlight: true - excludes time highlight filter (for time chart to show all periods)
+  //   includeFactFilter: true - includes factFilter (only for Fact tables like Transaction Data Table)
   const buildApiParams = useCallback((additionalParams = {}, options = {}) => {
     const params = { ...additionalParams };
-    const { excludeHighlight = false } = options;
+    const { excludeHighlight = false, includeFactFilter = false } = options;
 
     // Apply date range - but skip if excludeHighlight and the date comes from highlight
     const highlightApplied = highlight.dimension && highlight.value;
@@ -563,11 +567,15 @@ export function PowerBIFilterProvider({ children }) {
     if (activeFilters.sizeRange.max !== null) {
       params.size_max = activeFilters.sizeRange.max;
     }
-    if (activeFilters.priceRange?.min !== null) {
-      params.price_min = activeFilters.priceRange.min;
-    }
-    if (activeFilters.priceRange?.max !== null) {
-      params.price_max = activeFilters.priceRange.max;
+    // Price range from factFilter - only include for Fact tables (Transaction Data Table)
+    // This implements Power BI best practice: Dimension → Fact (one-way filtering)
+    if (includeFactFilter) {
+      if (factFilter.priceRange?.min !== null) {
+        params.price_min = factFilter.priceRange.min;
+      }
+      if (factFilter.priceRange?.max !== null) {
+        params.price_max = factFilter.priceRange.max;
+      }
     }
     if (activeFilters.tenure) {
       params.tenure = activeFilters.tenure;
@@ -577,7 +585,7 @@ export function PowerBIFilterProvider({ children }) {
     }
 
     return params;
-  }, [activeFilters, filters, highlight]);
+  }, [activeFilters, filters, highlight, factFilter]);
 
   // ===== Count active filters =====
   const activeFilterCount = useMemo(() => {
@@ -600,7 +608,8 @@ export function PowerBIFilterProvider({ children }) {
     // State
     filters,
     crossFilter,
-    highlight,         // NEW: for non-filtering visual emphasis
+    factFilter,        // Filters that only apply to Fact tables (Dimension → Fact)
+    highlight,         // For non-filtering visual emphasis
     drillPath,
     breadcrumbs,
     filterOptions,
@@ -617,7 +626,6 @@ export function PowerBIFilterProvider({ children }) {
     setSaleType,
     setPsfRange,
     setSizeRange,
-    setPriceRange,
     setTenure,
     setProject,
     resetFilters,
