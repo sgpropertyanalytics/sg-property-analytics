@@ -12,7 +12,7 @@ import { getTransactionsList } from '../../api/client';
  * - Shows key transaction fields
  */
 export function TransactionDataTable({ height = 400 }) {
-  const { buildApiParams, activeFilterCount, crossFilter, highlight } = usePowerBIFilters();
+  const { buildApiParams, activeFilterCount, crossFilter, highlight, factFilter } = usePowerBIFilters();
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,12 +33,14 @@ export function TransactionDataTable({ height = 400 }) {
     setLoading(true);
     setError(null);
     try {
+      // includeFactFilter: true enables one-way filtering from dimension charts
+      // (e.g., Price Distribution click filters this table but not other dimension charts)
       const params = buildApiParams({
         page: pagination.page,
         limit: pagination.limit,
         sort_by: sortConfig.column,
         sort_order: sortConfig.order,
-      });
+      }, { includeFactFilter: true });
       const response = await getTransactionsList(params);
       setData(response.data.transactions || []);
       setPagination(prev => ({
@@ -58,10 +60,10 @@ export function TransactionDataTable({ height = 400 }) {
     fetchData();
   }, [fetchData]);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change (including factFilter from dimension chart clicks)
   useEffect(() => {
     setPagination(prev => ({ ...prev, page: 1 }));
-  }, [activeFilterCount, crossFilter.value, highlight.value]);
+  }, [activeFilterCount, crossFilter.value, highlight.value, factFilter]);
 
   // Handle sort
   const handleSort = (column) => {
