@@ -245,14 +245,22 @@ export function PowerBIFilterProvider({ children }) {
 
   const drillDown = useCallback((type, value, label) => {
     // Ensure value is always stored as a string for consistency
-    const stringValue = value != null ? String(value) : value;
-    const stringLabel = label != null ? String(label) : stringValue;
+    // If value is null/undefined (from "Go to Next Level"), don't add breadcrumb
+    const hasValue = value != null;
+    const stringValue = hasValue ? String(value) : null;
+    const stringLabel = hasValue ? (label != null ? String(label) : stringValue) : null;
 
     if (type === 'time') {
       const levels = ['year', 'quarter', 'month'];
-      const currentIndex = levels.indexOf(drillPath.time);
-      if (currentIndex < levels.length - 1) {
-        setDrillPath(prev => ({ ...prev, time: levels[currentIndex + 1] }));
+      setDrillPath(prev => {
+        const currentIndex = levels.indexOf(prev.time);
+        if (currentIndex < levels.length - 1) {
+          return { ...prev, time: levels[currentIndex + 1] };
+        }
+        return prev;
+      });
+      // Only add breadcrumb if drilling into a specific value
+      if (hasValue) {
         setBreadcrumbs(prev => ({
           ...prev,
           time: [...prev.time, { value: stringValue, label: stringLabel }]
@@ -260,40 +268,52 @@ export function PowerBIFilterProvider({ children }) {
       }
     } else if (type === 'location') {
       const levels = ['region', 'district', 'project'];
-      const currentIndex = levels.indexOf(drillPath.location);
-      if (currentIndex < levels.length - 1) {
-        setDrillPath(prev => ({ ...prev, location: levels[currentIndex + 1] }));
+      setDrillPath(prev => {
+        const currentIndex = levels.indexOf(prev.location);
+        if (currentIndex < levels.length - 1) {
+          return { ...prev, location: levels[currentIndex + 1] };
+        }
+        return prev;
+      });
+      // Only add breadcrumb if drilling into a specific value
+      if (hasValue) {
         setBreadcrumbs(prev => ({
           ...prev,
           location: [...prev.location, { value: stringValue, label: stringLabel }]
         }));
       }
     }
-  }, [drillPath]);
+  }, []);
 
   const drillUp = useCallback((type) => {
     if (type === 'time') {
       const levels = ['year', 'quarter', 'month'];
-      const currentIndex = levels.indexOf(drillPath.time);
-      if (currentIndex > 0) {
-        setDrillPath(prev => ({ ...prev, time: levels[currentIndex - 1] }));
-        setBreadcrumbs(prev => ({
-          ...prev,
-          time: prev.time.slice(0, -1)
-        }));
-      }
+      setDrillPath(prev => {
+        const currentIndex = levels.indexOf(prev.time);
+        if (currentIndex > 0) {
+          return { ...prev, time: levels[currentIndex - 1] };
+        }
+        return prev;
+      });
+      setBreadcrumbs(prev => ({
+        ...prev,
+        time: prev.time.length > 0 ? prev.time.slice(0, -1) : []
+      }));
     } else if (type === 'location') {
       const levels = ['region', 'district', 'project'];
-      const currentIndex = levels.indexOf(drillPath.location);
-      if (currentIndex > 0) {
-        setDrillPath(prev => ({ ...prev, location: levels[currentIndex - 1] }));
-        setBreadcrumbs(prev => ({
-          ...prev,
-          location: prev.location.slice(0, -1)
-        }));
-      }
+      setDrillPath(prev => {
+        const currentIndex = levels.indexOf(prev.location);
+        if (currentIndex > 0) {
+          return { ...prev, location: levels[currentIndex - 1] };
+        }
+        return prev;
+      });
+      setBreadcrumbs(prev => ({
+        ...prev,
+        location: prev.location.length > 0 ? prev.location.slice(0, -1) : []
+      }));
     }
-  }, [drillPath]);
+  }, []);
 
   const navigateToBreadcrumb = useCallback((type, index) => {
     if (type === 'time') {
