@@ -55,11 +55,18 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
           metrics: 'count,median_psf,avg_psf'
         });
         const response = await getAggregate(params);
-        // Sort by time
+        // Sort by time - handle both string and numeric values
         const sortedData = (response.data.data || []).sort((a, b) => {
-          const aKey = a[drillPath.time] || '';
-          const bKey = b[drillPath.time] || '';
-          return aKey.localeCompare(bKey);
+          const aKey = a[drillPath.time];
+          const bKey = b[drillPath.time];
+          // Handle null/undefined
+          if (aKey == null) return -1;
+          if (bKey == null) return 1;
+          // Use numeric comparison for numbers, string comparison otherwise
+          if (typeof aKey === 'number' && typeof bKey === 'number') {
+            return aKey - bKey;
+          }
+          return String(aKey).localeCompare(String(bKey));
         });
         setData(sortedData);
       } catch (err) {
