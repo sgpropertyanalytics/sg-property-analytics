@@ -88,10 +88,23 @@ function MacroOverviewContent() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <h1 className="text-2xl font-bold text-[#213448]">Macro Overview</h1>
-                <p className="text-[#547792] text-sm">
-                  Power BI-style analytics with dynamic filtering
-                </p>
+                <h1 className="text-2xl font-bold text-[#213448]">Singapore Property Market Analytics</h1>
+                {/* Data source info - shows raw database count and date range */}
+                {apiMetadata && (
+                  <p className="text-[#547792] text-sm italic">
+                    Data source from URA | {apiMetadata.row_count?.toLocaleString() || '0'} records
+                    {apiMetadata.min_date && apiMetadata.max_date && (
+                      <> from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short'
+                      })} to {new Date(apiMetadata.max_date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short'
+                      })}
+                      </>
+                    )}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {/* Highlight indicator (visual emphasis on time, no filtering) */}
@@ -124,23 +137,6 @@ function MacroOverviewContent() {
                 )}
               </div>
             </div>
-
-            {/* Data source info */}
-            {apiMetadata && (
-              <p className="text-xs text-slate-500 italic">
-                Data source from URA | {apiMetadata.row_count?.toLocaleString() || '0'} records
-                {apiMetadata.min_date && apiMetadata.max_date && (
-                  <> from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short'
-                  })} to {new Date(apiMetadata.max_date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short'
-                  })}
-                  </>
-                )}
-              </p>
-            )}
 
             {/* Breadcrumb navigation */}
             <DrillBreadcrumb />
