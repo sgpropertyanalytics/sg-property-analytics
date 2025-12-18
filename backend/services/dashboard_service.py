@@ -481,8 +481,139 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
     """
     Query price distribution histogram with server-side binning.
 
-    Uses SQL WIDTH_BUCKET for efficient binning (or equivalent for SQLite).
+    Uses a single optimized SQL query with CTE for min/max calculation
+    and PostgreSQL's width_bucket() equivalent for efficient binning.
     """
+    num_bins = options.get('histogram_bins', DEFAULT_HISTOGRAM_BINS)
+    conditions = build_filter_conditions(filters)
+
+    # Build WHERE clause for raw SQL
+    where_parts = []
+    params = {}
+
+    if filters.get('date_from'):
+        where_parts.append("transaction_date >= :date_from")
+        params['date_from'] = filters['date_from']
+    if filters.get('date_to'):
+        where_parts.append("transaction_date <= :date_to")
+        params['date_to'] = filters['date_to']
+
+    districts = filters.get('districts', [])
+    if districts:
+        if isinstance(districts, str):
+            districts = [d.strip() for d in districts.split(',')]
+        normalized = [normalize_district(d) for d in districts]
+        placeholders = ','.join([f":district_{i}" for i in range(len(normalized))])
+        where_parts.append(f"district IN ({placeholders})")
+        for i, d in enumerate(normalized):
+            params[f'district_{i}'] = d
+    elif filters.get('segment'):
+        segment_districts = get_districts_for_segment(filters['segment'])
+        if segment_districts:
+            placeholders = ','.join([f":seg_district_{i}" for i in range(len(segment_districts))])
+            where_parts.append(f"district IN ({placeholders})")
+            for i, d in enumerate(segment_districts):
+                params[f'seg_district_{i}'] = d
+
+    bedrooms = filters.get('bedrooms', [])
+    if bedrooms:
+        if isinstance(bedrooms, str):
+            bedrooms = [int(b.strip()) for b in bedrooms.split(',')]
+        placeholders = ','.join([f":bedroom_{i}" for i in range(len(bedrooms))])
+        where_parts.append(f"bedroom_count IN ({placeholders})")
+        for i, b in enumerate(bedrooms):
+            params[f'bedroom_{i}'] = b
+
+    if filters.get('sale_type'):
+        where_parts.append("sale_type = :sale_type")
+        params['sale_type'] = filters['sale_type']
+
+    if filters.get('psf_min') is not None:
+        where_parts.append("psf >= :psf_min")
+        params['psf_min'] = float(filters['psf_min'])
+    if filters.get('psf_max') is not None:
+        where_parts.append("psf <= :psf_max")
+        params['psf_max'] = float(filters['psf_max'])
+
+    if filters.get('size_min') is not None:
+        where_parts.append("area_sqft >= :size_min")
+        params['size_min'] = float(filters['size_min'])
+    if filters.get('size_max') is not None:
+        where_parts.append("area_sqft <= :size_max")
+        params['size_max'] = float(filters['size_max'])
+
+    where_clause = " AND ".join(where_parts) if where_parts else "1=1"
+    params['num_bins'] = num_bins
+
+    # Single-pass query using window functions for min/max
+    # PostgreSQL computes the window aggregates in one table scan
+    sql = text(f"""
+        WITH base_data AS (
+            SELECT
+                price,
+                MIN(price) OVER () as min_price,
+                MAX(price) OVER () as max_price
+            FROM transactions
+            WHERE {where_clause} AND price IS NOT NULL AND price > 0
+        ),
+        binned AS (
+            SELECT
+                CASE
+                    WHEN max_price = min_price THEN 1
+                    ELSE LEAST(
+                        GREATEST(
+                            FLOOR((price - min_price) / NULLIF((max_price - min_price) / :num_bins, 0)) + 1,
+                            1
+                        )::INTEGER,
+                        :num_bins
+                    )
+                END as bin_num,
+                min_price,
+                (max_price - min_price) / :num_bins as bin_width
+            FROM base_data
+        )
+        SELECT
+            bin_num as bin,
+            MIN(min_price) as min_price,
+            MIN(bin_width) as bin_width,
+            COUNT(*) as count
+        FROM binned
+        GROUP BY bin_num
+        ORDER BY bin_num
+    """)
+
+    try:
+        results = db.session.execute(sql, params).fetchall()
+
+        if not results:
+            return []
+
+        # Get min_price and bin_width from first row (same for all rows)
+        min_price = float(results[0].min_price) if results[0].min_price else 0
+        bin_width = float(results[0].bin_width) if results[0].bin_width else 0
+
+        histogram = []
+        for r in results:
+            bin_num = r.bin if r.bin else 1
+            bin_start = min_price + (bin_num - 1) * bin_width
+            bin_end = min_price + bin_num * bin_width
+            histogram.append({
+                'bin': bin_num,
+                'bin_start': round(bin_start, 0),
+                'bin_end': round(bin_end, 0),
+                'count': r.count
+            })
+
+        return histogram
+
+    except Exception as e:
+        logger.error(f"Histogram query failed: {e}")
+        # Fallback to original method if CTE fails (e.g., SQLite)
+        return _query_price_histogram_fallback(filters, options)
+
+
+def _query_price_histogram_fallback(filters: Dict[str, Any], options: Dict[str, Any]) -> List[Dict]:
+    """Fallback histogram query for non-PostgreSQL databases."""
     num_bins = options.get('histogram_bins', DEFAULT_HISTOGRAM_BINS)
     conditions = build_filter_conditions(filters)
 
@@ -502,19 +633,11 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
     min_price = float(price_range.min_price)
     max_price = float(price_range.max_price)
 
-    # Avoid division by zero
     if min_price == max_price:
-        return [{
-            'bin': 1,
-            'bin_start': min_price,
-            'bin_end': max_price,
-            'count': 1
-        }]
+        return [{'bin': 1, 'bin_start': min_price, 'bin_end': max_price, 'count': 1}]
 
     bin_width = (max_price - min_price) / num_bins
 
-    # Calculate bin for each transaction
-    # bin_number = floor((price - min_price) / bin_width) + 1, capped at num_bins
     bin_expr = func.least(
         cast(func.floor((Transaction.price - min_price) / bin_width) + 1, Integer),
         num_bins
@@ -529,10 +652,8 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
         query = query.filter(and_(*conditions))
 
     query = query.group_by(bin_expr).order_by(bin_expr)
-
     results = query.all()
 
-    # Convert to histogram format
     histogram = []
     for r in results:
         bin_num = r.bin if r.bin else 1
