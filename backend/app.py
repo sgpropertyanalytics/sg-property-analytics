@@ -21,6 +21,40 @@ from flask_migrate import Migrate
 migrate = Migrate()
 
 
+def _run_startup_validation():
+    """
+    Run data validation on startup.
+
+    Called from within create_app() so it works with gunicorn.
+    Safe to run repeatedly - if data is clean, does nothing.
+    """
+    from models.transaction import Transaction
+    from services.data_validation import run_all_validations
+    from services.data_computation import recompute_all_stats, get_metadata
+
+    count = db.session.query(Transaction).count()
+    if count == 0:
+        return  # No data to validate
+
+    try:
+        # Run all validations
+        results = run_all_validations()
+
+        # If any data was cleaned, recompute stats
+        if results['total_cleaned'] > 0:
+            existing_metadata = get_metadata()
+            previous_outliers = existing_metadata.get('outliers_excluded', 0)
+            total_outliers = previous_outliers + results['outliers_removed']
+
+            print(f"   Recomputing stats (total outliers excluded: {total_outliers:,})...")
+            recompute_all_stats(outliers_excluded=total_outliers)
+            print(f"   ✓ Stats recomputed")
+
+    except Exception as e:
+        print(f"\n⚠️  Auto-validation skipped: {e}")
+        # Don't fail startup if validation fails
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -47,10 +81,14 @@ def create_app():
     # Initialize Flask-Migrate for database migrations
     migrate.init_app(app, db)
 
-    # Create database tables
+    # Create database tables and run auto-validation
     with app.app_context():
         db.create_all()
         print("✓ Database initialized - using SQL-only aggregation for memory efficiency")
+
+        # Auto-validate data on startup (self-healing)
+        # This runs inside create_app() so it works with gunicorn
+        _run_startup_validation()
 
     # Register routes
     # Analytics routes (PUBLIC - no authentication required)
@@ -97,57 +135,14 @@ def create_app():
     return app
 
 
-def auto_validate_data(app):
-    """
-    Auto-validate and clean data on startup.
-
-    This ensures the database is clean on every deploy.
-    Safe to run repeatedly - if data is clean, does nothing.
-
-    Runs all validation checks:
-    1. Remove invalid/corrupted records (null/zero values)
-    2. Remove duplicates
-    3. Filter outliers (IQR method)
-    """
-    with app.app_context():
-        from models.transaction import Transaction
-        from services.data_validation import run_all_validations
-        from services.data_computation import recompute_all_stats, get_metadata
-
-        count = db.session.query(Transaction).count()
-        if count == 0:
-            return  # No data to validate
-
-        try:
-            # Run all validations
-            results = run_all_validations()
-
-            # If any data was cleaned, recompute stats
-            if results['total_cleaned'] > 0:
-                existing_metadata = get_metadata()
-                previous_outliers = existing_metadata.get('outliers_excluded', 0)
-                total_outliers = previous_outliers + results['outliers_removed']
-
-                print(f"   Recomputing stats (total outliers excluded: {total_outliers:,})...")
-                recompute_all_stats(outliers_excluded=total_outliers)
-                print(f"   ✓ Stats recomputed")
-
-        except Exception as e:
-            print(f"\n⚠️  Auto-validation skipped: {e}")
-            # Don't fail startup if validation fails
-
-
 def run_app():
-    """Main entry point - starts server with SQL-only analytics."""
+    """Main entry point for local development - starts server with Flask's dev server."""
     print("=" * 60)
     print("Starting Flask API - SQL-Only Analytics Architecture")
     print("=" * 60)
 
-    # Create app
+    # Create app (validation runs inside create_app)
     app = create_app()
-
-    # Auto-validate and clean data on startup (self-healing)
-    auto_validate_data(app)
 
     with app.app_context():
         from models.transaction import Transaction
