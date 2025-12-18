@@ -1130,9 +1130,9 @@ def transactions_list():
     start = time.time()
 
     # Pagination params
-    # Higher max limit (10000) for histogram/distribution analysis use cases
+    # No max limit - allow fetching all records for accurate histogram analysis
     page = int(request.args.get("page", 1))
-    limit = min(int(request.args.get("limit", 50)), 10000)
+    limit = int(request.args.get("limit", 50))
     sort_by = request.args.get("sort_by", "transaction_date")
     sort_order = request.args.get("sort_order", "desc")
 
