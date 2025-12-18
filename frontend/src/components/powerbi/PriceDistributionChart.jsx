@@ -37,6 +37,7 @@ ChartJS.register(
 export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, numBins = 30 }) {
   const { buildApiParams, crossFilter, applyCrossFilter } = usePowerBIFilters();
   const [transactions, setTransactions] = useState([]);
+  const [totalAvailable, setTotalAvailable] = useState(0); // Track total from API
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
@@ -60,8 +61,17 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
           sort_by: 'price',
           sort_order: 'asc'
         });
+        console.log('PriceDistribution API params:', params);
         const response = await getTransactionsList(params);
-        setTransactions(response.data.transactions || []);
+        const txns = response.data.transactions || [];
+        const pagination = response.data.pagination || {};
+        console.log('PriceDistribution API response:', {
+          returned: txns.length,
+          total_records: pagination.total_records,
+          limit: pagination.limit
+        });
+        setTransactions(txns);
+        setTotalAvailable(pagination.total_records || txns.length);
         isInitialLoad.current = false;
       } catch (err) {
         console.error('Error fetching price distribution data:', err);
@@ -309,7 +319,10 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
         <Bar ref={chartRef} data={chartData} options={options} />
       </div>
       <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] flex justify-between">
-        <span>Total: {totalCount.toLocaleString()} transactions</span>
+        <span>
+          Showing: {totalCount.toLocaleString()} transactions
+          {totalAvailable > totalCount && ` (of ${totalAvailable.toLocaleString()} available)`}
+        </span>
         <span>Click a bar to filter by price range</span>
       </div>
     </div>
