@@ -128,11 +128,11 @@ export function DrillButtons({
     }
   };
 
-  // Button styles
+  // Button styles using theme colors
   const buttonBase = "w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150";
-  const enabledStyle = "bg-white border border-slate-300 hover:bg-slate-50 hover:border-slate-400 text-slate-600 shadow-sm";
-  const disabledStyle = "bg-slate-50 border border-slate-200 text-slate-300 cursor-not-allowed";
-  const activeStyle = "bg-blue-500 border border-blue-500 text-white hover:bg-blue-600 shadow-sm";
+  const enabledStyle = "bg-white border border-[#94B4C1] hover:bg-[#EAE0CF] hover:border-[#547792] text-[#547792] shadow-sm";
+  const disabledStyle = "bg-[#EAE0CF]/50 border border-[#94B4C1]/50 text-[#94B4C1] cursor-not-allowed";
+  const activeStyle = "bg-[#547792] border border-[#547792] text-white hover:bg-[#213448] shadow-sm";
 
   // Check if any drill functions are available
   const hasDrillHierarchy = canDrillUp || canDrillDown;
@@ -190,7 +190,7 @@ export function DrillButtons({
 
       {/* Separator */}
       {hasDrillHierarchy && (
-        <div className="w-px h-5 bg-slate-200 mx-0.5" />
+        <div className="w-px h-5 bg-[#94B4C1] mx-0.5" />
       )}
 
       {/* View Transactions Button */}
@@ -209,14 +209,14 @@ export function DrillButtons({
 
       {/* Current Level Label */}
       {hasDrillHierarchy && (
-        <span className="ml-1 text-xs text-slate-500 font-medium whitespace-nowrap">
+        <span className="ml-1 text-xs text-[#547792] font-medium whitespace-nowrap">
           {levelLabels[currentLevel]}
         </span>
       )}
 
       {/* Drill Mode Indicator */}
       {drillDownMode && canDrillDown && (
-        <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded font-medium">
+        <span className="ml-1 px-1.5 py-0.5 text-xs bg-[#547792]/20 text-[#213448] rounded font-medium">
           Click to drill
         </span>
       )}

@@ -4,7 +4,6 @@ import { PowerBIFilterSidebar } from '../components/powerbi/PowerBIFilterSidebar
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { VolumeByLocationChart } from '../components/powerbi/VolumeByLocationChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
-import { BedroomMixChart } from '../components/powerbi/BedroomMixChart';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
@@ -23,8 +22,6 @@ import { useData } from '../context/DataContext';
 function MacroOverviewContent() {
   const { apiMetadata } = useData();
   const {
-    activeFilters,
-    activeFilterCount,
     crossFilter,
     buildApiParams,
     clearCrossFilter,
@@ -75,7 +72,7 @@ function MacroOverviewContent() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen bg-[#EAE0CF]/30">
       {/* Filter Sidebar */}
       <PowerBIFilterSidebar
         collapsed={sidebarCollapsed}
@@ -89,15 +86,15 @@ function MacroOverviewContent() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <h1 className="text-2xl font-bold text-slate-800">Macro Overview</h1>
-                <p className="text-slate-500 text-sm">
+                <h1 className="text-2xl font-bold text-[#213448]">Macro Overview</h1>
+                <p className="text-[#547792] text-sm">
                   Power BI-style analytics with dynamic filtering
                 </p>
               </div>
               {crossFilter.value && (
                 <button
                   onClick={clearCrossFilter}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors text-sm"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-[#547792]/20 text-[#213448] rounded-lg hover:bg-[#547792]/30 transition-colors text-sm"
                 >
                   <span>Cross-filter: {crossFilter.value}</span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,46 +195,6 @@ function MacroOverviewContent() {
             />
           </div>
 
-          {/* Second row */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            {/* Bedroom Mix - 1 column */}
-            <BedroomMixChart
-              onDrillThrough={(value) => handleDrillThrough(`${value} Transactions`)}
-              height={250}
-            />
-
-            {/* Quick Stats - 2 columns */}
-            <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 p-4">
-              <h3 className="font-semibold text-slate-800 mb-4">Quick Insights</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <InsightCard
-                  label="Avg Transaction Size"
-                  value={kpis.totalTransactions > 0 ? `$${((kpis.totalValue / kpis.totalTransactions) / 1000000).toFixed(2)}M` : '-'}
-                />
-                <InsightCard
-                  label="Active Filters"
-                  value={activeFilterCount.toString()}
-                  highlight={activeFilterCount > 0}
-                />
-                <InsightCard
-                  label="Cross-filter"
-                  value={crossFilter.value || 'None'}
-                  highlight={!!crossFilter.value}
-                />
-                <InsightCard
-                  label="Data Quality"
-                  value="100%"
-                />
-              </div>
-              <div className="mt-4 pt-4 border-t border-slate-200">
-                <p className="text-xs text-slate-500">
-                  <strong>Tips:</strong> Click on any chart element to cross-filter all charts.
-                  Double-click to drill down into details. Use the sidebar filters for precise control.
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Transaction Data Table */}
           <div className="mb-6">
             <TransactionDataTable height={400} />
@@ -260,35 +217,24 @@ function MacroOverviewContent() {
 function KPICard({ title, value, loading, icon, onClick }) {
   return (
     <div
-      className={`bg-white rounded-lg border border-slate-200 p-4 ${
-        onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
+      className={`bg-white rounded-lg border border-[#94B4C1]/50 p-4 ${
+        onClick ? 'cursor-pointer hover:shadow-md hover:border-[#547792] transition-all' : ''
       }`}
       onClick={onClick}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-slate-500 text-sm">{title}</span>
-        <span className="text-slate-400">{icon}</span>
+        <span className="text-[#547792] text-sm">{title}</span>
+        <span className="text-[#94B4C1]">{icon}</span>
       </div>
       {loading ? (
-        <div className="h-8 bg-slate-200 rounded animate-pulse"></div>
+        <div className="h-8 bg-[#94B4C1]/30 rounded animate-pulse"></div>
       ) : (
-        <div className="text-2xl font-bold text-slate-800">{value}</div>
+        <div className="text-2xl font-bold text-[#213448]">{value}</div>
       )}
     </div>
   );
 }
 
-// Insight Card Component
-function InsightCard({ label, value, highlight = false }) {
-  return (
-    <div className="text-center">
-      <div className="text-xs text-slate-500 mb-1">{label}</div>
-      <div className={`font-semibold ${highlight ? 'text-blue-600' : 'text-slate-800'}`}>
-        {value}
-      </div>
-    </div>
-  );
-}
 
 // Export wrapped with provider
 export default function MacroOverview() {
