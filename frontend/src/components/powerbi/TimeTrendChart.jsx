@@ -162,6 +162,12 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   const avgCount = counts.reduce((sum, c) => sum + c, 0) / counts.length;
   const peakThreshold = avgCount + (maxCount - avgCount) * 0.5; // 50% above average towards max
 
+  // Calculate y1 axis range to push the line higher above the bars
+  const maxTotalValue = Math.max(...totalValues);
+  const minTotalValue = Math.min(...totalValues);
+  // Extend the axis 40% below the min value to lift the line visually above bars
+  const y1Min = minTotalValue - (maxTotalValue - minTotalValue) * 0.6;
+
   // Determine which bars should be highlighted based on highlight state
   const highlightedIndex = highlight.source === 'time' && highlight.value
     ? labels.indexOf(highlight.value)
@@ -280,6 +286,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         type: 'linear',
         display: true,
         position: 'right',
+        min: y1Min, // Push the line higher above the bars
         title: {
           display: true,
           text: 'Total Quantum ($)',
@@ -289,6 +296,8 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         },
         ticks: {
           callback: (value) => {
+            // Don't show negative tick labels
+            if (value < 0) return '';
             if (value >= 1000000000) {
               return `$${(value / 1000000000).toFixed(1)}B`;
             }
