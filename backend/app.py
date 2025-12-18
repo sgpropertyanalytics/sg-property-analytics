@@ -97,9 +97,12 @@ def create_app():
     # Create database tables
     with app.app_context():
         db.create_all()
-        
-        # Initialize GLOBAL_DF from database (for fast in-memory queries)
-        initialize_global_dataframe(app)
+
+        # DISABLED: GLOBAL_DF loading causes OOM on Render's 512MB limit
+        # The /api/aggregate and /api/dashboard endpoints use SQL directly
+        # and don't need GLOBAL_DF. This saves ~200-400MB of memory.
+        # initialize_global_dataframe(app)
+        print("✓ GLOBAL_DF loading disabled - using SQL-only aggregation for memory efficiency")
     
     # Register routes
     # Analytics routes (PUBLIC - no authentication required)
