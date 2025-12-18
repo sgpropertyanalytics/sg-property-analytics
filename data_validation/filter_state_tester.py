@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Set
 from datetime import datetime
 from decimal import Decimal
+from dotenv import load_dotenv
+load_dotenv()
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -671,4 +673,19 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    conn_string = os.getenv("DATABASE_URL")
+    if not conn_string:
+        raise ValueError("DATABASE_URL not set in .env file")
+    
+    validator = FilterStateValidator(conn_string)
+    
+    print("Starting validation...")
+    
+    # Test specific filter state
+    results = validator.run_all_checks(FilterState(year=2024, quarter=3))
+    
+    # Generate and print report
+    report = validator.generate_report(results)
+    print(report)
+    
+    validator.close()

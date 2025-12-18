@@ -24,7 +24,7 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
-from filter_state_tester import FilterState, ValidationResult, FilterStateValidator
+from .filter_state_tester import FilterState, ValidationResult, FilterStateValidator
 
 
 @dataclass
