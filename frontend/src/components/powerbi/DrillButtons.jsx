@@ -118,7 +118,8 @@ export function DrillButtons({
     <div className={`flex items-center gap-0.5 ${className}`}>
       {/* Drill Up Button */}
       <button
-        onClick={handleDrillUp}
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDrillUp(); }}
         disabled={!canDrillUp}
         className={`${buttonBaseClass} ${canDrillUp ? enabledClass : disabledClass}`}
         title={canDrillUp ? `Drill up to ${levelLabels[levels[currentIndex - 1]]}` : 'Already at top level'}
@@ -132,7 +133,8 @@ export function DrillButtons({
 
       {/* Drill Down Mode Toggle */}
       <button
-        onClick={handleToggleDrillMode}
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleDrillMode(); }}
         disabled={!canDrillDown}
         className={`${buttonBaseClass} ${!canDrillDown ? disabledClass : drillDownMode ? activeClass : enabledClass}`}
         title={drillDownMode ? 'Disable drill-down mode (click data point to drill)' : 'Enable drill-down mode (click data point to drill)'}
@@ -146,7 +148,8 @@ export function DrillButtons({
 
       {/* Go to Next Level */}
       <button
-        onClick={handleGoToNextLevel}
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleGoToNextLevel(); }}
         disabled={!canDrillDown}
         className={`${buttonBaseClass} ${canDrillDown ? enabledClass : disabledClass}`}
         title={canDrillDown ? `Go to ${levelLabels[levels[currentIndex + 1]]} level` : 'Already at lowest level'}
@@ -161,7 +164,8 @@ export function DrillButtons({
 
       {/* Expand All Down One Level */}
       <button
-        onClick={handleExpandAll}
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleExpandAll(); }}
         disabled={!canDrillDown}
         className={`${buttonBaseClass} ${canDrillDown ? enabledClass : disabledClass}`}
         title={canDrillDown ? `Expand all to ${levelLabels[levels[currentIndex + 1]]}` : 'Already at lowest level'}
