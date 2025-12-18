@@ -1,10 +1,12 @@
 """
-Upload Script - Loads CSV data into Transaction table and triggers aggregation
+Upload Script - Loads CSV data into Transaction table and triggers computation
 
 Memory-efficient design for 512MB Render limit:
 1. Process one CSV at a time, save to DB, clear memory
 2. Deduplicate using SQL after all data loaded
 3. Remove outliers using SQL-based IQR calculation (no pandas needed)
+
+Pipeline: **Load Raw** → **Validate/Filter** → Store in DB → **Compute Stats**
 """
 
 import sys
@@ -15,12 +17,16 @@ import gc
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from flask import Flask
-from sqlalchemy import text
 from config import Config
 from models.database import db
 from models.transaction import Transaction
 from services.data_loader import clean_csv_data, parse_date_flexible
-from services.aggregation_service import recompute_all_stats
+from services.data_computation import recompute_all_stats
+from services.data_validation import (
+    filter_outliers_sql,
+    remove_duplicates_sql,
+    print_iqr_statistics
+)
 import pandas as pd
 from datetime import datetime
 
@@ -167,109 +173,6 @@ def process_and_save_csv(csv_path: str, sale_type: str, app):
         return 0
 
 
-def remove_duplicates_sql(app):
-    """Remove duplicates using SQL - memory efficient."""
-    print("\n🔍 Removing duplicates using SQL...")
-
-    with app.app_context():
-        before_count = db.session.query(Transaction).count()
-
-        # SQL to keep only the first occurrence of each duplicate
-        # Uses a subquery to find IDs to keep
-        sql = text("""
-            DELETE FROM transactions
-            WHERE id NOT IN (
-                SELECT MIN(id)
-                FROM transactions
-                GROUP BY project_name, transaction_date, price, area_sqft
-            )
-        """)
-
-        try:
-            db.session.execute(sql)
-            db.session.commit()
-            after_count = db.session.query(Transaction).count()
-            removed = before_count - after_count
-            print(f"  ✓ Removed {removed:,} duplicates")
-            return removed
-        except Exception as e:
-            print(f"  ⚠️  Error removing duplicates: {e}")
-            db.session.rollback()
-            return 0
-
-
-def filter_outliers_sql(app):
-    """
-    Filter outliers using SQL-based IQR calculation.
-    No pandas needed - fully SQL-based for memory efficiency.
-
-    Returns count of outliers removed.
-    """
-    print("\n🔍 Filtering outliers using IQR method (SQL-based)...")
-
-    with app.app_context():
-        before_count = db.session.query(Transaction).count()
-
-        # Calculate Q1, Q3 using SQL percentile functions
-        # PostgreSQL uses percentile_cont, SQLite needs different approach
-        try:
-            # Try PostgreSQL syntax first
-            quartile_sql = text("""
-                SELECT
-                    percentile_cont(0.25) WITHIN GROUP (ORDER BY price) as q1,
-                    percentile_cont(0.75) WITHIN GROUP (ORDER BY price) as q3
-                FROM transactions
-                WHERE price > 0
-            """)
-            result = db.session.execute(quartile_sql).fetchone()
-            q1, q3 = result[0], result[1]
-        except:
-            # Fallback for SQLite - use subquery approach
-            count_sql = text("SELECT COUNT(*) FROM transactions WHERE price > 0")
-            count = db.session.execute(count_sql).scalar()
-
-            q1_offset = int(count * 0.25)
-            q3_offset = int(count * 0.75)
-
-            q1_sql = text(f"SELECT price FROM transactions WHERE price > 0 ORDER BY price LIMIT 1 OFFSET {q1_offset}")
-            q3_sql = text(f"SELECT price FROM transactions WHERE price > 0 ORDER BY price LIMIT 1 OFFSET {q3_offset}")
-
-            q1 = db.session.execute(q1_sql).scalar()
-            q3 = db.session.execute(q3_sql).scalar()
-
-        if q1 is None or q3 is None:
-            print("  ⚠️  Could not calculate quartiles, skipping outlier filtering")
-            return 0
-
-        iqr = q3 - q1
-        lower_bound = q1 - 1.5 * iqr
-        upper_bound = q3 + 1.5 * iqr
-
-        print(f"  📊 IQR Statistics:")
-        print(f"     Q1 (25th percentile): ${q1:,.0f}")
-        print(f"     Q3 (75th percentile): ${q3:,.0f}")
-        print(f"     IQR: ${iqr:,.0f}")
-        print(f"     Lower bound: ${lower_bound:,.0f}")
-        print(f"     Upper bound: ${upper_bound:,.0f}")
-
-        # Delete outliers
-        delete_sql = text("""
-            DELETE FROM transactions
-            WHERE price < :lower_bound OR price > :upper_bound
-        """)
-
-        db.session.execute(delete_sql, {'lower_bound': lower_bound, 'upper_bound': upper_bound})
-        db.session.commit()
-
-        after_count = db.session.query(Transaction).count()
-        outliers_removed = before_count - after_count
-
-        print(f"  ✓ Removed {outliers_removed:,} outliers")
-        print(f"  ✓ Final clean records: {after_count:,}")
-
-        return outliers_removed
-
-
 def main():
     """Main upload function - memory efficient design"""
     print("=" * 60)
@@ -333,27 +236,32 @@ def main():
 
     print(f"\n📊 Total rows loaded: {total_saved:,}")
 
-    # Remove duplicates using SQL
-    remove_duplicates_sql(app)
-
-    # Filter outliers using SQL-based IQR
-    outliers_excluded = filter_outliers_sql(app)
-
-    # Verify final count
+    # Validate and filter data using centralized data_validation module
     with app.app_context():
+        # Step 1: Remove duplicates
+        print("\n🔍 Removing duplicates using SQL...")
+        duplicates_removed = remove_duplicates_sql()
+        print(f"  ✓ Removed {duplicates_removed:,} duplicates")
+
+        # Step 2: Filter outliers using IQR
+        print("\n🔍 Filtering outliers using IQR method (SQL-based)...")
+        outliers_excluded, stats = filter_outliers_sql()
+        print_iqr_statistics(stats)
+        print(f"  ✓ Removed {outliers_excluded:,} outliers")
+
+        # Step 3: Verify final count
         final_count = db.session.query(Transaction).count()
         print(f"\n✓ Upload complete! Final transaction count: {final_count:,}")
 
-    # Trigger aggregation
-    print("\n" + "=" * 60)
-    print("Triggering aggregation service...")
-    print("=" * 60)
+        # Step 4: Compute stats
+        print("\n" + "=" * 60)
+        print("Triggering data computation service...")
+        print("=" * 60)
 
-    with app.app_context():
         recompute_all_stats(outliers_excluded=outliers_excluded)
 
     print("\n" + "=" * 60)
-    print("✓ All done! Data loaded and analytics pre-computed.")
+    print("✓ All done! Data loaded, validated, and analytics pre-computed.")
     print("=" * 60)
 
 

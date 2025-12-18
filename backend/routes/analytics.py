@@ -204,21 +204,21 @@ def health():
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func
-    
+
     try:
         count = db.session.query(Transaction).count()
         metadata = reader.get_metadata()
-        
+
         # Get min and max transaction dates from database
         min_date_result = db.session.query(func.min(Transaction.transaction_date)).scalar()
         max_date_result = db.session.query(func.max(Transaction.transaction_date)).scalar()
-        
+
         # If transaction_date is None, try contract_date
         if min_date_result is None:
             min_date_result = db.session.query(func.min(Transaction.contract_date)).scalar()
         if max_date_result is None:
             max_date_result = db.session.query(func.max(Transaction.contract_date)).scalar()
-        
+
         return jsonify({
             "status": "healthy",
             "data_loaded": count > 0,
@@ -232,6 +232,83 @@ def health():
     except Exception as e:
         return jsonify({
             "status": "error",
+            "error": str(e)
+        }), 500
+
+
+@analytics_bp.route("/admin/filter-outliers", methods=["GET", "POST"])
+def filter_outliers_endpoint():
+    """
+    Filter outliers from the database using IQR method.
+
+    GET: Preview outliers (dry run) - shows what would be removed
+    POST: Actually remove outliers and recompute stats
+
+    Query params:
+      - confirm: must be 'yes' for POST to actually delete (safety check)
+
+    Returns IQR statistics and outlier count.
+    """
+    from models.transaction import Transaction
+    from models.database import db
+    from services.data_validation import (
+        calculate_iqr_bounds,
+        count_outliers,
+        get_sample_outliers,
+        filter_outliers_sql
+    )
+    from services.data_computation import recompute_all_stats
+
+    try:
+        before_count = db.session.query(Transaction).count()
+
+        # Use centralized data_validation functions
+        lower_bound, upper_bound, stats = calculate_iqr_bounds()
+        outlier_count = count_outliers(lower_bound, upper_bound)
+        sample_outliers = get_sample_outliers(lower_bound, upper_bound)
+
+        response_data = {
+            "iqr_statistics": stats,
+            "current_count": before_count,
+            "outlier_count": outlier_count,
+            "sample_outliers": sample_outliers
+        }
+
+        # POST with confirm=yes actually deletes
+        if request.method == 'POST':
+            confirm = request.args.get('confirm', '')
+            if confirm.lower() != 'yes':
+                response_data["error"] = "Add ?confirm=yes to actually delete outliers"
+                response_data["action"] = "none"
+                return jsonify(response_data)
+
+            if outlier_count == 0:
+                response_data["action"] = "none"
+                response_data["message"] = "No outliers to remove"
+                return jsonify(response_data)
+
+            # Use centralized filter function
+            outliers_removed, filter_stats = filter_outliers_sql()
+
+            # Recompute stats with outlier count
+            recompute_all_stats(outliers_excluded=outliers_removed)
+
+            response_data["action"] = "deleted"
+            response_data["outliers_removed"] = outliers_removed
+            response_data["new_count"] = filter_stats.get('after_count', before_count - outliers_removed)
+            response_data["message"] = f"Successfully removed {outliers_removed} outliers and recomputed stats"
+
+            return jsonify(response_data)
+
+        # GET just previews
+        response_data["action"] = "preview"
+        response_data["message"] = "Use POST with ?confirm=yes to delete outliers"
+        return jsonify(response_data)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
             "error": str(e)
         }), 500
 
