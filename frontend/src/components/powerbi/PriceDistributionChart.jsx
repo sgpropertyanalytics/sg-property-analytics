@@ -10,7 +10,7 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
-import { getAggregate } from '../../api/client';
+import { getTransactionsList } from '../../api/client';
 import { DrillButtons } from './DrillButtons';
 
 ChartJS.register(
@@ -23,25 +23,24 @@ ChartJS.register(
 );
 
 /**
- * Price Distribution Chart - Histogram
+ * Price Distribution Chart - Histogram of Individual Transaction Prices
  *
  * X-axis: Total Price Bands ($1M-1.2M, $1.2M-1.4M, ...)
  * Y-axis: Transaction Count
  *
- * Supports:
- * - Cross-filtering: clicking a bar filters to that price range
- * - Shows price spread and common price points
+ * Uses individual transaction prices for accurate distribution analysis.
+ * Helps users understand if they overpaid or underpaid compared to others.
  */
 export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, bucketSize = 200000 }) {
   const { buildApiParams, crossFilter, applyCrossFilter } = usePowerBIFilters();
-  const [rawData, setRawData] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
-  // Fetch data - we need individual price values to bucket
+  // Fetch individual transaction data for accurate histogram
   useEffect(() => {
     const fetchData = async () => {
       if (isInitialLoad.current) {
@@ -51,13 +50,14 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       }
       setError(null);
       try {
-        // Get data grouped to create histogram based on total quantum price
+        // Get individual transactions with prices (limit to reasonable amount for histogram)
         const params = buildApiParams({
-          group_by: 'month,district', // Get granular data
-          metrics: 'count,median_price,min_price,max_price'
+          limit: 5000, // Get enough for good distribution
+          sort_by: 'price',
+          sort_order: 'asc'
         });
-        const response = await getAggregate(params);
-        setRawData(response.data.data || []);
+        const response = await getTransactionsList(params);
+        setTransactions(response.data.transactions || []);
         isInitialLoad.current = false;
       } catch (err) {
         console.error('Error fetching price distribution data:', err);
@@ -78,16 +78,16 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
     return `$${(value / 1000).toFixed(0)}K`;
   };
 
-  // Create histogram buckets from the data
+  // Create histogram buckets from individual transaction prices
   const bucketedData = useMemo(() => {
-    if (!rawData.length) return [];
+    if (!transactions.length) return [];
 
-    // Get price range from data
-    const allPrices = rawData.flatMap(d => [d.min_price, d.max_price, d.median_price]).filter(Boolean);
-    if (allPrices.length === 0) return [];
+    // Get actual price range from individual transactions
+    const prices = transactions.map(t => t.price).filter(p => p > 0);
+    if (prices.length === 0) return [];
 
-    const minPrice = Math.floor(Math.min(...allPrices) / bucketSize) * bucketSize;
-    const maxPrice = Math.ceil(Math.max(...allPrices) / bucketSize) * bucketSize;
+    const minPrice = Math.floor(Math.min(...prices) / bucketSize) * bucketSize;
+    const maxPrice = Math.ceil(Math.max(...prices) / bucketSize) * bucketSize;
 
     // Create buckets
     const buckets = [];
@@ -100,15 +100,11 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       });
     }
 
-    // Assign counts to buckets based on median price
-    rawData.forEach(item => {
-      const price = item.median_price;
-      const count = item.count || 0;
-      if (price) {
-        const bucketIndex = Math.floor((price - minPrice) / bucketSize);
-        if (bucketIndex >= 0 && bucketIndex < buckets.length) {
-          buckets[bucketIndex].count += count;
-        }
+    // Count individual transactions in each bucket
+    prices.forEach(price => {
+      const bucketIndex = Math.floor((price - minPrice) / bucketSize);
+      if (bucketIndex >= 0 && bucketIndex < buckets.length) {
+        buckets[bucketIndex].count += 1;
       }
     });
 
@@ -119,7 +115,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
     while (endIdx >= 0 && buckets[endIdx].count === 0) endIdx--;
 
     return buckets.slice(startIdx, endIdx + 1);
-  }, [rawData, bucketSize]);
+  }, [transactions, bucketSize]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;
@@ -174,6 +170,11 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
   const maxCount = Math.max(...counts);
   const modeIndex = counts.indexOf(maxCount);
   const modeBucket = bucketedData[modeIndex];
+
+  // Calculate price statistics from actual transactions
+  const prices = transactions.map(t => t.price).filter(p => p > 0);
+  const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+  const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
 
   // Determine color gradient based on count using theme colors
   const maxValue = Math.max(...counts);
@@ -257,7 +258,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
         </div>
         <div className="flex items-center justify-between mt-1">
           <p className="text-xs text-[#547792]">
-            Total price distribution ({formatPriceLabel(bucketSize)} buckets)
+            {formatPriceLabel(minPrice)} - {formatPriceLabel(maxPrice)} ({formatPriceLabel(bucketSize)} buckets)
           </p>
           <div className="text-xs text-[#213448]">
             Mode: {modeBucket?.label || 'N/A'}
