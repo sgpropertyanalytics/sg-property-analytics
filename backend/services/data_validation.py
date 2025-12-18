@@ -285,3 +285,121 @@ def print_iqr_statistics(stats: Dict[str, float]) -> None:
     print(f"     IQR: ${stats['iqr']:,.0f}")
     print(f"     Lower bound (Q1 - 1.5*IQR): ${stats['lower_bound']:,.0f}")
     print(f"     Upper bound (Q3 + 1.5*IQR): ${stats['upper_bound']:,.0f}")
+
+
+def remove_invalid_records() -> int:
+    """
+    Remove records with invalid/corrupted data.
+
+    Removes records where:
+    - price <= 0 or NULL
+    - area_sqft <= 0 or NULL
+    - psf <= 0 or NULL
+    - transaction_date is NULL
+
+    Returns:
+        Count of invalid records removed
+    """
+    before_count = db.session.query(Transaction).count()
+
+    # Remove records with invalid price
+    sql = text("""
+        DELETE FROM transactions
+        WHERE price IS NULL OR price <= 0
+           OR area_sqft IS NULL OR area_sqft <= 0
+           OR psf IS NULL OR psf <= 0
+           OR transaction_date IS NULL
+    """)
+
+    try:
+        db.session.execute(sql)
+        db.session.commit()
+        after_count = db.session.query(Transaction).count()
+        return before_count - after_count
+    except Exception as e:
+        db.session.rollback()
+        raise e
+
+
+def run_all_validations() -> Dict[str, Any]:
+    """
+    Run all data validation and cleaning operations.
+
+    This is the main entry point for data validation on startup.
+    Runs all checks in order:
+    1. Remove invalid/corrupted records
+    2. Remove duplicates
+    3. Filter outliers (IQR method)
+
+    Returns:
+        Dictionary with validation results:
+        {
+            'invalid_removed': int,
+            'duplicates_removed': int,
+            'outliers_removed': int,
+            'total_cleaned': int,
+            'final_count': int,
+            'iqr_stats': dict
+        }
+    """
+    results = {
+        'invalid_removed': 0,
+        'duplicates_removed': 0,
+        'outliers_removed': 0,
+        'total_cleaned': 0,
+        'final_count': 0,
+        'iqr_stats': {}
+    }
+
+    initial_count = db.session.query(Transaction).count()
+    if initial_count == 0:
+        return results
+
+    print(f"\n🔍 Running data validation ({initial_count:,} records)...")
+
+    # Step 1: Remove invalid records
+    try:
+        invalid_removed = remove_invalid_records()
+        results['invalid_removed'] = invalid_removed
+        if invalid_removed > 0:
+            print(f"   ✓ Removed {invalid_removed:,} invalid records (null/zero values)")
+    except Exception as e:
+        print(f"   ⚠️  Invalid record removal failed: {e}")
+
+    # Step 2: Remove duplicates
+    try:
+        duplicates_removed = remove_duplicates_sql()
+        results['duplicates_removed'] = duplicates_removed
+        if duplicates_removed > 0:
+            print(f"   ✓ Removed {duplicates_removed:,} duplicate records")
+    except Exception as e:
+        print(f"   ⚠️  Duplicate removal failed: {e}")
+
+    # Step 3: Filter outliers
+    try:
+        lower_bound, upper_bound, iqr_stats = calculate_iqr_bounds()
+        outlier_count = count_outliers(lower_bound, upper_bound)
+        results['iqr_stats'] = iqr_stats
+
+        if outlier_count > 0:
+            print(f"   IQR bounds: ${iqr_stats['lower_bound']:,.0f} - ${iqr_stats['upper_bound']:,.0f}")
+            outliers_removed, _ = filter_outliers_sql()
+            results['outliers_removed'] = outliers_removed
+            print(f"   ✓ Removed {outliers_removed:,} outlier records")
+    except Exception as e:
+        print(f"   ⚠️  Outlier filtering failed: {e}")
+
+    # Calculate totals
+    results['total_cleaned'] = (
+        results['invalid_removed'] +
+        results['duplicates_removed'] +
+        results['outliers_removed']
+    )
+    results['final_count'] = db.session.query(Transaction).count()
+
+    if results['total_cleaned'] == 0:
+        print(f"   ✓ Data is clean - no issues detected")
+    else:
+        print(f"   ✓ Total cleaned: {results['total_cleaned']:,} records")
+
+    return results

@@ -97,6 +97,46 @@ def create_app():
     return app
 
 
+def auto_validate_data(app):
+    """
+    Auto-validate and clean data on startup.
+
+    This ensures the database is clean on every deploy.
+    Safe to run repeatedly - if data is clean, does nothing.
+
+    Runs all validation checks:
+    1. Remove invalid/corrupted records (null/zero values)
+    2. Remove duplicates
+    3. Filter outliers (IQR method)
+    """
+    with app.app_context():
+        from models.transaction import Transaction
+        from services.data_validation import run_all_validations
+        from services.data_computation import recompute_all_stats, get_metadata
+
+        count = db.session.query(Transaction).count()
+        if count == 0:
+            return  # No data to validate
+
+        try:
+            # Run all validations
+            results = run_all_validations()
+
+            # If any data was cleaned, recompute stats
+            if results['total_cleaned'] > 0:
+                existing_metadata = get_metadata()
+                previous_outliers = existing_metadata.get('outliers_excluded', 0)
+                total_outliers = previous_outliers + results['outliers_removed']
+
+                print(f"   Recomputing stats (total outliers excluded: {total_outliers:,})...")
+                recompute_all_stats(outliers_excluded=total_outliers)
+                print(f"   ✓ Stats recomputed")
+
+        except Exception as e:
+            print(f"\n⚠️  Auto-validation skipped: {e}")
+            # Don't fail startup if validation fails
+
+
 def run_app():
     """Main entry point - starts server with SQL-only analytics."""
     print("=" * 60)
@@ -105,6 +145,9 @@ def run_app():
 
     # Create app
     app = create_app()
+
+    # Auto-validate and clean data on startup (self-healing)
+    auto_validate_data(app)
 
     with app.app_context():
         from models.transaction import Transaction
@@ -115,6 +158,8 @@ def run_app():
 
         print(f"\n📊 Database Status:")
         print(f"   Transactions: {count:,}")
+        if metadata.get("outliers_excluded", 0) > 0:
+            print(f"   Outliers excluded: {metadata.get('outliers_excluded'):,}")
         if metadata.get("last_updated"):
             print(f"   Stats last computed: {metadata.get('last_updated')}")
             print(f"   ✓ Pre-computed analytics ready")
