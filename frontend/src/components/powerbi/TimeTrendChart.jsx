@@ -41,13 +41,20 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   const { buildApiParams, drillPath, crossFilter, applyCrossFilter, drillDown } = usePowerBIFilters();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
+  const isInitialLoad = useRef(true);
 
   // Fetch data when filters change
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      // Only show full loading on initial load, otherwise show subtle updating
+      if (isInitialLoad.current) {
+        setLoading(true);
+      } else {
+        setUpdating(true);
+      }
       setError(null);
       try {
         const params = buildApiParams({
@@ -69,11 +76,13 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
           return String(aKey).localeCompare(String(bKey));
         });
         setData(sortedData);
+        isInitialLoad.current = false;
       } catch (err) {
         console.error('Error fetching time trend data:', err);
         setError(err.message);
       } finally {
         setLoading(false);
+        setUpdating(false);
       }
     };
     fetchData();
@@ -255,10 +264,15 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   };
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+    <div className={`bg-white rounded-lg border border-slate-200 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
       <div className="px-4 py-3 border-b border-slate-200">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-slate-800">Transaction Trend</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-slate-800">Transaction Trend</h3>
+            {updating && (
+              <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            )}
+          </div>
           <DrillButtons hierarchyType="time" />
         </div>
         <div className="flex items-center justify-between mt-1">

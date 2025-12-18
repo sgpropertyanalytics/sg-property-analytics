@@ -202,6 +202,10 @@ export function PowerBIFilterProvider({ children }) {
   // ===== Drill Navigation =====
 
   const drillDown = useCallback((type, value, label) => {
+    // Ensure value is always stored as a string for consistency
+    const stringValue = value != null ? String(value) : value;
+    const stringLabel = label != null ? String(label) : stringValue;
+
     if (type === 'time') {
       const levels = ['year', 'quarter', 'month'];
       const currentIndex = levels.indexOf(drillPath.time);
@@ -209,7 +213,7 @@ export function PowerBIFilterProvider({ children }) {
         setDrillPath(prev => ({ ...prev, time: levels[currentIndex + 1] }));
         setBreadcrumbs(prev => ({
           ...prev,
-          time: [...prev.time, { value, label: label || value }]
+          time: [...prev.time, { value: stringValue, label: stringLabel }]
         }));
       }
     } else if (type === 'location') {
@@ -219,7 +223,7 @@ export function PowerBIFilterProvider({ children }) {
         setDrillPath(prev => ({ ...prev, location: levels[currentIndex + 1] }));
         setBreadcrumbs(prev => ({
           ...prev,
-          location: [...prev.location, { value, label: label || value }]
+          location: [...prev.location, { value: stringValue, label: stringLabel }]
         }));
       }
     }
@@ -316,18 +320,22 @@ export function PowerBIFilterProvider({ children }) {
     // Apply breadcrumb filters
     if (breadcrumbs.time.length > 0) {
       const lastTime = breadcrumbs.time[breadcrumbs.time.length - 1];
-      if (lastTime) {
+      if (lastTime && lastTime.value) {
         // Apply date filter from breadcrumb
         if (drillPath.time === 'quarter' && breadcrumbs.time.length === 1) {
           // Year selected, filter to that year
+          const yearStr = String(lastTime.value);
           combined.dateRange = {
-            start: `${lastTime.value}-01-01`,
-            end: `${lastTime.value}-12-31`
+            start: `${yearStr}-01-01`,
+            end: `${yearStr}-12-31`
           };
         } else if (drillPath.time === 'month' && breadcrumbs.time.length === 2) {
-          // Quarter selected
-          const year = breadcrumbs.time[0].value;
-          const q = parseInt(lastTime.value.replace('Q', ''));
+          // Quarter selected - parse quarter from format like "2024-Q3" or just "Q3"
+          const year = String(breadcrumbs.time[0].value);
+          const quarterValue = String(lastTime.value);
+          // Extract quarter number from "2024-Q3" or "Q3" format
+          const qMatch = quarterValue.match(/Q(\d)/);
+          const q = qMatch ? parseInt(qMatch[1]) : 1;
           const quarterMonth = (q - 1) * 3 + 1;
           combined.dateRange = {
             start: `${year}-${String(quarterMonth).padStart(2, '0')}-01`,
@@ -339,13 +347,13 @@ export function PowerBIFilterProvider({ children }) {
 
     if (breadcrumbs.location.length > 0) {
       const lastLoc = breadcrumbs.location[breadcrumbs.location.length - 1];
-      if (lastLoc) {
+      if (lastLoc && lastLoc.value) {
         if (drillPath.location === 'district' && breadcrumbs.location.length === 1) {
           // Region selected
-          combined.segment = lastLoc.value;
+          combined.segment = String(lastLoc.value);
         } else if (drillPath.location === 'project' && breadcrumbs.location.length === 2) {
           // District selected
-          combined.districts = [lastLoc.value];
+          combined.districts = [String(lastLoc.value)];
         }
       }
     }

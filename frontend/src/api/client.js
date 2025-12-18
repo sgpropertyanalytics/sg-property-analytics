@@ -81,6 +81,61 @@ const buildQueryString = (params) => {
   return query.toString();
 };
 
+// ===== API Response Cache =====
+// Simple in-memory cache for instant drill navigation
+
+const apiCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL
+
+/**
+ * Get cached response or fetch fresh data
+ * @param {string} cacheKey - Unique key for this request
+ * @param {Function} fetchFn - Function that returns a promise for the API call
+ * @param {Object} options - Cache options
+ * @param {boolean} options.forceRefresh - Skip cache and fetch fresh
+ * @returns {Promise} - Cached or fresh response
+ */
+const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
+  const { forceRefresh = false } = options;
+
+  // Check cache first (unless force refresh)
+  if (!forceRefresh && apiCache.has(cacheKey)) {
+    const cached = apiCache.get(cacheKey);
+    if (Date.now() - cached.timestamp < CACHE_TTL) {
+      // Return cached data immediately
+      return cached.data;
+    }
+    // Cache expired, remove it
+    apiCache.delete(cacheKey);
+  }
+
+  // Fetch fresh data
+  const response = await fetchFn();
+
+  // Cache the response
+  apiCache.set(cacheKey, {
+    data: response,
+    timestamp: Date.now()
+  });
+
+  return response;
+};
+
+/**
+ * Clear all cached data (useful when filters change significantly)
+ */
+export const clearApiCache = () => {
+  apiCache.clear();
+};
+
+/**
+ * Get cache stats for debugging
+ */
+export const getCacheStats = () => ({
+  size: apiCache.size,
+  keys: Array.from(apiCache.keys())
+});
+
 // ===== Analytics API Functions =====
 
 export const getHealth = () => apiClient.get('/health');
@@ -127,6 +182,7 @@ export const getComparableValueAnalysis = (params = {}) =>
 
 /**
  * Flexible aggregation endpoint for dynamic filtering
+ * Uses caching for instant drill navigation
  * @param {Object} params - Query parameters
  * @param {string} params.group_by - Comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region)
  * @param {string} params.metrics - Comma-separated metrics (count, median_psf, avg_psf, total_value, median_price)
@@ -141,9 +197,18 @@ export const getComparableValueAnalysis = (params = {}) =>
  * @param {number} params.size_min - Minimum sqft
  * @param {number} params.size_max - Maximum sqft
  * @param {string} params.tenure - Freehold, 99-year, 999-year
+ * @param {Object} options - Cache options
+ * @param {boolean} options.skipCache - Skip cache and fetch fresh
  */
-export const getAggregate = (params = {}) =>
-  apiClient.get(`/aggregate?${buildQueryString(params)}`);
+export const getAggregate = (params = {}, options = {}) => {
+  const queryString = buildQueryString(params);
+  const cacheKey = `aggregate:${queryString}`;
+  return cachedFetch(
+    cacheKey,
+    () => apiClient.get(`/aggregate?${queryString}`),
+    { forceRefresh: options.skipCache }
+  );
+};
 
 /**
  * Paginated transaction list for drill-through

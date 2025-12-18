@@ -31,13 +31,19 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
   const { buildApiParams, crossFilter, applyCrossFilter, toggleBedroomType } = usePowerBIFilters();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
+  const isInitialLoad = useRef(true);
 
   // Fetch data when filters change
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      if (isInitialLoad.current) {
+        setLoading(true);
+      } else {
+        setUpdating(true);
+      }
       setError(null);
       try {
         // Override bedroom filter to get all bedroom types for the donut
@@ -53,11 +59,13 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
           .filter(d => d.bedroom && d.count > 0)
           .sort((a, b) => a.bedroom - b.bedroom);
         setData(sortedData);
+        isInitialLoad.current = false;
       } catch (err) {
         console.error('Error fetching bedroom mix data:', err);
         setError(err.message);
       } finally {
         setLoading(false);
+        setUpdating(false);
       }
     };
     fetchData();
@@ -206,10 +214,15 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
   };
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+    <div className={`bg-white rounded-lg border border-slate-200 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
       <div className="px-4 py-3 border-b border-slate-200">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-slate-800">Bedroom Mix</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-slate-800">Bedroom Mix</h3>
+            {updating && (
+              <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            )}
+          </div>
           <DrillButtons hierarchyType="bedroom" />
         </div>
         <p className="text-xs text-slate-500 mt-1">
