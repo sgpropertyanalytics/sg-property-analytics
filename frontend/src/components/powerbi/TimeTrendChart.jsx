@@ -13,6 +13,7 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
+import { DrillButtons } from './DrillButtons';
 
 ChartJS.register(
   CategoryScale,
@@ -248,18 +249,21 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
 
   return (
     <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-        <div>
+      <div className="px-4 py-3 border-b border-slate-200">
+        <div className="flex items-center justify-between">
           <h3 className="font-semibold text-slate-800">Transaction Trend</h3>
+          <DrillButtons hierarchyType="time" />
+        </div>
+        <div className="flex items-center justify-between mt-1">
           <p className="text-xs text-slate-500">
             Volume and price by {timeLabels[drillPath.time]}
-            {drillPath.time !== 'year' && (
-              <span className="text-blue-500 ml-1">(double-click to drill down)</span>
+            {drillPath.time !== 'month' && (
+              <span className="text-blue-500 ml-1">(click to drill down)</span>
             )}
           </p>
-        </div>
-        <div className="text-xs text-slate-500">
-          {data.length} periods | {data.reduce((sum, d) => sum + (d.count || 0), 0).toLocaleString()} txns
+          <div className="text-xs text-slate-500">
+            {data.length} periods | {data.reduce((sum, d) => sum + (d.count || 0), 0).toLocaleString()} txns
+          </div>
         </div>
       </div>
       <div className="p-4" style={{ height }}>

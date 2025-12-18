@@ -9,6 +9,7 @@ import {
 import { Doughnut } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
+import { DrillButtons } from './DrillButtons';
 
 ChartJS.register(
   ArcElement,
@@ -207,8 +208,11 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
   return (
     <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
       <div className="px-4 py-3 border-b border-slate-200">
-        <h3 className="font-semibold text-slate-800">Bedroom Mix</h3>
-        <p className="text-xs text-slate-500">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-slate-800">Bedroom Mix</h3>
+          <DrillButtons hierarchyType="bedroom" />
+        </div>
+        <p className="text-xs text-slate-500 mt-1">
           Transaction distribution by bedroom type
         </p>
       </div>

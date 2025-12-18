@@ -6,3 +6,4 @@ export { PriceDistributionChart } from './PriceDistributionChart';
 export { BedroomMixChart } from './BedroomMixChart';
 export { TransactionDetailModal } from './TransactionDetailModal';
 export { DrillBreadcrumb } from './DrillBreadcrumb';
+export { DrillButtons } from './DrillButtons';

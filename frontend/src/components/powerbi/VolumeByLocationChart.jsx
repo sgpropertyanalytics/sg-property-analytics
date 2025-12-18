@@ -12,6 +12,7 @@ import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { DISTRICT_NAMES } from '../../constants';
+import { DrillButtons } from './DrillButtons';
 
 ChartJS.register(
   CategoryScale,
@@ -245,28 +246,31 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
 
   return (
     <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-        <div>
+      <div className="px-4 py-3 border-b border-slate-200">
+        <div className="flex items-center justify-between">
           <h3 className="font-semibold text-slate-800">Volume by {locationLabels[drillPath.location]}</h3>
+          <DrillButtons hierarchyType="location" />
+        </div>
+        <div className="flex items-center justify-between mt-1">
           <p className="text-xs text-slate-500">
             Top {data.length} by transaction count
             {drillPath.location !== 'project' && (
-              <span className="text-blue-500 ml-1">(double-click to drill down)</span>
+              <span className="text-blue-500 ml-1">(click to drill down)</span>
             )}
           </p>
-        </div>
-        <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-sm bg-[rgba(192,80,77,0.8)]"></span>
-            <span className="text-slate-500">CCR</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-sm bg-[rgba(79,129,189,0.8)]"></span>
-            <span className="text-slate-500">RCR</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-sm bg-[rgba(155,187,89,0.8)]"></span>
-            <span className="text-slate-500">OCR</span>
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-sm bg-[rgba(192,80,77,0.8)]"></span>
+              <span className="text-slate-500">CCR</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-sm bg-[rgba(79,129,189,0.8)]"></span>
+              <span className="text-slate-500">RCR</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-sm bg-[rgba(155,187,89,0.8)]"></span>
+              <span className="text-slate-500">OCR</span>
+            </div>
           </div>
         </div>
       </div>

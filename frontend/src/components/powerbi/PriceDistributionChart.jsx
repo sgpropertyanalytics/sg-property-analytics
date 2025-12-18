@@ -11,6 +11,7 @@ import {
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
+import { DrillButtons } from './DrillButtons';
 
 ChartJS.register(
   CategoryScale,
@@ -234,15 +235,18 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
 
   return (
     <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-        <div>
+      <div className="px-4 py-3 border-b border-slate-200">
+        <div className="flex items-center justify-between">
           <h3 className="font-semibold text-slate-800">Price Distribution</h3>
+          <DrillButtons hierarchyType="price" />
+        </div>
+        <div className="flex items-center justify-between mt-1">
           <p className="text-xs text-slate-500">
             PSF distribution (${bucketSize} buckets)
           </p>
-        </div>
-        <div className="text-xs text-slate-600">
-          Mode: {modeBucket?.label || 'N/A'}
+          <div className="text-xs text-slate-600">
+            Mode: {modeBucket?.label || 'N/A'}
+          </div>
         </div>
       </div>
       <div className="p-4" style={{ height }}>
