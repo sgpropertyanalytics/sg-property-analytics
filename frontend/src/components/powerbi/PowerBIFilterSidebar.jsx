@@ -413,6 +413,16 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
     }
   };
 
+  // Get display text - show actual label when only 1 selected
+  const getDisplayText = () => {
+    if (selected.length === 0) return placeholder;
+    if (selected.length === 1) {
+      const selectedOption = options.find(opt => opt.value === selected[0]);
+      return selectedOption?.label || selected[0];
+    }
+    return `${selected.length} selected`;
+  };
+
   return (
     <div className="relative">
       <button
@@ -420,11 +430,11 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
         onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
         className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        <span className={selected.length > 0 ? 'text-slate-800' : 'text-slate-500'}>
-          {selected.length > 0 ? `${selected.length} selected` : placeholder}
+        <span className={selected.length > 0 ? 'text-slate-800 truncate' : 'text-slate-500'}>
+          {getDisplayText()}
         </span>
         <svg
-          className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

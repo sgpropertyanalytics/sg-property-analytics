@@ -12,7 +12,7 @@ import { getTransactionsList } from '../../api/client';
  * - Shows key transaction fields
  */
 export function TransactionDataTable({ height = 400 }) {
-  const { buildApiParams, activeFilterCount, crossFilter } = usePowerBIFilters();
+  const { buildApiParams, activeFilterCount, crossFilter, highlight } = usePowerBIFilters();
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +61,7 @@ export function TransactionDataTable({ height = 400 }) {
   // Reset to page 1 when filters change
   useEffect(() => {
     setPagination(prev => ({ ...prev, page: 1 }));
-  }, [activeFilterCount, crossFilter.value]);
+  }, [activeFilterCount, crossFilter.value, highlight.value]);
 
   // Handle sort
   const handleSort = (column) => {
