@@ -55,9 +55,9 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       setError(null);
       try {
         // Get individual transactions with prices for accurate histogram
-        // Higher limit ensures we capture the full distribution
+        // Use high limit to capture all transactions for accurate distribution
         const params = buildApiParams({
-          limit: 10000, // Get enough for comprehensive distribution
+          limit: 100000, // Fetch all transactions for accurate histogram
           sort_by: 'price',
           sort_order: 'asc'
         });
