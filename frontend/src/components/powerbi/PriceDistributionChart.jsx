@@ -10,7 +10,7 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
-import { getTransactionsList } from '../../api/client';
+import { getDashboard } from '../../api/client';
 import { DrillButtons } from './DrillButtons';
 
 ChartJS.register(
@@ -23,28 +23,26 @@ ChartJS.register(
 );
 
 /**
- * Price Distribution Chart - Histogram of Individual Transaction Prices
+ * Price Distribution Chart - Histogram of Transaction Prices
  *
  * X-axis: Total Price Bands ($1M-1.2M, $1.2M-1.4M, ...)
  * Y-axis: Transaction Count
  *
- * Uses individual transaction prices for accurate distribution analysis.
- * Helps users understand if they overpaid or underpaid compared to others.
- *
- * Dynamic binning: Automatically calculates bin intervals to fit approximately
- * the specified number of bins based on the filtered data range.
+ * Uses SERVER-SIDE histogram computation for optimal performance.
+ * The /api/dashboard endpoint computes bins in SQL, returning only
+ * aggregated bucket data instead of 100K+ individual transactions.
  */
-export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, numBins = 30 }) {
+export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, numBins = 20 }) {
   const { buildApiParams, crossFilter, applyCrossFilter } = usePowerBIFilters();
-  const [transactions, setTransactions] = useState([]);
-  const [totalAvailable, setTotalAvailable] = useState(0); // Track total from API
+  const [histogramData, setHistogramData] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
-  // Fetch individual transaction data for accurate histogram
+  // Fetch server-side computed histogram (much faster than downloading all transactions)
   useEffect(() => {
     const fetchData = async () => {
       if (isInitialLoad.current) {
@@ -54,24 +52,26 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       }
       setError(null);
       try {
-        // Get individual transactions with prices for accurate histogram
-        // Use high limit to capture all transactions for accurate distribution
+        // Use dashboard endpoint with price_histogram panel
+        // Server computes bins in SQL - returns only ~20 data points instead of 100K rows
         const params = buildApiParams({
-          limit: 100000, // Fetch all transactions for accurate histogram
-          sort_by: 'price',
-          sort_order: 'asc'
+          panels: 'price_histogram,summary',
+          histogram_bins: numBins
         });
         console.log('PriceDistribution API params:', params);
-        const response = await getTransactionsList(params);
-        const txns = response.data.transactions || [];
-        const pagination = response.data.pagination || {};
+        const response = await getDashboard(params);
+        const data = response.data || {};
+        const histogram = data.price_histogram || [];
+        const summary = data.summary || {};
+
         console.log('PriceDistribution API response:', {
-          returned: txns.length,
-          total_records: pagination.total_records,
-          limit: pagination.limit
+          bins: histogram.length,
+          total_records: summary.total_count,
+          cache_hit: data.meta?.cache_hit
         });
-        setTransactions(txns);
-        setTotalAvailable(pagination.total_records || txns.length);
+
+        setHistogramData(histogram);
+        setTotalCount(summary.total_count || histogram.reduce((sum, b) => sum + b.count, 0));
         isInitialLoad.current = false;
       } catch (err) {
         console.error('Error fetching price distribution data:', err);
@@ -82,7 +82,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       }
     };
     fetchData();
-  }, [buildApiParams]);
+  }, [buildApiParams, numBins]);
 
   // Helper to format price labels (e.g., $1.2M, $800K)
   const formatPriceLabel = (value) => {
@@ -92,79 +92,23 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
     return `$${(value / 1000).toFixed(0)}K`;
   };
 
-  // Helper to round to a "nice" bucket size for readability
-  // Uses CLOSEST nice number to maintain approximately the target number of bins
-  const getNiceBucketSize = (rawSize) => {
-    // Nice numbers for Singapore property prices (more granular options)
-    const niceNumbers = [5000, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 100000, 150000, 200000, 250000, 500000, 1000000];
-
-    // Find the closest nice number (not just next one up)
-    let closest = niceNumbers[0];
-    let minDiff = Math.abs(rawSize - closest);
-
-    for (const nice of niceNumbers) {
-      const diff = Math.abs(rawSize - nice);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closest = nice;
-      }
-    }
-
-    // For very large ranges, round to nearest 500K or 1M
-    if (rawSize > 1000000) {
-      return Math.ceil(rawSize / 500000) * 500000;
-    }
-
-    return closest;
-  };
-
-  // Create histogram buckets from individual transaction prices
+  // Convert server histogram data to chart format
   const bucketedData = useMemo(() => {
-    if (!transactions.length) return { buckets: [], bucketSize: 0 };
+    if (!histogramData.length) return { buckets: [], bucketSize: 0 };
 
-    // Get actual price range from individual transactions
-    const prices = transactions.map(t => t.price).filter(p => p > 0);
-    if (prices.length === 0) return { buckets: [], bucketSize: 0 };
+    // Server returns: { bin, bin_start, bin_end, count }
+    const buckets = histogramData.map(h => ({
+      start: h.bin_start,
+      end: h.bin_end,
+      label: `${formatPriceLabel(h.bin_start)}-${formatPriceLabel(h.bin_end)}`,
+      count: h.count
+    }));
 
-    const dataMin = Math.min(...prices);
-    const dataMax = Math.max(...prices);
-    const range = dataMax - dataMin;
+    // Calculate bucket size from first bin
+    const bucketSize = buckets.length > 0 ? (buckets[0].end - buckets[0].start) : 0;
 
-    // Calculate bucket size to fit exactly numBins
-    const rawBucketSize = range / numBins;
-    const bucketSize = getNiceBucketSize(rawBucketSize);
-
-    // Adjust min/max to align with bucket boundaries
-    const minPrice = Math.floor(dataMin / bucketSize) * bucketSize;
-    const maxPrice = Math.ceil(dataMax / bucketSize) * bucketSize;
-
-    // Create buckets
-    const buckets = [];
-    for (let start = minPrice; start < maxPrice; start += bucketSize) {
-      buckets.push({
-        start,
-        end: start + bucketSize,
-        label: `${formatPriceLabel(start)}-${formatPriceLabel(start + bucketSize)}`,
-        count: 0,
-      });
-    }
-
-    // Count individual transactions in each bucket
-    prices.forEach(price => {
-      const bucketIndex = Math.floor((price - minPrice) / bucketSize);
-      if (bucketIndex >= 0 && bucketIndex < buckets.length) {
-        buckets[bucketIndex].count += 1;
-      }
-    });
-
-    // Filter out empty buckets at edges
-    let startIdx = 0;
-    let endIdx = buckets.length - 1;
-    while (startIdx < buckets.length && buckets[startIdx].count === 0) startIdx++;
-    while (endIdx >= 0 && buckets[endIdx].count === 0) endIdx--;
-
-    return { buckets: buckets.slice(startIdx, endIdx + 1), bucketSize };
-  }, [transactions, numBins]);
+    return { buckets, bucketSize };
+  }, [histogramData]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;
@@ -215,19 +159,18 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
   const labels = buckets.map(b => b.label);
   const counts = buckets.map(b => b.count);
 
-  // Calculate statistics
-  const totalCount = counts.reduce((sum, c) => sum + c, 0);
-  const maxCount = Math.max(...counts);
-  const modeIndex = counts.indexOf(maxCount);
-  const modeBucket = buckets[modeIndex];
+  // Calculate statistics from server-computed histogram
+  const displayCount = counts.reduce((sum, c) => sum + c, 0);
+  const maxCount = Math.max(...counts, 0);
+  const modeIndex = counts.length > 0 ? counts.indexOf(maxCount) : -1;
+  const modeBucket = modeIndex >= 0 ? buckets[modeIndex] : null;
 
-  // Calculate price statistics from actual transactions
-  const prices = transactions.map(t => t.price).filter(p => p > 0);
-  const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
-  const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+  // Price range from histogram bins
+  const minPrice = buckets.length > 0 ? buckets[0].start : 0;
+  const maxPrice = buckets.length > 0 ? buckets[buckets.length - 1].end : 0;
 
   // Determine color gradient based on count using theme colors
-  const maxValue = Math.max(...counts);
+  const maxValue = Math.max(...counts, 1);
   const getBarColor = (count, alpha = 0.8) => {
     const intensity = 0.3 + (count / maxValue) * 0.7;
     return `rgba(84, 119, 146, ${alpha * intensity})`;  // #547792
@@ -262,7 +205,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
           },
           label: (context) => {
             const count = context.parsed.y;
-            const pct = ((count / totalCount) * 100).toFixed(1);
+            const pct = displayCount > 0 ? ((count / displayCount) * 100).toFixed(1) : 0;
             return [`Transactions: ${count.toLocaleString()}`, `Share: ${pct}%`];
           },
         },
@@ -320,8 +263,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       </div>
       <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] flex justify-between">
         <span>
-          Showing: {totalCount.toLocaleString()} transactions
-          {totalAvailable > totalCount && ` (of ${totalAvailable.toLocaleString()} available)`}
+          Total: {(totalCount || displayCount).toLocaleString()} transactions
         </span>
         <span>Click a bar to filter by price range</span>
       </div>
