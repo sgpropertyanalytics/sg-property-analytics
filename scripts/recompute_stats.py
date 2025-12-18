@@ -32,23 +32,31 @@ def main():
     print("=" * 60)
     print("Recomputing Pre-Computed Analytics")
     print("=" * 60)
-    
+
     app = create_app()
-    
+
     with app.app_context():
         from models.transaction import Transaction
+        from models.precomputed_stats import PreComputedStats
+
         count = db.session.query(Transaction).count()
-        
+
         if count == 0:
             print("\n❌ No transactions found in database.")
             print("   Please run: python scripts/upload.py first")
             return
-        
+
+        # Preserve existing outliers_excluded count from metadata
+        existing_metadata = PreComputedStats.get_stat('_metadata') or {}
+        outliers_excluded = existing_metadata.get('outliers_excluded', 0)
+
         print(f"\n📊 Found {count:,} transactions in database")
+        if outliers_excluded > 0:
+            print(f"   Preserving outliers_excluded count: {outliers_excluded:,}")
         print("   Starting aggregation...\n")
-        
-        recompute_all_stats()
-        
+
+        recompute_all_stats(outliers_excluded=outliers_excluded)
+
         print("\n" + "=" * 60)
         print("✓ Re-computation complete!")
         print("=" * 60)
