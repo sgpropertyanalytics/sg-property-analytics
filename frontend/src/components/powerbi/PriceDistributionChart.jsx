@@ -25,15 +25,15 @@ ChartJS.register(
 /**
  * Price Distribution Chart - Histogram
  *
- * X-axis: PSF Bands ($500-600, $600-700, ...)
+ * X-axis: Total Price Bands ($1M-1.2M, $1.2M-1.4M, ...)
  * Y-axis: Transaction Count
  *
  * Supports:
- * - Cross-filtering: clicking a bar filters to that PSF range
+ * - Cross-filtering: clicking a bar filters to that price range
  * - Shows price spread and common price points
  */
-export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, bucketSize = 200 }) {
-  const { buildApiParams, crossFilter, applyCrossFilter, setPsfRange } = usePowerBIFilters();
+export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, bucketSize = 200000 }) {
+  const { buildApiParams, crossFilter, applyCrossFilter } = usePowerBIFilters();
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -41,7 +41,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
-  // Fetch data - we need individual PSF values to bucket
+  // Fetch data - we need individual price values to bucket
   useEffect(() => {
     const fetchData = async () => {
       if (isInitialLoad.current) {
@@ -51,12 +51,10 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       }
       setError(null);
       try {
-        // Get data grouped by PSF to create histogram
-        // Since we can't get raw values easily, we'll request aggregated data
-        // and manually bucket by PSF ranges
+        // Get data grouped to create histogram based on total quantum price
         const params = buildApiParams({
           group_by: 'month,district', // Get granular data
-          metrics: 'count,median_psf,min_psf,max_psf'
+          metrics: 'count,median_price,min_price,max_price'
         });
         const response = await getAggregate(params);
         setRawData(response.data.data || []);
@@ -72,34 +70,42 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
     fetchData();
   }, [buildApiParams]);
 
+  // Helper to format price labels (e.g., $1.2M, $800K)
+  const formatPriceLabel = (value) => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    }
+    return `$${(value / 1000).toFixed(0)}K`;
+  };
+
   // Create histogram buckets from the data
   const bucketedData = useMemo(() => {
     if (!rawData.length) return [];
 
-    // Get PSF range from data
-    const allPsfs = rawData.flatMap(d => [d.min_psf, d.max_psf, d.median_psf]).filter(Boolean);
-    if (allPsfs.length === 0) return [];
+    // Get price range from data
+    const allPrices = rawData.flatMap(d => [d.min_price, d.max_price, d.median_price]).filter(Boolean);
+    if (allPrices.length === 0) return [];
 
-    const minPsf = Math.floor(Math.min(...allPsfs) / bucketSize) * bucketSize;
-    const maxPsf = Math.ceil(Math.max(...allPsfs) / bucketSize) * bucketSize;
+    const minPrice = Math.floor(Math.min(...allPrices) / bucketSize) * bucketSize;
+    const maxPrice = Math.ceil(Math.max(...allPrices) / bucketSize) * bucketSize;
 
     // Create buckets
     const buckets = [];
-    for (let start = minPsf; start < maxPsf; start += bucketSize) {
+    for (let start = minPrice; start < maxPrice; start += bucketSize) {
       buckets.push({
         start,
         end: start + bucketSize,
-        label: `$${start.toLocaleString()}-${(start + bucketSize).toLocaleString()}`,
+        label: `${formatPriceLabel(start)}-${formatPriceLabel(start + bucketSize)}`,
         count: 0,
       });
     }
 
-    // Assign counts to buckets based on median PSF
+    // Assign counts to buckets based on median price
     rawData.forEach(item => {
-      const psf = item.median_psf;
+      const price = item.median_price;
       const count = item.count || 0;
-      if (psf) {
-        const bucketIndex = Math.floor((psf - minPsf) / bucketSize);
+      if (price) {
+        const bucketIndex = Math.floor((price - minPrice) / bucketSize);
         if (bucketIndex >= 0 && bucketIndex < buckets.length) {
           buckets[bucketIndex].count += count;
         }
@@ -123,13 +129,9 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
     if (elements.length > 0) {
       const index = elements[0].index;
       const clickedBucket = bucketedData[index];
-      if (clickedBucket) {
-        // Apply PSF range filter
-        if (onCrossFilter) {
-          onCrossFilter('price', 'psf_range', `${clickedBucket.start}-${clickedBucket.end}`);
-        }
-        // Apply to sidebar filter
-        setPsfRange(clickedBucket.start, clickedBucket.end);
+      if (clickedBucket && onCrossFilter) {
+        // Apply price range cross-filter
+        onCrossFilter('price', 'price_range', `${clickedBucket.start}-${clickedBucket.end}`);
       }
     }
   };
@@ -205,7 +207,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
         callbacks: {
           title: (items) => {
             const bucket = bucketedData[items[0].dataIndex];
-            return `PSF: $${bucket.start.toLocaleString()} - $${bucket.end.toLocaleString()}`;
+            return `Price: ${formatPriceLabel(bucket.start)} - ${formatPriceLabel(bucket.end)}`;
           },
           label: (context) => {
             const count = context.parsed.y;
@@ -255,7 +257,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
         </div>
         <div className="flex items-center justify-between mt-1">
           <p className="text-xs text-[#547792]">
-            PSF distribution (${bucketSize} buckets)
+            Total price distribution ({formatPriceLabel(bucketSize)} buckets)
           </p>
           <div className="text-xs text-[#213448]">
             Mode: {modeBucket?.label || 'N/A'}
@@ -267,7 +269,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       </div>
       <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] flex justify-between">
         <span>Total: {totalCount.toLocaleString()} transactions</span>
-        <span>Click a bar to filter by PSF range</span>
+        <span>Click a bar to filter by price range</span>
       </div>
     </div>
   );
