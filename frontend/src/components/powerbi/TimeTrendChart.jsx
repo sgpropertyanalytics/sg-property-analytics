@@ -66,7 +66,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         // even when a specific time period is highlighted
         const params = buildApiParams({
           group_by: drillPath.time,
-          metrics: 'count,median_psf,avg_psf'
+          metrics: 'count,total_value'
         }, { excludeHighlight: true });
         const response = await getAggregate(params);
         // Sort by time - handle both string and numeric values
@@ -155,12 +155,35 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   const displayTimeGrain = dataTimeGrain || drillPath.time;
   const labels = data.map(d => d[displayTimeGrain] ?? '');
   const counts = data.map(d => d.count || 0);
-  const medianPsfs = data.map(d => d.median_psf || 0);
+  const totalValues = data.map(d => d.total_value || 0);
+
+  // Find peak values for gradient coloring
+  const maxCount = Math.max(...counts);
+  const avgCount = counts.reduce((sum, c) => sum + c, 0) / counts.length;
+  const peakThreshold = avgCount + (maxCount - avgCount) * 0.5; // 50% above average towards max
 
   // Determine which bars should be highlighted based on highlight state
   const highlightedIndex = highlight.source === 'time' && highlight.value
     ? labels.indexOf(highlight.value)
     : -1;
+
+  // Generate gradient colors for bars based on count intensity
+  // Using color palette: #213448 (Deep Navy) for peaks, #547792 (Ocean Blue) normal, #94B4C1 (Sky Blue) low
+  const getBarColor = (count, index) => {
+    const isHighlighted = highlightedIndex === -1 || highlightedIndex === index;
+    const opacity = isHighlighted ? 0.9 : 0.3;
+
+    if (count >= peakThreshold) {
+      // Peak months - Deep Navy (#213448)
+      return `rgba(33, 52, 72, ${opacity})`;
+    } else if (count >= avgCount) {
+      // Above average - Ocean Blue (#547792)
+      return `rgba(84, 119, 146, ${opacity})`;
+    } else {
+      // Below average - Sky Blue (#94B4C1)
+      return `rgba(148, 180, 193, ${opacity})`;
+    }
+  };
 
   const chartData = {
     labels,
@@ -169,20 +192,22 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         type: 'bar',
         label: 'Transaction Count',
         data: counts,
-        backgroundColor: labels.map((_, i) =>
-          highlightedIndex === -1 || highlightedIndex === i
-            ? 'rgba(84, 119, 146, 0.8)'  // #547792
-            : 'rgba(84, 119, 146, 0.3)'
+        backgroundColor: counts.map((count, i) => getBarColor(count, i)),
+        borderColor: counts.map((count) =>
+          count >= peakThreshold
+            ? 'rgba(33, 52, 72, 1)'     // #213448 - Deep Navy border for peaks
+            : count >= avgCount
+              ? 'rgba(84, 119, 146, 1)'  // #547792 - Ocean Blue border
+              : 'rgba(148, 180, 193, 1)' // #94B4C1 - Sky Blue border
         ),
-        borderColor: 'rgba(33, 52, 72, 1)',  // #213448
         borderWidth: 1,
         yAxisID: 'y',
         order: 2,
       },
       {
         type: 'line',
-        label: 'Median PSF',
-        data: medianPsfs,
+        label: 'Total Quantum',
+        data: totalValues,
         borderColor: 'rgba(33, 52, 72, 1)',  // #213448
         backgroundColor: 'rgba(33, 52, 72, 0.1)',
         borderWidth: 2,
@@ -217,8 +242,12 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
           label: (context) => {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-            if (label === 'Median PSF') {
-              return `${label}: $${value.toLocaleString()}`;
+            if (label === 'Total Quantum') {
+              // Format in millions or billions
+              if (value >= 1000000000) {
+                return `${label}: $${(value / 1000000000).toFixed(2)}B`;
+              }
+              return `${label}: $${(value / 1000000).toFixed(0)}M`;
             }
             return `${label}: ${value.toLocaleString()}`;
           },
@@ -253,13 +282,18 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         position: 'right',
         title: {
           display: true,
-          text: 'Median PSF ($)',
+          text: 'Total Quantum ($)',
         },
         grid: {
           drawOnChartArea: false,
         },
         ticks: {
-          callback: (value) => `$${value.toLocaleString()}`,
+          callback: (value) => {
+            if (value >= 1000000000) {
+              return `$${(value / 1000000000).toFixed(1)}B`;
+            }
+            return `$${(value / 1000000).toFixed(0)}M`;
+          },
         },
       },
     },
