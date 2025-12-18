@@ -964,6 +964,8 @@ def aggregate():
     Flexible aggregation endpoint for Power BI-style dynamic filtering.
     Uses SQL-level aggregation for memory efficiency.
 
+    Now includes server-side caching for faster repeated queries.
+
     Query params:
       - group_by: comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region)
       - metrics: comma-separated metrics (count, median_psf, avg_psf, total_value, median_price, avg_price, min_psf, max_psf)
@@ -979,6 +981,7 @@ def aggregate():
       - size_max: maximum sqft
       - tenure: Freehold, 99-year, 999-year
       - project: project name filter (partial match)
+      - skip_cache: if 'true', bypass cache
 
     Returns:
       {
@@ -987,18 +990,36 @@ def aggregate():
           "total_records": N,
           "filters_applied": {...},
           "group_by": [...],
-          "metrics": [...]
+          "metrics": [...],
+          "cache_hit": bool
         }
       }
     """
     import time
+    import hashlib
+    import json
     from datetime import datetime
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func, and_, or_, extract, cast, String, Integer, literal_column
     from services.data_processor import _get_market_segment
+    from services.dashboard_service import _dashboard_cache
 
     start = time.time()
+
+    # Build cache key from query string
+    skip_cache = request.args.get('skip_cache', '').lower() == 'true'
+    cache_key = f"aggregate:{request.query_string.decode('utf-8')}"
+
+    # Check cache first
+    if not skip_cache:
+        cached = _dashboard_cache.get(cache_key)
+        if cached is not None:
+            elapsed = time.time() - start
+            cached['meta']['cache_hit'] = True
+            cached['meta']['elapsed_ms'] = int(elapsed * 1000)
+            print(f"GET /api/aggregate CACHE HIT in {elapsed:.4f} seconds")
+            return jsonify(cached)
 
     # Parse parameters
     group_by_param = request.args.get("group_by", "month")
@@ -1270,7 +1291,7 @@ def aggregate():
     elapsed = time.time() - start
     print(f"GET /api/aggregate took: {elapsed:.4f} seconds (returned {len(data)} groups from {total_records} records)")
 
-    return jsonify({
+    result = {
         "data": data,
         "meta": {
             "total_records": total_records,
@@ -1278,9 +1299,15 @@ def aggregate():
             "group_by": group_by,
             "metrics": metrics,
             "elapsed_ms": int(elapsed * 1000),
+            "cache_hit": False,
             "note": "median values are approximated using avg for memory efficiency"
         }
-    })
+    }
+
+    # Cache the result for faster repeated queries
+    _dashboard_cache.set(cache_key, result)
+
+    return jsonify(result)
 
 
 @analytics_bp.route("/transactions/list", methods=["GET"])

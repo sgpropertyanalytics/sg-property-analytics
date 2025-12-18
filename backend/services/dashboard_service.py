@@ -580,8 +580,8 @@ def query_bedroom_mix(filters: Dict[str, Any], options: Dict[str, Any]) -> List[
     if conditions:
         query = query.filter(and_(*conditions))
 
-    # Only include common bedroom types
-    query = query.filter(Transaction.bedroom_count.in_([1, 2, 3, 4, 5]))
+    # No hardcoded bedroom filter - show ALL bedroom types by default
+    # User can filter via the 'bedrooms' filter parameter if needed
 
     query = query.group_by(period_expr, Transaction.bedroom_count, Transaction.sale_type)
     query = query.order_by(period_expr, Transaction.bedroom_count)
