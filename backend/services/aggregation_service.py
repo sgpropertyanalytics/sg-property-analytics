@@ -85,12 +85,15 @@ def load_transactions_to_dataframe() -> pd.DataFrame:
     return all_transactions
 
 
-def recompute_all_stats():
+def recompute_all_stats(outliers_excluded: int = 0):
     """
     Recompute all analytics and store in PreComputedStats.
-    
+
     This function calls all the existing analytics functions and saves
     their results to the database.
+
+    Args:
+        outliers_excluded: Number of outlier records filtered out during data loading
     """
     print("=" * 60)
     print("Starting aggregation service - computing all analytics...")
@@ -237,10 +240,11 @@ def recompute_all_stats():
     metadata = {
         'last_updated': datetime.utcnow().isoformat(),
         'row_count': total_count,
+        'outliers_excluded': outliers_excluded,
         'computed_at': datetime.utcnow().isoformat()
     }
     PreComputedStats.set_stat('_metadata', metadata, total_count)
-    print("    ✓ _metadata")
+    print(f"    ✓ _metadata (outliers_excluded: {outliers_excluded:,})")
     
     print("\n" + "=" * 60)
     print("✓ Aggregation complete! All stats pre-computed and saved.")
