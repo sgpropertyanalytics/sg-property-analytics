@@ -129,7 +129,7 @@ export function TransactionDataTable({ height = 400 }) {
   ];
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+    <div id="transaction-data-table" className="bg-white rounded-lg border border-slate-200 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
         <div>
