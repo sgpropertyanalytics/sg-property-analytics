@@ -481,8 +481,9 @@ export function PowerBIFilterProvider({ children }) {
     if (filters.tenure) count++;
     if (filters.project) count++;
     if (crossFilter.value) count++;
+    if (highlight.value) count++;  // Include time highlight in active filter count
     return count;
-  }, [filters, crossFilter]);
+  }, [filters, crossFilter, highlight]);
 
   const value = {
     // State
