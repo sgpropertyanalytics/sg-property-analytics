@@ -35,7 +35,7 @@ ChartJS.register(
  * - Drill-down: region -> district -> project
  */
 export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 350, maxBars = 15 }) {
-  const { buildApiParams, drillPath, crossFilter, applyCrossFilter, drillDown } = usePowerBIFilters();
+  const { buildApiParams, drillPath, crossFilter, applyCrossFilter, drillDown, breadcrumbs } = usePowerBIFilters();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -254,6 +254,31 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
 
   const totalCount = data.reduce((sum, d) => sum + (d.count || 0), 0);
 
+  // Build contextual footer message based on breadcrumbs
+  const getContextMessage = () => {
+    const levelName = locationLabels[drillPath.location].toLowerCase();
+    const count = data.length;
+    const base = `Total: ${totalCount.toLocaleString()} transactions across ${count} ${levelName}${count !== 1 ? 's' : ''}`;
+
+    // Add parent context from breadcrumbs
+    if (breadcrumbs.location.length === 0) {
+      return base; // At top level (region), no parent context
+    } else if (drillPath.location === 'district' && breadcrumbs.location.length >= 1) {
+      // At district level, show region context
+      const region = breadcrumbs.location[0]?.label || breadcrumbs.location[0]?.value;
+      return `${base} in ${region}`;
+    } else if (drillPath.location === 'project' && breadcrumbs.location.length >= 2) {
+      // At project level with both region and district, show district context
+      const district = breadcrumbs.location[1]?.label || breadcrumbs.location[1]?.value;
+      return `${base} in ${district}`;
+    } else if (drillPath.location === 'project' && breadcrumbs.location.length === 1) {
+      // At project level with only region (if user drilled differently)
+      const region = breadcrumbs.location[0]?.label || breadcrumbs.location[0]?.value;
+      return `${base} in ${region}`;
+    }
+    return base;
+  };
+
   return (
     <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
@@ -293,7 +318,7 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
         <Bar ref={chartRef} data={chartData} options={options} />
       </div>
       <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
-        Total: {totalCount.toLocaleString()} transactions across {data.length} {locationLabels[drillPath.location].toLowerCase()}s
+        {getContextMessage()}
       </div>
     </div>
   );
