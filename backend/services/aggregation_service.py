@@ -106,15 +106,14 @@ def recompute_all_stats():
     
     # Load all transactions as DataFrame (for functions that need it)
     all_transactions = load_transactions_to_dataframe()
-    
+
     if all_transactions.empty:
         print("⚠️  No transactions found in database.")
         return
-    
-    # Set global DataFrame in data_processor (for backward compatibility with existing functions)
-    from services.data_processor import set_global_dataframe
-    set_global_dataframe(all_transactions)
-    
+
+    # SQL-only architecture: data_processor functions query database directly
+    # No need to set GLOBAL_DF anymore
+
     print("\n📊 Computing analytics...")
     
     # 1. Resale Stats (all combinations)

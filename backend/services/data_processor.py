@@ -1,13 +1,12 @@
 """
-Analysis Layer: Data Processor Module
+Analysis Layer: Data Processor Module - SQL-Only Architecture
 
 Queries the transactions table (Single Source of Truth) via SQLAlchemy and performs
 statistical calculations. This module ONLY reads from the database - it never writes
 or modifies data.
 
-All analysis is performed on the clean, consolidated transactions table.
-Uses in-memory DataFrame (GLOBAL_DF) for performance when available, with SQLAlchemy
-fallback for database queries (supports both PostgreSQL and SQLite).
+All analysis is performed using SQL aggregation for memory efficiency.
+Safe for resource-constrained hosting (Render 512MB).
 """
 
 import re
@@ -28,8 +27,6 @@ from services.classifier_extended import (
 
 # Table name constant for reference
 MASTER_TABLE = "transactions"  # Use SQLAlchemy transactions table
-
-GLOBAL_DF = None  # Global DataFrame - set by app.py if CSV data is loaded into memory
 
 
 def _add_lease_columns(df: pd.DataFrame) -> None:
@@ -129,20 +126,6 @@ def _get_market_segment(district: str) -> Optional[str]:
     return None
 
 
-def set_global_dataframe(df: pd.DataFrame) -> None:
-    """Set the global DataFrame for in-memory queries. Called by app.py at startup."""
-    global GLOBAL_DF
-    GLOBAL_DF = df
-
-    if df is not None:
-        # Ensure parsed_date column exists for fast filtering
-        if "parsed_date" not in df.columns and "transaction_date" in df.columns:
-            df["parsed_date"] = pd.to_datetime(df["transaction_date"], errors="coerce")
-
-        # Add lease information if Tenure is available
-        _add_lease_columns(df)
-
-
 def parse_contract_date(date_str: str) -> Optional[str]:
     """
     Parse URA contract date format (MMYY) to ISO format (YYYY-MM-01).
@@ -176,62 +159,19 @@ def get_filtered_transactions(
     limit: Optional[int] = None
 ) -> pd.DataFrame:
     """
-    Query transactions with optional filters.
-    Uses in-memory DataFrame (GLOBAL_DF) if available, otherwise falls back to database.
-    
+    Query transactions with optional filters using SQL for memory efficiency.
+
     Args:
         start_date: Start date in YYYY-MM format (e.g., "2024-01")
         end_date: End date in YYYY-MM format (e.g., "2024-06")
         districts: List of districts (e.g., ["D09", "D10", "D11"])
         segment: Market segment filter ("CCR", "RCR", or "OCR")
         limit: Maximum number of rows to return (optional)
-        
+
     Returns:
         DataFrame with filtered transactions
     """
-    global GLOBAL_DF
-    
-    # Use in-memory DataFrame if available (much faster)
-    if GLOBAL_DF is not None and not GLOBAL_DF.empty:
-        df = GLOBAL_DF.copy()
-        
-        # Apply segment filter (before district filter for efficiency)
-        if segment:
-            segment_upper = segment.strip().upper()
-            if segment_upper in ["CCR", "RCR", "OCR"]:
-                # Map districts to segments and filter
-                df["_market_segment"] = df["district"].apply(_get_market_segment)
-                df = df[df["_market_segment"] == segment_upper]
-                df = df.drop(columns=["_market_segment"])
-        
-        # Apply district filter
-        if districts:
-            normalized_districts = []
-            for d in districts:
-                d = d.strip().upper()
-                if not d.startswith("D"):
-                    d = f"D{d.zfill(2)}"
-                normalized_districts.append(d)
-            df = df[df["district"].isin(normalized_districts)]
-        
-        # Apply date range filter
-        if start_date:
-            start_filter = f"{start_date}-01" if len(start_date) == 7 else start_date
-            start_ts = pd.to_datetime(start_filter)
-            df = df[df["parsed_date"] >= start_ts]
-        
-        if end_date:
-            end_filter = f"{end_date}-31" if len(end_date) == 7 else end_date
-            end_ts = pd.to_datetime(end_filter)
-            df = df[df["parsed_date"] <= end_ts]
-        
-        # Apply limit if specified
-        if limit and len(df) > limit:
-            df = df.head(limit)
-        
-        return df
-    
-    # Fallback to SQLAlchemy database query (PostgreSQL/SQLite via SQLAlchemy)
+    # SQLAlchemy database query (PostgreSQL/SQLite)
     from models.database import db
     from models.transaction import Transaction
     
@@ -281,7 +221,7 @@ def get_filtered_transactions(
             df = df[df["_market_segment"] == segment_upper]
             df = df.drop(columns=["_market_segment"])
     
-    # Add parsed_date column (for consistency with GLOBAL_DF path)
+    # Add parsed_date column for date filtering
     if "transaction_date" in df.columns:
         df["parsed_date"] = pd.to_datetime(df["transaction_date"], errors='coerce')
         # Fill missing dates by parsing contract_date if available
@@ -457,17 +397,10 @@ def get_resale_stats(
 
 
 def get_available_districts() -> list:
-    """Get list of all districts with transaction data."""
-    global GLOBAL_DF
-    
-    # Use in-memory DataFrame if available (much faster)
-    if GLOBAL_DF is not None and not GLOBAL_DF.empty:
-        return sorted(GLOBAL_DF["district"].unique().tolist())
-    
-    # Fallback to SQLAlchemy database query
+    """Get list of all districts with transaction data using SQL query."""
     from models.database import db
     from models.transaction import Transaction
-    
+
     districts = db.session.query(Transaction.district).distinct().order_by(Transaction.district).all()
     return [d[0] for d in districts]  # Extract district from tuple results
 
