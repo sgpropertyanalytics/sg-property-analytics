@@ -1,11 +1,21 @@
 """
-Extended Property Classifier Utilities
+Tenure & Lease Classifier Utilities
 
-This module adds tenure / lease / age helpers on top of the existing
-bedroom classifier in `classifier.py`.
+IMPORTANT: This module handles TENURE/LEASE classification only, NOT bedrooms.
+For bedroom classification, see classifier.py which contains:
+- classify_bedroom() - Simple area-based classification
+- classify_bedroom_three_tier() - Sale type and date aware classification
 
-Separated into its own file to avoid disrupting the original
-`classifier.py` which is used heavily across the codebase.
+This module provides:
+- Tenure classification (Freehold, 99-year, 999-year)
+- Lease start year extraction from tenure strings
+- Property age calculation
+- Remaining lease calculation
+- Floor level classification
+
+Separated from classifier.py to maintain clear separation of concerns:
+- classifier.py = Bedroom classification (based on unit area)
+- classifier_extended.py = Tenure/lease classification (based on tenure strings)
 """
 
 from datetime import datetime

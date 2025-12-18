@@ -13,7 +13,7 @@ import os
 import time
 from datetime import datetime
 from typing import Optional
-from services.classifier import classify_bedroom
+from services.classifier import classify_bedroom, classify_bedroom_three_tier
 
 # Global DataFrame - loaded once at startup
 GLOBAL_DF = None
@@ -215,97 +215,47 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
     # Filter valid prices/areas
     df = df[(df['price'] > 0) & (df['area_sqft'] > 0)].copy()
     
-    # Classify bedrooms using three-tier logic (based on sale type and date)
-    def classify_bedroom_final(row):
+    # Classify bedrooms using consolidated three-tier logic from classifier.py
+    def classify_bedroom_for_row(row):
         """
-        Three-tier bedroom classification based on sale type and date.
-        
-        Tier 1: New Sale (Post-Harmonization, >= June 1, 2023) - Ultra Compact
-        Tier 2: New Sale (Pre-Harmonization, < June 1, 2023) - Modern Compact
-        Tier 3: Resale (Any Date) - Legacy Sizes
+        Wrapper that extracts row data and calls the consolidated classifier.
+        Handles date parsing edge cases specific to CSV data loading.
         """
         try:
             area = float(row['area_sqft'])
-            sale_date_str = row['transaction_date']
-            sale_type = row.get('Type of Sale', 'Resale')  # Default to Resale if not found
-            
-            # Parse sale date to datetime
+            sale_type = row.get('Type of Sale', 'Resale')
+
+            # Parse sale date - try multiple sources
+            sale_date = None
+
             # First try transaction_date_dt if available (already parsed)
             if 'transaction_date_dt' in row and pd.notna(row['transaction_date_dt']):
                 sale_date = row['transaction_date_dt']
             else:
                 # Fallback: parse from transaction_date string
-                sale_date = pd.to_datetime(sale_date_str, errors='coerce')
-                if pd.isna(sale_date):
+                sale_date_str = row.get('transaction_date')
+                if sale_date_str:
+                    sale_date = pd.to_datetime(sale_date_str, errors='coerce')
+
+                if pd.isna(sale_date) or sale_date is None:
                     # Last resort: try to parse from original Sale Date
                     if 'Sale Date' in row:
                         date_result = parse_date_flexible(row['Sale Date'])
                         if date_result[0] is not None and date_result[1] is not None:
                             sale_date = pd.Timestamp(year=int(date_result[0]), month=int(date_result[1]), day=1)
-                        else:
-                            sale_date = None
-                    else:
-                        sale_date = None
-            
-            if pd.isna(sale_date):
-                # If we can't parse the date, use Legacy (Resale) logic
-                sale_type = 'Resale'
-                sale_date = pd.Timestamp('2000-01-01')  # Use old date to trigger Legacy logic
-            
-            # CUTOFF DATE for Harmonization (AC Ledge Removal)
-            harmonization_date = pd.Timestamp('2023-06-01')
-            
-            # Normalize sale_type
-            sale_type_str = str(sale_type).strip()
-            
-            # ---------------------------------------------------------
-            # TIER 1: NEW SALE (Post-Harmonization) - Ultra Compact
-            # ---------------------------------------------------------
-            if sale_type_str == 'New Sale' and sale_date >= harmonization_date:
-                if area < 580:
-                    return 1  # 1-Bedroom
-                elif area < 780:
-                    return 2  # 2-Bedroom (3-Bed starts 780)
-                elif area < 1150:
-                    return 3  # 3-Bedroom
-                else:
-                    return 4  # 4-Bedroom
-            
-            # ---------------------------------------------------------
-            # TIER 2: NEW SALE (Pre-Harmonization) - Modern Compact
-            # ---------------------------------------------------------
-            elif sale_type_str == 'New Sale' and sale_date < harmonization_date:
-                if area < 600:
-                    return 1  # 1-Bedroom
-                elif area < 850:
-                    return 2  # 2-Bedroom (3-Bed starts 850)
-                elif area < 1200:
-                    return 3  # 3-Bedroom
-                else:
-                    return 4  # 4-Bedroom
-            
-            # ---------------------------------------------------------
-            # TIER 3: RESALE - Legacy Sizes
-            # ---------------------------------------------------------
-            else:
-                if area < 600:
-                    return 1  # 1-Bedroom
-                elif area < 950:
-                    return 2  # 2-Bedroom (3-Bed starts 950)
-                elif area < 1350:
-                    return 3  # 3-Bedroom
-                else:
-                    return 4  # 4-Bedroom
-                    
-        except Exception as e:
+
+            # Use consolidated three-tier classifier
+            return classify_bedroom_three_tier(area, sale_type, sale_date)
+
+        except Exception:
             # Fallback to simple classification if anything fails
             try:
                 return classify_bedroom(float(row['area_sqft']))
             except:
                 return 1  # Default to 1-Bedroom
-    
+
     # Apply the three-tier classification
-    df['bedroom_count'] = df.apply(classify_bedroom_final, axis=1)
+    df['bedroom_count'] = df.apply(classify_bedroom_for_row, axis=1)
     
     # Prepare final result
     result_dict = {
