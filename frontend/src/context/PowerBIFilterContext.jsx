@@ -334,48 +334,75 @@ export function PowerBIFilterProvider({ children }) {
   }, []);
 
   // ===== Derived: Combined filters for API calls =====
+  // PRIORITY ORDER (like Power BI):
+  // 1. Sidebar filters (slicers) - HIGHEST priority, never overwritten
+  // 2. Cross-filters - only apply if sidebar filter not set
+  // 3. Highlights - only apply to date if sidebar date not set
   const activeFilters = useMemo(() => {
     const combined = { ...filters };
 
-    // Apply cross-filter if set (for categorical dimensions)
+    // Apply cross-filter ONLY if corresponding sidebar filter is NOT set
+    // Sidebar slicers always take precedence (Power BI behavior)
     if (crossFilter.dimension && crossFilter.value) {
       switch (crossFilter.dimension) {
         case 'district':
-          combined.districts = [crossFilter.value];
+          // Only apply if no districts selected in sidebar
+          if (filters.districts.length === 0) {
+            combined.districts = [crossFilter.value];
+          }
           break;
         case 'bedroom':
-          combined.bedroomTypes = [parseInt(crossFilter.value)];
+          // Only apply if no bedroom types selected in sidebar
+          if (filters.bedroomTypes.length === 0) {
+            combined.bedroomTypes = [parseInt(crossFilter.value)];
+          }
           break;
         case 'sale_type':
-          combined.saleType = crossFilter.value;
+          // Only apply if no sale type selected in sidebar
+          if (!filters.saleType) {
+            combined.saleType = crossFilter.value;
+          }
           break;
         case 'region':
-          combined.segment = crossFilter.value;
+          // Only apply if no segment selected in sidebar
+          if (!filters.segment) {
+            combined.segment = crossFilter.value;
+          }
+          break;
+        case 'project':
+          // Only apply if no project selected in sidebar
+          if (!filters.project) {
+            combined.project = crossFilter.value;
+          }
           break;
       }
     }
 
-    // Apply highlight filter if set (for time dimensions)
-    // This filters OTHER charts while the source chart keeps full context
+    // Apply highlight filter ONLY if sidebar date range is NOT set
+    // Sidebar date filter always takes precedence
     if (highlight.dimension && highlight.value) {
-      if (highlight.dimension === 'month') {
-        combined.dateRange = {
-          start: `${highlight.value}-01`,
-          end: `${highlight.value}-31`
-        };
-      } else if (highlight.dimension === 'quarter') {
-        // Parse quarter (e.g., "2024-Q3" -> start: 2024-07-01, end: 2024-09-30)
-        const [year, q] = highlight.value.split('-Q');
-        const quarterMonth = (parseInt(q) - 1) * 3 + 1;
-        combined.dateRange = {
-          start: `${year}-${String(quarterMonth).padStart(2, '0')}-01`,
-          end: `${year}-${String(quarterMonth + 2).padStart(2, '0')}-31`
-        };
-      } else if (highlight.dimension === 'year') {
-        combined.dateRange = {
-          start: `${highlight.value}-01-01`,
-          end: `${highlight.value}-12-31`
-        };
+      const sidebarDateSet = filters.dateRange.start || filters.dateRange.end;
+
+      if (!sidebarDateSet) {
+        if (highlight.dimension === 'month') {
+          combined.dateRange = {
+            start: `${highlight.value}-01`,
+            end: `${highlight.value}-31`
+          };
+        } else if (highlight.dimension === 'quarter') {
+          // Parse quarter (e.g., "2024-Q3" -> start: 2024-07-01, end: 2024-09-30)
+          const [year, q] = highlight.value.split('-Q');
+          const quarterMonth = (parseInt(q) - 1) * 3 + 1;
+          combined.dateRange = {
+            start: `${year}-${String(quarterMonth).padStart(2, '0')}-01`,
+            end: `${year}-${String(quarterMonth + 2).padStart(2, '0')}-31`
+          };
+        } else if (highlight.dimension === 'year') {
+          combined.dateRange = {
+            start: `${highlight.value}-01-01`,
+            end: `${highlight.value}-12-31`
+          };
+        }
       }
     }
 
