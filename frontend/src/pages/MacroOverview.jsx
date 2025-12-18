@@ -7,6 +7,7 @@ import { PriceDistributionChart } from '../components/powerbi/PriceDistributionC
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
+import { GLSDataTable } from '../components/powerbi/GLSDataTable';
 import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
@@ -263,6 +264,11 @@ function MacroOverviewContent() {
               onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
               height={350}
             />
+          </div>
+
+          {/* GLS Data Table - Government Land Sales */}
+          <div className="mb-4 md:mb-6">
+            <GLSDataTable height={350} />
           </div>
 
           {/* Transaction Data Table - Component unchanged */}
