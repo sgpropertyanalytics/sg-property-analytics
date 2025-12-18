@@ -162,8 +162,8 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   const avgCount = counts.reduce((sum, c) => sum + c, 0) / counts.length;
   const peakThreshold = avgCount + (maxCount - avgCount) * 0.5; // 50% above average towards max
 
-  // Extend y axis (count) to push bars lower, making room for line above
-  const yAxisMax = maxCount * 2.2; // Bars occupy ~45% of chart height
+  // Extend y axis (count) slightly to leave room for line above
+  const yAxisMax = Math.ceil(maxCount * 1.4); // Bars occupy ~70% of chart height
 
   // Determine which bars should be highlighted based on highlight state
   const highlightedIndex = highlight.source === 'time' && highlight.value
@@ -211,13 +211,13 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         type: 'line',
         label: 'Total Quantum',
         data: totalValues,
-        borderColor: '#EAE0CF',  // Sand/Cream - contrasts with blue bars
-        backgroundColor: 'rgba(234, 224, 207, 0.1)',
-        borderWidth: 3,
-        pointRadius: 5,
-        pointBackgroundColor: '#EAE0CF',
-        pointBorderColor: '#213448',  // Deep Navy outline for visibility
-        pointBorderWidth: 2,
+        borderColor: '#C4B8A5',  // Darker beige for line
+        backgroundColor: 'rgba(196, 184, 165, 0.1)',
+        borderWidth: 2,
+        pointRadius: 4,
+        pointBackgroundColor: '#EAE0CF',  // Sand/Cream fill
+        pointBorderColor: '#C4B8A5',  // Darker beige border (no black)
+        pointBorderWidth: 1,
         fill: false,
         yAxisID: 'y1',
         order: 1,
@@ -280,6 +280,9 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         },
         grid: {
           drawOnChartArea: true,
+        },
+        ticks: {
+          callback: (value) => Math.round(value).toLocaleString(), // Fix floating point precision
         },
       },
       y1: {
