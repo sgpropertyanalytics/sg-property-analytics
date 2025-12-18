@@ -97,49 +97,44 @@ def create_app():
     return app
 
 
-def auto_filter_outliers(app):
+def auto_validate_data(app):
     """
-    Auto-filter outliers on startup.
+    Auto-validate and clean data on startup.
 
     This ensures the database is clean on every deploy.
-    Safe to run repeatedly - if no outliers exist, does nothing.
+    Safe to run repeatedly - if data is clean, does nothing.
+
+    Runs all validation checks:
+    1. Remove invalid/corrupted records (null/zero values)
+    2. Remove duplicates
+    3. Filter outliers (IQR method)
     """
     with app.app_context():
         from models.transaction import Transaction
-        from services.data_validation import filter_outliers_sql, count_outliers, calculate_iqr_bounds
+        from services.data_validation import run_all_validations
         from services.data_computation import recompute_all_stats, get_metadata
 
         count = db.session.query(Transaction).count()
         if count == 0:
-            return  # No data to filter
+            return  # No data to validate
 
         try:
-            # Check if outliers exist
-            lower_bound, upper_bound, stats = calculate_iqr_bounds()
-            outlier_count = count_outliers(lower_bound, upper_bound)
+            # Run all validations
+            results = run_all_validations()
 
-            if outlier_count > 0:
-                print(f"\n🔍 Auto-filtering {outlier_count:,} outliers on startup...")
-                print(f"   IQR bounds: ${stats['lower_bound']:,.0f} - ${stats['upper_bound']:,.0f}")
-
-                # Filter outliers
-                outliers_removed, _ = filter_outliers_sql()
-                print(f"   ✓ Removed {outliers_removed:,} outliers")
-
-                # Recompute stats with new outlier count
+            # If any data was cleaned, recompute stats
+            if results['total_cleaned'] > 0:
                 existing_metadata = get_metadata()
                 previous_outliers = existing_metadata.get('outliers_excluded', 0)
-                total_outliers = previous_outliers + outliers_removed
+                total_outliers = previous_outliers + results['outliers_removed']
 
                 print(f"   Recomputing stats (total outliers excluded: {total_outliers:,})...")
                 recompute_all_stats(outliers_excluded=total_outliers)
                 print(f"   ✓ Stats recomputed")
-            else:
-                print(f"\n✓ Data is clean - no outliers detected")
 
         except Exception as e:
-            print(f"\n⚠️  Auto-filter skipped: {e}")
-            # Don't fail startup if filtering fails
+            print(f"\n⚠️  Auto-validation skipped: {e}")
+            # Don't fail startup if validation fails
 
 
 def run_app():
@@ -151,8 +146,8 @@ def run_app():
     # Create app
     app = create_app()
 
-    # Auto-filter outliers on startup (self-healing)
-    auto_filter_outliers(app)
+    # Auto-validate and clean data on startup (self-healing)
+    auto_validate_data(app)
 
     with app.app_context():
         from models.transaction import Transaction
