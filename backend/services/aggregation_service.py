@@ -4,21 +4,19 @@ Aggregation Service - Pre-computes analytics using existing business logic
 This service uses the existing functions from data_processor.py to calculate
 all analytics once, then stores the results in PreComputedStats table.
 
-CRITICAL: All business logic is preserved exactly as it was in data_processor.py
+SQL-only architecture: All data_processor functions query the database directly.
+No DataFrame loading needed - saves memory on 512MB Render limit.
 """
 
-import pandas as pd
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional
 from models.database import db
 from models.precomputed_stats import PreComputedStats
 from models.transaction import Transaction
 from services.json_serializer import serialize_for_json
 
-# Import existing business logic - DO NOT MODIFY
+# Import existing business logic - these all use SQL-only queries
 from services.data_processor import (
-    _add_lease_columns,
-    _get_market_segment,
     get_resale_stats,
     get_price_trends,
     get_total_volume_by_district,
@@ -36,53 +34,6 @@ from services.data_processor import (
     get_available_districts,
     get_transaction_details
 )
-
-
-def load_transactions_to_dataframe() -> pd.DataFrame:
-    """
-    Load all transactions from database into DataFrame for processing.
-    This temporarily creates a DataFrame to use with existing logic functions.
-    """
-    # Load all transactions using SQLAlchemy connection
-    from sqlalchemy import text
-    query = db.session.query(Transaction)
-    all_transactions = pd.read_sql(query.statement, db.engine)
-    
-    if all_transactions.empty:
-        return all_transactions
-    
-    # Map database columns to expected DataFrame columns
-    # The existing functions expect certain column names
-    column_mapping = {
-        'transaction_date': 'transaction_date',
-        'contract_date': 'contract_date',
-        'price': 'price',
-        'area_sqft': 'area_sqft',
-        'psf': 'psf',
-        'district': 'district',
-        'bedroom_count': 'bedroom_count',
-        'sale_type': 'sale_type',
-        'tenure': 'Tenure'  # Map to expected name
-    }
-    
-    # Rename columns if needed
-    for db_col, df_col in column_mapping.items():
-        if db_col in all_transactions.columns and df_col != db_col:
-            all_transactions[df_col] = all_transactions[db_col]
-    
-    # Add parsed_date for date filtering
-    if 'transaction_date' in all_transactions.columns:
-        all_transactions['parsed_date'] = pd.to_datetime(all_transactions['transaction_date'], errors='coerce')
-    
-    # Add lease columns if Tenure exists
-    if 'Tenure' in all_transactions.columns:
-        _add_lease_columns(all_transactions)
-    
-    # Add market_segment column
-    if 'district' in all_transactions.columns:
-        all_transactions['market_segment'] = all_transactions['district'].apply(_get_market_segment)
-    
-    return all_transactions
 
 
 def recompute_all_stats(outliers_excluded: int = 0):
@@ -106,16 +57,9 @@ def recompute_all_stats(outliers_excluded: int = 0):
     if total_count == 0:
         print("⚠️  No transactions found. Please run upload.py first.")
         return
-    
-    # Load all transactions as DataFrame (for functions that need it)
-    all_transactions = load_transactions_to_dataframe()
-
-    if all_transactions.empty:
-        print("⚠️  No transactions found in database.")
-        return
 
     # SQL-only architecture: data_processor functions query database directly
-    # No need to set GLOBAL_DF anymore
+    # No DataFrame loading needed - saves memory on 512MB Render limit
 
     print("\n📊 Computing analytics...")
     
