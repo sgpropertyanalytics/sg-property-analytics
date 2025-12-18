@@ -1,10 +1,12 @@
 """
-Recompute Stats Script - Re-runs aggregation service to update pre-computed stats
+Recompute Stats Script - Re-runs data computation to update pre-computed stats
 
 This can be run:
 1. Manually: python scripts/recompute_stats.py
 2. Via cron: Add to crontab for scheduled updates
-3. Via API: Can be triggered via admin endpoint (future enhancement)
+3. Via API: Can be triggered via admin endpoint
+
+Pipeline: Load Raw → Validate/Filter → Store in DB → **Compute Stats**
 """
 
 import sys
@@ -16,7 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 from flask import Flask
 from config import Config
 from models.database import db
-from services.aggregation_service import recompute_all_stats
+from services.data_computation import recompute_all_stats, get_metadata
 
 
 def create_app():
@@ -37,7 +39,6 @@ def main():
 
     with app.app_context():
         from models.transaction import Transaction
-        from models.precomputed_stats import PreComputedStats
 
         count = db.session.query(Transaction).count()
 
@@ -47,18 +48,18 @@ def main():
             return
 
         # Preserve existing outliers_excluded count from metadata
-        existing_metadata = PreComputedStats.get_stat('_metadata') or {}
+        existing_metadata = get_metadata()
         outliers_excluded = existing_metadata.get('outliers_excluded', 0)
 
         print(f"\n📊 Found {count:,} transactions in database")
         if outliers_excluded > 0:
             print(f"   Preserving outliers_excluded count: {outliers_excluded:,}")
-        print("   Starting aggregation...\n")
+        print("   Starting data computation...\n")
 
         recompute_all_stats(outliers_excluded=outliers_excluded)
 
         print("\n" + "=" * 60)
-        print("✓ Re-computation complete!")
+        print("✓ Data computation complete!")
         print("=" * 60)
 
 

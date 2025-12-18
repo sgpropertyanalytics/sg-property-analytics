@@ -1,0 +1,287 @@
+"""
+Data Validation Service - Centralized data filtering, cleaning, and validation
+
+This module contains all functions related to:
+- Outlier detection and filtering (IQR method)
+- Data deduplication
+- Data quality validation
+
+All filtering happens BEFORE data is stored in the master database,
+ensuring clean data for downstream computation.
+
+Pipeline: Load Raw → Validate/Filter/Clean → Store in DB → Compute Stats
+"""
+
+from typing import Tuple, Dict, Any, List, Optional
+from sqlalchemy import text
+from models.database import db
+from models.transaction import Transaction
+
+
+def calculate_iqr_bounds(column: str = 'price') -> Tuple[float, float, Dict[str, float]]:
+    """
+    Calculate IQR bounds for outlier detection using SQL.
+
+    Args:
+        column: Column name to calculate IQR for (default: 'price')
+
+    Returns:
+        Tuple of (lower_bound, upper_bound, statistics_dict)
+        statistics_dict contains: q1, q3, iqr, lower_bound, upper_bound
+    """
+    try:
+        # PostgreSQL syntax
+        quartile_sql = text(f"""
+            SELECT
+                percentile_cont(0.25) WITHIN GROUP (ORDER BY {column}) as q1,
+                percentile_cont(0.75) WITHIN GROUP (ORDER BY {column}) as q3
+            FROM transactions
+            WHERE {column} > 0
+        """)
+        result = db.session.execute(quartile_sql).fetchone()
+        q1, q3 = float(result[0]), float(result[1])
+    except Exception:
+        # Fallback for SQLite
+        count_sql = text(f"SELECT COUNT(*) FROM transactions WHERE {column} > 0")
+        count = db.session.execute(count_sql).scalar()
+
+        q1_offset = int(count * 0.25)
+        q3_offset = int(count * 0.75)
+
+        q1_sql = text(f"SELECT {column} FROM transactions WHERE {column} > 0 ORDER BY {column} LIMIT 1 OFFSET {q1_offset}")
+        q3_sql = text(f"SELECT {column} FROM transactions WHERE {column} > 0 ORDER BY {column} LIMIT 1 OFFSET {q3_offset}")
+
+        q1 = float(db.session.execute(q1_sql).scalar())
+        q3 = float(db.session.execute(q3_sql).scalar())
+
+    iqr = q3 - q1
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+
+    stats = {
+        'q1': q1,
+        'q3': q3,
+        'iqr': iqr,
+        'lower_bound': lower_bound,
+        'upper_bound': upper_bound
+    }
+
+    return lower_bound, upper_bound, stats
+
+
+def count_outliers(lower_bound: float, upper_bound: float, column: str = 'price') -> int:
+    """
+    Count records that fall outside the IQR bounds.
+
+    Args:
+        lower_bound: Lower bound for valid data
+        upper_bound: Upper bound for valid data
+        column: Column to check (default: 'price')
+
+    Returns:
+        Count of outlier records
+    """
+    count_sql = text(f"""
+        SELECT COUNT(*) FROM transactions
+        WHERE {column} < :lower_bound OR {column} > :upper_bound
+    """)
+    return db.session.execute(
+        count_sql,
+        {'lower_bound': lower_bound, 'upper_bound': upper_bound}
+    ).scalar()
+
+
+def get_sample_outliers(lower_bound: float, upper_bound: float,
+                        column: str = 'price', limit: int = 10) -> List[Dict[str, Any]]:
+    """
+    Get sample outlier records for preview.
+
+    Args:
+        lower_bound: Lower bound for valid data
+        upper_bound: Upper bound for valid data
+        column: Column to check (default: 'price')
+        limit: Max samples to return
+
+    Returns:
+        List of outlier records with project_name, price, district
+    """
+    sample_sql = text(f"""
+        SELECT project_name, {column}, district
+        FROM transactions
+        WHERE {column} < :lower_bound OR {column} > :upper_bound
+        ORDER BY {column} DESC
+        LIMIT :limit
+    """)
+    samples = db.session.execute(
+        sample_sql,
+        {'lower_bound': lower_bound, 'upper_bound': upper_bound, 'limit': limit}
+    ).fetchall()
+
+    return [
+        {"project": s[0], "price": float(s[1]), "district": s[2]}
+        for s in samples
+    ]
+
+
+def filter_outliers_sql(column: str = 'price', dry_run: bool = False) -> Tuple[int, Dict[str, Any]]:
+    """
+    Filter outliers from database using SQL-based IQR calculation.
+
+    This is the main outlier filtering function. It:
+    1. Calculates IQR bounds
+    2. Identifies outliers
+    3. Deletes them from the database (unless dry_run=True)
+
+    Args:
+        column: Column to filter outliers on (default: 'price')
+        dry_run: If True, only preview without deleting
+
+    Returns:
+        Tuple of (outliers_removed_count, statistics_dict)
+    """
+    before_count = db.session.query(Transaction).count()
+
+    # Calculate bounds
+    lower_bound, upper_bound, stats = calculate_iqr_bounds(column)
+
+    # Count outliers
+    outlier_count = count_outliers(lower_bound, upper_bound, column)
+
+    stats['before_count'] = before_count
+    stats['outlier_count'] = outlier_count
+
+    if dry_run or outlier_count == 0:
+        stats['action'] = 'preview' if dry_run else 'none'
+        stats['outliers_removed'] = 0
+        return 0, stats
+
+    # Delete outliers
+    delete_sql = text(f"""
+        DELETE FROM transactions
+        WHERE {column} < :lower_bound OR {column} > :upper_bound
+    """)
+    db.session.execute(delete_sql, {'lower_bound': lower_bound, 'upper_bound': upper_bound})
+    db.session.commit()
+
+    after_count = db.session.query(Transaction).count()
+    outliers_removed = before_count - after_count
+
+    stats['action'] = 'deleted'
+    stats['outliers_removed'] = outliers_removed
+    stats['after_count'] = after_count
+
+    return outliers_removed, stats
+
+
+def remove_duplicates_sql() -> int:
+    """
+    Remove duplicate transactions using SQL.
+
+    Duplicates are identified by matching:
+    - project_name
+    - transaction_date
+    - price
+    - area_sqft
+
+    Keeps the first occurrence (lowest ID) of each duplicate set.
+
+    Returns:
+        Count of duplicates removed
+    """
+    before_count = db.session.query(Transaction).count()
+
+    sql = text("""
+        DELETE FROM transactions
+        WHERE id NOT IN (
+            SELECT MIN(id)
+            FROM transactions
+            GROUP BY project_name, transaction_date, price, area_sqft
+        )
+    """)
+
+    try:
+        db.session.execute(sql)
+        db.session.commit()
+        after_count = db.session.query(Transaction).count()
+        return before_count - after_count
+    except Exception as e:
+        db.session.rollback()
+        raise e
+
+
+def validate_transaction_data(data: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """
+    Validate a single transaction record before insertion.
+
+    Args:
+        data: Dictionary of transaction fields
+
+    Returns:
+        Tuple of (is_valid, list_of_errors)
+    """
+    errors = []
+
+    # Required fields
+    if not data.get('price') or data['price'] <= 0:
+        errors.append("Price must be positive")
+
+    if not data.get('area_sqft') or data['area_sqft'] <= 0:
+        errors.append("Area must be positive")
+
+    if not data.get('district'):
+        errors.append("District is required")
+
+    # PSF validation (should be reasonable)
+    if data.get('psf'):
+        if data['psf'] < 100 or data['psf'] > 50000:
+            errors.append(f"PSF {data['psf']} seems unrealistic")
+
+    # Bedroom count validation
+    if data.get('bedroom_count'):
+        if data['bedroom_count'] < 1 or data['bedroom_count'] > 10:
+            errors.append(f"Bedroom count {data['bedroom_count']} seems unrealistic")
+
+    return len(errors) == 0, errors
+
+
+def get_data_quality_report() -> Dict[str, Any]:
+    """
+    Generate a data quality report for the current database.
+
+    Returns:
+        Dictionary with quality metrics
+    """
+    total_count = db.session.query(Transaction).count()
+
+    if total_count == 0:
+        return {"error": "No data in database"}
+
+    # Count records with missing values
+    null_counts = {}
+    for column in ['price', 'area_sqft', 'psf', 'district', 'bedroom_count', 'transaction_date']:
+        sql = text(f"SELECT COUNT(*) FROM transactions WHERE {column} IS NULL")
+        null_counts[column] = db.session.execute(sql).scalar()
+
+    # Get IQR stats
+    _, _, price_stats = calculate_iqr_bounds('price')
+
+    # Count potential outliers (without removing)
+    outlier_count = count_outliers(price_stats['lower_bound'], price_stats['upper_bound'])
+
+    return {
+        'total_records': total_count,
+        'null_counts': null_counts,
+        'price_statistics': price_stats,
+        'potential_outliers': outlier_count,
+        'outlier_percentage': round(outlier_count / total_count * 100, 2) if total_count > 0 else 0
+    }
+
+
+def print_iqr_statistics(stats: Dict[str, float]) -> None:
+    """Print IQR statistics in a formatted way."""
+    print(f"  📊 IQR Statistics:")
+    print(f"     Q1 (25th percentile): ${stats['q1']:,.0f}")
+    print(f"     Q3 (75th percentile): ${stats['q3']:,.0f}")
+    print(f"     IQR: ${stats['iqr']:,.0f}")
+    print(f"     Lower bound (Q1 - 1.5*IQR): ${stats['lower_bound']:,.0f}")
+    print(f"     Upper bound (Q3 + 1.5*IQR): ${stats['upper_bound']:,.0f}")

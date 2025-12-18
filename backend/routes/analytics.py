@@ -237,7 +237,7 @@ def health():
 
 
 @analytics_bp.route("/admin/filter-outliers", methods=["GET", "POST"])
-def filter_outliers():
+def filter_outliers_endpoint():
     """
     Filter outliers from the database using IQR method.
 
@@ -251,76 +251,24 @@ def filter_outliers():
     """
     from models.transaction import Transaction
     from models.database import db
-    from sqlalchemy import text
+    from services.data_validation import (
+        calculate_iqr_bounds,
+        count_outliers,
+        get_sample_outliers,
+        filter_outliers_sql
+    )
+    from services.data_computation import recompute_all_stats
 
     try:
         before_count = db.session.query(Transaction).count()
 
-        # Calculate Q1, Q3 using SQL percentile functions (PostgreSQL)
-        try:
-            quartile_sql = text("""
-                SELECT
-                    percentile_cont(0.25) WITHIN GROUP (ORDER BY price) as q1,
-                    percentile_cont(0.75) WITHIN GROUP (ORDER BY price) as q3
-                FROM transactions
-                WHERE price > 0
-            """)
-            result = db.session.execute(quartile_sql).fetchone()
-            q1, q3 = float(result[0]), float(result[1])
-        except Exception as e:
-            # Fallback for SQLite
-            count_sql = text("SELECT COUNT(*) FROM transactions WHERE price > 0")
-            count = db.session.execute(count_sql).scalar()
-
-            q1_offset = int(count * 0.25)
-            q3_offset = int(count * 0.75)
-
-            q1_sql = text(f"SELECT price FROM transactions WHERE price > 0 ORDER BY price LIMIT 1 OFFSET {q1_offset}")
-            q3_sql = text(f"SELECT price FROM transactions WHERE price > 0 ORDER BY price LIMIT 1 OFFSET {q3_offset}")
-
-            q1 = float(db.session.execute(q1_sql).scalar())
-            q3 = float(db.session.execute(q3_sql).scalar())
-
-        iqr = q3 - q1
-        lower_bound = q1 - 1.5 * iqr
-        upper_bound = q3 + 1.5 * iqr
-
-        # Count outliers
-        count_outliers_sql = text("""
-            SELECT COUNT(*) FROM transactions
-            WHERE price < :lower_bound OR price > :upper_bound
-        """)
-        outlier_count = db.session.execute(
-            count_outliers_sql,
-            {'lower_bound': lower_bound, 'upper_bound': upper_bound}
-        ).scalar()
-
-        # Get sample outliers
-        sample_sql = text("""
-            SELECT project_name, price, district
-            FROM transactions
-            WHERE price < :lower_bound OR price > :upper_bound
-            ORDER BY price DESC
-            LIMIT 10
-        """)
-        samples = db.session.execute(
-            sample_sql,
-            {'lower_bound': lower_bound, 'upper_bound': upper_bound}
-        ).fetchall()
-
-        sample_outliers = [
-            {"project": s[0], "price": float(s[1]), "district": s[2]}
-            for s in samples
-        ]
+        # Use centralized data_validation functions
+        lower_bound, upper_bound, stats = calculate_iqr_bounds()
+        outlier_count = count_outliers(lower_bound, upper_bound)
+        sample_outliers = get_sample_outliers(lower_bound, upper_bound)
 
         response_data = {
-            "iqr_statistics": {
-                "q1": q1,
-                "q3": q3,
-                "iqr": iqr,
-                "lower_bound": lower_bound,
-                "upper_bound": upper_bound
-            },
+            "iqr_statistics": stats,
             "current_count": before_count,
             "outlier_count": outlier_count,
             "sample_outliers": sample_outliers
@@ -339,24 +287,15 @@ def filter_outliers():
                 response_data["message"] = "No outliers to remove"
                 return jsonify(response_data)
 
-            # Delete outliers
-            delete_sql = text("""
-                DELETE FROM transactions
-                WHERE price < :lower_bound OR price > :upper_bound
-            """)
-            db.session.execute(delete_sql, {'lower_bound': lower_bound, 'upper_bound': upper_bound})
-            db.session.commit()
-
-            after_count = db.session.query(Transaction).count()
-            outliers_removed = before_count - after_count
+            # Use centralized filter function
+            outliers_removed, filter_stats = filter_outliers_sql()
 
             # Recompute stats with outlier count
-            from services.aggregation_service import recompute_all_stats
             recompute_all_stats(outliers_excluded=outliers_removed)
 
             response_data["action"] = "deleted"
             response_data["outliers_removed"] = outliers_removed
-            response_data["new_count"] = after_count
+            response_data["new_count"] = filter_stats.get('after_count', before_count - outliers_removed)
             response_data["message"] = f"Successfully removed {outliers_removed} outliers and recomputed stats"
 
             return jsonify(response_data)
