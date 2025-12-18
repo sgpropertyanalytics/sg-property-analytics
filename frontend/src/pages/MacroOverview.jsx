@@ -204,11 +204,10 @@ function MacroOverviewContent() {
               maxBars={12}
             />
 
-            {/* Price Distribution */}
+            {/* Price Distribution - 20 bins with dynamic intervals */}
             <PriceDistributionChart
               onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
               height={350}
-              bucketSize={200000}
             />
           </div>
 
