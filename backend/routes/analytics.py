@@ -1101,12 +1101,12 @@ def aggregate():
 @analytics_bp.route("/transactions/list", methods=["GET"])
 def transactions_list():
     """
-    Paginated transaction list endpoint for drill-through.
+    Paginated transaction list endpoint for drill-through and histogram analysis.
 
     Query params:
       - Same filters as /aggregate
       - page: page number (default 1)
-      - limit: records per page (default 50, max 200)
+      - limit: records per page (default 50, max 10000 for histogram use cases)
       - sort_by: column to sort (default transaction_date)
       - sort_order: asc or desc (default desc)
 
@@ -1130,8 +1130,9 @@ def transactions_list():
     start = time.time()
 
     # Pagination params
+    # Higher max limit (10000) for histogram/distribution analysis use cases
     page = int(request.args.get("page", 1))
-    limit = min(int(request.args.get("limit", 50)), 200)
+    limit = min(int(request.args.get("limit", 50)), 10000)
     sort_by = request.args.get("sort_by", "transaction_date")
     sort_order = request.args.get("sort_order", "desc")
 
