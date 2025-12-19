@@ -22,6 +22,121 @@ This project is a **Power BI-style Analytics Dashboard** for analyzing Singapore
 
 ---
 
+## System Design Diagram
+
+```mermaid
+graph TB
+    subgraph "Data Ingestion"
+        CSV[CSV Files<br/>rawdata/]
+        Upload[scripts/upload.py<br/>ETL Script]
+    end
+
+    subgraph "Database Layer"
+        DB[(PostgreSQL)]
+        TxnTable[transactions table<br/>Raw Transaction Data]
+        StatsTable[api_stats table<br/>Pre-computed Analytics]
+    end
+
+    subgraph "Backend Services"
+        Flask[Flask App<br/>app.py]
+        Validation[data_validation.py<br/>Outliers, Duplicates]
+        DashService[dashboard_service.py<br/>SQL Aggregation]
+        DataProc[data_processor.py<br/>Analytics Logic]
+        Routes[routes/analytics.py<br/>API Endpoints]
+    end
+
+    subgraph "Frontend Application"
+        React[React + Vite<br/>MacroOverview.jsx]
+        FilterCtx[PowerBIFilterContext<br/>Global Filter State]
+        Charts[Chart Components<br/>TimeTrend, Volume, etc.]
+        FactTable[TransactionDataTable<br/>Fact Table]
+    end
+
+    CSV -->|1. Load & Clean| Upload
+    Upload -->|2. Insert| TxnTable
+    Upload -->|3. Trigger| Validation
+    Validation -->|4. Clean Data| TxnTable
+
+    TxnTable -.->|Stored in| DB
+    StatsTable -.->|Stored in| DB
+
+    React -->|5. User Interaction| FilterCtx
+    FilterCtx -->|6. buildApiParams()| Charts
+    Charts -->|7. HTTP GET /api/*| Flask
+    Flask -->|8. Route| Routes
+    Routes -->|9. Query| DashService
+    DashService -->|10. SQL Aggregation| TxnTable
+    Routes -->|11. JSON Response| Charts
+
+    FactTable -->|12. includeFactFilter| Routes
+
+    style CSV fill:#e1f5ff
+    style Upload fill:#fff4e1
+    style TxnTable fill:#e8f5e9
+    style StatsTable fill:#e8f5e9
+    style FilterCtx fill:#f3e5f5
+    style React fill:#e3f2fd
+    style FactTable fill:#ffe0e0
+```
+
+### Request Flow (Step by Step)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  1. USER ACTION                                                               │
+│     User selects D09 in sidebar filter                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  2. FILTER CONTEXT UPDATE                                                     │
+│     PowerBIFilterContext.jsx                                                  │
+│     ├── filters.districts = ['D09']                                          │
+│     └── Triggers re-render of all chart components                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  3. API CALL CONSTRUCTION                                                     │
+│     Each chart calls: buildApiParams({ panels: 'time_series' })              │
+│     Returns: { district: 'D09', panels: 'time_series', ... }                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  4. HTTP REQUEST                                                              │
+│     GET /api/dashboard?district=D09&panels=time_series                       │
+│     axios.get() from api/client.js                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  5. FLASK ROUTING                                                             │
+│     routes/analytics.py                                                       │
+│     ├── Parse query params (district, bedroom, segment, date_from, date_to)  │
+│     └── Call dashboard_service.get_dashboard_data(filters, panels)           │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  6. SQL AGGREGATION                                                           │
+│     dashboard_service.py                                                      │
+│     ├── Build WHERE clause from filters                                      │
+│     ├── Execute: SELECT district, COUNT(*), AVG(psf) ... GROUP BY ...        │
+│     └── Return JSON response (no DataFrame in memory)                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  7. CHART UPDATE                                                              │
+│     TimeTrendChart.jsx receives data                                         │
+│     ├── Updates Chart.js visualization                                       │
+│     └── Shows only D09 transactions                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Power BI Data Modeling Rules
 
 ### Golden Rule
