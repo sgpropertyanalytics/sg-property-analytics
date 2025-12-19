@@ -138,16 +138,14 @@ export function GLSDataTable({ height = 400 }) {
     );
   };
 
-  // Column definitions
+  // Column definitions - focused on key pricing data
   const columns = [
-    { key: 'release_date', label: 'Date', sortable: true, width: 'w-20' },
-    { key: 'location_raw', label: 'Location', sortable: true, width: 'w-40' },
+    { key: 'release_date', label: 'Potential Launch Date', sortable: true, width: 'w-28' },
+    { key: 'location_raw', label: 'Project Name', sortable: true, width: 'w-48' },
     { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-16' },
-    { key: 'successful_tenderer', label: 'Developer', sortable: true, width: 'w-40' },
+    { key: 'successful_tenderer', label: 'Developer', sortable: true, width: 'w-44' },
     { key: 'psf_ppr', label: 'PSF (PPR)', sortable: true, width: 'w-24', align: 'right' },
-    { key: 'implied_launch_psf', label: 'Implied Launch PSF', sortable: false, width: 'w-32', align: 'right' },
-    { key: 'estimated_units', label: 'Supply Units', sortable: true, width: 'w-20', align: 'right' },
-    { key: 'status', label: 'Status', sortable: true, width: 'w-20' },
+    { key: 'implied_launch_psf', label: 'Implied Launch PSF', sortable: false, width: 'w-36', align: 'right' },
   ];
 
   // Count by status
@@ -285,7 +283,7 @@ export function GLSDataTable({ height = 400 }) {
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                       {formatDate(tender.release_date)}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[200px]" title={tender.location_raw}>
+                    <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[250px]" title={tender.location_raw}>
                       {tender.location_raw || '-'}
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100">
@@ -303,13 +301,13 @@ export function GLSDataTable({ height = 400 }) {
                         <span className="text-slate-400">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 truncate max-w-[200px]" title={tender.successful_tenderer}>
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 truncate max-w-[220px]" title={tender.successful_tenderer}>
                       {tender.successful_tenderer || <span className="text-slate-400 italic">TBD</span>}
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-800 font-medium text-right">
                       {tender.psf_ppr ? formatCurrency(tender.psf_ppr) : <span className="text-slate-400">-</span>}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right text-xs">
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right">
                       {tender.psf_ppr && tender.market_segment ? (
                         <span title={`Based on ${tender.market_segment} margin assumptions`}>
                           {formatImpliedPSF(tender.psf_ppr, tender.market_segment)}
@@ -317,22 +315,6 @@ export function GLSDataTable({ height = 400 }) {
                       ) : (
                         <span className="text-slate-400">-</span>
                       )}
-                    </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      {tender.estimated_units ? `~${tender.estimated_units.toLocaleString()}` : '-'}
-                    </td>
-                    <td className="px-3 py-2 border-b border-slate-100">
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                        tender.status === 'awarded'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {tender.status === 'awarded' ? (
-                          <span title="FACT: Confirmed supply - capital committed">Awarded</span>
-                        ) : (
-                          <span title="SIGNAL: Open for tender - not confirmed supply">Open</span>
-                        )}
-                      </span>
                     </td>
                   </tr>
                 ))
@@ -347,16 +329,20 @@ export function GLSDataTable({ height = 400 }) {
         <div className="flex items-center justify-between text-xs text-[#547792]">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-              <span>Open = SIGNAL (upcoming supply)</span>
+              <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+              <span>CCR = Core Central</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              <span>Awarded = FACT (confirmed supply)</span>
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span>RCR = Rest of Central</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-teal-400 rounded-full"></span>
+              <span>OCR = Outside Central</span>
             </span>
           </div>
           <span className="text-[#547792]/70">
-            PSF (PPR) = Price per sqft of Gross Floor Area
+            PSF (PPR) = Land cost per sqft of GFA
           </span>
         </div>
       </div>
