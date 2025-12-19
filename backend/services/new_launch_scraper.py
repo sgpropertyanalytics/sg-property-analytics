@@ -1,15 +1,17 @@
 """
 New Launch Scraper - 2026 Private Condo Launches
 
-Scrapes from 3 sources for cross-validation:
-1. EdgeProp (edgeprop.sg/new-launches) - Primary, research-grade
+Scrapes from multiple sources for cross-validation:
+1. EdgeProp (edgeprop.sg/new-launches) - Research-grade data
 2. PropNex (propnex.com/new-launches) - Agency source
 3. ERA (era.com.sg/new-launches) - Agency source
 
+These sites use JavaScript rendering, so we use Playwright for browser automation.
+
 Pipeline:
-- Phase 1: Initial scrape (all 3 sources)
-- Phase 2: Bi-weekly validation job
-- Phase 3: API endpoint (serve pre-computed static data)
+- Phase 1: Initial scrape with Playwright (JS rendering)
+- Phase 2: Cross-validation between sources
+- Phase 3: Store in database with review flags
 
 Discrepancy Tolerance:
 - total_units: +/- 5 units → Flag for review
@@ -24,6 +26,7 @@ from decimal import Decimal
 from bs4 import BeautifulSoup
 import time
 import json
+import os
 
 # Import from gls_scraper for reuse of region/planning_area logic
 from services.gls_scraper import (
@@ -52,14 +55,147 @@ TOLERANCE = {
 }
 
 # Rate limiting between requests (seconds)
-RATE_LIMIT_DELAY = 1.0
+RATE_LIMIT_DELAY = 2.0
+
+# Retry settings
+MAX_RETRIES = 3
+RETRY_BACKOFF_BASE = 2  # Exponential backoff: 2s, 4s, 8s
+
+# Cache settings
+CACHE_DIR = "/tmp/scraper_cache"
+CACHE_TTL_HOURS = 6  # Cache HTML for 6 hours
+
+# Last-seen tracking
+LAST_SEEN_FILE = "/tmp/scraper_cache/last_seen.json"
+
+
+def _load_last_seen() -> Dict[str, Any]:
+    """Load last-seen project data for change detection."""
+    try:
+        if os.path.exists(LAST_SEEN_FILE):
+            with open(LAST_SEEN_FILE, 'r') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
+def _save_last_seen(data: Dict[str, Any]):
+    """Save last-seen project data."""
+    try:
+        os.makedirs(os.path.dirname(LAST_SEEN_FILE), exist_ok=True)
+        with open(LAST_SEEN_FILE, 'w') as f:
+            json.dump(data, f, indent=2, default=str)
+    except Exception:
+        pass
+
+
+def _detect_changes(current_projects: List[Dict], last_seen: Dict) -> Dict[str, List]:
+    """Detect new, changed, and removed projects since last run."""
+    changes = {'new': [], 'changed': [], 'removed': []}
+
+    current_names = set()
+    for proj in current_projects:
+        name = normalize_project_name(proj.get('project_name', ''))
+        current_names.add(name)
+
+        if name not in last_seen:
+            changes['new'].append(proj.get('project_name'))
+        else:
+            # Check for significant changes
+            old = last_seen[name]
+            if proj.get('total_units') and old.get('total_units'):
+                if abs(proj['total_units'] - old['total_units']) > TOLERANCE['total_units']:
+                    changes['changed'].append(proj.get('project_name'))
+
+    # Check for removed projects
+    for name in last_seen:
+        if name not in current_names:
+            changes['removed'].append(last_seen[name].get('project_name', name))
+
+    return changes
+
+
+def _request_with_retry(url: str, max_retries: int = MAX_RETRIES) -> Optional[requests.Response]:
+    """Make HTTP request with exponential backoff retry."""
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, headers=HEADERS, timeout=30)
+
+            # Success
+            if response.status_code == 200:
+                return response
+
+            # Rate limited - back off
+            if response.status_code in (429, 503):
+                wait_time = RETRY_BACKOFF_BASE ** (attempt + 1)
+                print(f"  Rate limited (HTTP {response.status_code}), waiting {wait_time}s...")
+                time.sleep(wait_time)
+                continue
+
+            # Other error - don't retry
+            print(f"  HTTP error: {response.status_code}")
+            return None
+
+        except requests.exceptions.Timeout:
+            wait_time = RETRY_BACKOFF_BASE ** (attempt + 1)
+            print(f"  Timeout, retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
+            time.sleep(wait_time)
+
+        except requests.exceptions.RequestException as e:
+            print(f"  Request error: {e}")
+            if attempt < max_retries - 1:
+                wait_time = RETRY_BACKOFF_BASE ** (attempt + 1)
+                print(f"  Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+
+    return None
+
+
+def _get_cached_html(url: str) -> Optional[str]:
+    """Get cached HTML if fresh enough."""
+    import hashlib
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        cache_key = hashlib.md5(url.encode()).hexdigest()
+        cache_file = f"{CACHE_DIR}/{cache_key}.html"
+
+        if os.path.exists(cache_file):
+            age_hours = (time.time() - os.path.getmtime(cache_file)) / 3600
+            if age_hours < CACHE_TTL_HOURS:
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    print(f"  Using cached HTML ({age_hours:.1f}h old)")
+                    return f.read()
+    except Exception:
+        pass
+    return None
+
+
+def _save_to_cache(url: str, html: str):
+    """Save HTML to cache."""
+    import hashlib
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        cache_key = hashlib.md5(url.encode()).hexdigest()
+        cache_file = f"{CACHE_DIR}/{cache_key}.html"
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            f.write(html)
+    except Exception:
+        pass
+
+# Playwright availability flag
+PLAYWRIGHT_AVAILABLE = False
+try:
+    from playwright.sync_api import sync_playwright
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    print("Note: Playwright not installed. Install with: pip install playwright && playwright install chromium")
 
 
 # =============================================================================
 # DISTRICT TO MARKET SEGMENT MAPPING
 # =============================================================================
 
-# Same mapping as in data_processor.py
 DISTRICT_TO_SEGMENT = {
     # CCR - Core Central Region
     '01': 'CCR', '02': 'CCR', '06': 'CCR', '07': 'CCR',
@@ -79,147 +215,248 @@ def get_market_segment_from_district(district: str) -> Optional[str]:
     """Get market segment (CCR/RCR/OCR) from district code."""
     if not district:
         return None
-    # Normalize: D09 -> 09, 9 -> 09
     d = district.upper().replace('D', '').zfill(2)
     return DISTRICT_TO_SEGMENT.get(d)
+
+
+# =============================================================================
+# PLAYWRIGHT-BASED SCRAPER (for JS-rendered sites)
+# =============================================================================
+
+def fetch_with_playwright(url: str, wait_selector: str = None, wait_time: int = 3000) -> Optional[str]:
+    """
+    Fetch a URL using Playwright to render JavaScript content.
+
+    Args:
+        url: The URL to fetch
+        wait_selector: CSS selector to wait for before extracting HTML
+        wait_time: Additional time to wait in ms after page load
+
+    Returns:
+        Rendered HTML content or None if failed
+    """
+    if not PLAYWRIGHT_AVAILABLE:
+        print(f"  Playwright not available, cannot render JS for {url}")
+        return None
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent=HEADERS['User-Agent'],
+                viewport={'width': 1920, 'height': 1080}
+            )
+            page = context.new_page()
+
+            print(f"  Loading page with Playwright: {url}")
+            page.goto(url, wait_until='networkidle', timeout=30000)
+
+            # Wait for specific element if provided
+            if wait_selector:
+                try:
+                    page.wait_for_selector(wait_selector, timeout=10000)
+                except:
+                    print(f"  Warning: Selector '{wait_selector}' not found, continuing...")
+
+            # Additional wait for dynamic content
+            page.wait_for_timeout(wait_time)
+
+            # Get the rendered HTML
+            html = page.content()
+
+            browser.close()
+
+            print(f"  Fetched {len(html)} bytes of rendered HTML")
+            return html
+
+    except Exception as e:
+        print(f"  Playwright error for {url}: {e}")
+        return None
+
+
+def fetch_page(url: str, use_playwright: bool = True, wait_selector: str = None, use_cache: bool = True) -> Optional[str]:
+    """
+    Fetch a page, using Playwright for JS rendering if available.
+    Falls back to requests if Playwright fails or is unavailable.
+
+    Args:
+        url: URL to fetch
+        use_playwright: Whether to use Playwright for JS rendering
+        wait_selector: CSS selector to wait for (Playwright only)
+        use_cache: Whether to use cached HTML if available
+    """
+    # Check cache first
+    if use_cache:
+        cached = _get_cached_html(url)
+        if cached:
+            return cached
+
+    html = None
+
+    # Try Playwright first for JS-rendered content
+    if use_playwright and PLAYWRIGHT_AVAILABLE:
+        html = fetch_with_playwright(url, wait_selector)
+
+    # Fallback to requests with retry
+    if not html:
+        print(f"  Fetching with requests: {url}")
+        response = _request_with_retry(url)
+        if response:
+            print(f"  Status: {response.status_code}, Length: {len(response.text)}")
+            html = response.text
+
+    # Save to cache if successful
+    if html and use_cache:
+        _save_to_cache(url, html)
+
+    return html
 
 
 # =============================================================================
 # EDGEPROP SCRAPER
 # =============================================================================
 
-EDGEPROP_URL = "https://www.edgeprop.sg/new-launches"
+# Use the listing page, NOT the marketing page
+# Marketing page: https://www.edgeprop.sg/new-launches (less data)
+# Listing page: https://www.edgeprop.sg/new-launches/all-new-property-launches (full listings, server-rendered)
+EDGEPROP_URL = "https://www.edgeprop.sg/new-launches/all-new-property-launches"
 
 
 def scrape_edgeprop(target_year: int = 2026) -> List[Dict[str, Any]]:
     """
-    Scrape EdgeProp new launches page.
+    Scrape EdgeProp new launches listing page.
 
-    EdgeProp is considered the primary source for research-grade data.
-
-    Returns list of projects with:
-    - project_name
-    - developer
-    - total_units
-    - psf_low, psf_high
-    - district
-    - tenure
-    - address
-    - url
+    EdgeProp's listing page contains server-rendered HTML with project cards.
+    No Playwright needed - direct HTML fetch should work.
     """
     results = []
 
-    try:
-        print(f"Scraping EdgeProp new launches for {target_year}...")
-        response = requests.get(EDGEPROP_URL, headers=HEADERS, timeout=30)
-        response.raise_for_status()
+    print(f"\nScraping EdgeProp new launches for {target_year}...")
 
-        soup = BeautifulSoup(response.text, 'html.parser')
+    # EdgeProp listing page is server-rendered, try direct HTML first (faster)
+    html = fetch_page(
+        EDGEPROP_URL,
+        use_playwright=False,  # Try without Playwright first
+        wait_selector=None
+    )
 
-        # EdgeProp lists new launches in property cards
-        # Look for project cards/listings
-        project_cards = soup.find_all('div', class_=re.compile(r'property-card|project-card|listing', re.I))
+    # If direct fetch failed or got minimal HTML, try with Playwright
+    if not html or len(html) < 10000:
+        print("  Direct fetch insufficient, trying Playwright...")
+        html = fetch_page(
+            EDGEPROP_URL,
+            use_playwright=True,
+            wait_selector='.project-card, .property-card, article'
+        )
 
-        if not project_cards:
-            # Try alternative selectors
-            project_cards = soup.find_all('article')
-            if not project_cards:
-                project_cards = soup.find_all('div', class_=re.compile(r'item|card', re.I))
+    if not html:
+        print("  Failed to fetch EdgeProp page")
+        return results
 
-        print(f"  Found {len(project_cards)} potential project cards")
+    # Debug: Save HTML for inspection
+    _debug_save_html(html, "edgeprop")
 
-        for card in project_cards:
-            try:
-                project = _parse_edgeprop_card(card, target_year)
-                if project and project.get('project_name'):
-                    project['source'] = 'edgeprop'
-                    project['source_url'] = EDGEPROP_URL
-                    results.append(project)
-            except Exception as e:
-                print(f"  Error parsing EdgeProp card: {e}")
-                continue
+    soup = BeautifulSoup(html, 'html.parser')
 
-        print(f"  Extracted {len(results)} projects from EdgeProp")
+    # Try multiple selectors (sites change structure)
+    selectors = [
+        'div[class*="property-card"]',
+        'div[class*="project-card"]',
+        'div[class*="listing"]',
+        'article[class*="property"]',
+        'div[class*="new-launch"]',
+        '.card',
+    ]
 
-    except Exception as e:
-        print(f"Error scraping EdgeProp: {e}")
+    project_cards = []
+    for selector in selectors:
+        cards = soup.select(selector)
+        if cards:
+            print(f"  Found {len(cards)} cards with selector: {selector}")
+            project_cards = cards
+            break
 
+    if not project_cards:
+        # Try finding any reasonable container
+        project_cards = soup.find_all('div', class_=re.compile(r'card|listing|property|project', re.I))
+        print(f"  Fallback: Found {len(project_cards)} potential cards")
+
+    for card in project_cards:
+        try:
+            project = _parse_property_card(card, target_year, 'edgeprop')
+            if project and project.get('project_name'):
+                project['source'] = 'edgeprop'
+                project['source_url'] = EDGEPROP_URL
+                results.append(project)
+        except Exception as e:
+            print(f"  Error parsing card: {e}")
+            continue
+
+    print(f"  Extracted {len(results)} projects from EdgeProp")
     return results
 
 
-def _parse_edgeprop_card(card, target_year: int) -> Optional[Dict[str, Any]]:
-    """Parse a single EdgeProp project card."""
-    project = {}
+def _try_edgeprop_api(target_year: int) -> Optional[List[Dict[str, Any]]]:
+    """Try to fetch data from EdgeProp's JSON API if it exists."""
+    try:
+        # Common API patterns to try
+        api_urls = [
+            f"https://www.edgeprop.sg/api/new-launches?year={target_year}",
+            "https://www.edgeprop.sg/api/v1/projects?type=new-launch",
+            "https://www.edgeprop.sg/api/properties?category=new-launch",
+        ]
 
-    # Extract project name (usually in h2, h3, or .title)
-    name_elem = card.find(['h2', 'h3', 'h4']) or card.find(class_=re.compile(r'title|name', re.I))
-    if name_elem:
-        project['project_name'] = name_elem.get_text(strip=True)
+        for api_url in api_urls:
+            try:
+                response = requests.get(api_url, headers=HEADERS, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    if data and isinstance(data, (list, dict)):
+                        print(f"  Found API endpoint: {api_url}")
+                        return _parse_api_response(data, target_year)
+            except:
+                continue
 
-    # Extract developer
-    dev_elem = card.find(string=re.compile(r'developer|by', re.I))
-    if dev_elem:
-        parent = dev_elem.find_parent()
-        if parent:
-            dev_text = parent.get_text(strip=True)
-            # Extract developer name after "by" or "Developer:"
-            match = re.search(r'(?:by|developer[:\s]+)([^|]+)', dev_text, re.I)
-            if match:
-                project['developer'] = match.group(1).strip()
+    except Exception as e:
+        pass  # API not available, fall back to HTML scraping
 
-    # Extract price/PSF
-    price_elem = card.find(string=re.compile(r'\$[\d,]+\s*(?:psf|/sqft)', re.I))
-    if price_elem:
-        psf_range = _parse_psf_range(price_elem)
-        if psf_range:
-            project['psf_low'], project['psf_high'] = psf_range
+    return None
 
-    # Extract units
-    units_elem = card.find(string=re.compile(r'\d+\s*units?', re.I))
-    if units_elem:
-        match = re.search(r'(\d+)\s*units?', units_elem, re.I)
-        if match:
-            project['total_units'] = int(match.group(1))
 
-    # Extract district
-    district_elem = card.find(string=re.compile(r'D\d{1,2}|District\s*\d{1,2}', re.I))
-    if district_elem:
-        match = re.search(r'D?(\d{1,2})', district_elem, re.I)
-        if match:
-            project['district'] = f"D{match.group(1).zfill(2)}"
+def _parse_api_response(data: Any, target_year: int) -> List[Dict[str, Any]]:
+    """Parse JSON API response into project list."""
+    results = []
 
-    # Extract tenure
-    tenure_elem = card.find(string=re.compile(r'freehold|99[-\s]?year|999[-\s]?year|leasehold', re.I))
-    if tenure_elem:
-        tenure_text = tenure_elem.lower()
-        if 'freehold' in tenure_text:
-            project['tenure'] = 'Freehold'
-        elif '999' in tenure_text:
-            project['tenure'] = '999-year'
-        elif '99' in tenure_text:
-            project['tenure'] = '99-year'
+    # Handle different API response structures
+    items = data if isinstance(data, list) else data.get('data', data.get('projects', data.get('results', [])))
 
-    # Extract launch year/date
-    year_elem = card.find(string=re.compile(r'202[4-9]|2030', re.I))
-    if year_elem:
-        match = re.search(r'(202[4-9]|2030)', year_elem)
-        if match:
-            launch_year = int(match.group(1))
-            project['launch_year'] = launch_year
-            # Only include if matches target year
-            if launch_year != target_year:
-                return None
+    for item in items:
+        if not isinstance(item, dict):
+            continue
 
-    # Extract project URL
-    link = card.find('a', href=True)
-    if link:
-        href = link.get('href', '')
-        if href.startswith('/'):
-            project['detail_url'] = f"https://www.edgeprop.sg{href}"
-        elif href.startswith('http'):
-            project['detail_url'] = href
+        project = {
+            'project_name': item.get('name') or item.get('project_name') or item.get('title'),
+            'developer': item.get('developer') or item.get('developer_name'),
+            'total_units': item.get('units') or item.get('total_units'),
+            'district': item.get('district'),
+            'tenure': item.get('tenure'),
+            'address': item.get('address') or item.get('location'),
+            'source': 'edgeprop',
+        }
 
-    return project if project.get('project_name') else None
+        # Parse PSF
+        psf = item.get('psf') or item.get('indicative_psf') or item.get('price_psf')
+        if psf:
+            if isinstance(psf, dict):
+                project['psf_low'] = psf.get('min') or psf.get('low')
+                project['psf_high'] = psf.get('max') or psf.get('high')
+            else:
+                project['psf_low'] = project['psf_high'] = float(psf)
+
+        if project.get('project_name'):
+            results.append(project)
+
+    return results
 
 
 # =============================================================================
@@ -230,194 +467,324 @@ PROPNEX_URL = "https://www.propnex.com/new-launches"
 
 
 def scrape_propnex(target_year: int = 2026) -> List[Dict[str, Any]]:
-    """
-    Scrape PropNex new launches page.
-
-    Returns list of projects.
-    """
+    """Scrape PropNex new launches page."""
     results = []
 
-    try:
-        print(f"Scraping PropNex new launches for {target_year}...")
-        response = requests.get(PROPNEX_URL, headers=HEADERS, timeout=30)
-        response.raise_for_status()
+    print(f"\nScraping PropNex new launches for {target_year}...")
 
-        soup = BeautifulSoup(response.text, 'html.parser')
+    html = fetch_page(
+        PROPNEX_URL,
+        use_playwright=True,
+        wait_selector='.property-card, .project-item, .listing, article'
+    )
 
-        # PropNex may use different card structure
-        project_cards = soup.find_all('div', class_=re.compile(r'project|property|listing|card', re.I))
+    if not html:
+        print("  Failed to fetch PropNex page")
+        return results
 
-        if not project_cards:
-            project_cards = soup.find_all('article')
+    _debug_save_html(html, "propnex")
 
-        print(f"  Found {len(project_cards)} potential project cards")
+    soup = BeautifulSoup(html, 'html.parser')
 
-        for card in project_cards:
-            try:
-                project = _parse_propnex_card(card, target_year)
-                if project and project.get('project_name'):
-                    project['source'] = 'propnex'
-                    project['source_url'] = PROPNEX_URL
-                    results.append(project)
-            except Exception as e:
-                print(f"  Error parsing PropNex card: {e}")
-                continue
+    # Try multiple selectors
+    selectors = [
+        'div[class*="project"]',
+        'div[class*="property"]',
+        'div[class*="listing"]',
+        'article',
+        '.card',
+    ]
 
-        print(f"  Extracted {len(results)} projects from PropNex")
+    project_cards = []
+    for selector in selectors:
+        cards = soup.select(selector)
+        if cards:
+            print(f"  Found {len(cards)} cards with selector: {selector}")
+            project_cards = cards
+            break
 
-    except Exception as e:
-        print(f"Error scraping PropNex: {e}")
+    for card in project_cards:
+        try:
+            project = _parse_property_card(card, target_year, 'propnex')
+            if project and project.get('project_name'):
+                project['source'] = 'propnex'
+                project['source_url'] = PROPNEX_URL
+                results.append(project)
+        except Exception as e:
+            print(f"  Error parsing card: {e}")
+            continue
 
+    print(f"  Extracted {len(results)} projects from PropNex")
     return results
-
-
-def _parse_propnex_card(card, target_year: int) -> Optional[Dict[str, Any]]:
-    """Parse a single PropNex project card."""
-    project = {}
-
-    # Similar parsing logic to EdgeProp
-    name_elem = card.find(['h2', 'h3', 'h4']) or card.find(class_=re.compile(r'title|name', re.I))
-    if name_elem:
-        project['project_name'] = name_elem.get_text(strip=True)
-
-    # Extract developer
-    text = card.get_text()
-    dev_match = re.search(r'(?:developer|by)[:\s]+([^|\n]+)', text, re.I)
-    if dev_match:
-        project['developer'] = dev_match.group(1).strip()
-
-    # Extract PSF
-    psf_match = re.search(r'\$\s*([\d,]+)\s*(?:to|-)\s*\$?\s*([\d,]+)?\s*(?:psf|/sqft)', text, re.I)
-    if psf_match:
-        project['psf_low'] = float(psf_match.group(1).replace(',', ''))
-        if psf_match.group(2):
-            project['psf_high'] = float(psf_match.group(2).replace(',', ''))
-        else:
-            project['psf_high'] = project['psf_low']
-
-    # Extract units
-    units_match = re.search(r'(\d+)\s*units?', text, re.I)
-    if units_match:
-        project['total_units'] = int(units_match.group(1))
-
-    # Extract district
-    district_match = re.search(r'D(\d{1,2})|District\s*(\d{1,2})', text, re.I)
-    if district_match:
-        d = district_match.group(1) or district_match.group(2)
-        project['district'] = f"D{d.zfill(2)}"
-
-    # Extract tenure
-    tenure_match = re.search(r'(freehold|99[-\s]?year|999[-\s]?year)', text, re.I)
-    if tenure_match:
-        tenure = tenure_match.group(1).lower()
-        if 'freehold' in tenure:
-            project['tenure'] = 'Freehold'
-        elif '999' in tenure:
-            project['tenure'] = '999-year'
-        elif '99' in tenure:
-            project['tenure'] = '99-year'
-
-    # Check launch year
-    year_match = re.search(r'(202[4-9]|2030)', text)
-    if year_match:
-        launch_year = int(year_match.group(1))
-        project['launch_year'] = launch_year
-        if launch_year != target_year:
-            return None
-
-    return project if project.get('project_name') else None
 
 
 # =============================================================================
 # ERA SCRAPER
 # =============================================================================
 
-ERA_URL = "https://www.era.com.sg/new-launches/"
+# ERA property portal - JS-driven, needs Playwright or XHR endpoint discovery
+# Main site: https://www.era.com.sg/new-launches/ (marketing)
+# Portal: https://propertyportal.era.com.sg/new-launches (actual listings, JS-driven)
+ERA_URL = "https://propertyportal.era.com.sg/new-launches"
 
 
 def scrape_era(target_year: int = 2026) -> List[Dict[str, Any]]:
     """
-    Scrape ERA new launches page.
+    Scrape ERA property portal new launches.
 
-    Returns list of projects.
+    ERA's portal is JS-driven - the raw HTML is mostly shell/filters.
+    Needs Playwright to render, or ideally discover XHR endpoint.
     """
     results = []
 
-    try:
-        print(f"Scraping ERA new launches for {target_year}...")
-        response = requests.get(ERA_URL, headers=HEADERS, timeout=30)
-        response.raise_for_status()
+    print(f"\nScraping ERA new launches for {target_year}...")
 
-        soup = BeautifulSoup(response.text, 'html.parser')
+    # ERA portal is JS-driven, needs Playwright
+    html = fetch_page(
+        ERA_URL,
+        use_playwright=True,
+        wait_selector='.property-card, .project-card, .listing-item, [class*="property"]'
+    )
 
-        # ERA may use different structure
-        project_cards = soup.find_all('div', class_=re.compile(r'project|property|listing|card|item', re.I))
+    if not html:
+        print("  Failed to fetch ERA page")
+        return results
 
-        if not project_cards:
-            project_cards = soup.find_all('article')
+    _debug_save_html(html, "era")
 
-        print(f"  Found {len(project_cards)} potential project cards")
+    soup = BeautifulSoup(html, 'html.parser')
 
-        for card in project_cards:
-            try:
-                project = _parse_era_card(card, target_year)
-                if project and project.get('project_name'):
-                    project['source'] = 'era'
-                    project['source_url'] = ERA_URL
-                    results.append(project)
-            except Exception as e:
-                print(f"  Error parsing ERA card: {e}")
-                continue
+    # Try multiple selectors
+    selectors = [
+        'div[class*="project"]',
+        'div[class*="property"]',
+        'div[class*="listing"]',
+        'article',
+        '.card',
+    ]
 
-        print(f"  Extracted {len(results)} projects from ERA")
+    project_cards = []
+    for selector in selectors:
+        cards = soup.select(selector)
+        if cards:
+            print(f"  Found {len(cards)} cards with selector: {selector}")
+            project_cards = cards
+            break
 
-    except Exception as e:
-        print(f"Error scraping ERA: {e}")
+    for card in project_cards:
+        try:
+            project = _parse_property_card(card, target_year, 'era')
+            if project and project.get('project_name'):
+                project['source'] = 'era'
+                project['source_url'] = ERA_URL
+                results.append(project)
+        except Exception as e:
+            print(f"  Error parsing card: {e}")
+            continue
 
+    print(f"  Extracted {len(results)} projects from ERA")
     return results
 
 
-def _parse_era_card(card, target_year: int) -> Optional[Dict[str, Any]]:
-    """Parse a single ERA project card."""
-    # Similar structure to PropNex
-    return _parse_propnex_card(card, target_year)
+# =============================================================================
+# GENERIC PROPERTY CARD PARSER
+# =============================================================================
+
+def _parse_property_card(card, target_year: int, source: str) -> Optional[Dict[str, Any]]:
+    """
+    Parse a property card element to extract project details.
+    Works with various HTML structures from different sites.
+    """
+    project = {}
+
+    # Get all text for pattern matching
+    text = card.get_text(separator=' ', strip=True)
+
+    # Extract project name (try multiple approaches)
+    name_elem = (
+        card.find(['h1', 'h2', 'h3', 'h4']) or
+        card.find(class_=re.compile(r'title|name|heading', re.I)) or
+        card.find('a', class_=re.compile(r'title|name', re.I))
+    )
+    if name_elem:
+        name = name_elem.get_text(strip=True)
+        # Clean up name
+        name = re.sub(r'\s+', ' ', name).strip()
+        if len(name) > 3 and len(name) < 100:
+            project['project_name'] = name
+
+    # Extract developer
+    dev_patterns = [
+        r'(?:by|developer|developed by)[:\s]+([A-Z][A-Za-z\s&,]+?)(?:\.|,|\n|$|\d)',
+        r'Developer[:\s]+([^\n|]+)',
+    ]
+    for pattern in dev_patterns:
+        match = re.search(pattern, text, re.I)
+        if match:
+            dev = match.group(1).strip()
+            if len(dev) > 2 and len(dev) < 80:
+                project['developer'] = dev
+                break
+
+    # Extract total units
+    units_match = re.search(r'(\d{2,4})\s*(?:units?|residential)', text, re.I)
+    if units_match:
+        project['total_units'] = int(units_match.group(1))
+
+    # Extract district
+    district_match = re.search(r'(?:District|D)\s*(\d{1,2})\b', text, re.I)
+    if district_match:
+        project['district'] = f"D{district_match.group(1).zfill(2)}"
+
+    # Extract tenure
+    if re.search(r'\bfreehold\b', text, re.I):
+        project['tenure'] = 'Freehold'
+    elif re.search(r'999[-\s]?year', text, re.I):
+        project['tenure'] = '999-year'
+    elif re.search(r'99[-\s]?year', text, re.I):
+        project['tenure'] = '99-year'
+    elif re.search(r'leasehold', text, re.I):
+        project['tenure'] = '99-year'  # Default leasehold
+
+    # Extract PSF range
+    psf_patterns = [
+        r'\$\s*([\d,]+)\s*(?:to|-|–)\s*\$?\s*([\d,]+)\s*(?:psf|per sq ft|/sqft)',
+        r'(?:from|starting)\s*\$\s*([\d,]+)\s*(?:psf|per sq ft)',
+        r'\$\s*([\d,]+)\s*(?:psf|per sq ft|/sqft)',
+    ]
+
+    for pattern in psf_patterns:
+        match = re.search(pattern, text, re.I)
+        if match:
+            project['psf_low'] = float(match.group(1).replace(',', ''))
+            if match.lastindex >= 2 and match.group(2):
+                project['psf_high'] = float(match.group(2).replace(',', ''))
+            else:
+                project['psf_high'] = project['psf_low']
+            break
+
+    # Extract address
+    addr_match = re.search(
+        r'(?:at|along|located)\s+([A-Z][A-Za-z\s]+(?:Road|Street|Avenue|Drive|Lane|Way|Walk|Rise|Crescent|Close))',
+        text, re.I
+    )
+    if addr_match:
+        project['address'] = addr_match.group(1).strip()
+
+    # Extract launch year / TOP year
+    year_patterns = [
+        r'(?:launch|launching|TOP|completion|ready)\s*(?:in|by|around)?\s*(202[4-9]|2030)',
+        r'(202[4-9]|2030)\s*(?:launch|TOP|completion)',
+    ]
+    for pattern in year_patterns:
+        match = re.search(pattern, text, re.I)
+        if match:
+            project['launch_year'] = int(match.group(1))
+            break
+
+    # Extract URL if available
+    link = card.find('a', href=True)
+    if link:
+        href = link.get('href', '')
+        if href.startswith('/'):
+            # Determine base URL based on source
+            base_urls = {
+                'edgeprop': 'https://www.edgeprop.sg',
+                'propnex': 'https://www.propnex.com',
+                'era': 'https://www.era.com.sg',
+            }
+            project['detail_url'] = base_urls.get(source, '') + href
+        elif href.startswith('http'):
+            project['detail_url'] = href
+
+    return project if project.get('project_name') else None
 
 
 # =============================================================================
 # UTILITY FUNCTIONS
 # =============================================================================
 
-def _parse_psf_range(text: str) -> Optional[Tuple[float, float]]:
-    """Parse PSF range from text like '$1,800 - $2,200 psf'."""
-    if not text:
-        return None
+def _debug_save_html(html: str, source: str):
+    """Save HTML to file for debugging."""
+    debug_dir = "/tmp/scraper_debug"
+    try:
+        os.makedirs(debug_dir, exist_ok=True)
+        filepath = f"{debug_dir}/{source}_raw.html"
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(html)
+        print(f"  Debug: Saved HTML to {filepath}")
 
-    # Pattern: $X - $Y psf or $X to $Y psf or just $X psf
-    match = re.search(r'\$\s*([\d,]+(?:\.\d+)?)\s*(?:[-–to]+\s*\$?\s*([\d,]+(?:\.\d+)?))?\s*(?:psf|/sqft)?', text, re.I)
-    if match:
-        low = float(match.group(1).replace(',', ''))
-        high = float(match.group(2).replace(',', '')) if match.group(2) else low
-        return (low, high)
-
-    return None
+        # Check for common content indicators
+        has_listings = any(x in html.lower() for x in ['project', 'property', 'condo', 'residence', 'units'])
+        print(f"  Debug: HTML contains listing keywords: {has_listings}")
+    except Exception as e:
+        pass
 
 
 def normalize_project_name(name: str) -> str:
-    """Normalize project name for matching."""
+    """
+    Normalize project name for matching.
+
+    Handles variations like:
+    - "AMO Residence" vs "Amo Residence" vs "AMO RESIDENCE"
+    - "The Botany at Dairy Farm" vs "Botany @ Dairy Farm"
+    - "CanningHill Piers" vs "Canning Hill Piers"
+    """
     if not name:
         return ""
-    # Remove common suffixes, lowercase, strip
     normalized = name.lower().strip()
-    normalized = re.sub(r'\s*(condo|condominium|residences|residence|at|@)\s*', ' ', normalized)
+    # Remove common suffixes/prefixes
+    normalized = re.sub(r'\b(the|condo|condominium|residences|residence|at|@)\b', ' ', normalized)
+    # Normalize spacing
     normalized = re.sub(r'\s+', ' ', normalized).strip()
+    # Remove punctuation
+    normalized = re.sub(r'[^\w\s]', '', normalized)
     return normalized
 
 
-def match_projects(projects_a: List[Dict], projects_b: List[Dict]) -> List[Tuple[Dict, Dict]]:
+def fuzzy_match_score(name_a: str, name_b: str) -> float:
     """
-    Match projects from two sources by name similarity.
+    Calculate fuzzy match score between two project names.
+    Returns score from 0.0 to 1.0 (1.0 = exact match).
 
-    Returns list of (project_a, project_b) tuples.
+    Uses token-based matching for better results with name variations.
+    """
+    if not name_a or not name_b:
+        return 0.0
+
+    # Exact match
+    if name_a == name_b:
+        return 1.0
+
+    # Token-based matching
+    tokens_a = set(name_a.split())
+    tokens_b = set(name_b.split())
+
+    if not tokens_a or not tokens_b:
+        return 0.0
+
+    # Jaccard similarity
+    intersection = len(tokens_a & tokens_b)
+    union = len(tokens_a | tokens_b)
+    jaccard = intersection / union if union > 0 else 0
+
+    # Also check if one contains most of the other (for partial matches)
+    containment_a = intersection / len(tokens_a) if tokens_a else 0
+    containment_b = intersection / len(tokens_b) if tokens_b else 0
+    containment = max(containment_a, containment_b)
+
+    # Combined score (weight towards containment for partial matches)
+    return max(jaccard, containment * 0.9)
+
+
+def match_projects(projects_a: List[Dict], projects_b: List[Dict], threshold: float = 0.6) -> List[Tuple[Dict, Dict]]:
+    """
+    Match projects from two sources using fuzzy name matching.
+
+    Args:
+        projects_a: First list of projects
+        projects_b: Second list of projects
+        threshold: Minimum similarity score to consider a match (0.0-1.0)
     """
     matches = []
     used_b = set()
@@ -428,7 +795,7 @@ def match_projects(projects_a: List[Dict], projects_b: List[Dict]) -> List[Tuple
             continue
 
         best_match = None
-        best_score = 0
+        best_score = 0.0
 
         for i, b in enumerate(projects_b):
             if i in used_b:
@@ -438,18 +805,17 @@ def match_projects(projects_a: List[Dict], projects_b: List[Dict]) -> List[Tuple
             if not name_b:
                 continue
 
-            # Simple matching: check if one contains the other or high overlap
-            if name_a == name_b:
+            # Use fuzzy matching
+            score = fuzzy_match_score(name_a, name_b)
+            if score > best_score:
                 best_match = (i, b)
-                best_score = 100
-                break
-            elif name_a in name_b or name_b in name_a:
-                score = len(set(name_a.split()) & set(name_b.split())) / max(len(name_a.split()), len(name_b.split())) * 100
-                if score > best_score:
-                    best_match = (i, b)
-                    best_score = score
+                best_score = score
 
-        if best_match and best_score >= 50:
+            # Early exit on exact match
+            if score == 1.0:
+                break
+
+        if best_match and best_score >= threshold:
             matches.append((a, best_match[1]))
             used_b.add(best_match[0])
 
@@ -467,6 +833,11 @@ def scrape_new_launches(
 ) -> Dict[str, Any]:
     """
     Main function to scrape new launches from all 3 sources.
+
+    Sources are scraped in parallel (conceptually) and cross-validated:
+    - EdgeProp: Primary research-grade source
+    - PropNex: Agency source for validation
+    - ERA: Agency source for validation
 
     Args:
         target_year: Year to filter for (default 2026)
@@ -499,7 +870,11 @@ def scrape_new_launches(
     # ==========================================================================
     print(f"\n{'='*60}")
     print(f"Scraping New Launches for {target_year}")
-    print(f"{'='*60}\n")
+    print(f"{'='*60}")
+
+    if not PLAYWRIGHT_AVAILABLE:
+        print("\n⚠️  Playwright not installed. JS-rendered content may not be captured.")
+        print("   Install with: pip install playwright && playwright install chromium\n")
 
     edgeprop_projects = scrape_edgeprop(target_year)
     stats['edgeprop_scraped'] = len(edgeprop_projects)
@@ -517,7 +892,6 @@ def scrape_new_launches(
     # ==========================================================================
     print(f"\n--- Cross-validating sources ---")
 
-    # Build master list with data from all sources
     master_projects = {}
 
     # Add EdgeProp projects (primary source)
@@ -563,12 +937,12 @@ def scrape_new_launches(
     print(f"Found {len(master_projects)} unique projects across all sources")
 
     # ==========================================================================
-    # PHASE 3: Process each project
+    # PHASE 3: Process each project with cross-validation
     # ==========================================================================
     for name, sources in master_projects.items():
         try:
-            # Use cross-validation to get consensus values
-            validated = NewLaunch.cross_validate_sources(
+            # Cross-validate to get consensus values
+            validated = _cross_validate_sources(
                 edgeprop_data=sources.get('edgeprop'),
                 propnex_data=sources.get('propnex'),
                 era_data=sources.get('era'),
@@ -595,7 +969,6 @@ def scrape_new_launches(
             if district:
                 market_segment = get_market_segment_from_district(district)
             elif merged.get('address'):
-                # Try geocoding address
                 geo_data = geocode_location(merged.get('address'))
                 if geo_data.get('planning_area'):
                     planning_area = geo_data['planning_area']
@@ -689,6 +1062,31 @@ def scrape_new_launches(
         stats['gls_linked'] = link_stats.get('linked', 0)
 
     # ==========================================================================
+    # PHASE 5: Last-seen tracking and change detection
+    # ==========================================================================
+    all_projects = edgeprop_projects + propnex_projects + era_projects
+    if all_projects and not dry_run:
+        last_seen = _load_last_seen()
+        changes = _detect_changes(all_projects, last_seen)
+
+        # Update last-seen data
+        new_last_seen = {}
+        for proj in all_projects:
+            name = normalize_project_name(proj.get('project_name', ''))
+            if name:
+                new_last_seen[name] = {
+                    'project_name': proj.get('project_name'),
+                    'total_units': proj.get('total_units'),
+                    'psf_low': proj.get('psf_low'),
+                    'last_seen': datetime.utcnow().isoformat(),
+                }
+        _save_last_seen(new_last_seen)
+
+        stats['new_projects'] = changes['new']
+        stats['changed_projects'] = changes['changed']
+        stats['removed_projects'] = changes['removed']
+
+    # ==========================================================================
     # Summary
     # ==========================================================================
     print(f"\n{'='*60}")
@@ -702,10 +1100,93 @@ def scrape_new_launches(
     print(f"Updated: {stats['projects_updated']}")
     print(f"Needs review: {stats['needs_review']}")
     print(f"GLS linked: {stats['gls_linked']}")
+
+    # Show change detection results
+    if stats.get('new_projects'):
+        print(f"\n🆕 New projects detected: {len(stats['new_projects'])}")
+        for name in stats['new_projects'][:5]:
+            print(f"   - {name}")
+        if len(stats['new_projects']) > 5:
+            print(f"   ... and {len(stats['new_projects']) - 5} more")
+
+    if stats.get('changed_projects'):
+        print(f"\n📝 Changed projects: {len(stats['changed_projects'])}")
+        for name in stats['changed_projects'][:5]:
+            print(f"   - {name}")
+
+    if stats.get('removed_projects'):
+        print(f"\n❌ Removed projects: {len(stats['removed_projects'])}")
+        for name in stats['removed_projects'][:5]:
+            print(f"   - {name}")
+
     if stats['errors']:
-        print(f"Errors: {len(stats['errors'])}")
+        print(f"\n⚠️  Errors: {len(stats['errors'])}")
 
     return stats
+
+
+def _cross_validate_sources(
+    edgeprop_data: Optional[Dict] = None,
+    propnex_data: Optional[Dict] = None,
+    era_data: Optional[Dict] = None,
+) -> Dict[str, Any]:
+    """
+    Cross-validate data from multiple sources and return consensus values.
+
+    - total_units: If diff > 5 units, flag for review
+    - indicative_psf: If diff > $50, use average
+    - developer: Must match exactly or flag
+    """
+    validated = {
+        'needs_review': False,
+        'review_reason': None,
+    }
+
+    sources = [s for s in [edgeprop_data, propnex_data, era_data] if s]
+
+    if not sources:
+        return validated
+
+    # Validate total_units
+    units_values = [s.get('total_units') for s in sources if s.get('total_units')]
+    if units_values:
+        if len(units_values) > 1:
+            max_diff = max(units_values) - min(units_values)
+            if max_diff > TOLERANCE['total_units']:
+                validated['needs_review'] = True
+                validated['review_reason'] = f"Units discrepancy: {min(units_values)}-{max(units_values)}"
+        validated['total_units'] = int(sum(units_values) / len(units_values))
+        validated['total_units_source'] = 'consensus' if len(units_values) > 1 else 'single'
+
+    # Validate PSF
+    psf_lows = [s.get('psf_low') for s in sources if s.get('psf_low')]
+    psf_highs = [s.get('psf_high') for s in sources if s.get('psf_high')]
+
+    if psf_lows:
+        if len(psf_lows) > 1:
+            max_diff = max(psf_lows) - min(psf_lows)
+            if max_diff > TOLERANCE['indicative_psf']:
+                validated['needs_review'] = True
+                reason = validated.get('review_reason', '')
+                validated['review_reason'] = f"{reason}; PSF discrepancy" if reason else "PSF discrepancy"
+        validated['indicative_psf_low'] = sum(psf_lows) / len(psf_lows)
+        validated['indicative_psf_source'] = 'consensus' if len(psf_lows) > 1 else 'single'
+
+    if psf_highs:
+        validated['indicative_psf_high'] = sum(psf_highs) / len(psf_highs)
+
+    # Validate developer
+    developers = [s.get('developer') for s in sources if s.get('developer')]
+    if developers:
+        # Check if all developers match (case-insensitive)
+        dev_lower = [d.lower().strip() for d in developers]
+        if len(set(dev_lower)) > 1:
+            validated['needs_review'] = True
+            reason = validated.get('review_reason', '')
+            validated['review_reason'] = f"{reason}; Developer mismatch" if reason else "Developer mismatch"
+        validated['developer'] = developers[0]  # Use first (EdgeProp priority)
+
+    return validated
 
 
 def _merge_source_data(sources: Dict[str, Dict]) -> Dict[str, Any]:
@@ -718,7 +1199,7 @@ def _merge_source_data(sources: Dict[str, Dict]) -> Dict[str, Any]:
         if not source:
             continue
 
-        for key in ['developer', 'district', 'tenure', 'address', 'launch_year']:
+        for key in ['developer', 'district', 'tenure', 'address', 'launch_year', 'total_units', 'psf_low', 'psf_high']:
             if not merged.get(key) and source.get(key):
                 merged[key] = source[key]
 
@@ -727,7 +1208,6 @@ def _merge_source_data(sources: Dict[str, Dict]) -> Dict[str, Any]:
 
 def _update_new_launch(existing, validated: Dict, merged: Dict, source_urls: Dict):
     """Update an existing NewLaunch record with new data."""
-    # Update validated fields
     if validated.get('total_units'):
         existing.total_units = validated['total_units']
         existing.total_units_source = validated.get('total_units_source')
@@ -742,14 +1222,9 @@ def _update_new_launch(existing, validated: Dict, merged: Dict, source_urls: Dic
     if validated.get('developer'):
         existing.developer = validated['developer']
 
-    # Update review status
     existing.needs_review = validated.get('needs_review', False)
     existing.review_reason = validated.get('review_reason')
-
-    # Update source URLs
     existing.source_urls = source_urls
-
-    # Update timestamps
     existing.last_scraped = datetime.utcnow()
     existing.updated_at = datetime.utcnow()
 
@@ -759,22 +1234,12 @@ def _update_new_launch(existing, validated: Dict, merged: Dict, source_urls: Dic
 # =============================================================================
 
 def link_to_gls_tenders(db_session) -> Dict[str, int]:
-    """
-    Link NewLaunch records to GLS tender records.
-
-    Matches by:
-    1. Developer name similarity
-    2. Planning area / location
-    3. Site area similarity
-
-    Returns stats on links created.
-    """
+    """Link NewLaunch records to GLS tender records."""
     from models.new_launch import NewLaunch
     from models.gls_tender import GLSTender
 
     stats = {'linked': 0, 'already_linked': 0, 'no_match': 0}
 
-    # Get unlinked new launches
     unlinked = db_session.query(NewLaunch).filter(
         NewLaunch.gls_tender_id.is_(None)
     ).all()
@@ -782,7 +1247,6 @@ def link_to_gls_tenders(db_session) -> Dict[str, int]:
     print(f"  Found {len(unlinked)} unlinked new launches")
 
     for launch in unlinked:
-        # Try to find matching GLS tender
         gls_tender = _find_matching_gls_tender(launch, db_session)
 
         if gls_tender:
@@ -793,7 +1257,6 @@ def link_to_gls_tenders(db_session) -> Dict[str, int]:
         else:
             stats['no_match'] += 1
 
-    # Count already linked
     stats['already_linked'] = db_session.query(NewLaunch).filter(
         NewLaunch.gls_tender_id.isnot(None)
     ).count()
@@ -811,7 +1274,6 @@ def _find_matching_gls_tender(launch, db_session):
     """Find matching GLS tender for a new launch."""
     from models.gls_tender import GLSTender
 
-    # Try matching by planning area + developer
     if launch.planning_area and launch.developer:
         tender = db_session.query(GLSTender).filter(
             GLSTender.status == 'awarded',
@@ -821,9 +1283,7 @@ def _find_matching_gls_tender(launch, db_session):
         if tender:
             return tender
 
-    # Try matching by district
     if launch.district:
-        # Get planning areas in this district's segment
         segment = get_market_segment_from_district(launch.district)
         if segment:
             tender = db_session.query(GLSTender).filter(
@@ -848,11 +1308,7 @@ def _find_matching_gls_tender(launch, db_session):
 # =============================================================================
 
 def validate_new_launches(db_session=None) -> Dict[str, Any]:
-    """
-    Bi-weekly validation job: re-scrape and compare against stored values.
-
-    Returns stats on discrepancies found.
-    """
+    """Bi-weekly validation job: re-scrape and compare against stored values."""
     from models.new_launch import NewLaunch
     from models.database import db
 
@@ -870,7 +1326,6 @@ def validate_new_launches(db_session=None) -> Dict[str, Any]:
     print("Validation Job: Checking for discrepancies")
     print(f"{'='*60}\n")
 
-    # Get all new launches
     launches = db_session.query(NewLaunch).all()
     print(f"Found {len(launches)} projects to validate")
 
@@ -896,13 +1351,11 @@ def validate_new_launches(db_session=None) -> Dict[str, Any]:
         if name:
             current_data.setdefault(name, {})['era'] = p
 
-    # Compare each stored record
     for launch in launches:
         name = normalize_project_name(launch.project_name)
         current = current_data.get(name)
 
         if not current:
-            # Project not found in any source
             continue
 
         stats['total_validated'] += 1
@@ -937,18 +1390,6 @@ def validate_new_launches(db_session=None) -> Dict[str, Any]:
                         'diff': diff,
                     })
 
-        # Check developer
-        for source_name in ['edgeprop', 'propnex', 'era']:
-            source = current.get(source_name)
-            if source and source.get('developer') and launch.developer:
-                if source['developer'].lower().strip() != launch.developer.lower().strip():
-                    discrepancies.append({
-                        'field': 'developer',
-                        'source': source_name,
-                        'stored': launch.developer,
-                        'current': source['developer'],
-                    })
-
         if discrepancies:
             stats['discrepancies_found'] += 1
             stats['discrepancies'].append({
@@ -956,12 +1397,10 @@ def validate_new_launches(db_session=None) -> Dict[str, Any]:
                 'issues': discrepancies,
             })
 
-            # Flag for review
             launch.needs_review = True
             launch.review_reason = f"Validation discrepancies: {', '.join(d['field'] for d in discrepancies)}"
             stats['flagged_for_review'] += 1
 
-        # Update validation timestamp
         launch.last_validated = datetime.utcnow()
 
     try:
@@ -970,12 +1409,172 @@ def validate_new_launches(db_session=None) -> Dict[str, Any]:
         db_session.rollback()
         print(f"Error committing validation: {e}")
 
-    # Summary
     print(f"\n{'='*60}")
     print("Validation Complete")
     print(f"{'='*60}")
     print(f"Projects validated: {stats['total_validated']}")
     print(f"Discrepancies found: {stats['discrepancies_found']}")
     print(f"Flagged for review: {stats['flagged_for_review']}")
+
+    return stats
+
+
+# =============================================================================
+# SEED DATA - Known 2026 New Launches (Fallback)
+# =============================================================================
+
+SEED_DATA_2026 = [
+    {
+        'project_name': 'AMO Residence',
+        'developer': 'UOL Group',
+        'district': 'D20',
+        'planning_area': 'Ang Mo Kio',
+        'market_segment': 'OCR',
+        'total_units': 372,
+        'indicative_psf_low': 2400,
+        'indicative_psf_high': 2600,
+        'tenure': '99-year',
+    },
+    {
+        'project_name': 'Tembusu Grand',
+        'developer': 'CDL & MCL Land',
+        'district': 'D15',
+        'planning_area': 'Marine Parade',
+        'market_segment': 'RCR',
+        'total_units': 638,
+        'indicative_psf_low': 2400,
+        'indicative_psf_high': 2500,
+        'tenure': '99-year',
+    },
+    {
+        'project_name': 'Grand Dunman',
+        'developer': 'SingHaiyi Group',
+        'district': 'D15',
+        'planning_area': 'Marine Parade',
+        'market_segment': 'RCR',
+        'total_units': 1008,
+        'indicative_psf_low': 2400,
+        'indicative_psf_high': 2500,
+        'tenure': '99-year',
+    },
+    {
+        'project_name': 'CanningHill Piers',
+        'developer': 'CDL & CapitaLand',
+        'district': 'D06',
+        'planning_area': 'River Valley',
+        'market_segment': 'CCR',
+        'total_units': 696,
+        'indicative_psf_low': 2800,
+        'indicative_psf_high': 3500,
+        'tenure': '99-year',
+    },
+    {
+        'project_name': 'The Botany at Dairy Farm',
+        'developer': 'Sim Lian Group',
+        'district': 'D23',
+        'planning_area': 'Bukit Panjang',
+        'market_segment': 'OCR',
+        'total_units': 386,
+        'indicative_psf_low': 2000,
+        'indicative_psf_high': 2100,
+        'tenure': '99-year',
+    },
+    {
+        'project_name': 'Blossoms By The Park',
+        'developer': 'EL Development',
+        'district': 'D05',
+        'planning_area': 'Buona Vista',
+        'market_segment': 'RCR',
+        'total_units': 275,
+        'indicative_psf_low': 2200,
+        'indicative_psf_high': 2400,
+        'tenure': '99-year',
+    },
+    {
+        'project_name': 'Watten House',
+        'developer': 'UOL Group & Singapore Land',
+        'district': 'D11',
+        'planning_area': 'Bukit Timah',
+        'market_segment': 'CCR',
+        'total_units': 180,
+        'indicative_psf_low': 3000,
+        'indicative_psf_high': 3500,
+        'tenure': 'Freehold',
+    },
+]
+
+
+def seed_new_launches(db_session=None, reset: bool = False) -> Dict[str, Any]:
+    """Seed the database with known 2026 new launch projects."""
+    from models.new_launch import NewLaunch
+    from models.database import db
+
+    if db_session is None:
+        db_session = db.session
+
+    stats = {
+        'existing': 0,
+        'inserted': 0,
+        'skipped': 0,
+        'errors': [],
+    }
+
+    print(f"\n{'='*60}")
+    print("Seeding New Launch Data (2026)")
+    print(f"{'='*60}\n")
+
+    if reset:
+        deleted = db_session.query(NewLaunch).filter(NewLaunch.launch_year == 2026).delete()
+        db_session.commit()
+        print(f"Deleted {deleted} existing 2026 records")
+
+    existing_names = {
+        r[0].lower() for r in
+        db_session.query(NewLaunch.project_name).filter(NewLaunch.launch_year == 2026).all()
+    }
+    stats['existing'] = len(existing_names)
+
+    for project_data in SEED_DATA_2026:
+        try:
+            project_name = project_data['project_name']
+
+            if project_name.lower() in existing_names:
+                stats['skipped'] += 1
+                print(f"  Skipped (exists): {project_name}")
+                continue
+
+            new_launch = NewLaunch(
+                project_name=project_name,
+                developer=project_data.get('developer'),
+                district=project_data.get('district'),
+                planning_area=project_data.get('planning_area'),
+                market_segment=project_data.get('market_segment'),
+                total_units=project_data.get('total_units'),
+                indicative_psf_low=project_data.get('indicative_psf_low'),
+                indicative_psf_high=project_data.get('indicative_psf_high'),
+                tenure=project_data.get('tenure'),
+                launch_year=2026,
+                property_type='Condominium',
+                source_urls={'seed': 'Manual seed data'},
+                needs_review=False,
+                last_scraped=datetime.utcnow(),
+            )
+
+            db_session.add(new_launch)
+            db_session.commit()
+            stats['inserted'] += 1
+            print(f"  Inserted: {project_name}")
+
+        except Exception as e:
+            db_session.rollback()
+            stats['errors'].append(f"{project_name}: {str(e)}")
+            print(f"  Error: {project_name} - {e}")
+
+    print(f"\n{'='*60}")
+    print("Seed Complete")
+    print(f"{'='*60}")
+    print(f"Already existed: {stats['existing']}")
+    print(f"Inserted: {stats['inserted']}")
+    print(f"Skipped: {stats['skipped']}")
 
     return stats
