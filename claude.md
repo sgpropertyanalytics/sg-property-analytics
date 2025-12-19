@@ -396,6 +396,163 @@ const params = {
 
 ---
 
+## Power BI Interaction Semantics
+
+### The Four Interaction Concepts
+
+Power BI explicitly separates these concepts:
+
+| Concept | Meaning | Scope | Affects Backend? |
+|---------|---------|-------|------------------|
+| **Filter** | Hard constraint | Global / Page / Visual | ✅ Yes |
+| **Highlight** | Focus inside same visual | Visual-level only | ❌ No (by default) |
+| **Cross-highlight** | Focus propagated to other visuals | Multiple visuals | ❌ No (visual only) |
+| **Cross-filter** | Filter propagated to other visuals | Multiple visuals | ✅ Yes |
+| **Drill** | Change granularity | Visual navigation | ❌ No (visual-local) |
+
+### Highlight vs Cross-highlight vs Cross-filter
+
+**Highlight** (Single Visual)
+- Click a bar in Chart A
+- That bar is emphasized
+- Nothing else changes
+- Totals preserved
+
+**Cross-highlight** (Multiple Visuals, Visual-only)
+- Click a data point in Chart A
+- Charts B and C visually respond (partial bars, faded segments)
+- Other charts show context + focus (still show totals)
+- No backend query changes
+
+**Cross-filter** (Multiple Visuals, Data-level)
+- Click a data point in Chart A
+- Charts B and C are **filtered** to only matching data
+- Everything else disappears
+- Backend queries change
+
+### Our Design Choice: Highlights Act as Filters (Option A)
+
+> **Key Rule**: In this app, time highlights (from TimeTrendChart clicks) participate in backend queries as filters.
+
+This matches:
+- Power BI (when cross-filter interaction is enabled)
+- Bloomberg / Tableau analyst workflows
+
+**Rationale**:
+- Click = "show me this subset"
+- Charts update with filtered data
+- Numbers tie out across visuals
+- Behavior is intuitive
+
+### The `activeFilters` Pattern (Single Source of Truth)
+
+```jsx
+// In PowerBIFilterContext.jsx
+
+// activeFilters combines sidebar filters + highlight into one object
+const activeFilters = useMemo(() => {
+  const combined = { ...filters };
+
+  // Apply highlight as date filter (if sidebar date not set)
+  if (highlight.dimension && highlight.value && !filters.dateRange.start) {
+    if (highlight.dimension === 'month') {
+      const [year, month] = highlight.value.split('-');
+      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+      combined.dateRange = {
+        start: `${highlight.value}-01`,
+        end: `${highlight.value}-${String(lastDay).padStart(2, '0')}`
+      };
+    }
+    // ... quarter, year handling
+  }
+
+  return combined;
+}, [filters, highlight, ...]);
+
+// Exposed from context
+{
+  filters,           // Raw sidebar filters only
+  highlight,         // Current time highlight (if any)
+  activeFilters,     // Combined: filters + highlight (use for queries)
+  buildApiParams,    // Builds API params from activeFilters
+}
+```
+
+### Component Dependency Rule (Critical)
+
+**Every chart that should respond to highlights MUST include `highlight` in useEffect dependencies.**
+
+```jsx
+// ❌ BAD - Chart won't respond to time highlight clicks
+useEffect(() => {
+  fetchData();
+}, [buildApiParams, filters]);
+
+// ✅ GOOD - Chart responds to both filters AND highlights
+useEffect(() => {
+  fetchData();
+}, [buildApiParams, filters, highlight]);
+```
+
+**Charts that respond to highlights:**
+- `NewVsResaleChart` ✅
+- `VolumeByLocationChart` ✅
+- `BedroomMixChart` ✅
+- `PriceDistributionChart` ✅
+- `TransactionDataTable` ✅
+
+**Charts that DON'T respond to highlights:**
+- `TimeTrendChart` - Uses `excludeHighlight: true` (it's the SOURCE of highlights)
+
+### Backend Contract
+
+The backend treats all incoming params as authoritative constraints:
+
+```python
+# Backend doesn't care if date_from/date_to came from:
+# - Sidebar filter
+# - Chart click highlight
+# - Drill breadcrumb
+#
+# All are treated equally as constraints
+@analytics_bp.route("/api/aggregate")
+def aggregate():
+    date_from = request.args.get('date_from')  # Constraint
+    date_to = request.args.get('date_to')      # Constraint
+    # ... apply as WHERE clauses
+```
+
+This keeps backend logic clean and deterministic.
+
+### UX Indicator Pattern
+
+When a highlight is active, show a visual indicator:
+
+```jsx
+// In chart header or filter bar
+{highlight.value && (
+  <span className="text-xs text-[#547792] flex items-center gap-1">
+    Filtered to {formatHighlightLabel(highlight)}
+    <button onClick={clearHighlight}>✕</button>
+  </span>
+)}
+```
+
+This avoids "why did everything change?" confusion.
+
+### Interaction Summary
+
+| User Action | What Happens | Scope |
+|-------------|--------------|-------|
+| Change sidebar filter | All charts re-fetch with new filter | Global |
+| Click time bar (TimeTrendChart) | Sets highlight → activeFilters updates → all charts re-fetch | Cross-filter |
+| Click location bar (VolumeByLocationChart) | Sets crossFilter → all charts re-fetch | Cross-filter |
+| Click bedroom segment (BedroomMixChart) | Sets crossFilter → all charts re-fetch | Cross-filter |
+| Click price bin (PriceDistributionChart) | Sets factFilter → only TransactionDataTable re-fetches | Dimension → Fact |
+| Drill up/down | Only that chart changes granularity | Visual-local |
+
+---
+
 ## Power BI Drill Up/Down Rules
 
 ### Core Principle
