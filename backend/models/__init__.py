@@ -7,5 +7,6 @@ from models.precomputed_stats import PreComputedStats
 from models.user import User
 from models.ad_placement import AdPlacement
 from models.gls_tender import GLSTender
+from models.new_launch import NewLaunch
 
-__all__ = ['db', 'Transaction', 'PreComputedStats', 'User', 'AdPlacement', 'GLSTender']
+__all__ = ['db', 'Transaction', 'PreComputedStats', 'User', 'AdPlacement', 'GLSTender', 'NewLaunch']

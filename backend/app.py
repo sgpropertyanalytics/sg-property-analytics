@@ -147,6 +147,10 @@ def create_app():
     from routes.gls import gls_bp
     app.register_blueprint(gls_bp, url_prefix='/api/gls')
 
+    # New Launches (2026 condo launches) routes
+    from routes.new_launches import new_launches_bp
+    app.register_blueprint(new_launches_bp, url_prefix='/api/new-launches')
+
     # Serve dashboard.html at root
     @app.route("/", methods=["GET"])
     def index():
