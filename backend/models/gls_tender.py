@@ -16,13 +16,13 @@ class GLSTender(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     status = db.Column(db.String(20), nullable=False, index=True)  # 'launched' or 'awarded'
-    release_id = db.Column(db.String(50), unique=True, nullable=False)  # e.g., 'pr25-66'
+    release_id = db.Column(db.String(100), unique=True, nullable=False)  # e.g., 'pr25-66-dairy-farm-walk'
     release_url = db.Column(db.Text, nullable=False)
     release_date = db.Column(db.Date, nullable=False, index=True)
     tender_close_date = db.Column(db.Date)
 
-    # Location (raw)
-    location_raw = db.Column(db.String(255), nullable=False)
+    # Location (raw) - use Text for long location names
+    location_raw = db.Column(db.Text, nullable=False)
 
     # Location (derived via geocoding)
     latitude = db.Column(db.Numeric(10, 7))
@@ -35,7 +35,7 @@ class GLSTender(db.Model):
     site_area_sqft = db.Column(db.Numeric(12, 2))  # Computed: sqm * 10.7639
     max_gfa_sqm = db.Column(db.Numeric(12, 2))
     max_gfa_sqft = db.Column(db.Numeric(12, 2))  # Computed
-    plot_ratio = db.Column(db.Numeric(5, 2))  # Computed: max_gfa_sqm / site_area_sqm
+    plot_ratio = db.Column(db.Numeric(8, 2))  # Computed: max_gfa_sqm / site_area_sqm (increased precision)
 
     # Supply estimate
     estimated_units = db.Column(db.Integer)
