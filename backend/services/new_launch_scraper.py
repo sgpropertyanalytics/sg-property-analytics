@@ -57,9 +57,99 @@ TOLERANCE = {
 # Rate limiting between requests (seconds)
 RATE_LIMIT_DELAY = 2.0
 
+# Retry settings
+MAX_RETRIES = 3
+RETRY_BACKOFF_BASE = 2  # Exponential backoff: 2s, 4s, 8s
+
 # Cache settings
 CACHE_DIR = "/tmp/scraper_cache"
 CACHE_TTL_HOURS = 6  # Cache HTML for 6 hours
+
+# Last-seen tracking
+LAST_SEEN_FILE = "/tmp/scraper_cache/last_seen.json"
+
+
+def _load_last_seen() -> Dict[str, Any]:
+    """Load last-seen project data for change detection."""
+    try:
+        if os.path.exists(LAST_SEEN_FILE):
+            with open(LAST_SEEN_FILE, 'r') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
+def _save_last_seen(data: Dict[str, Any]):
+    """Save last-seen project data."""
+    try:
+        os.makedirs(os.path.dirname(LAST_SEEN_FILE), exist_ok=True)
+        with open(LAST_SEEN_FILE, 'w') as f:
+            json.dump(data, f, indent=2, default=str)
+    except Exception:
+        pass
+
+
+def _detect_changes(current_projects: List[Dict], last_seen: Dict) -> Dict[str, List]:
+    """Detect new, changed, and removed projects since last run."""
+    changes = {'new': [], 'changed': [], 'removed': []}
+
+    current_names = set()
+    for proj in current_projects:
+        name = normalize_project_name(proj.get('project_name', ''))
+        current_names.add(name)
+
+        if name not in last_seen:
+            changes['new'].append(proj.get('project_name'))
+        else:
+            # Check for significant changes
+            old = last_seen[name]
+            if proj.get('total_units') and old.get('total_units'):
+                if abs(proj['total_units'] - old['total_units']) > TOLERANCE['total_units']:
+                    changes['changed'].append(proj.get('project_name'))
+
+    # Check for removed projects
+    for name in last_seen:
+        if name not in current_names:
+            changes['removed'].append(last_seen[name].get('project_name', name))
+
+    return changes
+
+
+def _request_with_retry(url: str, max_retries: int = MAX_RETRIES) -> Optional[requests.Response]:
+    """Make HTTP request with exponential backoff retry."""
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, headers=HEADERS, timeout=30)
+
+            # Success
+            if response.status_code == 200:
+                return response
+
+            # Rate limited - back off
+            if response.status_code in (429, 503):
+                wait_time = RETRY_BACKOFF_BASE ** (attempt + 1)
+                print(f"  Rate limited (HTTP {response.status_code}), waiting {wait_time}s...")
+                time.sleep(wait_time)
+                continue
+
+            # Other error - don't retry
+            print(f"  HTTP error: {response.status_code}")
+            return None
+
+        except requests.exceptions.Timeout:
+            wait_time = RETRY_BACKOFF_BASE ** (attempt + 1)
+            print(f"  Timeout, retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
+            time.sleep(wait_time)
+
+        except requests.exceptions.RequestException as e:
+            print(f"  Request error: {e}")
+            if attempt < max_retries - 1:
+                wait_time = RETRY_BACKOFF_BASE ** (attempt + 1)
+                print(f"  Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+
+    return None
 
 
 def _get_cached_html(url: str) -> Optional[str]:
@@ -207,20 +297,13 @@ def fetch_page(url: str, use_playwright: bool = True, wait_selector: str = None,
     if use_playwright and PLAYWRIGHT_AVAILABLE:
         html = fetch_with_playwright(url, wait_selector)
 
-    # Fallback to requests
+    # Fallback to requests with retry
     if not html:
-        try:
-            print(f"  Fetching with requests: {url}")
-            response = requests.get(url, headers=HEADERS, timeout=30)
+        print(f"  Fetching with requests: {url}")
+        response = _request_with_retry(url)
+        if response:
             print(f"  Status: {response.status_code}, Length: {len(response.text)}")
-
-            if response.status_code == 200:
-                html = response.text
-            else:
-                print(f"  HTTP error: {response.status_code}")
-
-        except Exception as e:
-            print(f"  Request error: {e}")
+            html = response.text
 
     # Save to cache if successful
     if html and use_cache:
@@ -639,17 +722,70 @@ def _debug_save_html(html: str, source: str):
 
 
 def normalize_project_name(name: str) -> str:
-    """Normalize project name for matching."""
+    """
+    Normalize project name for matching.
+
+    Handles variations like:
+    - "AMO Residence" vs "Amo Residence" vs "AMO RESIDENCE"
+    - "The Botany at Dairy Farm" vs "Botany @ Dairy Farm"
+    - "CanningHill Piers" vs "Canning Hill Piers"
+    """
     if not name:
         return ""
     normalized = name.lower().strip()
-    normalized = re.sub(r'\s*(condo|condominium|residences|residence|at|@)\s*', ' ', normalized)
+    # Remove common suffixes/prefixes
+    normalized = re.sub(r'\b(the|condo|condominium|residences|residence|at|@)\b', ' ', normalized)
+    # Normalize spacing
     normalized = re.sub(r'\s+', ' ', normalized).strip()
+    # Remove punctuation
+    normalized = re.sub(r'[^\w\s]', '', normalized)
     return normalized
 
 
-def match_projects(projects_a: List[Dict], projects_b: List[Dict]) -> List[Tuple[Dict, Dict]]:
-    """Match projects from two sources by name similarity."""
+def fuzzy_match_score(name_a: str, name_b: str) -> float:
+    """
+    Calculate fuzzy match score between two project names.
+    Returns score from 0.0 to 1.0 (1.0 = exact match).
+
+    Uses token-based matching for better results with name variations.
+    """
+    if not name_a or not name_b:
+        return 0.0
+
+    # Exact match
+    if name_a == name_b:
+        return 1.0
+
+    # Token-based matching
+    tokens_a = set(name_a.split())
+    tokens_b = set(name_b.split())
+
+    if not tokens_a or not tokens_b:
+        return 0.0
+
+    # Jaccard similarity
+    intersection = len(tokens_a & tokens_b)
+    union = len(tokens_a | tokens_b)
+    jaccard = intersection / union if union > 0 else 0
+
+    # Also check if one contains most of the other (for partial matches)
+    containment_a = intersection / len(tokens_a) if tokens_a else 0
+    containment_b = intersection / len(tokens_b) if tokens_b else 0
+    containment = max(containment_a, containment_b)
+
+    # Combined score (weight towards containment for partial matches)
+    return max(jaccard, containment * 0.9)
+
+
+def match_projects(projects_a: List[Dict], projects_b: List[Dict], threshold: float = 0.6) -> List[Tuple[Dict, Dict]]:
+    """
+    Match projects from two sources using fuzzy name matching.
+
+    Args:
+        projects_a: First list of projects
+        projects_b: Second list of projects
+        threshold: Minimum similarity score to consider a match (0.0-1.0)
+    """
     matches = []
     used_b = set()
 
@@ -659,7 +795,7 @@ def match_projects(projects_a: List[Dict], projects_b: List[Dict]) -> List[Tuple
             continue
 
         best_match = None
-        best_score = 0
+        best_score = 0.0
 
         for i, b in enumerate(projects_b):
             if i in used_b:
@@ -669,17 +805,17 @@ def match_projects(projects_a: List[Dict], projects_b: List[Dict]) -> List[Tuple
             if not name_b:
                 continue
 
-            if name_a == name_b:
+            # Use fuzzy matching
+            score = fuzzy_match_score(name_a, name_b)
+            if score > best_score:
                 best_match = (i, b)
-                best_score = 100
-                break
-            elif name_a in name_b or name_b in name_a:
-                score = len(set(name_a.split()) & set(name_b.split())) / max(len(name_a.split()), len(name_b.split())) * 100
-                if score > best_score:
-                    best_match = (i, b)
-                    best_score = score
+                best_score = score
 
-        if best_match and best_score >= 50:
+            # Early exit on exact match
+            if score == 1.0:
+                break
+
+        if best_match and best_score >= threshold:
             matches.append((a, best_match[1]))
             used_b.add(best_match[0])
 
@@ -926,6 +1062,31 @@ def scrape_new_launches(
         stats['gls_linked'] = link_stats.get('linked', 0)
 
     # ==========================================================================
+    # PHASE 5: Last-seen tracking and change detection
+    # ==========================================================================
+    all_projects = edgeprop_projects + propnex_projects + era_projects
+    if all_projects and not dry_run:
+        last_seen = _load_last_seen()
+        changes = _detect_changes(all_projects, last_seen)
+
+        # Update last-seen data
+        new_last_seen = {}
+        for proj in all_projects:
+            name = normalize_project_name(proj.get('project_name', ''))
+            if name:
+                new_last_seen[name] = {
+                    'project_name': proj.get('project_name'),
+                    'total_units': proj.get('total_units'),
+                    'psf_low': proj.get('psf_low'),
+                    'last_seen': datetime.utcnow().isoformat(),
+                }
+        _save_last_seen(new_last_seen)
+
+        stats['new_projects'] = changes['new']
+        stats['changed_projects'] = changes['changed']
+        stats['removed_projects'] = changes['removed']
+
+    # ==========================================================================
     # Summary
     # ==========================================================================
     print(f"\n{'='*60}")
@@ -939,8 +1100,27 @@ def scrape_new_launches(
     print(f"Updated: {stats['projects_updated']}")
     print(f"Needs review: {stats['needs_review']}")
     print(f"GLS linked: {stats['gls_linked']}")
+
+    # Show change detection results
+    if stats.get('new_projects'):
+        print(f"\n🆕 New projects detected: {len(stats['new_projects'])}")
+        for name in stats['new_projects'][:5]:
+            print(f"   - {name}")
+        if len(stats['new_projects']) > 5:
+            print(f"   ... and {len(stats['new_projects']) - 5} more")
+
+    if stats.get('changed_projects'):
+        print(f"\n📝 Changed projects: {len(stats['changed_projects'])}")
+        for name in stats['changed_projects'][:5]:
+            print(f"   - {name}")
+
+    if stats.get('removed_projects'):
+        print(f"\n❌ Removed projects: {len(stats['removed_projects'])}")
+        for name in stats['removed_projects'][:5]:
+            print(f"   - {name}")
+
     if stats['errors']:
-        print(f"Errors: {len(stats['errors'])}")
+        print(f"\n⚠️  Errors: {len(stats['errors'])}")
 
     return stats
 
