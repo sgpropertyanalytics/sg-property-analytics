@@ -790,43 +790,31 @@ def extract_all_table_data(tables: List, status: str) -> List[Dict[str, Any]]:
                     # This is actually a price value - extract it
                     print(f"    Warning: Price found in tenderer column: {tenderer_text[:50]}")
                     data['tendered_price_sgd'] = parse_price(tenderer_text)
-                    # Extract PSF from format "$X($Y.ZZ)" - URA shows $/sqm of GFA
-                    # CRITICAL: URA publishes $/sqm, we need $/sqft (divide by 10.7639)
-                    psf_match = re.search(r'\(\$?([\d,]+(?:\.\d+)?)\)', tenderer_text)
-                    if psf_match:
+                    # Extract $/sqm from format "$X($Y.ZZ)" - URA shows $/sqm of GFA in brackets
+                    # CRITICAL: Store as psm_gfa ($/sqm), NOT psf_ppr. Let model compute psf_ppr.
+                    psm_match = re.search(r'\(\$?([\d,]+(?:\.\d+)?)\)', tenderer_text)
+                    if psm_match:
                         try:
-                            psm_value = Decimal(psf_match.group(1).replace(',', ''))
-                            # Convert $/sqm to $/sqft (PSF)
-                            psf_value = psm_value / Decimal('10.7639')
-                            # Sanity check: PSF should be between 500 and 3500
-                            if 500 <= float(psf_value) <= 3500:
-                                data['psf_ppr'] = round(psf_value, 2)
-                                print(f"    Extracted PSF: ${psm_value}/sqm → ${psf_value:.2f}/sqft")
-                            else:
-                                print(f"    Warning: PSF ${psf_value:.2f} outside bounds (500-3500), skipping")
+                            psm_value = Decimal(psm_match.group(1).replace(',', ''))
+                            data['psm_gfa'] = float(psm_value)  # Store as $/sqm
+                            print(f"    Extracted $/sqm GFA: ${psm_value}")
                         except Exception as e:
-                            print(f"    Failed to parse PSF: {e}")
+                            print(f"    Failed to parse $/sqm: {e}")
 
             if col_map.get('price') is not None and col_map['price'] < len(cells):
                 price_text = cells[col_map['price']].get_text(strip=True)
                 if price_text:
                     data['tendered_price_sgd'] = parse_price(price_text)
-                    # Extract PSF from format "$X($Y.ZZ)" - URA shows $/sqm of GFA
-                    # CRITICAL: URA publishes $/sqm, we need $/sqft (divide by 10.7639)
-                    psf_match = re.search(r'\(\$?([\d,]+(?:\.\d+)?)\)', price_text)
-                    if psf_match:
+                    # Extract $/sqm from format "$X($Y.ZZ)" - URA shows $/sqm of GFA in brackets
+                    # CRITICAL: Store as psm_gfa ($/sqm), NOT psf_ppr. Let model compute psf_ppr.
+                    psm_match = re.search(r'\(\$?([\d,]+(?:\.\d+)?)\)', price_text)
+                    if psm_match:
                         try:
-                            psm_value = Decimal(psf_match.group(1).replace(',', ''))
-                            # Convert $/sqm to $/sqft (PSF)
-                            psf_value = psm_value / Decimal('10.7639')
-                            # Sanity check: PSF should be between 500 and 3500
-                            if 500 <= float(psf_value) <= 3500:
-                                data['psf_ppr'] = round(psf_value, 2)
-                                print(f"    Extracted PSF from price: ${psm_value}/sqm → ${psf_value:.2f}/sqft")
-                            else:
-                                print(f"    Warning: PSF ${psf_value:.2f} outside bounds (500-3500), skipping")
+                            psm_value = Decimal(psm_match.group(1).replace(',', ''))
+                            data['psm_gfa'] = float(psm_value)  # Store as $/sqm
+                            print(f"    Extracted $/sqm GFA from price: ${psm_value}")
                         except Exception as e:
-                            print(f"    Failed to parse PSF: {e}")
+                            print(f"    Failed to parse $/sqm: {e}")
 
             if col_map.get('num_tenderers') is not None and col_map['num_tenderers'] < len(cells):
                 data['num_tenderers'] = parse_number(cells[col_map['num_tenderers']].get_text(strip=True))
@@ -1169,6 +1157,7 @@ def scrape_gls_tenders(
                     stats['needs_review'].append(release_id)
 
             # Create tender object
+            # NOTE: psf_ppr is computed by model from fundamentals - never set from scraper
             tender = GLSTender(
                 status=data.get('status', 'launched'),
                 release_id=release_id,
@@ -1186,7 +1175,7 @@ def scrape_gls_tenders(
                 estimated_units_source=data.get('estimated_units_source'),
                 successful_tenderer=data.get('successful_tenderer'),
                 tendered_price_sgd=data.get('tendered_price_sgd'),
-                psf_ppr=data.get('psf_ppr'),  # Extracted PSF if available
+                psm_gfa=data.get('psm_gfa'),  # $/sqm of GFA from URA table (if available)
                 num_tenderers=data.get('num_tenderers'),
                 needs_review=data.get('needs_review', False),
                 review_reason=data.get('review_reason'),
