@@ -351,6 +351,64 @@ def trigger_scrape():
         return jsonify({"error": str(e)}), 500
 
 
+@gls_bp.route("/reset", methods=["POST"])
+def reset_and_rescrape():
+    """
+    Reset GLS data and rescrape from URA.
+
+    Query params:
+        - year: Year to scrape (default: 2025)
+        - confirm: Must be 'yes' to proceed
+
+    Returns:
+        Scrape statistics after reset
+    """
+    start = time.time()
+
+    year = int(request.args.get("year", 2025))
+    confirm = request.args.get("confirm", "").lower()
+
+    if confirm != "yes":
+        return jsonify({
+            "error": "Must pass confirm=yes to reset all GLS data",
+            "warning": "This will DELETE all existing GLS tender records"
+        }), 400
+
+    try:
+        from models.gls_tender import GLSTender
+        from services.gls_scraper import scrape_gls_tenders
+
+        # Count existing records
+        existing_count = db.session.query(GLSTender).count()
+
+        # Delete all existing records
+        db.session.query(GLSTender).delete()
+        db.session.commit()
+        print(f"Deleted {existing_count} existing GLS records")
+
+        # Rescrape
+        stats = scrape_gls_tenders(year=year, dry_run=False)
+
+        elapsed = time.time() - start
+        print(f"POST /api/gls/reset took: {elapsed:.4f} seconds")
+
+        return jsonify({
+            "success": True,
+            "year": year,
+            "deleted_records": existing_count,
+            "elapsed_seconds": round(elapsed, 2),
+            "statistics": stats
+        })
+
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"POST /api/gls/reset ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
 @gls_bp.route("/stats", methods=["GET"])
 def get_stats():
     """

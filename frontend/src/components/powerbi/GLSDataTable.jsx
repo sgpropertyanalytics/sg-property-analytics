@@ -75,6 +75,26 @@ export function GLSDataTable({ height = 400 }) {
     }
   };
 
+  // Reset and rescrape - clears all data and fetches fresh
+  const handleReset = async () => {
+    if (!window.confirm('This will delete all existing GLS data and fetch fresh data from URA. Continue?')) {
+      return;
+    }
+    setScraping(true);
+    setError(null);
+    try {
+      const response = await apiClient.post('/gls/reset?year=2025&confirm=yes');
+      console.log('Reset result:', response.data);
+      // Refresh data after reset
+      await fetchData();
+    } catch (err) {
+      console.error('Error resetting GLS data:', err);
+      setError('Failed to reset data: ' + err.message);
+    } finally {
+      setScraping(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -168,10 +188,20 @@ export function GLSDataTable({ height = 400 }) {
               onClick={(e) => { e.preventDefault(); fetchData(); }}
               className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
               title="Refresh data"
+              disabled={loading || scraping}
             >
               <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); handleReset(); }}
+              className="px-2 py-1 text-xs bg-amber-100 text-amber-700 hover:bg-amber-200 rounded transition-colors disabled:opacity-50"
+              title="Clear all data and fetch fresh from URA"
+              disabled={scraping}
+            >
+              {scraping ? 'Fetching...' : 'Reset & Fetch'}
             </button>
           </div>
         </div>
