@@ -538,6 +538,59 @@ def extract_location_units_from_text(content: str) -> Dict[str, int]:
     return location_units
 
 
+def is_valid_location(location: str) -> bool:
+    """
+    Validate that a string is a valid location name.
+    Filters out common parsing artifacts like 'and', 'the', etc.
+    """
+    if not location:
+        return False
+
+    location = location.strip()
+
+    # Too short to be a real location
+    if len(location) < 5:
+        return False
+
+    # Common words that aren't locations
+    invalid_words = {
+        'and', 'the', 'for', 'with', 'from', 'that', 'this', 'which',
+        'residential', 'commercial', 'industrial', 'site', 'land',
+        'parcel', 'tender', 'award', 'sale', 'gls', 'ura',
+        'while', 'about', 'units', 'sqm', 'sq m'
+    }
+
+    if location.lower() in invalid_words:
+        return False
+
+    # Must contain at least one letter
+    if not any(c.isalpha() for c in location):
+        return False
+
+    # Should have a road suffix or be a known place name
+    road_suffixes = ['road', 'street', 'avenue', 'drive', 'lane', 'way',
+                     'close', 'rise', 'park', 'view', 'central', 'walk',
+                     'crescent', 'place', 'terrace', 'grove', 'hill', 'heights']
+
+    location_lower = location.lower()
+
+    # Check if it ends with a road suffix
+    has_road_suffix = any(location_lower.endswith(suffix) for suffix in road_suffixes)
+
+    # Or contains a road suffix somewhere
+    has_road_word = any(suffix in location_lower for suffix in road_suffixes)
+
+    # Known place names without road suffixes
+    known_places = ['bedok', 'tampines', 'clementi', 'jurong', 'woodlands',
+                    'sembawang', 'punggol', 'sengkang', 'hougang', 'bishan',
+                    'toa payoh', 'ang mo kio', 'bukit', 'kallang', 'geylang',
+                    'queenstown', 'novena', 'orchard', 'newton', 'tanglin']
+
+    is_known_place = any(place in location_lower for place in known_places)
+
+    return has_road_suffix or has_road_word or is_known_place
+
+
 def extract_all_table_data(tables: List, status: str) -> List[Dict[str, Any]]:
     """
     Extract tender data from ALL rows of HTML tables.
@@ -603,8 +656,8 @@ def extract_all_table_data(tables: List, status: str) -> List[Dict[str, Any]]:
             if col_map.get('close_date') is not None and col_map['close_date'] < len(cells):
                 data['tender_close_date'] = parse_date(cells[col_map['close_date']].get_text(strip=True))
 
-            # Only add if we have at least a location
-            if data.get('location_raw'):
+            # Only add if we have a valid location
+            if data.get('location_raw') and is_valid_location(data['location_raw']):
                 results.append(data)
 
     return results
@@ -631,7 +684,8 @@ def extract_all_from_text(content: str, status: str) -> List[Dict[str, Any]]:
             locs = re.split(r',\s*|\s+and\s+', match)
             for loc in locs:
                 loc = loc.strip()
-                if loc and len(loc) > 3:
+                # Validate the location
+                if is_valid_location(loc):
                     locations.append(loc)
 
     # Deduplicate while preserving order
