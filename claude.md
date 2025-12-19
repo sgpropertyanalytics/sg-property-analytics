@@ -519,6 +519,32 @@ useEffect(() => {
 - `TimeTrendChart` - Uses `excludeHighlight: true` (SOURCE of highlights)
 - `NewVsResaleChart` - Uses `excludeHighlight: true` (time-series trend chart)
 
+### Time-Series Chart Rule (Critical for New Charts)
+
+> **If a chart's X-axis is TIME (year, quarter, month), it MUST use `excludeHighlight: true`.**
+
+**Why**: Time-series charts show trends over time. Collapsing to a single point destroys context.
+
+**How to identify a time-series chart:**
+| Characteristic | Time-Series Chart | Breakdown Chart |
+|----------------|-------------------|-----------------|
+| X-axis | Time periods (months, quarters, years) | Categories (districts, bedrooms, price bins) |
+| Purpose | Show trends over time | Show composition/distribution |
+| On time highlight | Preserve full timeline, visual highlight only | Filter to highlighted period |
+| `excludeHighlight` | `true` | `false` (default) |
+
+**Examples:**
+- `TimeTrendChart` → X-axis is time → `excludeHighlight: true`
+- `NewVsResaleChart` → X-axis is time → `excludeHighlight: true`
+- `VolumeByLocationChart` → X-axis is location → `excludeHighlight: false`
+- `BedroomMixChart` → Segments are bedrooms → `excludeHighlight: false`
+
+**When creating a new chart, ask:**
+1. Does the X-axis represent time periods?
+2. Would filtering to a single period destroy the chart's purpose?
+
+If YES to both → use `excludeHighlight: true`.
+
 ### Backend Contract
 
 The backend treats all incoming params as authoritative constraints:
