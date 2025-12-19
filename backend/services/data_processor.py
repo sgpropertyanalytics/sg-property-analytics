@@ -1723,6 +1723,7 @@ def get_new_vs_resale_comparison(
 
     # Raw SQL query using PostgreSQL's DATE_TRUNC for time granularity
     # Using avg as fallback for true median (SQLite compatibility)
+    # Note: NULL lease_start_year = "unknown age", include them (production-safe fix)
     sql = text(f"""
         WITH new_launches AS (
             SELECT
@@ -1741,8 +1742,10 @@ def get_new_vs_resale_comparison(
                 COUNT(*) AS transaction_count
             FROM transactions
             WHERE sale_type = 'Resale'
-              AND lease_start_year IS NOT NULL
-              AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) < 10
+              AND (
+                lease_start_year IS NULL
+                OR (EXTRACT(YEAR FROM transaction_date) - lease_start_year) < 10
+              )
               AND {where_clause}
             GROUP BY DATE_TRUNC('{date_trunc_grain}', transaction_date)
         )
@@ -1787,8 +1790,10 @@ def get_new_vs_resale_comparison(
                     COUNT(*) AS transaction_count
                 FROM transactions
                 WHERE sale_type = 'Resale'
-                  AND lease_start_year IS NOT NULL
-                  AND (CAST(strftime('%Y', transaction_date) AS INTEGER) - lease_start_year) < 10
+                  AND (
+                    lease_start_year IS NULL
+                    OR (CAST(strftime('%Y', transaction_date) AS INTEGER) - lease_start_year) < 10
+                  )
                   AND {where_clause}
                 GROUP BY {sqlite_period}
             )
