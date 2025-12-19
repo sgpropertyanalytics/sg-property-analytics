@@ -123,6 +123,13 @@ def create_app():
         # This runs inside create_app() so it works with gunicorn
         _run_startup_validation()
 
+        # GLS data freshness check - refresh if stale or bad data
+        try:
+            from services.gls_scheduler import check_and_refresh_on_startup
+            check_and_refresh_on_startup(app)
+        except Exception as e:
+            print(f"⚠️  GLS startup check skipped: {e}")
+
     # Register routes
     # Analytics routes (PUBLIC - no authentication required)
     from routes.analytics import analytics_bp

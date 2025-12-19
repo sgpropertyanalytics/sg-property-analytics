@@ -412,6 +412,134 @@ def reset_and_rescrape():
         return jsonify({"error": str(e)}), 500
 
 
+@gls_bp.route("/cron-refresh", methods=["POST"])
+def cron_refresh():
+    """
+    Cron job endpoint for scheduled GLS data refresh.
+
+    This endpoint is designed to be called by Render cron jobs or external schedulers.
+    It performs a full refresh: drop table, recreate, and re-scrape.
+
+    Query params:
+        - year: Year to scrape (default: 2025)
+        - secret: Optional secret key for security (set GLS_CRON_SECRET env var)
+
+    Returns:
+        Scrape statistics
+    """
+    import os
+    start = time.time()
+
+    year = int(request.args.get("year", 2025))
+    secret = request.args.get("secret", "")
+
+    # Optional security check - if GLS_CRON_SECRET is set, require it
+    expected_secret = os.environ.get("GLS_CRON_SECRET", "")
+    if expected_secret and secret != expected_secret:
+        return jsonify({"error": "Invalid secret"}), 403
+
+    try:
+        from services.gls_scheduler import cron_refresh as do_cron_refresh
+
+        result = do_cron_refresh(year=year)
+
+        elapsed = time.time() - start
+        print(f"POST /api/gls/cron-refresh took: {elapsed:.4f} seconds")
+
+        result["elapsed_seconds"] = round(elapsed, 2)
+        return jsonify(result)
+
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"POST /api/gls/cron-refresh ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@gls_bp.route("/refresh-status", methods=["GET"])
+def get_refresh_status():
+    """
+    Get the status of GLS data and any ongoing refresh.
+
+    Returns:
+        Status information including last scrape time and whether refresh is in progress
+    """
+    try:
+        from services.gls_scheduler import get_scrape_status, is_data_stale, has_bad_data
+
+        status = get_scrape_status()
+        status["data_stale"] = is_data_stale(max_age_hours=24)
+        status["has_bad_data"] = has_bad_data()
+
+        # Get counts from database
+        launched_count = db.session.query(GLSTender).filter(GLSTender.status == 'launched').count()
+        awarded_count = db.session.query(GLSTender).filter(GLSTender.status == 'awarded').count()
+
+        status["counts"] = {
+            "launched": launched_count,
+            "awarded": awarded_count,
+            "total": launched_count + awarded_count
+        }
+
+        return jsonify(status)
+
+    except Exception as e:
+        print(f"GET /api/gls/refresh-status ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@gls_bp.route("/trigger-refresh", methods=["POST"])
+def trigger_background_refresh():
+    """
+    Trigger a background refresh of GLS data.
+
+    This endpoint starts the scrape in a background thread and returns immediately.
+    Use /refresh-status to check progress.
+
+    Query params:
+        - year: Year to scrape (default: 2025)
+        - force: If 'true', force reset even if data looks fresh
+
+    Returns:
+        Whether refresh was started
+    """
+    start = time.time()
+
+    year = int(request.args.get("year", 2025))
+    force = request.args.get("force", "").lower() == "true"
+
+    try:
+        from services.gls_scheduler import run_background_scrape, is_data_stale, has_bad_data
+
+        # Check if refresh is actually needed (unless forced)
+        needs_refresh = force or is_data_stale(max_age_hours=24) or has_bad_data()
+
+        if not needs_refresh:
+            return jsonify({
+                "started": False,
+                "reason": "Data is fresh and valid. Use force=true to override."
+            })
+
+        # Start background scrape
+        started = run_background_scrape(year=year, force_reset=True)
+
+        elapsed = time.time() - start
+        print(f"POST /api/gls/trigger-refresh took: {elapsed:.4f} seconds (started={started})")
+
+        return jsonify({
+            "started": started,
+            "message": "Background refresh started" if started else "Refresh already in progress"
+        })
+
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"POST /api/gls/trigger-refresh ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @gls_bp.route("/stats", methods=["GET"])
 def get_stats():
     """
