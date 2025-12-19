@@ -437,9 +437,10 @@ def get_media_release_links(year: int = 2025) -> List[Dict[str, str]]:
                         release_id = match.group(1).lower()
                         release_year = int(match.group(2))
 
-                        # CRITICAL: Only include releases from 2025 onwards
+                        # Include 2024+ to capture launch records for 2025 awards
                         # pr25-XX = 2025, pr24-XX = 2024, etc.
-                        if release_year < 25:  # 25 = 2025
+                        # Sites launched in late 2024 may be awarded in 2025
+                        if release_year < 24:  # Include 2024+
                             continue
 
                         full_url = f"https://www.ura.gov.sg{href}" if href.startswith('/') else href
@@ -569,38 +570,52 @@ def extract_location_units_from_text(content: str) -> Dict[str, int]:
     Extract location->units mapping from text like:
     "The sites at Lentor Central, Kallang Close and Dunearn Road can potentially yield about 560, 470 and 330 residential units"
     "The sites at Dairy Farm Walk, Tanjong Rhu Road, and Dover Drive can potentially yield about 480, 525, and 625 residential units, respectively"
+
+    Handles:
+    - Multiple sentences with different sites
+    - "respectively" patterns
+    - Normalized whitespace (including non-breaking spaces)
     """
     location_units = {}
 
-    # Pattern for multiple sites with units
+    # Normalize whitespace once (including non-breaking spaces, line breaks)
+    content_norm = re.sub(r'[\s\xa0]+', ' ', content)
+
+    # Pattern for multiple sites with units - use finditer to catch all matches
     patterns = [
         # "sites at X, Y and Z can potentially yield about 480, 525, and 625 units"
         r'sites?\s+at\s+([^\.]+?)\s+can\s+(?:potentially\s+)?yield\s+(?:about\s+)?([0-9,\s]+(?:and\s+)?[0-9,]+)\s+(?:residential\s+)?units?',
-        # Alternative pattern
+        # "site at X ... can yield about N residential units"
+        r'site\s+at\s+([A-Z][a-zA-Z\s]+(?:Road|Drive|Walk|Close|Central|Way|Avenue|Lane|Rise|Park|View))\s+[^\.]*?(?:yield|provide|accommodate)\s+(?:about\s+)?(\d[\d,]*)\s+(?:residential\s+)?units?',
+        # Alternative: location names followed by yield
         r'([A-Z][a-zA-Z\s,]+(?:Road|Drive|Walk|Close|Central|Way|Avenue|Lane|Rise|Park|View)(?:,\s+[A-Z][a-zA-Z\s]+(?:Road|Drive|Walk|Close|Central|Way|Avenue|Lane|Rise|Park|View))*(?:\s+and\s+[A-Z][a-zA-Z\s]+(?:Road|Drive|Walk|Close|Central|Way|Avenue|Lane|Rise|Park|View))?)\s+can\s+(?:potentially\s+)?yield\s+(?:about\s+)?([0-9,\s]+(?:and\s+)?[0-9,]+)\s+(?:residential\s+)?units?',
     ]
 
     for pattern in patterns:
-        match = re.search(pattern, content, re.IGNORECASE)
-        if match:
+        # Use finditer to capture ALL matches, not just the first
+        for match in re.finditer(pattern, content_norm, re.IGNORECASE):
             locations_str = match.group(1)
             units_str = match.group(2)
 
             # Parse locations: "Lentor Central, Kallang Close and Dunearn Road"
             # Split on comma and "and"
             locations = re.split(r',\s*|\s+and\s+', locations_str)
-            locations = [loc.strip() for loc in locations if loc.strip()]
+            locations = [loc.strip() for loc in locations if loc.strip() and len(loc.strip()) > 3]
 
             # Parse units: "560, 470 and 330" or "480, 525, and 625"
-            units = re.findall(r'(\d+)', units_str)
-            units = [int(u) for u in units]
+            units = re.findall(r'(\d[\d,]*)', units_str)
+            units = [int(u.replace(',', '')) for u in units if u]
 
             # Match locations to units (in order)
             if len(locations) == len(units):
                 for loc, unit in zip(locations, units):
-                    location_units[loc] = unit
-
-            break
+                    # Only add if not already present (first match wins)
+                    if loc not in location_units:
+                        location_units[loc] = unit
+            elif len(locations) == 1 and len(units) >= 1:
+                # Single location with single unit count
+                if locations[0] not in location_units:
+                    location_units[locations[0]] = units[0]
 
     return location_units
 
@@ -946,8 +961,9 @@ def map_table_columns(headers: List[str]) -> Dict[str, int]:
         if any(k in h for k in gfa_keywords):
             col_map['max_gfa'] = idx
 
-        # Estimated units
-        if any(k in h for k in ['unit', 'dwelling', 'no. of units', 'number of units']):
+        # Estimated units - URA uses various header names:
+        # "No. of Units", "Dwelling Units", "Potential Yield", "Estimated No. of Units"
+        if any(k in h for k in ['unit', 'dwelling', 'no. of units', 'number of units', 'potential yield', 'yield']):
             if 'price' not in h:
                 col_map['units'] = idx
 
@@ -1081,7 +1097,8 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
     Matching priority:
     1. Exact location_raw match
     2. Fuzzy location match (normalized, stripped of parcel labels)
-    3. Planning area + similar characteristics
+    3. Containment match (one contains the other + shared key road token)
+    4. Planning area + similar characteristics
 
     Returns dict with estimated_units and source, or None if no match.
     """
@@ -1096,13 +1113,33 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
         if not loc:
             return ""
         loc = loc.lower().strip()
-        # Remove parcel labels
+        # Remove parcel labels like "(Parcel A)", "Parcel B", etc.
         loc = re.sub(r'\s*\(?parcel\s*[a-z0-9]+\)?', '', loc, flags=re.IGNORECASE)
+        # Remove "at " prefix
+        loc = re.sub(r'^at\s+', '', loc)
         # Remove extra whitespace
         loc = re.sub(r'\s+', ' ', loc)
         return loc.strip()
 
+    def extract_road_tokens(loc: str) -> set:
+        """Extract key road/place tokens from location for fuzzy matching."""
+        loc = loc.lower()
+        # Common road suffixes
+        suffixes = ['road', 'drive', 'walk', 'close', 'central', 'way', 'avenue',
+                    'lane', 'rise', 'park', 'view', 'street', 'boulevard']
+        # Extract the base name before the suffix
+        tokens = set()
+        for suffix in suffixes:
+            match = re.search(rf'(\w+(?:\s+\w+)?)\s+{suffix}', loc)
+            if match:
+                tokens.add(match.group(1).strip())
+        # Also add individual words (for places like "Dairy Farm", "Dover")
+        words = re.findall(r'\b[a-z]{4,}\b', loc)
+        tokens.update(words)
+        return tokens
+
     normalized = normalize_location(location_raw)
+    awarded_tokens = extract_road_tokens(location_raw)
 
     # Try exact match first
     exact_match = db_session.query(GLSTender).filter(
@@ -1124,6 +1161,7 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
         GLSTender.estimated_units.isnot(None)
     ).all()
 
+    # Pass 1: Exact normalized match
     for launch in launched_records:
         if normalize_location(launch.location_raw) == normalized:
             return {
@@ -1132,7 +1170,26 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
                 'launch_release_id': launch.release_id
             }
 
-    # Try planning area match with similar characteristics
+    # Pass 2: Containment fallback - if one normalized string contains the other
+    # and they share at least one key road token
+    for launch in launched_records:
+        launch_normalized = normalize_location(launch.location_raw)
+        launch_tokens = extract_road_tokens(launch.location_raw)
+
+        # Check containment
+        is_contained = (normalized in launch_normalized) or (launch_normalized in normalized)
+
+        # Check token overlap
+        shared_tokens = awarded_tokens & launch_tokens
+
+        if is_contained and shared_tokens:
+            return {
+                'estimated_units': launch.estimated_units,
+                'estimated_units_source': launch.estimated_units_source or 'ura_stated',
+                'launch_release_id': launch.release_id
+            }
+
+    # Pass 3: Try planning area match with similar characteristics
     if planning_area:
         planning_matches = db_session.query(GLSTender).filter(
             GLSTender.status == 'launched',
@@ -1235,11 +1292,21 @@ def scrape_gls_tenders(
         'needs_review': []
     }
 
-    # Get media release links
-    print(f"Fetching GLS media releases for {year}...")
+    # Get media release links - fetch current year PLUS prior year
+    # to capture launch records for sites awarded in current year
+    print(f"Fetching GLS media releases for {year} and {year-1}...")
     releases = get_media_release_links(year)
+    prior_releases = get_media_release_links(year - 1)
+
+    # Combine and deduplicate by release_id
+    seen_ids = {r['release_id'] for r in releases}
+    for r in prior_releases:
+        if r['release_id'] not in seen_ids:
+            releases.append(r)
+            seen_ids.add(r['release_id'])
+
     stats['releases_found'] = len(releases)
-    print(f"Found {len(releases)} potential GLS releases")
+    print(f"Found {len(releases)} potential GLS releases ({year}: {len(releases) - len(prior_releases)}, {year-1}: {len(prior_releases)})")
 
     for release in releases:
         base_release_id = release['release_id']
