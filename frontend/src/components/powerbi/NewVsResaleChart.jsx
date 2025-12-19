@@ -45,7 +45,11 @@ export function NewVsResaleChart({ height = 350 }) {
   const { buildApiParams, filters } = usePowerBIFilters();
 
   // Provide safe defaults for filters if context not ready
-  const safeFilters = filters || { districts: [], bedrooms: [], segment: null };
+  const safeFilters = {
+    districts: filters?.districts || [],
+    bedroomTypes: filters?.bedroomTypes || [],
+    segment: filters?.segment || null,
+  };
 
   // LOCAL drill state only - year → quarter → month (visual-local)
   const [localDrillLevel, setLocalDrillLevel] = useState('quarter');
@@ -115,8 +119,8 @@ export function NewVsResaleChart({ height = 350 }) {
     if (safeFilters.segment) {
       parts.push(safeFilters.segment);
     }
-    if (safeFilters.bedrooms.length > 0 && safeFilters.bedrooms.length < 4) {
-      parts.push(`${safeFilters.bedrooms.join(',')}BR`);
+    if (safeFilters.bedroomTypes.length > 0 && safeFilters.bedroomTypes.length < 4) {
+      parts.push(`${safeFilters.bedroomTypes.join(',')}BR`);
     }
     return parts.length > 0 ? parts.join(' · ') : 'All data';
   };
