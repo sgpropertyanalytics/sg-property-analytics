@@ -14,6 +14,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import { getNewVsResale } from '../../api/client';
 import { DrillButtons } from './DrillButtons';
+import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 
 ChartJS.register(
   CategoryScale,
@@ -34,20 +35,16 @@ ChartJS.register(
  * - Line A (solid, blue): New Launch median PSF
  * - Line B (dashed, green): Resale (Lease age < 10 years) median PSF
  *
- * Features:
- * - LOCAL filters (does NOT affect other charts on page)
- * - LOCAL drill up/down (year → quarter → month) - visual-local only
- * - KPI badges showing current premium and period average
- * - Trend indicator when difference >= 2%
+ * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
+ * Only the drill level (year/quarter/month) is visual-local.
  *
- * Power BI Best Practice: Drill is visual-local by default.
- * Drill ≠ Filter. Drill changes level of detail inside one chart only.
+ * Power BI Pattern: Global slicers MUST apply to ALL visuals.
  */
 export function NewVsResaleChart({ height = 350 }) {
-  // LOCAL state only - does not affect other charts
-  const [localRegion, setLocalRegion] = useState('ALL');
-  const [localBedroom, setLocalBedroom] = useState('ALL');
-  // LOCAL drill state - year → quarter → month (visual-local, not global)
+  // Get GLOBAL filters from context - respects sidebar selections
+  const { buildApiParams, filters } = usePowerBIFilters();
+
+  // LOCAL drill state only - year → quarter → month (visual-local)
   const [localDrillLevel, setLocalDrillLevel] = useState('quarter');
 
   const [data, setData] = useState(null);
@@ -57,7 +54,7 @@ export function NewVsResaleChart({ height = 350 }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
-  // Fetch data when local filters or drill level change
+  // Fetch data when global filters or local drill level change
   useEffect(() => {
     const fetchData = async () => {
       if (isInitialLoad.current) {
@@ -68,11 +65,12 @@ export function NewVsResaleChart({ height = 350 }) {
       setError(null);
 
       try {
-        const response = await getNewVsResale({
-          region: localRegion,
-          bedroom: localBedroom,
+        // Use buildApiParams to include GLOBAL filters from sidebar
+        const params = buildApiParams({
           timeGrain: localDrillLevel,
         });
+
+        const response = await getNewVsResale(params);
         setData(response.data);
         isInitialLoad.current = false;
       } catch (err) {
@@ -84,7 +82,7 @@ export function NewVsResaleChart({ height = 350 }) {
       }
     };
     fetchData();
-  }, [localRegion, localBedroom, localDrillLevel]);
+  }, [buildApiParams, localDrillLevel, filters]); // Re-fetch when global filters change
 
   // LOCAL drill handlers - visual-local only, does NOT affect other charts
   const drillLevels = ['year', 'quarter', 'month'];
@@ -103,6 +101,21 @@ export function NewVsResaleChart({ height = 350 }) {
     if (canDrillDown) {
       setLocalDrillLevel(drillLevels[currentDrillIndex + 1]);
     }
+  };
+
+  // Build filter summary for display
+  const getFilterSummary = () => {
+    const parts = [];
+    if (filters.districts.length > 0) {
+      parts.push(filters.districts.length === 1 ? filters.districts[0] : `${filters.districts.length} districts`);
+    }
+    if (filters.segment) {
+      parts.push(filters.segment);
+    }
+    if (filters.bedrooms.length > 0 && filters.bedrooms.length < 4) {
+      parts.push(`${filters.bedrooms.join(',')}BR`);
+    }
+    return parts.length > 0 ? parts.join(' · ') : 'All data';
   };
 
   if (loading) {
@@ -137,7 +150,6 @@ export function NewVsResaleChart({ height = 350 }) {
   const resalePsf = chartData.map(d => d.resalePsf);
 
   // Calculate data completeness for user awareness
-  const newLaunchGaps = newLaunchPsf.filter(v => v === null).length;
   const resaleGaps = resalePsf.filter(v => v === null).length;
   const totalPoints = chartData.length;
   const hasSignificantGaps = resaleGaps > totalPoints * 0.2; // >20% gaps
@@ -315,10 +327,10 @@ export function NewVsResaleChart({ height = 350 }) {
               )}
             </div>
             <p className="text-xs text-[#547792] mt-0.5">
-              Median PSF comparison by {drillLevelLabels[localDrillLevel].toLowerCase()}
+              {getFilterSummary()} · by {drillLevelLabels[localDrillLevel].toLowerCase()}
               {hasSignificantGaps && (
                 <span className="ml-2 text-amber-600">
-                  (sparse resale data for this filter)
+                  (sparse resale data)
                 </span>
               )}
             </p>
@@ -330,22 +342,6 @@ export function NewVsResaleChart({ height = 350 }) {
             localLevelLabels={drillLevelLabels}
             onLocalDrillUp={handleDrillUp}
             onLocalDrillDown={handleDrillDown}
-          />
-        </div>
-
-        {/* Local Filters - compact inline (Region & Bedroom only, Period removed) */}
-        <div className="flex flex-wrap gap-2 mt-3">
-          <LocalFilter
-            label="Region"
-            value={localRegion}
-            onChange={setLocalRegion}
-            options={['ALL', 'CCR', 'RCR', 'OCR']}
-          />
-          <LocalFilter
-            label="Bedroom"
-            value={localBedroom}
-            onChange={setLocalBedroom}
-            options={['ALL', '1BR', '2BR', '3BR', '4BR+']}
           />
         </div>
 
@@ -393,35 +389,10 @@ export function NewVsResaleChart({ height = 350 }) {
       {/* Info tooltip */}
       <div className="px-3 py-2 md:px-4 md:py-2 border-t border-[#94B4C1]/30 bg-gray-50">
         <p className="text-[10px] md:text-xs text-[#547792]">
-          Controls for age by comparing new launches with near-new resale units. Use drill buttons to change time granularity. All controls are local to this chart only.
+          Compares new launches with near-new resale units (&lt;10 years old). Respects sidebar filters. Drill buttons change time granularity locally.
         </p>
       </div>
     </div>
-  );
-}
-
-/**
- * Compact local filter component - stays inline on all screen sizes
- */
-function LocalFilter({ label, value, options, onChange }) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="
-        px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded bg-white
-        min-w-[80px] min-h-[32px]
-        focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-[#547792]
-        cursor-pointer
-      "
-      aria-label={label}
-    >
-      {options.map(opt => (
-        <option key={opt} value={opt}>
-          {label}: {opt}
-        </option>
-      ))}
-    </select>
   );
 }
 

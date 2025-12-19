@@ -1648,56 +1648,56 @@ def new_vs_resale():
     """
     New Launch vs Resale (Lease age < 10 years) comparison.
 
-    Visual-level endpoint - filters are LOCAL to this chart only.
-    Compares median PSF of new launches against resale units under 10 years old.
+    RESPECTS GLOBAL FILTERS from sidebar (district, bedroom, segment, date range).
+    Only the drill level (timeGrain) is visual-local.
 
-    Query params:
-      - region: ALL, CCR, RCR, OCR (default: ALL)
-      - bedroom: ALL, 1BR, 2BR, 3BR, 4BR+ (default: ALL)
+    Query params (global filters from sidebar):
+      - district: comma-separated districts (D01,D02,...) - from global sidebar
+      - bedroom: comma-separated bedroom counts (2,3,4) - from global sidebar
+      - segment: CCR, RCR, OCR - from global sidebar
+      - date_from: YYYY-MM-DD - from global sidebar
+      - date_to: YYYY-MM-DD - from global sidebar
+
+    Query params (visual-local):
       - timeGrain: year, quarter, month (default: quarter) - for drill up/down
 
     Returns:
       {
-        "chartData": [
-          {
-            "period": "2024-Q1",
-            "newLaunchPsf": 2500,
-            "resalePsf": 2100,
-            "premiumPct": 19.0,
-            "newLaunchCount": 150,
-            "resaleCount": 45
-          },
-          ...
-        ],
-        "summary": {
-          "currentPremium": 15.2,
-          "avgPremium10Y": 18.5,
-          "premiumTrend": "widening" | "narrowing" | "stable"
-        },
-        "appliedFilters": {
-          "region": "ALL",
-          "bedroom": "ALL",
-          "timeGrain": "quarter",
-          "scope": "visual-level"
-        }
+        "chartData": [...],
+        "summary": {...},
+        "appliedFilters": {...}
       }
     """
     start = time.time()
 
-    # Parse query parameters (visual-level filters - local to this chart)
-    region = request.args.get("region", "ALL")
-    bedroom = request.args.get("bedroom", "ALL")
+    # Parse GLOBAL filter parameters (from sidebar)
+    districts_param = request.args.get("district")
+    districts = None
+    if districts_param:
+        districts = [d.strip().upper() for d in districts_param.split(",") if d.strip()]
+        # Normalize districts
+        normalized = []
+        for d in districts:
+            if not d.startswith("D"):
+                d = f"D{d.zfill(2)}"
+            normalized.append(d)
+        districts = normalized
+
+    bedroom_param = request.args.get("bedroom")
+    bedrooms = None
+    if bedroom_param:
+        try:
+            bedrooms = [int(b.strip()) for b in bedroom_param.split(",") if b.strip()]
+        except ValueError:
+            bedrooms = None
+
+    segment = request.args.get("segment")
+    date_from = request.args.get("date_from")
+    date_to = request.args.get("date_to")
+
+    # Parse visual-local parameter (drill level)
     time_grain = request.args.get("timeGrain", "quarter")
-
-    # Validate parameters
-    valid_regions = ["ALL", "CCR", "RCR", "OCR"]
-    valid_bedrooms = ["ALL", "1BR", "2BR", "3BR", "4BR+"]
     valid_time_grains = ["year", "quarter", "month"]
-
-    if region not in valid_regions:
-        return jsonify({"error": f"Invalid region. Must be one of: {valid_regions}"}), 400
-    if bedroom not in valid_bedrooms:
-        return jsonify({"error": f"Invalid bedroom. Must be one of: {valid_bedrooms}"}), 400
     if time_grain not in valid_time_grains:
         return jsonify({"error": f"Invalid timeGrain. Must be one of: {valid_time_grains}"}), 400
 
@@ -1705,13 +1705,17 @@ def new_vs_resale():
         from services.data_processor import get_new_vs_resale_comparison
 
         result = get_new_vs_resale_comparison(
-            region=region,
-            bedroom=bedroom,
+            districts=districts,
+            bedrooms=bedrooms,
+            segment=segment,
+            date_from=date_from,
+            date_to=date_to,
             time_grain=time_grain
         )
 
         elapsed = time.time() - start
-        print(f"GET /api/new-vs-resale took: {elapsed:.4f} seconds (region={region}, bedroom={bedroom}, timeGrain={time_grain})")
+        filter_info = f"districts={districts}, bedrooms={bedrooms}, segment={segment}, timeGrain={time_grain}"
+        print(f"GET /api/new-vs-resale took: {elapsed:.4f} seconds ({filter_info})")
         return jsonify(result)
     except Exception as e:
         elapsed = time.time() - start

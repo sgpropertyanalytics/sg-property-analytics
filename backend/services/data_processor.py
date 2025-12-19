@@ -1621,8 +1621,11 @@ def get_price_project_stats_by_district(
 
 
 def get_new_vs_resale_comparison(
-    region: Optional[str] = None,
-    bedroom: Optional[str] = None,
+    districts: Optional[List[str]] = None,
+    bedrooms: Optional[List[int]] = None,
+    segment: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
     time_grain: str = "quarter"
 ) -> Dict[str, Any]:
     """
@@ -1631,10 +1634,15 @@ def get_new_vs_resale_comparison(
     Compares median PSF of new launches against resale units under 10 years old.
     This controls for age by comparing new launches with near-new resale units.
 
+    RESPECTS GLOBAL FILTERS from sidebar. Only time_grain is visual-local.
+
     Args:
-        region: Market segment filter ("ALL", "CCR", "RCR", "OCR") - defaults to ALL
-        bedroom: Bedroom filter ("ALL", "1BR", "2BR", "3BR", "4BR+") - defaults to ALL
-        time_grain: Time granularity for drill ("year", "quarter", "month") - defaults to quarter
+        districts: List of district codes (e.g., ['D09', 'D10']) - from global sidebar
+        bedrooms: List of bedroom counts (e.g., [2, 3, 4]) - from global sidebar
+        segment: Market segment ('CCR', 'RCR', 'OCR') - from global sidebar (used if no districts)
+        date_from: Start date 'YYYY-MM-DD' - from global sidebar
+        date_to: End date 'YYYY-MM-DD' - from global sidebar
+        time_grain: Time granularity for drill ("year", "quarter", "month") - visual-local
 
     Returns:
         Dictionary with chart data, summary, and applied filters
@@ -1642,55 +1650,71 @@ def get_new_vs_resale_comparison(
     from models.database import db
     from sqlalchemy import text
 
-    # Set implicit time range based on drill level to prevent cluttering
+    # Set implicit time range based on drill level (only if no date filter from sidebar)
     # Year: ALL time, Quarter: 5Y, Month: 2Y
     today = datetime.now()
-    if time_grain == "year":
-        start_date = None  # ALL time at year level
-    elif time_grain == "month":
-        start_date = today - timedelta(days=2 * 365)  # 2Y at month level
-    else:  # quarter (default)
-        start_date = today - timedelta(days=5 * 365)  # 5Y at quarter level
+    if date_from or date_to:
+        # Use sidebar date filters if provided
+        start_date = None  # Will be applied via where clause
+        end_date = None
+    else:
+        # Apply implicit time range based on drill level
+        if time_grain == "year":
+            start_date = None  # ALL time at year level
+        elif time_grain == "month":
+            start_date = today - timedelta(days=2 * 365)  # 2Y at month level
+        else:  # quarter (default)
+            start_date = today - timedelta(days=5 * 365)  # 5Y at quarter level
 
     # Build WHERE conditions for the query
     where_conditions = ["1=1"]  # Base condition that's always true
     params = {}
 
-    if start_date:
+    # Apply date filters
+    if date_from:
+        where_conditions.append("transaction_date >= :date_from")
+        params["date_from"] = date_from
+    elif start_date:
         where_conditions.append("transaction_date >= :start_date")
         params["start_date"] = start_date.strftime("%Y-%m-%d")
 
-    # Region filter - map to districts
-    if region and region != "ALL":
+    if date_to:
+        where_conditions.append("transaction_date <= :date_to")
+        params["date_to"] = date_to
+
+    # District filter (from global sidebar)
+    if districts and len(districts) > 0:
+        placeholders = ", ".join([f":district_{i}" for i in range(len(districts))])
+        where_conditions.append(f"district IN ({placeholders})")
+        for i, d in enumerate(districts):
+            params[f"district_{i}"] = d
+    elif segment:
+        # Fallback to segment if no districts specified
         ccr_districts = ["D01", "D02", "D06", "D07", "D09", "D10", "D11"]
         rcr_districts = ["D03", "D04", "D05", "D08", "D12", "D13", "D14", "D15", "D20"]
         ocr_districts = ["D16", "D17", "D18", "D19", "D21", "D22", "D23", "D24", "D25", "D26", "D27", "D28"]
 
-        if region == "CCR":
-            districts = ccr_districts
-        elif region == "RCR":
-            districts = rcr_districts
-        elif region == "OCR":
-            districts = ocr_districts
+        if segment.upper() == "CCR":
+            segment_districts = ccr_districts
+        elif segment.upper() == "RCR":
+            segment_districts = rcr_districts
+        elif segment.upper() == "OCR":
+            segment_districts = ocr_districts
         else:
-            districts = []
+            segment_districts = []
 
-        if districts:
-            placeholders = ", ".join([f":district_{i}" for i in range(len(districts))])
+        if segment_districts:
+            placeholders = ", ".join([f":segment_district_{i}" for i in range(len(segment_districts))])
             where_conditions.append(f"district IN ({placeholders})")
-            for i, d in enumerate(districts):
-                params[f"district_{i}"] = d
+            for i, d in enumerate(segment_districts):
+                params[f"segment_district_{i}"] = d
 
-    # Bedroom filter
-    if bedroom and bedroom != "ALL":
-        bedroom_map = {"1BR": 1, "2BR": 2, "3BR": 3, "4BR+": 4}
-        bedroom_int = bedroom_map.get(bedroom)
-        if bedroom_int:
-            if bedroom_int == 4:
-                where_conditions.append("bedroom_count >= 4")
-            else:
-                where_conditions.append("bedroom_count = :bedroom_count")
-                params["bedroom_count"] = bedroom_int
+    # Bedroom filter (from global sidebar - numeric list)
+    if bedrooms and len(bedrooms) > 0:
+        placeholders = ", ".join([f":bedroom_{i}" for i in range(len(bedrooms))])
+        where_conditions.append(f"bedroom_count IN ({placeholders})")
+        for i, b in enumerate(bedrooms):
+            params[f"bedroom_{i}"] = b
 
     where_clause = " AND ".join(where_conditions)
 
@@ -1857,10 +1881,13 @@ def get_new_vs_resale_comparison(
             'dataPoints': len(chart_data)
         },
         'appliedFilters': {
-            'region': region or 'ALL',
-            'bedroom': bedroom or 'ALL',
+            'districts': districts if districts else [],
+            'bedrooms': bedrooms if bedrooms else [],
+            'segment': segment,
+            'date_from': date_from,
+            'date_to': date_to,
             'timeGrain': time_grain,
-            'scope': 'visual-level'
+            'scope': 'respects-global-filters'
         }
     }
 
