@@ -18,7 +18,7 @@ class GLSTender(db.Model):
     status = db.Column(db.String(20), nullable=False, index=True)  # 'launched' or 'awarded'
     release_id = db.Column(db.String(100), unique=True, nullable=False)  # e.g., 'pr25-66-dairy-farm-walk'
     release_url = db.Column(db.Text, nullable=False)
-    release_date = db.Column(db.Date, nullable=False, index=True)
+    release_date = db.Column(db.Date, nullable=True, index=True)  # Allow null for releases without clear dates
     tender_close_date = db.Column(db.Date)
 
     # Location (raw) - use Text for long location names
