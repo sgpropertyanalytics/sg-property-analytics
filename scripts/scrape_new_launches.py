@@ -77,7 +77,7 @@ def main():
             print(f"{'='*60}\n")
 
             if args.dry_run:
-                print("DRY RUN: Would load 15 seed projects")
+                print("DRY RUN: Would load 18 seed projects")
                 print("\nProjects that would be inserted:")
                 from services.new_launch_scraper import SEED_DATA_2026
                 for p in SEED_DATA_2026:

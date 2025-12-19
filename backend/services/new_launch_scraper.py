@@ -985,8 +985,109 @@ def validate_new_launches(db_session=None) -> Dict[str, Any]:
 # SEED DATA - Known 2026 New Launches
 # =============================================================================
 
-# Based on publicly available information about upcoming Singapore condo launches
+# Based on StackedHomes data (via Firecrawl) and public sources
+# Includes both:
+# 1. Projects nearing TOP (Temporary Occupation Permit) in 2026/2027
+# 2. Upcoming launches expected in 2026
+
 SEED_DATA_2026 = [
+    # =========================================================================
+    # PROJECTS NEARING TOP IN 2026 (Source: StackedHomes Dec 2025)
+    # =========================================================================
+    {
+        'project_name': 'AMO Residence',
+        'developer': 'UOL Group',
+        'district': 'D20',
+        'planning_area': 'Ang Mo Kio',
+        'market_segment': 'OCR',
+        'total_units': 372,
+        'indicative_psf_low': 2400,
+        'indicative_psf_high': 2600,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-Q1',  # TOP date
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'Tembusu Grand',
+        'developer': 'CDL & MCL Land',
+        'district': 'D15',
+        'planning_area': 'Marine Parade',
+        'market_segment': 'RCR',
+        'total_units': 638,
+        'indicative_psf_low': 2400,
+        'indicative_psf_high': 2500,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-Q1',  # Early TOP
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'Grand Dunman',
+        'developer': 'SingHaiyi Group',
+        'district': 'D15',
+        'planning_area': 'Marine Parade',
+        'market_segment': 'RCR',
+        'total_units': 1008,
+        'indicative_psf_low': 2400,
+        'indicative_psf_high': 2500,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-Q3',  # Early TOP
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'CanningHill Piers',
+        'developer': 'CDL & CapitaLand',
+        'district': 'D06',
+        'planning_area': 'River Valley',
+        'market_segment': 'CCR',
+        'total_units': 696,
+        'indicative_psf_low': 2800,
+        'indicative_psf_high': 3500,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-Q4',  # TOP date
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'The Botany at Dairy Farm',
+        'developer': 'Sim Lian Group',
+        'district': 'D23',
+        'planning_area': 'Bukit Panjang',
+        'market_segment': 'OCR',
+        'total_units': 386,
+        'indicative_psf_low': 2000,
+        'indicative_psf_high': 2100,
+        'tenure': '99-year',
+        'expected_launch_date': '2027-Q1',  # TOP 2027
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'Blossoms By The Park',
+        'developer': 'EL Development',
+        'district': 'D05',
+        'planning_area': 'Buona Vista',
+        'market_segment': 'RCR',
+        'total_units': 275,
+        'indicative_psf_low': 2200,
+        'indicative_psf_high': 2400,
+        'tenure': '99-year',
+        'expected_launch_date': '2027-Q1',  # TOP 2027
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'Watten House',
+        'developer': 'UOL Group & Singapore Land',
+        'district': 'D11',
+        'planning_area': 'Bukit Timah',
+        'market_segment': 'CCR',
+        'total_units': 180,
+        'indicative_psf_low': 3000,
+        'indicative_psf_high': 3500,
+        'tenure': 'Freehold',
+        'expected_launch_date': '2027-Q1',  # TOP 2027
+        'land_bid_psf': None,
+    },
+    # =========================================================================
+    # UPCOMING LAUNCHES EXPECTED 2026 (GLS pipeline & enbloc sites)
+    # =========================================================================
     {
         'project_name': 'Parktown Residence',
         'developer': 'CapitaLand Development',
@@ -997,7 +1098,7 @@ SEED_DATA_2026 = [
         'indicative_psf_low': 2050,
         'indicative_psf_high': 2350,
         'tenure': '99-year',
-        'expected_launch_date': '2026-01-15',
+        'expected_launch_date': '2026-Q1',
         'land_bid_psf': 768,
     },
     {
@@ -1010,21 +1111,8 @@ SEED_DATA_2026 = [
         'indicative_psf_low': 2200,
         'indicative_psf_high': 2500,
         'tenure': '99-year',
-        'expected_launch_date': '2026-02-01',
+        'expected_launch_date': '2026-Q1',
         'land_bid_psf': 1106,
-    },
-    {
-        'project_name': 'The Collective at One Sophia',
-        'developer': 'SingHaiyi Group',
-        'district': 'D09',
-        'planning_area': 'Orchard',
-        'market_segment': 'CCR',
-        'total_units': 366,
-        'indicative_psf_low': 3200,
-        'indicative_psf_high': 3800,
-        'tenure': 'Freehold',
-        'expected_launch_date': '2026-03-01',
-        'land_bid_psf': None,
     },
     {
         'project_name': 'Meyer Blue',
@@ -1077,45 +1165,6 @@ SEED_DATA_2026 = [
         'tenure': '99-year',
         'expected_launch_date': '2026-Q2',
         'land_bid_psf': 1108,
-    },
-    {
-        'project_name': 'Aurea',
-        'developer': 'Aurum Land',
-        'district': 'D15',
-        'planning_area': 'Marine Parade',
-        'market_segment': 'RCR',
-        'total_units': 188,
-        'indicative_psf_low': 2450,
-        'indicative_psf_high': 2750,
-        'tenure': 'Freehold',
-        'expected_launch_date': '2026-Q2',
-        'land_bid_psf': None,
-    },
-    {
-        'project_name': 'The Continuum',
-        'developer': 'Hoi Hup Realty & Sunway Developments',
-        'district': 'D15',
-        'planning_area': 'Katong',
-        'market_segment': 'RCR',
-        'total_units': 816,
-        'indicative_psf_low': 2500,
-        'indicative_psf_high': 2900,
-        'tenure': 'Freehold',
-        'expected_launch_date': '2026-Q2',
-        'land_bid_psf': None,
-    },
-    {
-        'project_name': 'Tembusu Grand',
-        'developer': 'CDL & MCL Land',
-        'district': 'D15',
-        'planning_area': 'Marine Parade',
-        'market_segment': 'RCR',
-        'total_units': 638,
-        'indicative_psf_low': 2400,
-        'indicative_psf_high': 2700,
-        'tenure': '99-year',
-        'expected_launch_date': '2026-Q2',
-        'land_bid_psf': 1302,
     },
     {
         'project_name': 'Sora',
