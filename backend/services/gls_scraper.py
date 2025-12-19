@@ -280,50 +280,69 @@ def reverse_geocode_to_planning_area(lat: float, lon: float) -> Optional[str]:
 # =============================================================================
 
 LAUNCHED_PATTERNS = [
-    r'launch(?:ed|es|ing)?',
+    r'ura\s+launch(?:ed|es|ing)?',
+    r'launch(?:ed|es|ing)?\s+(?:for\s+)?(?:sale|tender|application)',
     r'invite(?:s|d)?\s+(?:tender|bid)',
     r'available\s+for\s+(?:application|tender)',
     r'open(?:s|ed)?\s+for\s+(?:tender|application)',
     r'call(?:s|ed)?\s+(?:for\s+)?tender',
-    r'release(?:s|d)?\s+(?:site|land)',
-    r'offer(?:s|ed)?\s+(?:site|land)',
-    r'for\s+sale\s+today',  # "released for sale today"
-    r'gls\s+programme',  # "Government Land Sales Programme"
+    r'release(?:s|d)?\s+(?:for\s+sale|new\s+site)',
+    r'offer(?:s|ed)?\s+(?:site|land)\s+for\s+sale',
+    r'for\s+sale\s+today',
+    r'gls\s+programme',
+    r'reserve\s+list',  # Sites on reserve list = not awarded yet
 ]
 
 AWARDED_PATTERNS = [
-    r'award(?:s|ed)?',
+    r'award(?:s|ed)\s+(?:to|the)',  # More specific - "awarded to" or "awards the"
     r'successful\s+tenderer',
-    r'highest\s+bid',
-    r'winning\s+bid',
+    r'highest\s+bid(?:der)?',
+    r'winning\s+bid(?:der)?',
     r'tender(?:ed)?\s+(?:at|for)\s+\$',
     r'won\s+(?:by|the)',
     r'land\s+parcel\s+(?:sold|awarded)',
+    r'tender\s+result',
+    r'closes?\s+tender',  # Tender has closed = awarded
 ]
 
 
 def classify_status(title: str, content: str = "") -> str:
     """
     Classify a media release as 'launched' or 'awarded'.
-    Uses semantic pattern matching.
+    Uses semantic pattern matching on TITLE primarily.
+
+    Title is most reliable:
+    - "URA launches tender for..." = launched
+    - "URA awards tender for..." = awarded
+    - "Tender results for..." = awarded
     """
-    text = f"{title} {content}".lower()
+    title_lower = title.lower()
+    content_lower = content.lower() if content else ""
 
-    # Check awarded patterns first (they're more specific)
-    for pattern in AWARDED_PATTERNS:
-        if re.search(pattern, text, re.IGNORECASE):
-            return 'awarded'
+    # Check TITLE first - most reliable indicator
+    # Award keywords in title = definitely awarded
+    if any(kw in title_lower for kw in ['award', 'result', 'closes tender', 'successful']):
+        return 'awarded'
 
-    # Check launched patterns
-    for pattern in LAUNCHED_PATTERNS:
-        if re.search(pattern, text, re.IGNORECASE):
-            return 'launched'
-
-    # Default to launched if contains 'tender' but no award language
-    if 'tender' in text.lower():
+    # Launch keywords in title = definitely launched
+    if any(kw in title_lower for kw in ['launch', 'invit', 'open for', 'release']):
         return 'launched'
 
-    return 'launched'  # Safe default
+    # If title doesn't have clear indicator, check content
+    # But be more conservative - look for definitive award language
+
+    # Check for awarded patterns in content
+    for pattern in AWARDED_PATTERNS:
+        if re.search(pattern, content_lower, re.IGNORECASE):
+            return 'awarded'
+
+    # Check for launched patterns in content
+    for pattern in LAUNCHED_PATTERNS:
+        if re.search(pattern, content_lower, re.IGNORECASE):
+            return 'launched'
+
+    # Default to launched (safer - open tenders are more common in announcements)
+    return 'launched'
 
 
 # =============================================================================
@@ -552,16 +571,45 @@ def is_valid_location(location: str) -> bool:
     if len(location) < 5:
         return False
 
+    location_lower = location.lower()
+
     # Common words that aren't locations
     invalid_words = {
         'and', 'the', 'for', 'with', 'from', 'that', 'this', 'which',
         'residential', 'commercial', 'industrial', 'site', 'land',
         'parcel', 'tender', 'award', 'sale', 'gls', 'ura',
-        'while', 'about', 'units', 'sqm', 'sq m'
+        'while', 'about', 'units', 'sqm', 'sq m', 'are', 'is', 'was',
+        'were', 'will', 'can', 'could', 'would', 'should', 'may', 'might'
     }
 
-    if location.lower() in invalid_words:
+    if location_lower in invalid_words:
         return False
+
+    # CRITICAL: Reject strings that START with invalid words
+    # This catches "and Dover Drive", "while the site...", etc.
+    invalid_starts = [
+        'and ', 'the ', 'for ', 'with ', 'from ', 'that ', 'this ', 'which ',
+        'while ', 'about ', 'are ', 'is ', 'was ', 'were ', 'will ', 'can ',
+        'could ', 'would ', 'should ', 'may ', 'might ', 'ura ', 'gls ',
+        'residential ', 'commercial ', 'industrial ', 'site ', 'land ',
+        'respectively', 'approximately', 'estimated', 'total', 'combined',
+        'as part of', 'in addition', 'together with'
+    ]
+
+    for start in invalid_starts:
+        if location_lower.startswith(start):
+            return False
+
+    # Reject strings that contain sentence fragments
+    invalid_patterns = [
+        'are zoned', 'is zoned', 'can yield', 'will yield', 'may yield',
+        'launched', 'awarded', 'tender', 'programme', 'announcement',
+        'press release', 'media release'
+    ]
+
+    for pattern in invalid_patterns:
+        if pattern in location_lower:
+            return False
 
     # Must contain at least one letter
     if not any(c.isalpha() for c in location):
@@ -570,21 +618,27 @@ def is_valid_location(location: str) -> bool:
     # Should have a road suffix or be a known place name
     road_suffixes = ['road', 'street', 'avenue', 'drive', 'lane', 'way',
                      'close', 'rise', 'park', 'view', 'central', 'walk',
-                     'crescent', 'place', 'terrace', 'grove', 'hill', 'heights']
-
-    location_lower = location.lower()
+                     'crescent', 'place', 'terrace', 'grove', 'hill', 'heights',
+                     'boulevard', 'circle', 'link', 'loop']
 
     # Check if it ends with a road suffix
     has_road_suffix = any(location_lower.endswith(suffix) for suffix in road_suffixes)
 
-    # Or contains a road suffix somewhere
-    has_road_word = any(suffix in location_lower for suffix in road_suffixes)
+    # Or contains a road suffix as a word (not part of another word)
+    has_road_word = False
+    for suffix in road_suffixes:
+        # Check if suffix appears as a word (bounded by spaces or end of string)
+        pattern = r'\b' + suffix + r'\b'
+        if re.search(pattern, location_lower):
+            has_road_word = True
+            break
 
     # Known place names without road suffixes
     known_places = ['bedok', 'tampines', 'clementi', 'jurong', 'woodlands',
                     'sembawang', 'punggol', 'sengkang', 'hougang', 'bishan',
                     'toa payoh', 'ang mo kio', 'bukit', 'kallang', 'geylang',
-                    'queenstown', 'novena', 'orchard', 'newton', 'tanglin']
+                    'queenstown', 'novena', 'orchard', 'newton', 'tanglin',
+                    'dairy farm', 'lentor', 'tengah']
 
     is_known_place = any(place in location_lower for place in known_places)
 
@@ -601,7 +655,7 @@ def extract_all_table_data(tables: List, status: str) -> List[Dict[str, Any]]:
     if not tables:
         return results
 
-    for table in tables:
+    for table_idx, table in enumerate(tables):
         rows = table.find_all('tr')
         if len(rows) < 2:
             continue
@@ -617,6 +671,10 @@ def extract_all_table_data(tables: List, status: str) -> List[Dict[str, Any]]:
 
         # Find relevant column indices using fuzzy matching
         col_map = map_table_columns(headers)
+
+        # Debug: Print what columns we found
+        if col_map:
+            print(f"    Table {table_idx}: headers={headers[:5]}... | mapped={col_map}")
 
         # Parse ALL data rows
         for row in rows[1:]:
@@ -709,17 +767,30 @@ def extract_all_from_text(content: str, status: str) -> List[Dict[str, Any]]:
                 if price_val:
                     data['tendered_price_sgd'] = price_val
 
-            # Try to find successful tenderer
+            # Try to find successful tenderer - multiple patterns
             tenderer_patterns = [
-                r'(?:successful\s+tenderer|winning\s+bid(?:der)?|awarded\s+to)\s*[:\-]?\s*([A-Z][A-Za-z\s&]+(?:Pte\.?\s*Ltd\.?|Limited|Inc|Corporation|Development))',
-                r'([A-Z][A-Za-z\s&]+(?:Pte\.?\s*Ltd\.?|Limited))\s+(?:submitted|won|secured)',
+                # "The successful tenderer is ABC Development Pte Ltd"
+                r'successful\s+tenderer\s+(?:is|was|:)\s*([A-Z][A-Za-z\s&\.,\(\)]+(?:Pte\.?\s*Ltd\.?|Limited|Inc|Corporation|Development|Holdings|Group))',
+                # "awarded to ABC Development"
+                r'awarded\s+to\s+([A-Z][A-Za-z\s&\.,\(\)]+(?:Pte\.?\s*Ltd\.?|Limited|Inc|Corporation|Development|Holdings|Group))',
+                # "won by ABC Development"
+                r'won\s+by\s+([A-Z][A-Za-z\s&\.,\(\)]+(?:Pte\.?\s*Ltd\.?|Limited|Inc|Corporation|Development|Holdings|Group))',
+                # "ABC Development Pte Ltd submitted the highest bid"
+                r'([A-Z][A-Za-z\s&\.,\(\)]+(?:Pte\.?\s*Ltd\.?|Limited))\s+submitted\s+(?:the\s+)?(?:highest|winning)',
+                # "highest bid of $X million from ABC Development"
+                r'highest\s+bid\s+(?:of\s+\$[\d,\.]+\s*(?:million)?\s+)?(?:from|by)\s+([A-Z][A-Za-z\s&\.,\(\)]+(?:Pte\.?\s*Ltd\.?|Limited|Inc|Corporation|Development|Holdings|Group))',
             ]
 
             for pattern in tenderer_patterns:
                 match = re.search(pattern, content, re.IGNORECASE)
                 if match:
-                    data['successful_tenderer'] = match.group(1).strip()
-                    break
+                    tenderer = match.group(1).strip()
+                    # Clean up the tenderer name
+                    tenderer = re.sub(r'\s+', ' ', tenderer)  # Normalize whitespace
+                    tenderer = tenderer.rstrip('.,')  # Remove trailing punctuation
+                    if len(tenderer) > 3:  # Sanity check
+                        data['successful_tenderer'] = tenderer
+                        break
 
         results.append(data)
 
@@ -730,47 +801,58 @@ def map_table_columns(headers: List[str]) -> Dict[str, int]:
     """
     Map table headers to field names using fuzzy matching.
     Returns dict of field_name -> column_index.
+
+    URA table headers examples:
+    - "Location" or "Site" for location
+    - "Successful Tenderer" or "Tenderer" for developer
+    - "Tendered Price" or "Price ($)" for price
+    - "Site Area (sq m)" for site area
+    - "Maximum GFA (sq m)" for GFA
     """
     col_map = {}
 
     for idx, header in enumerate(headers):
-        h = header.lower()
+        h = header.lower().strip()
 
-        # Location
-        if any(k in h for k in ['location', 'address', 'street']):
-            if 'area' not in h:  # Avoid 'site area'
-                col_map['location'] = idx
-        elif 'site' in h and 'area' not in h:
+        # Location (be more specific to avoid false matches)
+        if h in ['location', 'site', 'address', 'street name', 'site location']:
+            col_map['location'] = idx
+        elif 'location' in h and 'area' not in h:
             col_map['location'] = idx
 
         # Site area
-        if any(k in h for k in ['site area', 'land area']):
+        if any(k in h for k in ['site area', 'land area', 'site (sq']):
             col_map['site_area'] = idx
 
         # Max GFA
-        if any(k in h for k in ['gfa', 'gross floor', 'max floor', 'maximum gfa']):
+        if any(k in h for k in ['gfa', 'gross floor', 'max floor', 'maximum gfa', 'maximum gross']):
             col_map['max_gfa'] = idx
 
         # Estimated units
-        if any(k in h for k in ['unit', 'dwelling']):
+        if any(k in h for k in ['unit', 'dwelling', 'no. of units', 'number of units']):
             if 'price' not in h:
                 col_map['units'] = idx
 
-        # Tenderer
-        if any(k in h for k in ['tenderer', 'bidder', 'developer', 'winner', 'successful']):
+        # Tenderer / Developer - be very specific
+        if 'successful tenderer' in h or 'winning tenderer' in h:
+            col_map['tenderer'] = idx
+        elif h == 'tenderer' or h == 'developer' or h == 'bidder':
+            col_map['tenderer'] = idx
+        elif 'tenderer' in h and 'no' not in h and 'number' not in h:
             col_map['tenderer'] = idx
 
-        # Price
-        if any(k in h for k in ['price', 'bid', 'amount']):
-            if 'unit' not in h:  # Avoid 'unit price'
-                col_map['price'] = idx
+        # Price - be specific to avoid matching "unit price"
+        if any(k in h for k in ['tendered price', 'tender price', 'bid price', 'price ($)', 'tender amount']):
+            col_map['price'] = idx
+        elif h == 'price' or h == 'amount':
+            col_map['price'] = idx
 
         # Number of tenderers
-        if any(k in h for k in ['no. of tender', 'number of tender', 'bids received']):
+        if any(k in h for k in ['no. of tender', 'number of tender', 'bids received', 'no of tenderer']):
             col_map['num_tenderers'] = idx
 
         # Close date
-        if any(k in h for k in ['close', 'closing', 'deadline']):
+        if any(k in h for k in ['close', 'closing', 'deadline', 'tender closing']):
             col_map['close_date'] = idx
 
     return col_map
@@ -925,6 +1007,10 @@ def scrape_gls_tenders(
 
         for data in tender_data_list:
             release_id = data['release_id']
+            location = data.get('location_raw', 'Unknown')
+
+            # Debug: Print what we extracted
+            print(f"  Extracted: status={data.get('status')} | location={location[:50]} | dev={data.get('successful_tenderer', 'N/A')[:30] if data.get('successful_tenderer') else 'N/A'}")
 
             # Check if already exists
             existing = db_session.query(GLSTender).filter_by(release_id=release_id).first()

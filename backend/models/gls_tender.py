@@ -154,7 +154,20 @@ class GLSTender(db.Model):
         # Compute estimated units if not stated
         if not tender.estimated_units and tender.max_gfa_sqm:
             # Average 100 sqm per unit
-            tender.estimated_units = int(float(tender.max_gfa_sqm) / 100)
-            tender.estimated_units_source = 'computed'
+            computed_units = int(float(tender.max_gfa_sqm) / 100)
+            # SANITY CHECK: Cap at 5000 units (largest SG condo is ~3000 units)
+            # If computed units > 5000, the GFA was likely parsed incorrectly
+            if computed_units <= 5000:
+                tender.estimated_units = computed_units
+                tender.estimated_units_source = 'computed'
+            else:
+                # Don't set estimated_units if it's unreasonable
+                tender.estimated_units = None
+                tender.estimated_units_source = None
+
+        # Additional sanity check: if estimated_units is set but too high, clear it
+        if tender.estimated_units and tender.estimated_units > 5000:
+            tender.estimated_units = None
+            tender.estimated_units_source = None
 
         return tender
