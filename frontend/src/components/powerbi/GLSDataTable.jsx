@@ -117,7 +117,7 @@ export function GLSDataTable({ height = 400 }) {
     { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-16' },
     { key: 'successful_tenderer', label: 'Developer', sortable: true, width: 'w-40' },
     { key: 'psf_ppr', label: 'PSF (PPR)', sortable: true, width: 'w-24', align: 'right' },
-    { key: 'estimated_units', label: 'Units', sortable: true, width: 'w-16', align: 'right' },
+    { key: 'estimated_units', label: 'Supply Units', sortable: true, width: 'w-20', align: 'right' },
     { key: 'status', label: 'Status', sortable: true, width: 'w-20' },
   ];
 

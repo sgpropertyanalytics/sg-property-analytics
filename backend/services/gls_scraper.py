@@ -1067,6 +1067,139 @@ def parse_price(text: str) -> Optional[Decimal]:
 
 
 # =============================================================================
+# LINK AWARDED TO LAUNCH RECORDS
+# =============================================================================
+
+def find_matching_launch_record(location_raw: str, planning_area: str, db_session) -> Optional[Dict]:
+    """
+    Find a matching 'launched' tender for an awarded tender.
+
+    Awarded tenders often don't have unit estimates - these come from the
+    earlier 'launched' stage. This function finds the corresponding launch
+    record to inherit estimated_units.
+
+    Matching priority:
+    1. Exact location_raw match
+    2. Fuzzy location match (normalized, stripped of parcel labels)
+    3. Planning area + similar characteristics
+
+    Returns dict with estimated_units and source, or None if no match.
+    """
+    from models.gls_tender import GLSTender
+
+    if not location_raw:
+        return None
+
+    # Normalize location for matching
+    def normalize_location(loc: str) -> str:
+        """Normalize location for fuzzy matching."""
+        if not loc:
+            return ""
+        loc = loc.lower().strip()
+        # Remove parcel labels
+        loc = re.sub(r'\s*\(?parcel\s*[a-z0-9]+\)?', '', loc, flags=re.IGNORECASE)
+        # Remove extra whitespace
+        loc = re.sub(r'\s+', ' ', loc)
+        return loc.strip()
+
+    normalized = normalize_location(location_raw)
+
+    # Try exact match first
+    exact_match = db_session.query(GLSTender).filter(
+        GLSTender.status == 'launched',
+        GLSTender.location_raw == location_raw,
+        GLSTender.estimated_units.isnot(None)
+    ).first()
+
+    if exact_match:
+        return {
+            'estimated_units': exact_match.estimated_units,
+            'estimated_units_source': exact_match.estimated_units_source or 'ura_stated',
+            'launch_release_id': exact_match.release_id
+        }
+
+    # Try fuzzy match on normalized location
+    launched_records = db_session.query(GLSTender).filter(
+        GLSTender.status == 'launched',
+        GLSTender.estimated_units.isnot(None)
+    ).all()
+
+    for launch in launched_records:
+        if normalize_location(launch.location_raw) == normalized:
+            return {
+                'estimated_units': launch.estimated_units,
+                'estimated_units_source': launch.estimated_units_source or 'ura_stated',
+                'launch_release_id': launch.release_id
+            }
+
+    # Try planning area match with similar characteristics
+    if planning_area:
+        planning_matches = db_session.query(GLSTender).filter(
+            GLSTender.status == 'launched',
+            GLSTender.planning_area == planning_area,
+            GLSTender.estimated_units.isnot(None)
+        ).all()
+
+        # If only one match in same planning area, use it
+        if len(planning_matches) == 1:
+            return {
+                'estimated_units': planning_matches[0].estimated_units,
+                'estimated_units_source': 'inferred_from_planning_area',
+                'launch_release_id': planning_matches[0].release_id
+            }
+
+    return None
+
+
+def link_awarded_to_launches(db_session) -> Dict[str, int]:
+    """
+    Post-scrape pass: Link awarded tenders to their launch records.
+
+    For awarded tenders missing estimated_units, find the corresponding
+    launch record and copy over the unit estimate.
+
+    Returns stats on how many were linked.
+    """
+    from models.gls_tender import GLSTender
+
+    stats = {'linked': 0, 'already_has_units': 0, 'no_match': 0}
+
+    # Find awarded tenders without unit estimates
+    awarded_missing_units = db_session.query(GLSTender).filter(
+        GLSTender.status == 'awarded',
+        GLSTender.estimated_units.is_(None)
+    ).all()
+
+    for tender in awarded_missing_units:
+        match = find_matching_launch_record(
+            tender.location_raw,
+            tender.planning_area,
+            db_session
+        )
+
+        if match:
+            tender.estimated_units = match['estimated_units']
+            tender.estimated_units_source = match['estimated_units_source']
+            stats['linked'] += 1
+        else:
+            stats['no_match'] += 1
+
+    # Count those that already have units
+    stats['already_has_units'] = db_session.query(GLSTender).filter(
+        GLSTender.status == 'awarded',
+        GLSTender.estimated_units.isnot(None)
+    ).count()
+
+    try:
+        db_session.commit()
+    except Exception as e:
+        db_session.rollback()
+        print(f"Error linking awarded to launches: {e}")
+
+    return stats
+
+
+# =============================================================================
 # MAIN SCRAPER FUNCTION
 # =============================================================================
 
@@ -1268,6 +1401,24 @@ def scrape_gls_tenders(
 
     except Exception as e:
         print(f"PSF validation error: {e}")
+
+    # =============================================================================
+    # LINK AWARDED TO LAUNCHES: Inherit supply units from launch records
+    # =============================================================================
+    # Awarded tenders often don't have unit estimates - these come from the
+    # earlier 'launched' stage. Link them to inherit estimated_units.
+    try:
+        link_stats = link_awarded_to_launches(db_session)
+        stats['units_linked'] = link_stats['linked']
+        stats['units_no_match'] = link_stats['no_match']
+
+        print(f"\n=== Supply Units Linking ===")
+        print(f"Awarded linked to launch: {link_stats['linked']}")
+        print(f"Already had units: {link_stats['already_has_units']}")
+        print(f"No matching launch found: {link_stats['no_match']}")
+
+    except Exception as e:
+        print(f"Supply units linking error: {e}")
 
     return stats
 
