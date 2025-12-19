@@ -996,8 +996,8 @@ def scrape_gls_tenders(
                     stats['errors'].append(f"{release_id}: {str(e)}")
                     print(f"  Error saving: {e}")
 
-        # Rate limiting
-        time.sleep(0.5)
+        # Rate limiting (reduced to avoid worker timeout)
+        time.sleep(0.2)
 
     return stats
 
