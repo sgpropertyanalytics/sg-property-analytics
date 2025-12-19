@@ -1,30 +1,27 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { getGLSAll } from '../../api/client';
+import { getNewLaunchesAll } from '../../api/client';
 
 /**
- * GLS Data Table - Shows Government Land Sales tender details
+ * New Launch Data Table - Shows 2026 Private Condo Launches
  *
  * Displays:
- * - Date (month/year)
- * - Location (address)
- * - Market Segment (CCR/RCR/OCR)
- * - Developer Name
- * - Bidded PSF (psf_ppr)
- * - Status (Launched/Awarded)
+ * - Potential Launch Date (expected_launch_date or created from launch_year)
+ * - Project Name
+ * - Segment (CCR/RCR/OCR)
+ * - Developer
+ * - PSF (PPR) - from linked GLS tender land bid
+ * - Implied Launch PSF - indicative pricing range
  *
- * Two-phase model:
- * - SIGNAL (launched): Government intent, upcoming supply
- * - FACT (awarded): Capital committed, confirmed supply
+ * Data cross-validated from EdgeProp, PropNex, ERA
  */
-export function GLSDataTable({ height = 400 }) {
+export function NewLaunchDataTable({ height = 400 }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all', 'launched', 'awarded'
   const [segmentFilter, setSegmentFilter] = useState(''); // '', 'CCR', 'RCR', 'OCR'
   const [sortConfig, setSortConfig] = useState({
-    column: 'release_date',
-    order: 'desc',
+    column: 'project_name',
+    order: 'asc',
   });
 
   // Fetch data when filters change
@@ -34,27 +31,24 @@ export function GLSDataTable({ height = 400 }) {
     try {
       const params = {
         limit: 100,
+        launch_year: 2026,
         sort: sortConfig.column,
         order: sortConfig.order,
       };
-
-      if (filter !== 'all') {
-        params.status = filter;
-      }
 
       if (segmentFilter) {
         params.market_segment = segmentFilter;
       }
 
-      const response = await getGLSAll(params);
+      const response = await getNewLaunchesAll(params);
       setData(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching GLS data:', err);
+      console.error('Error fetching new launches data:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [filter, segmentFilter, sortConfig]);
+  }, [segmentFilter, sortConfig]);
 
   useEffect(() => {
     fetchData();
@@ -69,13 +63,16 @@ export function GLSDataTable({ height = 400 }) {
   };
 
   // Format date - show month and year
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-SG', {
-      year: 'numeric',
-      month: 'short',
-    });
+  const formatDate = (dateStr, launchYear) => {
+    if (dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-SG', {
+        year: 'numeric',
+        month: 'short',
+      });
+    }
+    // Fallback to launch year if no specific date
+    return launchYear ? `${launchYear}` : '-';
   };
 
   // Format currency
@@ -84,38 +81,13 @@ export function GLSDataTable({ height = 400 }) {
     return `$${Math.round(value).toLocaleString()}`;
   };
 
-  // Format large numbers (millions)
-  const formatMillions = (value) => {
-    if (value === null || value === undefined) return '-';
-    return `$${(value / 1000000).toFixed(1)}M`;
-  };
-
-  // Segment-specific multipliers for implied launch PSF
-  // Based on margin-based feasibility model: Selling PSF = Land PSF / (1 - margin)
-  // CCR has lower multiplier (higher land cost proportion)
-  // RCR/OCR have higher multipliers (lower land cost proportion)
-  const SEGMENT_MULTIPLIERS = {
-    CCR: { low: 1.45, high: 1.60 },
-    RCR: { low: 1.70, high: 1.85 },
-    OCR: { low: 1.70, high: 1.85 },
-  };
-
-  // Calculate implied launch PSF range
-  const getImpliedLaunchPSF = (psf_ppr, market_segment) => {
-    if (!psf_ppr || !market_segment) return null;
-    const multipliers = SEGMENT_MULTIPLIERS[market_segment];
-    if (!multipliers) return null;
-    return {
-      low: Math.round(psf_ppr * multipliers.low),
-      high: Math.round(psf_ppr * multipliers.high),
-    };
-  };
-
-  // Format implied launch PSF range
-  const formatImpliedPSF = (psf_ppr, market_segment) => {
-    const range = getImpliedLaunchPSF(psf_ppr, market_segment);
-    if (!range) return '-';
-    return `$${range.low.toLocaleString()} – $${range.high.toLocaleString()}`;
+  // Format PSF range
+  const formatPSFRange = (low, high) => {
+    if (!low && !high) return '-';
+    if (low && high && low !== high) {
+      return `$${Math.round(low).toLocaleString()} – $${Math.round(high).toLocaleString()}`;
+    }
+    return formatCurrency(low || high);
   };
 
   // Sort indicator
@@ -140,34 +112,33 @@ export function GLSDataTable({ height = 400 }) {
 
   // Column definitions
   const columns = [
-    { key: 'release_date', label: 'Date', sortable: true, width: 'w-20' },
-    { key: 'location_raw', label: 'Location', sortable: true, width: 'w-40' },
+    { key: 'expected_launch_date', label: 'Potential Launch Date', sortable: true, width: 'w-28' },
+    { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-48' },
     { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-16' },
-    { key: 'successful_tenderer', label: 'Developer', sortable: true, width: 'w-40' },
-    { key: 'psf_ppr', label: 'PSF (PPR)', sortable: true, width: 'w-24', align: 'right' },
-    { key: 'implied_launch_psf', label: 'Implied Launch PSF', sortable: false, width: 'w-32', align: 'right' },
-    { key: 'estimated_units', label: 'Supply Units', sortable: true, width: 'w-20', align: 'right' },
-    { key: 'status', label: 'Status', sortable: true, width: 'w-20' },
+    { key: 'developer', label: 'Developer', sortable: true, width: 'w-44' },
+    { key: 'land_bid_psf', label: 'PSF (PPR)', sortable: true, width: 'w-24', align: 'right' },
+    { key: 'indicative_psf', label: 'Implied Launch PSF', sortable: false, width: 'w-36', align: 'right' },
   ];
 
-  // Count by status
-  const launchedCount = data.filter(t => t.status === 'launched').length;
-  const awardedCount = data.filter(t => t.status === 'awarded').length;
+  // Count by segment
+  const segmentCounts = data.reduce((acc, item) => {
+    const seg = item.market_segment || 'Unknown';
+    acc[seg] = (acc[seg] || 0) + 1;
+    return acc;
+  }, {});
 
   return (
-    <div id="gls-data-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div id="new-launch-data-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h3 className="font-semibold text-[#213448]">Government Land Sales (GLS)</h3>
+            <h3 className="font-semibold text-[#213448]">2026 New Launch Projects</h3>
             <p className="text-xs text-[#547792]">
-              {loading ? 'Loading...' : `${data.length} tenders`}
+              {loading ? 'Loading...' : `${data.length} projects`}
               {!loading && data.length > 0 && (
                 <span className="ml-2">
-                  (<span className="text-amber-600">{launchedCount} open</span>
-                  {' / '}
-                  <span className="text-green-600">{awardedCount} awarded</span>)
+                  (CCR: {segmentCounts.CCR || 0} | RCR: {segmentCounts.RCR || 0} | OCR: {segmentCounts.OCR || 0})
                 </span>
               )}
             </p>
@@ -189,31 +160,8 @@ export function GLSDataTable({ height = 400 }) {
 
         {/* Filter controls */}
         <div className="flex items-center gap-3">
-          {/* Status filter */}
-          <div className="flex items-center gap-1 text-xs">
-            <span className="text-[#547792]">Status:</span>
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-2 py-1 rounded ${filter === 'all' ? 'bg-[#213448] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilter('launched')}
-              className={`px-2 py-1 rounded ${filter === 'launched' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-            >
-              Open for Tender
-            </button>
-            <button
-              onClick={() => setFilter('awarded')}
-              className={`px-2 py-1 rounded ${filter === 'awarded' ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-            >
-              Awarded
-            </button>
-          </div>
-
           {/* Segment filter */}
-          <div className="flex items-center gap-1 text-xs ml-4">
+          <div className="flex items-center gap-1 text-xs">
             <span className="text-[#547792]">Segment:</span>
             <select
               value={segmentFilter}
@@ -270,69 +218,53 @@ export function GLSDataTable({ height = 400 }) {
               ) : data.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-3 py-8 text-center">
-                    <div className="text-slate-500">No GLS tenders found.</div>
+                    <div className="text-slate-500">No 2026 new launch projects found.</div>
                     <p className="text-xs text-slate-400 mt-1">
-                      Data will be available once synchronized from URA.
+                      Run the scraper to fetch data from EdgeProp, PropNex, ERA.
                     </p>
                   </td>
                 </tr>
               ) : (
-                data.map((tender, idx) => (
+                data.map((project, idx) => (
                   <tr
-                    key={tender.id || idx}
+                    key={project.id || idx}
                     className="hover:bg-slate-50 transition-colors"
                   >
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
-                      {formatDate(tender.release_date)}
+                      {formatDate(project.expected_launch_date, project.launch_year)}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[200px]" title={tender.location_raw}>
-                      {tender.location_raw || '-'}
+                    <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[250px]" title={project.project_name}>
+                      {project.project_name || '-'}
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100">
-                      {tender.market_segment ? (
+                      {project.market_segment ? (
                         <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
-                          tender.market_segment === 'CCR'
+                          project.market_segment === 'CCR'
                             ? 'bg-purple-100 text-purple-700'
-                            : tender.market_segment === 'RCR'
+                            : project.market_segment === 'RCR'
                               ? 'bg-blue-100 text-blue-700'
                               : 'bg-teal-100 text-teal-700'
                         }`}>
-                          {tender.market_segment}
+                          {project.market_segment}
                         </span>
                       ) : (
                         <span className="text-slate-400">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 truncate max-w-[200px]" title={tender.successful_tenderer}>
-                      {tender.successful_tenderer || <span className="text-slate-400 italic">TBD</span>}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 truncate max-w-[220px]" title={project.developer}>
+                      {project.developer || <span className="text-slate-400 italic">TBD</span>}
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-800 font-medium text-right">
-                      {tender.psf_ppr ? formatCurrency(tender.psf_ppr) : <span className="text-slate-400">-</span>}
+                      {project.land_bid_psf ? formatCurrency(project.land_bid_psf) : <span className="text-slate-400">-</span>}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right text-xs">
-                      {tender.psf_ppr && tender.market_segment ? (
-                        <span title={`Based on ${tender.market_segment} margin assumptions`}>
-                          {formatImpliedPSF(tender.psf_ppr, tender.market_segment)}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right">
+                      {project.indicative_psf_low || project.indicative_psf_high ? (
+                        <span title="Indicative pricing from cross-validated sources">
+                          {formatPSFRange(project.indicative_psf_low, project.indicative_psf_high)}
                         </span>
                       ) : (
                         <span className="text-slate-400">-</span>
                       )}
-                    </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      {tender.estimated_units ? `~${tender.estimated_units.toLocaleString()}` : '-'}
-                    </td>
-                    <td className="px-3 py-2 border-b border-slate-100">
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                        tender.status === 'awarded'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {tender.status === 'awarded' ? (
-                          <span title="FACT: Confirmed supply - capital committed">Awarded</span>
-                        ) : (
-                          <span title="SIGNAL: Open for tender - not confirmed supply">Open</span>
-                        )}
-                      </span>
                     </td>
                   </tr>
                 ))
@@ -347,16 +279,20 @@ export function GLSDataTable({ height = 400 }) {
         <div className="flex items-center justify-between text-xs text-[#547792]">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-              <span>Open = SIGNAL (upcoming supply)</span>
+              <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+              <span>CCR = Core Central</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              <span>Awarded = FACT (confirmed supply)</span>
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span>RCR = Rest of Central</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-teal-400 rounded-full"></span>
+              <span>OCR = Outside Central</span>
             </span>
           </div>
           <span className="text-[#547792]/70">
-            PSF (PPR) = Price per sqft of Gross Floor Area
+            PSF (PPR) = Land cost per sqft of GFA
           </span>
         </div>
       </div>
@@ -364,18 +300,13 @@ export function GLSDataTable({ height = 400 }) {
       {/* Methodology footnote */}
       <div className="px-4 py-3 border-t border-[#94B4C1]/20 bg-slate-50/50">
         <p className="text-[10px] text-slate-500 leading-relaxed">
-          <span className="font-medium text-slate-600">Methodology note:</span>{' '}
-          Estimated selling prices are derived using a margin-based feasibility model applied to the
-          government land bid PSF of gross floor area (PSF PPR). Segment-specific margin assumptions
-          reflect differences in land cost and cost composition across market segments.
-        </p>
-        <p className="text-[10px] text-slate-500 mt-1">
-          <span className="font-medium text-slate-600">Formula:</span>{' '}
-          Estimated Selling PSF = Land Bid PSF (PPR) ÷ (1 − All-in Margin)
+          <span className="font-medium text-slate-600">Data sources:</span>{' '}
+          Cross-validated from EdgeProp, PropNex, and ERA. Discrepancies flagged for review.
+          PSF (PPR) linked from awarded GLS tender data where available.
         </p>
       </div>
     </div>
   );
 }
 
-export default GLSDataTable;
+export default NewLaunchDataTable;

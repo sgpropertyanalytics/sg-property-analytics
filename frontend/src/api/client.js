@@ -369,6 +369,45 @@ export const getGLSPriceFloor = (params = {}) =>
 export const getGLSStats = () =>
   apiClient.get('/gls/stats');
 
+// ===== New Launches API Functions =====
+
+/**
+ * Get all new launch projects
+ * @param {Object} params - Query parameters
+ * @param {string} params.market_segment - CCR, RCR, or OCR
+ * @param {string} params.district - Filter by district (e.g. D09)
+ * @param {number} params.launch_year - Filter by launch year (default 2026)
+ * @param {boolean} params.needs_review - Filter by review status
+ * @param {number} params.limit - Max results (default 100)
+ * @param {string} params.sort - Field to sort by
+ * @param {string} params.order - asc or desc
+ */
+export const getNewLaunchesAll = (params = {}) =>
+  apiClient.get(`/new-launches/all?${buildQueryString(params)}`);
+
+/**
+ * Get new launches grouped by segment
+ * @param {Object} params - Query parameters
+ * @param {number} params.launch_year - Filter by launch year (default 2026)
+ */
+export const getNewLaunchesBySegment = (params = {}) =>
+  apiClient.get(`/new-launches/by-segment?${buildQueryString(params)}`);
+
+/**
+ * Get new launches supply pipeline
+ * @param {Object} params - Query parameters
+ * @param {number} params.launch_year - Filter by launch year (default 2026)
+ * @param {string} params.market_segment - CCR, RCR, or OCR
+ */
+export const getNewLaunchesSupplyPipeline = (params = {}) =>
+  apiClient.get(`/new-launches/supply-pipeline?${buildQueryString(params)}`);
+
+/**
+ * Get new launches statistics summary
+ */
+export const getNewLaunchesStats = () =>
+  apiClient.get('/new-launches/stats');
+
 // ===== Auth API Functions =====
 
 export const register = (email, password) => {
