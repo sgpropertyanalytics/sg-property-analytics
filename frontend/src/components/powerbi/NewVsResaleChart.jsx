@@ -44,6 +44,9 @@ export function NewVsResaleChart({ height = 350 }) {
   // Get GLOBAL filters from context - respects sidebar selections
   const { buildApiParams, filters } = usePowerBIFilters();
 
+  // Provide safe defaults for filters if context not ready
+  const safeFilters = filters || { districts: [], bedrooms: [], segment: null };
+
   // LOCAL drill state only - year → quarter → month (visual-local)
   const [localDrillLevel, setLocalDrillLevel] = useState('quarter');
 
@@ -106,14 +109,14 @@ export function NewVsResaleChart({ height = 350 }) {
   // Build filter summary for display
   const getFilterSummary = () => {
     const parts = [];
-    if (filters.districts.length > 0) {
-      parts.push(filters.districts.length === 1 ? filters.districts[0] : `${filters.districts.length} districts`);
+    if (safeFilters.districts.length > 0) {
+      parts.push(safeFilters.districts.length === 1 ? safeFilters.districts[0] : `${safeFilters.districts.length} districts`);
     }
-    if (filters.segment) {
-      parts.push(filters.segment);
+    if (safeFilters.segment) {
+      parts.push(safeFilters.segment);
     }
-    if (filters.bedrooms.length > 0 && filters.bedrooms.length < 4) {
-      parts.push(`${filters.bedrooms.join(',')}BR`);
+    if (safeFilters.bedrooms.length > 0 && safeFilters.bedrooms.length < 4) {
+      parts.push(`${safeFilters.bedrooms.join(',')}BR`);
     }
     return parts.length > 0 ? parts.join(' · ') : 'All data';
   };

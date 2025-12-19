@@ -12,7 +12,7 @@ Safe for resource-constrained hosting (Render 512MB).
 import re
 import os
 import pandas as pd
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 from calendar import monthrange
 from services.classifier import get_bedroom_label
