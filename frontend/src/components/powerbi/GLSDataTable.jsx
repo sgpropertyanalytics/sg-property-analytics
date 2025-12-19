@@ -90,6 +90,34 @@ export function GLSDataTable({ height = 400 }) {
     return `$${(value / 1000000).toFixed(1)}M`;
   };
 
+  // Segment-specific multipliers for implied launch PSF
+  // Based on margin-based feasibility model: Selling PSF = Land PSF / (1 - margin)
+  // CCR has lower multiplier (higher land cost proportion)
+  // RCR/OCR have higher multipliers (lower land cost proportion)
+  const SEGMENT_MULTIPLIERS = {
+    CCR: { low: 1.45, high: 1.60 },
+    RCR: { low: 1.70, high: 1.85 },
+    OCR: { low: 1.70, high: 1.85 },
+  };
+
+  // Calculate implied launch PSF range
+  const getImpliedLaunchPSF = (psf_ppr, market_segment) => {
+    if (!psf_ppr || !market_segment) return null;
+    const multipliers = SEGMENT_MULTIPLIERS[market_segment];
+    if (!multipliers) return null;
+    return {
+      low: Math.round(psf_ppr * multipliers.low),
+      high: Math.round(psf_ppr * multipliers.high),
+    };
+  };
+
+  // Format implied launch PSF range
+  const formatImpliedPSF = (psf_ppr, market_segment) => {
+    const range = getImpliedLaunchPSF(psf_ppr, market_segment);
+    if (!range) return '-';
+    return `$${range.low.toLocaleString()} – $${range.high.toLocaleString()}`;
+  };
+
   // Sort indicator
   const SortIcon = ({ column }) => {
     if (sortConfig.column !== column) {
@@ -117,6 +145,7 @@ export function GLSDataTable({ height = 400 }) {
     { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-16' },
     { key: 'successful_tenderer', label: 'Developer', sortable: true, width: 'w-40' },
     { key: 'psf_ppr', label: 'PSF (PPR)', sortable: true, width: 'w-24', align: 'right' },
+    { key: 'implied_launch_psf', label: 'Implied Launch PSF', sortable: false, width: 'w-32', align: 'right' },
     { key: 'estimated_units', label: 'Supply Units', sortable: true, width: 'w-20', align: 'right' },
     { key: 'status', label: 'Status', sortable: true, width: 'w-20' },
   ];
@@ -280,6 +309,15 @@ export function GLSDataTable({ height = 400 }) {
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-800 font-medium text-right">
                       {tender.psf_ppr ? formatCurrency(tender.psf_ppr) : <span className="text-slate-400">-</span>}
                     </td>
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right text-xs">
+                      {tender.psf_ppr && tender.market_segment ? (
+                        <span title={`Based on ${tender.market_segment} margin assumptions`}>
+                          {formatImpliedPSF(tender.psf_ppr, tender.market_segment)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
                       {tender.estimated_units ? `~${tender.estimated_units.toLocaleString()}` : '-'}
                     </td>
@@ -321,6 +359,20 @@ export function GLSDataTable({ height = 400 }) {
             PSF (PPR) = Price per sqft of Gross Floor Area
           </span>
         </div>
+      </div>
+
+      {/* Methodology footnote */}
+      <div className="px-4 py-3 border-t border-[#94B4C1]/20 bg-slate-50/50">
+        <p className="text-[10px] text-slate-500 leading-relaxed">
+          <span className="font-medium text-slate-600">Methodology note:</span>{' '}
+          Estimated selling prices are derived using a margin-based feasibility model applied to the
+          government land bid PSF of gross floor area (PSF PPR). Segment-specific margin assumptions
+          reflect differences in land cost and cost composition across market segments.
+        </p>
+        <p className="text-[10px] text-slate-500 mt-1">
+          <span className="font-medium text-slate-600">Formula:</span>{' '}
+          Estimated Selling PSF = Land Bid PSF (PPR) ÷ (1 − All-in Margin)
+        </p>
       </div>
     </div>
   );
