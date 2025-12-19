@@ -494,12 +494,14 @@ import { DrillButtons } from './DrillButtons';
 3. **Maintenance** - Fix styling in one place, updates all charts
 4. **Accessibility** - Consistent ARIA labels and keyboard navigation
 
-**DrillButtons features:**
-- Drill Up (↑) - Go back up one level
-- Drill Mode Toggle (global mode only) - Enable click-to-drill
-- Go to Next Level (↓) - Drill down to next level
-- View Transactions - Scroll to transaction table
-- Current level label
+**DrillButtons provides these controls:**
+- **Drill Up (↑)** - Go back up one level in the hierarchy
+- **Go to Next Level (↓)** - Drill down to next level for all data
+- **View Transactions** - Scroll to transaction table
+- **Current level label** - Shows Year/Quarter/Month
+
+**REMOVED - Do NOT implement:**
+- ~~Click-to-drill mode toggle~~ - This button was removed because it was dead code. No chart had click handlers wired to the drill mode state. If click-to-drill is needed in the future, it must be fully implemented (chart click handlers, drill mode state management) before adding the UI button.
 
 ---
 
