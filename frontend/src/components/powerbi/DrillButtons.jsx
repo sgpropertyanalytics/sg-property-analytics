@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 
 /**
  * Power BI-style Drill Buttons - STANDARDIZED component for all charts
  *
- * Provides 3 drill controls matching Power BI's visual hierarchy navigation:
+ * Provides 2 drill controls matching Power BI's visual hierarchy navigation:
  * 1. Drill Up (↑) - go back up one level in the hierarchy
- * 2. Drill Down Mode - toggle mode where clicking a data point drills into it
- * 3. Go to Next Level (↓) - replace entire visual with next level down
+ * 2. Go to Next Level (↓) - replace entire visual with next level down
  *
  * MODES:
  * - Global mode (default): Uses PowerBIFilterContext for state
@@ -20,7 +19,6 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
  *   drill-through to transaction table provides row-level details
  *
  * @param {string} hierarchyType - 'time' | 'location' | 'price' | 'bedroom'
- * @param {function} onDrillModeChange - callback when drill mode changes
  * @param {function} onViewTransactions - callback to scroll to transaction table
  * @param {string} localLevel - (LOCAL MODE) current drill level from parent state
  * @param {function} onLocalDrillUp - (LOCAL MODE) callback to drill up
@@ -30,7 +28,6 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
  */
 export function DrillButtons({
   hierarchyType = 'time',
-  onDrillModeChange,
   onViewTransactions,
   className = '',
   // Local mode props - when provided, component uses local state instead of global context
@@ -41,7 +38,6 @@ export function DrillButtons({
   localLevelLabels,
 }) {
   const { drillPath, drillUp, drillDown } = usePowerBIFilters();
-  const [drillDownMode, setDrillDownMode] = useState(false);
 
   // Determine if we're in local mode (visual-local drill) or global mode
   const isLocalMode = localLevel !== undefined && onLocalDrillUp && onLocalDrillDown;
@@ -133,17 +129,6 @@ export function DrillButtons({
     }
   };
 
-  // Toggle Drill Down Mode (only available in global mode for click-to-drill behavior)
-  const handleToggleDrillMode = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const newMode = !drillDownMode;
-    setDrillDownMode(newMode);
-    if (onDrillModeChange) {
-      onDrillModeChange(newMode);
-    }
-  };
-
   // Go to Next Level (for all data) - uses local callback in local mode
   const handleGoToNextLevel = (e) => {
     e.preventDefault();
@@ -176,7 +161,6 @@ export function DrillButtons({
   const buttonBase = "w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150";
   const enabledStyle = "bg-white border border-[#94B4C1] hover:bg-[#EAE0CF] hover:border-[#547792] text-[#547792] shadow-sm";
   const disabledStyle = "bg-[#EAE0CF]/50 border border-[#94B4C1]/50 text-[#94B4C1] cursor-not-allowed";
-  const activeStyle = "bg-[#547792] border border-[#547792] text-white hover:bg-[#213448] shadow-sm";
 
   // Check if any drill functions are available
   const hasDrillHierarchy = canDrillUp || canDrillDown;
@@ -195,23 +179,6 @@ export function DrillButtons({
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 9V3" />
             <path d="M3 6l3-3 3 3" />
-          </svg>
-        </button>
-      )}
-
-      {/* Drill Down Mode Toggle - Click specific data point to drill (global mode only) */}
-      {hasDrillHierarchy && !isLocalMode && (
-        <button
-          type="button"
-          onClick={handleToggleDrillMode}
-          disabled={!canDrillDown}
-          className={`${buttonBase} ${!canDrillDown ? disabledStyle : drillDownMode ? activeStyle : enabledStyle}`}
-          title={drillDownMode ? 'Click mode ON: Click chart element to drill down' : 'Enable click-to-drill mode'}
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="6" cy="4" r="2" strokeWidth="1.5" />
-            <path d="M6 6v3" />
-            <path d="M4 7l2 2 2-2" />
           </svg>
         </button>
       )}
@@ -255,13 +222,6 @@ export function DrillButtons({
       {hasDrillHierarchy && (
         <span className="ml-1 text-xs text-[#547792] font-medium whitespace-nowrap">
           {levelLabels[currentLevel]}
-        </span>
-      )}
-
-      {/* Drill Mode Indicator (global mode only) */}
-      {!isLocalMode && drillDownMode && canDrillDown && (
-        <span className="ml-1 px-1.5 py-0.5 text-xs bg-[#547792]/20 text-[#213448] rounded font-medium">
-          Click to drill
         </span>
       )}
     </div>

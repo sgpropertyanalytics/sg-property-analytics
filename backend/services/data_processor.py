@@ -1629,9 +1629,9 @@ def get_new_vs_resale_comparison(
     time_grain: str = "quarter"
 ) -> Dict[str, Any]:
     """
-    Get New Launch vs Resale (lease age < 10 years) comparison data.
+    Get New Launch vs Resale (lease age ≤10 years) comparison data.
 
-    Compares median PSF of new launches against resale units under 10 years old.
+    Compares median total quantum (price) of new launches against resale units under 10 years old.
     This controls for age by comparing new launches with near-new resale units.
 
     RESPECTS GLOBAL FILTERS from sidebar. Only time_grain is visual-local.
@@ -1724,11 +1724,12 @@ def get_new_vs_resale_comparison(
     # Raw SQL query using PostgreSQL's DATE_TRUNC for time granularity
     # Using avg as fallback for true median (SQLite compatibility)
     # Note: NULL lease_start_year = "unknown age", include them (production-safe fix)
+    # Returns median PRICE (total quantum) instead of PSF
     sql = text(f"""
         WITH new_launches AS (
             SELECT
                 DATE_TRUNC('{date_trunc_grain}', transaction_date) AS period,
-                AVG(psf) AS median_psf,
+                AVG(price) AS median_price,
                 COUNT(*) AS transaction_count
             FROM transactions
             WHERE sale_type = 'New Sale'
@@ -1738,22 +1739,22 @@ def get_new_vs_resale_comparison(
         resale_under_10y AS (
             SELECT
                 DATE_TRUNC('{date_trunc_grain}', transaction_date) AS period,
-                AVG(psf) AS median_psf,
+                AVG(price) AS median_price,
                 COUNT(*) AS transaction_count
             FROM transactions
             WHERE sale_type = 'Resale'
               AND (
                 lease_start_year IS NULL
-                OR (EXTRACT(YEAR FROM transaction_date) - lease_start_year) < 10
+                OR (EXTRACT(YEAR FROM transaction_date) - lease_start_year) <= 10
               )
               AND {where_clause}
             GROUP BY DATE_TRUNC('{date_trunc_grain}', transaction_date)
         )
         SELECT
             COALESCE(n.period, r.period) AS period,
-            n.median_psf AS new_launch_psf,
+            n.median_price AS new_launch_price,
             n.transaction_count AS new_launch_count,
-            r.median_psf AS resale_psf,
+            r.median_price AS resale_price,
             r.transaction_count AS resale_count
         FROM new_launches n
         FULL OUTER JOIN resale_under_10y r ON n.period = r.period
@@ -1776,7 +1777,7 @@ def get_new_vs_resale_comparison(
             WITH new_launches AS (
                 SELECT
                     {sqlite_period} AS period,
-                    AVG(psf) AS median_psf,
+                    AVG(price) AS median_price,
                     COUNT(*) AS transaction_count
                 FROM transactions
                 WHERE sale_type = 'New Sale'
@@ -1786,31 +1787,31 @@ def get_new_vs_resale_comparison(
             resale_under_10y AS (
                 SELECT
                     {sqlite_period} AS period,
-                    AVG(psf) AS median_psf,
+                    AVG(price) AS median_price,
                     COUNT(*) AS transaction_count
                 FROM transactions
                 WHERE sale_type = 'Resale'
                   AND (
                     lease_start_year IS NULL
-                    OR (CAST(strftime('%Y', transaction_date) AS INTEGER) - lease_start_year) < 10
+                    OR (CAST(strftime('%Y', transaction_date) AS INTEGER) - lease_start_year) <= 10
                   )
                   AND {where_clause}
                 GROUP BY {sqlite_period}
             )
             SELECT
                 COALESCE(n.period, r.period) AS period,
-                n.median_psf AS new_launch_psf,
+                n.median_price AS new_launch_price,
                 n.transaction_count AS new_launch_count,
-                r.median_psf AS resale_psf,
+                r.median_price AS resale_price,
                 r.transaction_count AS resale_count
             FROM new_launches n
             LEFT JOIN resale_under_10y r ON n.period = r.period
             UNION
             SELECT
                 r.period AS period,
-                n.median_psf AS new_launch_psf,
+                n.median_price AS new_launch_price,
                 n.transaction_count AS new_launch_count,
-                r.median_psf AS resale_psf,
+                r.median_price AS resale_price,
                 r.transaction_count AS resale_count
             FROM resale_under_10y r
             LEFT JOIN new_launches n ON n.period = r.period
@@ -1825,15 +1826,15 @@ def get_new_vs_resale_comparison(
 
     for row in result:
         period = row[0]
-        new_launch_psf = float(row[1]) if row[1] else None
+        new_launch_price = float(row[1]) if row[1] else None
         new_launch_count = int(row[2]) if row[2] else 0
-        resale_psf = float(row[3]) if row[3] else None
+        resale_price = float(row[3]) if row[3] else None
         resale_count = int(row[4]) if row[4] else 0
 
         # Calculate premium percentage
         premium_pct = None
-        if new_launch_psf and resale_psf and resale_psf > 0:
-            premium_pct = round((new_launch_psf - resale_psf) / resale_psf * 100, 1)
+        if new_launch_price and resale_price and resale_price > 0:
+            premium_pct = round((new_launch_price - resale_price) / resale_price * 100, 1)
             premiums.append(premium_pct)
 
         # Format period based on time_grain
@@ -1855,8 +1856,8 @@ def get_new_vs_resale_comparison(
 
         chart_data.append({
             'period': period_str,
-            'newLaunchPsf': round(new_launch_psf, 0) if new_launch_psf else None,
-            'resalePsf': round(resale_psf, 0) if resale_psf else None,
+            'newLaunchPrice': round(new_launch_price, 0) if new_launch_price else None,
+            'resalePrice': round(resale_price, 0) if resale_price else None,
             'premiumPct': premium_pct,
             'newLaunchCount': new_launch_count,
             'resaleCount': resale_count
