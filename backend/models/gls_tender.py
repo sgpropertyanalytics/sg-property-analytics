@@ -134,7 +134,29 @@ class GLSTender(db.Model):
         if tender.site_area_sqm and tender.max_gfa_sqm and float(tender.site_area_sqm) > 0:
             tender.plot_ratio = float(tender.max_gfa_sqm) / float(tender.site_area_sqm)
 
-        # Compute price metrics (for awarded tenders)
+        # =============================================================================
+        # PRICE RECOVERY: Derive total price from psm_gfa when missing or invalid
+        # =============================================================================
+        # URA tables sometimes show only $/sqm of GFA (e.g., "$14,405.06") without total price.
+        # If tendered_price_sgd is missing OR suspiciously small (< 1M = likely per-sqm value),
+        # derive total price from: psm_gfa * max_gfa_sqm
+
+        if tender.max_gfa_sqm and tender.psm_gfa:
+            derived_price = float(tender.psm_gfa) * float(tender.max_gfa_sqm)
+
+            if not tender.tendered_price_sgd:
+                # No price at all - derive from psm_gfa
+                tender.tendered_price_sgd = derived_price
+                print(f"    Derived total price: ${derived_price:,.0f} from psm_gfa=${tender.psm_gfa}")
+            elif float(tender.tendered_price_sgd) < 1_000_000:
+                # Price looks like per-sqm (< $1M is too small for any GLS site)
+                # This happens when scraper mistakenly parses "$14,405" as total price
+                print(f"    Warning: tendered_price ${tender.tendered_price_sgd:,.0f} looks like per-sqm, deriving from psm_gfa")
+                tender.tendered_price_sgd = derived_price
+
+        # =============================================================================
+        # PSF (PPR) COMPUTATION - Always from fundamentals
+        # =============================================================================
         # PSF (PPR) = Price per sqft of GFA = tendered_price / (GFA_sqm * 10.7639)
         # Valid range: 500 to 3500 (sanity check)
         # CRITICAL: Always recompute from fundamentals - scraped psf_ppr is untrusted
