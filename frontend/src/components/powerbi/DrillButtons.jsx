@@ -48,7 +48,9 @@ export function DrillButtons({
     if (isLocalMode) {
       const levels = localLevels || ['year', 'quarter', 'month'];
       const labels = localLevelLabels || { year: 'Year', quarter: 'Quarter', month: 'Month' };
-      const currentIndex = levels.indexOf(localLevel);
+      const rawIndex = levels.indexOf(localLevel);
+      // Safeguard: If level not found (-1), default to 0 to prevent incorrect canDrillDown
+      const currentIndex = rawIndex >= 0 ? rawIndex : 0;
       return {
         currentLevel: localLevel,
         currentIndex,
@@ -62,7 +64,9 @@ export function DrillButtons({
     // GLOBAL MODE: Use context for state
     if (hierarchyType === 'time') {
       const levels = ['year', 'quarter', 'month'];
-      const currentIndex = levels.indexOf(drillPath.time);
+      const rawIndex = levels.indexOf(drillPath.time);
+      // Safeguard: If level not found (-1), default to 0 to prevent incorrect canDrillDown
+      const currentIndex = rawIndex >= 0 ? rawIndex : 0;
       return {
         currentLevel: drillPath.time,
         currentIndex,
@@ -72,16 +76,19 @@ export function DrillButtons({
         levelLabels: { year: 'Year', quarter: 'Quarter', month: 'Month' }
       };
     } else if (hierarchyType === 'location') {
-      // Location hierarchy: region -> district -> project
-      const levels = ['region', 'district', 'project'];
-      const currentIndex = levels.indexOf(drillPath.location);
+      // Location hierarchy: region -> district (STOPS HERE - no project in global hierarchy)
+      // Project is drill-through only, handled via setSelectedProject
+      const levels = ['region', 'district'];
+      const rawIndex = levels.indexOf(drillPath.location);
+      // Safeguard: If level not found (-1), default to 0 to prevent incorrect canDrillDown
+      const currentIndex = rawIndex >= 0 ? rawIndex : 0;
       return {
         currentLevel: drillPath.location,
         currentIndex,
         levels,
         canDrillUp: currentIndex > 0,
         canDrillDown: currentIndex < levels.length - 1,
-        levelLabels: { region: 'Region', district: 'District', project: 'Project' }
+        levelLabels: { region: 'Region', district: 'District' }
       };
     } else if (hierarchyType === 'price') {
       // Price distribution doesn't have drill hierarchy

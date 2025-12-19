@@ -11,6 +11,10 @@ const PowerBIFilterContext = createContext(null);
  * - Cross-filters (from chart click interactions)
  * - Drill state (current hierarchy level)
  * - Filter options (available values from API)
+ * - Selected project (drill-through only, does NOT affect global charts)
+ *
+ * IMPORTANT: Global location hierarchy stops at District.
+ * Project selection is drill-through only (opens ProjectDetailPanel).
  */
 export function PowerBIFilterProvider({ children }) {
   // ===== Sidebar Filters =====
@@ -57,10 +61,19 @@ export function PowerBIFilterProvider({ children }) {
 
   // ===== Drill State =====
   // Current granularity level for hierarchical dimensions
-  // Location hierarchy: region (CCR/RCR/OCR) -> district -> project
+  // Location hierarchy: region (CCR/RCR/OCR) -> district (STOPS HERE - no project)
+  // Project is drill-through only, managed via selectedProject state
   const [drillPath, setDrillPath] = useState({
     time: 'month',       // 'year' | 'quarter' | 'month'
-    location: 'region'   // 'region' | 'district' | 'project'
+    location: 'region'   // 'region' | 'district' (NO 'project' - that's drill-through)
+  });
+
+  // ===== Selected Project (Drill-Through Only) =====
+  // When a project is selected, it opens ProjectDetailPanel
+  // This does NOT affect global charts - only the detail panel uses this
+  const [selectedProject, setSelectedProjectState] = useState({
+    name: null,      // Project name
+    district: null,  // District the project is in (for context)
   });
 
   // ===== Breadcrumb Path =====
@@ -235,7 +248,8 @@ export function PowerBIFilterProvider({ children }) {
 
     // Only apply cross-filter for categorical dimensions
     // Time dimensions should use highlight instead
-    const categoricalDimensions = ['district', 'region', 'bedroom', 'sale_type', 'project'];
+    // NOTE: 'project' is NOT included - project is drill-through only (opens ProjectDetailPanel)
+    const categoricalDimensions = ['district', 'region', 'bedroom', 'sale_type'];
     if (categoricalDimensions.includes(dimension)) {
       // Toggle behavior: clicking same value again clears the filter
       setCrossFilter(prev => {
@@ -304,8 +318,9 @@ export function PowerBIFilterProvider({ children }) {
         }));
       }
     } else if (type === 'location') {
-      // Location hierarchy: region -> district -> project
-      const levels = ['region', 'district', 'project'];
+      // Location hierarchy: region -> district (STOPS HERE - no project in global hierarchy)
+      // Project is drill-through only, not part of global drill
+      const levels = ['region', 'district'];
       setDrillPath(prev => {
         const currentIndex = levels.indexOf(prev.location);
         if (currentIndex < levels.length - 1) {
@@ -338,8 +353,8 @@ export function PowerBIFilterProvider({ children }) {
         time: prev.time.length > 0 ? prev.time.slice(0, -1) : []
       }));
     } else if (type === 'location') {
-      // Location hierarchy: region -> district -> project
-      const levels = ['region', 'district', 'project'];
+      // Location hierarchy: region -> district (no project in global hierarchy)
+      const levels = ['region', 'district'];
       setDrillPath(prev => {
         const currentIndex = levels.indexOf(prev.location);
         if (currentIndex > 0) {
@@ -353,6 +368,8 @@ export function PowerBIFilterProvider({ children }) {
       }));
       // Also clear any cross-filter on location when drilling up
       setCrossFilter({ source: null, dimension: null, value: null });
+      // Also clear selected project when drilling up in location
+      setSelectedProjectState({ name: null, district: null });
     }
   }, []);
 
@@ -365,8 +382,8 @@ export function PowerBIFilterProvider({ children }) {
         time: prev.time.slice(0, index)
       }));
     } else if (type === 'location') {
-      // Location hierarchy: region -> district -> project
-      const levels = ['region', 'district', 'project'];
+      // Location hierarchy: region -> district (no project in global hierarchy)
+      const levels = ['region', 'district'];
       setDrillPath(prev => ({ ...prev, location: levels[index] }));
       setBreadcrumbs(prev => ({
         ...prev,
@@ -374,7 +391,22 @@ export function PowerBIFilterProvider({ children }) {
       }));
       // Clear cross-filter when navigating breadcrumbs
       setCrossFilter({ source: null, dimension: null, value: null });
+      // Clear selected project when navigating location breadcrumbs
+      setSelectedProjectState({ name: null, district: null });
     }
+  }, []);
+
+  // ===== Project Selection (Drill-Through Only) =====
+  // This does NOT affect global charts - only opens ProjectDetailPanel
+  const setSelectedProject = useCallback((projectName, district = null) => {
+    setSelectedProjectState({
+      name: projectName,
+      district: district,
+    });
+  }, []);
+
+  const clearSelectedProject = useCallback(() => {
+    setSelectedProjectState({ name: null, district: null });
   }, []);
 
   // ===== Derived: Combined filters for API calls =====
@@ -413,12 +445,8 @@ export function PowerBIFilterProvider({ children }) {
             combined.segment = crossFilter.value;
           }
           break;
-        case 'project':
-          // Only apply if no project selected in sidebar
-          if (!filters.project) {
-            combined.project = crossFilter.value;
-          }
-          break;
+        // NOTE: 'project' case removed - project is drill-through only (opens ProjectDetailPanel)
+        // Project selection does NOT affect global charts
       }
     }
 
@@ -501,8 +529,9 @@ export function PowerBIFilterProvider({ children }) {
     }
 
     // Apply location breadcrumb filters
-    // Hierarchy: region -> district -> project
-    // Breadcrumbs: [region] at district level, [region, district] at project level
+    // Hierarchy: region -> district (NO project in global hierarchy)
+    // Breadcrumbs: [region] at district level
+    // Project is drill-through only - handled separately via selectedProject state
     if (breadcrumbs.location.length > 0) {
       if (drillPath.location === 'district') {
         // At district level - filter by the region (segment) we drilled into
@@ -510,22 +539,9 @@ export function PowerBIFilterProvider({ children }) {
         if (regionBreadcrumb?.value) {
           combined.segment = String(regionBreadcrumb.value);
         }
-      } else if (drillPath.location === 'project') {
-        // At project level - filter by region and district
-        if (breadcrumbs.location.length >= 1) {
-          const regionBreadcrumb = breadcrumbs.location[0];
-          if (regionBreadcrumb?.value) {
-            combined.segment = String(regionBreadcrumb.value);
-          }
-        }
-        if (breadcrumbs.location.length >= 2) {
-          const districtBreadcrumb = breadcrumbs.location[1];
-          if (districtBreadcrumb?.value) {
-            combined.districts = [String(districtBreadcrumb.value)];
-          }
-        }
       }
       // At 'region' level - no location filters from breadcrumbs (showing all regions)
+      // NOTE: No 'project' level in global hierarchy - project is drill-through only
     }
 
     return combined;
@@ -648,6 +664,7 @@ export function PowerBIFilterProvider({ children }) {
     filterOptions,
     activeFilters,
     activeFilterCount,
+    selectedProject,   // Drill-through only - does NOT affect global charts
 
     // Filter setters
     setDateRange,
@@ -675,6 +692,10 @@ export function PowerBIFilterProvider({ children }) {
     drillDown,
     drillUp,
     navigateToBreadcrumb,
+
+    // Project drill-through (does NOT affect global charts)
+    setSelectedProject,
+    clearSelectedProject,
 
     // Helpers
     buildApiParams,
