@@ -29,11 +29,11 @@ ChartJS.register(
 );
 
 /**
- * New Launch vs Resale Comparison Chart
+ * New Sale vs Resale (≤10 yrs lease age) Comparison Chart
  *
  * Dual-line time series showing:
- * - Line A (solid, blue): New Launch median PSF
- * - Line B (dashed, green): Resale (Lease age < 10 years) median PSF
+ * - Line A (solid, blue): New Sale median total quantum (price)
+ * - Line B (dashed, green): Resale (Lease age ≤10 years) median total quantum (price)
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
  * Only the drill level (year/quarter/month) is visual-local.
@@ -153,11 +153,11 @@ export function NewVsResaleChart({ height = 350 }) {
 
   // Prepare chart data
   const labels = chartData.map(d => d.period);
-  const newLaunchPsf = chartData.map(d => d.newLaunchPsf);
-  const resalePsf = chartData.map(d => d.resalePsf);
+  const newLaunchPrice = chartData.map(d => d.newLaunchPrice);
+  const resalePrice = chartData.map(d => d.resalePrice);
 
   // Calculate data completeness for user awareness
-  const resaleGaps = resalePsf.filter(v => v === null).length;
+  const resaleGaps = resalePrice.filter(v => v === null).length;
   const totalPoints = chartData.length;
   const hasSignificantGaps = resaleGaps > totalPoints * 0.2; // >20% gaps
 
@@ -165,8 +165,8 @@ export function NewVsResaleChart({ height = 350 }) {
     labels,
     datasets: [
       {
-        label: 'New Launch',
-        data: newLaunchPsf,
+        label: 'New Sale',
+        data: newLaunchPrice,
         borderColor: '#3B82F6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         borderWidth: 2,
@@ -179,8 +179,8 @@ export function NewVsResaleChart({ height = 350 }) {
         spanGaps: true, // Connect line through null/missing data points
       },
       {
-        label: 'Resale (< 10 yrs)',
-        data: resalePsf,
+        label: 'Resale (≤10 yrs lease age)',
+        data: resalePrice,
         borderColor: '#10B981',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
         borderWidth: 2,
@@ -220,7 +220,7 @@ export function NewVsResaleChart({ height = 350 }) {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
             if (value === null || value === undefined) return `${label}: No data`;
-            return `${label}: $${value.toLocaleString()} PSF`;
+            return `${label}: $${value.toLocaleString()}`;
           },
           afterBody: (tooltipItems) => {
             const index = tooltipItems[0]?.dataIndex;
@@ -230,7 +230,7 @@ export function NewVsResaleChart({ height = 350 }) {
 
               // Show transaction counts for transparency
               if (dataPoint.newLaunchCount > 0) {
-                lines.push(`New Launch: ${dataPoint.newLaunchCount} txns`);
+                lines.push(`New Sale: ${dataPoint.newLaunchCount} txns`);
               }
               if (dataPoint.resaleCount > 0) {
                 lines.push(`Resale: ${dataPoint.resaleCount} txns`);
@@ -243,11 +243,11 @@ export function NewVsResaleChart({ height = 350 }) {
               }
 
               // Indicate missing data
-              if (dataPoint.newLaunchPsf === null) {
-                lines.push('(No new launch data)');
+              if (dataPoint.newLaunchPrice === null) {
+                lines.push('(No new sale data)');
               }
-              if (dataPoint.resalePsf === null) {
-                lines.push('(No resale <10yr data)');
+              if (dataPoint.resalePrice === null) {
+                lines.push('(No resale ≤10yr data)');
               }
 
               return lines;
@@ -282,7 +282,7 @@ export function NewVsResaleChart({ height = 350 }) {
       y: {
         title: {
           display: true,
-          text: 'PSF ($)',
+          text: 'Median Price ($)',
           font: {
             size: 11,
           },
@@ -327,7 +327,7 @@ export function NewVsResaleChart({ height = 350 }) {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-                New Launch vs Resale
+                New Sale vs Resale (≤10 yrs lease age)
               </h3>
               {updating && (
                 <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin flex-shrink-0" />
@@ -396,7 +396,7 @@ export function NewVsResaleChart({ height = 350 }) {
       {/* Info tooltip */}
       <div className="px-3 py-2 md:px-4 md:py-2 border-t border-[#94B4C1]/30 bg-gray-50">
         <p className="text-[10px] md:text-xs text-[#547792]">
-          Compares new launches with near-new resale units (&lt;10 years old). Respects sidebar filters. Drill buttons change time granularity locally.
+          Compares median total quantum of new sales with resale units (≤10 years lease age). Respects sidebar filters. Drill buttons change time granularity locally.
         </p>
       </div>
     </div>
