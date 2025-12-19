@@ -135,7 +135,7 @@ class GLSTender(db.Model):
             tender.plot_ratio = float(tender.max_gfa_sqm) / float(tender.site_area_sqm)
 
         # =============================================================================
-        # PSF (PPR) COMPUTATION - Priority-based
+        # PSF (PPR) COMPUTATION - Priority-based (no mutation of raw fields)
         # =============================================================================
         # Priority order:
         # 1. PRIMARY: Use psm_gfa directly (URA published $/sqm of GFA)
@@ -144,6 +144,9 @@ class GLSTender(db.Model):
         # URA tables show: "$294,889,000 ($9,729.42)"
         # The $9,729.42 is $/sqm of GFA - the cleanest PSF input
         # PSF = psm_gfa / 10.7639
+        #
+        # IMPORTANT: Never mutate raw scraped fields (tendered_price_sgd, psm_gfa)
+        # Raw = scraped, Derived = computed (psf_ppr, psf_land, etc.)
 
         tender.psf_ppr = None  # Reset before computing
 
@@ -156,11 +159,6 @@ class GLSTender(db.Model):
 
                 if 500 <= psf <= 3500:
                     tender.psf_ppr = round(psf, 2)
-                    tender.needs_review = False
-                    tender.review_reason = None
-                    # Also derive total price if missing
-                    if not tender.tendered_price_sgd and tender.max_gfa_sqm:
-                        tender.tendered_price_sgd = float(tender.psm_gfa) * float(tender.max_gfa_sqm)
                 else:
                     tender.needs_review = True
                     tender.review_reason = f"PSF ${psf:.0f} from psm_gfa outside valid range (500-3500)"
@@ -168,21 +166,24 @@ class GLSTender(db.Model):
             # =============================================
             # 2️⃣ FALLBACK: Compute from lump sum ÷ max GFA
             # =============================================
+            # Only if: price exists, GFA exists, price > $1M (real lump sum, not per-sqm)
             elif tender.tendered_price_sgd and tender.max_gfa_sqm:
+                price = float(tender.tendered_price_sgd)
                 max_gfa_sqft = float(tender.max_gfa_sqm) * SQM_TO_SQFT
-                if max_gfa_sqft > 0:
-                    psf = float(tender.tendered_price_sgd) / max_gfa_sqft
 
-                    # Also compute psm_gfa for reference
-                    tender.psm_gfa = float(tender.tendered_price_sgd) / float(tender.max_gfa_sqm)
+                # Sanity: GLS lump sums are always > $1M
+                if price >= 1_000_000 and max_gfa_sqft > 0:
+                    psf = price / max_gfa_sqft
 
                     if 500 <= psf <= 3500:
                         tender.psf_ppr = round(psf, 2)
-                        tender.needs_review = False
-                        tender.review_reason = None
                     else:
                         tender.needs_review = True
                         tender.review_reason = f"Computed PSF ${psf:.0f} outside valid range (500-3500)"
+                elif price < 1_000_000:
+                    # Price looks like per-sqm, not lump sum - flag for review
+                    tender.needs_review = True
+                    tender.review_reason = f"Price ${price:,.0f} looks like per-sqm (expected lump sum > $1M)"
 
         except Exception as e:
             tender.psf_ppr = None
