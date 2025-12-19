@@ -137,23 +137,28 @@ class GLSTender(db.Model):
         # Compute price metrics (for awarded tenders)
         # PSF (PPR) = Price per sqft of GFA = tendered_price / (GFA_sqm * 10.7639)
         # Valid range: 500 to 3500 (sanity check)
+        # CRITICAL: Always recompute from fundamentals - scraped psf_ppr is untrusted
         if tender.tendered_price_sgd and tender.max_gfa_sqm:
             max_gfa_sqft = float(tender.max_gfa_sqm) * SQM_TO_SQFT
             if max_gfa_sqft > 0:
-                # Compute $/sqm of GFA for reference
-                tender.psm_gfa = float(tender.tendered_price_sgd) / float(tender.max_gfa_sqm)
+                # Compute $/sqm of GFA for reference (only if not already scraped)
+                if not tender.psm_gfa:
+                    tender.psm_gfa = float(tender.tendered_price_sgd) / float(tender.max_gfa_sqm)
 
-                # Only compute PSF if not already set (may be extracted from table)
-                if not tender.psf_ppr:
-                    computed_psf = float(tender.tendered_price_sgd) / max_gfa_sqft
-                    # SANITY CHECK: PSF should be between 500 and 3500
-                    if 500 <= computed_psf <= 3500:
-                        tender.psf_ppr = computed_psf
-                    else:
-                        # Value outside bounds - likely a parsing/unit error
-                        tender.psf_ppr = None
-                        tender.needs_review = True
-                        tender.review_reason = f"Computed PSF ${computed_psf:.0f} outside valid range (500-3500)"
+                # ALWAYS compute PSF from fundamentals (price / GFA sqft)
+                # This is the single source of truth - never trust scraped psf_ppr
+                computed_psf = float(tender.tendered_price_sgd) / max_gfa_sqft
+
+                # SANITY CHECK: PSF should be between 500 and 3500
+                if 500 <= computed_psf <= 3500:
+                    tender.psf_ppr = computed_psf
+                    tender.needs_review = False
+                    tender.review_reason = None
+                else:
+                    # Value outside bounds - likely a parsing/unit error
+                    tender.psf_ppr = None
+                    tender.needs_review = True
+                    tender.review_reason = f"Computed PSF ${computed_psf:.0f} outside valid range (500-3500)"
 
                 # Implied launch pricing (for awarded) - only if PSF is valid
                 if tender.psf_ppr and 500 <= float(tender.psf_ppr) <= 3500:
