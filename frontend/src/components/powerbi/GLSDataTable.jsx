@@ -175,7 +175,7 @@ export function GLSDataTable({ height = 400 }) {
               {loading ? 'Loading...' : `${data.length} tenders`}
               {!loading && data.length > 0 && (
                 <span className="ml-2">
-                  (<span className="text-amber-600">{launchedCount} launched</span>
+                  (<span className="text-amber-600">{launchedCount} open</span>
                   {' / '}
                   <span className="text-green-600">{awardedCount} awarded</span>)
                 </span>
@@ -221,7 +221,7 @@ export function GLSDataTable({ height = 400 }) {
               onClick={() => setFilter('launched')}
               className={`px-2 py-1 rounded ${filter === 'launched' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
             >
-              Launched
+              Open for Tender
             </button>
             <button
               onClick={() => setFilter('awarded')}
@@ -356,7 +356,7 @@ export function GLSDataTable({ height = 400 }) {
                         {tender.status === 'awarded' ? (
                           <span title="FACT: Confirmed supply - capital committed">Awarded</span>
                         ) : (
-                          <span title="SIGNAL: Upcoming tender - not confirmed supply">Launched</span>
+                          <span title="SIGNAL: Open for tender - not confirmed supply">Open</span>
                         )}
                       </span>
                     </td>
@@ -374,11 +374,11 @@ export function GLSDataTable({ height = 400 }) {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-              <span>Launched = SIGNAL (upcoming)</span>
+              <span>Open = SIGNAL (upcoming supply)</span>
             </span>
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              <span>Awarded = FACT (confirmed)</span>
+              <span>Awarded = FACT (confirmed supply)</span>
             </span>
           </div>
           <span className="text-[#547792]/70">
