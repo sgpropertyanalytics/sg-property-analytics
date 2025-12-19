@@ -303,6 +303,60 @@ export const getTransactionsList = (params = {}) =>
 export const getFilterOptions = () =>
   apiClient.get('/filter-options');
 
+// ===== GLS (Government Land Sales) API Functions =====
+
+/**
+ * Get upcoming (launched) GLS tenders - SIGNAL data
+ * @param {Object} params - Query parameters
+ * @param {string} params.market_segment - CCR, RCR, or OCR
+ * @param {number} params.limit - Max results (default 50)
+ */
+export const getGLSUpcoming = (params = {}) =>
+  apiClient.get(`/gls/upcoming?${buildQueryString(params)}`);
+
+/**
+ * Get awarded GLS tenders - FACT data
+ * @param {Object} params - Query parameters
+ * @param {string} params.market_segment - CCR, RCR, or OCR
+ * @param {number} params.limit - Max results (default 50)
+ */
+export const getGLSAwarded = (params = {}) =>
+  apiClient.get(`/gls/awarded?${buildQueryString(params)}`);
+
+/**
+ * Get all GLS tenders (both launched and awarded)
+ * @param {Object} params - Query parameters
+ * @param {string} params.market_segment - CCR, RCR, or OCR
+ * @param {string} params.status - 'launched' or 'awarded'
+ * @param {number} params.limit - Max results (default 100)
+ * @param {string} params.sort - Field to sort by
+ * @param {string} params.order - asc or desc
+ */
+export const getGLSAll = (params = {}) =>
+  apiClient.get(`/gls/all?${buildQueryString(params)}`);
+
+/**
+ * Get aggregate supply pipeline (upcoming tenders)
+ * @param {Object} params - Query parameters
+ * @param {string} params.market_segment - CCR, RCR, or OCR
+ */
+export const getGLSSupplyPipeline = (params = {}) =>
+  apiClient.get(`/gls/supply-pipeline?${buildQueryString(params)}`);
+
+/**
+ * Get aggregate price floor data (awarded tenders)
+ * @param {Object} params - Query parameters
+ * @param {string} params.market_segment - CCR, RCR, or OCR
+ */
+export const getGLSPriceFloor = (params = {}) =>
+  apiClient.get(`/gls/price-floor?${buildQueryString(params)}`);
+
+/**
+ * Get GLS statistics summary
+ */
+export const getGLSStats = () =>
+  apiClient.get('/gls/stats');
+
 // ===== Auth API Functions =====
 
 export const register = (email, password) => {

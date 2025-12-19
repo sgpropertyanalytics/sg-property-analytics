@@ -64,21 +64,14 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Initialize CORS - allow all origins to ensure it works (can restrict later)
+    # Initialize CORS - allow all origins
+    # Note: Flask-CORS handles all CORS headers automatically, no after_request needed
     CORS(app,
          resources={r"/api/*": {"origins": "*"}},
          methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
          allow_headers=["Content-Type", "Authorization"],
-         supports_credentials=False)
-
-    # Also add after_request handler to ensure CORS headers are always set, even on errors
-    @app.after_request
-    def after_request(response):
-        # Always set CORS headers, even for error responses
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE')
-        return response
+         supports_credentials=False,
+         send_wildcard=True)  # Always send '*' instead of echoing Origin header
 
     # Initialize SQLAlchemy
     db.init_app(app)
@@ -107,6 +100,10 @@ def create_app():
     # Ad serving routes
     from routes.ads import ads_bp
     app.register_blueprint(ads_bp, url_prefix='/api/ads')
+
+    # GLS (Government Land Sales) routes
+    from routes.gls import gls_bp
+    app.register_blueprint(gls_bp, url_prefix='/api/gls')
 
     # Serve dashboard.html at root
     @app.route("/", methods=["GET"])

@@ -8,3 +8,4 @@ export { TransactionDetailModal } from './TransactionDetailModal';
 export { DrillBreadcrumb } from './DrillBreadcrumb';
 export { DrillButtons } from './DrillButtons';
 export { TransactionDataTable } from './TransactionDataTable';
+export { GLSDataTable } from './GLSDataTable';
