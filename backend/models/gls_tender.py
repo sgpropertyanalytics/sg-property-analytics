@@ -135,24 +135,34 @@ class GLSTender(db.Model):
             tender.plot_ratio = float(tender.max_gfa_sqm) / float(tender.site_area_sqm)
 
         # =============================================================================
-        # PRICE RECOVERY: Derive total price from psm_gfa when missing or invalid
+        # PRICE RECOVERY: Detect per-sqm values mistakenly parsed as total price
         # =============================================================================
         # URA tables sometimes show only $/sqm of GFA (e.g., "$14,405.06") without total price.
-        # If tendered_price_sgd is missing OR suspiciously small (< 1M = likely per-sqm value),
-        # derive total price from: psm_gfa * max_gfa_sqm
+        # This can happen in two scenarios:
+        # 1. psm_gfa is set (from bracket extraction) but price < $1M
+        # 2. psm_gfa is NOT set, but tendered_price looks like per-sqm (1000-50000 range)
+        #
+        # GLS land prices are typically $50M-$500M. Anything < $1M is almost certainly per-sqm.
 
-        if tender.max_gfa_sqm and tender.psm_gfa:
-            derived_price = float(tender.psm_gfa) * float(tender.max_gfa_sqm)
+        if tender.max_gfa_sqm:
+            price_val = float(tender.tendered_price_sgd) if tender.tendered_price_sgd else 0
 
-            if not tender.tendered_price_sgd:
-                # No price at all - derive from psm_gfa
+            # Case 1: psm_gfa is set, derive total price from it
+            if tender.psm_gfa:
+                derived_price = float(tender.psm_gfa) * float(tender.max_gfa_sqm)
+                if not tender.tendered_price_sgd or price_val < 1_000_000:
+                    print(f"    Derived total price: ${derived_price:,.0f} from psm_gfa=${tender.psm_gfa}")
+                    tender.tendered_price_sgd = derived_price
+
+            # Case 2: psm_gfa NOT set, but price looks like per-sqm (1000 < price < 50000)
+            # This happens when URA shows "$14,405.06" without brackets
+            elif price_val > 1000 and price_val < 50000:
+                # This is almost certainly $/sqm, not total price
+                # Typical GLS $/sqm ranges from $5,000 to $25,000
+                tender.psm_gfa = price_val
+                derived_price = price_val * float(tender.max_gfa_sqm)
                 tender.tendered_price_sgd = derived_price
-                print(f"    Derived total price: ${derived_price:,.0f} from psm_gfa=${tender.psm_gfa}")
-            elif float(tender.tendered_price_sgd) < 1_000_000:
-                # Price looks like per-sqm (< $1M is too small for any GLS site)
-                # This happens when scraper mistakenly parses "$14,405" as total price
-                print(f"    Warning: tendered_price ${tender.tendered_price_sgd:,.0f} looks like per-sqm, deriving from psm_gfa")
-                tender.tendered_price_sgd = derived_price
+                print(f"    Detected per-sqm price ${price_val:,.0f}, derived total: ${derived_price:,.0f}")
 
         # =============================================================================
         # PSF (PPR) COMPUTATION - Always from fundamentals
