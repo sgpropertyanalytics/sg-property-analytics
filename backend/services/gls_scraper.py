@@ -22,7 +22,7 @@ import functools
 # =============================================================================
 
 PLANNING_AREA_TO_REGION = {
-    # CCR (Core Central Region)
+    # CCR (Core Central Region) - Districts 9, 10, 11
     'Bukit Timah': 'CCR', 'Downtown Core': 'CCR', 'Marina East': 'CCR',
     'Marina South': 'CCR', 'Novena': 'CCR', 'Orchard': 'CCR',
     'Outram': 'CCR', 'Rochor': 'CCR', 'Singapore River': 'CCR',
@@ -48,43 +48,89 @@ PLANNING_AREA_TO_REGION = {
 }
 
 # Common subzone to Planning Area mappings
+# IMPORTANT: Bukit Timah Road classification depends on specific location
+# - D10/D11 (near Orchard/Novena) = CCR
+# - D21 (Upper Bukit Timah) = OCR
 SUBZONE_TO_PLANNING_AREA = {
+    # Bukit Merah subzones (RCR)
     'telok blangah': 'Bukit Merah',
     'telok blangah way': 'Bukit Merah',
+    'telok blangah road': 'Bukit Merah',
+
+    # Queenstown subzones (RCR)
     'alexandra': 'Queenstown',
     'alexandra road': 'Queenstown',
-    'bedok rise': 'Bedok',
-    'bedok north': 'Bedok',
-    'balestier': 'Novena',
-    'newton': 'Novena',
-    'upper serangoon': 'Serangoon',
-    'holland': 'Bukit Timah',
-    'holland road': 'Bukit Timah',
-    'pandan': 'Jurong East',
-    'clementi woods': 'Clementi',
-    'media circle': 'Bukit Timah',
     'one-north': 'Queenstown',
     'buona vista': 'Queenstown',
+    'pasir panjang': 'Queenstown',
+    'dover': 'Queenstown',
+    'dover drive': 'Queenstown',
+
+    # Bedok subzones (OCR)
+    'bedok rise': 'Bedok',
+    'bedok north': 'Bedok',
     'bayshore': 'Bedok',
-    'tampines north': 'Tampines',
+
+    # Novena subzones (CCR)
+    'balestier': 'Novena',
+    'newton': 'Newton',
+    'dunearn': 'Novena',
+    'dunearn road': 'Novena',
+
+    # Serangoon (OCR)
+    'upper serangoon': 'Serangoon',
+
+    # Bukit Timah proper (CCR - D10/D11)
+    'holland': 'Bukit Timah',
+    'holland road': 'Bukit Timah',
+    'media circle': 'Bukit Timah',
+    'mt sinai': 'Bukit Timah',
+    'beauty world': 'Bukit Timah',
+
+    # Upper Bukit Timah area (OCR - D21)
+    'dairy farm': 'Bukit Panjang',
+    'dairy farm walk': 'Bukit Panjang',
+    'hillview': 'Bukit Panjang',
+    'cashew': 'Bukit Panjang',
+    'upper bukit timah': 'Bukit Panjang',
+
+    # Clementi (OCR)
+    'clementi woods': 'Clementi',
+    'pine grove': 'Clementi',
+
+    # Tengah (OCR)
     'tengah': 'Tengah',
     'garden walk': 'Tengah',
     'plantation close': 'Tengah',
+
+    # Singapore River (CCR)
     'zion road': 'Singapore River',
     'kim seng': 'Singapore River',
+
+    # Kallang (RCR)
     'tanjong rhu': 'Kallang',
-    'upper thomson': 'Bishan',
+    'tanjong rhu road': 'Kallang',
+    'kallang close': 'Kallang',
+
+    # Ang Mo Kio (OCR)
     'mayflower': 'Ang Mo Kio',
     'lentor': 'Ang Mo Kio',
+    'lentor central': 'Ang Mo Kio',
+
+    # Bishan (RCR)
+    'upper thomson': 'Bishan',
+
+    # Sembawang (OCR)
     'springleaf': 'Sembawang',
     'canberra': 'Sembawang',
+
+    # Geylang (RCR)
     'jalan tembusu': 'Geylang',
+
+    # Toa Payoh (RCR)
     'lorong 1 toa payoh': 'Toa Payoh',
-    'pine grove': 'Clementi',
-    'pasir panjang': 'Queenstown',
-    'mt sinai': 'Bukit Timah',
-    'bukit batok west': 'Bukit Batok',
-    'beauty world': 'Bukit Timah',
+
+    # Downtown Core (CCR)
     'orchard boulevard': 'Orchard',
     'marina bay': 'Downtown Core',
     'raffles place': 'Downtown Core',
@@ -125,9 +171,9 @@ def lookup_planning_area_from_subzone(location: str) -> Optional[str]:
     if location_lower in SUBZONE_TO_PLANNING_AREA:
         return SUBZONE_TO_PLANNING_AREA[location_lower]
 
-    # Partial match
+    # Partial match - check if any subzone is in location
     for subzone, planning_area in SUBZONE_TO_PLANNING_AREA.items():
-        if subzone in location_lower or location_lower in subzone:
+        if subzone in location_lower:
             return planning_area
 
     return None
@@ -147,7 +193,7 @@ def geocode_location(location: str) -> Dict[str, Any]:
     if cache_key in _onemap_cache:
         return _onemap_cache[cache_key]
 
-    # Try subzone lookup first
+    # Try subzone lookup first (faster and more accurate for GLS)
     planning_area = lookup_planning_area_from_subzone(location)
     if planning_area:
         result = {
@@ -178,14 +224,11 @@ def geocode_location(location: str) -> Dict[str, Any]:
             geocoded = {
                 'latitude': float(result.get('LATITUDE')) if result.get('LATITUDE') else None,
                 'longitude': float(result.get('LONGITUDE')) if result.get('LONGITUDE') else None,
-                'planning_area': result.get('BUILDING'),  # Sometimes contains planning area
+                'planning_area': result.get('BUILDING'),
             }
 
             # Try to get planning area from address components
-            # OneMap returns building name, road name, etc.
-            # We may need to do a reverse geocode to get planning area
             if not geocoded['planning_area'] and geocoded['latitude'] and geocoded['longitude']:
-                # Try reverse geocode
                 planning_area = reverse_geocode_to_planning_area(
                     geocoded['latitude'],
                     geocoded['longitude']
@@ -221,7 +264,6 @@ def reverse_geocode_to_planning_area(lat: float, lon: float) -> Optional[str]:
         response.raise_for_status()
         data = response.json()
 
-        # Look for planning area in response
         if data.get('GeocodeInfo'):
             for info in data['GeocodeInfo']:
                 if info.get('PLANDIVISION'):
@@ -245,6 +287,8 @@ LAUNCHED_PATTERNS = [
     r'call(?:s|ed)?\s+(?:for\s+)?tender',
     r'release(?:s|d)?\s+(?:site|land)',
     r'offer(?:s|ed)?\s+(?:site|land)',
+    r'for\s+sale\s+today',  # "released for sale today"
+    r'gls\s+programme',  # "Government Land Sales Programme"
 ]
 
 AWARDED_PATTERNS = [
@@ -300,28 +344,30 @@ def get_media_release_links(year: int = 2025) -> List[Dict[str, str]]:
     try:
         # URA media releases page
         url = f"{URA_MEDIA_BASE}?year={year}"
-        response = requests.get(url, timeout=30)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, timeout=30, headers=headers)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
         # Find all media release links
-        # URA uses specific CSS classes for media releases
         for link in soup.find_all('a', href=True):
             href = link.get('href', '')
             text = link.get_text(strip=True).lower()
 
             # Filter for residential tender-related releases
             if '/Media-Releases/' in href and 'pr' in href.lower():
-                # Check if it's about tenders and residential
                 title = link.get_text(strip=True)
                 title_lower = title.lower()
 
                 # Must contain tender-related keywords
-                has_tender = any(k in title_lower for k in ['tender', 'gls', 'land sale', 'land parcel'])
+                has_tender = any(k in title_lower for k in ['tender', 'gls', 'land sale', 'land parcel', 'residential site'])
+
                 # Must be residential (or not specifically industrial/commercial)
                 is_residential = 'residential' in title_lower or not any(
-                    k in title_lower for k in ['industrial', 'commercial', 'office', 'retail', 'hotel']
+                    k in title_lower for k in ['industrial', 'commercial only', 'office only', 'retail only', 'hotel only']
                 )
 
                 if has_tender and is_residential:
@@ -351,13 +397,18 @@ def get_media_release_links(year: int = 2025) -> List[Dict[str, str]]:
     return unique_releases
 
 
-def parse_media_release(url: str, release_id: str) -> Optional[Dict[str, Any]]:
+def parse_media_release(url: str, release_id: str) -> List[Dict[str, Any]]:
     """
     Parse a single URA media release page.
-    Extracts tender details from HTML tables and text.
+    Returns a LIST of tender dicts (one per site) since releases can have multiple sites.
     """
+    tenders = []
+
     try:
-        response = requests.get(url, timeout=30)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, timeout=30, headers=headers)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -384,34 +435,118 @@ def parse_media_release(url: str, release_id: str) -> Optional[Dict[str, Any]]:
         # Classify status
         status = classify_status(title_text, content)
 
-        # Extract data from tables
+        # Extract unit counts from text FIRST (before table parsing)
+        # Pattern: "sites at X, Y and Z can potentially yield about 480, 525, and 625 residential units"
+        location_units_map = extract_location_units_from_text(content)
+
+        # Extract data from tables - get ALL rows, not just first
         tables = soup.find_all('table')
-        tender_data = extract_table_data(tables, status)
+        table_data_list = extract_all_table_data(tables, status)
 
-        if not tender_data:
+        if table_data_list:
+            for idx, data in enumerate(table_data_list):
+                location = data.get('location_raw', '')
+
+                # Try to match units from text extraction
+                if not data.get('estimated_units') and location_units_map:
+                    for loc_key, units in location_units_map.items():
+                        if loc_key.lower() in location.lower() or location.lower() in loc_key.lower():
+                            data['estimated_units'] = units
+                            data['estimated_units_source'] = 'ura_stated'
+                            break
+
+                # Generate unique release_id per location
+                location_slug = re.sub(r'[^a-z0-9]+', '-', location.lower().strip())[:30]
+                unique_id = f"{release_id}-{location_slug}" if len(table_data_list) > 1 else release_id
+
+                data['release_id'] = unique_id
+                data['release_url'] = url
+                data['release_date'] = release_date
+                data['status'] = status
+                tenders.append(data)
+        else:
             # Try extracting from text if no table found
-            tender_data = extract_from_text(content, status)
+            text_data_list = extract_all_from_text(content, status)
 
-        if tender_data:
-            tender_data['release_id'] = release_id
-            tender_data['release_url'] = url
-            tender_data['release_date'] = release_date
-            tender_data['status'] = status
-            return tender_data
+            if text_data_list:
+                for idx, data in enumerate(text_data_list):
+                    location = data.get('location_raw', '')
+
+                    # Try to match units from text extraction
+                    if not data.get('estimated_units') and location_units_map:
+                        for loc_key, units in location_units_map.items():
+                            if loc_key.lower() in location.lower() or location.lower() in loc_key.lower():
+                                data['estimated_units'] = units
+                                data['estimated_units_source'] = 'ura_stated'
+                                break
+
+                    location_slug = re.sub(r'[^a-z0-9]+', '-', location.lower().strip())[:30]
+                    unique_id = f"{release_id}-{location_slug}" if len(text_data_list) > 1 else release_id
+
+                    data['release_id'] = unique_id
+                    data['release_url'] = url
+                    data['release_date'] = release_date
+                    data['status'] = status
+                    tenders.append(data)
 
     except Exception as e:
         print(f"Error parsing {url}: {e}")
+        import traceback
+        traceback.print_exc()
 
-    return None
+    return tenders
 
 
-def extract_table_data(tables: List, status: str) -> Optional[Dict[str, Any]]:
+def extract_location_units_from_text(content: str) -> Dict[str, int]:
     """
-    Extract tender data from HTML tables.
-    Uses fuzzy header matching to handle URA's varying formats.
+    Extract location->units mapping from text like:
+    "The sites at Lentor Central, Kallang Close and Dunearn Road can potentially yield about 560, 470 and 330 residential units"
+    "The sites at Dairy Farm Walk, Tanjong Rhu Road, and Dover Drive can potentially yield about 480, 525, and 625 residential units, respectively"
     """
+    location_units = {}
+
+    # Pattern for multiple sites with units
+    patterns = [
+        # "sites at X, Y and Z can potentially yield about 480, 525, and 625 units"
+        r'sites?\s+at\s+([^\.]+?)\s+can\s+(?:potentially\s+)?yield\s+(?:about\s+)?([0-9,\s]+(?:and\s+)?[0-9,]+)\s+(?:residential\s+)?units?',
+        # Alternative pattern
+        r'([A-Z][a-zA-Z\s,]+(?:Road|Drive|Walk|Close|Central|Way|Avenue|Lane|Rise|Park|View)(?:,\s+[A-Z][a-zA-Z\s]+(?:Road|Drive|Walk|Close|Central|Way|Avenue|Lane|Rise|Park|View))*(?:\s+and\s+[A-Z][a-zA-Z\s]+(?:Road|Drive|Walk|Close|Central|Way|Avenue|Lane|Rise|Park|View))?)\s+can\s+(?:potentially\s+)?yield\s+(?:about\s+)?([0-9,\s]+(?:and\s+)?[0-9,]+)\s+(?:residential\s+)?units?',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, content, re.IGNORECASE)
+        if match:
+            locations_str = match.group(1)
+            units_str = match.group(2)
+
+            # Parse locations: "Lentor Central, Kallang Close and Dunearn Road"
+            # Split on comma and "and"
+            locations = re.split(r',\s*|\s+and\s+', locations_str)
+            locations = [loc.strip() for loc in locations if loc.strip()]
+
+            # Parse units: "560, 470 and 330" or "480, 525, and 625"
+            units = re.findall(r'(\d+)', units_str)
+            units = [int(u) for u in units]
+
+            # Match locations to units (in order)
+            if len(locations) == len(units):
+                for loc, unit in zip(locations, units):
+                    location_units[loc] = unit
+
+            break
+
+    return location_units
+
+
+def extract_all_table_data(tables: List, status: str) -> List[Dict[str, Any]]:
+    """
+    Extract tender data from ALL rows of HTML tables.
+    Returns a list of dicts, one per site.
+    """
+    results = []
+
     if not tables:
-        return None
+        return results
 
     for table in tables:
         rows = table.find_all('tr')
@@ -430,7 +565,7 @@ def extract_table_data(tables: List, status: str) -> Optional[Dict[str, Any]]:
         # Find relevant column indices using fuzzy matching
         col_map = map_table_columns(headers)
 
-        # Parse data rows
+        # Parse ALL data rows
         for row in rows[1:]:
             cells = row.find_all(['th', 'td'])
             if len(cells) < 2:
@@ -443,15 +578,17 @@ def extract_table_data(tables: List, status: str) -> Optional[Dict[str, Any]]:
                 data['location_raw'] = cells[col_map['location']].get_text(strip=True)
 
             if col_map.get('site_area') is not None and col_map['site_area'] < len(cells):
-                data['site_area_sqm'] = parse_number(cells[col_map['site_area']].get_text(strip=True))
+                data['site_area_sqm'] = parse_area(cells[col_map['site_area']].get_text(strip=True))
 
             if col_map.get('max_gfa') is not None and col_map['max_gfa'] < len(cells):
-                data['max_gfa_sqm'] = parse_number(cells[col_map['max_gfa']].get_text(strip=True))
+                data['max_gfa_sqm'] = parse_area(cells[col_map['max_gfa']].get_text(strip=True))
 
             if col_map.get('units') is not None and col_map['units'] < len(cells):
                 units_text = cells[col_map['units']].get_text(strip=True)
-                data['estimated_units'] = parse_number(units_text)
-                if data['estimated_units']:
+                # Only parse if it looks like a reasonable unit count (< 10000)
+                parsed_units = parse_number(units_text)
+                if parsed_units and parsed_units < 10000:
+                    data['estimated_units'] = parsed_units
                     data['estimated_units_source'] = 'ura_stated'
 
             if col_map.get('tenderer') is not None and col_map['tenderer'] < len(cells):
@@ -466,11 +603,73 @@ def extract_table_data(tables: List, status: str) -> Optional[Dict[str, Any]]:
             if col_map.get('close_date') is not None and col_map['close_date'] < len(cells):
                 data['tender_close_date'] = parse_date(cells[col_map['close_date']].get_text(strip=True))
 
-            # Only return if we have at least a location
+            # Only add if we have at least a location
             if data.get('location_raw'):
-                return data
+                results.append(data)
 
-    return None
+    return results
+
+
+def extract_all_from_text(content: str, status: str) -> List[Dict[str, Any]]:
+    """
+    Extract tender data from plain text when no table is available.
+    Returns a list for consistency, even if usually just one item.
+    """
+    results = []
+
+    # First try to find all locations mentioned
+    loc_patterns = [
+        r'(?:site|land\s+parcel)s?\s+at\s+([A-Z][a-zA-Z\s,]+(?:Road|Street|Avenue|Drive|Lane|Way|Close|Rise|Park|View|Central|Walk)(?:,\s+[A-Z][a-zA-Z\s]+(?:Road|Street|Avenue|Drive|Lane|Way|Close|Rise|Park|View|Central|Walk))*)',
+        r'(?:at|in|near|along)\s+([A-Z][a-zA-Z\s]+(?:Road|Street|Avenue|Drive|Lane|Way|Close|Rise|Park|View|Central|Walk))',
+    ]
+
+    locations = []
+    for pattern in loc_patterns:
+        matches = re.findall(pattern, content)
+        for match in matches:
+            # Split on comma and "and" for multiple locations
+            locs = re.split(r',\s*|\s+and\s+', match)
+            for loc in locs:
+                loc = loc.strip()
+                if loc and len(loc) > 3:
+                    locations.append(loc)
+
+    # Deduplicate while preserving order
+    seen = set()
+    unique_locations = []
+    for loc in locations:
+        loc_lower = loc.lower()
+        if loc_lower not in seen:
+            seen.add(loc_lower)
+            unique_locations.append(loc)
+
+    # For each location, create a data dict
+    for location in unique_locations[:5]:  # Limit to 5 to avoid false positives
+        data = {'location_raw': location}
+
+        # For awarded tenders, try to find price and tenderer
+        if status == 'awarded':
+            price_match = re.search(r'\$([0-9,]+(?:\.[0-9]+)?)\s*(?:million)?', content, re.IGNORECASE)
+            if price_match:
+                price_val = parse_price(price_match.group(0))
+                if price_val:
+                    data['tendered_price_sgd'] = price_val
+
+            # Try to find successful tenderer
+            tenderer_patterns = [
+                r'(?:successful\s+tenderer|winning\s+bid(?:der)?|awarded\s+to)\s*[:\-]?\s*([A-Z][A-Za-z\s&]+(?:Pte\.?\s*Ltd\.?|Limited|Inc|Corporation|Development))',
+                r'([A-Z][A-Za-z\s&]+(?:Pte\.?\s*Ltd\.?|Limited))\s+(?:submitted|won|secured)',
+            ]
+
+            for pattern in tenderer_patterns:
+                match = re.search(pattern, content, re.IGNORECASE)
+                if match:
+                    data['successful_tenderer'] = match.group(1).strip()
+                    break
+
+        results.append(data)
+
+    return results if results else []
 
 
 def map_table_columns(headers: List[str]) -> Dict[str, int]:
@@ -484,30 +683,33 @@ def map_table_columns(headers: List[str]) -> Dict[str, int]:
         h = header.lower()
 
         # Location
-        if any(k in h for k in ['location', 'site', 'address', 'street']):
+        if any(k in h for k in ['location', 'address', 'street']):
             if 'area' not in h:  # Avoid 'site area'
                 col_map['location'] = idx
+        elif 'site' in h and 'area' not in h:
+            col_map['location'] = idx
 
         # Site area
         if any(k in h for k in ['site area', 'land area']):
             col_map['site_area'] = idx
 
         # Max GFA
-        if any(k in h for k in ['gfa', 'gross floor', 'max floor']):
+        if any(k in h for k in ['gfa', 'gross floor', 'max floor', 'maximum gfa']):
             col_map['max_gfa'] = idx
 
         # Estimated units
-        if any(k in h for k in ['unit', 'dwelling', 'residential']):
+        if any(k in h for k in ['unit', 'dwelling']):
             if 'price' not in h:
                 col_map['units'] = idx
 
         # Tenderer
-        if any(k in h for k in ['tenderer', 'bidder', 'developer', 'winner']):
+        if any(k in h for k in ['tenderer', 'bidder', 'developer', 'winner', 'successful']):
             col_map['tenderer'] = idx
 
         # Price
-        if any(k in h for k in ['price', 'bid', 'amount', 'tender$']):
-            col_map['price'] = idx
+        if any(k in h for k in ['price', 'bid', 'amount']):
+            if 'unit' not in h:  # Avoid 'unit price'
+                col_map['price'] = idx
 
         # Number of tenderers
         if any(k in h for k in ['no. of tender', 'number of tender', 'bids received']):
@@ -518,72 +720,6 @@ def map_table_columns(headers: List[str]) -> Dict[str, int]:
             col_map['close_date'] = idx
 
     return col_map
-
-
-def extract_from_text(content: str, status: str) -> Optional[Dict[str, Any]]:
-    """
-    Extract tender data from plain text when no table is available.
-    """
-    data = {}
-
-    # Try to find location
-    loc_patterns = [
-        r'(?:at|in|near|along)\s+([A-Z][a-zA-Z\s]+(?:Road|Street|Avenue|Drive|Lane|Way|Close|Rise|Park|View))',
-        r'site\s+(?:at|in)\s+([A-Z][a-zA-Z\s]+)',
-        r'land\s+parcel\s+(?:at|in)\s+([A-Z][a-zA-Z\s]+)',
-    ]
-
-    for pattern in loc_patterns:
-        match = re.search(pattern, content)
-        if match:
-            data['location_raw'] = match.group(1).strip()
-            break
-
-    # Try to find site area
-    area_match = re.search(r'site\s+area\s+(?:of\s+)?(?:about\s+)?([0-9,]+(?:\.[0-9]+)?)\s*(?:sq\s*m|sqm|square\s*met)', content, re.IGNORECASE)
-    if area_match:
-        data['site_area_sqm'] = parse_number(area_match.group(1))
-
-    # Try to find GFA
-    gfa_match = re.search(r'(?:gross\s+floor\s+area|gfa|maximum\s+gfa)\s+(?:of\s+)?(?:about\s+)?([0-9,]+(?:\.[0-9]+)?)\s*(?:sq\s*m|sqm)', content, re.IGNORECASE)
-    if gfa_match:
-        data['max_gfa_sqm'] = parse_number(gfa_match.group(1))
-
-    # Try to find estimated units
-    units_patterns = [
-        r'yield\s+(?:about\s+)?([0-9,]+)\s+(?:residential\s+)?unit',
-        r'(?:about|approximately|around)\s+([0-9,]+)\s+(?:residential\s+)?(?:dwelling\s+)?unit',
-        r'estimated\s+([0-9,]+)\s+unit',
-    ]
-
-    for pattern in units_patterns:
-        match = re.search(pattern, content, re.IGNORECASE)
-        if match:
-            data['estimated_units'] = parse_number(match.group(1))
-            data['estimated_units_source'] = 'ura_stated'
-            break
-
-    # For awarded tenders, try to find price and tenderer
-    if status == 'awarded':
-        price_match = re.search(r'\$([0-9,]+(?:\.[0-9]+)?)\s*(?:million)?', content, re.IGNORECASE)
-        if price_match:
-            price_val = parse_price(price_match.group(0))
-            if price_val:
-                data['tendered_price_sgd'] = price_val
-
-        # Try to find successful tenderer
-        tenderer_patterns = [
-            r'(?:successful\s+tenderer|winning\s+bid(?:der)?|awarded\s+to)\s*[:\-]?\s*([A-Z][A-Za-z\s&]+(?:Pte\.?\s*Ltd\.?|Limited|Inc|Corporation|Development))',
-            r'([A-Z][A-Za-z\s&]+(?:Pte\.?\s*Ltd\.?|Limited))\s+(?:submitted|won|secured)',
-        ]
-
-        for pattern in tenderer_patterns:
-            match = re.search(pattern, content, re.IGNORECASE)
-            if match:
-                data['successful_tenderer'] = match.group(1).strip()
-                break
-
-    return data if data.get('location_raw') else None
 
 
 def parse_date(date_str: str) -> Optional[datetime]:
@@ -623,6 +759,24 @@ def parse_number(text: str) -> Optional[int]:
     match = re.search(r'(\d+)', cleaned)
     if match:
         return int(match.group(1))
+
+    return None
+
+
+def parse_area(text: str) -> Optional[Decimal]:
+    """Parse area text to Decimal value in sqm."""
+    if not text:
+        return None
+
+    text = text.strip()
+
+    # Remove commas and spaces
+    cleaned = re.sub(r'[,\s]', '', text)
+
+    # Extract number (including decimal)
+    match = re.search(r'([0-9]+(?:\.[0-9]+)?)', cleaned)
+    if match:
+        return Decimal(match.group(1))
 
     return None
 
@@ -689,6 +843,7 @@ def scrape_gls_tenders(
         'tenders_parsed': 0,
         'tenders_saved': 0,
         'tenders_updated': 0,
+        'tenders_skipped': 0,
         'errors': [],
         'needs_review': []
     }
@@ -700,87 +855,92 @@ def scrape_gls_tenders(
     print(f"Found {len(releases)} potential GLS releases")
 
     for release in releases:
-        release_id = release['release_id']
+        base_release_id = release['release_id']
         url = release['url']
         title = release['title']
 
-        print(f"Processing {release_id}: {title[:50]}...")
+        print(f"Processing {base_release_id}: {title[:50]}...")
 
-        # Check if already exists
-        existing = db_session.query(GLSTender).filter_by(release_id=release_id).first()
-        if existing:
-            print(f"  Already exists, skipping")
-            continue
+        # Parse the release - now returns a LIST of tenders
+        tender_data_list = parse_media_release(url, base_release_id)
 
-        # Parse the release
-        data = parse_media_release(url, release_id)
-        if not data:
-            stats['errors'].append(f"{release_id}: Could not parse")
+        if not tender_data_list:
+            stats['errors'].append(f"{base_release_id}: Could not parse")
             print(f"  Could not parse")
             continue
 
-        stats['tenders_parsed'] += 1
+        for data in tender_data_list:
+            release_id = data['release_id']
 
-        # Geocode location
-        location = data.get('location_raw', '')
-        geo_data = geocode_location(location)
-        data['latitude'] = geo_data.get('latitude')
-        data['longitude'] = geo_data.get('longitude')
-        data['planning_area'] = geo_data.get('planning_area')
+            # Check if already exists
+            existing = db_session.query(GLSTender).filter_by(release_id=release_id).first()
+            if existing:
+                print(f"  Already exists: {release_id}")
+                stats['tenders_skipped'] += 1
+                continue
 
-        # Determine region from planning area
-        if data['planning_area']:
-            data['market_segment'] = get_region_from_planning_area(data['planning_area'])
-        else:
-            # Try to infer from location text
-            planning_area = lookup_planning_area_from_subzone(location)
-            if planning_area:
-                data['planning_area'] = planning_area
-                data['market_segment'] = get_region_from_planning_area(planning_area)
+            stats['tenders_parsed'] += 1
+
+            # Geocode location
+            location = data.get('location_raw', '')
+            geo_data = geocode_location(location)
+            data['latitude'] = geo_data.get('latitude')
+            data['longitude'] = geo_data.get('longitude')
+            data['planning_area'] = geo_data.get('planning_area')
+
+            # Determine region from planning area
+            if data['planning_area']:
+                data['market_segment'] = get_region_from_planning_area(data['planning_area'])
             else:
-                data['market_segment'] = None
-                data['needs_review'] = True
-                data['review_reason'] = f"Could not determine region for: {location}"
-                stats['needs_review'].append(release_id)
+                # Try to infer from location text
+                planning_area = lookup_planning_area_from_subzone(location)
+                if planning_area:
+                    data['planning_area'] = planning_area
+                    data['market_segment'] = get_region_from_planning_area(planning_area)
+                else:
+                    data['market_segment'] = None
+                    data['needs_review'] = True
+                    data['review_reason'] = f"Could not determine region for: {location}"
+                    stats['needs_review'].append(release_id)
 
-        # Create tender object
-        tender = GLSTender(
-            status=data.get('status', 'launched'),
-            release_id=release_id,
-            release_url=url,
-            release_date=data.get('release_date'),
-            tender_close_date=data.get('tender_close_date'),
-            location_raw=data.get('location_raw'),
-            latitude=data.get('latitude'),
-            longitude=data.get('longitude'),
-            planning_area=data.get('planning_area'),
-            market_segment=data.get('market_segment'),
-            site_area_sqm=data.get('site_area_sqm'),
-            max_gfa_sqm=data.get('max_gfa_sqm'),
-            estimated_units=data.get('estimated_units'),
-            estimated_units_source=data.get('estimated_units_source'),
-            successful_tenderer=data.get('successful_tenderer'),
-            tendered_price_sgd=data.get('tendered_price_sgd'),
-            num_tenderers=data.get('num_tenderers'),
-            needs_review=data.get('needs_review', False),
-            review_reason=data.get('review_reason'),
-        )
+            # Create tender object
+            tender = GLSTender(
+                status=data.get('status', 'launched'),
+                release_id=release_id,
+                release_url=url,
+                release_date=data.get('release_date'),
+                tender_close_date=data.get('tender_close_date'),
+                location_raw=data.get('location_raw'),
+                latitude=data.get('latitude'),
+                longitude=data.get('longitude'),
+                planning_area=data.get('planning_area'),
+                market_segment=data.get('market_segment'),
+                site_area_sqm=data.get('site_area_sqm'),
+                max_gfa_sqm=data.get('max_gfa_sqm'),
+                estimated_units=data.get('estimated_units'),
+                estimated_units_source=data.get('estimated_units_source'),
+                successful_tenderer=data.get('successful_tenderer'),
+                tendered_price_sgd=data.get('tendered_price_sgd'),
+                num_tenderers=data.get('num_tenderers'),
+                needs_review=data.get('needs_review', False),
+                review_reason=data.get('review_reason'),
+            )
 
-        # Compute derived fields
-        GLSTender.compute_derived_fields(tender)
+            # Compute derived fields
+            GLSTender.compute_derived_fields(tender)
 
-        if dry_run:
-            print(f"  Would save: {tender.status} | {tender.location_raw} | {tender.market_segment}")
-        else:
-            try:
-                db_session.add(tender)
-                db_session.commit()
-                stats['tenders_saved'] += 1
-                print(f"  Saved: {tender.status} | {tender.location_raw} | {tender.market_segment}")
-            except Exception as e:
-                db_session.rollback()
-                stats['errors'].append(f"{release_id}: {str(e)}")
-                print(f"  Error saving: {e}")
+            if dry_run:
+                print(f"  Would save: {tender.status} | {tender.location_raw} | {tender.market_segment} | {tender.estimated_units} units")
+            else:
+                try:
+                    db_session.add(tender)
+                    db_session.commit()
+                    stats['tenders_saved'] += 1
+                    print(f"  Saved: {tender.status} | {tender.location_raw} | {tender.market_segment} | {tender.estimated_units} units")
+                except Exception as e:
+                    db_session.rollback()
+                    stats['errors'].append(f"{release_id}: {str(e)}")
+                    print(f"  Error saving: {e}")
 
         # Rate limiting
         time.sleep(0.5)
