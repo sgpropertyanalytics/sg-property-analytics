@@ -54,10 +54,12 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       try {
         // Use dashboard endpoint with price_histogram panel
         // Server computes bins in SQL - returns only ~20 data points instead of 100K rows
+        // excludeLocationDrill: true - Price Distribution should NOT be affected by
+        // location drill (Power BI best practice: Drill ≠ Filter, drill is visual-local)
         const params = buildApiParams({
           panels: 'price_histogram,summary',
           histogram_bins: numBins
-        });
+        }, { excludeLocationDrill: true });
         console.log('PriceDistribution API params:', params);
         const response = await getDashboard(params);
         const responseData = response.data || {};

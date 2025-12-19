@@ -1654,7 +1654,7 @@ def new_vs_resale():
     Query params:
       - region: ALL, CCR, RCR, OCR (default: ALL)
       - bedroom: ALL, 1BR, 2BR, 3BR, 4BR+ (default: ALL)
-      - timeRange: 2Y, 3Y, 5Y, ALL (default: 3Y)
+      - timeGrain: year, quarter, month (default: quarter) - for drill up/down
 
     Returns:
       {
@@ -1677,7 +1677,7 @@ def new_vs_resale():
         "appliedFilters": {
           "region": "ALL",
           "bedroom": "ALL",
-          "timeRange": "3Y",
+          "timeGrain": "quarter",
           "scope": "visual-level"
         }
       }
@@ -1687,19 +1687,19 @@ def new_vs_resale():
     # Parse query parameters (visual-level filters - local to this chart)
     region = request.args.get("region", "ALL")
     bedroom = request.args.get("bedroom", "ALL")
-    time_range = request.args.get("timeRange", "3Y")
+    time_grain = request.args.get("timeGrain", "quarter")
 
     # Validate parameters
     valid_regions = ["ALL", "CCR", "RCR", "OCR"]
     valid_bedrooms = ["ALL", "1BR", "2BR", "3BR", "4BR+"]
-    valid_time_ranges = ["2Y", "3Y", "5Y", "ALL"]
+    valid_time_grains = ["year", "quarter", "month"]
 
     if region not in valid_regions:
         return jsonify({"error": f"Invalid region. Must be one of: {valid_regions}"}), 400
     if bedroom not in valid_bedrooms:
         return jsonify({"error": f"Invalid bedroom. Must be one of: {valid_bedrooms}"}), 400
-    if time_range not in valid_time_ranges:
-        return jsonify({"error": f"Invalid timeRange. Must be one of: {valid_time_ranges}"}), 400
+    if time_grain not in valid_time_grains:
+        return jsonify({"error": f"Invalid timeGrain. Must be one of: {valid_time_grains}"}), 400
 
     try:
         from services.data_processor import get_new_vs_resale_comparison
@@ -1707,11 +1707,11 @@ def new_vs_resale():
         result = get_new_vs_resale_comparison(
             region=region,
             bedroom=bedroom,
-            time_range=time_range
+            time_grain=time_grain
         )
 
         elapsed = time.time() - start
-        print(f"GET /api/new-vs-resale took: {elapsed:.4f} seconds (region={region}, bedroom={bedroom}, timeRange={time_range})")
+        print(f"GET /api/new-vs-resale took: {elapsed:.4f} seconds (region={region}, bedroom={bedroom}, timeGrain={time_grain})")
         return jsonify(result)
     except Exception as e:
         elapsed = time.time() - start
