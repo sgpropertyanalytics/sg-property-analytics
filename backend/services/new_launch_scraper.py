@@ -1,13 +1,17 @@
 """
 New Launch Scraper - 2026 Private Condo Launches
 
-Scrapes from 3 sources for cross-validation:
-1. EdgeProp (edgeprop.sg/new-launches) - Primary, research-grade
-2. PropNex (propnex.com/new-launches) - Agency source
-3. ERA (era.com.sg/new-launches) - Agency source
+Scrapes from multiple sources for cross-validation:
+1. StackedHomes (stackedhomes.com) - Primary, aggregated editorial content
+2. EdgeProp (edgeprop.sg/new-launches) - Research-grade (requires JS rendering)
+3. PropNex (propnex.com/new-launches) - Agency source (requires JS rendering)
+4. ERA (era.com.sg/new-launches) - Agency source (requires JS rendering)
+
+Note: EdgeProp, PropNex, ERA use JavaScript rendering.
+Use Firecrawl or similar tool to get markdown content, then parse.
 
 Pipeline:
-- Phase 1: Initial scrape (all 3 sources)
+- Phase 1: Initial scrape (StackedHomes primary, others via Firecrawl)
 - Phase 2: Bi-weekly validation job
 - Phase 3: API endpoint (serve pre-computed static data)
 
@@ -24,6 +28,7 @@ from decimal import Decimal
 from bs4 import BeautifulSoup
 import time
 import json
+import os
 
 # Import from gls_scraper for reuse of region/planning_area logic
 from services.gls_scraper import (
@@ -32,6 +37,267 @@ from services.gls_scraper import (
     geocode_location,
     PLANNING_AREA_TO_REGION,
 )
+
+
+# =============================================================================
+# FIRECRAWL INTEGRATION (for JS-rendered sites)
+# =============================================================================
+
+FIRECRAWL_API_KEY = os.environ.get('FIRECRAWL_API_KEY', '')
+FIRECRAWL_API_URL = "https://api.firecrawl.dev/v1/scrape"
+
+
+def fetch_with_firecrawl(url: str) -> Optional[str]:
+    """
+    Fetch a URL using Firecrawl API to get rendered markdown content.
+
+    Returns markdown string or None if failed.
+    Requires FIRECRAWL_API_KEY environment variable.
+    """
+    if not FIRECRAWL_API_KEY:
+        print(f"  Firecrawl API key not set, skipping JS-rendered fetch for {url}")
+        return None
+
+    try:
+        response = requests.post(
+            FIRECRAWL_API_URL,
+            headers={
+                'Authorization': f'Bearer {FIRECRAWL_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'url': url,
+                'formats': ['markdown'],
+            },
+            timeout=60
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        if data.get('success') and data.get('data', {}).get('markdown'):
+            return data['data']['markdown']
+
+        return None
+    except Exception as e:
+        print(f"  Firecrawl error for {url}: {e}")
+        return None
+
+
+# =============================================================================
+# STACKEDHOMES SCRAPER (Primary - aggregated content)
+# =============================================================================
+
+STACKEDHOMES_URLS = [
+    "https://stackedhomes.com/7-close-to-top-new-launch-condos-in-2026/",
+    "https://stackedhomes.com/editorial/new-launch-condos/",
+]
+
+
+def scrape_stackedhomes(target_year: int = 2026) -> List[Dict[str, Any]]:
+    """
+    Scrape StackedHomes for new launch condo information.
+
+    StackedHomes aggregates data from multiple sources and provides
+    editorial content about new launches. Their articles contain
+    structured information about projects.
+
+    If Firecrawl API is available, uses it for better content extraction.
+    Otherwise falls back to BeautifulSoup HTML parsing.
+    """
+    results = []
+
+    print(f"Scraping StackedHomes for {target_year} new launches...")
+
+    for url in STACKEDHOMES_URLS:
+        try:
+            print(f"  Fetching: {url}")
+
+            # Try Firecrawl first for better markdown extraction
+            markdown_content = fetch_with_firecrawl(url)
+
+            if markdown_content:
+                # Parse markdown content
+                projects = _parse_stackedhomes_markdown(markdown_content, target_year)
+                print(f"  Found {len(projects)} projects via Firecrawl markdown")
+                results.extend(projects)
+            else:
+                # Fallback to HTML scraping
+                response = requests.get(url, headers=HEADERS, timeout=30)
+                response.raise_for_status()
+
+                soup = BeautifulSoup(response.text, 'html.parser')
+
+                # Get the main article content
+                article = soup.find('article') or soup.find('div', class_=re.compile(r'content|post|entry', re.I))
+
+                if article:
+                    # Extract text content and parse
+                    text_content = article.get_text(separator='\n')
+                    projects = _parse_stackedhomes_text(text_content, target_year)
+                    print(f"  Found {len(projects)} projects via HTML parsing")
+                    results.extend(projects)
+
+            time.sleep(RATE_LIMIT_DELAY)
+
+        except Exception as e:
+            print(f"  Error scraping {url}: {e}")
+            continue
+
+    # Deduplicate by project name
+    seen = set()
+    unique_results = []
+    for p in results:
+        name = normalize_project_name(p.get('project_name', ''))
+        if name and name not in seen:
+            seen.add(name)
+            p['source'] = 'stackedhomes'
+            unique_results.append(p)
+
+    print(f"  Total unique projects from StackedHomes: {len(unique_results)}")
+    return unique_results
+
+
+def _parse_stackedhomes_markdown(content: str, target_year: int) -> List[Dict[str, Any]]:
+    """
+    Parse StackedHomes markdown content to extract project information.
+
+    Expected patterns (from Firecrawl output):
+    - Project headings: "## 1. AMO Residence" or "## AMO Residence"
+    - Units: "372 units" or "with 372 units"
+    - District: "District 20" or "D20"
+    - Tenure: "99-year leasehold" or "freehold"
+    - PSF: "$2,400 to $2,600 psf" or "$2,400 - $2,600 psf"
+    - TOP: "TOP in 2026" or "slated to TOP in 2027"
+    - Developer: "by UOL Group" or "Developer: UOL"
+    """
+    projects = []
+
+    # Split by project headings (## followed by number or project name)
+    sections = re.split(r'\n##\s+(?:\d+\.\s+)?', content)
+
+    for section in sections[1:]:  # Skip first section (intro)
+        project = _extract_project_from_section(section, target_year)
+        if project and project.get('project_name'):
+            projects.append(project)
+
+    return projects
+
+
+def _extract_project_from_section(section: str, target_year: int) -> Optional[Dict[str, Any]]:
+    """Extract project details from a markdown section."""
+    project = {}
+
+    # Get project name from first line
+    lines = section.strip().split('\n')
+    if lines:
+        # Clean up the name (remove trailing punctuation, links, etc.)
+        name = re.sub(r'\[.*?\]\(.*?\)', '', lines[0])  # Remove markdown links
+        name = re.sub(r'\*+', '', name)  # Remove asterisks
+        name = name.strip().strip('*#').strip()
+        if name:
+            project['project_name'] = name
+
+    # Get full text for pattern matching
+    text = section
+
+    # Extract units
+    units_match = re.search(r'(\d{2,4})\s*units?', text, re.I)
+    if units_match:
+        project['total_units'] = int(units_match.group(1))
+
+    # Extract district
+    district_match = re.search(r'(?:District|D)\s*(\d{1,2})', text, re.I)
+    if district_match:
+        project['district'] = f"D{district_match.group(1).zfill(2)}"
+
+    # Extract tenure
+    if re.search(r'freehold', text, re.I):
+        project['tenure'] = 'Freehold'
+    elif re.search(r'999[-\s]?year', text, re.I):
+        project['tenure'] = '999-year'
+    elif re.search(r'99[-\s]?year', text, re.I):
+        project['tenure'] = '99-year'
+
+    # Extract PSF range
+    # Patterns: "$2,400 to $2,600 psf", "$2,400 - $2,600 psf", "around $2,500 psf"
+    psf_range_match = re.search(
+        r'\$\s*([\d,]+)\s*(?:to|-|–)\s*\$?\s*([\d,]+)\s*(?:psf|/sqft)',
+        text, re.I
+    )
+    if psf_range_match:
+        project['psf_low'] = float(psf_range_match.group(1).replace(',', ''))
+        project['psf_high'] = float(psf_range_match.group(2).replace(',', ''))
+    else:
+        # Single PSF value
+        psf_single_match = re.search(r'\$\s*([\d,]+)\s*(?:psf|/sqft)', text, re.I)
+        if psf_single_match:
+            psf = float(psf_single_match.group(1).replace(',', ''))
+            project['psf_low'] = psf
+            project['psf_high'] = psf
+
+    # Extract TOP year
+    top_match = re.search(r'(?:TOP|completing?|ready)\s*(?:in|by|around)?\s*(202[4-9]|2030)', text, re.I)
+    if top_match:
+        top_year = int(top_match.group(1))
+        project['launch_year'] = top_year
+        # Check if matches target year range
+        if abs(top_year - target_year) > 1:
+            return None  # Skip if too far from target
+
+    # Extract developer
+    dev_match = re.search(
+        r'(?:by|developer[:\s]+|developed by)\s*([A-Z][A-Za-z\s&,]+?)(?:\.|,|\n|$)',
+        text, re.I
+    )
+    if dev_match:
+        developer = dev_match.group(1).strip()
+        # Clean up common suffixes
+        developer = re.sub(r'\s*(?:and|&)\s*$', '', developer)
+        if len(developer) > 3:
+            project['developer'] = developer
+
+    # Extract location/address if available
+    location_match = re.search(
+        r'(?:located|at|along)\s+(?:at\s+)?([A-Z][A-Za-z\s]+(?:Road|Street|Avenue|Drive|Lane|Rise|Walk))',
+        text, re.I
+    )
+    if location_match:
+        project['address'] = location_match.group(1).strip()
+
+    return project if project.get('project_name') else None
+
+
+def _parse_stackedhomes_text(text: str, target_year: int) -> List[Dict[str, Any]]:
+    """
+    Parse plain text content from StackedHomes articles.
+    Fallback when Firecrawl is not available.
+    """
+    projects = []
+
+    # Look for project name patterns in text
+    # Common patterns: "1. Project Name", "Project Name launched", "Project Name is"
+    project_patterns = [
+        r'^\d+\.\s+([A-Z][A-Za-z\s]+?)(?:\n|launched|is|located)',
+        r'([A-Z][A-Za-z\s]+?)\s+launched\s+in',
+        r'([A-Z][A-Za-z\s]+?)\s+is\s+(?:a|an|the|slated)',
+    ]
+
+    for pattern in project_patterns:
+        matches = re.finditer(pattern, text, re.M)
+        for match in matches:
+            name = match.group(1).strip()
+            if len(name) > 5 and len(name) < 50:
+                # Find surrounding context (200 chars before and after)
+                start = max(0, match.start() - 200)
+                end = min(len(text), match.end() + 500)
+                context = text[start:end]
+
+                project = _extract_project_from_section(context, target_year)
+                if project:
+                    project['project_name'] = name
+                    projects.append(project)
+
+    return projects
 
 
 # =============================================================================
@@ -466,7 +732,10 @@ def scrape_new_launches(
     dry_run: bool = False
 ) -> Dict[str, Any]:
     """
-    Main function to scrape new launches from all 3 sources.
+    Main function to scrape new launches from all sources.
+
+    Primary source: StackedHomes (aggregated content, works with Firecrawl)
+    Secondary: EdgeProp, PropNex, ERA (JS-rendered, need Firecrawl)
 
     Args:
         target_year: Year to filter for (default 2026)
@@ -483,6 +752,7 @@ def scrape_new_launches(
         db_session = db.session
 
     stats = {
+        'stackedhomes_scraped': 0,
         'edgeprop_scraped': 0,
         'propnex_scraped': 0,
         'era_scraped': 0,
@@ -495,12 +765,18 @@ def scrape_new_launches(
     }
 
     # ==========================================================================
-    # PHASE 1: Scrape all sources
+    # PHASE 1: Scrape all sources (StackedHomes primary)
     # ==========================================================================
     print(f"\n{'='*60}")
     print(f"Scraping New Launches for {target_year}")
     print(f"{'='*60}\n")
 
+    # StackedHomes - Primary source (works with Firecrawl or HTML)
+    stackedhomes_projects = scrape_stackedhomes(target_year)
+    stats['stackedhomes_scraped'] = len(stackedhomes_projects)
+    time.sleep(RATE_LIMIT_DELAY)
+
+    # Secondary sources - may return 0 results if JS-rendered
     edgeprop_projects = scrape_edgeprop(target_year)
     stats['edgeprop_scraped'] = len(edgeprop_projects)
     time.sleep(RATE_LIMIT_DELAY)
@@ -520,16 +796,32 @@ def scrape_new_launches(
     # Build master list with data from all sources
     master_projects = {}
 
-    # Add EdgeProp projects (primary source)
-    for p in edgeprop_projects:
+    # Add StackedHomes projects (primary source - most reliable)
+    for p in stackedhomes_projects:
         name = normalize_project_name(p.get('project_name', ''))
         if name:
             master_projects[name] = {
                 'project_name': p.get('project_name'),
-                'edgeprop': p,
+                'stackedhomes': p,
+                'edgeprop': None,
                 'propnex': None,
                 'era': None,
             }
+
+    # Add EdgeProp projects
+    for p in edgeprop_projects:
+        name = normalize_project_name(p.get('project_name', ''))
+        if name:
+            if name in master_projects:
+                master_projects[name]['edgeprop'] = p
+            else:
+                master_projects[name] = {
+                    'project_name': p.get('project_name'),
+                    'stackedhomes': None,
+                    'edgeprop': p,
+                    'propnex': None,
+                    'era': None,
+                }
 
     # Match PropNex projects
     for p in propnex_projects:
@@ -540,6 +832,7 @@ def scrape_new_launches(
             else:
                 master_projects[name] = {
                     'project_name': p.get('project_name'),
+                    'stackedhomes': None,
                     'edgeprop': None,
                     'propnex': p,
                     'era': None,
@@ -554,6 +847,7 @@ def scrape_new_launches(
             else:
                 master_projects[name] = {
                     'project_name': p.get('project_name'),
+                    'stackedhomes': None,
                     'edgeprop': None,
                     'propnex': None,
                     'era': p,
@@ -567,15 +861,9 @@ def scrape_new_launches(
     # ==========================================================================
     for name, sources in master_projects.items():
         try:
-            # Use cross-validation to get consensus values
-            validated = NewLaunch.cross_validate_sources(
-                edgeprop_data=sources.get('edgeprop'),
-                propnex_data=sources.get('propnex'),
-                era_data=sources.get('era'),
-            )
-
-            # Get best project name (prefer EdgeProp)
+            # Get best project name (prefer StackedHomes > EdgeProp > PropNex > ERA)
             project_name = (
+                sources.get('stackedhomes', {}).get('project_name') or
                 sources.get('edgeprop', {}).get('project_name') or
                 sources.get('propnex', {}).get('project_name') or
                 sources.get('era', {}).get('project_name')
@@ -584,11 +872,25 @@ def scrape_new_launches(
             if not project_name:
                 continue
 
-            # Merge all source data
+            # Merge all source data (StackedHomes has priority)
             merged = _merge_source_data(sources)
 
+            # Build validated data from merged sources
+            # StackedHomes provides good quality data, use it directly
+            stackedhomes_data = sources.get('stackedhomes') or {}
+            validated = {
+                'total_units': stackedhomes_data.get('total_units') or merged.get('total_units'),
+                'total_units_source': 'stackedhomes' if stackedhomes_data.get('total_units') else None,
+                'indicative_psf_low': stackedhomes_data.get('psf_low') or merged.get('psf_low'),
+                'indicative_psf_high': stackedhomes_data.get('psf_high') or merged.get('psf_high'),
+                'indicative_psf_source': 'stackedhomes' if stackedhomes_data.get('psf_low') else None,
+                'developer': stackedhomes_data.get('developer') or merged.get('developer'),
+                'needs_review': False,
+                'review_reason': None,
+            }
+
             # Determine district and market segment
-            district = merged.get('district')
+            district = stackedhomes_data.get('district') or merged.get('district')
             market_segment = None
             planning_area = None
 
@@ -603,6 +905,8 @@ def scrape_new_launches(
 
             # Build source_urls JSON
             source_urls = {}
+            if sources.get('stackedhomes'):
+                source_urls['stackedhomes'] = sources['stackedhomes'].get('source_url') or 'https://stackedhomes.com'
             if sources.get('edgeprop'):
                 source_urls['edgeprop'] = sources['edgeprop'].get('source_url') or sources['edgeprop'].get('detail_url')
             if sources.get('propnex'):
@@ -694,6 +998,7 @@ def scrape_new_launches(
     print(f"\n{'='*60}")
     print("Scrape Complete")
     print(f"{'='*60}")
+    print(f"StackedHomes: {stats['stackedhomes_scraped']} projects (primary)")
     print(f"EdgeProp: {stats['edgeprop_scraped']} projects")
     print(f"PropNex: {stats['propnex_scraped']} projects")
     print(f"ERA: {stats['era_scraped']} projects")
@@ -709,16 +1014,16 @@ def scrape_new_launches(
 
 
 def _merge_source_data(sources: Dict[str, Dict]) -> Dict[str, Any]:
-    """Merge data from multiple sources, preferring EdgeProp."""
+    """Merge data from multiple sources, preferring StackedHomes."""
     merged = {}
 
-    # Priority: EdgeProp > PropNex > ERA
-    for source_name in ['edgeprop', 'propnex', 'era']:
+    # Priority: StackedHomes > EdgeProp > PropNex > ERA
+    for source_name in ['stackedhomes', 'edgeprop', 'propnex', 'era']:
         source = sources.get(source_name)
         if not source:
             continue
 
-        for key in ['developer', 'district', 'tenure', 'address', 'launch_year']:
+        for key in ['developer', 'district', 'tenure', 'address', 'launch_year', 'total_units', 'psf_low', 'psf_high']:
             if not merged.get(key) and source.get(key):
                 merged[key] = source[key]
 

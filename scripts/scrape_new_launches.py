@@ -2,20 +2,25 @@
 """
 CLI runner for new launches scraper.
 
-Scrapes 2026 private condo launches from 3 sources:
-- EdgeProp (primary, research-grade)
-- PropNex (agency source)
-- ERA (agency source)
+Scrapes 2026 private condo launches from multiple sources:
+- StackedHomes (primary - aggregated editorial content)
+- EdgeProp (research-grade, requires Firecrawl for JS)
+- PropNex (agency source, requires Firecrawl for JS)
+- ERA (agency source, requires Firecrawl for JS)
 
+For best results, set FIRECRAWL_API_KEY environment variable.
 Cross-validates data and stores in database.
 
 Usage:
     python scripts/scrape_new_launches.py                # Scrape from web sources
-    python scripts/scrape_new_launches.py --seed         # Load seed data (recommended)
+    python scripts/scrape_new_launches.py --seed         # Load seed data (fallback)
     python scripts/scrape_new_launches.py --seed --reset # Reset and reload seed data
     python scripts/scrape_new_launches.py --year 2026
     python scripts/scrape_new_launches.py --dry-run
     python scripts/scrape_new_launches.py --reset
+
+Environment Variables:
+    FIRECRAWL_API_KEY - API key for Firecrawl (get at firecrawl.dev)
 """
 import argparse
 import sys
@@ -119,6 +124,7 @@ def main():
             print(f"\n{'='*60}")
             print("Summary")
             print(f"{'='*60}")
+            print(f"StackedHomes scraped: {stats.get('stackedhomes_scraped', 0)} (primary)")
             print(f"EdgeProp scraped: {stats.get('edgeprop_scraped', 0)}")
             print(f"PropNex scraped: {stats.get('propnex_scraped', 0)}")
             print(f"ERA scraped: {stats.get('era_scraped', 0)}")
@@ -130,8 +136,12 @@ def main():
 
             if stats.get('total_unique_projects', 0) == 0:
                 print("\n⚠️  No projects found from web scraping.")
-                print("    This is likely due to JavaScript-rendered content.")
-                print("    Try: python scripts/scrape_new_launches.py --seed")
+                print("    Possible causes:")
+                print("    1. JavaScript-rendered content (need Firecrawl API)")
+                print("    2. Rate limiting from websites")
+                print("    Solutions:")
+                print("    - Set FIRECRAWL_API_KEY env var for better extraction")
+                print("    - Try: python scripts/scrape_new_launches.py --seed")
 
             if stats.get('errors'):
                 print(f"\nErrors ({len(stats['errors'])}):")
