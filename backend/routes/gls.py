@@ -9,11 +9,15 @@ Provides endpoints for:
 """
 from flask import Blueprint, request, jsonify
 import time
+from datetime import datetime
 from models.database import db
 from models.gls_tender import GLSTender
-from sqlalchemy import desc, asc
+from sqlalchemy import desc, asc, extract
 
 gls_bp = Blueprint('gls', __name__)
+
+# Minimum year for frontend display (2024 data used only for backend linking)
+MIN_DISPLAY_YEAR = 2025
 
 
 @gls_bp.route("/upcoming", methods=["GET"])
@@ -37,7 +41,9 @@ def get_upcoming():
 
     try:
         query = db.session.query(GLSTender).filter(
-            GLSTender.status == 'launched'
+            GLSTender.status == 'launched',
+            # Only show 2025+ records (2024 used for backend linking only)
+            extract('year', GLSTender.release_date) >= MIN_DISPLAY_YEAR
         )
 
         if market_segment:
@@ -86,7 +92,9 @@ def get_awarded():
 
     try:
         query = db.session.query(GLSTender).filter(
-            GLSTender.status == 'awarded'
+            GLSTender.status == 'awarded',
+            # Only show 2025+ records (2024 used for backend linking only)
+            extract('year', GLSTender.release_date) >= MIN_DISPLAY_YEAR
         )
 
         if market_segment:
@@ -140,7 +148,10 @@ def get_all():
     order = request.args.get("order", "desc")
 
     try:
-        query = db.session.query(GLSTender)
+        # Only show 2025+ records (2024 used for backend linking only)
+        query = db.session.query(GLSTender).filter(
+            extract('year', GLSTender.release_date) >= MIN_DISPLAY_YEAR
+        )
 
         if market_segment:
             query = query.filter(GLSTender.market_segment == market_segment.upper())

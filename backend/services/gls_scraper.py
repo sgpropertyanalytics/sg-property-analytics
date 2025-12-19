@@ -48,74 +48,68 @@ PLANNING_AREA_TO_REGION = {
 }
 
 # Common subzone to Planning Area mappings
-# IMPORTANT: Bukit Timah Road classification depends on specific location
-# - D10/D11 (near Orchard/Novena) = CCR
-# - D21 (Upper Bukit Timah) = OCR
+# IMPORTANT: These are AREA-BASED mappings, not specific roads.
+# The matching algorithm handles road name variations automatically.
 SUBZONE_TO_PLANNING_AREA = {
     # Bukit Merah subzones (RCR)
     'telok blangah': 'Bukit Merah',
-    'telok blangah way': 'Bukit Merah',
-    'telok blangah road': 'Bukit Merah',
 
     # Queenstown subzones (RCR)
     'alexandra': 'Queenstown',
-    'alexandra road': 'Queenstown',
     'one-north': 'Queenstown',
     'buona vista': 'Queenstown',
     'pasir panjang': 'Queenstown',
     'dover': 'Queenstown',
-    'dover drive': 'Queenstown',
 
     # Bedok subzones (OCR)
-    'bedok rise': 'Bedok',
-    'bedok north': 'Bedok',
     'bayshore': 'Bedok',
 
     # Novena subzones (CCR)
     'balestier': 'Novena',
     'newton': 'Newton',
     'dunearn': 'Novena',
-    'dunearn road': 'Novena',
 
     # Serangoon (OCR)
-    'upper serangoon': 'Serangoon',
+    'serangoon': 'Serangoon',
+    'chuan': 'Serangoon',
+    'lorong chuan': 'Serangoon',
 
     # Bukit Timah proper (CCR - D10/D11)
     'holland': 'Bukit Timah',
-    'holland road': 'Bukit Timah',
     'media circle': 'Bukit Timah',
     'mt sinai': 'Bukit Timah',
     'beauty world': 'Bukit Timah',
 
     # Upper Bukit Timah area (OCR - D21)
     'dairy farm': 'Bukit Panjang',
-    'dairy farm walk': 'Bukit Panjang',
     'hillview': 'Bukit Panjang',
     'cashew': 'Bukit Panjang',
     'upper bukit timah': 'Bukit Panjang',
 
     # Clementi (OCR)
-    'clementi woods': 'Clementi',
+    'clementi': 'Clementi',
     'pine grove': 'Clementi',
 
     # Tengah (OCR)
     'tengah': 'Tengah',
-    'garden walk': 'Tengah',
-    'plantation close': 'Tengah',
+    'garden': 'Tengah',  # Tengah Garden Walk/Avenue
+    'plantation': 'Tengah',
+
+    # Jurong Lake District (OCR)
+    'lakeside': 'Jurong East',
+    'jurong lake': 'Jurong East',
 
     # Singapore River (CCR)
-    'zion road': 'Singapore River',
+    'zion': 'Singapore River',
     'kim seng': 'Singapore River',
 
     # Kallang (RCR)
     'tanjong rhu': 'Kallang',
-    'tanjong rhu road': 'Kallang',
-    'kallang close': 'Kallang',
+    'kallang': 'Kallang',
 
     # Ang Mo Kio (OCR)
     'mayflower': 'Ang Mo Kio',
     'lentor': 'Ang Mo Kio',
-    'lentor central': 'Ang Mo Kio',
 
     # Bishan (RCR)
     'upper thomson': 'Bishan',
@@ -128,13 +122,13 @@ SUBZONE_TO_PLANNING_AREA = {
     'jalan tembusu': 'Geylang',
 
     # Toa Payoh (RCR)
-    'lorong 1 toa payoh': 'Toa Payoh',
+    'toa payoh': 'Toa Payoh',
 
     # Downtown Core (CCR)
-    'orchard boulevard': 'Orchard',
+    'orchard': 'Orchard',
     'marina bay': 'Downtown Core',
     'raffles place': 'Downtown Core',
-    'shenton way': 'Downtown Core',
+    'shenton': 'Downtown Core',
 }
 
 # OneMap API cache
@@ -1086,7 +1080,7 @@ def parse_price(text: str) -> Optional[Decimal]:
 # LINK AWARDED TO LAUNCH RECORDS
 # =============================================================================
 
-def find_matching_launch_record(location_raw: str, planning_area: str, db_session) -> Optional[Dict]:
+def find_matching_launch_record(location_raw: str, planning_area: str, db_session, site_area_sqm: float = None) -> Optional[Dict]:
     """
     Find a matching 'launched' tender for an awarded tender.
 
@@ -1094,11 +1088,16 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
     earlier 'launched' stage. This function finds the corresponding launch
     record to inherit estimated_units.
 
-    Matching priority:
+    SCALABLE MATCHING ALGORITHM:
     1. Exact location_raw match
     2. Fuzzy location match (normalized, stripped of parcel labels)
-    3. Containment match (one contains the other + shared key road token)
-    4. Planning area + similar characteristics
+    3. Same planning area + containment match
+    4. Same planning area + key place token match (most robust for variations)
+    5. Same planning area + site area similarity (within 20%)
+    6. Single launch in same planning area
+
+    The algorithm is designed to handle location name variations automatically
+    without hardcoded road-specific mappings.
 
     Returns dict with estimated_units and source, or None if no match.
     """
@@ -1121,12 +1120,30 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
         loc = re.sub(r'\s+', ' ', loc)
         return loc.strip()
 
+    def extract_key_place_tokens(loc: str) -> set:
+        """
+        Extract key place name tokens from location.
+        These are the unique identifiers that distinguish different sites.
+        E.g., "Chuan Grove" -> {"chuan"}, "Tengah Garden Avenue" -> {"tengah", "garden"}
+
+        SCALABLE: Automatically extracts meaningful words, excluding common suffixes.
+        """
+        loc = loc.lower()
+        # Common road suffixes to EXCLUDE from tokens (these don't distinguish sites)
+        suffixes = {'road', 'drive', 'walk', 'close', 'central', 'way', 'avenue',
+                    'lane', 'rise', 'park', 'view', 'street', 'boulevard', 'grove',
+                    'crescent', 'place', 'terrace', 'link', 'loop', 'lorong', 'jalan'}
+        # Extract words that are at least 4 chars and not road suffixes
+        words = re.findall(r'\b[a-z]{4,}\b', loc)
+        tokens = {w for w in words if w not in suffixes}
+        return tokens
+
     def extract_road_tokens(loc: str) -> set:
         """Extract key road/place tokens from location for fuzzy matching."""
         loc = loc.lower()
         # Common road suffixes
         suffixes = ['road', 'drive', 'walk', 'close', 'central', 'way', 'avenue',
-                    'lane', 'rise', 'park', 'view', 'street', 'boulevard']
+                    'lane', 'rise', 'park', 'view', 'street', 'boulevard', 'grove']
         # Extract the base name before the suffix
         tokens = set()
         for suffix in suffixes:
@@ -1138,10 +1155,26 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
         tokens.update(words)
         return tokens
 
+    def site_area_similar(area1, area2, tolerance=0.20) -> bool:
+        """Check if two site areas are within tolerance (20% by default)."""
+        if not area1 or not area2:
+            return False
+        try:
+            a1, a2 = float(area1), float(area2)
+            if a1 == 0 or a2 == 0:
+                return False
+            ratio = max(a1, a2) / min(a1, a2)
+            return ratio <= (1 + tolerance)
+        except (ValueError, TypeError):
+            return False
+
     normalized = normalize_location(location_raw)
     awarded_tokens = extract_road_tokens(location_raw)
+    awarded_place_tokens = extract_key_place_tokens(location_raw)
 
-    # Try exact match first
+    # =========================================================================
+    # Pass 1: Exact location_raw match (any planning area)
+    # =========================================================================
     exact_match = db_session.query(GLSTender).filter(
         GLSTender.status == 'launched',
         GLSTender.location_raw == location_raw,
@@ -1155,13 +1188,15 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
             'launch_release_id': exact_match.release_id
         }
 
-    # Try fuzzy match on normalized location
+    # Get all launched records with units for fuzzy matching
     launched_records = db_session.query(GLSTender).filter(
         GLSTender.status == 'launched',
         GLSTender.estimated_units.isnot(None)
     ).all()
 
-    # Pass 1: Exact normalized match
+    # =========================================================================
+    # Pass 2: Exact normalized match (any planning area)
+    # =========================================================================
     for launch in launched_records:
         if normalize_location(launch.location_raw) == normalized:
             return {
@@ -1170,26 +1205,78 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
                 'launch_release_id': launch.release_id
             }
 
-    # Pass 2: Containment fallback - if one normalized string contains the other
-    # and they share at least one key road token
-    for launch in launched_records:
-        launch_normalized = normalize_location(launch.location_raw)
-        launch_tokens = extract_road_tokens(launch.location_raw)
+    # =========================================================================
+    # Pass 3: Same planning area + containment match
+    # ROBUST: Only matches within same planning area to avoid false positives
+    # =========================================================================
+    if planning_area:
+        for launch in launched_records:
+            if launch.planning_area != planning_area:
+                continue
 
-        # Check containment
-        is_contained = (normalized in launch_normalized) or (launch_normalized in normalized)
+            launch_normalized = normalize_location(launch.location_raw)
+            launch_tokens = extract_road_tokens(launch.location_raw)
 
-        # Check token overlap
-        shared_tokens = awarded_tokens & launch_tokens
+            # Check containment
+            is_contained = (normalized in launch_normalized) or (launch_normalized in normalized)
 
-        if is_contained and shared_tokens:
+            # Check token overlap
+            shared_tokens = awarded_tokens & launch_tokens
+
+            if is_contained and shared_tokens:
+                return {
+                    'estimated_units': launch.estimated_units,
+                    'estimated_units_source': launch.estimated_units_source or 'ura_stated',
+                    'launch_release_id': launch.release_id
+                }
+
+    # =========================================================================
+    # Pass 4: Same planning area + key place token match
+    # SCALABLE: Automatically handles variations like "Chuan Grove" vs "Lorong Chuan"
+    # Both share the "chuan" token and are in Serangoon planning area
+    # =========================================================================
+    if planning_area and awarded_place_tokens:
+        best_match = None
+        best_overlap = 0
+        for launch in launched_records:
+            if launch.planning_area != planning_area:
+                continue
+
+            launch_place_tokens = extract_key_place_tokens(launch.location_raw)
+            shared = awarded_place_tokens & launch_place_tokens
+
+            # Require at least one shared token, prefer more overlap
+            if len(shared) > best_overlap:
+                best_match = launch
+                best_overlap = len(shared)
+
+        # If we found a match with token overlap in same planning area
+        if best_match and best_overlap >= 1:
             return {
-                'estimated_units': launch.estimated_units,
-                'estimated_units_source': launch.estimated_units_source or 'ura_stated',
-                'launch_release_id': launch.release_id
+                'estimated_units': best_match.estimated_units,
+                'estimated_units_source': best_match.estimated_units_source or 'ura_stated',
+                'launch_release_id': best_match.release_id
             }
 
-    # Pass 3: Try planning area match with similar characteristics
+    # =========================================================================
+    # Pass 5: Same planning area + site area similarity (within 20%)
+    # ROBUST: Uses site area as additional confirmation signal
+    # =========================================================================
+    if planning_area and site_area_sqm:
+        for launch in launched_records:
+            if launch.planning_area != planning_area:
+                continue
+
+            if site_area_similar(site_area_sqm, launch.site_area_sqm):
+                return {
+                    'estimated_units': launch.estimated_units,
+                    'estimated_units_source': 'inferred_from_site_area',
+                    'launch_release_id': launch.release_id
+                }
+
+    # =========================================================================
+    # Pass 6: Single launch in same planning area (last resort)
+    # =========================================================================
     if planning_area:
         planning_matches = db_session.query(GLSTender).filter(
             GLSTender.status == 'launched',
@@ -1231,7 +1318,8 @@ def link_awarded_to_launches(db_session) -> Dict[str, int]:
         match = find_matching_launch_record(
             tender.location_raw,
             tender.planning_area,
-            db_session
+            db_session,
+            site_area_sqm=float(tender.site_area_sqm) if tender.site_area_sqm else None
         )
 
         if match:
