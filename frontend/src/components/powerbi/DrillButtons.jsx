@@ -76,8 +76,9 @@ export function DrillButtons({
         levelLabels: { year: 'Year', quarter: 'Quarter', month: 'Month' }
       };
     } else if (hierarchyType === 'location') {
-      // Location hierarchy: region -> district -> project
-      const levels = ['region', 'district', 'project'];
+      // Location hierarchy: region -> district (STOPS HERE - no project in global hierarchy)
+      // Project is drill-through only, handled via setSelectedProject
+      const levels = ['region', 'district'];
       const rawIndex = levels.indexOf(drillPath.location);
       // Safeguard: If level not found (-1), default to 0 to prevent incorrect canDrillDown
       const currentIndex = rawIndex >= 0 ? rawIndex : 0;
@@ -87,7 +88,7 @@ export function DrillButtons({
         levels,
         canDrillUp: currentIndex > 0,
         canDrillDown: currentIndex < levels.length - 1,
-        levelLabels: { region: 'Region', district: 'District', project: 'Project' }
+        levelLabels: { region: 'Region', district: 'District' }
       };
     } else if (hierarchyType === 'price') {
       // Price distribution doesn't have drill hierarchy

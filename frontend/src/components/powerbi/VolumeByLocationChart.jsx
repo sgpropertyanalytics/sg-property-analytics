@@ -32,16 +32,35 @@ ChartJS.register(
  *
  * Supports:
  * - Cross-filtering: clicking a bar filters all other charts
- * - Drill-down: region -> district -> project
+ * - Drill-down: region -> district (global hierarchy stops here)
+ * - Project view: At district level, clicking a district shows projects (LOCAL view)
+ *   - Clicking a project opens ProjectDetailPanel (does NOT affect other charts)
  */
 export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 350, maxBars = 15 }) {
-  const { buildApiParams, drillPath, crossFilter, applyCrossFilter, drillDown, breadcrumbs, highlight } = usePowerBIFilters();
+  const {
+    buildApiParams,
+    drillPath,
+    crossFilter,
+    applyCrossFilter,
+    drillDown,
+    breadcrumbs,
+    highlight,
+    setSelectedProject
+  } = usePowerBIFilters();
+
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
+
+  // LOCAL STATE: Show projects for a specific district (drill-through, not global)
+  // When set, the chart shows projects for this district instead of the global drill level
+  const [showProjectsForDistrict, setShowProjectsForDistrict] = useState(null);
+
+  // Determine what we're displaying: global drill level OR local project view
+  const displayMode = showProjectsForDistrict ? 'project' : drillPath.location;
 
   // Fetch data when filters change
   useEffect(() => {
@@ -53,10 +72,23 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       }
       setError(null);
       try {
-        const params = buildApiParams({
-          group_by: drillPath.location,
-          metrics: 'count,median_psf,total_value'
-        });
+        // Build params based on display mode
+        let params;
+        if (showProjectsForDistrict) {
+          // LOCAL PROJECT VIEW: Show projects in selected district
+          params = buildApiParams({
+            group_by: 'project',
+            metrics: 'count,median_psf,total_value',
+            district: showProjectsForDistrict, // Filter to this district
+          });
+        } else {
+          // GLOBAL DRILL VIEW: Show regions or districts
+          params = buildApiParams({
+            group_by: drillPath.location,
+            metrics: 'count,median_psf,total_value'
+          });
+        }
+
         const response = await getAggregate(params);
         // Sort by count descending and take top N
         const sortedData = (response.data.data || [])
@@ -74,7 +106,12 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       }
     };
     fetchData();
-  }, [buildApiParams, drillPath.location, maxBars, highlight]);
+  }, [buildApiParams, drillPath.location, maxBars, highlight, showProjectsForDistrict]);
+
+  // Clear local project view when global drill changes
+  useEffect(() => {
+    setShowProjectsForDistrict(null);
+  }, [drillPath.location]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;
@@ -85,27 +122,33 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       const index = elements[0].index;
       const clickedItem = data[index];
       if (clickedItem) {
-        const locationValue = clickedItem[drillPath.location];
-
-        // At region or district level: clicking drills down
-        // At project level: clicking applies cross-filter
-        if (drillPath.location === 'region' || drillPath.location === 'district') {
-          drillDown('location', locationValue, locationValue);
-        } else {
-          // At project level - apply cross-filter
-          if (onCrossFilter) {
-            onCrossFilter('location', drillPath.location, locationValue);
-          } else {
-            applyCrossFilter('location', drillPath.location, locationValue);
+        if (showProjectsForDistrict) {
+          // SHOWING PROJECTS: Click opens ProjectDetailPanel (does NOT affect other charts)
+          const projectName = clickedItem.project;
+          if (projectName) {
+            setSelectedProject(projectName, showProjectsForDistrict);
           }
+        } else if (drillPath.location === 'region') {
+          // AT REGION LEVEL: Click drills down to district (global)
+          const regionValue = clickedItem.region;
+          drillDown('location', regionValue, regionValue);
+        } else if (drillPath.location === 'district') {
+          // AT DISTRICT LEVEL: Click shows projects for that district (LOCAL view)
+          const districtValue = clickedItem.district;
+          setShowProjectsForDistrict(districtValue);
         }
       }
     }
   };
 
+  // Handle back button from project view
+  const handleBackFromProjects = () => {
+    setShowProjectsForDistrict(null);
+  };
+
   // Get region color using theme palette
   const getRegionColor = (location, alpha = 0.8) => {
-    if (drillPath.location === 'region') {
+    if (displayMode === 'region') {
       const colors = {
         CCR: `rgba(33, 52, 72, ${alpha})`,   // #213448 - Dark navy
         RCR: `rgba(84, 119, 146, ${alpha})`, // #547792 - Medium blue
@@ -115,7 +158,7 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
     }
 
     // For district level, color by region based on district number
-    if (drillPath.location === 'district') {
+    if (displayMode === 'district') {
       const districtNum = parseInt(location?.replace('D', '') || '0');
       if (districtNum >= 1 && districtNum <= 11) {
         return `rgba(33, 52, 72, ${alpha})`;   // CCR - #213448
@@ -126,7 +169,7 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       }
     }
 
-    // For project level, use consistent color
+    // For project level (local view), use consistent color
     return `rgba(84, 119, 146, ${alpha})`;
   };
 
@@ -151,6 +194,15 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
   }
 
   const getLabel = (item) => {
+    if (showProjectsForDistrict) {
+      // Showing projects
+      const value = item.project;
+      if (value && value.length > 30) {
+        return value.substring(0, 27) + '...';
+      }
+      return value || 'Unknown';
+    }
+
     const value = item[drillPath.location];
     if (drillPath.location === 'district') {
       const areaName = DISTRICT_NAMES[value];
@@ -161,10 +213,6 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       }
       return value;
     }
-    // For project level, truncate long names
-    if (drillPath.location === 'project' && value && value.length > 30) {
-      return value.substring(0, 27) + '...';
-    }
     return value || 'Unknown';
   };
 
@@ -172,8 +220,9 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
   const counts = data.map(d => d.count || 0);
 
   // Highlight based on cross-filter
+  const groupByField = showProjectsForDistrict ? 'project' : drillPath.location;
   const highlightedIndex = crossFilter.source === 'location' && crossFilter.value
-    ? data.findIndex(d => d[drillPath.location] === crossFilter.value)
+    ? data.findIndex(d => d[groupByField] === crossFilter.value)
     : -1;
 
   const chartData = {
@@ -183,13 +232,17 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
         label: 'Transaction Count',
         data: counts,
         backgroundColor: data.map((d, i) => {
-          const baseColor = getRegionColor(d[drillPath.location]);
+          const locationValue = showProjectsForDistrict ? d.project : d[drillPath.location];
+          const baseColor = getRegionColor(locationValue);
           if (highlightedIndex === -1 || highlightedIndex === i) {
             return baseColor;
           }
           return baseColor.replace(/[\d.]+\)$/, '0.3)');
         }),
-        borderColor: data.map(d => getRegionColor(d[drillPath.location], 1)),
+        borderColor: data.map(d => {
+          const locationValue = showProjectsForDistrict ? d.project : d[drillPath.location];
+          return getRegionColor(locationValue, 1);
+        }),
         borderWidth: 1,
       },
     ],
@@ -256,9 +309,16 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
 
   // Build contextual footer message based on breadcrumbs
   const getContextMessage = () => {
-    const levelName = locationLabels[drillPath.location].toLowerCase();
+    const levelName = locationLabels[displayMode].toLowerCase();
     const count = data.length;
     const base = `Total: ${totalCount.toLocaleString()} transactions across ${count} ${levelName}${count !== 1 ? 's' : ''}`;
+
+    if (showProjectsForDistrict) {
+      // Showing projects in a specific district
+      const districtName = DISTRICT_NAMES[showProjectsForDistrict] || showProjectsForDistrict;
+      const shortName = districtName.split(',')[0];
+      return `${base} in ${showProjectsForDistrict} (${shortName})`;
+    }
 
     // Add parent context from breadcrumbs
     if (breadcrumbs.location.length === 0) {
@@ -267,16 +327,30 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       // At district level, show region context
       const region = breadcrumbs.location[0]?.label || breadcrumbs.location[0]?.value;
       return `${base} in ${region}`;
-    } else if (drillPath.location === 'project' && breadcrumbs.location.length >= 2) {
-      // At project level with both region and district, show district context
-      const district = breadcrumbs.location[1]?.label || breadcrumbs.location[1]?.value;
-      return `${base} in ${district}`;
-    } else if (drillPath.location === 'project' && breadcrumbs.location.length === 1) {
-      // At project level with only region (if user drilled differently)
-      const region = breadcrumbs.location[0]?.label || breadcrumbs.location[0]?.value;
-      return `${base} in ${region}`;
     }
     return base;
+  };
+
+  // Get title based on display mode
+  const getTitle = () => {
+    if (showProjectsForDistrict) {
+      return `Projects in ${showProjectsForDistrict}`;
+    }
+    return `Volume by ${locationLabels[drillPath.location]}`;
+  };
+
+  // Get click hint based on display mode
+  const getClickHint = () => {
+    if (showProjectsForDistrict) {
+      return '(click to view project details)';
+    }
+    if (drillPath.location === 'region') {
+      return '(click to drill down)';
+    }
+    if (drillPath.location === 'district') {
+      return '(click to view projects)';
+    }
+    return null;
   };
 
   return (
@@ -284,34 +358,49 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[#213448]">Volume by {locationLabels[drillPath.location]}</h3>
+            {showProjectsForDistrict && (
+              <button
+                onClick={handleBackFromProjects}
+                className="p-1 hover:bg-[#EAE0CF] rounded transition-colors"
+                title="Back to districts"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#547792]">
+                  <path d="M10 12L6 8l4-4" />
+                </svg>
+              </button>
+            )}
+            <h3 className="font-semibold text-[#213448]">{getTitle()}</h3>
             {updating && (
               <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
             )}
           </div>
-          <DrillButtons hierarchyType="location" />
+          {!showProjectsForDistrict && (
+            <DrillButtons hierarchyType="location" />
+          )}
         </div>
         <div className="flex items-center justify-between mt-1">
           <p className="text-xs text-[#547792]">
             Top {data.length} by transaction count
-            {drillPath.location !== 'project' && (
-              <span className="text-[#547792] font-medium ml-1">(click to drill down)</span>
+            {getClickHint() && (
+              <span className="text-[#547792] font-medium ml-1">{getClickHint()}</span>
             )}
           </p>
-          <div className="flex items-center gap-3 text-xs">
-            <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[#213448]"></span>
-              <span className="text-[#547792]">CCR</span>
+          {!showProjectsForDistrict && (
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#213448]"></span>
+                <span className="text-[#547792]">CCR</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#547792]"></span>
+                <span className="text-[#547792]">RCR</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#94B4C1]"></span>
+                <span className="text-[#547792]">OCR</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[#547792]"></span>
-              <span className="text-[#547792]">RCR</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[#94B4C1]"></span>
-              <span className="text-[#547792]">OCR</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
       <div className="p-4" style={{ height }}>

@@ -9,6 +9,7 @@ import { TransactionDetailModal } from '../components/powerbi/TransactionDetailM
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
 import { GLSDataTable } from '../components/powerbi/GLSDataTable';
+import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
@@ -20,7 +21,10 @@ import { KPICard } from '../components/ui';
  * Features:
  * - Dynamic filtering with sidebar controls
  * - Cross-filtering (click chart to filter others)
- * - Drill-down hierarchies (time: year/quarter/month, location: region/district/project)
+ * - Drill-down hierarchies:
+ *   - Time: year -> quarter -> month
+ *   - Location: region -> district (global hierarchy stops here)
+ * - Project drill-through: Opens ProjectDetailPanel without affecting global charts
  * - Drill-through to transaction details
  */
 function MacroOverviewContent() {
@@ -291,6 +295,9 @@ function MacroOverviewContent() {
         title={modalTitle}
         additionalFilters={modalFilters}
       />
+
+      {/* Project Detail Panel - Drill-through view (does NOT affect global charts) */}
+      <ProjectDetailPanel />
     </div>
   );
 }

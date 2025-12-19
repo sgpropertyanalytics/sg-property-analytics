@@ -213,7 +213,11 @@ const params = buildApiParams({ ... }, { includeFactFilter: true });
 │       │                                                         │
 │       ├── drillPath (current hierarchy level)                   │
 │       │       • time: year → quarter → month                    │
-│       │       • location: region → district → project           │
+│       │       • location: region → district (NO project)        │
+│       │                                                         │
+│       ├── selectedProject (drill-through only)                  │
+│       │       • name, district                                  │
+│       │       • Does NOT affect global charts                   │
 │       │                                                         │
 │       └── buildApiParams(additionalParams, options)             │
 │               • options.includeFactFilter = true (for Fact)     │
@@ -234,7 +238,10 @@ const params = buildApiParams({ ... }, { includeFactFilter: true });
 │       │       └── Uses excludeHighlight: true                   │
 │       │                                                         │
 │       ├── VolumeByLocationChart (dimension - cross-filters)     │
-│       │       └── Click applies region/district filter          │
+│       │       └── region/district global, project local view    │
+│       │                                                         │
+│       ├── ProjectDetailPanel (drill-through only)               │
+│       │       └── Opens when project selected, own API queries  │
 │       │                                                         │
 │       ├── PriceDistributionChart (dimension → fact only)        │
 │       │       └── Click sets factFilter.priceRange              │
@@ -298,15 +305,16 @@ frontend/src/
 │   └── client.js             # Axios API client
 ├── context/
 │   ├── DataContext.jsx       # Global data/metadata context
-│   └── PowerBIFilterContext.jsx  # Filter state management
+│   └── PowerBIFilterContext.jsx  # Filter state management + selectedProject
 ├── components/powerbi/
 │   ├── PowerBIFilterSidebar.jsx  # Dimension slicers
 │   ├── TimeTrendChart.jsx        # Time dimension (highlight)
-│   ├── VolumeByLocationChart.jsx # Location dimension (cross-filter)
+│   ├── VolumeByLocationChart.jsx # Location dimension (cross-filter, local project view)
 │   ├── PriceDistributionChart.jsx # Price dimension (fact-only filter)
 │   ├── TransactionDataTable.jsx  # Fact table (data sink)
 │   ├── DrillButtons.jsx          # Drill up/down controls
-│   └── DrillBreadcrumb.jsx       # Navigation breadcrumbs
+│   ├── DrillBreadcrumb.jsx       # Navigation breadcrumbs
+│   └── ProjectDetailPanel.jsx    # Project drill-through (independent of global charts)
 └── pages/
     └── MacroOverview.jsx         # Main dashboard page
 ```
@@ -627,8 +635,9 @@ const [drillValue, setDrillValue] = useState(null);   // Selected value at curre
 // Drill hierarchy for time-based charts
 const TIME_DRILL_LEVELS = ['year', 'quarter', 'month'];
 
-// Drill hierarchy for location-based charts
-const LOCATION_DRILL_LEVELS = ['region', 'district', 'project'];
+// Drill hierarchy for location-based charts (GLOBAL hierarchy stops at district)
+// Project is drill-through only - opens ProjectDetailPanel, does NOT affect other charts
+const LOCATION_DRILL_LEVELS = ['region', 'district'];  // NO 'project'
 ```
 
 ### Drill UI Components
@@ -711,13 +720,16 @@ import { DrillButtons } from './DrillButtons';
 | **Time: Quarter** | ✅ Enabled | ✅ Enabled |
 | **Time: Month** (lowest) | ✅ Enabled | ❌ Disabled |
 | **Location: Region** (highest) | ❌ Disabled | ✅ Enabled |
-| **Location: District** | ✅ Enabled | ✅ Enabled |
-| **Location: Project** (lowest) | ✅ Enabled | ❌ Disabled |
+| **Location: District** (lowest) | ✅ Enabled | ❌ Disabled |
+
+**Note:** Project is NOT part of the global location hierarchy. Project selection is drill-through only (opens ProjectDetailPanel).
 
 **Implementation Logic (in DrillButtons.jsx):**
 
 ```jsx
-const levels = ['year', 'quarter', 'month']; // or ['region', 'district', 'project']
+// Time: ['year', 'quarter', 'month']
+// Location: ['region', 'district']  (NO 'project' - that's drill-through)
+const levels = ['region', 'district'];
 const currentIndex = levels.indexOf(currentLevel);
 
 // SAFEGUARD: If level not found (-1), default to 0 to prevent incorrect button state
@@ -747,6 +759,53 @@ const disabledStyle = "bg-[#EAE0CF]/50 border border-[#94B4C1]/50 text-[#94B4C1]
 - Clicking disabled button = no action
 - Clicking chart data at lowest level = apply cross-filter (not drill)
 - System state should never allow drill level outside defined hierarchy
+
+### Project Drill-Through (NOT Global Hierarchy)
+
+**CRITICAL: Project is NOT part of the global location hierarchy.**
+
+| Level | Part of Global Hierarchy? | Action on Click |
+|-------|---------------------------|-----------------|
+| Region | ✅ Yes | Drill down to district |
+| District | ✅ Yes (lowest global level) | Show projects locally |
+| Project | ❌ No (drill-through only) | Open ProjectDetailPanel |
+
+**Implementation:**
+
+```jsx
+// In VolumeByLocationChart.jsx
+
+// LOCAL state for showing projects (not global)
+const [showProjectsForDistrict, setShowProjectsForDistrict] = useState(null);
+
+const handleClick = (event) => {
+  if (showProjectsForDistrict) {
+    // Showing projects: Open detail panel (does NOT affect other charts)
+    setSelectedProject(projectName, district);
+  } else if (drillPath.location === 'region') {
+    // At region: Drill down to district (global)
+    drillDown('location', regionValue, regionValue);
+  } else if (drillPath.location === 'district') {
+    // At district: Show projects for that district (LOCAL view)
+    setShowProjectsForDistrict(districtValue);
+  }
+};
+```
+
+**Why Project is Drill-Through Only:**
+
+1. **Market-level charts should not change** when viewing a single project
+2. **Projects are too granular** for market analysis (hundreds of projects)
+3. **Power BI pattern**: Drill-through opens detail page, doesn't filter main page
+4. **Context preservation**: Users can explore a project without losing market view
+
+**ProjectDetailPanel:**
+
+- Opens as a modal/overlay when a project is selected
+- Fetches project-specific data (trend + price distribution)
+- Uses its own API queries - does NOT use `buildApiParams()` from context
+- Other dashboard charts remain completely unchanged
+- Close button clears `selectedProject` state
 
 ---
 
