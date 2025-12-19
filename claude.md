@@ -701,6 +701,53 @@ import { DrillButtons } from './DrillButtons';
 **REMOVED - Do NOT implement:**
 - ~~Click-to-drill mode toggle~~ - This button was removed because it was dead code. No chart had click handlers wired to the drill mode state. If click-to-drill is needed in the future, it must be fully implemented (chart click handlers, drill mode state management) before adding the UI button.
 
+### MANDATORY: Drill Button Boundary Rules
+
+**Drill buttons MUST be automatically disabled at hierarchy boundaries:**
+
+| Hierarchy Level | Up Button (↑) | Down Button (↓) |
+|-----------------|---------------|-----------------|
+| **Time: Year** (highest) | ❌ Disabled | ✅ Enabled |
+| **Time: Quarter** | ✅ Enabled | ✅ Enabled |
+| **Time: Month** (lowest) | ✅ Enabled | ❌ Disabled |
+| **Location: Region** (highest) | ❌ Disabled | ✅ Enabled |
+| **Location: District** | ✅ Enabled | ✅ Enabled |
+| **Location: Project** (lowest) | ✅ Enabled | ❌ Disabled |
+
+**Implementation Logic (in DrillButtons.jsx):**
+
+```jsx
+const levels = ['year', 'quarter', 'month']; // or ['region', 'district', 'project']
+const currentIndex = levels.indexOf(currentLevel);
+
+// SAFEGUARD: If level not found (-1), default to 0 to prevent incorrect button state
+const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+
+const canDrillUp = safeIndex > 0;                    // Can't go up from highest
+const canDrillDown = safeIndex < levels.length - 1; // Can't go down from lowest
+```
+
+**Why safeguard against -1 index:**
+If `indexOf` returns -1 (invalid level value), without safeguard:
+- `-1 > 0` = false → canDrillUp correctly disabled
+- `-1 < 2` = true → canDrillDown **incorrectly enabled** ← BUG
+
+The safeguard ensures buttons are always disabled at boundaries, even with unexpected state.
+
+**Button Styling:**
+```jsx
+// Enabled: Interactive styling
+const enabledStyle = "bg-white border border-[#94B4C1] hover:bg-[#EAE0CF] text-[#547792]";
+
+// Disabled: Greyed out, no hover, cursor not-allowed
+const disabledStyle = "bg-[#EAE0CF]/50 border border-[#94B4C1]/50 text-[#94B4C1] cursor-not-allowed";
+```
+
+**Never allow drill beyond boundaries:**
+- Clicking disabled button = no action
+- Clicking chart data at lowest level = apply cross-filter (not drill)
+- System state should never allow drill level outside defined hierarchy
+
 ---
 
 ## District to Region Mapping

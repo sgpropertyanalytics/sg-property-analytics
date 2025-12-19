@@ -48,7 +48,9 @@ export function DrillButtons({
     if (isLocalMode) {
       const levels = localLevels || ['year', 'quarter', 'month'];
       const labels = localLevelLabels || { year: 'Year', quarter: 'Quarter', month: 'Month' };
-      const currentIndex = levels.indexOf(localLevel);
+      const rawIndex = levels.indexOf(localLevel);
+      // Safeguard: If level not found (-1), default to 0 to prevent incorrect canDrillDown
+      const currentIndex = rawIndex >= 0 ? rawIndex : 0;
       return {
         currentLevel: localLevel,
         currentIndex,
@@ -62,7 +64,9 @@ export function DrillButtons({
     // GLOBAL MODE: Use context for state
     if (hierarchyType === 'time') {
       const levels = ['year', 'quarter', 'month'];
-      const currentIndex = levels.indexOf(drillPath.time);
+      const rawIndex = levels.indexOf(drillPath.time);
+      // Safeguard: If level not found (-1), default to 0 to prevent incorrect canDrillDown
+      const currentIndex = rawIndex >= 0 ? rawIndex : 0;
       return {
         currentLevel: drillPath.time,
         currentIndex,
@@ -74,7 +78,9 @@ export function DrillButtons({
     } else if (hierarchyType === 'location') {
       // Location hierarchy: region -> district -> project
       const levels = ['region', 'district', 'project'];
-      const currentIndex = levels.indexOf(drillPath.location);
+      const rawIndex = levels.indexOf(drillPath.location);
+      // Safeguard: If level not found (-1), default to 0 to prevent incorrect canDrillDown
+      const currentIndex = rawIndex >= 0 ? rawIndex : 0;
       return {
         currentLevel: drillPath.location,
         currentIndex,
