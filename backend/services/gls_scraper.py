@@ -79,6 +79,10 @@ SUBZONE_TO_PLANNING_AREA = {
 
     # Serangoon (OCR)
     'upper serangoon': 'Serangoon',
+    'chuan': 'Serangoon',
+    'chuan grove': 'Serangoon',
+    'chuan lane': 'Serangoon',
+    'lorong chuan': 'Serangoon',
 
     # Bukit Timah proper (CCR - D10/D11)
     'holland': 'Bukit Timah',
@@ -101,7 +105,18 @@ SUBZONE_TO_PLANNING_AREA = {
     # Tengah (OCR)
     'tengah': 'Tengah',
     'garden walk': 'Tengah',
+    'garden avenue': 'Tengah',
+    'tengah garden': 'Tengah',
+    'tengah garden walk': 'Tengah',
+    'tengah garden avenue': 'Tengah',
     'plantation close': 'Tengah',
+    'plantation drive': 'Tengah',
+
+    # Jurong Lake District (OCR)
+    'lakeside': 'Jurong East',
+    'lakeside drive': 'Jurong East',
+    'jurong lake': 'Jurong East',
+    'jurong lake district': 'Jurong East',
 
     # Singapore River (CCR)
     'zion road': 'Singapore River',
@@ -1098,7 +1113,8 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
     1. Exact location_raw match
     2. Fuzzy location match (normalized, stripped of parcel labels)
     3. Containment match (one contains the other + shared key road token)
-    4. Planning area + similar characteristics
+    4. Key place token match within same planning area
+    5. Single launch in same planning area
 
     Returns dict with estimated_units and source, or None if no match.
     """
@@ -1121,12 +1137,28 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
         loc = re.sub(r'\s+', ' ', loc)
         return loc.strip()
 
+    def extract_key_place_tokens(loc: str) -> set:
+        """
+        Extract key place name tokens from location.
+        These are the unique identifiers that distinguish different sites.
+        E.g., "Chuan Grove" -> {"chuan"}, "Tengah Garden Avenue" -> {"tengah", "garden"}
+        """
+        loc = loc.lower()
+        # Common road suffixes to EXCLUDE from tokens
+        suffixes = {'road', 'drive', 'walk', 'close', 'central', 'way', 'avenue',
+                    'lane', 'rise', 'park', 'view', 'street', 'boulevard', 'grove',
+                    'crescent', 'place', 'terrace', 'link', 'loop', 'lorong'}
+        # Extract words that are at least 4 chars and not road suffixes
+        words = re.findall(r'\b[a-z]{4,}\b', loc)
+        tokens = {w for w in words if w not in suffixes}
+        return tokens
+
     def extract_road_tokens(loc: str) -> set:
         """Extract key road/place tokens from location for fuzzy matching."""
         loc = loc.lower()
         # Common road suffixes
         suffixes = ['road', 'drive', 'walk', 'close', 'central', 'way', 'avenue',
-                    'lane', 'rise', 'park', 'view', 'street', 'boulevard']
+                    'lane', 'rise', 'park', 'view', 'street', 'boulevard', 'grove']
         # Extract the base name before the suffix
         tokens = set()
         for suffix in suffixes:
@@ -1140,6 +1172,7 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
 
     normalized = normalize_location(location_raw)
     awarded_tokens = extract_road_tokens(location_raw)
+    awarded_place_tokens = extract_key_place_tokens(location_raw)
 
     # Try exact match first
     exact_match = db_session.query(GLSTender).filter(
@@ -1189,7 +1222,29 @@ def find_matching_launch_record(location_raw: str, planning_area: str, db_sessio
                 'launch_release_id': launch.release_id
             }
 
-    # Pass 3: Try planning area match with similar characteristics
+    # Pass 3: Key place token match - if they share a distinctive place name
+    # E.g., "Chuan Grove" matches "Lorong Chuan" via "chuan" token
+    # E.g., "Tengah Garden Avenue" matches "Tengah Garden Walk" via "tengah" + "garden"
+    if awarded_place_tokens:
+        best_match = None
+        best_overlap = 0
+        for launch in launched_records:
+            launch_place_tokens = extract_key_place_tokens(launch.location_raw)
+            shared = awarded_place_tokens & launch_place_tokens
+            # Require at least one shared token, prefer more overlap
+            if len(shared) > best_overlap:
+                best_match = launch
+                best_overlap = len(shared)
+
+        # If we found a match with significant token overlap
+        if best_match and best_overlap >= 1:
+            return {
+                'estimated_units': best_match.estimated_units,
+                'estimated_units_source': best_match.estimated_units_source or 'ura_stated',
+                'launch_release_id': best_match.release_id
+            }
+
+    # Pass 4: Try planning area match with similar characteristics
     if planning_area:
         planning_matches = db_session.query(GLSTender).filter(
             GLSTender.status == 'launched',
