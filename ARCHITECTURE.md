@@ -52,7 +52,7 @@ graph TB
         FactTable[TransactionDataTable<br/>Fact Table]
     end
 
-    CSV -->|1. Load & Clean| Upload
+    CSV -->|1. Load and Clean| Upload
     Upload -->|2. Insert| TxnTable
     Upload -->|3. Trigger| Validation
     Validation -->|4. Clean Data| TxnTable
@@ -61,8 +61,8 @@ graph TB
     StatsTable -.->|Stored in| DB
 
     React -->|5. User Interaction| FilterCtx
-    FilterCtx -->|6. buildApiParams()| Charts
-    Charts -->|7. HTTP GET /api/*| Flask
+    FilterCtx -->|6. buildApiParams| Charts
+    Charts -->|7. HTTP GET| Flask
     Flask -->|8. Route| Routes
     Routes -->|9. Query| DashService
     DashService -->|10. SQL Aggregation| TxnTable
