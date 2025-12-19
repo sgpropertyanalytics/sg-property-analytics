@@ -35,16 +35,19 @@ ChartJS.register(
  *
  * Features:
  * - LOCAL filters (does NOT affect other charts on page)
- * - KPI badges showing current premium and 10Y average
+ * - LOCAL drill up/down (year → quarter → month) - visual-local only
+ * - KPI badges showing current premium and period average
  * - Trend indicator when difference >= 2%
  *
- * Following ui-freeze skill: chart internals unchanged, only wrapper modified
+ * Power BI Best Practice: Drill is visual-local by default.
+ * Drill ≠ Filter. Drill changes level of detail inside one chart only.
  */
 export function NewVsResaleChart({ height = 350 }) {
   // LOCAL state only - does not affect other charts
   const [localRegion, setLocalRegion] = useState('ALL');
   const [localBedroom, setLocalBedroom] = useState('ALL');
-  const [localTimeRange, setLocalTimeRange] = useState('3Y');
+  // LOCAL drill state - year → quarter → month (visual-local, not global)
+  const [localDrillLevel, setLocalDrillLevel] = useState('quarter');
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +56,7 @@ export function NewVsResaleChart({ height = 350 }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
-  // Fetch data when local filters change
+  // Fetch data when local filters or drill level change
   useEffect(() => {
     const fetchData = async () => {
       if (isInitialLoad.current) {
@@ -67,7 +70,7 @@ export function NewVsResaleChart({ height = 350 }) {
         const response = await getNewVsResale({
           region: localRegion,
           bedroom: localBedroom,
-          timeRange: localTimeRange,
+          timeGrain: localDrillLevel,
         });
         setData(response.data);
         isInitialLoad.current = false;
@@ -80,7 +83,26 @@ export function NewVsResaleChart({ height = 350 }) {
       }
     };
     fetchData();
-  }, [localRegion, localBedroom, localTimeRange]);
+  }, [localRegion, localBedroom, localDrillLevel]);
+
+  // LOCAL drill handlers - visual-local only, does NOT affect other charts
+  const drillLevels = ['year', 'quarter', 'month'];
+  const drillLevelLabels = { year: 'Year', quarter: 'Quarter', month: 'Month' };
+  const currentDrillIndex = drillLevels.indexOf(localDrillLevel);
+  const canDrillUp = currentDrillIndex > 0;
+  const canDrillDown = currentDrillIndex < drillLevels.length - 1;
+
+  const handleDrillUp = () => {
+    if (canDrillUp) {
+      setLocalDrillLevel(drillLevels[currentDrillIndex - 1]);
+    }
+  };
+
+  const handleDrillDown = () => {
+    if (canDrillDown) {
+      setLocalDrillLevel(drillLevels[currentDrillIndex + 1]);
+    }
+  };
 
   if (loading) {
     return (
@@ -292,7 +314,7 @@ export function NewVsResaleChart({ height = 350 }) {
               )}
             </div>
             <p className="text-xs text-[#547792] mt-0.5">
-              Median PSF comparison with resale units under 10 years from lease start
+              Median PSF comparison by {drillLevelLabels[localDrillLevel].toLowerCase()}
               {hasSignificantGaps && (
                 <span className="ml-2 text-amber-600">
                   (sparse resale data for this filter)
@@ -300,9 +322,50 @@ export function NewVsResaleChart({ height = 350 }) {
               )}
             </p>
           </div>
+          {/* LOCAL Drill Up/Down Buttons - visual-local only */}
+          <div className="flex items-center gap-1">
+            {/* Drill Up */}
+            <button
+              type="button"
+              onClick={handleDrillUp}
+              disabled={!canDrillUp}
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150 ${
+                canDrillUp
+                  ? 'bg-white border border-[#94B4C1] hover:bg-[#EAE0CF] hover:border-[#547792] text-[#547792] shadow-sm'
+                  : 'bg-[#EAE0CF]/50 border border-[#94B4C1]/50 text-[#94B4C1] cursor-not-allowed'
+              }`}
+              title={canDrillUp ? `Drill up to ${drillLevelLabels[drillLevels[currentDrillIndex - 1]]}` : 'At top level'}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9V3" />
+                <path d="M3 6l3-3 3 3" />
+              </svg>
+            </button>
+            {/* Drill Down */}
+            <button
+              type="button"
+              onClick={handleDrillDown}
+              disabled={!canDrillDown}
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150 ${
+                canDrillDown
+                  ? 'bg-white border border-[#94B4C1] hover:bg-[#EAE0CF] hover:border-[#547792] text-[#547792] shadow-sm'
+                  : 'bg-[#EAE0CF]/50 border border-[#94B4C1]/50 text-[#94B4C1] cursor-not-allowed'
+              }`}
+              title={canDrillDown ? `Drill down to ${drillLevelLabels[drillLevels[currentDrillIndex + 1]]}` : 'At lowest level'}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 3v6" />
+                <path d="M3 6l3 3 3-3" />
+              </svg>
+            </button>
+            {/* Current level label */}
+            <span className="ml-1 text-xs text-[#547792] font-medium whitespace-nowrap">
+              {drillLevelLabels[localDrillLevel]}
+            </span>
+          </div>
         </div>
 
-        {/* Local Filters - compact inline */}
+        {/* Local Filters - compact inline (Region & Bedroom only, Period removed) */}
         <div className="flex flex-wrap gap-2 mt-3">
           <LocalFilter
             label="Region"
@@ -315,12 +378,6 @@ export function NewVsResaleChart({ height = 350 }) {
             value={localBedroom}
             onChange={setLocalBedroom}
             options={['ALL', '1BR', '2BR', '3BR', '4BR+']}
-          />
-          <LocalFilter
-            label="Period"
-            value={localTimeRange}
-            onChange={setLocalTimeRange}
-            options={['2Y', '3Y', '5Y', 'ALL']}
           />
         </div>
 
@@ -368,7 +425,7 @@ export function NewVsResaleChart({ height = 350 }) {
       {/* Info tooltip */}
       <div className="px-3 py-2 md:px-4 md:py-2 border-t border-[#94B4C1]/30 bg-gray-50">
         <p className="text-[10px] md:text-xs text-[#547792]">
-          Controls for age by comparing new launches with near-new resale units. Filters are local to this chart only.
+          Controls for age by comparing new launches with near-new resale units. Use drill buttons to change time granularity. All controls are local to this chart only.
         </p>
       </div>
     </div>

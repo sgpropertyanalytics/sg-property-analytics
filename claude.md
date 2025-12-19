@@ -327,6 +327,78 @@ Render free tier: **512MB RAM**
 
 ---
 
+## Power BI Drill Up/Down Rules
+
+### Core Principle
+
+> **Drill ≠ Filter. Drill is visual-local by default.**
+
+| Action | Scope | Effect |
+|--------|-------|--------|
+| **Drill** | Single visual only | Changes level of detail inside one chart |
+| **Filter** | Cross-visual (dashboard) | Changes data scope across all visuals |
+
+### Why Drill Must NOT Affect Other Visuals
+
+If drill affected other charts, users would:
+1. **Lose context** - Other charts change unexpectedly
+2. **Confusion** - Can't understand why unrelated charts changed
+3. **Perception of bugs** - Dashboard appears broken or unpredictable
+
+Power BI treats drill as **visual-local by default** for this reason.
+
+### Implementation Pattern
+
+```jsx
+// Drill state is LOCAL to each chart component
+const [drillLevel, setDrillLevel] = useState('year'); // year → quarter → month
+const [drillValue, setDrillValue] = useState(null);   // Selected value at current level
+
+// Drill does NOT use global context - it's component state only
+// This ensures other charts are never affected
+
+// Drill hierarchy for time-based charts
+const TIME_DRILL_LEVELS = ['year', 'quarter', 'month'];
+
+// Drill hierarchy for location-based charts
+const LOCATION_DRILL_LEVELS = ['region', 'district', 'project'];
+```
+
+### Drill UI Components
+
+```jsx
+// DrillButtons.jsx - Up/Down navigation
+<DrillButtons
+  canDrillDown={drillLevel !== 'month'}
+  canDrillUp={drillLevel !== 'year'}
+  onDrillDown={handleDrillDown}
+  onDrillUp={handleDrillUp}
+/>
+
+// Show current level indicator
+<span className="text-xs text-[#547792]">
+  Showing: {drillLevel === 'year' ? 'Yearly' : drillLevel === 'quarter' ? 'Quarterly' : 'Monthly'}
+</span>
+```
+
+### Click Behavior for Drill
+
+```jsx
+// Clicking a data point drills down into that value
+const handleChartClick = (clickedValue) => {
+  if (drillLevel === 'year') {
+    setDrillLevel('quarter');
+    setDrillValue(clickedValue); // e.g., "2023" → show Q1-Q4 of 2023
+  } else if (drillLevel === 'quarter') {
+    setDrillLevel('month');
+    setDrillValue(clickedValue); // e.g., "2023-Q1" → show Jan-Mar 2023
+  }
+  // At month level, click does nothing (already at lowest level)
+};
+```
+
+---
+
 ## District to Region Mapping
 
 ```javascript

@@ -1623,7 +1623,7 @@ def get_price_project_stats_by_district(
 def get_new_vs_resale_comparison(
     region: Optional[str] = None,
     bedroom: Optional[str] = None,
-    time_range: str = "3Y"
+    time_grain: str = "quarter"
 ) -> Dict[str, Any]:
     """
     Get New Launch vs Resale (lease age < 10 years) comparison data.
@@ -1634,7 +1634,7 @@ def get_new_vs_resale_comparison(
     Args:
         region: Market segment filter ("ALL", "CCR", "RCR", "OCR") - defaults to ALL
         bedroom: Bedroom filter ("ALL", "1BR", "2BR", "3BR", "4BR+") - defaults to ALL
-        time_range: Time range ("2Y", "3Y", "5Y", "ALL") - defaults to 3Y
+        time_grain: Time granularity for drill ("year", "quarter", "month") - defaults to quarter
 
     Returns:
         Dictionary with chart data, summary, and applied filters
@@ -1642,16 +1642,15 @@ def get_new_vs_resale_comparison(
     from models.database import db
     from sqlalchemy import text
 
-    # Calculate start date based on time range
+    # Set implicit time range based on drill level to prevent cluttering
+    # Year: ALL time, Quarter: 5Y, Month: 2Y
     today = datetime.now()
-    if time_range == "2Y":
-        start_date = today - timedelta(days=2 * 365)
-    elif time_range == "3Y":
-        start_date = today - timedelta(days=3 * 365)
-    elif time_range == "5Y":
-        start_date = today - timedelta(days=5 * 365)
-    else:  # ALL
-        start_date = None
+    if time_grain == "year":
+        start_date = None  # ALL time at year level
+    elif time_grain == "month":
+        start_date = today - timedelta(days=2 * 365)  # 2Y at month level
+    else:  # quarter (default)
+        start_date = today - timedelta(days=5 * 365)  # 5Y at quarter level
 
     # Build WHERE conditions for the query
     where_conditions = ["1=1"]  # Base condition that's always true
@@ -1695,22 +1694,25 @@ def get_new_vs_resale_comparison(
 
     where_clause = " AND ".join(where_conditions)
 
-    # Raw SQL query using PostgreSQL's percentile_cont for true median
-    # Using avg as fallback for SQLite compatibility
+    # Determine DATE_TRUNC parameter based on time_grain
+    date_trunc_grain = time_grain  # 'year', 'quarter', 'month'
+
+    # Raw SQL query using PostgreSQL's DATE_TRUNC for time granularity
+    # Using avg as fallback for true median (SQLite compatibility)
     sql = text(f"""
         WITH new_launches AS (
             SELECT
-                DATE_TRUNC('quarter', transaction_date) AS period,
+                DATE_TRUNC('{date_trunc_grain}', transaction_date) AS period,
                 AVG(psf) AS median_psf,
                 COUNT(*) AS transaction_count
             FROM transactions
             WHERE sale_type = 'New Sale'
               AND {where_clause}
-            GROUP BY DATE_TRUNC('quarter', transaction_date)
+            GROUP BY DATE_TRUNC('{date_trunc_grain}', transaction_date)
         ),
         resale_under_10y AS (
             SELECT
-                DATE_TRUNC('quarter', transaction_date) AS period,
+                DATE_TRUNC('{date_trunc_grain}', transaction_date) AS period,
                 AVG(psf) AS median_psf,
                 COUNT(*) AS transaction_count
             FROM transactions
@@ -1718,7 +1720,7 @@ def get_new_vs_resale_comparison(
               AND lease_start_year IS NOT NULL
               AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) < 10
               AND {where_clause}
-            GROUP BY DATE_TRUNC('quarter', transaction_date)
+            GROUP BY DATE_TRUNC('{date_trunc_grain}', transaction_date)
         )
         SELECT
             COALESCE(n.period, r.period) AS period,
@@ -1734,22 +1736,29 @@ def get_new_vs_resale_comparison(
     try:
         result = db.session.execute(sql, params).fetchall()
     except Exception as e:
-        # Fallback for SQLite (which doesn't support FULL OUTER JOIN)
-        # Use LEFT JOIN + RIGHT JOIN with UNION
+        # Fallback for SQLite (which doesn't support FULL OUTER JOIN or DATE_TRUNC)
+        # Build SQLite-compatible period expression based on time_grain
+        if time_grain == "year":
+            sqlite_period = "strftime('%Y', transaction_date)"
+        elif time_grain == "month":
+            sqlite_period = "strftime('%Y-%m', transaction_date)"
+        else:  # quarter
+            sqlite_period = "strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1)"
+
         sql_fallback = text(f"""
             WITH new_launches AS (
                 SELECT
-                    strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1) AS period,
+                    {sqlite_period} AS period,
                     AVG(psf) AS median_psf,
                     COUNT(*) AS transaction_count
                 FROM transactions
                 WHERE sale_type = 'New Sale'
                   AND {where_clause}
-                GROUP BY strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1)
+                GROUP BY {sqlite_period}
             ),
             resale_under_10y AS (
                 SELECT
-                    strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1) AS period,
+                    {sqlite_period} AS period,
                     AVG(psf) AS median_psf,
                     COUNT(*) AS transaction_count
                 FROM transactions
@@ -1757,7 +1766,7 @@ def get_new_vs_resale_comparison(
                   AND lease_start_year IS NOT NULL
                   AND (CAST(strftime('%Y', transaction_date) AS INTEGER) - lease_start_year) < 10
                   AND {where_clause}
-                GROUP BY strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1)
+                GROUP BY {sqlite_period}
             )
             SELECT
                 COALESCE(n.period, r.period) AS period,
@@ -1798,12 +1807,19 @@ def get_new_vs_resale_comparison(
             premium_pct = round((new_launch_psf - resale_psf) / resale_psf * 100, 1)
             premiums.append(premium_pct)
 
-        # Format period as YYYY-QX (if it's a datetime, convert it)
+        # Format period based on time_grain
         if period:
             if hasattr(period, 'month'):
-                quarter = (period.month - 1) // 3 + 1
-                period_str = f"{period.year}-Q{quarter}"
+                # PostgreSQL returns datetime objects
+                if time_grain == "year":
+                    period_str = str(period.year)
+                elif time_grain == "month":
+                    period_str = f"{period.year}-{period.month:02d}"
+                else:  # quarter
+                    quarter = (period.month - 1) // 3 + 1
+                    period_str = f"{period.year}-Q{quarter}"
             else:
+                # SQLite returns strings (already formatted)
                 period_str = str(period)
         else:
             period_str = "Unknown"
@@ -1843,7 +1859,7 @@ def get_new_vs_resale_comparison(
         'appliedFilters': {
             'region': region or 'ALL',
             'bedroom': bedroom or 'ALL',
-            'timeRange': time_range,
+            'timeGrain': time_grain,
             'scope': 'visual-level'
         }
     }

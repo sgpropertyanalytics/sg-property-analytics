@@ -516,9 +516,10 @@ export function PowerBIFilterProvider({ children }) {
   // Options:
   //   excludeHighlight: true - excludes time highlight filter (for time chart to show all periods)
   //   includeFactFilter: true - includes factFilter (only for Fact tables like Transaction Data Table)
+  //   excludeLocationDrill: true - excludes location drill filters (Power BI best practice: drill is visual-local)
   const buildApiParams = useCallback((additionalParams = {}, options = {}) => {
     const params = { ...additionalParams };
-    const { excludeHighlight = false, includeFactFilter = false } = options;
+    const { excludeHighlight = false, includeFactFilter = false, excludeLocationDrill = false } = options;
 
     // Apply date range - but skip if excludeHighlight and the date comes from highlight
     const highlightApplied = highlight.dimension && highlight.value;
@@ -541,7 +542,14 @@ export function PowerBIFilterProvider({ children }) {
       }
     }
 
-    if (activeFilters.districts.length > 0) {
+    // For districts: apply sidebar filter OR location drill filter (unless excluded)
+    // excludeLocationDrill implements Power BI best practice: Drill ≠ Filter (drill is visual-local)
+    if (excludeLocationDrill) {
+      // Only apply sidebar district filter, ignore location drill breadcrumbs
+      if (filters.districts.length > 0) {
+        params.district = filters.districts.join(',');
+      }
+    } else if (activeFilters.districts.length > 0) {
       params.district = activeFilters.districts.join(',');
     }
     // Only filter by bedroom if user explicitly selects bedrooms
@@ -549,7 +557,13 @@ export function PowerBIFilterProvider({ children }) {
     if (activeFilters.bedroomTypes.length > 0) {
       params.bedroom = activeFilters.bedroomTypes.join(',');
     }
-    if (activeFilters.segment) {
+    // For segment: apply sidebar filter OR location drill filter (unless excluded)
+    if (excludeLocationDrill) {
+      // Only apply sidebar segment filter, ignore location drill breadcrumbs
+      if (filters.segment) {
+        params.segment = filters.segment;
+      }
+    } else if (activeFilters.segment) {
       params.segment = activeFilters.segment;
     }
     if (activeFilters.saleType) {
