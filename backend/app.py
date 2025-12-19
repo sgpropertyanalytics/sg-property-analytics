@@ -96,6 +96,18 @@ def create_app():
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         return response
 
+    # Ensure CORS headers are present on ALL responses (including errors from routes)
+    @app.after_request
+    def add_cors_headers(response):
+        # Only add if not already present (avoid duplicates)
+        if 'Access-Control-Allow-Origin' not in response.headers:
+            response.headers['Access-Control-Allow-Origin'] = '*'
+        if 'Access-Control-Allow-Methods' not in response.headers:
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+        if 'Access-Control-Allow-Headers' not in response.headers:
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response
+
     # Initialize SQLAlchemy
     db.init_app(app)
 
