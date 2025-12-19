@@ -276,6 +276,47 @@ def reverse_geocode_to_planning_area(lat: float, lon: float) -> Optional[str]:
 
 
 # =============================================================================
+# LAND USE FILTERING (RESIDENTIAL ONLY)
+# =============================================================================
+
+# Allow-list for residential land uses (normalize to lowercase before comparing)
+ALLOWED_LAND_USES = [
+    "residential",
+    "residential with commercial at 1st storey",
+    "residential with commercial",
+    "executive condominium",
+    "ec",
+]
+
+
+def is_residential_land_use(land_use: str) -> bool:
+    """
+    Check if land use is residential (allow-list approach).
+
+    Args:
+        land_use: The land use string from URA table
+
+    Returns:
+        True if residential, False otherwise
+    """
+    if not land_use:
+        return False
+
+    land_use_lower = land_use.lower().strip()
+
+    # Check if starts with "residential" (covers most cases)
+    if land_use_lower.startswith("residential"):
+        return True
+
+    # Check exact matches in allow-list
+    for allowed in ALLOWED_LAND_USES:
+        if land_use_lower == allowed or land_use_lower.startswith(allowed):
+            return True
+
+    return False
+
+
+# =============================================================================
 # STATUS CLASSIFICATION
 # =============================================================================
 
@@ -690,6 +731,19 @@ def extract_all_table_data(tables: List, status: str) -> List[Dict[str, Any]]:
 
             data = {}
 
+            # CRITICAL: Extract Land Use first for filtering
+            land_use = None
+            if col_map.get('land_use') is not None and col_map['land_use'] < len(cells):
+                land_use = cells[col_map['land_use']].get_text(strip=True)
+                data['land_use'] = land_use
+
+            # Filter: Only process RESIDENTIAL land uses (allow-list approach)
+            # If land_use column exists but value is not residential, skip this row
+            if col_map.get('land_use') is not None:
+                if not land_use or not is_residential_land_use(land_use):
+                    print(f"    Skipping non-residential: land_use='{land_use}'")
+                    continue
+
             # Extract based on column mapping
             if col_map.get('location') is not None and col_map['location'] < len(cells):
                 data['location_raw'] = cells[col_map['location']].get_text(strip=True)
@@ -810,6 +864,7 @@ def map_table_columns(headers: List[str]) -> Dict[str, int]:
 
     URA table headers examples:
     - "Location" or "Site" for location
+    - "Land Use" or "Development Type" for filtering residential
     - "Successful Tenderer" or "Tenderer" for developer
     - "Tendered Price" or "Price ($)" for price
     - "Site Area (sq m)" for site area
@@ -819,6 +874,10 @@ def map_table_columns(headers: List[str]) -> Dict[str, int]:
 
     for idx, header in enumerate(headers):
         h = header.lower().strip()
+
+        # Land Use / Development Type (CRITICAL for filtering residential only)
+        if any(k in h for k in ['land use', 'land-use', 'development type', 'proposed development', 'zoning']):
+            col_map['land_use'] = idx
 
         # Location (be more specific to avoid false matches)
         if h in ['location', 'site', 'address', 'street name', 'site location']:
