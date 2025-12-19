@@ -1609,35 +1609,113 @@ def filter_options():
 def psf_trends_by_region():
     """
     Get median PSF trends by region (CCR, RCR, OCR) over time by quarter.
-    
+
     Query params:
       - bedroom: comma-separated bedroom counts, e.g. 2,3,4 (default: 2,3,4)
       - districts: comma-separated districts to filter (optional, but ignored for region analysis)
     """
     start = time.time()
-    
+
     # Parse bedroom parameter
     bedroom_param = request.args.get("bedroom", "2,3,4")
     try:
         bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
     except ValueError:
         return jsonify({"error": "Invalid bedroom parameter"}), 400
-    
+
     # Note: districts parameter is accepted but ignored for region analysis
     # (region analysis needs all districts to calculate CCR/RCR/OCR)
-    
+
     try:
         # Use data_processor function which supports bedroom filtering
         from services.data_processor import get_psf_trends_by_region
-        
+
         trends = get_psf_trends_by_region(bedroom_types=bedroom_types, districts=None)
-        
+
         elapsed = time.time() - start
         print(f"GET /api/psf_trends_by_region took: {elapsed:.4f} seconds (bedrooms: {bedroom_types})")
         return jsonify(trends)
     except Exception as e:
         elapsed = time.time() - start
         print(f"GET /api/psf_trends_by_region ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@analytics_bp.route("/new-vs-resale", methods=["GET"])
+def new_vs_resale():
+    """
+    New Launch vs Resale (Lease age < 10 years) comparison.
+
+    Visual-level endpoint - filters are LOCAL to this chart only.
+    Compares median PSF of new launches against resale units under 10 years old.
+
+    Query params:
+      - region: ALL, CCR, RCR, OCR (default: ALL)
+      - bedroom: ALL, 1BR, 2BR, 3BR, 4BR+ (default: ALL)
+      - timeRange: 2Y, 3Y, 5Y, ALL (default: 3Y)
+
+    Returns:
+      {
+        "chartData": [
+          {
+            "period": "2024-Q1",
+            "newLaunchPsf": 2500,
+            "resalePsf": 2100,
+            "premiumPct": 19.0,
+            "newLaunchCount": 150,
+            "resaleCount": 45
+          },
+          ...
+        ],
+        "summary": {
+          "currentPremium": 15.2,
+          "avgPremium10Y": 18.5,
+          "premiumTrend": "widening" | "narrowing" | "stable"
+        },
+        "appliedFilters": {
+          "region": "ALL",
+          "bedroom": "ALL",
+          "timeRange": "3Y",
+          "scope": "visual-level"
+        }
+      }
+    """
+    start = time.time()
+
+    # Parse query parameters (visual-level filters - local to this chart)
+    region = request.args.get("region", "ALL")
+    bedroom = request.args.get("bedroom", "ALL")
+    time_range = request.args.get("timeRange", "3Y")
+
+    # Validate parameters
+    valid_regions = ["ALL", "CCR", "RCR", "OCR"]
+    valid_bedrooms = ["ALL", "1BR", "2BR", "3BR", "4BR+"]
+    valid_time_ranges = ["2Y", "3Y", "5Y", "ALL"]
+
+    if region not in valid_regions:
+        return jsonify({"error": f"Invalid region. Must be one of: {valid_regions}"}), 400
+    if bedroom not in valid_bedrooms:
+        return jsonify({"error": f"Invalid bedroom. Must be one of: {valid_bedrooms}"}), 400
+    if time_range not in valid_time_ranges:
+        return jsonify({"error": f"Invalid timeRange. Must be one of: {valid_time_ranges}"}), 400
+
+    try:
+        from services.data_processor import get_new_vs_resale_comparison
+
+        result = get_new_vs_resale_comparison(
+            region=region,
+            bedroom=bedroom,
+            time_range=time_range
+        )
+
+        elapsed = time.time() - start
+        print(f"GET /api/new-vs-resale took: {elapsed:.4f} seconds (region={region}, bedroom={bedroom}, timeRange={time_range})")
+        return jsonify(result)
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/new-vs-resale ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500

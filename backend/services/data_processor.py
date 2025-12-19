@@ -1620,6 +1620,170 @@ def get_price_project_stats_by_district(
     return {"projects": projects}
 
 
+def get_new_vs_resale_comparison(
+    region: Optional[str] = None,
+    bedroom: Optional[str] = None,
+    time_range: str = "3Y"
+) -> Dict[str, Any]:
+    """
+    Get New Launch vs Resale (lease age < 10 years) comparison data.
+
+    Compares median PSF of new launches against resale units under 10 years old.
+    This controls for age by comparing new launches with near-new resale units.
+
+    Args:
+        region: Market segment filter ("ALL", "CCR", "RCR", "OCR") - defaults to ALL
+        bedroom: Bedroom filter ("ALL", "1BR", "2BR", "3BR", "4BR+") - defaults to ALL
+        time_range: Time range ("2Y", "3Y", "5Y", "ALL") - defaults to 3Y
+
+    Returns:
+        Dictionary with chart data, summary, and applied filters
+    """
+    from models.database import db
+    from models.transaction import Transaction
+    from sqlalchemy import func, extract, and_, or_
+
+    # Calculate start date based on time range
+    today = datetime.now()
+    if time_range == "2Y":
+        start_date = today - timedelta(days=2 * 365)
+    elif time_range == "3Y":
+        start_date = today - timedelta(days=3 * 365)
+    elif time_range == "5Y":
+        start_date = today - timedelta(days=5 * 365)
+    else:  # ALL
+        start_date = None
+
+    # Parse bedroom filter
+    bedroom_int = None
+    if bedroom and bedroom != "ALL":
+        bedroom_map = {"1BR": 1, "2BR": 2, "3BR": 3, "4BR+": 4}
+        bedroom_int = bedroom_map.get(bedroom)
+
+    # Build base filter conditions
+    base_conditions = []
+    if start_date:
+        base_conditions.append(Transaction.transaction_date >= start_date)
+
+    # Region filter - map to districts
+    if region and region != "ALL":
+        ccr_districts = ["D01", "D02", "D06", "D07", "D09", "D10", "D11"]
+        rcr_districts = ["D03", "D04", "D05", "D08", "D12", "D13", "D14", "D15", "D20"]
+        ocr_districts = ["D16", "D17", "D18", "D19", "D21", "D22", "D23", "D24", "D25", "D26", "D27", "D28"]
+
+        if region == "CCR":
+            base_conditions.append(Transaction.district.in_(ccr_districts))
+        elif region == "RCR":
+            base_conditions.append(Transaction.district.in_(rcr_districts))
+        elif region == "OCR":
+            base_conditions.append(Transaction.district.in_(ocr_districts))
+
+    # Bedroom filter
+    if bedroom_int:
+        if bedroom_int == 4:
+            # 4BR+ means 4 or more bedrooms
+            base_conditions.append(Transaction.bedroom_count >= 4)
+        else:
+            base_conditions.append(Transaction.bedroom_count == bedroom_int)
+
+    # Query New Sales - group by quarter
+    new_sales_query = db.session.query(
+        func.date_trunc('quarter', Transaction.transaction_date).label('period'),
+        func.percentile_cont(0.5).within_group(Transaction.psf).label('median_psf'),
+        func.count(Transaction.id).label('transaction_count')
+    ).filter(
+        Transaction.sale_type == 'New Sale',
+        *base_conditions
+    ).group_by(
+        func.date_trunc('quarter', Transaction.transaction_date)
+    )
+
+    # Query Resale (lease age < 10 years) - group by quarter
+    # Lease age = EXTRACT(YEAR FROM transaction_date) - lease_start_year
+    resale_query = db.session.query(
+        func.date_trunc('quarter', Transaction.transaction_date).label('period'),
+        func.percentile_cont(0.5).within_group(Transaction.psf).label('median_psf'),
+        func.count(Transaction.id).label('transaction_count')
+    ).filter(
+        Transaction.sale_type == 'Resale',
+        Transaction.lease_start_year.isnot(None),
+        (extract('year', Transaction.transaction_date) - Transaction.lease_start_year) < 10,
+        *base_conditions
+    ).group_by(
+        func.date_trunc('quarter', Transaction.transaction_date)
+    )
+
+    # Execute queries
+    new_sales_data = {row.period: {'median_psf': float(row.median_psf) if row.median_psf else None, 'count': row.transaction_count}
+                      for row in new_sales_query.all()}
+    resale_data = {row.period: {'median_psf': float(row.median_psf) if row.median_psf else None, 'count': row.transaction_count}
+                   for row in resale_query.all()}
+
+    # Combine periods and sort
+    all_periods = sorted(set(new_sales_data.keys()) | set(resale_data.keys()))
+
+    # Build chart data
+    chart_data = []
+    premiums = []
+
+    for period in all_periods:
+        new_launch_psf = new_sales_data.get(period, {}).get('median_psf')
+        resale_psf = resale_data.get(period, {}).get('median_psf')
+
+        # Calculate premium percentage
+        premium_pct = None
+        if new_launch_psf and resale_psf and resale_psf > 0:
+            premium_pct = round((new_launch_psf - resale_psf) / resale_psf * 100, 1)
+            premiums.append(premium_pct)
+
+        # Format period as YYYY-QX
+        if period:
+            quarter = (period.month - 1) // 3 + 1
+            period_str = f"{period.year}-Q{quarter}"
+        else:
+            period_str = "Unknown"
+
+        chart_data.append({
+            'period': period_str,
+            'newLaunchPsf': round(new_launch_psf, 0) if new_launch_psf else None,
+            'resalePsf': round(resale_psf, 0) if resale_psf else None,
+            'premiumPct': premium_pct,
+            'newLaunchCount': new_sales_data.get(period, {}).get('count', 0),
+            'resaleCount': resale_data.get(period, {}).get('count', 0)
+        })
+
+    # Calculate summary statistics
+    current_premium = premiums[-1] if premiums else None
+    avg_premium = round(sum(premiums) / len(premiums), 1) if premiums else None
+
+    # Determine trend (compare last 4 quarters vs previous 4)
+    premium_trend = 'stable'
+    if len(premiums) >= 8:
+        recent_avg = sum(premiums[-4:]) / 4
+        previous_avg = sum(premiums[-8:-4]) / 4
+        diff = recent_avg - previous_avg
+        if diff >= 2:
+            premium_trend = 'widening'
+        elif diff <= -2:
+            premium_trend = 'narrowing'
+
+    return {
+        'chartData': chart_data,
+        'summary': {
+            'currentPremium': current_premium,
+            'avgPremium10Y': avg_premium,
+            'premiumTrend': premium_trend,
+            'dataPoints': len(chart_data)
+        },
+        'appliedFilters': {
+            'region': region or 'ALL',
+            'bedroom': bedroom or 'ALL',
+            'timeRange': time_range,
+            'scope': 'visual-level'
+        }
+    }
+
+
 def get_comparable_value_analysis(
     target_price: float,
     price_band: float = 100000.0,
