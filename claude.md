@@ -398,9 +398,17 @@ const params = {
 
 ## Power BI Interaction Semantics
 
-### The Four Interaction Concepts
+### The Core Rule (Memorize This)
 
-Power BI explicitly separates these concepts:
+> **If the interaction answers "what happened when or where", it's a cross-filter.**
+> **If it answers "what portion of this is related", it can be a highlight.**
+
+| Intent | Interaction Type | Backend Query? |
+|--------|------------------|----------------|
+| Time and scope | **Cross-filter** | ✅ Yes |
+| Composition and contribution | Highlight | ❌ No |
+
+### The Four Interaction Concepts
 
 | Concept | Meaning | Scope | Affects Backend? |
 |---------|---------|-------|------------------|
@@ -408,41 +416,48 @@ Power BI explicitly separates these concepts:
 | **Highlight** | Focus inside same visual | Visual-level only | ❌ No (by default) |
 | **Cross-highlight** | Focus propagated to other visuals | Multiple visuals | ❌ No (visual only) |
 | **Cross-filter** | Filter propagated to other visuals | Multiple visuals | ✅ Yes |
-| **Drill** | Change granularity | Visual navigation | ❌ No (visual-local) |
+| **Drill** | Change granularity | Visual navigation | ✅ Yes (re-queries) |
 
-### Highlight vs Cross-highlight vs Cross-filter
+### MUST Be Cross-Filters (Non-Negotiable)
 
-**Highlight** (Single Visual)
-- Click a bar in Chart A
-- That bar is emphasized
-- Nothing else changes
-- Totals preserved
+These interactions **always** update all other visuals + backend queries:
 
-**Cross-highlight** (Multiple Visuals, Visual-only)
-- Click a data point in Chart A
-- Charts B and C visually respond (partial bars, faded segments)
-- Other charts show context + focus (still show totals)
-- No backend query changes
+**1. Time-Based Charts** (Most Important)
+- Monthly transaction trend, Quarterly price trend, YoY comparison
+- User intent: "What happened in this month?"
+- Behavior: Click = filter date range to that period → all visuals update
+- **Time-axis click = cross-filter. This is non-negotiable for BI tools.**
 
-**Cross-filter** (Multiple Visuals, Data-level)
-- Click a data point in Chart A
-- Charts B and C are **filtered** to only matching data
-- Everything else disappears
-- Backend queries change
+**2. Geographic Scope**
+- District bar chart, Region breakdown, Planning area
+- User intent: "What's happening in this district?"
+- Behavior: Click = filter to that district → all visuals update
 
-### Our Design Choice: Highlights Act as Filters (Option A)
+**3. Market Segment Selectors**
+- New Sale vs Resale, Tenure (99yr/FH), Property type
+- User intent: "Show me this segment only."
+- Behavior: Click = global filter → all visuals update
 
-> **Key Rule**: In this app, time highlights (from TimeTrendChart clicks) participate in backend queries as filters.
+**4. Drill-Down Actions**
+- Year → Quarter → Month, Region → District → Project
+- Behavior: Changes granularity + re-queries backend
 
-This matches:
-- Power BI (when cross-filter interaction is enabled)
-- Bloomberg / Tableau analyst workflows
+### Interaction Matrix (Use This)
 
-**Rationale**:
-- Click = "show me this subset"
-- Charts update with filtered data
-- Numbers tie out across visuals
-- Behavior is intuitive
+| Interaction | Behavior | Implementation |
+|-------------|----------|----------------|
+| Time trend click | **Cross-filter** | `applyHighlight('time', 'month', value)` |
+| District/Region click | **Cross-filter** | `applyCrossFilter('location', 'district', value)` |
+| Sale type click | **Cross-filter** | `applyCrossFilter('sale_type', value)` |
+| Bedroom segment click | **Cross-filter** | `applyCrossFilter('bedroom', value)` |
+| Drill down | **Cross-filter** | Update drill level + filter breadcrumbs |
+| Price bin click | Dimension → Fact only | `setFactFilter(priceRange)` |
+
+### Interaction Standard
+
+> **Time, location, and market-segment interactions act as cross-filters and update all visuals.**
+> **Visual-only highlights are NOT used for primary navigation.**
+> **All backend queries are driven by a single `activeFilters` object that merges sidebar filters and interaction-driven state.**
 
 ### The `activeFilters` Pattern (Single Source of Truth)
 
