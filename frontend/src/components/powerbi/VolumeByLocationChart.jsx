@@ -35,7 +35,7 @@ ChartJS.register(
  * - Drill-down: region -> district -> project
  */
 export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 350, maxBars = 15 }) {
-  const { buildApiParams, drillPath, crossFilter, applyCrossFilter, drillDown, breadcrumbs } = usePowerBIFilters();
+  const { buildApiParams, drillPath, crossFilter, applyCrossFilter, drillDown, breadcrumbs, highlight } = usePowerBIFilters();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -74,7 +74,7 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       }
     };
     fetchData();
-  }, [buildApiParams, drillPath.location, maxBars]);
+  }, [buildApiParams, drillPath.location, maxBars, highlight]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;

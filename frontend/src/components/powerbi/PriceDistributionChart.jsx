@@ -33,7 +33,7 @@ ChartJS.register(
  * aggregated bucket data instead of 100K+ individual transactions.
  */
 export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, numBins = 20 }) {
-  const { buildApiParams, crossFilter, applyCrossFilter } = usePowerBIFilters();
+  const { buildApiParams, crossFilter, applyCrossFilter, highlight } = usePowerBIFilters();
   const [histogramData, setHistogramData] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -85,7 +85,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       }
     };
     fetchData();
-  }, [buildApiParams, numBins]);
+  }, [buildApiParams, numBins, highlight]);
 
   // Helper to format price labels (e.g., $1.2M, $800K)
   const formatPriceLabel = (value) => {

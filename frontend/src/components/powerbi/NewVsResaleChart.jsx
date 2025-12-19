@@ -42,7 +42,7 @@ ChartJS.register(
  */
 export function NewVsResaleChart({ height = 350 }) {
   // Get GLOBAL filters from context - respects sidebar selections
-  const { buildApiParams, filters } = usePowerBIFilters();
+  const { buildApiParams, filters, highlight } = usePowerBIFilters();
 
   // Provide safe defaults for filters if context not ready
   const safeFilters = {
@@ -93,7 +93,7 @@ export function NewVsResaleChart({ height = 350 }) {
       }
     };
     fetchData();
-  }, [buildApiParams, localDrillLevel, filters]); // Re-fetch when global filters change
+  }, [buildApiParams, localDrillLevel, filters, highlight]); // Re-fetch when global filters or highlight change
 
   // LOCAL drill handlers - visual-local only, does NOT affect other charts
   const drillLevels = ['year', 'quarter', 'month'];
