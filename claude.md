@@ -396,6 +396,178 @@ const params = {
 
 ---
 
+## Power BI Interaction Semantics
+
+### The Core Rule (Memorize This)
+
+> **If the interaction answers "what happened when or where", it's a cross-filter.**
+> **If it answers "what portion of this is related", it can be a highlight.**
+
+| Intent | Interaction Type | Backend Query? |
+|--------|------------------|----------------|
+| Time and scope | **Cross-filter** | ✅ Yes |
+| Composition and contribution | Highlight | ❌ No |
+
+### The Four Interaction Concepts
+
+| Concept | Meaning | Scope | Affects Backend? |
+|---------|---------|-------|------------------|
+| **Filter** | Hard constraint | Global / Page / Visual | ✅ Yes |
+| **Highlight** | Focus inside same visual | Visual-level only | ❌ No (by default) |
+| **Cross-highlight** | Focus propagated to other visuals | Multiple visuals | ❌ No (visual only) |
+| **Cross-filter** | Filter propagated to other visuals | Multiple visuals | ✅ Yes |
+| **Drill** | Change granularity | Visual navigation | ✅ Yes (re-queries) |
+
+### MUST Be Cross-Filters (Non-Negotiable)
+
+These interactions **always** update all other visuals + backend queries:
+
+**1. Time-Based Charts** (Most Important)
+- Monthly transaction trend, Quarterly price trend, YoY comparison
+- User intent: "What happened in this month?"
+- Behavior: Click = filter date range to that period → all visuals update
+- **Time-axis click = cross-filter. This is non-negotiable for BI tools.**
+
+**2. Geographic Scope**
+- District bar chart, Region breakdown, Planning area
+- User intent: "What's happening in this district?"
+- Behavior: Click = filter to that district → all visuals update
+
+**3. Market Segment Selectors**
+- New Sale vs Resale, Tenure (99yr/FH), Property type
+- User intent: "Show me this segment only."
+- Behavior: Click = global filter → all visuals update
+
+**4. Drill-Down Actions**
+- Year → Quarter → Month, Region → District → Project
+- Behavior: Changes granularity + re-queries backend
+
+### Interaction Matrix (Use This)
+
+| Interaction | Behavior | Implementation |
+|-------------|----------|----------------|
+| Time trend click | **Cross-filter** | `applyHighlight('time', 'month', value)` |
+| District/Region click | **Cross-filter** | `applyCrossFilter('location', 'district', value)` |
+| Sale type click | **Cross-filter** | `applyCrossFilter('sale_type', value)` |
+| Bedroom segment click | **Cross-filter** | `applyCrossFilter('bedroom', value)` |
+| Drill down | **Cross-filter** | Update drill level + filter breadcrumbs |
+| Price bin click | Dimension → Fact only | `setFactFilter(priceRange)` |
+
+### Interaction Standard
+
+> **Time, location, and market-segment interactions act as cross-filters and update all visuals.**
+> **Visual-only highlights are NOT used for primary navigation.**
+> **All backend queries are driven by a single `activeFilters` object that merges sidebar filters and interaction-driven state.**
+
+### The `activeFilters` Pattern (Single Source of Truth)
+
+```jsx
+// In PowerBIFilterContext.jsx
+
+// activeFilters combines sidebar filters + highlight into one object
+const activeFilters = useMemo(() => {
+  const combined = { ...filters };
+
+  // Apply highlight as date filter (if sidebar date not set)
+  if (highlight.dimension && highlight.value && !filters.dateRange.start) {
+    if (highlight.dimension === 'month') {
+      const [year, month] = highlight.value.split('-');
+      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+      combined.dateRange = {
+        start: `${highlight.value}-01`,
+        end: `${highlight.value}-${String(lastDay).padStart(2, '0')}`
+      };
+    }
+    // ... quarter, year handling
+  }
+
+  return combined;
+}, [filters, highlight, ...]);
+
+// Exposed from context
+{
+  filters,           // Raw sidebar filters only
+  highlight,         // Current time highlight (if any)
+  activeFilters,     // Combined: filters + highlight (use for queries)
+  buildApiParams,    // Builds API params from activeFilters
+}
+```
+
+### Component Dependency Rule (Critical)
+
+**Every chart that should respond to highlights MUST include `highlight` in useEffect dependencies.**
+
+```jsx
+// ❌ BAD - Chart won't respond to time highlight clicks
+useEffect(() => {
+  fetchData();
+}, [buildApiParams, filters]);
+
+// ✅ GOOD - Chart responds to both filters AND highlights
+useEffect(() => {
+  fetchData();
+}, [buildApiParams, filters, highlight]);
+```
+
+**Charts that respond to highlights:**
+- `NewVsResaleChart` ✅
+- `VolumeByLocationChart` ✅
+- `BedroomMixChart` ✅
+- `PriceDistributionChart` ✅
+- `TransactionDataTable` ✅
+
+**Charts that DON'T respond to highlights:**
+- `TimeTrendChart` - Uses `excludeHighlight: true` (it's the SOURCE of highlights)
+
+### Backend Contract
+
+The backend treats all incoming params as authoritative constraints:
+
+```python
+# Backend doesn't care if date_from/date_to came from:
+# - Sidebar filter
+# - Chart click highlight
+# - Drill breadcrumb
+#
+# All are treated equally as constraints
+@analytics_bp.route("/api/aggregate")
+def aggregate():
+    date_from = request.args.get('date_from')  # Constraint
+    date_to = request.args.get('date_to')      # Constraint
+    # ... apply as WHERE clauses
+```
+
+This keeps backend logic clean and deterministic.
+
+### UX Indicator Pattern
+
+When a highlight is active, show a visual indicator:
+
+```jsx
+// In chart header or filter bar
+{highlight.value && (
+  <span className="text-xs text-[#547792] flex items-center gap-1">
+    Filtered to {formatHighlightLabel(highlight)}
+    <button onClick={clearHighlight}>✕</button>
+  </span>
+)}
+```
+
+This avoids "why did everything change?" confusion.
+
+### Interaction Summary
+
+| User Action | What Happens | Scope |
+|-------------|--------------|-------|
+| Change sidebar filter | All charts re-fetch with new filter | Global |
+| Click time bar (TimeTrendChart) | Sets highlight → activeFilters updates → all charts re-fetch | Cross-filter |
+| Click location bar (VolumeByLocationChart) | Sets crossFilter → all charts re-fetch | Cross-filter |
+| Click bedroom segment (BedroomMixChart) | Sets crossFilter → all charts re-fetch | Cross-filter |
+| Click price bin (PriceDistributionChart) | Sets factFilter → only TransactionDataTable re-fetches | Dimension → Fact |
+| Drill up/down | Only that chart changes granularity | Visual-local |
+
+---
+
 ## Power BI Drill Up/Down Rules
 
 ### Core Principle

@@ -54,7 +54,7 @@ export function TransactionDataTable({ height = 400 }) {
     } finally {
       setLoading(false);
     }
-  }, [buildApiParams, pagination.page, pagination.limit, sortConfig]);
+  }, [buildApiParams, pagination.page, pagination.limit, sortConfig, highlight]);
 
   useEffect(() => {
     fetchData();

@@ -46,8 +46,9 @@ export function PowerBIFilterProvider({ children }) {
 
   // ===== Highlight State =====
   // Applied when user clicks on a TIME chart element (year, quarter, month)
-  // This HIGHLIGHTS visually - other charts dim non-matching but keep ALL data
-  // Non-destructive: preserves full context while emphasizing selection
+  // Per Option A (claude.md): Highlights ACT AS CROSS-FILTERS for time dimensions.
+  // activeFilters merges highlight into dateRange, triggering backend queries.
+  // This ensures "time click = filter to that period" behavior across all visuals.
   const [highlight, setHighlight] = useState({
     source: null,        // which chart applied it ('time')
     dimension: null,     // 'year', 'quarter', 'month'
@@ -236,7 +237,13 @@ export function PowerBIFilterProvider({ children }) {
     // Time dimensions should use highlight instead
     const categoricalDimensions = ['district', 'region', 'bedroom', 'sale_type', 'project'];
     if (categoricalDimensions.includes(dimension)) {
-      setCrossFilter({ source, dimension, value });
+      // Toggle behavior: clicking same value again clears the filter
+      setCrossFilter(prev => {
+        if (prev.dimension === dimension && prev.value === value) {
+          return { source: null, dimension: null, value: null };
+        }
+        return { source, dimension, value };
+      });
       // Clear any existing highlight when applying cross-filter
       setHighlight({ source: null, dimension: null, value: null });
     } else {
@@ -255,7 +262,7 @@ export function PowerBIFilterProvider({ children }) {
 
   // ===== Highlight Management =====
   // Use for TIME dimensions (year, quarter, month)
-  // This highlights visually - charts dim non-matching but keep ALL data
+  // Per standard: Time click = cross-filter. Highlight is merged into activeFilters.dateRange.
 
   const applyHighlight = useCallback((source, dimension, value) => {
     // Toggle highlight - if same value clicked again, clear it
@@ -635,7 +642,7 @@ export function PowerBIFilterProvider({ children }) {
     filters,
     crossFilter,
     factFilter,        // Filters that only apply to Fact tables (Dimension → Fact)
-    highlight,         // For non-filtering visual emphasis
+    highlight,         // Time cross-filter (merged into activeFilters.dateRange)
     drillPath,
     breadcrumbs,
     filterOptions,
@@ -660,7 +667,7 @@ export function PowerBIFilterProvider({ children }) {
     applyCrossFilter,
     clearCrossFilter,
 
-    // Highlight (for time dimensions - visual only, preserves context)
+    // Highlight (for time dimensions - acts as cross-filter per standard)
     applyHighlight,
     clearHighlight,
 
