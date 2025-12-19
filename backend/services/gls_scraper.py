@@ -786,28 +786,47 @@ def extract_all_table_data(tables: List, status: str) -> List[Dict[str, Any]]:
                 # This catches misaligned columns like "$294,889,000($9,729.42)"
                 if tenderer_text and not tenderer_text.startswith('$'):
                     data['successful_tenderer'] = tenderer_text
-                elif tenderer_text.startswith('$'):
+                elif tenderer_text and tenderer_text.startswith('$'):
                     # This is actually a price value - extract it
-                    print(f"    Warning: Price found in tenderer column: {tenderer_text[:30]}")
+                    print(f"    Warning: Price found in tenderer column: {tenderer_text[:50]}")
                     data['tendered_price_sgd'] = parse_price(tenderer_text)
-                    # Also try to extract PSF if in format "$X($Y.ZZ)"
-                    psf_match = re.search(r'\(\$?([\d,]+\.?\d*)\)', tenderer_text)
+                    # Extract PSF from format "$X($Y.ZZ)" - URA shows $/sqm of GFA
+                    # CRITICAL: URA publishes $/sqm, we need $/sqft (divide by 10.7639)
+                    psf_match = re.search(r'\(\$?([\d,]+(?:\.\d+)?)\)', tenderer_text)
                     if psf_match:
                         try:
-                            data['psf_ppr'] = Decimal(psf_match.group(1).replace(',', ''))
-                        except:
-                            pass
+                            psm_value = Decimal(psf_match.group(1).replace(',', ''))
+                            # Convert $/sqm to $/sqft (PSF)
+                            psf_value = psm_value / Decimal('10.7639')
+                            # Sanity check: PSF should be between 500 and 3500
+                            if 500 <= float(psf_value) <= 3500:
+                                data['psf_ppr'] = round(psf_value, 2)
+                                print(f"    Extracted PSF: ${psm_value}/sqm → ${psf_value:.2f}/sqft")
+                            else:
+                                print(f"    Warning: PSF ${psf_value:.2f} outside bounds (500-3500), skipping")
+                        except Exception as e:
+                            print(f"    Failed to parse PSF: {e}")
 
             if col_map.get('price') is not None and col_map['price'] < len(cells):
                 price_text = cells[col_map['price']].get_text(strip=True)
-                data['tendered_price_sgd'] = parse_price(price_text)
-                # Also try to extract PSF if in format "$X($Y.ZZ)" or "$X (PSF: $Y.ZZ)"
-                psf_match = re.search(r'\(\$?([\d,]+\.?\d*)\)', price_text)
-                if psf_match:
-                    try:
-                        data['psf_ppr'] = Decimal(psf_match.group(1).replace(',', ''))
-                    except:
-                        pass
+                if price_text:
+                    data['tendered_price_sgd'] = parse_price(price_text)
+                    # Extract PSF from format "$X($Y.ZZ)" - URA shows $/sqm of GFA
+                    # CRITICAL: URA publishes $/sqm, we need $/sqft (divide by 10.7639)
+                    psf_match = re.search(r'\(\$?([\d,]+(?:\.\d+)?)\)', price_text)
+                    if psf_match:
+                        try:
+                            psm_value = Decimal(psf_match.group(1).replace(',', ''))
+                            # Convert $/sqm to $/sqft (PSF)
+                            psf_value = psm_value / Decimal('10.7639')
+                            # Sanity check: PSF should be between 500 and 3500
+                            if 500 <= float(psf_value) <= 3500:
+                                data['psf_ppr'] = round(psf_value, 2)
+                                print(f"    Extracted PSF from price: ${psm_value}/sqm → ${psf_value:.2f}/sqft")
+                            else:
+                                print(f"    Warning: PSF ${psf_value:.2f} outside bounds (500-3500), skipping")
+                        except Exception as e:
+                            print(f"    Failed to parse PSF: {e}")
 
             if col_map.get('num_tenderers') is not None and col_map['num_tenderers'] < len(cells):
                 data['num_tenderers'] = parse_number(cells[col_map['num_tenderers']].get_text(strip=True))
