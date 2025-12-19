@@ -510,14 +510,14 @@ useEffect(() => {
 ```
 
 **Charts that respond to highlights:**
-- `NewVsResaleChart` ✅
 - `VolumeByLocationChart` ✅
 - `BedroomMixChart` ✅
 - `PriceDistributionChart` ✅
 - `TransactionDataTable` ✅
 
-**Charts that DON'T respond to highlights:**
-- `TimeTrendChart` - Uses `excludeHighlight: true` (it's the SOURCE of highlights)
+**Charts that DON'T respond to highlights (time-series charts preserve timeline):**
+- `TimeTrendChart` - Uses `excludeHighlight: true` (SOURCE of highlights)
+- `NewVsResaleChart` - Uses `excludeHighlight: true` (time-series trend chart)
 
 ### Backend Contract
 

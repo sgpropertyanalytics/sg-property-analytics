@@ -42,7 +42,7 @@ ChartJS.register(
  */
 export function NewVsResaleChart({ height = 350 }) {
   // Get GLOBAL filters from context - respects sidebar selections
-  const { buildApiParams, filters, highlight } = usePowerBIFilters();
+  const { buildApiParams, filters } = usePowerBIFilters();
 
   // Provide safe defaults for filters if context not ready
   const safeFilters = {
@@ -73,9 +73,11 @@ export function NewVsResaleChart({ height = 350 }) {
 
       try {
         // Use buildApiParams to include GLOBAL filters from sidebar
+        // excludeHighlight: true - this is a time-series chart, preserve full timeline
+        // (same pattern as TimeTrendChart - SOURCE charts don't filter themselves)
         const params = buildApiParams({
           timeGrain: localDrillLevel,
-        });
+        }, { excludeHighlight: true });
 
         console.log('[NewVsResale] Fetching with params:', params);
         const response = await getNewVsResale(params);
@@ -93,7 +95,7 @@ export function NewVsResaleChart({ height = 350 }) {
       }
     };
     fetchData();
-  }, [buildApiParams, localDrillLevel, filters, highlight]); // Re-fetch when global filters or highlight change
+  }, [buildApiParams, localDrillLevel, filters]); // Re-fetch when global filters change (excludes highlight - preserves timeline)
 
   // LOCAL drill handlers - visual-local only, does NOT affect other charts
   const drillLevels = ['year', 'quarter', 'month'];
