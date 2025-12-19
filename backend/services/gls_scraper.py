@@ -1125,13 +1125,6 @@ def scrape_gls_tenders(
             # Debug: Print what we extracted
             print(f"  Extracted: status={data.get('status')} | location={location[:50]} | dev={data.get('successful_tenderer', 'N/A')[:30] if data.get('successful_tenderer') else 'N/A'}")
 
-            # Check if already exists
-            existing = db_session.query(GLSTender).filter_by(release_id=release_id).first()
-            if existing:
-                print(f"  Already exists: {release_id}")
-                stats['tenders_skipped'] += 1
-                continue
-
             stats['tenders_parsed'] += 1
 
             # Geocode location
@@ -1156,46 +1149,84 @@ def scrape_gls_tenders(
                     data['review_reason'] = f"Could not determine region for: {location}"
                     stats['needs_review'].append(release_id)
 
-            # Create tender object
-            # NOTE: psf_ppr is computed by model from fundamentals - never set from scraper
-            tender = GLSTender(
-                status=data.get('status', 'launched'),
-                release_id=release_id,
-                release_url=url,
-                release_date=data.get('release_date'),
-                tender_close_date=data.get('tender_close_date'),
-                location_raw=data.get('location_raw'),
-                latitude=data.get('latitude'),
-                longitude=data.get('longitude'),
-                planning_area=data.get('planning_area'),
-                market_segment=data.get('market_segment'),
-                site_area_sqm=data.get('site_area_sqm'),
-                max_gfa_sqm=data.get('max_gfa_sqm'),
-                estimated_units=data.get('estimated_units'),
-                estimated_units_source=data.get('estimated_units_source'),
-                successful_tenderer=data.get('successful_tenderer'),
-                tendered_price_sgd=data.get('tendered_price_sgd'),
-                psm_gfa=data.get('psm_gfa'),  # $/sqm of GFA from URA table (if available)
-                num_tenderers=data.get('num_tenderers'),
-                needs_review=data.get('needs_review', False),
-                review_reason=data.get('review_reason'),
-            )
+            # Check if already exists - UPDATE instead of skip
+            existing = db_session.query(GLSTender).filter_by(release_id=release_id).first()
 
-            # Compute derived fields
-            GLSTender.compute_derived_fields(tender)
+            if existing:
+                # UPDATE existing record with fresh data
+                # This ensures PSF is recomputed correctly even for old records
+                update_fields = [
+                    'status', 'release_url', 'release_date', 'tender_close_date',
+                    'location_raw', 'latitude', 'longitude', 'planning_area',
+                    'market_segment', 'site_area_sqm', 'max_gfa_sqm',
+                    'estimated_units', 'estimated_units_source',
+                    'successful_tenderer', 'tendered_price_sgd', 'psm_gfa',
+                    'num_tenderers'
+                ]
 
-            if dry_run:
-                print(f"  Would save: {tender.status} | {tender.location_raw} | {tender.market_segment} | {tender.estimated_units} units")
+                for field in update_fields:
+                    value = data.get(field)
+                    if value is not None:
+                        setattr(existing, field, value)
+
+                # Clear old psf_ppr so it gets recomputed from fundamentals
+                existing.psf_ppr = None
+
+                # Recompute derived fields (this will recalculate PSF correctly)
+                GLSTender.compute_derived_fields(existing)
+
+                if not dry_run:
+                    try:
+                        db_session.commit()
+                        stats['tenders_updated'] += 1
+                        print(f"  Updated: {existing.location_raw} | PSF=${existing.psf_ppr:.0f}" if existing.psf_ppr else f"  Updated: {existing.location_raw}")
+                    except Exception as e:
+                        db_session.rollback()
+                        stats['errors'].append(f"{release_id}: {str(e)}")
+                        print(f"  Error updating: {e}")
+                else:
+                    print(f"  Would update: {existing.location_raw}")
             else:
-                try:
-                    db_session.add(tender)
-                    db_session.commit()
-                    stats['tenders_saved'] += 1
-                    print(f"  Saved: {tender.status} | {tender.location_raw} | {tender.market_segment} | {tender.estimated_units} units")
-                except Exception as e:
-                    db_session.rollback()
-                    stats['errors'].append(f"{release_id}: {str(e)}")
-                    print(f"  Error saving: {e}")
+                # Create NEW tender object
+                # NOTE: psf_ppr is computed by model from fundamentals - never set from scraper
+                tender = GLSTender(
+                    status=data.get('status', 'launched'),
+                    release_id=release_id,
+                    release_url=url,
+                    release_date=data.get('release_date'),
+                    tender_close_date=data.get('tender_close_date'),
+                    location_raw=data.get('location_raw'),
+                    latitude=data.get('latitude'),
+                    longitude=data.get('longitude'),
+                    planning_area=data.get('planning_area'),
+                    market_segment=data.get('market_segment'),
+                    site_area_sqm=data.get('site_area_sqm'),
+                    max_gfa_sqm=data.get('max_gfa_sqm'),
+                    estimated_units=data.get('estimated_units'),
+                    estimated_units_source=data.get('estimated_units_source'),
+                    successful_tenderer=data.get('successful_tenderer'),
+                    tendered_price_sgd=data.get('tendered_price_sgd'),
+                    psm_gfa=data.get('psm_gfa'),  # $/sqm of GFA from URA table (if available)
+                    num_tenderers=data.get('num_tenderers'),
+                    needs_review=data.get('needs_review', False),
+                    review_reason=data.get('review_reason'),
+                )
+
+                # Compute derived fields
+                GLSTender.compute_derived_fields(tender)
+
+                if dry_run:
+                    print(f"  Would save: {tender.status} | {tender.location_raw} | {tender.market_segment} | {tender.estimated_units} units")
+                else:
+                    try:
+                        db_session.add(tender)
+                        db_session.commit()
+                        stats['tenders_saved'] += 1
+                        print(f"  Saved: {tender.status} | {tender.location_raw} | {tender.market_segment} | PSF=${tender.psf_ppr:.0f}" if tender.psf_ppr else f"  Saved: {tender.status} | {tender.location_raw}")
+                    except Exception as e:
+                        db_session.rollback()
+                        stats['errors'].append(f"{release_id}: {str(e)}")
+                        print(f"  Error saving: {e}")
 
         # Rate limiting (reduced to avoid worker timeout)
         time.sleep(0.2)
