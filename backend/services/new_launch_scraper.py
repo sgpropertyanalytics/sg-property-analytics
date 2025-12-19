@@ -57,6 +57,42 @@ TOLERANCE = {
 # Rate limiting between requests (seconds)
 RATE_LIMIT_DELAY = 2.0
 
+# Cache settings
+CACHE_DIR = "/tmp/scraper_cache"
+CACHE_TTL_HOURS = 6  # Cache HTML for 6 hours
+
+
+def _get_cached_html(url: str) -> Optional[str]:
+    """Get cached HTML if fresh enough."""
+    import hashlib
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        cache_key = hashlib.md5(url.encode()).hexdigest()
+        cache_file = f"{CACHE_DIR}/{cache_key}.html"
+
+        if os.path.exists(cache_file):
+            age_hours = (time.time() - os.path.getmtime(cache_file)) / 3600
+            if age_hours < CACHE_TTL_HOURS:
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    print(f"  Using cached HTML ({age_hours:.1f}h old)")
+                    return f.read()
+    except Exception:
+        pass
+    return None
+
+
+def _save_to_cache(url: str, html: str):
+    """Save HTML to cache."""
+    import hashlib
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        cache_key = hashlib.md5(url.encode()).hexdigest()
+        cache_file = f"{CACHE_DIR}/{cache_key}.html"
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            f.write(html)
+    except Exception:
+        pass
+
 # Playwright availability flag
 PLAYWRIGHT_AVAILABLE = False
 try:
@@ -148,11 +184,23 @@ def fetch_with_playwright(url: str, wait_selector: str = None, wait_time: int = 
         return None
 
 
-def fetch_page(url: str, use_playwright: bool = True, wait_selector: str = None) -> Optional[str]:
+def fetch_page(url: str, use_playwright: bool = True, wait_selector: str = None, use_cache: bool = True) -> Optional[str]:
     """
     Fetch a page, using Playwright for JS rendering if available.
     Falls back to requests if Playwright fails or is unavailable.
+
+    Args:
+        url: URL to fetch
+        use_playwright: Whether to use Playwright for JS rendering
+        wait_selector: CSS selector to wait for (Playwright only)
+        use_cache: Whether to use cached HTML if available
     """
+    # Check cache first
+    if use_cache:
+        cached = _get_cached_html(url)
+        if cached:
+            return cached
+
     html = None
 
     # Try Playwright first for JS-rendered content
@@ -174,6 +222,10 @@ def fetch_page(url: str, use_playwright: bool = True, wait_selector: str = None)
         except Exception as e:
             print(f"  Request error: {e}")
 
+    # Save to cache if successful
+    if html and use_cache:
+        _save_to_cache(url, html)
+
     return html
 
 
@@ -181,31 +233,38 @@ def fetch_page(url: str, use_playwright: bool = True, wait_selector: str = None)
 # EDGEPROP SCRAPER
 # =============================================================================
 
-EDGEPROP_URL = "https://www.edgeprop.sg/new-launches"
-EDGEPROP_API_URL = "https://www.edgeprop.sg/api/v1/new-launches"  # Potential API endpoint
+# Use the listing page, NOT the marketing page
+# Marketing page: https://www.edgeprop.sg/new-launches (less data)
+# Listing page: https://www.edgeprop.sg/new-launches/all-new-property-launches (full listings, server-rendered)
+EDGEPROP_URL = "https://www.edgeprop.sg/new-launches/all-new-property-launches"
 
 
 def scrape_edgeprop(target_year: int = 2026) -> List[Dict[str, Any]]:
     """
-    Scrape EdgeProp new launches page.
-    EdgeProp is considered the primary source for research-grade data.
+    Scrape EdgeProp new launches listing page.
+
+    EdgeProp's listing page contains server-rendered HTML with project cards.
+    No Playwright needed - direct HTML fetch should work.
     """
     results = []
 
     print(f"\nScraping EdgeProp new launches for {target_year}...")
 
-    # First, try to find and use the JSON API (faster, more reliable)
-    api_results = _try_edgeprop_api(target_year)
-    if api_results:
-        print(f"  Found {len(api_results)} projects via API")
-        return api_results
-
-    # Fallback to HTML scraping with Playwright
+    # EdgeProp listing page is server-rendered, try direct HTML first (faster)
     html = fetch_page(
         EDGEPROP_URL,
-        use_playwright=True,
-        wait_selector='.property-card, .project-card, .listing-card, article'
+        use_playwright=False,  # Try without Playwright first
+        wait_selector=None
     )
+
+    # If direct fetch failed or got minimal HTML, try with Playwright
+    if not html or len(html) < 10000:
+        print("  Direct fetch insufficient, trying Playwright...")
+        html = fetch_page(
+            EDGEPROP_URL,
+            use_playwright=True,
+            wait_selector='.project-card, .property-card, article'
+        )
 
     if not html:
         print("  Failed to fetch EdgeProp page")
@@ -380,19 +439,28 @@ def scrape_propnex(target_year: int = 2026) -> List[Dict[str, Any]]:
 # ERA SCRAPER
 # =============================================================================
 
-ERA_URL = "https://www.era.com.sg/new-launches/"
+# ERA property portal - JS-driven, needs Playwright or XHR endpoint discovery
+# Main site: https://www.era.com.sg/new-launches/ (marketing)
+# Portal: https://propertyportal.era.com.sg/new-launches (actual listings, JS-driven)
+ERA_URL = "https://propertyportal.era.com.sg/new-launches"
 
 
 def scrape_era(target_year: int = 2026) -> List[Dict[str, Any]]:
-    """Scrape ERA new launches page."""
+    """
+    Scrape ERA property portal new launches.
+
+    ERA's portal is JS-driven - the raw HTML is mostly shell/filters.
+    Needs Playwright to render, or ideally discover XHR endpoint.
+    """
     results = []
 
     print(f"\nScraping ERA new launches for {target_year}...")
 
+    # ERA portal is JS-driven, needs Playwright
     html = fetch_page(
         ERA_URL,
         use_playwright=True,
-        wait_selector='.property-card, .project-item, .listing, article'
+        wait_selector='.property-card, .project-card, .listing-item, [class*="property"]'
     )
 
     if not html:
