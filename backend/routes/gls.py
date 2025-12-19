@@ -377,14 +377,17 @@ def reset_and_rescrape():
     try:
         from models.gls_tender import GLSTender
         from services.gls_scraper import scrape_gls_tenders
+        from sqlalchemy import text
 
-        # Count existing records
-        existing_count = db.session.query(GLSTender).count()
-
-        # Delete all existing records
-        db.session.query(GLSTender).delete()
+        # DROP the table entirely to fix schema issues
+        # (db.create_all() doesn't ALTER existing columns)
+        print("Dropping gls_tenders table to reset schema...")
+        db.session.execute(text("DROP TABLE IF EXISTS gls_tenders CASCADE"))
         db.session.commit()
-        print(f"Deleted {existing_count} existing GLS records")
+
+        # Recreate the table with the correct schema
+        print("Recreating gls_tenders table with updated schema...")
+        GLSTender.__table__.create(db.engine, checkfirst=True)
 
         # Rescrape
         stats = scrape_gls_tenders(year=year, dry_run=False)
@@ -395,7 +398,7 @@ def reset_and_rescrape():
         return jsonify({
             "success": True,
             "year": year,
-            "deleted_records": existing_count,
+            "table_recreated": True,
             "elapsed_seconds": round(elapsed, 2),
             "statistics": stats
         })
