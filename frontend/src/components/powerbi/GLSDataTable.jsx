@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getGLSAll } from '../../api/client';
+import apiClient from '../../api/client';
 
 /**
  * GLS Data Table - Shows Government Land Sales tender details
@@ -20,6 +21,7 @@ export function GLSDataTable({ height = 400 }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [scraping, setScraping] = useState(false);
   const [filter, setFilter] = useState('all'); // 'all', 'launched', 'awarded'
   const [segmentFilter, setSegmentFilter] = useState(''); // '', 'CCR', 'RCR', 'OCR'
   const [sortConfig, setSortConfig] = useState({
@@ -55,6 +57,23 @@ export function GLSDataTable({ height = 400 }) {
       setLoading(false);
     }
   }, [filter, segmentFilter, sortConfig]);
+
+  // Trigger scraper to fetch data from URA
+  const handleScrape = async () => {
+    setScraping(true);
+    setError(null);
+    try {
+      const response = await apiClient.post('/gls/scrape?year=2025');
+      console.log('Scrape result:', response.data);
+      // Refresh data after scraping
+      await fetchData();
+    } catch (err) {
+      console.error('Error scraping GLS data:', err);
+      setError('Failed to fetch data from URA: ' + err.message);
+    } finally {
+      setScraping(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -239,8 +258,27 @@ export function GLSDataTable({ height = 400 }) {
                 ))
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-3 py-8 text-center text-slate-500">
-                    No GLS tenders found. Run the scraper to fetch data.
+                  <td colSpan={columns.length} className="px-3 py-8 text-center">
+                    <div className="text-slate-500 mb-3">No GLS tenders found in database.</div>
+                    <button
+                      onClick={handleScrape}
+                      disabled={scraping}
+                      className="px-4 py-2 bg-[#213448] text-white rounded-lg hover:bg-[#547792] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                    >
+                      {scraping ? (
+                        <span className="flex items-center gap-2">
+                          <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Fetching from URA...
+                        </span>
+                      ) : (
+                        'Fetch GLS Data from URA'
+                      )}
+                    </button>
+                    <p className="text-xs text-slate-400 mt-2">
+                      This will scrape 2025 GLS tender data from URA Media Releases
+                    </p>
                   </td>
                 </tr>
               ) : (
