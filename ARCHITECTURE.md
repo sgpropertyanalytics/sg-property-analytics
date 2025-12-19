@@ -2,322 +2,317 @@
 
 ## Project Overview
 
-This project is a **Pre-Computed Analytics Architecture** for analyzing Singapore private condominium resale transactions. The system follows a "Split Deployment" pattern with clear separation between data ingestion, computation, and consumption.
+This project is a **Power BI-style Analytics Dashboard** for analyzing Singapore private condominium transactions. The system follows a "Split Deployment" pattern with clear separation between data ingestion, computation, and consumption.
 
 ### Technology Stack
 
+- **Frontend**: React + Vite + Tailwind CSS + Chart.js
 - **Backend**: Flask (Python) with SQLAlchemy ORM
-- **Database**: SQLite (development) / PostgreSQL (production-ready)
-- **Frontend**: React (via single-page HTML with React CDN)
-- **Data Processing**: Pandas for analytics computation
-- **Architecture Pattern**: Pre-computed analytics (compute once, serve many)
+- **Database**: SQLite (development) / PostgreSQL (production)
+- **Hosting**: Render (512MB memory constraint)
+- **Architecture Pattern**: Pre-computed analytics + SQL-level aggregation
 
 ### Key Architectural Principles
 
 1. **Separation of Concerns**: Clear boundaries between ingestion, computation, and API layers
-2. **Pre-Computation**: Analytics computed once during data upload, stored in database
-3. **Lightweight API**: API routes are read-only, querying pre-computed stats (no on-demand calculations)
-4. **Business Logic Preservation**: All existing analytics logic preserved exactly as-is
-5. **Scalability**: Can handle high concurrent load since API is just database reads
+2. **Pre-Computation**: Heavy analytics computed once, stored in database
+3. **SQL Aggregation**: Live queries use SQL GROUP BY (no DataFrames in memory)
+4. **Power BI Filter Patterns**: Global slicers, cross-filtering, fact/dimension separation
+5. **Memory Efficiency**: Designed for 512MB RAM constraint
+
+---
+
+## Power BI Data Modeling Rules
+
+### Golden Rule
+
+> **Slicers belong to dimensions. Facts should almost never be slicers.**
+
+### Filter Direction: Dimension → Fact (One-Way)
+
+```
+┌─────────────────┐         ┌─────────────────┐
+│   DIMENSION     │────────▶│      FACT       │
+│   (Slicers)     │         │   (Data Sink)   │
+└─────────────────┘         └─────────────────┘
+     Filters                  Gets Filtered
+     Others                   Never Filters
+```
+
+### Component Architecture
+
+| Component | Type | Filters Others? | Notes |
+|-----------|------|-----------------|-------|
+| **Sidebar Filters** | Dimension Slicers | Yes → All charts | Region, District, Bedroom, Sale Type |
+| **Time Trend Chart** | Dimension Visual | Highlight only | Click applies visual highlight, not filter |
+| **Volume by Location** | Dimension Visual | Yes (categorical) | Click filters by region/district |
+| **Price Distribution** | Dimension Visual | Only → Fact table | Uses `factFilter` state |
+| **New vs Resale Chart** | Dimension Visual | No | Respects global filters, local drill only |
+| **Transaction Data Table** | **Fact Table** | Never | Pure data sink |
+
+---
+
+## Filtering Standard (Power BI Pattern)
+
+### Global Slicers (Page Scope) — MUST Apply to Everything
+
+All slicers in the **Global Slicer Bar** (sidebar) are **page-scoped** and **always apply to every visual** on the main page.
+
+**Global slicers include:**
+- Location (Districts, Market Segment: CCR/RCR/OCR)
+- Date Range (From/To)
+- Bedroom Types
+- Sale Type (New Sale / Resale)
+- PSF Range
+- Size Range
+
+**Rules:**
+1. Every main-page API query **MUST** accept these global filters
+2. Every main-page visual **MUST** use the filtered dataset returned from global filters
+3. **No visual is allowed to "opt out"** of global slicers
+4. Global slicers must be visible at all times and must not be duplicated inside individual chart cards
+
+**Implementation:**
+```jsx
+// Global slicer state lives in PowerBIFilterContext (single source of truth)
+const { buildApiParams, filters } = usePowerBIFilters();
+
+// CORRECT: Use buildApiParams to include global filters
+const params = buildApiParams({
+  group_by: 'quarter',
+  metrics: 'count,median_psf'
+});
+
+// WRONG: Ignoring global filters completely
+const params = { region: localRegion, bedroom: localBedroom }; // DON'T DO THIS
+```
+
+### Local Filters (Visual Scope) — Narrow, Don't Replace
+
+Visual components may add **local filters**, but local filters can only **further narrow** the already globally-filtered data. They cannot replace or override global filters.
+
+**Example - Correct pattern:**
+```jsx
+// Start with global filters
+const params = buildApiParams({});
+
+// Local filter ADDS to global (narrows further)
+params.timeGrain = localDrillLevel; // visual-local drill level
+```
+
+---
+
+## Drill Up/Down Rules
+
+### Core Principle
+
+> **Drill ≠ Filter. Drill is visual-local by default.**
+
+| Action | Scope | Effect |
+|--------|-------|--------|
+| **Drill** | Single visual only | Changes level of detail inside one chart |
+| **Filter** | Cross-visual (dashboard) | Changes data scope across all visuals |
+
+### Implementation Pattern
+
+```jsx
+// Drill state is LOCAL to each chart component
+const [drillLevel, setDrillLevel] = useState('quarter'); // year → quarter → month
+
+// Drill does NOT use global context - it's component state only
+// This ensures other charts are never affected
+```
+
+### MANDATORY: Standardized DrillButtons Component
+
+**Every chart with drill functionality MUST use the `DrillButtons` component** for visual consistency.
+
+```jsx
+import { DrillButtons } from './DrillButtons';
+
+// LOCAL MODE: Uses local state (visual-local, does NOT affect other charts)
+<DrillButtons
+  localLevel={localDrillLevel}
+  localLevels={['year', 'quarter', 'month']}
+  localLevelLabels={{ year: 'Year', quarter: 'Quarter', month: 'Month' }}
+  onLocalDrillUp={handleDrillUp}
+  onLocalDrillDown={handleDrillDown}
+/>
+```
 
 ---
 
 ## Directory Structure
 
 ```
-sgpropertytrend/
+sg-property-analyzer/
 ├── backend/                    # Flask API backend
 │   ├── app.py                 # Flask application factory & entry point
-│   ├── config.py              # Configuration (database, secrets)
+│   ├── config.py              # Configuration (DATABASE_URL, secrets)
 │   ├── requirements.txt       # Python dependencies
-│   ├── condo_master.db        # SQLite database (development)
 │   ├── models/                # SQLAlchemy models
 │   │   ├── database.py        # SQLAlchemy db instance
-│   │   ├── transaction.py    # Transaction model (raw data)
-│   │   ├── precomputed_stats.py  # PreComputedStats model (analytics)
+│   │   ├── transaction.py     # Transaction model (raw data)
 │   │   └── user.py            # User model (authentication)
 │   ├── routes/                # API route blueprints
-│   │   └── analytics.py      # Analytics endpoints (read-only)
+│   │   ├── analytics.py       # Analytics endpoints
+│   │   └── auth.py            # JWT authentication
 │   └── services/              # Business logic services
-│       ├── aggregation_service.py  # Pre-computes analytics
-│       ├── analytics_reader.py    # Read-only stats reader
-│       ├── data_loader.py         # CSV loading & cleaning
+│       ├── dashboard_service.py   # SQL-based panel queries
 │       ├── data_processor.py      # Analytics computation logic
-│       ├── classifier.py          # Bedroom classification
-│       └── json_serializer.py     # JSON serialization helper
+│       ├── data_validation.py     # Data cleaning (outliers, duplicates)
+│       ├── data_computation.py    # Pre-compute stats
+│       └── analytics_reader.py    # Read pre-computed stats
 │
-├── frontend/                   # React frontend
-│   └── dashboard.html         # Single-page React application
+├── frontend/                   # React frontend (Vite)
+│   ├── src/
+│   │   ├── api/
+│   │   │   └── client.js      # Axios API client
+│   │   ├── context/
+│   │   │   ├── DataContext.jsx           # Global data/metadata
+│   │   │   └── PowerBIFilterContext.jsx  # Filter state management
+│   │   ├── components/powerbi/
+│   │   │   ├── PowerBIFilterSidebar.jsx  # Dimension slicers
+│   │   │   ├── TimeTrendChart.jsx        # Time dimension
+│   │   │   ├── VolumeByLocationChart.jsx # Location dimension
+│   │   │   ├── PriceDistributionChart.jsx # Price dimension
+│   │   │   ├── NewVsResaleChart.jsx      # New vs Resale comparison
+│   │   │   ├── TransactionDataTable.jsx  # Fact table
+│   │   │   ├── DrillButtons.jsx          # Standardized drill controls
+│   │   │   └── DrillBreadcrumb.jsx       # Navigation breadcrumbs
+│   │   └── pages/
+│   │       └── MacroOverview.jsx         # Main dashboard page
+│   └── index.html
 │
 ├── scripts/                    # ETL & maintenance scripts
 │   ├── upload.py              # CSV → Database ingestion
-│   ├── recompute_stats.py     # Re-run aggregation service
-│   └── README.md              # Scripts documentation
+│   └── recompute_stats.py     # Re-run aggregation service
 │
 ├── rawdata/                    # Source CSV files
-│   ├── New Sale/              # New sale transaction CSVs
-│   └── Resale/                 # Resale transaction CSVs
-│
-├── .env                        # Environment variables (secrets)
-├── env.example                 # Environment template
-├── .gitignore                  # Git ignore rules
+├── .env                        # Environment variables
+├── claude.md                   # Project guide & patterns
 ├── README.md                   # Project documentation
 └── ARCHITECTURE.md             # This file
 ```
 
 ---
 
-## System Design Diagram
+## Data Flow Architecture
 
-```mermaid
-graph TB
-    subgraph "Local Development Environment"
-        CSV[CSV Files<br/>rawdata/]
-        Upload[upload.py<br/>ETL Script]
-    end
-    
-    subgraph "Database Layer"
-        DB[(SQLite/PostgreSQL)]
-        TxnTable[Transaction Table<br/>Raw Transaction Data]
-        StatsTable[PreComputedStats Table<br/>Pre-aggregated Analytics]
-    end
-    
-    subgraph "Backend API"
-        Flask[Flask App<br/>app.py]
-        Routes[Analytics Routes<br/>routes/analytics.py]
-        Reader[Analytics Reader<br/>services/analytics_reader.py]
-        Agg[Aggregation Service<br/>services/aggregation_service.py]
-        Processor[Data Processor<br/>services/data_processor.py]
-    end
-    
-    subgraph "Frontend"
-        React[React Dashboard<br/>dashboard.html]
-    end
-    
-    CSV -->|1. Load & Clean| Upload
-    Upload -->|2. Insert| TxnTable
-    Upload -->|3. Trigger| Agg
-    Agg -->|4. Query| TxnTable
-    Agg -->|5. Compute| Processor
-    Agg -->|6. Store| StatsTable
-    
-    TxnTable -.->|Stored in| DB
-    StatsTable -.->|Stored in| DB
-    
-    React -->|7. HTTP GET| Flask
-    Flask -->|8. Route| Routes
-    Routes -->|9. Query| Reader
-    Reader -->|10. Read| StatsTable
-    Reader -->|11. Return JSON| Routes
-    Routes -->|12. JSON Response| React
-    
-    style CSV fill:#e1f5ff
-    style Upload fill:#fff4e1
-    style TxnTable fill:#e8f5e9
-    style StatsTable fill:#e8f5e9
-    style Agg fill:#fff4e1
-    style Reader fill:#f3e5f5
-    style React fill:#e3f2fd
+### Backend Data Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        DATA INGESTION                           │
+├─────────────────────────────────────────────────────────────────┤
+│  URA API Data ──▶ scripts/upload.py ──▶ PostgreSQL Database    │
+│                         │                                       │
+│                         ▼                                       │
+│              services/data_validation.py                        │
+│              (auto-runs on app startup)                         │
+│                         │                                       │
+│                         ├── remove_invalid_records()            │
+│                         ├── remove_duplicates_sql()             │
+│                         └── filter_outliers_sql() (IQR method)  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        API LAYER                                │
+├─────────────────────────────────────────────────────────────────┤
+│  routes/analytics.py                                            │
+│       │                                                         │
+│       ├── /api/dashboard   ──▶ dashboard_service.py            │
+│       │       • Panels: summary, time_series, location_volume   │
+│       │       • SQL aggregation (no DataFrame in memory)        │
+│       │                                                         │
+│       ├── /api/aggregate   ──▶ SQL GROUP BY queries            │
+│       │                                                         │
+│       ├── /api/new-vs-resale ──▶ data_processor.py             │
+│       │       • Respects global filters (district, bedroom)     │
+│       │       • Visual-local drill (timeGrain only)             │
+│       │                                                         │
+│       ├── /api/transactions/list ──▶ Paginated transaction list│
+│       │                                                         │
+│       └── /api/filter-options ──▶ Available filter values      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Frontend Data Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      FILTER CONTEXT                             │
+├─────────────────────────────────────────────────────────────────┤
+│  context/PowerBIFilterContext.jsx                               │
+│       │                                                         │
+│       ├── filters (sidebar slicers - GLOBAL)                    │
+│       │       • dateRange, districts, bedroomTypes              │
+│       │       • segment, saleType, psfRange, sizeRange          │
+│       │                                                         │
+│       ├── crossFilter (categorical dimension clicks)            │
+│       │       • district, region, bedroom, sale_type            │
+│       │                                                         │
+│       ├── factFilter (dimension → fact only)                    │
+│       │       • priceRange (from Price Distribution chart)      │
+│       │                                                         │
+│       ├── highlight (time visual emphasis, non-filtering)       │
+│       │       • year, quarter, month                            │
+│       │                                                         │
+│       └── buildApiParams(additionalParams, options)             │
+│               • Combines all active filters for API calls       │
+│               • options.includeFactFilter (for Fact table)      │
+│               • options.excludeHighlight (for Time charts)      │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Data Flow
+## Key API Endpoints
 
-### Phase 1: Ingestion (Upload Script)
+### `/api/dashboard`
+Unified dashboard endpoint - returns all chart datasets in one response.
 
-**Script**: `scripts/upload.py`
+**Parameters:**
+- `district`: comma-separated districts (D01,D02,...)
+- `bedroom`: comma-separated bedroom counts (2,3,4)
+- `segment`: CCR, RCR, OCR
+- `date_from`, `date_to`: YYYY-MM-DD
+- `panels`: time_series, volume_by_location, price_histogram, summary
+- `time_grain`: year, quarter, month
 
-1. **CSV Loading**
-   - Reads all CSV files from `rawdata/New Sale/` and `rawdata/Resale/`
-   - Handles multiple encodings (UTF-8, Latin-1, ISO-8859-1) for compatibility
-   - Uses existing `data_loader.py` logic for cleaning
+### `/api/new-vs-resale`
+New Launch vs Resale comparison chart.
 
-2. **Data Processing**
-   - Applies three-tier bedroom classification (New Sale Post/Pre Harmonization, Resale)
-   - Parses flexible date formats (Dec-20, Mar-21, Oct 2023, etc.)
-   - Filters property types (Condo/Apartment only, excludes EC/HDB)
-   - Calculates lease information from Tenure text
-   - Maps districts to market segments (CCR, RCR, OCR)
+**Global filters (from sidebar):**
+- `district`: comma-separated districts
+- `bedroom`: comma-separated bedroom counts
+- `segment`: CCR, RCR, OCR
+- `date_from`, `date_to`: date range
 
-3. **Database Insertion**
-   - Saves cleaned transactions to `Transaction` SQLAlchemy table
-   - Handles duplicates (same project, date, price, area)
-   - Bulk inserts in batches of 1000 for performance
+**Visual-local parameter:**
+- `timeGrain`: year, quarter, month (for drill up/down)
 
-4. **Aggregation Trigger**
-   - Automatically calls `aggregation_service.recompute_all_stats()`
+### `/api/aggregate`
+Flexible aggregation endpoint for dynamic filtering.
 
-### Phase 2: Aggregation (Pre-Computation)
-
-**Service**: `backend/services/aggregation_service.py`
-
-1. **Data Loading**
-   - Loads all transactions from `Transaction` table into Pandas DataFrame
-   - Temporarily sets global DataFrame for backward compatibility with existing logic
-
-2. **Analytics Computation**
-   - Calls existing functions from `data_processor.py`:
-     - `get_resale_stats()` - Resale statistics by bedroom type
-     - `get_price_trends()` - Price trends over time by quarter
-     - `get_market_stats()` - Short-term vs long-term market analysis
-     - `get_price_trends_by_region()` - Regional trends (CCR/RCR/OCR)
-     - `get_psf_trends_by_region()` - PSF trends by region
-     - And 7+ other analytics functions
-   - **CRITICAL**: All business logic preserved exactly as-is
-
-3. **JSON Serialization**
-   - Converts pandas Timestamps, datetime objects to ISO strings
-   - Handles numpy types and nested structures
-   - Ensures JSON compatibility
-
-4. **Storage**
-   - Saves each computed stat to `PreComputedStats` table
-   - Key-value store: `stat_key` (e.g., 'price_trends_all') → `stat_value` (JSON)
-   - Stores metadata: `computed_at`, `row_count`
-
-### Phase 3: Consumption (API & Frontend)
-
-**API**: `backend/routes/analytics.py`  
-**Reader**: `backend/services/analytics_reader.py`
-
-1. **API Request**
-   - Frontend makes HTTP GET request to `/api/{endpoint}`
-   - Example: `GET /api/resale_stats`
-
-2. **Route Handling**
-   - Flask route receives request
-   - Calls `AnalyticsReader.get_resale_stats()`
-
-3. **Stats Retrieval**
-   - Reader queries `PreComputedStats` table by key
-   - Example: `PreComputedStats.get_stat('resale_stats_all')`
-   - Returns pre-computed JSON (no calculations)
-
-4. **Response**
-   - JSON response sent to frontend
-   - Fast response time (typically <10ms, just database read)
-
-5. **Frontend Rendering**
-   - React dashboard receives JSON
-   - Renders charts using Chart.js
-   - Updates UI with real-time data
+**Parameters:**
+- `group_by`: month, quarter, year, district, bedroom, sale_type, region
+- `metrics`: count, median_psf, avg_psf, total_value
 
 ---
 
-## Key Modules
+## Memory Constraints
 
-### `backend/app.py`
+Render free tier: **512MB RAM**
 
-**Purpose**: Flask application factory and entry point
+### Design Decisions for Memory Efficiency
 
-**Responsibilities**:
-- Initialize Flask app with configuration
-- Initialize SQLAlchemy database connection
-- Register route blueprints
-- Configure CORS headers
-- Serve dashboard.html at root route
-- Create database tables on startup
-
-**Key Functions**:
-- `create_app()` - Application factory pattern
-- `run_app()` - Entry point for `python app.py`
-
----
-
-### `backend/services/aggregation_service.py`
-
-**Purpose**: Pre-computes all analytics and stores in database
-
-**Responsibilities**:
-- Load transactions from database into DataFrame
-- Call existing analytics functions from `data_processor.py`
-- Serialize results to JSON-compatible format
-- Store in `PreComputedStats` table
-
-**Key Functions**:
-- `load_transactions_to_dataframe()` - Load from DB to DataFrame
-- `recompute_all_stats()` - Main aggregation function
-  - Computes 12+ different analytics
-  - Stores each as key-value pair in `PreComputedStats`
-- `recompute_stat_for_filters()` - Future: filtered pre-computation
-
-**Business Logic Preservation**:
-- Does NOT modify existing `data_processor.py` functions
-- Uses them exactly as-is
-- Only adds serialization and storage layer
-
----
-
-### `scripts/upload.py`
-
-**Purpose**: ETL script to load CSV data and trigger aggregation
-
-**Responsibilities**:
-- Load CSV files from `rawdata/` folder
-- Clean data using existing `data_loader.py` logic
-- Save to `Transaction` SQLAlchemy table
-- Trigger aggregation service
-
-**Key Functions**:
-- `load_csv_to_transactions()` - Load single CSV file
-- `save_dataframe_to_db()` - Bulk insert to database
-- `main()` - Orchestrates entire upload process
-
-**Data Processing**:
-- Uses `clean_csv_data()` from `data_loader.py`
-- Applies bedroom classification from `classifier.py`
-- Parses dates, calculates lease info
-- Removes duplicates before insertion
-
----
-
-### `backend/services/analytics_reader.py`
-
-**Purpose**: Lightweight read-only service for pre-computed stats
-
-**Responsibilities**:
-- Query `PreComputedStats` table by key
-- Return JSON data (no calculations)
-- Handle missing stats gracefully
-
-**Key Functions**:
-- `get_resale_stats()` - Returns pre-computed resale stats
-- `get_price_trends()` - Returns pre-computed price trends
-- `get_market_stats()` - Returns pre-computed market stats
-- And 10+ other getter methods
-
-**Performance**:
-- No Pandas operations
-- No calculations
-- Just database queries
-- Fast response times
-
----
-
-### `backend/routes/analytics.py`
-
-**Purpose**: API endpoints for analytics data
-
-**Responsibilities**:
-- Define REST API routes
-- Call `AnalyticsReader` methods
-- Return JSON responses
-- Handle errors gracefully
-
-**Key Endpoints**:
-- `GET /api/health` - System health check
-- `GET /api/resale_stats` - Resale statistics
-- `GET /api/price_trends` - Price trends over time
-- `GET /api/price_trends_by_region` - Regional price trends
-- `GET /api/market_stats` - Market statistics
-- And 15+ other endpoints
-
-**Architecture**:
-- Uses Flask Blueprint pattern
-- All routes are read-only (GET only)
-- No on-demand calculations
-- Fast responses from pre-computed data
+1. **No in-memory DataFrames** - All analytics use SQL aggregation
+2. **Server-side histogram** - Computes bins in SQL, not Python
+3. **Paginated transactions** - Never load all 100K+ records at once
+4. **Pre-computed stats** - Heavy aggregations stored in `api_stats` table
+5. **IQR outlier removal** - Reduces dataset size
 
 ---
 
@@ -327,7 +322,7 @@ graph TB
 
 Stores raw transaction data from CSV files.
 
-**Key Columns**:
+**Key Columns:**
 - `id` (Primary Key)
 - `project_name` (Indexed)
 - `transaction_date` (Indexed, Date)
@@ -338,122 +333,40 @@ Stores raw transaction data from CSV files.
 - `tenure` (Text: Original Tenure string)
 - `lease_start_year`, `remaining_lease` (Computed from Tenure)
 
-**Indexes**: Optimized for queries by district, bedroom_count, transaction_date
+---
+
+## Color Palette Theme
+
+**Source**: https://colorhunt.co/palette/21344854779294b4c1eae0cf
+
+| Color | Hex | Usage |
+|-------|-----|-------|
+| **Deep Navy** | `#213448` | Headings, primary text, CCR region |
+| **Ocean Blue** | `#547792` | Secondary text, labels, RCR region |
+| **Sky Blue** | `#94B4C1` | Borders, icons, OCR region |
+| **Sand/Cream** | `#EAE0CF` | Backgrounds, hover states |
 
 ---
 
-### PreComputedStats Table
+## District to Region Mapping
 
-Stores pre-aggregated analytics as JSON.
+```javascript
+const DISTRICT_REGION_MAP = {
+  // CCR - Core Central Region
+  '01': 'CCR', '02': 'CCR', '06': 'CCR', '07': 'CCR',
+  '09': 'CCR', '10': 'CCR', '11': 'CCR',
 
-**Key Columns**:
-- `id` (Primary Key)
-- `stat_key` (Unique, Indexed, String)
-  - Examples: 'resale_stats_all', 'price_trends_all', 'market_stats_all'
-- `stat_value` (Text: JSON string)
-- `computed_at` (DateTime: When stats were computed)
-- `row_count` (Integer: Number of transactions used)
+  // RCR - Rest of Central Region
+  '03': 'RCR', '04': 'RCR', '05': 'RCR', '08': 'RCR',
+  '12': 'RCR', '13': 'RCR', '14': 'RCR', '15': 'RCR',
+  '20': 'RCR', '21': 'RCR',
 
-**Usage**: Key-value store for fast lookups
-
----
-
-## Business Logic Preservation
-
-All existing analytics logic is preserved in `backend/services/data_processor.py`:
-
-1. **Three-Tier Bedroom Classification**
-   - Tier 1: New Sale (Post-Harmonization, >= June 1, 2023) - Ultra Compact
-   - Tier 2: New Sale (Pre-Harmonization, < June 1, 2023) - Modern Compact
-   - Tier 3: Resale (Any Date) - Legacy Sizes
-
-2. **Lease Calculations**
-   - Parses Tenure text to extract lease start year
-   - Calculates remaining lease years
-   - Handles Freehold as 999-year pseudo-lease
-
-3. **Market Segmentation**
-   - Maps districts to CCR (Core Central Region)
-   - Maps districts to RCR (Rest of Central Region)
-   - Maps districts to OCR (Outside Central Region)
-
-4. **Date Parsing**
-   - Handles multiple formats: "Dec-20", "Mar-21", "Oct 2023", ISO dates
-   - Flexible parsing with fallbacks
-
----
-
-## Performance Characteristics
-
-### Upload Phase
-- **Time**: ~2-5 minutes for 100K+ transactions
-- **Bottleneck**: CSV parsing and database inserts
-- **Optimization**: Bulk inserts in batches
-
-### Aggregation Phase
-- **Time**: ~30-60 seconds for all analytics
-- **Bottleneck**: Pandas calculations
-- **Frequency**: Once per upload (or scheduled)
-
-### API Phase
-- **Response Time**: <10ms (database read only)
-- **Throughput**: High (no calculations, just DB queries)
-- **Scalability**: Can handle 1000+ concurrent requests
-
----
-
-## Deployment Considerations
-
-### Development
-- SQLite database (`condo_master.db`)
-- Single Flask process
-- Local file system for CSVs
-
-### Production (Recommended)
-- PostgreSQL database
-- Gunicorn/uWSGI for Flask
-- Redis for caching (optional)
-- Nginx as reverse proxy
-- Scheduled aggregation via cron
-- Object storage for CSV files (S3, etc.)
-
----
-
-## Maintenance Scripts
-
-### `scripts/upload.py`
-- **When**: Initial data load or adding new CSV files
-- **What**: Loads CSVs → Transaction table → Triggers aggregation
-
-### `scripts/recompute_stats.py`
-- **When**: After business logic changes or scheduled updates
-- **What**: Re-runs aggregation without reloading data
-- **Cron**: Can be scheduled for daily/weekly updates
-
----
-
-## Future Enhancements
-
-1. **Filtered Pre-Computation**
-   - Pre-compute stats for common filter combinations
-   - Store as separate keys (e.g., 'resale_stats_d09', 'price_trends_ccr')
-
-2. **Incremental Updates**
-   - Only recompute stats for new data
-   - Faster updates for large datasets
-
-3. **API Admin Endpoints**
-   - `/api/admin/recompute` - Trigger recomputation via API
-   - `/api/admin/stats_status` - Check computation status
-
-4. **Caching Layer**
-   - Redis/memcached for even faster responses
-   - Cache frequently accessed stats
-
-5. **Monitoring**
-   - Track computation time
-   - Alert if stats are stale
-   - Monitor API response times
+  // OCR - Outside Central Region
+  '16': 'OCR', '17': 'OCR', '18': 'OCR', '19': 'OCR',
+  '22': 'OCR', '23': 'OCR', '24': 'OCR', '25': 'OCR',
+  '26': 'OCR', '27': 'OCR', '28': 'OCR',
+};
+```
 
 ---
 
@@ -461,12 +374,10 @@ All existing analytics logic is preserved in `backend/services/data_processor.py
 
 This architecture provides:
 
-✅ **Separation of Concerns**: Clear boundaries between ingestion, computation, and API  
-✅ **Performance**: Fast API responses (pre-computed stats)  
-✅ **Scalability**: Can handle high concurrent load  
-✅ **Maintainability**: Modular structure, easy to extend  
-✅ **Business Logic Preservation**: All existing analytics logic intact  
-✅ **Production-Ready**: Can scale to PostgreSQL, add caching, etc.
+- **Power BI Patterns**: Global slicers, cross-filtering, dimension/fact separation
+- **Performance**: SQL-level aggregation, no DataFrames in memory
+- **Scalability**: Pre-computed stats, paginated queries
+- **Consistency**: Standardized DrillButtons, unified filter context
+- **Memory Efficiency**: Designed for 512MB RAM constraint
 
-The system follows the "Compute Once, Serve Many" pattern, making it ideal for analytics dashboards with high read traffic.
-
+The system follows Power BI best practices where global slicers apply to all visuals, drill is visual-local, and facts never filter dimensions.
