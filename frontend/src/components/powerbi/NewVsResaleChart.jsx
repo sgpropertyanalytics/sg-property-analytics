@@ -77,7 +77,11 @@ export function NewVsResaleChart({ height = 350 }) {
           timeGrain: localDrillLevel,
         });
 
+        console.log('[NewVsResale] Fetching with params:', params);
         const response = await getNewVsResale(params);
+        console.log('[NewVsResale] Response:', response.data);
+        console.log('[NewVsResale] chartData length:', response.data?.chartData?.length);
+        console.log('[NewVsResale] First data point:', response.data?.chartData?.[0]);
         setData(response.data);
         isInitialLoad.current = false;
       } catch (err) {
