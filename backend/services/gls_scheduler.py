@@ -271,36 +271,85 @@ def cron_refresh(year: int = 2025) -> Dict[str, Any]:
     Returns:
         Status dict
     """
-    from models.database import db
     from models.gls_tender import GLSTender
     from services.gls_scraper import scrape_gls_tenders
-    from sqlalchemy import text
+    from sqlalchemy import text, create_engine
+    from sqlalchemy.orm import scoped_session, sessionmaker
 
     try:
         print(f"Cron GLS refresh starting for {year}...")
 
-        # Drop and recreate to ensure clean data
-        print("Dropping gls_tenders table for fresh scrape...")
-        db.session.execute(text("DROP TABLE IF EXISTS gls_tenders CASCADE"))
-        db.session.commit()
+        # Create a FRESH database connection to avoid SSL stale connection issues
+        database_url = os.environ.get('DATABASE_URL', '')
 
-        print("Recreating gls_tenders table...")
-        GLSTender.__table__.create(db.engine, checkfirst=True)
+        if database_url:
+            # Fix Render's postgres:// to postgresql://
+            if database_url.startswith('postgres://'):
+                database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
-        # Run scrape synchronously (cron has longer timeout)
-        result = scrape_gls_tenders(year=year, dry_run=False)
+            # Create fresh engine with SSL settings
+            engine = create_engine(
+                database_url,
+                pool_pre_ping=True,
+                pool_recycle=300,
+                connect_args={"sslmode": "require"} if 'render.com' in database_url or 'neon' in database_url else {}
+            )
 
-        global _last_scrape_time, _last_scrape_result
-        _last_scrape_time = datetime.utcnow()
-        _last_scrape_result = result
+            # Create a new session for this operation
+            Session = scoped_session(sessionmaker(bind=engine))
+            db_session = Session()
 
-        print(f"Cron GLS refresh completed: {result}")
+            try:
+                # Drop and recreate to ensure clean data
+                print("Dropping gls_tenders table for fresh scrape...")
+                db_session.execute(text("DROP TABLE IF EXISTS gls_tenders CASCADE"))
+                db_session.commit()
 
-        return {
-            "success": True,
-            "timestamp": _last_scrape_time.isoformat(),
-            "statistics": result
-        }
+                print("Recreating gls_tenders table...")
+                GLSTender.__table__.create(engine, checkfirst=True)
+
+                # Run scrape synchronously (cron has longer timeout)
+                result = scrape_gls_tenders(year=year, db_session=db_session, dry_run=False)
+
+                global _last_scrape_time, _last_scrape_result
+                _last_scrape_time = datetime.utcnow()
+                _last_scrape_result = result
+
+                print(f"Cron GLS refresh completed: {result}")
+
+                return {
+                    "success": True,
+                    "timestamp": _last_scrape_time.isoformat(),
+                    "statistics": result
+                }
+            finally:
+                db_session.close()
+                Session.remove()
+                engine.dispose()
+        else:
+            # Fallback: use app's db session (local dev without DATABASE_URL)
+            from models.database import db
+
+            print("Dropping gls_tenders table for fresh scrape...")
+            db.session.execute(text("DROP TABLE IF EXISTS gls_tenders CASCADE"))
+            db.session.commit()
+
+            print("Recreating gls_tenders table...")
+            GLSTender.__table__.create(db.engine, checkfirst=True)
+
+            result = scrape_gls_tenders(year=year, dry_run=False)
+
+            global _last_scrape_time, _last_scrape_result
+            _last_scrape_time = datetime.utcnow()
+            _last_scrape_result = result
+
+            print(f"Cron GLS refresh completed: {result}")
+
+            return {
+                "success": True,
+                "timestamp": _last_scrape_time.isoformat(),
+                "statistics": result
+            }
 
     except Exception as e:
         print(f"Cron GLS refresh error: {e}")

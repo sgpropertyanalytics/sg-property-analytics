@@ -363,6 +363,7 @@ def reset_and_rescrape():
     Returns:
         Scrape statistics after reset
     """
+    import os
     start = time.time()
 
     year = int(request.args.get("year", 2025))
@@ -377,38 +378,84 @@ def reset_and_rescrape():
     try:
         from models.gls_tender import GLSTender
         from services.gls_scraper import scrape_gls_tenders
-        from sqlalchemy import text
+        from sqlalchemy import text, create_engine
+        from sqlalchemy.orm import scoped_session, sessionmaker
 
-        # DROP the table entirely to fix schema issues
-        # (db.create_all() doesn't ALTER existing columns)
-        print("Dropping gls_tenders table to reset schema...")
-        db.session.execute(text("DROP TABLE IF EXISTS gls_tenders CASCADE"))
-        db.session.commit()
+        # Create a FRESH database connection to avoid SSL stale connection issues
+        # This is critical on Render where connections can go stale
+        database_url = os.environ.get('DATABASE_URL', '')
 
-        # Recreate the table with the correct schema
-        print("Recreating gls_tenders table with updated schema...")
-        GLSTender.__table__.create(db.engine, checkfirst=True)
+        if database_url:
+            # Fix Render's postgres:// to postgresql://
+            if database_url.startswith('postgres://'):
+                database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
-        # Rescrape
-        stats = scrape_gls_tenders(year=year, dry_run=False)
+            # Create fresh engine with SSL settings
+            engine = create_engine(
+                database_url,
+                pool_pre_ping=True,
+                pool_recycle=300,
+                connect_args={"sslmode": "require"} if 'render.com' in database_url or 'neon' in database_url else {}
+            )
 
-        elapsed = time.time() - start
-        print(f"POST /api/gls/reset took: {elapsed:.4f} seconds")
+            # Create a new session for this operation
+            Session = scoped_session(sessionmaker(bind=engine))
+            db_session = Session()
 
-        return jsonify({
-            "success": True,
-            "year": year,
-            "table_recreated": True,
-            "elapsed_seconds": round(elapsed, 2),
-            "statistics": stats
-        })
+            try:
+                # DROP the table entirely to fix schema issues
+                print("Dropping gls_tenders table to reset schema...")
+                db_session.execute(text("DROP TABLE IF EXISTS gls_tenders CASCADE"))
+                db_session.commit()
+
+                # Recreate the table with the correct schema
+                print("Recreating gls_tenders table with updated schema...")
+                GLSTender.__table__.create(engine, checkfirst=True)
+
+                # Rescrape with fresh session
+                stats = scrape_gls_tenders(year=year, db_session=db_session, dry_run=False)
+
+                elapsed = time.time() - start
+                print(f"POST /api/gls/reset took: {elapsed:.4f} seconds")
+
+                return jsonify({
+                    "success": True,
+                    "year": year,
+                    "table_recreated": True,
+                    "elapsed_seconds": round(elapsed, 2),
+                    "statistics": stats
+                })
+            finally:
+                db_session.close()
+                Session.remove()
+                engine.dispose()
+        else:
+            # Fallback: use app's db session (local dev without DATABASE_URL)
+            print("Dropping gls_tenders table to reset schema...")
+            db.session.execute(text("DROP TABLE IF EXISTS gls_tenders CASCADE"))
+            db.session.commit()
+
+            print("Recreating gls_tenders table with updated schema...")
+            GLSTender.__table__.create(db.engine, checkfirst=True)
+
+            stats = scrape_gls_tenders(year=year, dry_run=False)
+
+            elapsed = time.time() - start
+            print(f"POST /api/gls/reset took: {elapsed:.4f} seconds")
+
+            return jsonify({
+                "success": True,
+                "year": year,
+                "table_recreated": True,
+                "elapsed_seconds": round(elapsed, 2),
+                "statistics": stats
+            })
 
     except Exception as e:
         elapsed = time.time() - start
         print(f"POST /api/gls/reset ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
-        db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
 
