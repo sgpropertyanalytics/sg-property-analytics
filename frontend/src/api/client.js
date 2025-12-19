@@ -163,6 +163,18 @@ export const getPriceTrendsByRegion = (params = {}) =>
 export const getPsfTrendsByRegion = (params = {}) =>
   apiClient.get(`/psf_trends_by_region?${buildQueryString(params)}`);
 
+/**
+ * Get New Launch vs Resale (Lease age < 10 years) comparison
+ * Visual-level endpoint - filters are LOCAL to this chart only
+ * @param {Object} params - Query parameters
+ * @param {string} params.region - ALL, CCR, RCR, OCR (default: ALL)
+ * @param {string} params.bedroom - ALL, 1BR, 2BR, 3BR, 4BR+ (default: ALL)
+ * @param {string} params.timeRange - 2Y, 3Y, 5Y, ALL (default: 3Y)
+ * @returns {Promise<{chartData: Array, summary: Object, appliedFilters: Object}>}
+ */
+export const getNewVsResale = (params = {}) =>
+  apiClient.get(`/new-vs-resale?${buildQueryString(params)}`);
+
 export const getMarketStats = (params = {}) =>
   apiClient.get(`/market_stats?${buildQueryString(params)}`);
 

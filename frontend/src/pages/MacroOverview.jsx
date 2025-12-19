@@ -4,6 +4,7 @@ import { PowerBIFilterSidebar } from '../components/powerbi/PowerBIFilterSidebar
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { VolumeByLocationChart } from '../components/powerbi/VolumeByLocationChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
+import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
@@ -264,6 +265,11 @@ function MacroOverviewContent() {
               onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
               height={350}
             />
+
+            {/* New Launch vs Resale Comparison - Full width */}
+            <div className="lg:col-span-2">
+              <NewVsResaleChart height={350} />
+            </div>
           </div>
 
           {/* GLS Data Table - Government Land Sales */}

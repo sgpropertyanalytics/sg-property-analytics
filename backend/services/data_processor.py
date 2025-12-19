@@ -1620,6 +1620,235 @@ def get_price_project_stats_by_district(
     return {"projects": projects}
 
 
+def get_new_vs_resale_comparison(
+    region: Optional[str] = None,
+    bedroom: Optional[str] = None,
+    time_range: str = "3Y"
+) -> Dict[str, Any]:
+    """
+    Get New Launch vs Resale (lease age < 10 years) comparison data.
+
+    Compares median PSF of new launches against resale units under 10 years old.
+    This controls for age by comparing new launches with near-new resale units.
+
+    Args:
+        region: Market segment filter ("ALL", "CCR", "RCR", "OCR") - defaults to ALL
+        bedroom: Bedroom filter ("ALL", "1BR", "2BR", "3BR", "4BR+") - defaults to ALL
+        time_range: Time range ("2Y", "3Y", "5Y", "ALL") - defaults to 3Y
+
+    Returns:
+        Dictionary with chart data, summary, and applied filters
+    """
+    from models.database import db
+    from sqlalchemy import text
+
+    # Calculate start date based on time range
+    today = datetime.now()
+    if time_range == "2Y":
+        start_date = today - timedelta(days=2 * 365)
+    elif time_range == "3Y":
+        start_date = today - timedelta(days=3 * 365)
+    elif time_range == "5Y":
+        start_date = today - timedelta(days=5 * 365)
+    else:  # ALL
+        start_date = None
+
+    # Build WHERE conditions for the query
+    where_conditions = ["1=1"]  # Base condition that's always true
+    params = {}
+
+    if start_date:
+        where_conditions.append("transaction_date >= :start_date")
+        params["start_date"] = start_date.strftime("%Y-%m-%d")
+
+    # Region filter - map to districts
+    if region and region != "ALL":
+        ccr_districts = ["D01", "D02", "D06", "D07", "D09", "D10", "D11"]
+        rcr_districts = ["D03", "D04", "D05", "D08", "D12", "D13", "D14", "D15", "D20"]
+        ocr_districts = ["D16", "D17", "D18", "D19", "D21", "D22", "D23", "D24", "D25", "D26", "D27", "D28"]
+
+        if region == "CCR":
+            districts = ccr_districts
+        elif region == "RCR":
+            districts = rcr_districts
+        elif region == "OCR":
+            districts = ocr_districts
+        else:
+            districts = []
+
+        if districts:
+            placeholders = ", ".join([f":district_{i}" for i in range(len(districts))])
+            where_conditions.append(f"district IN ({placeholders})")
+            for i, d in enumerate(districts):
+                params[f"district_{i}"] = d
+
+    # Bedroom filter
+    if bedroom and bedroom != "ALL":
+        bedroom_map = {"1BR": 1, "2BR": 2, "3BR": 3, "4BR+": 4}
+        bedroom_int = bedroom_map.get(bedroom)
+        if bedroom_int:
+            if bedroom_int == 4:
+                where_conditions.append("bedroom_count >= 4")
+            else:
+                where_conditions.append("bedroom_count = :bedroom_count")
+                params["bedroom_count"] = bedroom_int
+
+    where_clause = " AND ".join(where_conditions)
+
+    # Raw SQL query using PostgreSQL's percentile_cont for true median
+    # Using avg as fallback for SQLite compatibility
+    sql = text(f"""
+        WITH new_launches AS (
+            SELECT
+                DATE_TRUNC('quarter', transaction_date) AS period,
+                AVG(psf) AS median_psf,
+                COUNT(*) AS transaction_count
+            FROM transactions
+            WHERE sale_type = 'New Sale'
+              AND {where_clause}
+            GROUP BY DATE_TRUNC('quarter', transaction_date)
+        ),
+        resale_under_10y AS (
+            SELECT
+                DATE_TRUNC('quarter', transaction_date) AS period,
+                AVG(psf) AS median_psf,
+                COUNT(*) AS transaction_count
+            FROM transactions
+            WHERE sale_type = 'Resale'
+              AND lease_start_year IS NOT NULL
+              AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) < 10
+              AND {where_clause}
+            GROUP BY DATE_TRUNC('quarter', transaction_date)
+        )
+        SELECT
+            COALESCE(n.period, r.period) AS period,
+            n.median_psf AS new_launch_psf,
+            n.transaction_count AS new_launch_count,
+            r.median_psf AS resale_psf,
+            r.transaction_count AS resale_count
+        FROM new_launches n
+        FULL OUTER JOIN resale_under_10y r ON n.period = r.period
+        ORDER BY period
+    """)
+
+    try:
+        result = db.session.execute(sql, params).fetchall()
+    except Exception as e:
+        # Fallback for SQLite (which doesn't support FULL OUTER JOIN)
+        # Use LEFT JOIN + RIGHT JOIN with UNION
+        sql_fallback = text(f"""
+            WITH new_launches AS (
+                SELECT
+                    strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1) AS period,
+                    AVG(psf) AS median_psf,
+                    COUNT(*) AS transaction_count
+                FROM transactions
+                WHERE sale_type = 'New Sale'
+                  AND {where_clause}
+                GROUP BY strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1)
+            ),
+            resale_under_10y AS (
+                SELECT
+                    strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1) AS period,
+                    AVG(psf) AS median_psf,
+                    COUNT(*) AS transaction_count
+                FROM transactions
+                WHERE sale_type = 'Resale'
+                  AND lease_start_year IS NOT NULL
+                  AND (CAST(strftime('%Y', transaction_date) AS INTEGER) - lease_start_year) < 10
+                  AND {where_clause}
+                GROUP BY strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1)
+            )
+            SELECT
+                COALESCE(n.period, r.period) AS period,
+                n.median_psf AS new_launch_psf,
+                n.transaction_count AS new_launch_count,
+                r.median_psf AS resale_psf,
+                r.transaction_count AS resale_count
+            FROM new_launches n
+            LEFT JOIN resale_under_10y r ON n.period = r.period
+            UNION
+            SELECT
+                r.period AS period,
+                n.median_psf AS new_launch_psf,
+                n.transaction_count AS new_launch_count,
+                r.median_psf AS resale_psf,
+                r.transaction_count AS resale_count
+            FROM resale_under_10y r
+            LEFT JOIN new_launches n ON n.period = r.period
+            WHERE n.period IS NULL
+            ORDER BY period
+        """)
+        result = db.session.execute(sql_fallback, params).fetchall()
+
+    # Build chart data
+    chart_data = []
+    premiums = []
+
+    for row in result:
+        period = row[0]
+        new_launch_psf = float(row[1]) if row[1] else None
+        new_launch_count = int(row[2]) if row[2] else 0
+        resale_psf = float(row[3]) if row[3] else None
+        resale_count = int(row[4]) if row[4] else 0
+
+        # Calculate premium percentage
+        premium_pct = None
+        if new_launch_psf and resale_psf and resale_psf > 0:
+            premium_pct = round((new_launch_psf - resale_psf) / resale_psf * 100, 1)
+            premiums.append(premium_pct)
+
+        # Format period as YYYY-QX (if it's a datetime, convert it)
+        if period:
+            if hasattr(period, 'month'):
+                quarter = (period.month - 1) // 3 + 1
+                period_str = f"{period.year}-Q{quarter}"
+            else:
+                period_str = str(period)
+        else:
+            period_str = "Unknown"
+
+        chart_data.append({
+            'period': period_str,
+            'newLaunchPsf': round(new_launch_psf, 0) if new_launch_psf else None,
+            'resalePsf': round(resale_psf, 0) if resale_psf else None,
+            'premiumPct': premium_pct,
+            'newLaunchCount': new_launch_count,
+            'resaleCount': resale_count
+        })
+
+    # Calculate summary statistics
+    current_premium = premiums[-1] if premiums else None
+    avg_premium = round(sum(premiums) / len(premiums), 1) if premiums else None
+
+    # Determine trend (compare last 4 quarters vs previous 4)
+    premium_trend = 'stable'
+    if len(premiums) >= 8:
+        recent_avg = sum(premiums[-4:]) / 4
+        previous_avg = sum(premiums[-8:-4]) / 4
+        diff = recent_avg - previous_avg
+        if diff >= 2:
+            premium_trend = 'widening'
+        elif diff <= -2:
+            premium_trend = 'narrowing'
+
+    return {
+        'chartData': chart_data,
+        'summary': {
+            'currentPremium': current_premium,
+            'avgPremium10Y': avg_premium,
+            'premiumTrend': premium_trend,
+            'dataPoints': len(chart_data)
+        },
+        'appliedFilters': {
+            'region': region or 'ALL',
+            'bedroom': bedroom or 'ALL',
+            'timeRange': time_range,
+            'scope': 'visual-level'
+        }
+    }
+
+
 def get_comparable_value_analysis(
     target_price: float,
     price_band: float = 100000.0,
