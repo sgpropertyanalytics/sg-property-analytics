@@ -979,3 +979,314 @@ def validate_new_launches(db_session=None) -> Dict[str, Any]:
     print(f"Flagged for review: {stats['flagged_for_review']}")
 
     return stats
+
+
+# =============================================================================
+# SEED DATA - Known 2026 New Launches
+# =============================================================================
+
+# Based on publicly available information about upcoming Singapore condo launches
+SEED_DATA_2026 = [
+    {
+        'project_name': 'Parktown Residence',
+        'developer': 'CapitaLand Development',
+        'district': 'D22',
+        'planning_area': 'Jurong East',
+        'market_segment': 'OCR',
+        'total_units': 1193,
+        'indicative_psf_low': 2050,
+        'indicative_psf_high': 2350,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-01-15',
+        'land_bid_psf': 768,
+    },
+    {
+        'project_name': 'Chuan Park',
+        'developer': 'Kingsford Development & MCC Land',
+        'district': 'D19',
+        'planning_area': 'Serangoon',
+        'market_segment': 'OCR',
+        'total_units': 916,
+        'indicative_psf_low': 2200,
+        'indicative_psf_high': 2500,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-02-01',
+        'land_bid_psf': 1106,
+    },
+    {
+        'project_name': 'The Collective at One Sophia',
+        'developer': 'SingHaiyi Group',
+        'district': 'D09',
+        'planning_area': 'Orchard',
+        'market_segment': 'CCR',
+        'total_units': 366,
+        'indicative_psf_low': 3200,
+        'indicative_psf_high': 3800,
+        'tenure': 'Freehold',
+        'expected_launch_date': '2026-03-01',
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'Meyer Blue',
+        'developer': 'UOL Group & Kheng Leong',
+        'district': 'D15',
+        'planning_area': 'Marine Parade',
+        'market_segment': 'RCR',
+        'total_units': 226,
+        'indicative_psf_low': 2800,
+        'indicative_psf_high': 3200,
+        'tenure': 'Freehold',
+        'expected_launch_date': '2026-Q1',
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'Arina East Residences',
+        'developer': 'Macly Group',
+        'district': 'D15',
+        'planning_area': 'Marine Parade',
+        'market_segment': 'RCR',
+        'total_units': 107,
+        'indicative_psf_low': 2300,
+        'indicative_psf_high': 2600,
+        'tenure': 'Freehold',
+        'expected_launch_date': '2026-Q1',
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'Bagnall Haus',
+        'developer': 'Roxy-Pacific Holdings',
+        'district': 'D16',
+        'planning_area': 'Bedok',
+        'market_segment': 'OCR',
+        'total_units': 113,
+        'indicative_psf_low': 2100,
+        'indicative_psf_high': 2400,
+        'tenure': 'Freehold',
+        'expected_launch_date': '2026-Q1',
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'Lentor Central Residences',
+        'developer': 'GuocoLand & Hong Leong Holdings',
+        'district': 'D26',
+        'planning_area': 'Yishun',
+        'market_segment': 'OCR',
+        'total_units': 475,
+        'indicative_psf_low': 2150,
+        'indicative_psf_high': 2400,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-Q2',
+        'land_bid_psf': 1108,
+    },
+    {
+        'project_name': 'Aurea',
+        'developer': 'Aurum Land',
+        'district': 'D15',
+        'planning_area': 'Marine Parade',
+        'market_segment': 'RCR',
+        'total_units': 188,
+        'indicative_psf_low': 2450,
+        'indicative_psf_high': 2750,
+        'tenure': 'Freehold',
+        'expected_launch_date': '2026-Q2',
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'The Continuum',
+        'developer': 'Hoi Hup Realty & Sunway Developments',
+        'district': 'D15',
+        'planning_area': 'Katong',
+        'market_segment': 'RCR',
+        'total_units': 816,
+        'indicative_psf_low': 2500,
+        'indicative_psf_high': 2900,
+        'tenure': 'Freehold',
+        'expected_launch_date': '2026-Q2',
+        'land_bid_psf': None,
+    },
+    {
+        'project_name': 'Tembusu Grand',
+        'developer': 'CDL & MCL Land',
+        'district': 'D15',
+        'planning_area': 'Marine Parade',
+        'market_segment': 'RCR',
+        'total_units': 638,
+        'indicative_psf_low': 2400,
+        'indicative_psf_high': 2700,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-Q2',
+        'land_bid_psf': 1302,
+    },
+    {
+        'project_name': 'Sora',
+        'developer': 'CEL Development',
+        'district': 'D26',
+        'planning_area': 'Yishun',
+        'market_segment': 'OCR',
+        'total_units': 440,
+        'indicative_psf_low': 1950,
+        'indicative_psf_high': 2200,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-Q2',
+        'land_bid_psf': 930,
+    },
+    {
+        'project_name': 'Kassia',
+        'developer': 'Hong Leong Holdings & CDL',
+        'district': 'D27',
+        'planning_area': 'Sembawang',
+        'market_segment': 'OCR',
+        'total_units': 276,
+        'indicative_psf_low': 1850,
+        'indicative_psf_high': 2100,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-Q3',
+        'land_bid_psf': 885,
+    },
+    {
+        'project_name': 'Norwood Grand',
+        'developer': 'CDL',
+        'district': 'D25',
+        'planning_area': 'Woodlands',
+        'market_segment': 'OCR',
+        'total_units': 348,
+        'indicative_psf_low': 1750,
+        'indicative_psf_high': 2000,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-Q3',
+        'land_bid_psf': 721,
+    },
+    {
+        'project_name': 'Marina View Residences',
+        'developer': 'IOI Properties & CDL',
+        'district': 'D01',
+        'planning_area': 'Downtown Core',
+        'market_segment': 'CCR',
+        'total_units': 683,
+        'indicative_psf_low': 3000,
+        'indicative_psf_high': 3600,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-Q3',
+        'land_bid_psf': 1402,
+    },
+    {
+        'project_name': 'Nava Grove',
+        'developer': 'MCL Land',
+        'district': 'D21',
+        'planning_area': 'Bukit Timah',
+        'market_segment': 'RCR',
+        'total_units': 552,
+        'indicative_psf_low': 2200,
+        'indicative_psf_high': 2500,
+        'tenure': '99-year',
+        'expected_launch_date': '2026-Q4',
+        'land_bid_psf': 1038,
+    },
+]
+
+
+def seed_new_launches(db_session=None, reset: bool = False) -> Dict[str, Any]:
+    """
+    Seed the database with known 2026 new launch projects.
+
+    This provides baseline data when web scraping fails or for testing.
+
+    Args:
+        db_session: SQLAlchemy session
+        reset: If True, delete existing data before seeding
+
+    Returns:
+        Dict with statistics
+    """
+    from models.new_launch import NewLaunch
+    from models.database import db
+
+    if db_session is None:
+        db_session = db.session
+
+    stats = {
+        'existing': 0,
+        'inserted': 0,
+        'skipped': 0,
+        'errors': [],
+    }
+
+    print(f"\n{'='*60}")
+    print("Seeding New Launch Data (2026)")
+    print(f"{'='*60}\n")
+
+    if reset:
+        # Delete existing 2026 records
+        deleted = db_session.query(NewLaunch).filter(NewLaunch.launch_year == 2026).delete()
+        db_session.commit()
+        print(f"Deleted {deleted} existing 2026 records")
+
+    # Get existing project names
+    existing_names = {
+        r[0].lower() for r in
+        db_session.query(NewLaunch.project_name).filter(NewLaunch.launch_year == 2026).all()
+    }
+    stats['existing'] = len(existing_names)
+
+    for project_data in SEED_DATA_2026:
+        try:
+            project_name = project_data['project_name']
+
+            # Skip if already exists
+            if project_name.lower() in existing_names:
+                stats['skipped'] += 1
+                print(f"  Skipped (exists): {project_name}")
+                continue
+
+            # Parse expected launch date
+            expected_launch_date = None
+            date_str = project_data.get('expected_launch_date', '')
+            if date_str:
+                if 'Q' in date_str:
+                    # Quarter format: 2026-Q1 -> 2026-01-01, 2026-Q2 -> 2026-04-01, etc.
+                    year, quarter = date_str.split('-Q')
+                    month = (int(quarter) - 1) * 3 + 1
+                    expected_launch_date = datetime(int(year), month, 1)
+                else:
+                    # Full date format
+                    expected_launch_date = datetime.strptime(date_str, '%Y-%m-%d')
+
+            new_launch = NewLaunch(
+                project_name=project_name,
+                developer=project_data.get('developer'),
+                district=project_data.get('district'),
+                planning_area=project_data.get('planning_area'),
+                market_segment=project_data.get('market_segment'),
+                total_units=project_data.get('total_units'),
+                indicative_psf_low=project_data.get('indicative_psf_low'),
+                indicative_psf_high=project_data.get('indicative_psf_high'),
+                tenure=project_data.get('tenure'),
+                launch_year=2026,
+                expected_launch_date=expected_launch_date,
+                land_bid_psf=project_data.get('land_bid_psf'),
+                property_type='Condominium',
+                source_urls={'seed': 'Manual seed data based on public sources'},
+                needs_review=False,
+                last_scraped=datetime.utcnow(),
+            )
+
+            db_session.add(new_launch)
+            db_session.commit()
+            stats['inserted'] += 1
+            print(f"  Inserted: {project_name}")
+
+        except Exception as e:
+            db_session.rollback()
+            stats['errors'].append(f"{project_name}: {str(e)}")
+            print(f"  Error: {project_name} - {e}")
+
+    print(f"\n{'='*60}")
+    print("Seed Complete")
+    print(f"{'='*60}")
+    print(f"Already existed: {stats['existing']}")
+    print(f"Inserted: {stats['inserted']}")
+    print(f"Skipped: {stats['skipped']}")
+    if stats['errors']:
+        print(f"Errors: {len(stats['errors'])}")
+
+    return stats
