@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""
+CLI runner for new launches scraper.
+
+Scrapes 2026 private condo launches from 3 sources:
+- EdgeProp (primary, research-grade)
+- PropNex (agency source)
+- ERA (agency source)
+
+Cross-validates data and stores in database.
+
+Usage:
+    python scripts/scrape_new_launches.py
+    python scripts/scrape_new_launches.py --year 2026
+    python scripts/scrape_new_launches.py --dry-run
+    python scripts/scrape_new_launches.py --reset
+"""
+import argparse
+import sys
+import os
+
+# Add backend to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+
+from app import create_app
+from models.database import db
+from services.new_launch_scraper import scrape_new_launches
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Scrape 2026 new launches from EdgeProp, PropNex, ERA'
+    )
+    parser.add_argument(
+        '--year',
+        type=int,
+        default=2026,
+        help='Target year to scrape (default: 2026)'
+    )
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Preview changes without saving to database'
+    )
+    parser.add_argument(
+        '--reset',
+        action='store_true',
+        help='Delete existing records for the year before scraping'
+    )
+    parser.add_argument(
+        '--verbose',
+        '-v',
+        action='store_true',
+        help='Enable verbose output'
+    )
+
+    args = parser.parse_args()
+
+    # Create Flask app context
+    app = create_app()
+
+    with app.app_context():
+        print(f"\n{'='*60}")
+        print(f"New Launches Scraper")
+        print(f"{'='*60}")
+        print(f"Target year: {args.year}")
+        print(f"Mode: {'DRY RUN' if args.dry_run else 'LIVE'}")
+        print(f"{'='*60}\n")
+
+        if args.reset and not args.dry_run:
+            from models.new_launch import NewLaunch
+
+            print(f"Resetting: Deleting existing records for {args.year}...")
+            deleted = db.session.query(NewLaunch).filter(
+                NewLaunch.launch_year == args.year
+            ).delete()
+            db.session.commit()
+            print(f"  Deleted {deleted} existing records\n")
+
+        # Run the scraper
+        stats = scrape_new_launches(
+            target_year=args.year,
+            db_session=db.session,
+            dry_run=args.dry_run
+        )
+
+        # Print summary
+        print(f"\n{'='*60}")
+        print("Summary")
+        print(f"{'='*60}")
+        print(f"EdgeProp scraped: {stats.get('edgeprop_scraped', 0)}")
+        print(f"PropNex scraped: {stats.get('propnex_scraped', 0)}")
+        print(f"ERA scraped: {stats.get('era_scraped', 0)}")
+        print(f"Unique projects: {stats.get('total_unique_projects', 0)}")
+        print(f"Saved: {stats.get('projects_saved', 0)}")
+        print(f"Updated: {stats.get('projects_updated', 0)}")
+        print(f"Needs review: {stats.get('needs_review', 0)}")
+        print(f"GLS linked: {stats.get('gls_linked', 0)}")
+
+        if stats.get('errors'):
+            print(f"\nErrors ({len(stats['errors'])}):")
+            for error in stats['errors'][:10]:
+                print(f"  - {error}")
+            if len(stats['errors']) > 10:
+                print(f"  ... and {len(stats['errors']) - 10} more")
+
+        print(f"\n{'='*60}")
+        print("Done!" if not args.dry_run else "Done! (dry run - no changes saved)")
+        print(f"{'='*60}\n")
+
+
+if __name__ == '__main__':
+    main()

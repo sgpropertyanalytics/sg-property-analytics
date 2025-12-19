@@ -9,6 +9,7 @@ import { TransactionDetailModal } from '../components/powerbi/TransactionDetailM
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
 import { GLSDataTable } from '../components/powerbi/GLSDataTable';
+import { NewLaunchDataTable } from '../components/powerbi/NewLaunchDataTable';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
@@ -279,6 +280,11 @@ function MacroOverviewContent() {
           {/* GLS Data Table - Government Land Sales */}
           <div className="mb-4 md:mb-6">
             <GLSDataTable height={350} />
+          </div>
+
+          {/* 2026 New Launch Projects Table */}
+          <div className="mb-4 md:mb-6">
+            <NewLaunchDataTable height={350} />
           </div>
 
           {/* Transaction Data Table - Component unchanged */}
