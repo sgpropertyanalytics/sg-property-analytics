@@ -397,6 +397,41 @@ const handleChartClick = (clickedValue) => {
 };
 ```
 
+### MANDATORY: Standardized DrillButtons Component
+
+**Every chart with drill functionality MUST use the `DrillButtons` component** for visual consistency across the dashboard. Never create custom drill buttons.
+
+```jsx
+import { DrillButtons } from './DrillButtons';
+
+// GLOBAL MODE: Uses PowerBIFilterContext (affects other charts via breadcrumbs)
+<DrillButtons hierarchyType="time" />
+<DrillButtons hierarchyType="location" />
+
+// LOCAL MODE: Uses local state (visual-local, does NOT affect other charts)
+// Required props: localLevel, localLevels, localLevelLabels, onLocalDrillUp, onLocalDrillDown
+<DrillButtons
+  localLevel={localDrillLevel}
+  localLevels={['year', 'quarter', 'month']}
+  localLevelLabels={{ year: 'Year', quarter: 'Quarter', month: 'Month' }}
+  onLocalDrillUp={handleDrillUp}
+  onLocalDrillDown={handleDrillDown}
+/>
+```
+
+**Why standardization matters:**
+1. **Visual consistency** - All drill buttons look identical across all charts
+2. **UX predictability** - Users learn one pattern, applied everywhere
+3. **Maintenance** - Fix styling in one place, updates all charts
+4. **Accessibility** - Consistent ARIA labels and keyboard navigation
+
+**DrillButtons features:**
+- Drill Up (↑) - Go back up one level
+- Drill Mode Toggle (global mode only) - Enable click-to-drill
+- Go to Next Level (↓) - Drill down to next level
+- View Transactions - Scroll to transaction table
+- Current level label
+
 ---
 
 ## District to Region Mapping

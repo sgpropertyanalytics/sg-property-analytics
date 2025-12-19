@@ -2,12 +2,17 @@ import React, { useState } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 
 /**
- * Power BI-style Drill Buttons
+ * Power BI-style Drill Buttons - STANDARDIZED component for all charts
  *
  * Provides 3 drill controls matching Power BI's visual hierarchy navigation:
  * 1. Drill Up (↑) - go back up one level in the hierarchy
  * 2. Drill Down Mode - toggle mode where clicking a data point drills into it
  * 3. Go to Next Level (↓) - replace entire visual with next level down
+ *
+ * MODES:
+ * - Global mode (default): Uses PowerBIFilterContext for state
+ * - Local mode: Uses props for state (when localLevel/onLocalDrillUp/onLocalDrillDown provided)
+ *   Local mode follows Power BI best practice: Drill ≠ Filter (drill is visual-local)
  *
  * Best Practices (per Power BI documentation):
  * - "Expand All Down" is NOT included as it clutters dashboards and breaks scanability
@@ -17,18 +22,48 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
  * @param {string} hierarchyType - 'time' | 'location' | 'price' | 'bedroom'
  * @param {function} onDrillModeChange - callback when drill mode changes
  * @param {function} onViewTransactions - callback to scroll to transaction table
+ * @param {string} localLevel - (LOCAL MODE) current drill level from parent state
+ * @param {function} onLocalDrillUp - (LOCAL MODE) callback to drill up
+ * @param {function} onLocalDrillDown - (LOCAL MODE) callback to drill down
+ * @param {string[]} localLevels - (LOCAL MODE) array of level names ['year', 'quarter', 'month']
+ * @param {object} localLevelLabels - (LOCAL MODE) labels for levels { year: 'Year', ... }
  */
 export function DrillButtons({
   hierarchyType = 'time',
   onDrillModeChange,
   onViewTransactions,
-  className = ''
+  className = '',
+  // Local mode props - when provided, component uses local state instead of global context
+  localLevel,
+  onLocalDrillUp,
+  onLocalDrillDown,
+  localLevels,
+  localLevelLabels,
 }) {
   const { drillPath, drillUp, drillDown } = usePowerBIFilters();
   const [drillDownMode, setDrillDownMode] = useState(false);
 
-  // Get current level and available levels based on hierarchy type
+  // Determine if we're in local mode (visual-local drill) or global mode
+  const isLocalMode = localLevel !== undefined && onLocalDrillUp && onLocalDrillDown;
+
+  // Get current level and available levels based on hierarchy type or local props
   const getHierarchyInfo = () => {
+    // LOCAL MODE: Use props for state (visual-local drill)
+    if (isLocalMode) {
+      const levels = localLevels || ['year', 'quarter', 'month'];
+      const labels = localLevelLabels || { year: 'Year', quarter: 'Quarter', month: 'Month' };
+      const currentIndex = levels.indexOf(localLevel);
+      return {
+        currentLevel: localLevel,
+        currentIndex,
+        levels,
+        canDrillUp: currentIndex > 0,
+        canDrillDown: currentIndex < levels.length - 1,
+        levelLabels: labels
+      };
+    }
+
+    // GLOBAL MODE: Use context for state
     if (hierarchyType === 'time') {
       const levels = ['year', 'quarter', 'month'];
       const currentIndex = levels.indexOf(drillPath.time);
@@ -85,16 +120,20 @@ export function DrillButtons({
 
   const { currentLevel, currentIndex, levels, canDrillUp, canDrillDown, levelLabels } = getHierarchyInfo();
 
-  // Handle Drill Up
+  // Handle Drill Up - uses local callback in local mode, global context otherwise
   const handleDrillUp = (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (canDrillUp) {
-      drillUp(hierarchyType);
+      if (isLocalMode) {
+        onLocalDrillUp();
+      } else {
+        drillUp(hierarchyType);
+      }
     }
   };
 
-  // Toggle Drill Down Mode
+  // Toggle Drill Down Mode (only available in global mode for click-to-drill behavior)
   const handleToggleDrillMode = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -105,12 +144,16 @@ export function DrillButtons({
     }
   };
 
-  // Go to Next Level (for all data)
+  // Go to Next Level (for all data) - uses local callback in local mode
   const handleGoToNextLevel = (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (canDrillDown) {
-      drillDown(hierarchyType, null, null);
+      if (isLocalMode) {
+        onLocalDrillDown();
+      } else {
+        drillDown(hierarchyType, null, null);
+      }
     }
   };
 
@@ -156,8 +199,8 @@ export function DrillButtons({
         </button>
       )}
 
-      {/* Drill Down Mode Toggle - Click specific data point to drill */}
-      {hasDrillHierarchy && (
+      {/* Drill Down Mode Toggle - Click specific data point to drill (global mode only) */}
+      {hasDrillHierarchy && !isLocalMode && (
         <button
           type="button"
           onClick={handleToggleDrillMode}
@@ -215,8 +258,8 @@ export function DrillButtons({
         </span>
       )}
 
-      {/* Drill Mode Indicator */}
-      {drillDownMode && canDrillDown && (
+      {/* Drill Mode Indicator (global mode only) */}
+      {!isLocalMode && drillDownMode && canDrillDown && (
         <span className="ml-1 px-1.5 py-0.5 text-xs bg-[#547792]/20 text-[#213448] rounded font-medium">
           Click to drill
         </span>

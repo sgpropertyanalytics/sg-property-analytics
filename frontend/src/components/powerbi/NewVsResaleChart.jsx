@@ -13,6 +13,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { getNewVsResale } from '../../api/client';
+import { DrillButtons } from './DrillButtons';
 
 ChartJS.register(
   CategoryScale,
@@ -322,47 +323,14 @@ export function NewVsResaleChart({ height = 350 }) {
               )}
             </p>
           </div>
-          {/* LOCAL Drill Up/Down Buttons - visual-local only */}
-          <div className="flex items-center gap-1">
-            {/* Drill Up */}
-            <button
-              type="button"
-              onClick={handleDrillUp}
-              disabled={!canDrillUp}
-              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150 ${
-                canDrillUp
-                  ? 'bg-white border border-[#94B4C1] hover:bg-[#EAE0CF] hover:border-[#547792] text-[#547792] shadow-sm'
-                  : 'bg-[#EAE0CF]/50 border border-[#94B4C1]/50 text-[#94B4C1] cursor-not-allowed'
-              }`}
-              title={canDrillUp ? `Drill up to ${drillLevelLabels[drillLevels[currentDrillIndex - 1]]}` : 'At top level'}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 9V3" />
-                <path d="M3 6l3-3 3 3" />
-              </svg>
-            </button>
-            {/* Drill Down */}
-            <button
-              type="button"
-              onClick={handleDrillDown}
-              disabled={!canDrillDown}
-              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-150 ${
-                canDrillDown
-                  ? 'bg-white border border-[#94B4C1] hover:bg-[#EAE0CF] hover:border-[#547792] text-[#547792] shadow-sm'
-                  : 'bg-[#EAE0CF]/50 border border-[#94B4C1]/50 text-[#94B4C1] cursor-not-allowed'
-              }`}
-              title={canDrillDown ? `Drill down to ${drillLevelLabels[drillLevels[currentDrillIndex + 1]]}` : 'At lowest level'}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 3v6" />
-                <path d="M3 6l3 3 3-3" />
-              </svg>
-            </button>
-            {/* Current level label */}
-            <span className="ml-1 text-xs text-[#547792] font-medium whitespace-nowrap">
-              {drillLevelLabels[localDrillLevel]}
-            </span>
-          </div>
+          {/* Standardized DrillButtons in LOCAL mode - visual-local only */}
+          <DrillButtons
+            localLevel={localDrillLevel}
+            localLevels={drillLevels}
+            localLevelLabels={drillLevelLabels}
+            onLocalDrillUp={handleDrillUp}
+            onLocalDrillDown={handleDrillDown}
+          />
         </div>
 
         {/* Local Filters - compact inline (Region & Bedroom only, Period removed) */}
