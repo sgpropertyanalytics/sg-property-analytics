@@ -116,6 +116,11 @@ def create_app():
 
     # Create database tables and run auto-validation
     with app.app_context():
+        # Import all models before create_all to ensure tables are created
+        from models.transaction import Transaction
+        from models.gls_tender import GLSTender
+        from models.new_launch import NewLaunch
+
         db.create_all()
         print("✓ Database initialized - using SQL-only aggregation for memory efficiency")
 
