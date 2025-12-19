@@ -28,7 +28,7 @@ ChartJS.register(
  * - Cross-filtering: clicking a segment filters all other charts
  */
 export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 }) {
-  const { buildApiParams, crossFilter, applyCrossFilter, toggleBedroomType, highlight } = usePowerBIFilters();
+  const { buildApiParams, crossFilter, applyCrossFilter, highlight } = usePowerBIFilters();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -82,15 +82,13 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
       if (clickedItem) {
         const bedroomValue = clickedItem.bedroom;
 
-        // Apply cross-filter
+        // Apply cross-filter (per standard: bedroom segment click = cross-filter)
+        // Toggle behavior: clicking same segment again clears the filter
         if (onCrossFilter) {
           onCrossFilter('bedroom', 'bedroom', bedroomValue);
         } else {
           applyCrossFilter('bedroom', 'bedroom', bedroomValue.toString());
         }
-
-        // Toggle in sidebar filter
-        toggleBedroomType(bedroomValue);
       }
     }
   };
