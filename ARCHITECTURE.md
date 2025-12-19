@@ -29,54 +29,184 @@ graph TB
     subgraph "Data Ingestion"
         CSV[CSV Files<br/>rawdata/]
         Upload[scripts/upload.py<br/>ETL Script]
+        URA[URA Website<br/>Media Releases]
+        GLSScraper[gls_scraper.py<br/>Web Scraper]
+        GLSScheduler[gls_scheduler.py<br/>Cron Refresh]
+        OneMap[OneMap API<br/>Geocoding]
     end
 
     subgraph "Database Layer"
         DB[(PostgreSQL)]
         TxnTable[transactions table<br/>Raw Transaction Data]
+        GLSTable[gls_tender table<br/>Land Sales Data]
         StatsTable[api_stats table<br/>Pre-computed Analytics]
     end
 
     subgraph "Backend Services"
         Flask[Flask App<br/>app.py]
-        Validation[data_validation.py<br/>Outliers, Duplicates]
-        DashService[dashboard_service.py<br/>SQL Aggregation]
-        DataProc[data_processor.py<br/>Analytics Logic]
-        Routes[routes/analytics.py<br/>API Endpoints]
+        Validation[data_validation.py<br/>Outliers Duplicates]
+        DashService[dashboard_service.py<br/>Cached SQL Panels]
+        DataProc[data_processor.py<br/>Analysis Functions]
+        AnalyticsRoutes[routes/analytics.py<br/>Transaction APIs]
+        GLSRoutes[routes/gls.py<br/>GLS APIs]
     end
 
     subgraph "Frontend Application"
         React[React + Vite<br/>MacroOverview.jsx]
         FilterCtx[PowerBIFilterContext<br/>Global Filter State]
-        Charts[Chart Components<br/>TimeTrend, Volume, etc.]
+        Charts[Chart Components<br/>TimeTrend Volume etc]
         FactTable[TransactionDataTable<br/>Fact Table]
     end
 
-    CSV -->|1. Load and Clean| Upload
+    %% CSV Ingestion Flow
+    CSV -->|1. Load| Upload
     Upload -->|2. Insert| TxnTable
     Upload -->|3. Trigger| Validation
-    Validation -->|4. Clean Data| TxnTable
+    Validation -->|4. Clean| TxnTable
 
+    %% GLS Scraping Flow
+    URA -->|5. Scrape| GLSScraper
+    GLSScraper -->|6. Geocode| OneMap
+    GLSScraper -->|7. Store| GLSTable
+    GLSScheduler -->|8. Schedule| GLSScraper
+
+    %% Storage
     TxnTable -.->|Stored in| DB
+    GLSTable -.->|Stored in| DB
     StatsTable -.->|Stored in| DB
 
-    React -->|5. User Interaction| FilterCtx
-    FilterCtx -->|6. buildApiParams| Charts
-    Charts -->|7. HTTP GET| Flask
-    Flask -->|8. Route| Routes
-    Routes -->|9. Query| DashService
-    DashService -->|10. SQL Aggregation| TxnTable
-    Routes -->|11. JSON Response| Charts
+    %% Frontend Request Flow
+    React -->|9. User Action| FilterCtx
+    FilterCtx -->|10. buildApiParams| Charts
+    Charts -->|11. HTTP GET| Flask
 
-    FactTable -->|12. includeFactFilter| Routes
+    %% Backend Routing
+    Flask -->|12. Route| AnalyticsRoutes
+    Flask -->|12. Route| GLSRoutes
+
+    %% Service Layer Calls
+    AnalyticsRoutes -->|dashboard endpoint| DashService
+    AnalyticsRoutes -->|analysis endpoints| DataProc
+    GLSRoutes -->|supply pipeline| GLSTable
+
+    %% Database Queries
+    DashService -->|13. SQL CTE| TxnTable
+    DataProc -->|14. SQL Query| TxnTable
+
+    %% Response Flow
+    AnalyticsRoutes -->|15. JSON| Charts
+    FactTable -->|includeFactFilter| AnalyticsRoutes
 
     style CSV fill:#e1f5ff
+    style URA fill:#e1f5ff
     style Upload fill:#fff4e1
+    style GLSScraper fill:#fff4e1
     style TxnTable fill:#e8f5e9
+    style GLSTable fill:#e8f5e9
     style StatsTable fill:#e8f5e9
     style FilterCtx fill:#f3e5f5
     style React fill:#e3f2fd
     style FactTable fill:#ffe0e0
+    style DashService fill:#ffeaa7
+    style DataProc fill:#ffeaa7
+```
+
+### Service Layer Detail
+
+```mermaid
+graph LR
+    subgraph "analytics.py Routes"
+        R1["/api/dashboard"]
+        R2["/api/new-vs-resale"]
+        R3["/api/price_trends"]
+        R4["/api/market_stats"]
+        R5["/api/transactions"]
+        R6["/api/aggregate"]
+    end
+
+    subgraph "dashboard_service.py"
+        DS1["query_time_series"]
+        DS2["query_volume_by_location"]
+        DS3["query_price_histogram"]
+        DS4["query_bedroom_mix"]
+        DS5["query_summary"]
+    end
+
+    subgraph "data_processor.py"
+        DP1["get_new_vs_resale_comparison"]
+        DP2["get_price_trends"]
+        DP3["get_market_stats"]
+        DP4["get_filtered_transactions"]
+        DP5["calculate_statistics"]
+    end
+
+    R1 --> DS1
+    R1 --> DS2
+    R1 --> DS3
+    R1 --> DS4
+    R1 --> DS5
+
+    R2 --> DP1
+    R3 --> DP2
+    R4 --> DP3
+    R5 --> DP4
+    R6 --> DP5
+
+    style R1 fill:#e3f2fd
+    style DS1 fill:#ffeaa7
+    style DS2 fill:#ffeaa7
+    style DS3 fill:#ffeaa7
+    style DP1 fill:#d4edda
+    style DP2 fill:#d4edda
+    style DP3 fill:#d4edda
+```
+
+### GLS Scraping Pipeline
+
+```mermaid
+graph TD
+    subgraph "Trigger"
+        Cron[cron_refresh]
+        Startup[check_and_refresh_on_startup]
+        Manual[POST /api/gls/scrape]
+    end
+
+    subgraph "gls_scraper.py"
+        S1[scrape_gls_tenders]
+        S2[get_media_release_links]
+        S3[parse_media_release]
+        S4[extract_all_table_data]
+        S5[geocode_location]
+        S6[link_awarded_to_launches]
+    end
+
+    subgraph "External APIs"
+        URA[URA Website]
+        OneMap[OneMap Geocoding]
+    end
+
+    subgraph "Database"
+        GLSTender[GLSTender Model]
+    end
+
+    Cron --> S1
+    Startup --> S1
+    Manual --> S1
+
+    S1 --> S2
+    S2 -->|fetch| URA
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 -->|geocode| OneMap
+    S5 --> GLSTender
+    S1 --> S6
+    S6 -->|match awarded to launched| GLSTender
+
+    style S1 fill:#fff4e1
+    style URA fill:#e1f5ff
+    style OneMap fill:#e1f5ff
+    style GLSTender fill:#e8f5e9
 ```
 
 ### Request Flow (Step by Step)
@@ -268,14 +398,18 @@ sg-property-analyzer/
 │   ├── models/                # SQLAlchemy models
 │   │   ├── database.py        # SQLAlchemy db instance
 │   │   ├── transaction.py     # Transaction model (raw data)
+│   │   ├── gls_tender.py      # GLSTender model (land sales)
 │   │   └── user.py            # User model (authentication)
 │   ├── routes/                # API route blueprints
-│   │   ├── analytics.py       # Analytics endpoints
+│   │   ├── analytics.py       # Transaction & analysis endpoints
+│   │   ├── gls.py             # GLS tender endpoints
 │   │   └── auth.py            # JWT authentication
 │   └── services/              # Business logic services
-│       ├── dashboard_service.py   # SQL-based panel queries
-│       ├── data_processor.py      # Analytics computation logic
+│       ├── dashboard_service.py   # Cached SQL panel queries (high-perf)
+│       ├── data_processor.py      # Analysis functions (price trends, stats)
 │       ├── data_validation.py     # Data cleaning (outliers, duplicates)
+│       ├── gls_scraper.py         # URA website scraper + geocoding
+│       ├── gls_scheduler.py       # Cron refresh & freshness checks
 │       ├── data_computation.py    # Pre-compute stats
 │       └── analytics_reader.py    # Read pre-computed stats
 │
@@ -414,6 +548,27 @@ Flexible aggregation endpoint for dynamic filtering.
 **Parameters:**
 - `group_by`: month, quarter, year, district, bedroom, sale_type, region
 - `metrics`: count, median_psf, avg_psf, total_value
+
+### GLS Endpoints (`/api/gls/*`)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/gls/upcoming` | GET | Launched tenders (forward-looking signal) |
+| `/api/gls/awarded` | GET | Awarded tenders (historical fact) |
+| `/api/gls/all` | GET | Combined with status labels |
+| `/api/gls/supply-pipeline` | GET | Aggregate units by region |
+| `/api/gls/price-floor` | GET | Aggregate PSF/sqm by region |
+| `/api/gls/tender/<id>` | GET | Single tender detail |
+| `/api/gls/scrape` | POST | Manual scrape trigger |
+| `/api/gls/cron-refresh` | POST | Cron job refresh |
+
+**GLS Data Flow:**
+1. `gls_scheduler.py` triggers scrape on startup or cron
+2. `gls_scraper.py` fetches URA media releases
+3. Parses HTML tables for tender data (location, price, units, GFA)
+4. Geocodes locations via OneMap API (cached)
+5. Links awarded tenders to original launches (6-pass matching algorithm)
+6. Stores in `GLSTender` model
 
 ---
 
