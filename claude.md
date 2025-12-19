@@ -327,6 +327,75 @@ Render free tier: **512MB RAM**
 
 ---
 
+## Filtering Standard (Power BI Pattern)
+
+### Global Slicers (Page Scope) — MUST Apply to Everything
+
+All slicers in the **Global Slicer Bar** (sidebar) are **page-scoped** and **always apply to every visual** on the main page.
+
+**Global slicers include:**
+- Location (Districts, Market Segment: CCR/RCR/OCR)
+- Date Range (From/To)
+- Bedroom Types
+- Sale Type (New Sale / Resale)
+- PSF Range
+- Size Range
+
+**Rules:**
+1. Every main-page API query **MUST** accept these global filters
+2. Every main-page visual **MUST** use the filtered dataset returned from global filters
+3. **No visual is allowed to "opt out"** of global slicers unless explicitly documented (rare exception)
+4. Global slicers must be visible at all times and must not be duplicated inside individual chart cards
+
+**Implementation:**
+```jsx
+// Global slicer state lives in PowerBIFilterContext (single source of truth)
+const { buildApiParams, filters } = usePowerBIFilters();
+
+// CORRECT: Use buildApiParams to include global filters
+const params = buildApiParams({
+  group_by: 'quarter',
+  metrics: 'count,median_psf'
+});
+
+// WRONG: Ignoring global filters completely
+const params = { region: localRegion, bedroom: localBedroom }; // DON'T DO THIS
+```
+
+### Local Filters (Visual Scope) — Narrow, Don't Replace
+
+Visual components may add **local filters**, but local filters can only **further narrow** the already globally-filtered data. They cannot replace or override global filters.
+
+**Example - Correct pattern:**
+```jsx
+// Start with global filters
+const globalParams = buildApiParams({});
+
+// Local filter ADDS to global (narrows further)
+if (localTimeGrain) {
+  globalParams.time_grain = localTimeGrain;
+}
+```
+
+**Example - Wrong pattern:**
+```jsx
+// WRONG: Local filter ignores global filters entirely
+const params = {
+  region: localRegion,  // Ignores global district selection!
+  bedroom: localBedroom // Ignores global bedroom selection!
+};
+```
+
+### Visual-Level Filters vs Global Filters
+
+| Filter Type | Scope | Can Override Global? | Example |
+|-------------|-------|---------------------|---------|
+| Global Slicer | All visuals | N/A (is the base) | Sidebar District filter |
+| Local Filter | Single visual | NO - only narrows | Drill level (Year/Quarter/Month) |
+| Visual Filter | Single visual | NO - only narrows | Chart-specific grouping |
+
+---
+
 ## Power BI Drill Up/Down Rules
 
 ### Core Principle
