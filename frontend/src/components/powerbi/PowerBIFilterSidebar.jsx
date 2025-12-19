@@ -306,6 +306,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                   onChange={(e) => {
                     if (e.target.value) {
                       // Get last day of the selected month (e.g., Sep has 30, Feb has 28/29)
+                      // month from input is 1-based (01-12), day 0 trick gives last day of that month
                       const [year, month] = e.target.value.split('-');
                       const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
                       setDateRange(filters.dateRange.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);

@@ -423,6 +423,9 @@ export function PowerBIFilterProvider({ children }) {
       if (!sidebarDateSet) {
         if (highlight.dimension === 'month') {
           // Get last day of month correctly (e.g., Sep has 30, Feb has 28/29)
+          // Note: month from date string is 1-based (Jan=1, Dec=12)
+          // new Date(year, month, 0) works because JS month is 0-indexed,
+          // so month=9 (Sep) → October day 0 → last day of September
           const [year, month] = highlight.value.split('-');
           const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
           combined.dateRange = {
@@ -434,7 +437,7 @@ export function PowerBIFilterProvider({ children }) {
           const [year, q] = highlight.value.split('-Q');
           const quarterStartMonth = (parseInt(q) - 1) * 3 + 1;
           const quarterEndMonth = quarterStartMonth + 2;
-          // Get last day of the quarter's final month
+          // Get last day of the quarter's final month (same month indexing trick as above)
           const lastDay = new Date(parseInt(year), quarterEndMonth, 0).getDate();
           combined.dateRange = {
             start: `${year}-${String(quarterStartMonth).padStart(2, '0')}-01`,
@@ -478,9 +481,9 @@ export function PowerBIFilterProvider({ children }) {
           // Extract quarter number from "2024-Q3" or "Q3" format
           const qMatch = lastValue.match(/Q(\d)/);
           const q = qMatch ? parseInt(qMatch[1]) : 1;
-          const quarterStartMonth = (q - 1) * 3 + 1;
-          const quarterEndMonth = quarterStartMonth + 2;
-          // Get last day of the quarter's final month correctly
+          const quarterStartMonth = (q - 1) * 3 + 1;  // Q1=1, Q2=4, Q3=7, Q4=10
+          const quarterEndMonth = quarterStartMonth + 2;  // Q1=3, Q2=6, Q3=9, Q4=12
+          // Get last day of quarter's final month (month is 1-based, day 0 trick)
           const lastDay = new Date(parseInt(year), quarterEndMonth, 0).getDate();
           combined.dateRange = {
             start: `${year}-${String(quarterStartMonth).padStart(2, '0')}-01`,
