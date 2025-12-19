@@ -303,7 +303,17 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 <input
                   type="month"
                   value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
-                  onChange={(e) => setDateRange(filters.dateRange.start, e.target.value ? `${e.target.value}-01` : null)}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      // Get last day of the selected month (e.g., Sep has 30, Feb has 28/29)
+                      // month from input is 1-based (01-12), day 0 trick gives last day of that month
+                      const [year, month] = e.target.value.split('-');
+                      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+                      setDateRange(filters.dateRange.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
+                    } else {
+                      setDateRange(filters.dateRange.start, null);
+                    }
+                  }}
                   className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                   max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}

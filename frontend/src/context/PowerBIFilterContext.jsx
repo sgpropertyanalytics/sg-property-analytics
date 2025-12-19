@@ -422,17 +422,26 @@ export function PowerBIFilterProvider({ children }) {
 
       if (!sidebarDateSet) {
         if (highlight.dimension === 'month') {
+          // Get last day of month correctly (e.g., Sep has 30, Feb has 28/29)
+          // Note: month from date string is 1-based (Jan=1, Dec=12)
+          // new Date(year, month, 0) works because JS month is 0-indexed,
+          // so month=9 (Sep) → October day 0 → last day of September
+          const [year, month] = highlight.value.split('-');
+          const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
           combined.dateRange = {
             start: `${highlight.value}-01`,
-            end: `${highlight.value}-31`
+            end: `${highlight.value}-${String(lastDay).padStart(2, '0')}`
           };
         } else if (highlight.dimension === 'quarter') {
           // Parse quarter (e.g., "2024-Q3" -> start: 2024-07-01, end: 2024-09-30)
           const [year, q] = highlight.value.split('-Q');
-          const quarterMonth = (parseInt(q) - 1) * 3 + 1;
+          const quarterStartMonth = (parseInt(q) - 1) * 3 + 1;
+          const quarterEndMonth = quarterStartMonth + 2;
+          // Get last day of the quarter's final month (same month indexing trick as above)
+          const lastDay = new Date(parseInt(year), quarterEndMonth, 0).getDate();
           combined.dateRange = {
-            start: `${year}-${String(quarterMonth).padStart(2, '0')}-01`,
-            end: `${year}-${String(quarterMonth + 2).padStart(2, '0')}-31`
+            start: `${year}-${String(quarterStartMonth).padStart(2, '0')}-01`,
+            end: `${year}-${String(quarterEndMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
           };
         } else if (highlight.dimension === 'year') {
           combined.dateRange = {
@@ -472,10 +481,13 @@ export function PowerBIFilterProvider({ children }) {
           // Extract quarter number from "2024-Q3" or "Q3" format
           const qMatch = lastValue.match(/Q(\d)/);
           const q = qMatch ? parseInt(qMatch[1]) : 1;
-          const quarterMonth = (q - 1) * 3 + 1;
+          const quarterStartMonth = (q - 1) * 3 + 1;  // Q1=1, Q2=4, Q3=7, Q4=10
+          const quarterEndMonth = quarterStartMonth + 2;  // Q1=3, Q2=6, Q3=9, Q4=12
+          // Get last day of quarter's final month (month is 1-based, day 0 trick)
+          const lastDay = new Date(parseInt(year), quarterEndMonth, 0).getDate();
           combined.dateRange = {
-            start: `${year}-${String(quarterMonth).padStart(2, '0')}-01`,
-            end: `${year}-${String(quarterMonth + 2).padStart(2, '0')}-31`
+            start: `${year}-${String(quarterStartMonth).padStart(2, '0')}-01`,
+            end: `${year}-${String(quarterEndMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
           };
         }
       }
