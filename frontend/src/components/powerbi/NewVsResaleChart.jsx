@@ -113,6 +113,12 @@ export function NewVsResaleChart({ height = 350 }) {
   const newLaunchPsf = chartData.map(d => d.newLaunchPsf);
   const resalePsf = chartData.map(d => d.resalePsf);
 
+  // Calculate data completeness for user awareness
+  const newLaunchGaps = newLaunchPsf.filter(v => v === null).length;
+  const resaleGaps = resalePsf.filter(v => v === null).length;
+  const totalPoints = chartData.length;
+  const hasSignificantGaps = resaleGaps > totalPoints * 0.2; // >20% gaps
+
   const chartConfig = {
     labels,
     datasets: [
@@ -128,6 +134,7 @@ export function NewVsResaleChart({ height = 350 }) {
         pointBorderWidth: 1,
         tension: 0.3,
         fill: false,
+        spanGaps: true, // Connect line through null/missing data points
       },
       {
         label: 'Resale (< 10 yrs)',
@@ -142,6 +149,7 @@ export function NewVsResaleChart({ height = 350 }) {
         pointBorderWidth: 1,
         tension: 0.3,
         fill: false,
+        spanGaps: true, // Connect line through null/missing data points
       },
     ],
   };
@@ -175,10 +183,32 @@ export function NewVsResaleChart({ height = 350 }) {
           afterBody: (tooltipItems) => {
             const index = tooltipItems[0]?.dataIndex;
             if (index !== undefined && chartData[index]) {
-              const premium = chartData[index].premiumPct;
-              if (premium !== null && premium !== undefined) {
-                return [`Premium: ${premium > 0 ? '+' : ''}${premium}%`];
+              const dataPoint = chartData[index];
+              const lines = [];
+
+              // Show transaction counts for transparency
+              if (dataPoint.newLaunchCount > 0) {
+                lines.push(`New Launch: ${dataPoint.newLaunchCount} txns`);
               }
+              if (dataPoint.resaleCount > 0) {
+                lines.push(`Resale: ${dataPoint.resaleCount} txns`);
+              }
+
+              // Show premium if both values exist
+              const premium = dataPoint.premiumPct;
+              if (premium !== null && premium !== undefined) {
+                lines.push(`Premium: ${premium > 0 ? '+' : ''}${premium}%`);
+              }
+
+              // Indicate missing data
+              if (dataPoint.newLaunchPsf === null) {
+                lines.push('(No new launch data)');
+              }
+              if (dataPoint.resalePsf === null) {
+                lines.push('(No resale <10yr data)');
+              }
+
+              return lines;
             }
             return [];
           },
@@ -263,6 +293,11 @@ export function NewVsResaleChart({ height = 350 }) {
             </div>
             <p className="text-xs text-[#547792] mt-0.5">
               Median PSF comparison with resale units under 10 years from lease start
+              {hasSignificantGaps && (
+                <span className="ml-2 text-amber-600">
+                  (sparse resale data for this filter)
+                </span>
+              )}
             </p>
           </div>
         </div>
