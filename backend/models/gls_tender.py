@@ -138,12 +138,15 @@ class GLSTender(db.Model):
         if tender.tendered_price_sgd and tender.max_gfa_sqm:
             max_gfa_sqft = float(tender.max_gfa_sqm) * SQM_TO_SQFT
             if max_gfa_sqft > 0:
-                tender.psf_ppr = float(tender.tendered_price_sgd) / max_gfa_sqft
+                # Only compute PSF if not already set (may be extracted from table)
+                if not tender.psf_ppr:
+                    tender.psf_ppr = float(tender.tendered_price_sgd) / max_gfa_sqft
                 tender.psm_gfa = float(tender.tendered_price_sgd) / float(tender.max_gfa_sqm)
 
                 # Implied launch pricing (for awarded)
-                tender.implied_launch_psf_low = tender.psf_ppr * 2.5
-                tender.implied_launch_psf_high = tender.psf_ppr * 3.0
+                if tender.psf_ppr:
+                    tender.implied_launch_psf_low = float(tender.psf_ppr) * 2.5
+                    tender.implied_launch_psf_high = float(tender.psf_ppr) * 3.0
 
         if tender.tendered_price_sgd and tender.site_area_sqm:
             site_area_sqft = float(tender.site_area_sqm) * SQM_TO_SQFT

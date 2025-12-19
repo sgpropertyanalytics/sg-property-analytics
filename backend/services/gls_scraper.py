@@ -432,9 +432,16 @@ def get_media_release_links(year: int = 2025) -> List[Dict[str, str]]:
 
                 if has_tender and is_residential:
                     # Extract release ID from URL
-                    match = re.search(r'(pr\d+-\d+)', href, re.IGNORECASE)
+                    match = re.search(r'(pr(\d+)-\d+)', href, re.IGNORECASE)
                     if match:
                         release_id = match.group(1).lower()
+                        release_year = int(match.group(2))
+
+                        # CRITICAL: Only include releases from 2025 onwards
+                        # pr25-XX = 2025, pr24-XX = 2024, etc.
+                        if release_year < 25:  # 25 = 2025
+                            continue
+
                         full_url = f"https://www.ura.gov.sg{href}" if href.startswith('/') else href
 
                         releases.append({
@@ -614,6 +621,17 @@ def is_valid_location(location: str) -> bool:
 
     location_lower = location.lower()
 
+    # HARD REJECT: Any location containing "conservation" or "active mobility"
+    # These are NOT residential land uses and should never appear
+    if 'conservation' in location_lower:
+        return False
+    if 'active mobility' in location_lower:
+        return False
+    if 'transport' in location_lower:
+        return False
+    if 'heritage' in location_lower:
+        return False
+
     # Common words that aren't locations
     invalid_words = {
         'and', 'the', 'for', 'with', 'from', 'that', 'this', 'which',
@@ -763,10 +781,33 @@ def extract_all_table_data(tables: List, status: str) -> List[Dict[str, Any]]:
                     data['estimated_units_source'] = 'ura_stated'
 
             if col_map.get('tenderer') is not None and col_map['tenderer'] < len(cells):
-                data['successful_tenderer'] = cells[col_map['tenderer']].get_text(strip=True)
+                tenderer_text = cells[col_map['tenderer']].get_text(strip=True)
+                # CRITICAL: If value starts with '$', it's a price, not a tenderer name
+                # This catches misaligned columns like "$294,889,000($9,729.42)"
+                if tenderer_text and not tenderer_text.startswith('$'):
+                    data['successful_tenderer'] = tenderer_text
+                elif tenderer_text.startswith('$'):
+                    # This is actually a price value - extract it
+                    print(f"    Warning: Price found in tenderer column: {tenderer_text[:30]}")
+                    data['tendered_price_sgd'] = parse_price(tenderer_text)
+                    # Also try to extract PSF if in format "$X($Y.ZZ)"
+                    psf_match = re.search(r'\(\$?([\d,]+\.?\d*)\)', tenderer_text)
+                    if psf_match:
+                        try:
+                            data['psf_ppr'] = Decimal(psf_match.group(1).replace(',', ''))
+                        except:
+                            pass
 
             if col_map.get('price') is not None and col_map['price'] < len(cells):
-                data['tendered_price_sgd'] = parse_price(cells[col_map['price']].get_text(strip=True))
+                price_text = cells[col_map['price']].get_text(strip=True)
+                data['tendered_price_sgd'] = parse_price(price_text)
+                # Also try to extract PSF if in format "$X($Y.ZZ)" or "$X (PSF: $Y.ZZ)"
+                psf_match = re.search(r'\(\$?([\d,]+\.?\d*)\)', price_text)
+                if psf_match:
+                    try:
+                        data['psf_ppr'] = Decimal(psf_match.group(1).replace(',', ''))
+                    except:
+                        pass
 
             if col_map.get('num_tenderers') is not None and col_map['num_tenderers'] < len(cells):
                 data['num_tenderers'] = parse_number(cells[col_map['num_tenderers']].get_text(strip=True))
@@ -1126,6 +1167,7 @@ def scrape_gls_tenders(
                 estimated_units_source=data.get('estimated_units_source'),
                 successful_tenderer=data.get('successful_tenderer'),
                 tendered_price_sgd=data.get('tendered_price_sgd'),
+                psf_ppr=data.get('psf_ppr'),  # Extracted PSF if available
                 num_tenderers=data.get('num_tenderers'),
                 needs_review=data.get('needs_review', False),
                 review_reason=data.get('review_reason'),
