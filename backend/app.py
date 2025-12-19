@@ -64,24 +64,14 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Initialize CORS - allow all origins to ensure it works (can restrict later)
+    # Initialize CORS - allow all origins
+    # Note: Flask-CORS handles all CORS headers automatically, no after_request needed
     CORS(app,
          resources={r"/api/*": {"origins": "*"}},
          methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
          allow_headers=["Content-Type", "Authorization"],
-         supports_credentials=False)
-
-    # Also add after_request handler to ensure CORS headers are always set, even on errors
-    @app.after_request
-    def after_request(response):
-        # Only set CORS headers if not already set by Flask-CORS (avoid duplicates)
-        if 'Access-Control-Allow-Origin' not in response.headers:
-            response.headers['Access-Control-Allow-Origin'] = '*'
-        if 'Access-Control-Allow-Headers' not in response.headers:
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        if 'Access-Control-Allow-Methods' not in response.headers:
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-        return response
+         supports_credentials=False,
+         send_wildcard=True)  # Always send '*' instead of echoing Origin header
 
     # Initialize SQLAlchemy
     db.init_app(app)
