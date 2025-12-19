@@ -145,30 +145,73 @@ def run_background_scrape(year: int = 2025, force_reset: bool = False, app=None)
         global _scrape_in_progress, _last_scrape_time, _last_scrape_result
 
         try:
-            from models.database import db
             from models.gls_tender import GLSTender
             from services.gls_scraper import scrape_gls_tenders
-            from sqlalchemy import text
+            from sqlalchemy import text, create_engine
+            from sqlalchemy.orm import scoped_session, sessionmaker
+            import os
 
             print(f"Starting background GLS scrape for {year}...")
 
             # Need app context for database operations
             with flask_app.app_context():
-                if force_reset:
-                    print("Force reset: Dropping gls_tenders table...")
-                    db.session.execute(text("DROP TABLE IF EXISTS gls_tenders CASCADE"))
-                    db.session.commit()
+                # Create a NEW database engine for this thread to avoid SSL issues
+                # Background threads can't share SSL connections with main thread
+                database_url = os.environ.get('DATABASE_URL', '')
 
-                    print("Recreating gls_tenders table...")
-                    GLSTender.__table__.create(db.engine, checkfirst=True)
+                if database_url:
+                    # Fix Render's postgres:// to postgresql://
+                    if database_url.startswith('postgres://'):
+                        database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
-                # Run the scrape
-                result = scrape_gls_tenders(year=year, dry_run=False)
+                    # Create fresh engine with SSL settings
+                    engine = create_engine(
+                        database_url,
+                        pool_pre_ping=True,
+                        pool_recycle=300,
+                        connect_args={"sslmode": "require"} if 'render.com' in database_url or 'neon' in database_url else {}
+                    )
 
-                _last_scrape_time = datetime.utcnow()
-                _last_scrape_result = result
+                    # Create a new session for this thread
+                    Session = scoped_session(sessionmaker(bind=engine))
+                    db_session = Session()
 
-                print(f"Background GLS scrape completed: {result}")
+                    try:
+                        if force_reset:
+                            print("Force reset: Dropping gls_tenders table...")
+                            db_session.execute(text("DROP TABLE IF EXISTS gls_tenders CASCADE"))
+                            db_session.commit()
+
+                            print("Recreating gls_tenders table...")
+                            GLSTender.__table__.create(engine, checkfirst=True)
+
+                        # Run the scrape with our thread-local session
+                        result = scrape_gls_tenders(year=year, db_session=db_session, dry_run=False)
+
+                        _last_scrape_time = datetime.utcnow()
+                        _last_scrape_result = result
+
+                        print(f"Background GLS scrape completed: {result}")
+                    finally:
+                        db_session.close()
+                        Session.remove()
+                        engine.dispose()
+                else:
+                    # Fallback: use the app's db session (may fail with SSL)
+                    from models.database import db
+
+                    if force_reset:
+                        print("Force reset: Dropping gls_tenders table...")
+                        db.session.execute(text("DROP TABLE IF EXISTS gls_tenders CASCADE"))
+                        db.session.commit()
+
+                        print("Recreating gls_tenders table...")
+                        GLSTender.__table__.create(db.engine, checkfirst=True)
+
+                    result = scrape_gls_tenders(year=year, dry_run=False)
+                    _last_scrape_time = datetime.utcnow()
+                    _last_scrape_result = result
+                    print(f"Background GLS scrape completed: {result}")
 
         except Exception as e:
             print(f"Background GLS scrape error: {e}")
