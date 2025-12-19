@@ -73,6 +73,29 @@ def create_app():
          supports_credentials=False,
          send_wildcard=True)  # Always send '*' instead of echoing Origin header
 
+    # Global error handlers to ensure CORS headers are present on error responses
+    @app.errorhandler(500)
+    def handle_500(error):
+        response = jsonify({"error": "Internal server error", "details": str(error)})
+        response.status_code = 500
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response
+
+    @app.errorhandler(Exception)
+    def handle_exception(error):
+        # Log the error for debugging
+        import traceback
+        traceback.print_exc()
+
+        response = jsonify({"error": "Server error", "details": str(error)})
+        response.status_code = 500
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response
+
     # Initialize SQLAlchemy
     db.init_app(app)
 
