@@ -937,8 +937,13 @@ def map_table_columns(headers: List[str]) -> Dict[str, int]:
         if any(k in h for k in ['site area', 'land area', 'site (sq']):
             col_map['site_area'] = idx
 
-        # Max GFA
-        if any(k in h for k in ['gfa', 'gross floor', 'max floor', 'maximum gfa', 'maximum gross']):
+        # Max GFA - expanded recognition for URA table variants
+        gfa_keywords = [
+            'gfa', 'gross floor', 'max floor', 'maximum gfa', 'maximum gross',
+            'max. gfa', 'max gfa', 'allowable gfa', 'permissible gfa',
+            'gross floor area', 'floor area', 'total gfa', 'gpr',  # GPR = Gross Plot Ratio sometimes used
+        ]
+        if any(k in h for k in gfa_keywords):
             col_map['max_gfa'] = idx
 
         # Estimated units
@@ -1230,6 +1235,39 @@ def scrape_gls_tenders(
 
         # Rate limiting (reduced to avoid worker timeout)
         time.sleep(0.2)
+
+    # =============================================================================
+    # POST-SCRAPE VALIDATION: Log PSF coverage stats
+    # =============================================================================
+    try:
+        total_awarded = db_session.query(GLSTender).filter(GLSTender.status == 'awarded').count()
+        awarded_with_psf = db_session.query(GLSTender).filter(
+            GLSTender.status == 'awarded',
+            GLSTender.psf_ppr.isnot(None)
+        ).count()
+        awarded_missing_psf = db_session.query(GLSTender).filter(
+            GLSTender.status == 'awarded',
+            GLSTender.psf_ppr.is_(None)
+        ).all()
+
+        psf_coverage = (awarded_with_psf / total_awarded * 100) if total_awarded > 0 else 0
+        stats['psf_coverage'] = f"{psf_coverage:.1f}%"
+        stats['awarded_with_psf'] = awarded_with_psf
+        stats['awarded_total'] = total_awarded
+
+        print(f"\n=== PSF Coverage Report ===")
+        print(f"Awarded tenders with PSF: {awarded_with_psf}/{total_awarded} ({psf_coverage:.1f}%)")
+
+        if awarded_missing_psf:
+            print(f"\nAwarded tenders MISSING PSF ({len(awarded_missing_psf)}):")
+            for t in awarded_missing_psf[:10]:  # Show first 10
+                reason = "missing price" if not t.tendered_price_sgd else "missing GFA" if not t.max_gfa_sqm else t.review_reason or "unknown"
+                print(f"  - {t.location_raw[:40]}: {reason}")
+            if len(awarded_missing_psf) > 10:
+                print(f"  ... and {len(awarded_missing_psf) - 10} more")
+
+    except Exception as e:
+        print(f"PSF validation error: {e}")
 
     return stats
 
