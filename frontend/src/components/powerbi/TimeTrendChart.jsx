@@ -107,8 +107,8 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
       if (clickedItem) {
         const timeValue = clickedItem[drillPath.time];
 
-        // Apply highlight (visual only, doesn't filter data)
-        // This preserves context while emphasizing the selection
+        // Apply highlight - this triggers cross-filter for OTHER charts
+        // TimeTrendChart itself uses excludeHighlight:true to preserve full timeline
         applyHighlight('time', drillPath.time, timeValue);
       }
     }
