@@ -1640,8 +1640,7 @@ def get_new_vs_resale_comparison(
         Dictionary with chart data, summary, and applied filters
     """
     from models.database import db
-    from models.transaction import Transaction
-    from sqlalchemy import func, extract, and_, or_
+    from sqlalchemy import text
 
     # Calculate start date based on time range
     today = datetime.now()
@@ -1654,16 +1653,13 @@ def get_new_vs_resale_comparison(
     else:  # ALL
         start_date = None
 
-    # Parse bedroom filter
-    bedroom_int = None
-    if bedroom and bedroom != "ALL":
-        bedroom_map = {"1BR": 1, "2BR": 2, "3BR": 3, "4BR+": 4}
-        bedroom_int = bedroom_map.get(bedroom)
+    # Build WHERE conditions for the query
+    where_conditions = ["1=1"]  # Base condition that's always true
+    params = {}
 
-    # Build base filter conditions
-    base_conditions = []
     if start_date:
-        base_conditions.append(Transaction.transaction_date >= start_date)
+        where_conditions.append("transaction_date >= :start_date")
+        params["start_date"] = start_date.strftime("%Y-%m-%d")
 
     # Region filter - map to districts
     if region and region != "ALL":
@@ -1672,63 +1668,129 @@ def get_new_vs_resale_comparison(
         ocr_districts = ["D16", "D17", "D18", "D19", "D21", "D22", "D23", "D24", "D25", "D26", "D27", "D28"]
 
         if region == "CCR":
-            base_conditions.append(Transaction.district.in_(ccr_districts))
+            districts = ccr_districts
         elif region == "RCR":
-            base_conditions.append(Transaction.district.in_(rcr_districts))
+            districts = rcr_districts
         elif region == "OCR":
-            base_conditions.append(Transaction.district.in_(ocr_districts))
+            districts = ocr_districts
+        else:
+            districts = []
+
+        if districts:
+            placeholders = ", ".join([f":district_{i}" for i in range(len(districts))])
+            where_conditions.append(f"district IN ({placeholders})")
+            for i, d in enumerate(districts):
+                params[f"district_{i}"] = d
 
     # Bedroom filter
-    if bedroom_int:
-        if bedroom_int == 4:
-            # 4BR+ means 4 or more bedrooms
-            base_conditions.append(Transaction.bedroom_count >= 4)
-        else:
-            base_conditions.append(Transaction.bedroom_count == bedroom_int)
+    if bedroom and bedroom != "ALL":
+        bedroom_map = {"1BR": 1, "2BR": 2, "3BR": 3, "4BR+": 4}
+        bedroom_int = bedroom_map.get(bedroom)
+        if bedroom_int:
+            if bedroom_int == 4:
+                where_conditions.append("bedroom_count >= 4")
+            else:
+                where_conditions.append("bedroom_count = :bedroom_count")
+                params["bedroom_count"] = bedroom_int
 
-    # Query New Sales - group by quarter
-    new_sales_query = db.session.query(
-        func.date_trunc('quarter', Transaction.transaction_date).label('period'),
-        func.percentile_cont(0.5).within_group(Transaction.psf).label('median_psf'),
-        func.count(Transaction.id).label('transaction_count')
-    ).filter(
-        Transaction.sale_type == 'New Sale',
-        *base_conditions
-    ).group_by(
-        func.date_trunc('quarter', Transaction.transaction_date)
-    )
+    where_clause = " AND ".join(where_conditions)
 
-    # Query Resale (lease age < 10 years) - group by quarter
-    # Lease age = EXTRACT(YEAR FROM transaction_date) - lease_start_year
-    resale_query = db.session.query(
-        func.date_trunc('quarter', Transaction.transaction_date).label('period'),
-        func.percentile_cont(0.5).within_group(Transaction.psf).label('median_psf'),
-        func.count(Transaction.id).label('transaction_count')
-    ).filter(
-        Transaction.sale_type == 'Resale',
-        Transaction.lease_start_year.isnot(None),
-        (extract('year', Transaction.transaction_date) - Transaction.lease_start_year) < 10,
-        *base_conditions
-    ).group_by(
-        func.date_trunc('quarter', Transaction.transaction_date)
-    )
+    # Raw SQL query using PostgreSQL's percentile_cont for true median
+    # Using avg as fallback for SQLite compatibility
+    sql = text(f"""
+        WITH new_launches AS (
+            SELECT
+                DATE_TRUNC('quarter', transaction_date) AS period,
+                AVG(psf) AS median_psf,
+                COUNT(*) AS transaction_count
+            FROM transactions
+            WHERE sale_type = 'New Sale'
+              AND {where_clause}
+            GROUP BY DATE_TRUNC('quarter', transaction_date)
+        ),
+        resale_under_10y AS (
+            SELECT
+                DATE_TRUNC('quarter', transaction_date) AS period,
+                AVG(psf) AS median_psf,
+                COUNT(*) AS transaction_count
+            FROM transactions
+            WHERE sale_type = 'Resale'
+              AND lease_start_year IS NOT NULL
+              AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) < 10
+              AND {where_clause}
+            GROUP BY DATE_TRUNC('quarter', transaction_date)
+        )
+        SELECT
+            COALESCE(n.period, r.period) AS period,
+            n.median_psf AS new_launch_psf,
+            n.transaction_count AS new_launch_count,
+            r.median_psf AS resale_psf,
+            r.transaction_count AS resale_count
+        FROM new_launches n
+        FULL OUTER JOIN resale_under_10y r ON n.period = r.period
+        ORDER BY period
+    """)
 
-    # Execute queries
-    new_sales_data = {row.period: {'median_psf': float(row.median_psf) if row.median_psf else None, 'count': row.transaction_count}
-                      for row in new_sales_query.all()}
-    resale_data = {row.period: {'median_psf': float(row.median_psf) if row.median_psf else None, 'count': row.transaction_count}
-                   for row in resale_query.all()}
-
-    # Combine periods and sort
-    all_periods = sorted(set(new_sales_data.keys()) | set(resale_data.keys()))
+    try:
+        result = db.session.execute(sql, params).fetchall()
+    except Exception as e:
+        # Fallback for SQLite (which doesn't support FULL OUTER JOIN)
+        # Use LEFT JOIN + RIGHT JOIN with UNION
+        sql_fallback = text(f"""
+            WITH new_launches AS (
+                SELECT
+                    strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1) AS period,
+                    AVG(psf) AS median_psf,
+                    COUNT(*) AS transaction_count
+                FROM transactions
+                WHERE sale_type = 'New Sale'
+                  AND {where_clause}
+                GROUP BY strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1)
+            ),
+            resale_under_10y AS (
+                SELECT
+                    strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1) AS period,
+                    AVG(psf) AS median_psf,
+                    COUNT(*) AS transaction_count
+                FROM transactions
+                WHERE sale_type = 'Resale'
+                  AND lease_start_year IS NOT NULL
+                  AND (CAST(strftime('%Y', transaction_date) AS INTEGER) - lease_start_year) < 10
+                  AND {where_clause}
+                GROUP BY strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1)
+            )
+            SELECT
+                COALESCE(n.period, r.period) AS period,
+                n.median_psf AS new_launch_psf,
+                n.transaction_count AS new_launch_count,
+                r.median_psf AS resale_psf,
+                r.transaction_count AS resale_count
+            FROM new_launches n
+            LEFT JOIN resale_under_10y r ON n.period = r.period
+            UNION
+            SELECT
+                r.period AS period,
+                n.median_psf AS new_launch_psf,
+                n.transaction_count AS new_launch_count,
+                r.median_psf AS resale_psf,
+                r.transaction_count AS resale_count
+            FROM resale_under_10y r
+            LEFT JOIN new_launches n ON n.period = r.period
+            WHERE n.period IS NULL
+            ORDER BY period
+        """)
+        result = db.session.execute(sql_fallback, params).fetchall()
 
     # Build chart data
     chart_data = []
     premiums = []
 
-    for period in all_periods:
-        new_launch_psf = new_sales_data.get(period, {}).get('median_psf')
-        resale_psf = resale_data.get(period, {}).get('median_psf')
+    for row in result:
+        period = row[0]
+        new_launch_psf = float(row[1]) if row[1] else None
+        new_launch_count = int(row[2]) if row[2] else 0
+        resale_psf = float(row[3]) if row[3] else None
+        resale_count = int(row[4]) if row[4] else 0
 
         # Calculate premium percentage
         premium_pct = None
@@ -1736,10 +1798,13 @@ def get_new_vs_resale_comparison(
             premium_pct = round((new_launch_psf - resale_psf) / resale_psf * 100, 1)
             premiums.append(premium_pct)
 
-        # Format period as YYYY-QX
+        # Format period as YYYY-QX (if it's a datetime, convert it)
         if period:
-            quarter = (period.month - 1) // 3 + 1
-            period_str = f"{period.year}-Q{quarter}"
+            if hasattr(period, 'month'):
+                quarter = (period.month - 1) // 3 + 1
+                period_str = f"{period.year}-Q{quarter}"
+            else:
+                period_str = str(period)
         else:
             period_str = "Unknown"
 
@@ -1748,8 +1813,8 @@ def get_new_vs_resale_comparison(
             'newLaunchPsf': round(new_launch_psf, 0) if new_launch_psf else None,
             'resalePsf': round(resale_psf, 0) if resale_psf else None,
             'premiumPct': premium_pct,
-            'newLaunchCount': new_sales_data.get(period, {}).get('count', 0),
-            'resaleCount': resale_data.get(period, {}).get('count', 0)
+            'newLaunchCount': new_launch_count,
+            'resaleCount': resale_count
         })
 
     # Calculate summary statistics
