@@ -579,7 +579,8 @@ def is_valid_location(location: str) -> bool:
         'residential', 'commercial', 'industrial', 'site', 'land',
         'parcel', 'tender', 'award', 'sale', 'gls', 'ura',
         'while', 'about', 'units', 'sqm', 'sq m', 'are', 'is', 'was',
-        'were', 'will', 'can', 'could', 'would', 'should', 'may', 'might'
+        'were', 'will', 'can', 'could', 'would', 'should', 'may', 'might',
+        'conservation', 'areas', 'active', 'mobility', 'heritage', 'historic'
     }
 
     if location_lower in invalid_words:
@@ -600,11 +601,16 @@ def is_valid_location(location: str) -> bool:
         if location_lower.startswith(start):
             return False
 
+    # Reject multi-line strings (clear sign of bad parsing)
+    if '\n' in location or '\r' in location:
+        return False
+
     # Reject strings that contain sentence fragments
     invalid_patterns = [
         'are zoned', 'is zoned', 'can yield', 'will yield', 'may yield',
         'launched', 'awarded', 'tender', 'programme', 'announcement',
-        'press release', 'media release'
+        'press release', 'media release', 'conservation area', 'active mobility',
+        'heritage', 'historic site', 'overall', 'private housing', 'government land'
     ]
 
     for pattern in invalid_patterns:
