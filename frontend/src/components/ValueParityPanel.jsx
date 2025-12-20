@@ -261,10 +261,10 @@ export function ValueParityPanel() {
 
         <form onSubmit={handleSearch}>
           {/* 50/50 Two-column layout: Budget+Search (left) | Optional Filters (right) */}
-          <div className="flex flex-col lg:flex-row">
+          <div className="grid grid-cols-1 lg:grid-cols-2">
 
-            {/* LEFT: Budget Slider + Search (flex-1 for 50% fluid width) */}
-            <div className="flex-1 min-w-0 lg:pr-6">
+            {/* LEFT: Budget Slider + Search */}
+            <div className="min-w-0 lg:pr-6">
               {/* Slider with floating value */}
               <div className="relative mb-4">
                 {/* Floating budget value - clamped to stay within bounds */}
@@ -275,14 +275,14 @@ export function ValueParityPanel() {
                   const isNearRight = thumbPercent > 85;
                   return (
                     <div
-                      className={`absolute -top-1 pointer-events-none ${
+                      className={`absolute -top-6 pointer-events-none ${
                         isNearLeft ? 'left-0' :
                         isNearRight ? 'right-0' :
                         'transform -translate-x-1/2'
                       }`}
                       style={!isNearLeft && !isNearRight ? { left: `${thumbPercent}%` } : undefined}
                     >
-                      <span className="text-2xl font-semibold text-[#213448] bg-white px-1">
+                      <span className="text-2xl font-semibold text-[#213448]">
                         {formatBudgetDisplay(budget)}
                       </span>
                     </div>
@@ -346,12 +346,9 @@ export function ValueParityPanel() {
               </button>
             </div>
 
-            {/* RIGHT WRAPPER: Background zone extends left to fill gap from pr-6 */}
-            <div className="flex-1 min-w-0 bg-[#547792]/[0.03] lg:-ml-6 -mr-4 md:-mr-5 mt-6 lg:mt-0 flex">
-              {/* Divider - inside the tinted zone */}
-              <div className="hidden lg:block w-px bg-[#94B4C1]/30 shrink-0 self-stretch" />
-              {/* Content area */}
-              <div className="flex-1 min-w-0 pl-5 pr-4 md:pr-5 pb-4">
+            {/* RIGHT: Optional Filters (full-height zone, aligned, no hacks) */}
+            <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03]">
+              <div className="px-5 py-4">
                 <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {/* Bedroom */}
