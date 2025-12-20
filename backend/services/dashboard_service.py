@@ -329,10 +329,10 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
             bedrooms = [int(b.strip()) for b in bedrooms.split(',')]
         conditions.append(Transaction.bedroom_count.in_(bedrooms))
 
-    # Sale type
+    # Sale type (case-insensitive)
     sale_type = filters.get('sale_type')
     if sale_type:
-        conditions.append(Transaction.sale_type == sale_type)
+        conditions.append(func.lower(Transaction.sale_type) == sale_type.lower())
 
     # PSF range
     if filters.get('psf_min') is not None:
@@ -531,7 +531,7 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
             params[f'bedroom_{i}'] = b
 
     if filters.get('sale_type'):
-        where_parts.append("sale_type = :sale_type")
+        where_parts.append("LOWER(sale_type) = LOWER(:sale_type)")
         params['sale_type'] = filters['sale_type']
 
     if filters.get('psf_min') is not None:

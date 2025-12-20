@@ -874,8 +874,8 @@ def comparable_value_analysis():
             query = query.filter(Transaction.remaining_lease >= min_lease)
         
         if sale_type:
-            query = query.filter(Transaction.sale_type == sale_type)
-        
+            query = query.filter(func.lower(Transaction.sale_type) == sale_type.lower())
+
         transactions = query.limit(100).all()
         
         points = [t.to_dict() for t in transactions]
@@ -1289,10 +1289,11 @@ def aggregate():
         filter_conditions.append(Transaction.district.in_(segment_districts))
         filters_applied["segment"] = segment.upper()
 
-    # Sale type filter
+    # Sale type filter (case-insensitive to handle data variations)
     sale_type = request.args.get("sale_type")
     if sale_type:
-        filter_conditions.append(Transaction.sale_type == sale_type)
+        # Use case-insensitive comparison to handle 'New Sale', 'NEW SALE', 'new sale', etc.
+        filter_conditions.append(func.lower(Transaction.sale_type) == sale_type.lower())
         filters_applied["sale_type"] = sale_type
 
     # Date range filter
@@ -1300,14 +1301,14 @@ def aggregate():
     date_to = request.args.get("date_to")
     if date_from:
         try:
-            from_dt = datetime.strptime(date_from, "%Y-%m-%d")
+            from_dt = datetime.strptime(date_from, "%Y-%m-%d").date()
             filter_conditions.append(Transaction.transaction_date >= from_dt)
             filters_applied["date_from"] = date_from
         except ValueError:
             pass
     if date_to:
         try:
-            to_dt = datetime.strptime(date_to, "%Y-%m-%d")
+            to_dt = datetime.strptime(date_to, "%Y-%m-%d").date()
             filter_conditions.append(Transaction.transaction_date <= to_dt)
             filters_applied["date_to"] = date_to
         except ValueError:
@@ -1610,23 +1611,23 @@ def transactions_list():
         ]
         query = query.filter(Transaction.district.in_(segment_districts))
 
-    # Sale type filter
+    # Sale type filter (case-insensitive)
     sale_type = request.args.get("sale_type")
     if sale_type:
-        query = query.filter(Transaction.sale_type == sale_type)
+        query = query.filter(func.lower(Transaction.sale_type) == sale_type.lower())
 
     # Date range filter
     date_from = request.args.get("date_from")
     date_to = request.args.get("date_to")
     if date_from:
         try:
-            from_dt = datetime.strptime(date_from, "%Y-%m-%d")
+            from_dt = datetime.strptime(date_from, "%Y-%m-%d").date()
             query = query.filter(Transaction.transaction_date >= from_dt)
         except ValueError:
             pass
     if date_to:
         try:
-            to_dt = datetime.strptime(date_to, "%Y-%m-%d")
+            to_dt = datetime.strptime(date_to, "%Y-%m-%d").date()
             query = query.filter(Transaction.transaction_date <= to_dt)
         except ValueError:
             pass
