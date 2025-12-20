@@ -12,9 +12,13 @@ import { DISTRICT_NAMES } from '../constants';
  * - Reuses same table structure as TransactionDataTable
  */
 // Budget slider constants
-const BUDGET_MIN = 500000;    // $500K
-const BUDGET_MAX = 8000000;   // $8M
+const BUDGET_MIN = 500000;    // $0.5M
+const BUDGET_MAX = 5000000;   // $5M
 const BUDGET_STEP = 25000;    // $25K intervals
+
+// Active trading range for gradient visualization
+const ACTIVE_RANGE_MIN = 1500000;  // $1.5M
+const ACTIVE_RANGE_MAX = 3500000;  // $3.5M
 
 export function ValueParityPanel() {
   // Form state - budget as number for slider
@@ -222,18 +226,32 @@ export function ValueParityPanel() {
     return true;
   });
 
-  // Tick marks with positions (percentage based on actual value position in range)
-  // Remove $0.5M, show only round millions
+  // Tick marks at $500k intervals
   const tickMarks = [
+    { value: 500000, label: '$0.5M', percent: 0 },
     { value: 1000000, label: '$1M', percent: ((1000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 1500000, label: '$1.5M', percent: ((1500000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
     { value: 2000000, label: '$2M', percent: ((2000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 2500000, label: '$2.5M', percent: ((2500000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
     { value: 3000000, label: '$3M', percent: ((3000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 3500000, label: '$3.5M', percent: ((3500000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
     { value: 4000000, label: '$4M', percent: ((4000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
-    { value: 5000000, label: '$5M', percent: ((5000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
-    { value: 6000000, label: '$6M', percent: ((6000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
-    { value: 7000000, label: '$7M', percent: ((7000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
-    { value: 8000000, label: '$8M', percent: 100 },
+    { value: 4500000, label: '$4.5M', percent: ((4500000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 5000000, label: '$5M', percent: 100 },
   ];
+
+  // Calculate gradient for slider showing active trading range
+  // $1.5M-$3.5M is most active (darker), fades towards both ends
+  const activeStartPercent = ((ACTIVE_RANGE_MIN - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
+  const activeEndPercent = ((ACTIVE_RANGE_MAX - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
+  const sliderGradient = `linear-gradient(to right,
+    #94B4C1 0%,
+    #94B4C1 ${activeStartPercent * 0.5}%,
+    #547792 ${activeStartPercent}%,
+    #213448 ${(activeStartPercent + activeEndPercent) / 2}%,
+    #547792 ${activeEndPercent}%,
+    #94B4C1 ${activeEndPercent + (100 - activeEndPercent) * 0.5}%,
+    #94B4C1 100%)`;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -242,91 +260,58 @@ export function ValueParityPanel() {
         <p className="text-sm text-[#547792] mb-4">Benchmark realized transaction prices across your target budget</p>
 
         <form onSubmit={handleSearch}>
-          {/* Two-column layout: Budget+Search (left) | Optional Filters (right) */}
-          <div className="flex flex-col lg:flex-row gap-5">
-
-            {/* LEFT: Budget Slider + Search Button (50% width on desktop) */}
-            <div className="flex-1 min-w-0">
-
-              {/* Slider with floating value */}
-              <div className="relative mb-3">
-                {/* Floating budget value - anchored to thumb position */}
-                <div
-                  className="absolute -top-1 transform -translate-x-1/2 pointer-events-none"
-                  style={{ left: `${((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100}%` }}
-                >
-                  <span className="text-2xl font-semibold text-[#213448] bg-white px-1">
-                    {formatBudgetDisplay(budget)}
-                  </span>
-                </div>
-
-                {/* Slider input */}
-                <input
-                  type="range"
-                  min={BUDGET_MIN}
-                  max={BUDGET_MAX}
-                  step={BUDGET_STEP}
-                  value={budget}
-                  onChange={(e) => setBudget(parseInt(e.target.value))}
-                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb mt-8"
-                  style={{
-                    background: `linear-gradient(to right, #94B4C1 0%, #94B4C1 6.67%, #213448 6.67%, #213448 93.33%, #94B4C1 93.33%, #94B4C1 100%)`
-                  }}
-                />
-                {/* Tick marks - padded to align with slider thumb radius */}
-                <div className="relative w-full h-5 mt-1 px-1">
-                  {tickMarks.map((tick, index) => {
-                    const isFirst = index === 0;
-                    const isLast = index === tickMarks.length - 1;
-                    return (
-                      <span
-                        key={tick.value}
-                        className={`absolute text-xs text-[#547792] ${
-                          isFirst ? 'left-0 text-left' :
-                          isLast ? 'right-0 text-right' :
-                          'transform -translate-x-1/2'
-                        }`}
-                        style={!isFirst && !isLast ? { left: `${tick.percent}%` } : undefined}
-                      >
-                        {tick.label}
-                      </span>
-                    );
-                  })}
-                </div>
-                <p className="text-[10px] text-[#547792]/60 mt-1">$500K intervals</p>
+          {/* Budget Slider - Full Width Primary Control */}
+          <div className="mb-4">
+            {/* Slider with floating value */}
+            <div className="relative mb-3">
+              {/* Floating budget value - anchored to thumb position */}
+              <div
+                className="absolute -top-1 transform -translate-x-1/2 pointer-events-none"
+                style={{ left: `${((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100}%` }}
+              >
+                <span className="text-2xl font-semibold text-[#213448] bg-white px-1">
+                  {formatBudgetDisplay(budget)}
+                </span>
               </div>
 
-              {/* Compact action button - secondary style */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full px-4 py-2 border border-[#213448] text-[#213448] text-sm font-medium rounded-md hover:bg-[#213448] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Searching...
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    Search
-                  </span>
-                )}
-              </button>
+              {/* Slider input - gradient shows active trading range ($1.5M-$3.5M darker) */}
+              <input
+                type="range"
+                min={BUDGET_MIN}
+                max={BUDGET_MAX}
+                step={BUDGET_STEP}
+                value={budget}
+                onChange={(e) => setBudget(parseInt(e.target.value))}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb mt-8"
+                style={{ background: sliderGradient }}
+              />
+              {/* Tick marks - padded to align with slider thumb radius */}
+              <div className="relative w-full h-5 mt-1 px-1">
+                {tickMarks.map((tick, index) => {
+                  const isFirst = index === 0;
+                  const isLast = index === tickMarks.length - 1;
+                  return (
+                    <span
+                      key={tick.value}
+                      className={`absolute text-xs text-[#547792] ${
+                        isFirst ? 'left-0 text-left' :
+                        isLast ? 'right-0 text-right' :
+                        'transform -translate-x-1/2'
+                      }`}
+                      style={!isFirst && !isLast ? { left: `${tick.percent}%` } : undefined}
+                    >
+                      {tick.label}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
+          </div>
 
-            {/* Divider - visible on desktop */}
-            <div className="hidden lg:block w-px bg-[#94B4C1]/20 self-stretch" />
-
-            {/* RIGHT: Optional Filters - toolbar strip style */}
-            <div className="flex-1 min-w-0 bg-[#F8FAFB]/60 -mr-4 md:-mr-5 pr-4 md:pr-5 py-3 -my-1">
-              <p className="text-[10px] uppercase tracking-wide text-[#547792]/70 mb-2 font-medium">Optional filters</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {/* Optional Filters - Full-width horizontal band */}
+          <div className="bg-[#F8FAFB]/50 -mx-4 md:-mx-5 px-4 md:px-5 py-3 mb-4 border-y border-[#94B4C1]/10">
+            <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                 {/* Bedroom */}
                 <div>
                   <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Bedroom</label>
@@ -421,9 +406,31 @@ export function ValueParityPanel() {
                     <option value="20+">20+ years</option>
                   </select>
                 </div>
-              </div>
             </div>
           </div>
+
+          {/* Search Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Searching...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Search
+              </span>
+            )}
+          </button>
         </form>
       </div>
 
