@@ -674,62 +674,104 @@ def remove_duplicates_staging(logger: UploadLogger) -> int:
 
 def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
     """
-    Mark outliers in staging using GLOBAL IQR method (soft-delete).
+    Mark outliers in staging using two-stage detection (soft-delete).
 
-    Uses global IQR (across all transactions) to catch extreme outliers
-    like $890M transactions that would skew the price distribution chart.
+    Stage 1: En-bloc/collective sales detection (area-based)
+      - Units with area_sqft > 10,000 are likely en-bloc collective sales
+      - These have total development area, not individual unit area
+
+    Stage 2: Price outliers using relaxed IQR method (3x instead of 1.5x)
+      - Uses 3x IQR to avoid excluding legitimate luxury condos ($4M-$10M)
+      - Still catches extreme price outliers
+
     Marks outliers with is_outlier=true instead of deleting them.
     """
     before = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
 
-    # Calculate GLOBAL IQR bounds (across all transactions)
-    # This catches extreme outliers that per-group IQR would miss
+    # ==========================================================================
+    # STAGE 1: Mark en-bloc/collective sales (area > 10,000 sqft)
+    # ==========================================================================
+    # En-bloc sales have the total development area, not individual unit area
+    # Normal condos are typically < 5,000 sqft even for penthouses
+    EN_BLOC_AREA_THRESHOLD = 10000  # sqft
+
+    enbloc_marked = db.session.execute(text(f"""
+        UPDATE {STAGING_TABLE}
+        SET is_outlier = true
+        WHERE area_sqft > :threshold
+          AND (is_outlier = false OR is_outlier IS NULL)
+    """), {'threshold': EN_BLOC_AREA_THRESHOLD})
+
+    enbloc_count = enbloc_marked.rowcount
+    db.session.commit()
+
+    if enbloc_count > 0:
+        logger.log(f"  Stage 1: Marked {enbloc_count:,} en-bloc sales (area > {EN_BLOC_AREA_THRESHOLD:,} sqft)")
+
+    # ==========================================================================
+    # STAGE 2: Price-based IQR outlier detection (3x IQR - relaxed)
+    # ==========================================================================
+    # Calculate IQR on NON-enbloc records only (exclude already-marked outliers)
+    IQR_MULTIPLIER = 3.0  # Relaxed from 1.5x to allow luxury condos
+
     result = db.session.execute(text(f"""
         SELECT
             PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) as q1,
             PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) as q3
         FROM {STAGING_TABLE}
         WHERE price > 0
+          AND (is_outlier = false OR is_outlier IS NULL)
     """)).fetchone()
 
     if not result or not result.q1 or not result.q3:
         logger.log("⚠️  Could not calculate IQR bounds")
-        return 0, {'before': before, 'after': before}
+        return enbloc_count, {'before': before, 'after': before - enbloc_count}
 
     q1, q3 = float(result.q1), float(result.q3)
     iqr = q3 - q1
-    lower_bound = q1 - 1.5 * iqr
-    upper_bound = q3 + 1.5 * iqr
+    lower_bound = q1 - IQR_MULTIPLIER * iqr
+    upper_bound = q3 + IQR_MULTIPLIER * iqr
 
-    logger.log(f"  Global IQR bounds: Q1=${q1:,.0f}, Q3=${q3:,.0f}, IQR=${iqr:,.0f}")
-    logger.log(f"  Valid range: ${lower_bound:,.0f} - ${upper_bound:,.0f}")
+    logger.log(f"  Stage 2: IQR bounds (3x): Q1=${q1:,.0f}, Q3=${q3:,.0f}, IQR=${iqr:,.0f}")
+    logger.log(f"  Valid price range: ${max(0, lower_bound):,.0f} - ${upper_bound:,.0f}")
 
-    # Mark outliers with is_outlier=true (soft-delete, not hard-delete)
-    marked = db.session.execute(text(f"""
+    # Mark price outliers (excluding already-marked en-bloc sales)
+    price_marked = db.session.execute(text(f"""
         UPDATE {STAGING_TABLE}
         SET is_outlier = true
-        WHERE price < :lower_bound OR price > :upper_bound
+        WHERE (price < :lower_bound OR price > :upper_bound)
+          AND (is_outlier = false OR is_outlier IS NULL)
     """), {'lower_bound': lower_bound, 'upper_bound': upper_bound})
 
-    total_marked = marked.rowcount
+    price_outlier_count = price_marked.rowcount
     db.session.commit()
+
+    if price_outlier_count > 0:
+        logger.log(f"  Stage 2: Marked {price_outlier_count:,} price outliers")
+
+    total_marked = enbloc_count + price_outlier_count
 
     # Count active (non-outlier) records
     active_count = db.session.execute(text(f"""
         SELECT COUNT(*) FROM {STAGING_TABLE} WHERE is_outlier = false
     """)).scalar()
-    logger.log(f"✓ Marked {total_marked:,} outliers in staging (soft-delete)")
+
+    logger.log(f"✓ Total outliers marked: {total_marked:,} (en-bloc: {enbloc_count}, price: {price_outlier_count})")
     logger.log(f"  Active records: {active_count:,}")
 
     return total_marked, {
         'before': before,
-        'after': active_count,  # Report active (non-outlier) count
+        'after': active_count,
         'total_marked': total_marked,
+        'enbloc_count': enbloc_count,
+        'price_outlier_count': price_outlier_count,
         'q1': q1,
         'q3': q3,
         'iqr': iqr,
+        'iqr_multiplier': IQR_MULTIPLIER,
         'lower_bound': lower_bound,
-        'upper_bound': upper_bound
+        'upper_bound': upper_bound,
+        'enbloc_area_threshold': EN_BLOC_AREA_THRESHOLD
     }
 
 

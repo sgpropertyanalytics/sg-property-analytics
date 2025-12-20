@@ -905,10 +905,28 @@ When diagnosing or fixing any issue, Claude MUST follow these rules:
 
 ### Where Outliers Are Marked
 
-Outliers are marked during data upload in `scripts/upload.py`:
-- Uses Global IQR method to identify extreme prices
-- Sets `is_outlier = true` on affected rows (soft-delete, not hard-delete)
-- Records are preserved but excluded from analytics
+Outliers are marked during data upload in `scripts/upload.py` using **two-stage detection**:
+
+**Stage 1: En-bloc/Collective Sales Detection (Area-based)**
+```python
+EN_BLOC_AREA_THRESHOLD = 10000  # sqft
+# Units with area > 10,000 sqft are en-bloc collective sales
+# These have total development area, not individual unit area
+```
+
+**Stage 2: Price Outliers (Relaxed 3x IQR)**
+```python
+IQR_MULTIPLIER = 3.0  # Relaxed from 1.5x to allow luxury condos ($4M-$10M)
+lower_bound = Q1 - 3.0 * IQR
+upper_bound = Q3 + 3.0 * IQR
+```
+
+**Why Two Stages:**
+- En-bloc sales have normal PSF but abnormal total area (100K+ sqft)
+- Pure IQR would incorrectly exclude legitimate $4M-$10M luxury units
+- Area filter catches en-blocs; relaxed IQR catches only extreme prices
+
+Records are preserved with `is_outlier = true` (soft-delete, not hard-delete).
 
 ### Outlier Exclusion Checklist
 
