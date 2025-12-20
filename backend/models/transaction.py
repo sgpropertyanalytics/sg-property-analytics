@@ -59,6 +59,10 @@ class Transaction(db.Model):
     type_of_area = db.Column(db.String(20))  # "Type of Area" - Strata or Land
     market_segment = db.Column(db.String(10))  # URA's CCR/RCR/OCR classification
 
+    # Outlier flag - soft-delete approach instead of hard-deleting outliers
+    # Records marked as outliers are excluded from analytics but kept for audit
+    is_outlier = db.Column(db.Boolean, default=False, index=True)
+
     def to_dict(self):
         """Convert to dictionary for JSON serialization"""
         return {
@@ -85,5 +89,6 @@ class Transaction(db.Model):
             'nett_price': self.nett_price,
             'type_of_area': self.type_of_area,
             'market_segment': self.market_segment,
+            'is_outlier': self.is_outlier,
         }
 

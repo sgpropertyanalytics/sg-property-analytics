@@ -174,10 +174,17 @@ def get_filtered_transactions(
     # SQLAlchemy database query (PostgreSQL only)
     from models.database import db
     from models.transaction import Transaction
-    
+    from sqlalchemy import or_
+
     # Build query using SQLAlchemy
     query = db.session.query(Transaction)
-    
+
+    # ALWAYS exclude outliers from all analytics (soft-delete)
+    query = query.filter(or_(
+        Transaction.is_outlier == False,
+        Transaction.is_outlier.is_(None)
+    ))
+
     # Normalize districts if provided
     if districts:
         normalized_districts = []

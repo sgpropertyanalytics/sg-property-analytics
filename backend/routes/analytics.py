@@ -203,15 +203,31 @@ def health():
     """Health check endpoint."""
     from models.transaction import Transaction
     from models.database import db
-    from sqlalchemy import func
+    from sqlalchemy import func, or_
 
     try:
-        count = db.session.query(Transaction).count()
+        # Total records in database
+        total_count = db.session.query(Transaction).count()
+
+        # Active records (non-outliers) - this is what analytics use
+        active_count = db.session.query(Transaction).filter(
+            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+        ).count()
+
+        # Outlier count - directly from database, always accurate
+        outlier_count = db.session.query(Transaction).filter(
+            Transaction.is_outlier == True
+        ).count()
+
         metadata = reader.get_metadata()
 
-        # Get min and max transaction dates from database
-        min_date_result = db.session.query(func.min(Transaction.transaction_date)).scalar()
-        max_date_result = db.session.query(func.max(Transaction.transaction_date)).scalar()
+        # Get min and max transaction dates from non-outlier records
+        min_date_result = db.session.query(func.min(Transaction.transaction_date)).filter(
+            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+        ).scalar()
+        max_date_result = db.session.query(func.max(Transaction.transaction_date)).filter(
+            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+        ).scalar()
 
         # If transaction_date is None, try contract_date
         if min_date_result is None:
@@ -221,10 +237,11 @@ def health():
 
         return jsonify({
             "status": "healthy",
-            "data_loaded": count > 0,
-            "row_count": count,
-            "outliers_excluded": metadata.get("outliers_excluded", 0),
-            "total_records_removed": metadata.get("total_records_removed", metadata.get("outliers_excluded", 0)),
+            "data_loaded": active_count > 0,
+            "row_count": active_count,  # Non-outlier records (used by analytics)
+            "total_records": total_count,  # All records in database
+            "outliers_excluded": outlier_count,  # Direct count from is_outlier=true
+            "total_records_removed": outlier_count,  # For backward compatibility
             "stats_computed": metadata.get("last_updated") is not None,
             "last_updated": metadata.get("last_updated"),
             "min_date": min_date_result.isoformat() if min_date_result else None,

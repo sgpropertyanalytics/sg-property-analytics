@@ -296,7 +296,8 @@ def create_staging_table(logger: UploadLogger):
             num_units INTEGER,
             nett_price FLOAT,
             type_of_area VARCHAR(20),
-            market_segment VARCHAR(10)
+            market_segment VARCHAR(10),
+            is_outlier BOOLEAN DEFAULT false
         )
     """))
     db.session.commit()
@@ -453,11 +454,11 @@ def remove_duplicates_staging(logger: UploadLogger) -> int:
 
 def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
     """
-    Remove outliers from staging using GLOBAL IQR method.
+    Mark outliers in staging using GLOBAL IQR method (soft-delete).
 
     Uses global IQR (across all transactions) to catch extreme outliers
     like $890M transactions that would skew the price distribution chart.
-    This matches the original filter_outliers_sql behavior.
+    Marks outliers with is_outlier=true instead of deleting them.
     """
     before = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
 
@@ -483,21 +484,27 @@ def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
     logger.log(f"  Global IQR bounds: Q1=${q1:,.0f}, Q3=${q3:,.0f}, IQR=${iqr:,.0f}")
     logger.log(f"  Valid range: ${lower_bound:,.0f} - ${upper_bound:,.0f}")
 
-    # Delete outliers outside global bounds
-    deleted = db.session.execute(text(f"""
-        DELETE FROM {STAGING_TABLE}
+    # Mark outliers with is_outlier=true (soft-delete, not hard-delete)
+    marked = db.session.execute(text(f"""
+        UPDATE {STAGING_TABLE}
+        SET is_outlier = true
         WHERE price < :lower_bound OR price > :upper_bound
     """), {'lower_bound': lower_bound, 'upper_bound': upper_bound})
 
-    total_removed = deleted.rowcount
+    total_marked = marked.rowcount
     db.session.commit()
 
-    after = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
-    logger.log(f"✓ Removed {total_removed:,} outliers from staging (global IQR)")
+    # Count active (non-outlier) records
+    active_count = db.session.execute(text(f"""
+        SELECT COUNT(*) FROM {STAGING_TABLE} WHERE is_outlier = false
+    """)).scalar()
+    logger.log(f"✓ Marked {total_marked:,} outliers in staging (soft-delete)")
+    logger.log(f"  Active records: {active_count:,}")
 
-    return total_removed, {
+    return total_marked, {
         'before': before,
-        'after': after,
+        'after': active_count,  # Report active (non-outlier) count
+        'total_marked': total_marked,
         'q1': q1,
         'q3': q3,
         'iqr': iqr,
@@ -646,6 +653,7 @@ def atomic_publish(logger: UploadLogger) -> bool:
             CREATE INDEX IF NOT EXISTS ix_transactions_district ON {PRODUCTION_TABLE}(district);
             CREATE INDEX IF NOT EXISTS ix_transactions_bedroom_count ON {PRODUCTION_TABLE}(bedroom_count);
             CREATE INDEX IF NOT EXISTS ix_transactions_floor_level ON {PRODUCTION_TABLE}(floor_level);
+            CREATE INDEX IF NOT EXISTS ix_transactions_is_outlier ON {PRODUCTION_TABLE}(is_outlier);
         """))
 
         db.session.commit()
