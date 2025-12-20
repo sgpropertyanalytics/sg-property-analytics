@@ -262,7 +262,7 @@ export function ValueParityPanel() {
                   className="absolute -top-1 transform -translate-x-1/2 pointer-events-none"
                   style={{ left: `${((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100}%` }}
                 >
-                  <span className="text-lg font-bold text-[#213448] bg-white px-1">
+                  <span className="text-2xl font-semibold text-[#213448] bg-white px-1">
                     {formatBudgetDisplay(budget)}
                   </span>
                 </div>
@@ -275,22 +275,30 @@ export function ValueParityPanel() {
                   step={BUDGET_STEP}
                   value={budget}
                   onChange={(e) => setBudget(parseInt(e.target.value))}
-                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb mt-7"
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb mt-8"
                   style={{
                     background: `linear-gradient(to right, #94B4C1 0%, #94B4C1 6.67%, #213448 6.67%, #213448 93.33%, #94B4C1 93.33%, #94B4C1 100%)`
                   }}
                 />
-                {/* Tick marks */}
-                <div className="relative w-full h-4 mt-1">
-                  {tickMarks.map((tick) => (
-                    <span
-                      key={tick.value}
-                      className="absolute text-[10px] text-[#547792] transform -translate-x-1/2"
-                      style={{ left: `${tick.percent}%` }}
-                    >
-                      {tick.label}
-                    </span>
-                  ))}
+                {/* Tick marks - padded to align with slider thumb radius */}
+                <div className="relative w-full h-4 mt-1 px-1">
+                  {tickMarks.map((tick, index) => {
+                    const isFirst = index === 0;
+                    const isLast = index === tickMarks.length - 1;
+                    return (
+                      <span
+                        key={tick.value}
+                        className={`absolute text-[10px] text-[#547792] ${
+                          isFirst ? 'left-0 text-left' :
+                          isLast ? 'right-0 text-right' :
+                          'transform -translate-x-1/2'
+                        }`}
+                        style={!isFirst && !isLast ? { left: `${tick.percent}%` } : undefined}
+                      >
+                        {tick.label}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
 
