@@ -347,10 +347,10 @@ export function ValueParityPanel() {
             </div>
 
             {/* Divider - visible on desktop */}
-            <div className="hidden lg:block w-px bg-[#94B4C1]/20 self-stretch" />
+            <div className="hidden lg:block w-px bg-[#94B4C1]/15 self-stretch" />
 
-            {/* RIGHT: Optional Filters (flex-1 for 50% fluid width) */}
-            <div className="flex-1 min-w-0">
+            {/* RIGHT: Optional Filters (flex-1 for 50% fluid width) - subtle zone tint */}
+            <div className="flex-1 min-w-0 bg-[#547792]/[0.03] -my-4 md:-my-5 -mr-4 md:-mr-5 py-4 md:py-5 pr-4 md:pr-5 pl-4">
               <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {/* Bedroom */}
