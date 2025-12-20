@@ -241,8 +241,8 @@ export function ValueParityPanel() {
           {/* Two-column layout: Budget+Search (left) | Optional Filters (right) */}
           <div className="flex flex-col lg:flex-row gap-6">
 
-            {/* LEFT: Budget Slider + Search Button */}
-            <div className="lg:w-[340px] flex-shrink-0">
+            {/* LEFT: Budget Slider + Search Button (50% width on desktop) */}
+            <div className="flex-1 min-w-0">
               {/* Budget Label + Value */}
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium text-[#213448]">
@@ -308,10 +308,10 @@ export function ValueParityPanel() {
             {/* Divider - visible on desktop */}
             <div className="hidden lg:block w-px bg-[#94B4C1]/30 self-stretch" />
 
-            {/* RIGHT: Optional Filters */}
+            {/* RIGHT: Optional Filters (50% width on desktop) */}
             <div className="flex-1 min-w-0">
               <p className="text-xs text-[#547792] mb-3">Optional filters</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {/* Bedroom */}
                 <div>
                   <label className="block text-xs font-medium text-[#547792] mb-1">Bedroom</label>
