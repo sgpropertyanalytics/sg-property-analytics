@@ -247,10 +247,13 @@ export function ValueParityPanel() {
 
             {/* LEFT: Budget Slider + Search Button (50% width on desktop) */}
             <div className="flex-1 min-w-0">
-              {/* Budget Label */}
-              <label className="block text-xs font-medium text-[#547792] mb-1">
+              {/* Budget Label + Interpretive hint */}
+              <label className="block text-xs font-medium text-[#547792] mb-0.5">
                 Maximum Budget (SGD)
               </label>
+              <p className="text-[10px] text-[#547792]/70 mb-2">
+                Showing realized transactions priced at or below your selected value
+              </p>
 
               {/* Slider with floating value */}
               <div className="relative mb-3">
@@ -319,16 +322,16 @@ export function ValueParityPanel() {
             <div className="hidden lg:block w-px bg-[#94B4C1]/30 self-stretch" />
 
             {/* RIGHT: Optional Filters (50% width on desktop) */}
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-[#547792] mb-3">Optional filters</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="flex-1 min-w-0 bg-[#F8FAFB] rounded-lg p-3">
+              <p className="text-[10px] uppercase tracking-wide text-[#547792]/70 mb-2 font-medium">Optional filters</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {/* Bedroom */}
                 <div>
-                  <label className="block text-xs font-medium text-[#547792] mb-1">Bedroom</label>
+                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Bedroom</label>
                   <select
                     value={bedroom}
                     onChange={(e) => setBedroom(e.target.value)}
-                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
                   >
                     <option value="">All</option>
                     <option value="1">1B</option>
@@ -340,14 +343,14 @@ export function ValueParityPanel() {
 
                 {/* Region */}
                 <div>
-                  <label className="block text-xs font-medium text-[#547792] mb-1">Region</label>
+                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Region</label>
                   <select
                     value={region}
                     onChange={(e) => {
                       setRegion(e.target.value);
                       setDistrict('');
                     }}
-                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
                   >
                     <option value="">All</option>
                     <option value="CCR">CCR</option>
@@ -358,11 +361,11 @@ export function ValueParityPanel() {
 
                 {/* District */}
                 <div>
-                  <label className="block text-xs font-medium text-[#547792] mb-1">District</label>
+                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">District</label>
                   <select
                     value={district}
                     onChange={(e) => setDistrict(e.target.value)}
-                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
                     disabled={filterOptions.loading}
                   >
                     <option value="">All</option>
@@ -374,11 +377,11 @@ export function ValueParityPanel() {
 
                 {/* Tenure */}
                 <div>
-                  <label className="block text-xs font-medium text-[#547792] mb-1">Tenure</label>
+                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Tenure</label>
                   <select
                     value={tenure}
                     onChange={(e) => setTenure(e.target.value)}
-                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
                   >
                     <option value="">All</option>
                     <option value="Freehold">Freehold</option>
@@ -389,11 +392,11 @@ export function ValueParityPanel() {
 
                 {/* Sale Type */}
                 <div>
-                  <label className="block text-xs font-medium text-[#547792] mb-1">Sale Type</label>
+                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Sale Type</label>
                   <select
                     value={saleType}
                     onChange={(e) => setSaleType(e.target.value)}
-                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
                   >
                     <option value="">All</option>
                     <option value="New Sale">New Sale</option>
@@ -403,11 +406,11 @@ export function ValueParityPanel() {
 
                 {/* Lease Age */}
                 <div>
-                  <label className="block text-xs font-medium text-[#547792] mb-1">Lease Age</label>
+                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Lease Age</label>
                   <select
                     value={leaseAge}
                     onChange={(e) => setLeaseAge(e.target.value)}
-                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
                   >
                     <option value="">All</option>
                     <option value="0-5">0-5 years</option>
@@ -428,10 +431,14 @@ export function ValueParityPanel() {
           {/* Header */}
           <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-[#213448]">Benchmark realized transaction prices across your target budget</h3>
+              <h3 className="font-semibold text-[#213448]">Comparable Transactions</h3>
               <p className="text-xs text-[#547792]">
-                {loading ? 'Loading...' : `${pagination.totalRecords.toLocaleString()} transactions found`}
-                {budget && <span className="font-medium ml-1">(max {formatBudgetDisplay(budget)})</span>}
+                {loading ? 'Loading...' : (
+                  <>
+                    <span className="font-semibold text-[#213448]">{pagination.totalRecords.toLocaleString()}</span>
+                    {' '}comparable transactions within this price band
+                  </>
+                )}
               </p>
             </div>
             <div className="flex items-center gap-2">
