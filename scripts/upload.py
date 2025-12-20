@@ -892,6 +892,16 @@ def main():
 
     app = create_app()
 
+    # Print database connection info for verification
+    with app.app_context():
+        db_info = db.session.execute(text(
+            "SELECT current_database(), inet_server_addr(), inet_server_port()"
+        )).fetchone()
+        print(f"\n🔗 Database Connection:")
+        print(f"   Database: {db_info[0]}")
+        print(f"   Host: {db_info[1] or 'localhost'}")
+        print(f"   Port: {db_info[2] or 5432}")
+
     # Schema check mode (read-only, no lock needed)
     if args.check:
         with app.app_context():
@@ -1043,6 +1053,18 @@ def main():
                     logger.log("❌ Publish failed!")
                     exit_code = 1
                     raise SystemExit(exit_code)
+
+                # Verify schema has new columns
+                schema_check = db.session.execute(text("""
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = 'transactions'
+                    AND column_name IN ('street_name', 'floor_level', 'floor_range')
+                """)).fetchall()
+                new_cols = [r[0] for r in schema_check]
+                if 'street_name' in new_cols:
+                    logger.log(f"✓ Schema verified: new columns present ({', '.join(new_cols)})")
+                else:
+                    logger.log("⚠️  Warning: New columns not found in transactions table")
 
                 # STAGE 7: Recompute stats
                 logger.stage("RECOMPUTE STATS")
