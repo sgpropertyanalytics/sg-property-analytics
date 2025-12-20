@@ -261,10 +261,10 @@ export function ValueParityPanel() {
 
         <form onSubmit={handleSearch}>
           {/* 50/50 Two-column layout: Budget+Search (left) | Optional Filters (right) */}
-          <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex flex-col lg:flex-row">
 
             {/* LEFT: Budget Slider + Search (flex-1 for 50% fluid width) */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 lg:pr-6">
               {/* Slider with floating value */}
               <div className="relative mb-4">
                 {/* Floating budget value - clamped to stay within bounds */}
@@ -347,10 +347,10 @@ export function ValueParityPanel() {
             </div>
 
             {/* Divider - visible on desktop */}
-            <div className="hidden lg:block w-px bg-[#94B4C1]/15 self-stretch" />
+            <div className="hidden lg:block w-px bg-[#94B4C1]/15 self-stretch shrink-0" />
 
-            {/* RIGHT: Optional Filters (flex-1 for 50% fluid width) - subtle zone tint */}
-            <div className="flex-1 min-w-0 bg-[#547792]/[0.03] -my-4 md:-my-5 -mr-4 md:-mr-5 py-4 md:py-5 pr-4 md:pr-5 pl-4">
+            {/* RIGHT: Optional Filters (flex-1 for 50% fluid width) - subtle zone tint, flush with divider */}
+            <div className="flex-1 min-w-0 bg-[#547792]/[0.03] -mr-4 md:-mr-5 pr-4 md:pr-5 pl-5 pb-4 mt-6 lg:mt-0">
               <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {/* Bedroom */}
