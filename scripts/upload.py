@@ -260,6 +260,18 @@ def main():
 
         recompute_all_stats(outliers_excluded=outliers_excluded)
 
+    # Step 5: Update project locations (optional - can be run separately)
+    try:
+        from services.project_location_service import run_incremental_update
+        print("\n" + "=" * 60)
+        print("Updating project locations...")
+        print("=" * 60)
+        run_incremental_update(app, geocode_limit=50)
+    except ImportError as e:
+        print(f"\n⚠️  Project location update skipped (module not found): {e}")
+    except Exception as e:
+        print(f"\n⚠️  Project location update failed (non-critical): {e}")
+
     print("\n" + "=" * 60)
     print("✓ All done! Data loaded, validated, and analytics pre-computed.")
     print("=" * 60)
