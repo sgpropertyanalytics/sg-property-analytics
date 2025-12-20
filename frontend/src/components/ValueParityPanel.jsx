@@ -346,106 +346,108 @@ export function ValueParityPanel() {
               </button>
             </div>
 
-            {/* Divider - visible on desktop */}
-            <div className="hidden lg:block w-px bg-[#94B4C1]/15 self-stretch shrink-0" />
+            {/* RIGHT WRAPPER: Background zone extends left to fill gap from pr-6 */}
+            <div className="flex-1 min-w-0 bg-[#547792]/[0.03] lg:-ml-6 -mr-4 md:-mr-5 mt-6 lg:mt-0 flex">
+              {/* Divider - inside the tinted zone */}
+              <div className="hidden lg:block w-px bg-[#94B4C1]/30 shrink-0 self-stretch" />
+              {/* Content area */}
+              <div className="flex-1 min-w-0 pl-5 pr-4 md:pr-5 pb-4">
+                <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {/* Bedroom */}
+                  <div>
+                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Bedroom</label>
+                    <select
+                      value={bedroom}
+                      onChange={(e) => setBedroom(e.target.value)}
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    >
+                      <option value="">All</option>
+                      <option value="1">1B</option>
+                      <option value="2">2B</option>
+                      <option value="3">3B</option>
+                      <option value="4">4B+</option>
+                    </select>
+                  </div>
 
-            {/* RIGHT: Optional Filters (flex-1 for 50% fluid width) - subtle zone tint, flush with divider */}
-            <div className="flex-1 min-w-0 bg-[#547792]/[0.03] -mr-4 md:-mr-5 pr-4 md:pr-5 pl-5 pb-4 mt-6 lg:mt-0">
-              <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {/* Bedroom */}
-                <div>
-                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Bedroom</label>
-                  <select
-                    value={bedroom}
-                    onChange={(e) => setBedroom(e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                  >
-                    <option value="">All</option>
-                    <option value="1">1B</option>
-                    <option value="2">2B</option>
-                    <option value="3">3B</option>
-                    <option value="4">4B+</option>
-                  </select>
-                </div>
+                  {/* Region */}
+                  <div>
+                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Region</label>
+                    <select
+                      value={region}
+                      onChange={(e) => {
+                        setRegion(e.target.value);
+                        setDistrict('');
+                      }}
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    >
+                      <option value="">All</option>
+                      <option value="CCR">CCR</option>
+                      <option value="RCR">RCR</option>
+                      <option value="OCR">OCR</option>
+                    </select>
+                  </div>
 
-                {/* Region */}
-                <div>
-                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Region</label>
-                  <select
-                    value={region}
-                    onChange={(e) => {
-                      setRegion(e.target.value);
-                      setDistrict('');
-                    }}
-                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                  >
-                    <option value="">All</option>
-                    <option value="CCR">CCR</option>
-                    <option value="RCR">RCR</option>
-                    <option value="OCR">OCR</option>
-                  </select>
-                </div>
+                  {/* District */}
+                  <div>
+                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">District</label>
+                    <select
+                      value={district}
+                      onChange={(e) => setDistrict(e.target.value)}
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                      disabled={filterOptions.loading}
+                    >
+                      <option value="">All</option>
+                      {filteredDistricts.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                {/* District */}
-                <div>
-                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">District</label>
-                  <select
-                    value={district}
-                    onChange={(e) => setDistrict(e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                    disabled={filterOptions.loading}
-                  >
-                    <option value="">All</option>
-                    {filteredDistricts.map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Tenure */}
+                  <div>
+                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Tenure</label>
+                    <select
+                      value={tenure}
+                      onChange={(e) => setTenure(e.target.value)}
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    >
+                      <option value="">All</option>
+                      <option value="Freehold">Freehold</option>
+                      <option value="99-year">99-year</option>
+                      <option value="999-year">999-year</option>
+                    </select>
+                  </div>
 
-                {/* Tenure */}
-                <div>
-                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Tenure</label>
-                  <select
-                    value={tenure}
-                    onChange={(e) => setTenure(e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                  >
-                    <option value="">All</option>
-                    <option value="Freehold">Freehold</option>
-                    <option value="99-year">99-year</option>
-                    <option value="999-year">999-year</option>
-                  </select>
-                </div>
+                  {/* Sale Type */}
+                  <div>
+                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Sale Type</label>
+                    <select
+                      value={saleType}
+                      onChange={(e) => setSaleType(e.target.value)}
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    >
+                      <option value="">All</option>
+                      <option value="New Sale">New Sale</option>
+                      <option value="Resale">Resale</option>
+                    </select>
+                  </div>
 
-                {/* Sale Type */}
-                <div>
-                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Sale Type</label>
-                  <select
-                    value={saleType}
-                    onChange={(e) => setSaleType(e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                  >
-                    <option value="">All</option>
-                    <option value="New Sale">New Sale</option>
-                    <option value="Resale">Resale</option>
-                  </select>
-                </div>
-
-                {/* Lease Age */}
-                <div>
-                  <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Lease Age</label>
-                  <select
-                    value={leaseAge}
-                    onChange={(e) => setLeaseAge(e.target.value)}
-                    className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                  >
-                    <option value="">All</option>
-                    <option value="0-5">0-5 years</option>
-                    <option value="5-10">5-10 years</option>
-                    <option value="10-20">10-20 years</option>
-                    <option value="20+">20+ years</option>
-                  </select>
+                  {/* Lease Age */}
+                  <div>
+                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Lease Age</label>
+                    <select
+                      value={leaseAge}
+                      onChange={(e) => setLeaseAge(e.target.value)}
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    >
+                      <option value="">All</option>
+                      <option value="0-5">0-5 years</option>
+                      <option value="5-10">5-10 years</option>
+                      <option value="10-20">10-20 years</option>
+                      <option value="20+">20+ years</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
