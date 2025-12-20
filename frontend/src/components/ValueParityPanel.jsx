@@ -11,9 +11,14 @@ import { DISTRICT_NAMES } from '../constants';
  * - Shows transactions where price <= budget
  * - Reuses same table structure as TransactionDataTable
  */
+// Budget slider constants
+const BUDGET_MIN = 500000;    // $500K
+const BUDGET_MAX = 8000000;   // $8M
+const BUDGET_STEP = 25000;    // $25K intervals
+
 export function ValueParityPanel() {
-  // Form state
-  const [budget, setBudget] = useState('');
+  // Form state - budget as number for slider
+  const [budget, setBudget] = useState(1500000); // Default $1.5M
   const [bedroom, setBedroom] = useState('');
   const [region, setRegion] = useState('');
   const [district, setDistrict] = useState('');
@@ -59,8 +64,8 @@ export function ValueParityPanel() {
 
   // Fetch transactions based on budget and filters
   const fetchTransactions = useCallback(async (page = 1) => {
-    if (!budget || parseFloat(budget.replace(/,/g, '')) <= 0) {
-      setError('Please enter a valid budget');
+    if (!budget || budget <= 0) {
+      setError('Please select a valid budget');
       return;
     }
 
@@ -69,13 +74,12 @@ export function ValueParityPanel() {
     setHasSearched(true);
 
     try {
-      const budgetValue = parseFloat(budget.replace(/,/g, ''));
       const params = {
         page,
         limit: pagination.limit,
         sort_by: sortConfig.column,
         sort_order: sortConfig.order,
-        price_max: budgetValue,
+        price_max: budget,
       };
 
       // Add optional filters
@@ -134,14 +138,13 @@ export function ValueParityPanel() {
     }
   };
 
-  // Format budget input with commas
-  const handleBudgetChange = (e) => {
-    const value = e.target.value.replace(/[^0-9]/g, '');
-    if (value) {
-      setBudget(parseInt(value).toLocaleString());
-    } else {
-      setBudget('');
+  // Format budget for display
+  const formatBudgetDisplay = (value) => {
+    if (value >= 1000000) {
+      const millions = value / 1000000;
+      return `$${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(2)}M`;
     }
+    return `$${(value / 1000).toFixed(0)}K`;
   };
 
   // Format date - show only month and year
@@ -218,21 +221,33 @@ export function ValueParityPanel() {
 
         <form onSubmit={handleSearch}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Budget Input - Required */}
-            <div className="lg:col-span-1">
-              <label className="block text-xs font-medium text-[#547792] mb-1.5">
-                Budget (SGD) <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#547792]">$</span>
+            {/* Budget Slider - Required */}
+            <div className="lg:col-span-2 sm:col-span-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium text-[#547792]">
+                  Budget (SGD)
+                </label>
+                <span className="text-lg font-bold text-[#213448]">
+                  {formatBudgetDisplay(budget)}
+                </span>
+              </div>
+              <div className="relative pt-1">
                 <input
-                  type="text"
+                  type="range"
+                  min={BUDGET_MIN}
+                  max={BUDGET_MAX}
+                  step={BUDGET_STEP}
                   value={budget}
-                  onChange={handleBudgetChange}
-                  placeholder="1,500,000"
-                  className="w-full pl-7 pr-3 py-2.5 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448]"
-                  required
+                  onChange={(e) => setBudget(parseInt(e.target.value))}
+                  className="w-full h-2 bg-[#94B4C1]/30 rounded-lg appearance-none cursor-pointer accent-[#213448] slider-thumb"
                 />
+                <div className="flex justify-between text-[10px] text-[#547792] mt-1">
+                  <span>$500K</span>
+                  <span>$2M</span>
+                  <span>$4M</span>
+                  <span>$6M</span>
+                  <span>$8M</span>
+                </div>
               </div>
             </div>
 
@@ -302,7 +317,7 @@ export function ValueParityPanel() {
             <div className="flex items-end">
               <button
                 type="submit"
-                disabled={loading || !budget}
+                disabled={loading}
                 className="w-full px-6 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >
                 {loading ? (
@@ -335,7 +350,7 @@ export function ValueParityPanel() {
               <h3 className="font-semibold text-[#213448]">Properties Within Budget</h3>
               <p className="text-xs text-[#547792]">
                 {loading ? 'Loading...' : `${pagination.totalRecords.toLocaleString()} properties found`}
-                {budget && <span className="text-[#547792] font-medium ml-1">(max ${budget})</span>}
+                {budget && <span className="text-[#547792] font-medium ml-1">(max {formatBudgetDisplay(budget)})</span>}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -518,7 +533,7 @@ export function ValueParityPanel() {
             </svg>
             <h3 className="text-lg font-semibold text-[#213448] mb-2">Find Your Dream Property</h3>
             <p className="text-sm text-[#547792]">
-              Enter your budget above and click Search to discover properties within your price range.
+              Drag the budget slider above to set your maximum price and click Search to discover properties within your range.
               Use the optional filters to narrow down by bedroom type, region, or district.
             </p>
           </div>
