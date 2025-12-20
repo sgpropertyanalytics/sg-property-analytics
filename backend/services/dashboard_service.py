@@ -289,8 +289,15 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
     Build SQLAlchemy filter conditions from filter dict.
 
     Returns list of conditions to be combined with and_().
+    Always excludes outliers (is_outlier = false).
     """
     conditions = []
+
+    # ALWAYS exclude outliers from all queries (soft-delete)
+    conditions.append(or_(
+        Transaction.is_outlier == False,
+        Transaction.is_outlier.is_(None)
+    ))
 
     # Date range
     if filters.get('date_from'):

@@ -22,6 +22,9 @@ def calculate_iqr_bounds(column: str = 'price') -> Tuple[float, float, Dict[str,
     """
     Calculate IQR bounds for outlier detection using SQL.
 
+    Only includes non-outlier records in the calculation to prevent
+    already-identified outliers from skewing the bounds.
+
     Args:
         column: Column name to calculate IQR for (default: 'price')
 
@@ -30,12 +33,14 @@ def calculate_iqr_bounds(column: str = 'price') -> Tuple[float, float, Dict[str,
         statistics_dict contains: q1, q3, iqr, lower_bound, upper_bound
     """
     # PostgreSQL percentile function (SQLite not supported)
+    # Exclude already-marked outliers from calculation
     quartile_sql = text(f"""
         SELECT
             percentile_cont(0.25) WITHIN GROUP (ORDER BY {column}) as q1,
             percentile_cont(0.75) WITHIN GROUP (ORDER BY {column}) as q3
         FROM transactions
         WHERE {column} > 0
+        AND (is_outlier = false OR is_outlier IS NULL)
     """)
     result = db.session.execute(quartile_sql).fetchone()
     q1, q3 = float(result[0]), float(result[1])
@@ -57,7 +62,7 @@ def calculate_iqr_bounds(column: str = 'price') -> Tuple[float, float, Dict[str,
 
 def count_outliers(lower_bound: float, upper_bound: float, column: str = 'price') -> int:
     """
-    Count records that fall outside the IQR bounds.
+    Count records that fall outside the IQR bounds (excluding already-marked outliers).
 
     Args:
         lower_bound: Lower bound for valid data
@@ -65,11 +70,12 @@ def count_outliers(lower_bound: float, upper_bound: float, column: str = 'price'
         column: Column to check (default: 'price')
 
     Returns:
-        Count of outlier records
+        Count of potential new outlier records
     """
     count_sql = text(f"""
         SELECT COUNT(*) FROM transactions
-        WHERE {column} < :lower_bound OR {column} > :upper_bound
+        WHERE ({column} < :lower_bound OR {column} > :upper_bound)
+        AND (is_outlier = false OR is_outlier IS NULL)
     """)
     return db.session.execute(
         count_sql,
@@ -111,52 +117,99 @@ def get_sample_outliers(lower_bound: float, upper_bound: float,
 
 def filter_outliers_sql(column: str = 'price', dry_run: bool = False) -> Tuple[int, Dict[str, Any]]:
     """
-    Filter outliers from database using SQL-based IQR calculation.
+    Mark outliers in database using SQL-based IQR calculation (soft-delete).
 
     This is the main outlier filtering function. It:
     1. Calculates IQR bounds
     2. Identifies outliers
-    3. Deletes them from the database (unless dry_run=True)
+    3. Marks them with is_outlier=True (soft-delete, not hard-delete)
+
+    Outliers are kept in the database for audit purposes but excluded from
+    analytics queries via WHERE is_outlier = false.
 
     Args:
         column: Column to filter outliers on (default: 'price')
-        dry_run: If True, only preview without deleting
+        dry_run: If True, only preview without marking
 
     Returns:
-        Tuple of (outliers_removed_count, statistics_dict)
+        Tuple of (outliers_marked_count, statistics_dict)
     """
-    before_count = db.session.query(Transaction).count()
+    # Count non-outlier records
+    before_count = db.session.query(Transaction).filter(
+        Transaction.is_outlier == False
+    ).count()
 
-    # Calculate bounds
+    # Calculate bounds (only from non-outlier records)
     lower_bound, upper_bound, stats = calculate_iqr_bounds(column)
 
-    # Count outliers
-    outlier_count = count_outliers(lower_bound, upper_bound, column)
+    # Count potential new outliers (records not yet marked)
+    count_sql = text(f"""
+        SELECT COUNT(*) FROM transactions
+        WHERE ({column} < :lower_bound OR {column} > :upper_bound)
+        AND (is_outlier = false OR is_outlier IS NULL)
+    """)
+    outlier_count = db.session.execute(
+        count_sql,
+        {'lower_bound': lower_bound, 'upper_bound': upper_bound}
+    ).scalar()
 
     stats['before_count'] = before_count
     stats['outlier_count'] = outlier_count
 
     if dry_run or outlier_count == 0:
         stats['action'] = 'preview' if dry_run else 'none'
-        stats['outliers_removed'] = 0
+        stats['outliers_marked'] = 0
         return 0, stats
 
-    # Delete outliers
-    delete_sql = text(f"""
-        DELETE FROM transactions
-        WHERE {column} < :lower_bound OR {column} > :upper_bound
+    # Mark outliers with is_outlier=True (soft-delete)
+    mark_sql = text(f"""
+        UPDATE transactions
+        SET is_outlier = true
+        WHERE ({column} < :lower_bound OR {column} > :upper_bound)
+        AND (is_outlier = false OR is_outlier IS NULL)
     """)
-    db.session.execute(delete_sql, {'lower_bound': lower_bound, 'upper_bound': upper_bound})
+    result = db.session.execute(mark_sql, {'lower_bound': lower_bound, 'upper_bound': upper_bound})
     db.session.commit()
 
-    after_count = db.session.query(Transaction).count()
-    outliers_removed = before_count - after_count
+    outliers_marked = result.rowcount
 
-    stats['action'] = 'deleted'
-    stats['outliers_removed'] = outliers_removed
+    # Count remaining non-outlier records
+    after_count = db.session.query(Transaction).filter(
+        Transaction.is_outlier == False
+    ).count()
+
+    stats['action'] = 'marked'
+    stats['outliers_marked'] = outliers_marked
+    stats['outliers_removed'] = outliers_marked  # Backward compatibility
     stats['after_count'] = after_count
 
-    return outliers_removed, stats
+    return outliers_marked, stats
+
+
+def get_outlier_count() -> int:
+    """
+    Get count of records currently marked as outliers.
+
+    Returns:
+        Count of is_outlier=True records
+    """
+    return db.session.query(Transaction).filter(
+        Transaction.is_outlier == True
+    ).count()
+
+
+def unmark_outliers() -> int:
+    """
+    Remove outlier flag from all records (for recalculation).
+
+    Returns:
+        Count of records unmarked
+    """
+    result = db.session.execute(text("""
+        UPDATE transactions SET is_outlier = false WHERE is_outlier = true
+    """))
+    db.session.commit()
+    return result.rowcount
 
 
 def remove_duplicates_sql() -> int:
@@ -386,7 +439,7 @@ def run_all_validations() -> Dict[str, Any]:
     except Exception as e:
         print(f"   ⚠️  Duplicate removal failed: {e}")
 
-    # Step 3: Filter outliers
+    # Step 3: Mark outliers (soft-delete)
     try:
         lower_bound, upper_bound, iqr_stats = calculate_iqr_bounds()
         outlier_count = count_outliers(lower_bound, upper_bound)
@@ -394,9 +447,9 @@ def run_all_validations() -> Dict[str, Any]:
 
         if outlier_count > 0:
             print(f"   IQR bounds: ${iqr_stats['lower_bound']:,.0f} - ${iqr_stats['upper_bound']:,.0f}")
-            outliers_removed, _ = filter_outliers_sql()
-            results['outliers_removed'] = outliers_removed
-            print(f"   ✓ Removed {outliers_removed:,} outlier records")
+            outliers_marked, _ = filter_outliers_sql()
+            results['outliers_removed'] = outliers_marked  # Keep key name for backward compat
+            print(f"   ✓ Marked {outliers_marked:,} outlier records (soft-delete)")
     except Exception as e:
         print(f"   ⚠️  Outlier filtering failed: {e}")
 
@@ -406,7 +459,10 @@ def run_all_validations() -> Dict[str, Any]:
         results['duplicates_removed'] +
         results['outliers_removed']
     )
-    results['final_count'] = db.session.query(Transaction).count()
+    # Final count excludes outliers
+    results['final_count'] = db.session.query(Transaction).filter(
+        Transaction.is_outlier == False
+    ).count()
 
     if results['total_cleaned'] == 0:
         print(f"   ✓ Data is clean - no issues detected")
@@ -441,6 +497,8 @@ def run_validation_report() -> Dict[str, Any]:
     """
     report = {
         'total_count': 0,
+        'active_count': 0,  # Non-outlier records
+        'outliers_excluded': 0,  # Already marked as outliers
         'potential_issues': {
             'invalid_records': 0,
             'potential_duplicates': 0,
@@ -452,6 +510,13 @@ def run_validation_report() -> Dict[str, Any]:
 
     total_count = db.session.query(Transaction).count()
     report['total_count'] = total_count
+
+    # Count existing outliers (already marked)
+    outlier_count = db.session.query(Transaction).filter(
+        Transaction.is_outlier == True
+    ).count()
+    report['outliers_excluded'] = outlier_count
+    report['active_count'] = total_count - outlier_count
 
     if total_count == 0:
         return report

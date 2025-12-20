@@ -63,18 +63,36 @@ def recompute_all_stats(validation_results: dict = None):
 
     invalid_removed = validation_results.get('invalid_removed', 0)
     duplicates_removed = validation_results.get('duplicates_removed', 0)
-    outliers_removed = validation_results.get('outliers_removed', 0)
-    total_records_removed = invalid_removed + duplicates_removed + outliers_removed
+
     print("=" * 60)
     print("Starting data computation - computing all analytics...")
     print("=" * 60)
 
-    # Get total transaction count
+    # Get record counts from database
+    from sqlalchemy import or_
     total_count = db.session.query(Transaction).count()
-    print(f"Total transactions in database: {total_count:,}")
 
-    if total_count == 0:
-        print("⚠️  No transactions found. Please run upload.py first.")
+    # Get outlier count directly from database (source of truth)
+    db_outlier_count = db.session.query(Transaction).filter(
+        Transaction.is_outlier == True
+    ).count()
+
+    # Active records (non-outliers) - what analytics actually use
+    active_count = db.session.query(Transaction).filter(
+        or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+    ).count()
+
+    # Use database outlier count as source of truth
+    # validation_results may have the count from staging deletion (legacy)
+    outliers_removed = db_outlier_count if db_outlier_count > 0 else validation_results.get('outliers_removed', 0)
+    total_records_removed = invalid_removed + duplicates_removed + outliers_removed
+
+    print(f"Total records in database: {total_count:,}")
+    print(f"Active records (non-outliers): {active_count:,}")
+    print(f"Outliers excluded: {outliers_removed:,}")
+
+    if active_count == 0:
+        print("⚠️  No active transactions found. Please run upload.py first.")
         return
 
     # SQL-only architecture: data_processor functions query database directly
@@ -86,7 +104,7 @@ def recompute_all_stats(validation_results: dict = None):
     print("  Computing resale_stats...")
     try:
         stats = get_resale_stats()
-        PreComputedStats.set_stat('resale_stats_all', stats, total_count)
+        PreComputedStats.set_stat('resale_stats_all', stats, active_count)
         print("    ✓ resale_stats_all")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -97,7 +115,7 @@ def recompute_all_stats(validation_results: dict = None):
         trends = get_price_trends()
         # Serialize timestamps to strings for JSON
         trends = serialize_for_json(trends)
-        PreComputedStats.set_stat('price_trends_all', trends, total_count)
+        PreComputedStats.set_stat('price_trends_all', trends, active_count)
         print("    ✓ price_trends_all")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -108,7 +126,7 @@ def recompute_all_stats(validation_results: dict = None):
     print("  Computing total_volume_by_district...")
     try:
         volume = get_total_volume_by_district([2, 3, 4])
-        PreComputedStats.set_stat('total_volume_by_district', volume, total_count)
+        PreComputedStats.set_stat('total_volume_by_district', volume, active_count)
         print("    ✓ total_volume_by_district")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -117,7 +135,7 @@ def recompute_all_stats(validation_results: dict = None):
     print("  Computing avg_psf_by_district...")
     try:
         psf = get_avg_psf_by_district([2, 3, 4])
-        PreComputedStats.set_stat('avg_psf_by_district', psf, total_count)
+        PreComputedStats.set_stat('avg_psf_by_district', psf, active_count)
         print("    ✓ avg_psf_by_district")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -128,7 +146,7 @@ def recompute_all_stats(validation_results: dict = None):
         market = get_market_stats()
         # Serialize timestamps to strings for JSON
         market = serialize_for_json(market)
-        PreComputedStats.set_stat('market_stats_all', market, total_count)
+        PreComputedStats.set_stat('market_stats_all', market, active_count)
         print("    ✓ market_stats_all")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -139,7 +157,7 @@ def recompute_all_stats(validation_results: dict = None):
     print("  Computing market_stats_by_district...")
     try:
         market_dist = get_market_stats_by_district([2, 3, 4])
-        PreComputedStats.set_stat('market_stats_by_district', market_dist, total_count)
+        PreComputedStats.set_stat('market_stats_by_district', market_dist, active_count)
         print("    ✓ market_stats_by_district")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -148,7 +166,7 @@ def recompute_all_stats(validation_results: dict = None):
     print("  Computing sale_type_trends...")
     try:
         sale_trends = get_sale_type_trends()
-        PreComputedStats.set_stat('sale_type_trends_all', sale_trends, total_count)
+        PreComputedStats.set_stat('sale_type_trends_all', sale_trends, active_count)
         print("    ✓ sale_type_trends_all")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -157,7 +175,7 @@ def recompute_all_stats(validation_results: dict = None):
     print("  Computing price_trends_by_sale_type...")
     try:
         price_sale = get_price_trends_by_sale_type([2, 3, 4])
-        PreComputedStats.set_stat('price_trends_by_sale_type', price_sale, total_count)
+        PreComputedStats.set_stat('price_trends_by_sale_type', price_sale, active_count)
         print("    ✓ price_trends_by_sale_type")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -166,7 +184,7 @@ def recompute_all_stats(validation_results: dict = None):
     print("  Computing price_trends_by_region...")
     try:
         price_region = get_price_trends_by_region([2, 3, 4])
-        PreComputedStats.set_stat('price_trends_by_region', price_region, total_count)
+        PreComputedStats.set_stat('price_trends_by_region', price_region, active_count)
         print("    ✓ price_trends_by_region")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -175,7 +193,7 @@ def recompute_all_stats(validation_results: dict = None):
     print("  Computing psf_trends_by_region...")
     try:
         psf_region = get_psf_trends_by_region([2, 3, 4])
-        PreComputedStats.set_stat('psf_trends_by_region', psf_region, total_count)
+        PreComputedStats.set_stat('psf_trends_by_region', psf_region, active_count)
         print("    ✓ psf_trends_by_region")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -184,7 +202,7 @@ def recompute_all_stats(validation_results: dict = None):
     print("  Computing price_trends_by_district...")
     try:
         price_dist = get_price_trends_by_district([2, 3, 4], top_n_districts=10)
-        PreComputedStats.set_stat('price_trends_by_district', price_dist, total_count)
+        PreComputedStats.set_stat('price_trends_by_district', price_dist, active_count)
         print("    ✓ price_trends_by_district")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -193,7 +211,7 @@ def recompute_all_stats(validation_results: dict = None):
     print("  Computing available_districts...")
     try:
         districts = get_available_districts()
-        PreComputedStats.set_stat('available_districts', {'districts': districts}, total_count)
+        PreComputedStats.set_stat('available_districts', {'districts': districts}, active_count)
         print("    ✓ available_districts")
     except Exception as e:
         print(f"    ✗ Error: {e}")
@@ -202,15 +220,16 @@ def recompute_all_stats(validation_results: dict = None):
     print("  Saving metadata...")
     metadata = {
         'last_updated': datetime.utcnow().isoformat(),
-        'row_count': total_count,
+        'row_count': active_count,  # Active (non-outlier) records
+        'total_records': total_count,  # All records in database
         'invalid_removed': invalid_removed,
         'duplicates_removed': duplicates_removed,
-        'outliers_excluded': outliers_removed,
+        'outliers_excluded': outliers_removed,  # From is_outlier=true
         'total_records_removed': total_records_removed,
         'computed_at': datetime.utcnow().isoformat()
     }
-    PreComputedStats.set_stat('_metadata', metadata, total_count)
-    print(f"    ✓ _metadata (total removed: {total_records_removed:,} = {invalid_removed:,} invalid + {duplicates_removed:,} duplicates + {outliers_removed:,} outliers)")
+    PreComputedStats.set_stat('_metadata', metadata, active_count)
+    print(f"    ✓ _metadata (outliers: {outliers_removed:,}, active: {active_count:,})")
 
     print("\n" + "=" * 60)
     print("✓ Data computation complete! All stats pre-computed and saved.")

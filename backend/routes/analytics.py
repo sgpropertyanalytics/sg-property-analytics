@@ -203,15 +203,31 @@ def health():
     """Health check endpoint."""
     from models.transaction import Transaction
     from models.database import db
-    from sqlalchemy import func
+    from sqlalchemy import func, or_
 
     try:
-        count = db.session.query(Transaction).count()
+        # Total records in database
+        total_count = db.session.query(Transaction).count()
+
+        # Active records (non-outliers) - this is what analytics use
+        active_count = db.session.query(Transaction).filter(
+            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+        ).count()
+
+        # Outlier count - directly from database, always accurate
+        outlier_count = db.session.query(Transaction).filter(
+            Transaction.is_outlier == True
+        ).count()
+
         metadata = reader.get_metadata()
 
-        # Get min and max transaction dates from database
-        min_date_result = db.session.query(func.min(Transaction.transaction_date)).scalar()
-        max_date_result = db.session.query(func.max(Transaction.transaction_date)).scalar()
+        # Get min and max transaction dates from non-outlier records
+        min_date_result = db.session.query(func.min(Transaction.transaction_date)).filter(
+            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+        ).scalar()
+        max_date_result = db.session.query(func.max(Transaction.transaction_date)).filter(
+            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+        ).scalar()
 
         # If transaction_date is None, try contract_date
         if min_date_result is None:
@@ -221,10 +237,11 @@ def health():
 
         return jsonify({
             "status": "healthy",
-            "data_loaded": count > 0,
-            "row_count": count,
-            "outliers_excluded": metadata.get("outliers_excluded", 0),
-            "total_records_removed": metadata.get("total_records_removed", metadata.get("outliers_excluded", 0)),
+            "data_loaded": active_count > 0,
+            "row_count": active_count,  # Non-outlier records (used by analytics)
+            "total_records": total_count,  # All records in database
+            "outliers_excluded": outlier_count,  # Direct count from is_outlier=true
+            "total_records_removed": outlier_count,  # For backward compatibility
             "stats_computed": metadata.get("last_updated") is not None,
             "last_updated": metadata.get("last_updated"),
             "min_date": min_date_result.isoformat() if min_date_result else None,
@@ -524,9 +541,10 @@ def transactions():
         limit = int(limit_param)
     except ValueError:
         return jsonify({"error": "Invalid parameter"}), 400
-    
-    query = db.session.query(Transaction)
-    
+
+    # Use active_query() to exclude outliers
+    query = Transaction.active_query()
+
     # Apply filters
     if districts_param:
         districts = [d.strip() for d in districts_param.split(",") if d.strip()]
@@ -861,7 +879,8 @@ def comparable_value_analysis():
     sale_type = request.args.get("sale_type")  # "New Launch" or "Resale"
     
     try:
-        query = db.session.query(Transaction).filter(
+        # Use active_query() to exclude outliers
+        query = Transaction.active_query().filter(
             Transaction.price >= (target_price - band),
             Transaction.price <= (target_price + band),
             Transaction.bedroom_count.in_(bedroom_types)
@@ -1256,7 +1275,8 @@ def aggregate():
     metrics = [m.strip() for m in metrics_param.split(",") if m.strip()]
 
     # Build filter conditions (we'll reuse these)
-    filter_conditions = []
+    # ALWAYS exclude outliers first
+    filter_conditions = [Transaction.outlier_filter()]
     filters_applied = {}
 
     # District filter
@@ -1581,7 +1601,8 @@ def transactions_list():
     sort_order = request.args.get("sort_order", "desc")
 
     # Build query with same filters as aggregate
-    query = db.session.query(Transaction)
+    # Use active_query() to exclude outliers
+    query = Transaction.active_query()
 
     # District filter
     districts_param = request.args.get("district")
@@ -1735,30 +1756,33 @@ def filter_options():
     from services.data_processor import _get_market_segment
 
     try:
-        # Get distinct values for each dimension
-        districts = [d[0] for d in db.session.query(distinct(Transaction.district)).order_by(Transaction.district).all()]
-        bedrooms = [b[0] for b in db.session.query(distinct(Transaction.bedroom_count)).order_by(Transaction.bedroom_count).all() if b[0]]
-        sale_types = [s[0] for s in db.session.query(distinct(Transaction.sale_type)).all() if s[0]]
-        projects = [p[0] for p in db.session.query(distinct(Transaction.project_name)).order_by(Transaction.project_name).limit(500).all() if p[0]]
+        # Base filter to exclude outliers
+        outlier_filter = Transaction.outlier_filter()
 
-        # Get date range
-        min_date = db.session.query(func.min(Transaction.transaction_date)).scalar()
-        max_date = db.session.query(func.max(Transaction.transaction_date)).scalar()
+        # Get distinct values for each dimension (excluding outliers)
+        districts = [d[0] for d in db.session.query(distinct(Transaction.district)).filter(outlier_filter).order_by(Transaction.district).all()]
+        bedrooms = [b[0] for b in db.session.query(distinct(Transaction.bedroom_count)).filter(outlier_filter).order_by(Transaction.bedroom_count).all() if b[0]]
+        sale_types = [s[0] for s in db.session.query(distinct(Transaction.sale_type)).filter(outlier_filter).all() if s[0]]
+        projects = [p[0] for p in db.session.query(distinct(Transaction.project_name)).filter(outlier_filter).order_by(Transaction.project_name).limit(500).all() if p[0]]
 
-        # Get PSF range
+        # Get date range (excluding outliers)
+        min_date = db.session.query(func.min(Transaction.transaction_date)).filter(outlier_filter).scalar()
+        max_date = db.session.query(func.max(Transaction.transaction_date)).filter(outlier_filter).scalar()
+
+        # Get PSF range (excluding outliers)
         psf_stats = db.session.query(
             func.min(Transaction.psf),
             func.max(Transaction.psf)
-        ).first()
+        ).filter(outlier_filter).first()
 
-        # Get size range
+        # Get size range (excluding outliers)
         size_stats = db.session.query(
             func.min(Transaction.area_sqft),
             func.max(Transaction.area_sqft)
-        ).first()
+        ).filter(outlier_filter).first()
 
-        # Get tenure options
-        tenures = [t[0] for t in db.session.query(distinct(Transaction.tenure)).all() if t[0]]
+        # Get tenure options (excluding outliers)
+        tenures = [t[0] for t in db.session.query(distinct(Transaction.tenure)).filter(outlier_filter).all() if t[0]]
 
         # Group districts by region
         regions = {"CCR": [], "RCR": [], "OCR": []}
