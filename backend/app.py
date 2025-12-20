@@ -32,15 +32,18 @@ def _run_startup_validation():
 
     This function only REPORTS potential issues for logging/monitoring.
     """
-    from models.transaction import Transaction
-    from services.data_validation import run_validation_report
-
-    count = db.session.query(Transaction).count()
-    if count == 0:
-        return  # No data to validate
+    from sqlalchemy import text
 
     try:
-        # Run READ-ONLY validation report (no mutations)
+        # Use raw SQL to avoid ORM schema mismatch errors
+        result = db.session.execute(text("SELECT COUNT(*) FROM transactions"))
+        count = result.scalar()
+
+        if count == 0:
+            return  # No data to validate
+
+        # Try to run validation report (may fail if schema is outdated)
+        from services.data_validation import run_validation_report
         report = run_validation_report()
 
         # Log the report (informational only)
