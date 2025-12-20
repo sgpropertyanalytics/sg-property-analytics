@@ -588,88 +588,16 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
         ORDER BY bin_num
     """)
 
-    try:
-        results = db.session.execute(sql, params).fetchall()
+    # Execute PostgreSQL CTE query (SQLite is not supported)
+    results = db.session.execute(sql, params).fetchall()
 
-        if not results:
-            logger.warning(f"Histogram query returned no results. Filters: {filters}")
-            return []
-
-        # Get min_price and bin_width from first row (same for all rows)
-        min_price = float(results[0].min_price) if results[0].min_price else 0
-        bin_width = float(results[0].bin_width) if results[0].bin_width else 0
-
-        histogram = []
-        for r in results:
-            bin_num = r.bin if r.bin else 1
-            bin_start = min_price + (bin_num - 1) * bin_width
-            bin_end = min_price + bin_num * bin_width
-            histogram.append({
-                'bin': bin_num,
-                'bin_start': round(bin_start, 0),
-                'bin_end': round(bin_end, 0),
-                'count': r.count
-            })
-
-        return histogram
-
-    except Exception as e:
-        logger.error(f"Histogram CTE query failed: {e}, trying fallback...")
-        # Fallback to original method if CTE fails (e.g., SQLite)
-        try:
-            return _query_price_histogram_fallback(filters, options)
-        except Exception as e2:
-            logger.error(f"Histogram fallback also failed: {e2}")
-            return []
-
-
-def _query_price_histogram_fallback(filters: Dict[str, Any], options: Dict[str, Any]) -> List[Dict]:
-    """Fallback histogram query for non-PostgreSQL databases."""
-    num_bins = options.get('histogram_bins', DEFAULT_HISTOGRAM_BINS)
-    conditions = build_filter_conditions(filters)
-
-    # Add price > 0 filter
-    price_filter = Transaction.price > 0
-    if conditions:
-        conditions = conditions + [price_filter]
-    else:
-        conditions = [price_filter]
-
-    # First get the price range
-    range_query = db.session.query(
-        func.min(Transaction.price).label('min_price'),
-        func.max(Transaction.price).label('max_price')
-    ).filter(and_(*conditions))
-
-    price_range = range_query.first()
-
-    if not price_range or not price_range.min_price or not price_range.max_price:
-        logger.warning(f"Fallback histogram: No price range found. Conditions: {len(conditions)}")
+    if not results:
+        logger.warning(f"Histogram query returned no results. Filters: {filters}")
         return []
 
-    min_price = float(price_range.min_price)
-    max_price = float(price_range.max_price)
-
-    if min_price == max_price:
-        return [{'bin': 1, 'bin_start': min_price, 'bin_end': max_price, 'count': 1}]
-
-    bin_width = (max_price - min_price) / num_bins
-
-    bin_expr = func.least(
-        cast(func.floor((Transaction.price - min_price) / bin_width) + 1, Integer),
-        num_bins
-    )
-
-    query = db.session.query(
-        bin_expr.label('bin'),
-        func.count(Transaction.id).label('count')
-    )
-
-    if conditions:
-        query = query.filter(and_(*conditions))
-
-    query = query.group_by(bin_expr).order_by(bin_expr)
-    results = query.all()
+    # Get min_price and bin_width from first row (same for all rows)
+    min_price = float(results[0].min_price) if results[0].min_price else 0
+    bin_width = float(results[0].bin_width) if results[0].bin_width else 0
 
     histogram = []
     for r in results:
