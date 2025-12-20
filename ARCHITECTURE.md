@@ -8,7 +8,7 @@ This project is a **Power BI-style Analytics Dashboard** for analyzing Singapore
 
 - **Frontend**: React + Vite + Tailwind CSS + Chart.js
 - **Backend**: Flask (Python) with SQLAlchemy ORM
-- **Database**: SQLite (development) / PostgreSQL (production)
+- **Database**: PostgreSQL (all environments - SQLite not supported)
 - **Hosting**: Render (512MB memory constraint)
 - **Architecture Pattern**: Pre-computed analytics + SQL-level aggregation
 

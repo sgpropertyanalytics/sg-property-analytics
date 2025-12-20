@@ -29,30 +29,16 @@ def calculate_iqr_bounds(column: str = 'price') -> Tuple[float, float, Dict[str,
         Tuple of (lower_bound, upper_bound, statistics_dict)
         statistics_dict contains: q1, q3, iqr, lower_bound, upper_bound
     """
-    try:
-        # PostgreSQL syntax
-        quartile_sql = text(f"""
-            SELECT
-                percentile_cont(0.25) WITHIN GROUP (ORDER BY {column}) as q1,
-                percentile_cont(0.75) WITHIN GROUP (ORDER BY {column}) as q3
-            FROM transactions
-            WHERE {column} > 0
-        """)
-        result = db.session.execute(quartile_sql).fetchone()
-        q1, q3 = float(result[0]), float(result[1])
-    except Exception:
-        # Fallback for SQLite
-        count_sql = text(f"SELECT COUNT(*) FROM transactions WHERE {column} > 0")
-        count = db.session.execute(count_sql).scalar()
-
-        q1_offset = int(count * 0.25)
-        q3_offset = int(count * 0.75)
-
-        q1_sql = text(f"SELECT {column} FROM transactions WHERE {column} > 0 ORDER BY {column} LIMIT 1 OFFSET {q1_offset}")
-        q3_sql = text(f"SELECT {column} FROM transactions WHERE {column} > 0 ORDER BY {column} LIMIT 1 OFFSET {q3_offset}")
-
-        q1 = float(db.session.execute(q1_sql).scalar())
-        q3 = float(db.session.execute(q3_sql).scalar())
+    # PostgreSQL percentile function (SQLite not supported)
+    quartile_sql = text(f"""
+        SELECT
+            percentile_cont(0.25) WITHIN GROUP (ORDER BY {column}) as q1,
+            percentile_cont(0.75) WITHIN GROUP (ORDER BY {column}) as q3
+        FROM transactions
+        WHERE {column} > 0
+    """)
+    result = db.session.execute(quartile_sql).fetchone()
+    q1, q3 = float(result[0]), float(result[1])
 
     iqr = q3 - q1
     lower_bound = q1 - 1.5 * iqr

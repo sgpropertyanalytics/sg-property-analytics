@@ -17,10 +17,25 @@ A **Power BI-style analytics dashboard** for Singapore private condo transaction
 ```bash
 cd backend
 pip install -r requirements.txt
+# Set up PostgreSQL (required - SQLite NOT supported)
+export DATABASE_URL=postgresql://dev:dev@localhost:5432/sg_property
 python app.py
 ```
 
-Runs on `http://localhost:5000`. Requires PostgreSQL in production (SQLite for local dev).
+Runs on `http://localhost:5000`. **PostgreSQL is required** (SQLite is not supported).
+
+#### Local PostgreSQL Setup (Docker)
+
+```bash
+docker run -d --name sg-property-db -p 5432:5432 \
+    -e POSTGRES_DB=sg_property -e POSTGRES_USER=dev -e POSTGRES_PASSWORD=dev \
+    postgres:15
+```
+
+Then add to your `.env`:
+```
+DATABASE_URL=postgresql://dev:dev@localhost:5432/sg_property
+```
 
 ### Frontend
 
@@ -42,7 +57,7 @@ VITE_API_URL=https://your-backend.onrender.com/api
 |-------|------------|
 | Frontend | React 18 + Vite + Tailwind CSS + Chart.js |
 | Backend | Flask + SQLAlchemy |
-| Database | PostgreSQL (production) / SQLite (dev) |
+| Database | PostgreSQL (all environments) |
 | Hosting | Render (512MB memory optimized) |
 
 ## Architecture

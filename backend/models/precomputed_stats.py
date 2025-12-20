@@ -10,7 +10,7 @@ class PreComputedStats(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     stat_key = db.Column(db.String(100), unique=True, nullable=False, index=True)
-    stat_value = db.Column(db.Text, nullable=False)  # JSON stored as TEXT (SQLite) or JSON (PostgreSQL)
+    stat_value = db.Column(db.Text, nullable=False)  # JSON stored as TEXT
     computed_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     row_count = db.Column(db.Integer)  # Number of transactions used in calculation
     
@@ -21,7 +21,7 @@ class PreComputedStats(db.Model):
         if not record:
             return None
         
-        # Handle both PostgreSQL (returns dict) and SQLite (may return string)
+        # Parse JSON from TEXT column
         value = record.stat_value
         if isinstance(value, str):
             try:

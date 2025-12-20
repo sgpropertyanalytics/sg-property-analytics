@@ -171,7 +171,7 @@ def get_filtered_transactions(
     Returns:
         DataFrame with filtered transactions
     """
-    # SQLAlchemy database query (PostgreSQL/SQLite)
+    # SQLAlchemy database query (PostgreSQL only)
     from models.database import db
     from models.transaction import Transaction
     
@@ -1722,7 +1722,7 @@ def get_new_vs_resale_comparison(
     date_trunc_grain = time_grain  # 'year', 'quarter', 'month'
 
     # Raw SQL query using PostgreSQL's DATE_TRUNC for time granularity
-    # Using avg as fallback for true median (SQLite compatibility)
+    # Using avg as approximation for true median (memory-efficient)
     # Note: NULL lease_start_year = "unknown age", include them (production-safe fix)
     # Returns median PRICE (total quantum) instead of PSF
     sql = text(f"""
@@ -1761,64 +1761,8 @@ def get_new_vs_resale_comparison(
         ORDER BY period
     """)
 
-    try:
-        result = db.session.execute(sql, params).fetchall()
-    except Exception as e:
-        # Fallback for SQLite (which doesn't support FULL OUTER JOIN or DATE_TRUNC)
-        # Build SQLite-compatible period expression based on time_grain
-        if time_grain == "year":
-            sqlite_period = "strftime('%Y', transaction_date)"
-        elif time_grain == "month":
-            sqlite_period = "strftime('%Y-%m', transaction_date)"
-        else:  # quarter
-            sqlite_period = "strftime('%Y', transaction_date) || '-Q' || ((CAST(strftime('%m', transaction_date) AS INTEGER) - 1) / 3 + 1)"
-
-        sql_fallback = text(f"""
-            WITH new_launches AS (
-                SELECT
-                    {sqlite_period} AS period,
-                    AVG(price) AS median_price,
-                    COUNT(*) AS transaction_count
-                FROM transactions
-                WHERE sale_type = 'New Sale'
-                  AND {where_clause}
-                GROUP BY {sqlite_period}
-            ),
-            resale_under_10y AS (
-                SELECT
-                    {sqlite_period} AS period,
-                    AVG(price) AS median_price,
-                    COUNT(*) AS transaction_count
-                FROM transactions
-                WHERE sale_type = 'Resale'
-                  AND (
-                    lease_start_year IS NULL
-                    OR (CAST(strftime('%Y', transaction_date) AS INTEGER) - lease_start_year) <= 10
-                  )
-                  AND {where_clause}
-                GROUP BY {sqlite_period}
-            )
-            SELECT
-                COALESCE(n.period, r.period) AS period,
-                n.median_price AS new_launch_price,
-                n.transaction_count AS new_launch_count,
-                r.median_price AS resale_price,
-                r.transaction_count AS resale_count
-            FROM new_launches n
-            LEFT JOIN resale_under_10y r ON n.period = r.period
-            UNION
-            SELECT
-                r.period AS period,
-                n.median_price AS new_launch_price,
-                n.transaction_count AS new_launch_count,
-                r.median_price AS resale_price,
-                r.transaction_count AS resale_count
-            FROM resale_under_10y r
-            LEFT JOIN new_launches n ON n.period = r.period
-            WHERE n.period IS NULL
-            ORDER BY period
-        """)
-        result = db.session.execute(sql_fallback, params).fetchall()
+    # Execute PostgreSQL query (SQLite is not supported)
+    result = db.session.execute(sql, params).fetchall()
 
     # Build chart data
     chart_data = []
@@ -1837,10 +1781,9 @@ def get_new_vs_resale_comparison(
             premium_pct = round((new_launch_price - resale_price) / resale_price * 100, 1)
             premiums.append(premium_pct)
 
-        # Format period based on time_grain
+        # Format period based on time_grain (PostgreSQL returns datetime objects)
         if period:
             if hasattr(period, 'month'):
-                # PostgreSQL returns datetime objects
                 if time_grain == "year":
                     period_str = str(period.year)
                 elif time_grain == "month":
@@ -1849,7 +1792,7 @@ def get_new_vs_resale_comparison(
                     quarter = (period.month - 1) // 3 + 1
                     period_str = f"{period.year}-Q{quarter}"
             else:
-                # SQLite returns strings (already formatted)
+                # Fallback for string period values
                 period_str = str(period)
         else:
             period_str = "Unknown"
