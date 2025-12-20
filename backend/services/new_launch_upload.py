@@ -357,11 +357,9 @@ def _create_from_csv(row: Dict[str, Any], year: int):
         launch_year=year,
         property_type='Condominium',
         land_bid_psf=float(row.get('land_bid_psf', 0)) or None if row.get('land_bid_psf') else None,
-        source_urls={'csv': file_path if 'file_path' in dir() else 'CSV upload'},
-        data_confidence=str(row.get('confidence', 'medium')).strip().lower(),
         data_source=str(row.get('source', '')).strip(),
+        data_confidence=str(row.get('confidence', 'medium')).strip().lower(),
         needs_review=False,
-        last_scraped=datetime.utcnow(),
     )
 
 
@@ -392,6 +390,5 @@ def _update_from_csv(existing, row: Dict[str, Any]):
     if row.get('source'):
         existing.data_source = str(row['source']).strip()
 
-    existing.source_urls = {'csv': 'CSV upload'}
     existing.needs_review = False
     existing.updated_at = datetime.utcnow()
