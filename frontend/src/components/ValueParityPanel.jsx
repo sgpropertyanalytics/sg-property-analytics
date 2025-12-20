@@ -267,15 +267,27 @@ export function ValueParityPanel() {
             <div className="flex-1 min-w-0">
               {/* Slider with floating value */}
               <div className="relative mb-4">
-                {/* Floating budget value - anchored to thumb position */}
-                <div
-                  className="absolute -top-1 transform -translate-x-1/2 pointer-events-none"
-                  style={{ left: `${((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100}%` }}
-                >
-                  <span className="text-2xl font-semibold text-[#213448] bg-white px-1">
-                    {formatBudgetDisplay(budget)}
-                  </span>
-                </div>
+                {/* Floating budget value - clamped to stay within bounds */}
+                {(() => {
+                  const thumbPercent = ((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
+                  // Clamp: left-align when <15%, right-align when >85%, center otherwise
+                  const isNearLeft = thumbPercent < 15;
+                  const isNearRight = thumbPercent > 85;
+                  return (
+                    <div
+                      className={`absolute -top-1 pointer-events-none ${
+                        isNearLeft ? 'left-0' :
+                        isNearRight ? 'right-0' :
+                        'transform -translate-x-1/2'
+                      }`}
+                      style={!isNearLeft && !isNearRight ? { left: `${thumbPercent}%` } : undefined}
+                    >
+                      <span className="text-2xl font-semibold text-[#213448] bg-white px-1">
+                        {formatBudgetDisplay(budget)}
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {/* Slider input - gradient shows active trading range ($1.5M-$3.5M darker) */}
                 <input
