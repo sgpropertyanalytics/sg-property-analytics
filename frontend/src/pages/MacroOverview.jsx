@@ -56,17 +56,23 @@ function MacroOverviewContent({ view = 'analytics' }) {
     loading: true,
   });
 
-  // Fetch KPIs for last 30 days (fixed time window, not affected by sidebar filters)
+  // Fetch KPIs for last 30 days (based on data's max_date, not today)
   useEffect(() => {
     const fetchKpis = async () => {
+      // Wait for apiMetadata to be loaded
+      if (!apiMetadata?.max_date) {
+        return;
+      }
+
       try {
-        // Calculate last 30 days from today
-        const today = new Date();
-        const thirtyDaysAgo = new Date(today);
-        thirtyDaysAgo.setDate(today.getDate() - 30);
+        // Calculate last 30 days from the database's max_date (not today)
+        // This ensures KPIs show data even if the dataset doesn't extend to today
+        const maxDate = new Date(apiMetadata.max_date);
+        const thirtyDaysAgo = new Date(maxDate);
+        thirtyDaysAgo.setDate(maxDate.getDate() - 30);
 
         const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
-        const dateTo = today.toISOString().split('T')[0];
+        const dateTo = maxDate.toISOString().split('T')[0];
 
         // Fetch New Sales and Resales in parallel
         const [newSalesRes, resalesRes] = await Promise.all([
@@ -101,7 +107,7 @@ function MacroOverviewContent({ view = 'analytics' }) {
       }
     };
     fetchKpis();
-  }, []); // Only fetch once on mount - these are market snapshot KPIs
+  }, [apiMetadata?.max_date]); // Re-fetch when max_date is available
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
     setModalTitle(title);
