@@ -81,6 +81,22 @@ canvas {
   animation: fade-in 0.2s ease-out;
 }
 
+/* View enter animation - for Analytics/Value Parity view transitions */
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-view-enter {
+  animation: view-enter 0.15s ease-out;
+}
+
 /* ====== Responsive Layout Utilities ====== */
 
 /* Hide scrollbars but allow scrolling */
