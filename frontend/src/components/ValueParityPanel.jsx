@@ -238,150 +238,158 @@ export function ValueParityPanel() {
         <p className="text-sm text-[#547792] mb-5">Benchmark realized transaction prices across your target budget</p>
 
         <form onSubmit={handleSearch}>
-          {/* Budget Slider Section - Required */}
-          <div className="mb-5">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-[#213448]">
-                Budget (SGD)
-              </label>
-              <span className="text-xl font-bold text-[#213448]">
-                {formatBudgetDisplay(budget)}
-              </span>
-            </div>
-            <div className="relative">
-              <input
-                type="range"
-                min={BUDGET_MIN}
-                max={BUDGET_MAX}
-                step={BUDGET_STEP}
-                value={budget}
-                onChange={(e) => setBudget(parseInt(e.target.value))}
-                className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb"
-                style={{
-                  background: `linear-gradient(to right, #94B4C1 0%, #94B4C1 6.67%, #213448 6.67%, #213448 93.33%, #94B4C1 93.33%, #94B4C1 100%)`
-                }}
-              />
-              {/* Tick marks positioned absolutely based on actual value */}
-              <div className="relative w-full h-5 mt-1">
-                {tickMarks.map((tick, idx) => (
-                  <span
-                    key={tick.value}
-                    className="absolute text-xs text-[#547792] font-medium transform -translate-x-1/2"
-                    style={{ left: `${tick.percent}%` }}
-                  >
-                    {tick.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* Two-column layout: Budget+Search (left) | Optional Filters (right) */}
+          <div className="flex flex-col lg:flex-row gap-6">
 
-          {/* Optional Filters Section */}
-          <div className="border-t border-[#94B4C1]/30 pt-4">
-            <p className="text-xs text-[#547792] mb-3">Optional filters</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {/* Bedroom */}
-              <div>
-                <label className="block text-xs font-medium text-[#547792] mb-1">Bedroom</label>
-                <select
-                  value={bedroom}
-                  onChange={(e) => setBedroom(e.target.value)}
-                  className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                >
-                  <option value="">All</option>
-                  <option value="1">1B</option>
-                  <option value="2">2B</option>
-                  <option value="3">3B</option>
-                  <option value="4">4B+</option>
-                </select>
+            {/* LEFT: Budget Slider + Search Button */}
+            <div className="lg:w-[340px] flex-shrink-0">
+              {/* Budget Label + Value */}
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-[#213448]">
+                  Budget (SGD)
+                </label>
+                <span className="text-xl font-bold text-[#213448]">
+                  {formatBudgetDisplay(budget)}
+                </span>
               </div>
 
-              {/* Region */}
-              <div>
-                <label className="block text-xs font-medium text-[#547792] mb-1">Region</label>
-                <select
-                  value={region}
-                  onChange={(e) => {
-                    setRegion(e.target.value);
-                    setDistrict('');
+              {/* Slider */}
+              <div className="relative mb-4">
+                <input
+                  type="range"
+                  min={BUDGET_MIN}
+                  max={BUDGET_MAX}
+                  step={BUDGET_STEP}
+                  value={budget}
+                  onChange={(e) => setBudget(parseInt(e.target.value))}
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb"
+                  style={{
+                    background: `linear-gradient(to right, #94B4C1 0%, #94B4C1 6.67%, #213448 6.67%, #213448 93.33%, #94B4C1 93.33%, #94B4C1 100%)`
                   }}
-                  className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                >
-                  <option value="">All</option>
-                  <option value="CCR">CCR</option>
-                  <option value="RCR">RCR</option>
-                  <option value="OCR">OCR</option>
-                </select>
-              </div>
-
-              {/* District */}
-              <div>
-                <label className="block text-xs font-medium text-[#547792] mb-1">District</label>
-                <select
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                  className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                  disabled={filterOptions.loading}
-                >
-                  <option value="">All</option>
-                  {filteredDistricts.map(d => (
-                    <option key={d} value={d}>{d}</option>
+                />
+                {/* Tick marks */}
+                <div className="relative w-full h-5 mt-1">
+                  {tickMarks.map((tick) => (
+                    <span
+                      key={tick.value}
+                      className="absolute text-xs text-[#547792] font-medium transform -translate-x-1/2"
+                      style={{ left: `${tick.percent}%` }}
+                    >
+                      {tick.label}
+                    </span>
                   ))}
-                </select>
-              </div>
-
-              {/* Tenure */}
-              <div>
-                <label className="block text-xs font-medium text-[#547792] mb-1">Tenure</label>
-                <select
-                  value={tenure}
-                  onChange={(e) => setTenure(e.target.value)}
-                  className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                >
-                  <option value="">All</option>
-                  <option value="Freehold">Freehold</option>
-                  <option value="99-year">99-year</option>
-                  <option value="999-year">999-year</option>
-                </select>
-              </div>
-
-              {/* Sale Type */}
-              <div>
-                <label className="block text-xs font-medium text-[#547792] mb-1">Sale Type</label>
-                <select
-                  value={saleType}
-                  onChange={(e) => setSaleType(e.target.value)}
-                  className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                >
-                  <option value="">All</option>
-                  <option value="New Sale">New Sale</option>
-                  <option value="Resale">Resale</option>
-                </select>
+                </div>
               </div>
 
               {/* Search Button */}
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full px-4 py-2 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Searching...
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      Search
-                    </span>
-                  )}
-                </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Searching...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Search
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Divider - visible on desktop */}
+            <div className="hidden lg:block w-px bg-[#94B4C1]/30 self-stretch" />
+
+            {/* RIGHT: Optional Filters */}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-[#547792] mb-3">Optional filters</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {/* Bedroom */}
+                <div>
+                  <label className="block text-xs font-medium text-[#547792] mb-1">Bedroom</label>
+                  <select
+                    value={bedroom}
+                    onChange={(e) => setBedroom(e.target.value)}
+                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                  >
+                    <option value="">All</option>
+                    <option value="1">1B</option>
+                    <option value="2">2B</option>
+                    <option value="3">3B</option>
+                    <option value="4">4B+</option>
+                  </select>
+                </div>
+
+                {/* Region */}
+                <div>
+                  <label className="block text-xs font-medium text-[#547792] mb-1">Region</label>
+                  <select
+                    value={region}
+                    onChange={(e) => {
+                      setRegion(e.target.value);
+                      setDistrict('');
+                    }}
+                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                  >
+                    <option value="">All</option>
+                    <option value="CCR">CCR</option>
+                    <option value="RCR">RCR</option>
+                    <option value="OCR">OCR</option>
+                  </select>
+                </div>
+
+                {/* District */}
+                <div>
+                  <label className="block text-xs font-medium text-[#547792] mb-1">District</label>
+                  <select
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
+                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                    disabled={filterOptions.loading}
+                  >
+                    <option value="">All</option>
+                    {filteredDistricts.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tenure */}
+                <div>
+                  <label className="block text-xs font-medium text-[#547792] mb-1">Tenure</label>
+                  <select
+                    value={tenure}
+                    onChange={(e) => setTenure(e.target.value)}
+                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                  >
+                    <option value="">All</option>
+                    <option value="Freehold">Freehold</option>
+                    <option value="99-year">99-year</option>
+                    <option value="999-year">999-year</option>
+                  </select>
+                </div>
+
+                {/* Sale Type */}
+                <div>
+                  <label className="block text-xs font-medium text-[#547792] mb-1">Sale Type</label>
+                  <select
+                    value={saleType}
+                    onChange={(e) => setSaleType(e.target.value)}
+                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                  >
+                    <option value="">All</option>
+                    <option value="New Sale">New Sale</option>
+                    <option value="Resale">Resale</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
