@@ -238,27 +238,33 @@ export function ValueParityPanel() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Input Panel */}
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4 md:p-6">
-        <p className="text-sm text-[#547792] mb-5">Benchmark realized transaction prices across your target budget</p>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4 md:p-5">
+        <p className="text-sm text-[#547792] mb-4">Benchmark realized transaction prices across your target budget</p>
 
         <form onSubmit={handleSearch}>
           {/* Two-column layout: Budget+Search (left) | Optional Filters (right) */}
-          <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex flex-col lg:flex-row gap-5">
 
             {/* LEFT: Budget Slider + Search Button (50% width on desktop) */}
             <div className="flex-1 min-w-0">
-              {/* Budget Label + Value */}
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-[#213448]">
-                  Budget (SGD)
-                </label>
-                <span className="text-xl font-bold text-[#213448]">
-                  {formatBudgetDisplay(budget)}
-                </span>
-              </div>
+              {/* Budget Label */}
+              <label className="block text-xs font-medium text-[#547792] mb-1">
+                Maximum Budget (SGD)
+              </label>
 
-              {/* Slider */}
-              <div className="relative mb-4">
+              {/* Slider with floating value */}
+              <div className="relative mb-3">
+                {/* Floating budget value - anchored to thumb position */}
+                <div
+                  className="absolute -top-1 transform -translate-x-1/2 pointer-events-none"
+                  style={{ left: `${((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100}%` }}
+                >
+                  <span className="text-lg font-bold text-[#213448] bg-white px-1">
+                    {formatBudgetDisplay(budget)}
+                  </span>
+                </div>
+
+                {/* Slider input */}
                 <input
                   type="range"
                   min={BUDGET_MIN}
@@ -266,17 +272,17 @@ export function ValueParityPanel() {
                   step={BUDGET_STEP}
                   value={budget}
                   onChange={(e) => setBudget(parseInt(e.target.value))}
-                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb"
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb mt-7"
                   style={{
                     background: `linear-gradient(to right, #94B4C1 0%, #94B4C1 6.67%, #213448 6.67%, #213448 93.33%, #94B4C1 93.33%, #94B4C1 100%)`
                   }}
                 />
                 {/* Tick marks */}
-                <div className="relative w-full h-5 mt-1">
+                <div className="relative w-full h-4 mt-1">
                   {tickMarks.map((tick) => (
                     <span
                       key={tick.value}
-                      className="absolute text-xs text-[#547792] font-medium transform -translate-x-1/2"
+                      className="absolute text-[10px] text-[#547792] transform -translate-x-1/2"
                       style={{ left: `${tick.percent}%` }}
                     >
                       {tick.label}
@@ -285,25 +291,25 @@ export function ValueParityPanel() {
                 </div>
               </div>
 
-              {/* Search Button */}
+              {/* Compact action button - secondary style */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                className="w-full px-4 py-2 border border-[#213448] text-[#213448] text-sm font-medium rounded-md hover:bg-[#213448] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Searching...
+                    Finding...
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                    Search
+                    Find Properties
                   </span>
                 )}
               </button>
