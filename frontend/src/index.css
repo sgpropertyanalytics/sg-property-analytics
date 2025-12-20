@@ -99,13 +99,21 @@ canvas {
 
 /* ====== Budget Slider Styling ====== */
 
-/* Custom slider thumb styling */
+/* Custom slider thumb styling - teal only at extreme 15% ends */
 input[type="range"].slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  background: linear-gradient(to right, #213448 0%, #213448 var(--slider-progress, 50%), #94B4C1 var(--slider-progress, 50%), #94B4C1 100%);
+  background: linear-gradient(to right,
+    #94B4C1 0%,
+    #94B4C1 15%,
+    #213448 15%,
+    #213448 85%,
+    #94B4C1 85%,
+    #94B4C1 100%
+  );
   background-size: 100% 100%;
   border-radius: 0.5rem;
+  height: 8px;
 }
 
 input[type="range"].slider-thumb::-webkit-slider-thumb {

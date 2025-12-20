@@ -214,15 +214,14 @@ export function ValueParityPanel() {
     <div className="space-y-6 animate-fade-in">
       {/* Input Panel */}
       <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4 md:p-6">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-[#213448]">Value Parity Tool</h2>
-          <p className="text-sm text-[#547792]">Find properties within your budget</p>
-        </div>
+        <p className="text-sm text-[#547792] mb-4">Benchmark realized transaction prices across your target budget</p>
 
         <form onSubmit={handleSearch}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Budget Slider - Required */}
-            <div className="lg:col-span-2 sm:col-span-2">
+          {/* Desktop: 6 columns - Slider(2) + Bedroom(1) + Region(1) + District(1) + Search(1) */}
+          {/* Tablet/Mobile: Stack appropriately */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 lg:gap-4 items-end">
+            {/* Budget Slider - spans 2 columns on all breakpoints */}
+            <div className="col-span-2">
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-medium text-[#547792]">
                   Budget (SGD)
@@ -239,12 +238,15 @@ export function ValueParityPanel() {
                   step={BUDGET_STEP}
                   value={budget}
                   onChange={(e) => setBudget(parseInt(e.target.value))}
-                  className="w-full h-2 bg-[#94B4C1]/30 rounded-lg appearance-none cursor-pointer accent-[#213448] slider-thumb"
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb"
                 />
-                <div className="flex justify-between text-[10px] text-[#547792] mt-1">
+                <div className="flex justify-between text-xs text-[#547792] mt-1.5 font-medium">
                   <span>$500K</span>
+                  <span>$1M</span>
                   <span>$2M</span>
+                  <span>$3M</span>
                   <span>$4M</span>
+                  <span>$5M</span>
                   <span>$6M</span>
                   <span>$8M</span>
                 </div>
@@ -314,11 +316,12 @@ export function ValueParityPanel() {
             </div>
 
             {/* Search Button */}
-            <div className="flex items-end">
+            <div>
+              <label className="block text-xs font-medium text-[#547792] mb-1.5 invisible">Search</label>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-6 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                className="w-full px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -531,9 +534,9 @@ export function ValueParityPanel() {
             <svg className="w-16 h-16 mx-auto text-[#94B4C1] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
-            <h3 className="text-lg font-semibold text-[#213448] mb-2">Find Your Dream Property</h3>
+            <h3 className="text-lg font-semibold text-[#213448] mb-2">Benchmark Transaction Prices</h3>
             <p className="text-sm text-[#547792]">
-              Drag the budget slider above to set your maximum price and click Search to discover properties within your range.
+              Drag the budget slider above to set your target price ceiling and click Search to view realized transaction prices.
               Use the optional filters to narrow down by bedroom type, region, or district.
             </p>
           </div>
