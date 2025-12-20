@@ -159,6 +159,11 @@ CREATE TABLE IF NOT EXISTS precomputed_stats (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Add columns if table already existed without them
+ALTER TABLE precomputed_stats ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+ALTER TABLE precomputed_stats ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+ALTER TABLE precomputed_stats ADD COLUMN IF NOT EXISTS stat_value JSONB;
+
 -- =============================================================================
 -- VERIFICATION
 -- =============================================================================
