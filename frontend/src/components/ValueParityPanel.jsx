@@ -256,17 +256,17 @@ export function ValueParityPanel() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Input Panel */}
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4 md:p-5">
-        <p className="text-sm text-[#547792] mb-4">Benchmark realized transaction prices across your target budget</p>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+        <p className="text-sm text-[#547792] px-4 md:px-5 pt-4 md:pt-5 pb-4">Benchmark realized transaction prices across your target budget</p>
 
         <form onSubmit={handleSearch}>
           {/* 50/50 Two-column layout: Budget+Search (left) | Optional Filters (right) */}
           <div className="grid grid-cols-1 lg:grid-cols-2">
 
             {/* LEFT: Budget Slider + Search */}
-            <div className="min-w-0 lg:pr-6">
+            <div className="min-w-0 px-4 md:px-5 pb-4 md:pb-5 lg:pr-6">
               {/* Slider with floating value */}
-              <div className="relative mb-4">
+              <div className="relative mb-4 pt-8">
                 {/* Floating budget value - clamped to stay within bounds */}
                 {(() => {
                   const thumbPercent = ((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
@@ -275,7 +275,7 @@ export function ValueParityPanel() {
                   const isNearRight = thumbPercent > 85;
                   return (
                     <div
-                      className={`absolute -top-6 pointer-events-none ${
+                      className={`absolute top-0 pointer-events-none ${
                         isNearLeft ? 'left-0' :
                         isNearRight ? 'right-0' :
                         'transform -translate-x-1/2'
@@ -297,7 +297,7 @@ export function ValueParityPanel() {
                   step={BUDGET_STEP}
                   value={budget}
                   onChange={(e) => setBudget(parseInt(e.target.value))}
-                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb mt-8"
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb mt-4"
                   style={{ background: sliderGradient }}
                 />
                 {/* Tick marks */}
@@ -346,9 +346,9 @@ export function ValueParityPanel() {
               </button>
             </div>
 
-            {/* RIGHT: Optional Filters (full-height zone, aligned, no hacks) */}
+            {/* RIGHT: Optional Filters - grey zone extends to card edges */}
             <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03]">
-              <div className="px-5 py-4">
+              <div className="px-4 md:px-5 py-4 md:py-5">
                 <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {/* Bedroom */}
