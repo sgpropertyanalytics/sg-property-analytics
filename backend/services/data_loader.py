@@ -6,19 +6,48 @@ This module is responsible for LOADING data only:
 - Three-tier bedroom classification (New Sale Post/Pre Harmonization, Resale)
 - Flexible date parsing (Dec-20, Mar-21, Oct 2023, etc.)
 - Property type filtering (Condo/Apartment only, exclude EC/HDB)
+- Floor level classification (Low, Mid-Low, Mid, Mid-High, High, Luxury)
+
+CRITICAL: ALL raw CSV columns are preserved end-to-end.
+The clean_csv_data() function adds computed columns but NEVER drops original columns.
 
 For data VALIDATION and FILTERING (outliers, duplicates, etc.),
 see: services/data_validation.py
 
 Pipeline: **Load Raw** → Validate/Filter/Clean → Store in DB → Compute Stats
+
+CSV Column Mapping (URA REALIS format):
+  CSV Column              → DB Column           Transformation
+  ─────────────────────────────────────────────────────────────
+  Project Name            → project_name        Direct copy
+  Street Name             → street_name         Direct copy (NEW)
+  Property Type           → property_type       Direct copy
+  Postal District         → district            Extract number, format as D01
+  Market Segment          → market_segment      Direct copy (NEW)
+  Tenure                  → tenure              Direct copy
+  Type of Sale            → sale_type           Direct copy
+  No. of Units            → num_units           Parse as integer (NEW)
+  Nett Price ($)          → nett_price          Parse as float (NEW)
+  Transacted Price ($)    → price               Parse as float
+  Area (SQFT)             → area_sqft           Parse as float
+  Type of Area            → type_of_area        Direct copy (NEW)
+  Unit Price ($ PSF)      → psf                 Parse as float
+  Sale Date               → transaction_date    Parse to YYYY-MM-DD
+  Floor Range             → floor_range         Direct copy (NEW)
+  (computed)              → floor_level         Classified from floor_range (NEW)
+  (computed)              → bedroom_count       Classified from area_sqft
+  (computed)              → contract_date       Derived from transaction_date
+  (computed)              → lease_start_year    Parsed from tenure
+  (computed)              → remaining_lease     Calculated from tenure
 """
 
 import pandas as pd
 import os
 import time
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 from services.classifier import classify_bedroom, classify_bedroom_three_tier
+from services.classifier_extended import classify_floor_level
 
 
 # Month name to number mapping
@@ -90,73 +119,91 @@ def parse_date_flexible(date_str):
 
 def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Clean and process CSV data.
-    
-    CRITICAL: This contains the THREE-TIER BEDROOM CLASSIFICATION logic.
-    KEEP THIS FUNCTION EXACTLY AS-IS FROM app.py (lines 89-324)
-    
-    Three-tier classification:
+    Clean and process CSV data while preserving ALL original columns.
+
+    CRITICAL: This function preserves ALL raw CSV columns end-to-end.
+    It adds computed columns (transaction_date, district, price, etc.) but
+    NEVER drops original columns from the CSV.
+
+    Three-tier bedroom classification:
     - Tier 1: New Sale (Post-Harmonization, >= June 1, 2023) - Ultra Compact
-    - Tier 2: New Sale (Pre-Harmonization, < June 1, 2023) - Modern Compact  
+    - Tier 2: New Sale (Pre-Harmonization, < June 1, 2023) - Modern Compact
     - Tier 3: Resale (Any Date) - Legacy Sizes
+
+    Floor level classification:
+    - 01-05: Low
+    - 06-10: Mid-Low
+    - 11-15: Mid
+    - 16-20: Mid-High
+    - 21-30: High
+    - 31+: Luxury
+
+    Args:
+        df: Raw DataFrame from CSV file
+
+    Returns:
+        Cleaned DataFrame with ALL original columns plus computed columns
     """
     if df.empty:
         return pd.DataFrame()
-    
+
+    # Store original columns for later preservation
+    original_columns = list(df.columns)
+
     # Filter: Private condos and apartments only (exclude EC, HDB, public housing)
     if 'Property Type' in df.columns:
         prop_type_lower = df['Property Type'].astype(str).str.lower()
         df = df[
-            (prop_type_lower.str.contains('condo', na=False) | 
+            (prop_type_lower.str.contains('condo', na=False) |
              prop_type_lower.str.contains('apartment', na=False)) &
             ~prop_type_lower.str.contains('executive condominium', na=False) &
             ~prop_type_lower.str.contains('ec', na=False) &
             ~prop_type_lower.str.contains('hdb', na=False) &
             ~prop_type_lower.str.contains('public', na=False)
         ].copy()
-    
+
     # Filter: Non-empty project names
     if 'Project Name' in df.columns:
         df = df[df['Project Name'].astype(str).str.strip() != ''].copy()
         df = df[df['Project Name'].astype(str).str.strip() != 'nan'].copy()
-    
+
     # Parse dates (vectorized)
     if 'Sale Date' not in df.columns:
         return pd.DataFrame()
-    
+
     date_results = df['Sale Date'].apply(parse_date_flexible)
     df['parsed_year'] = date_results.apply(lambda x: x[0] if x[0] is not None else None)
     df['parsed_month'] = date_results.apply(lambda x: x[1] if x[1] is not None else None)
-    
+
     # Filter out failed dates
     df = df[df['parsed_year'].notna() & df['parsed_month'].notna()].copy()
-    
+
+    if df.empty:
+        return pd.DataFrame()
+
     # Create transaction_date (YYYY-MM-DD format)
     # For the most recent month, use the last day of the month to show it as "latest"
     # For older months, use the 1st day
-    if not df.empty:
-        max_year = int(df['parsed_year'].max())
-        max_month_df = df[df['parsed_year'] == max_year]
-        if not max_month_df.empty:
-            max_month = int(max_month_df['parsed_month'].max())
-            
-            # Calculate last day of the most recent month
-            from calendar import monthrange
-            last_day = monthrange(max_year, max_month)[1]
-            
-            # Create dates: use last day for most recent month, 1st day for others
-            def get_day(row):
-                if int(row['parsed_year']) == max_year and int(row['parsed_month']) == max_month:
-                    return last_day
-                else:
-                    return 1
-            
-            df['parsed_day'] = df.apply(get_day, axis=1)
-        else:
-            df['parsed_day'] = 1
+    max_year = int(df['parsed_year'].max())
+    max_month_df = df[df['parsed_year'] == max_year]
+    if not max_month_df.empty:
+        max_month = int(max_month_df['parsed_month'].max())
+
+        # Calculate last day of the most recent month
+        from calendar import monthrange
+        last_day = monthrange(max_year, max_month)[1]
+
+        # Create dates: use last day for most recent month, 1st day for others
+        def get_day(row):
+            if int(row['parsed_year']) == max_year and int(row['parsed_month']) == max_month:
+                return last_day
+            else:
+                return 1
+
+        df['parsed_day'] = df.apply(get_day, axis=1)
     else:
         df['parsed_day'] = 1
-    
+
     # Create transaction_date as datetime (needed for bedroom classification)
     df['transaction_date_dt'] = pd.to_datetime({
         'year': df['parsed_year'].values,
@@ -164,19 +211,20 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
         'day': df['parsed_day'].values
     })
     df['transaction_date'] = df['transaction_date_dt'].dt.strftime('%Y-%m-%d')
-    df = df.drop(columns=['parsed_day'])
-    
+
     # Create contract_date (MMYY format for compatibility)
     df['contract_date'] = df['transaction_date'].str[5:7] + df['transaction_date'].str[2:4]
-    df = df.drop(columns=['parsed_year', 'parsed_month'])
-    
-    # Parse district
+
+    # Drop temporary parsing columns (not original columns)
+    df = df.drop(columns=['parsed_year', 'parsed_month', 'parsed_day'], errors='ignore')
+
+    # Parse district from Postal District
     if 'Postal District' in df.columns:
         df['district'] = df['Postal District'].astype(str).str.extract(r'(\d+)', expand=False)
         df = df[df['district'].notna()].copy()
         df['district'] = 'D' + df['district'].str.zfill(2)
-    
-    # Clean and parse price (remove $ and commas)
+
+    # === Parse price fields ===
     if 'Transacted Price ($)' in df.columns:
         df['price'] = (
             df['Transacted Price ($)']
@@ -187,7 +235,19 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
             .replace('nan', '0')
             .astype(float)
         )
-    
+
+    # NEW: Parse Nett Price if it exists
+    if 'Nett Price ($)' in df.columns:
+        df['nett_price'] = pd.to_numeric(
+            df['Nett Price ($)']
+            .astype(str)
+            .str.replace(',', '', regex=False)
+            .str.replace('$', '', regex=False)
+            .str.strip()
+            .replace(['nan', ''], '0'),
+            errors='coerce'
+        ).fillna(0)
+
     # Clean and parse area (remove commas)
     if 'Area (SQFT)' in df.columns:
         df['area_sqft'] = (
@@ -198,7 +258,7 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
             .replace('nan', '0')
             .astype(float)
         )
-    
+
     # Calculate PSF
     if 'Unit Price ($ PSF)' in df.columns:
         df['psf'] = (
@@ -214,10 +274,35 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
         df['psf'] = df['psf'].astype(float)
     else:
         df['psf'] = (df['price'] / df['area_sqft']).fillna(0)
-    
+
     # Filter valid prices/areas
     df = df[(df['price'] > 0) & (df['area_sqft'] > 0)].copy()
-    
+
+    # === NEW: Parse No. of Units if it exists ===
+    if 'No. of Units' in df.columns:
+        df['num_units'] = pd.to_numeric(
+            df['No. of Units'].astype(str).str.strip().replace(['nan', ''], '0'),
+            errors='coerce'
+        ).fillna(1).astype(int)
+
+    # === NEW: Preserve Street Name ===
+    if 'Street Name' in df.columns:
+        df['street_name'] = df['Street Name'].astype(str).replace('nan', '')
+
+    # === NEW: Preserve Type of Area ===
+    if 'Type of Area' in df.columns:
+        df['type_of_area'] = df['Type of Area'].astype(str).replace('nan', '')
+
+    # === NEW: Preserve Market Segment ===
+    if 'Market Segment' in df.columns:
+        df['market_segment'] = df['Market Segment'].astype(str).replace('nan', '')
+
+    # === NEW: Preserve and classify Floor Range ===
+    if 'Floor Range' in df.columns:
+        df['floor_range'] = df['Floor Range'].astype(str).replace('nan', '')
+        # Apply floor level classification
+        df['floor_level'] = df['floor_range'].apply(classify_floor_level)
+
     # Classify bedrooms using consolidated three-tier logic from classifier.py
     def classify_bedroom_for_row(row):
         """
@@ -259,29 +344,46 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
 
     # Apply the three-tier classification
     df['bedroom_count'] = df.apply(classify_bedroom_for_row, axis=1)
-    
-    # Prepare final result
-    result_dict = {
-        'project_name': df['Project Name'],
-        'transaction_date': df['transaction_date'],
-        'contract_date': df['contract_date'],
-        'price': df['price'],
-        'area_sqft': df['area_sqft'],
-        'psf': df['psf'],
-        'district': df['district'],
-        'bedroom_count': df['bedroom_count'],
-        'property_type': df.get('Property Type', 'Condominium'),
-        'source': 'csv_offline',
-        'sale_type': None  # Will be set based on folder
-    }
-    
-    # Preserve Tenure column if it exists (needed for lease calculations)
+
+    # === Create standardized column names (DB-friendly) ===
+    # Map original CSV columns to standardized names for the database
+    # This preserves original columns AND creates standardized versions
+
+    # Project Name → project_name
+    if 'Project Name' in df.columns:
+        df['project_name'] = df['Project Name']
+
+    # Property Type → property_type
+    if 'Property Type' in df.columns:
+        df['property_type'] = df['Property Type']
+    else:
+        df['property_type'] = 'Condominium'
+
+    # Tenure → tenure (lowercase for DB)
     if 'Tenure' in df.columns:
-        result_dict['Tenure'] = df['Tenure']
-    
-    result = pd.DataFrame(result_dict)
-    
-    return result
+        df['tenure'] = df['Tenure']
+
+    # Type of Sale → sale_type (will be overwritten by folder-based assignment)
+    if 'Type of Sale' in df.columns:
+        df['sale_type'] = df['Type of Sale']
+    else:
+        df['sale_type'] = None
+
+    # Add source marker
+    df['source'] = 'csv_offline'
+
+    # Drop the temporary datetime column used for classification
+    df = df.drop(columns=['transaction_date_dt'], errors='ignore')
+
+    return df
+
+
+def get_csv_columns_from_dataframe(df: pd.DataFrame) -> List[str]:
+    """
+    Get the list of original CSV columns from a DataFrame.
+    Useful for debugging and schema parity checks.
+    """
+    return list(df.columns)
 
 
 def load_all_csv_data():

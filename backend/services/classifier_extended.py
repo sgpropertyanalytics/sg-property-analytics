@@ -190,28 +190,68 @@ def classify_remaining_lease_band(tenure_str: Optional[str], remaining: Optional
 
 def classify_floor_level(floor_range: Optional[str]) -> str:
     """
-    Classify floor into Low / Mid / High based on floor range text.
+    Classify floor into tier based on floor range text.
 
-    Example:
-        "01 to 05" -> "Low (1-5)"
-        "16 to 20" -> "High (31+)" depending on lower bound.
+    Floor Classification Tiers:
+        01 – 05  → Low
+        06 – 10  → Mid-Low
+        11 – 15  → Mid
+        16 – 20  → Mid-High
+        21 – 30  → High
+        31+      → Luxury
+
+    Args:
+        floor_range: URA floor range string, e.g., "01 to 05", "06 to 10"
+
+    Returns:
+        Classification string: "Low", "Mid-Low", "Mid", "Mid-High", "High", "Luxury", or "Unknown"
+
+    Examples:
+        >>> classify_floor_level("01 to 05")
+        'Low'
+        >>> classify_floor_level("16 to 20")
+        'Mid-High'
+        >>> classify_floor_level("36 to 40")
+        'Luxury'
     """
     if not floor_range:
         return "Unknown"
     try:
-        # Parse "01 to 05" style strings
-        low_part = str(floor_range).split(" to ")[0]
+        # Parse "01 to 05" style strings - extract the lower bound
+        floor_str = str(floor_range).strip()
+
+        # Handle various formats: "01 to 05", "01-05", "01 - 05"
+        if " to " in floor_str:
+            low_part = floor_str.split(" to ")[0]
+        elif "-" in floor_str:
+            low_part = floor_str.split("-")[0]
+        else:
+            # Maybe just a single number like "B1" (basement) or "01"
+            low_part = floor_str
+
+        # Clean and parse the floor number
+        low_part = low_part.strip()
+
+        # Handle basement levels
+        if low_part.upper().startswith('B'):
+            return "Low"  # Basement is always Low
+
         low_floor = int(low_part)
+
+        # Classification based on lower bound of floor range
         if low_floor <= 5:
-            return "Low (1-5)"
+            return "Low"
         if low_floor <= 10:
-            return "Mid-Low (6-10)"
+            return "Mid-Low"
+        if low_floor <= 15:
+            return "Mid"
         if low_floor <= 20:
-            return "Mid (11-20)"
+            return "Mid-High"
         if low_floor <= 30:
-            return "Mid-High (21-30)"
-        return "High (31+)"
-    except Exception:
+            return "High"
+        return "Luxury"
+
+    except (ValueError, IndexError, AttributeError):
         return "Unknown"
 
 

@@ -182,6 +182,7 @@ def remove_duplicates_sql() -> int:
     - transaction_date
     - price
     - area_sqft
+    - floor_range (if column exists - added for more accurate deduplication)
 
     Keeps the first occurrence (lowest ID) of each duplicate set.
 
@@ -190,14 +191,35 @@ def remove_duplicates_sql() -> int:
     """
     before_count = db.session.query(Transaction).count()
 
-    sql = text("""
-        DELETE FROM transactions
-        WHERE id NOT IN (
-            SELECT MIN(id)
-            FROM transactions
-            GROUP BY project_name, transaction_date, price, area_sqft
-        )
-    """)
+    # Check if floor_range column exists (for backward compatibility)
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('transactions')]
+        has_floor_range = 'floor_range' in columns
+    except:
+        has_floor_range = False
+
+    # Use floor_range in deduplication if available for more accurate matching
+    if has_floor_range:
+        sql = text("""
+            DELETE FROM transactions
+            WHERE id NOT IN (
+                SELECT MIN(id)
+                FROM transactions
+                GROUP BY project_name, transaction_date, price, area_sqft,
+                         COALESCE(floor_range, '')
+            )
+        """)
+    else:
+        sql = text("""
+            DELETE FROM transactions
+            WHERE id NOT IN (
+                SELECT MIN(id)
+                FROM transactions
+                GROUP BY project_name, transaction_date, price, area_sqft
+            )
+        """)
 
     try:
         db.session.execute(sql)
