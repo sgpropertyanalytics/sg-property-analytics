@@ -1,41 +1,21 @@
 """
-Excel Data Loader - Source-of-Truth Import for New Launches
+New Launch Condo Upload Service
 
-This service loads curated property data from Excel files.
-Excel is treated as the source-of-truth; scrapers only suggest updates.
+Uploads new launch condo data from CSV file (source-of-truth).
 
 Usage:
-    from services.excel_loader import load_new_launches_excel
+    from services.new_launch_upload import upload_new_launches
 
-    stats = load_new_launches_excel(
-        file_path='data/new_launches_2026.xlsx',
+    stats = upload_new_launches(
+        file_path='data/new_launches_2026.csv',
         db_session=db.session,
         dry_run=False
     )
-
-Schema validation ensures data quality before import.
 """
 import os
+import csv
 from datetime import datetime
-from typing import Dict, Any, List, Optional
-from decimal import Decimal
-
-
-# Excel reading - openpyxl for .xlsx
-OPENPYXL_AVAILABLE = False
-try:
-    from openpyxl import load_workbook
-    OPENPYXL_AVAILABLE = True
-except ImportError:
-    pass
-
-# Also support pandas for convenience
-PANDAS_AVAILABLE = False
-try:
-    import pandas as pd
-    PANDAS_AVAILABLE = True
-except ImportError:
-    pass
+from typing import Dict, Any, List
 
 
 # =============================================================================
@@ -68,11 +48,6 @@ OPTIONAL_COLUMNS = [
 VALID_MARKET_SEGMENTS = {'CCR', 'RCR', 'OCR'}
 VALID_CONFIDENCE_LEVELS = {'high', 'medium', 'low'}
 VALID_TENURES = {'Freehold', '99-year', '999-year'}
-
-
-class ValidationError(Exception):
-    """Raised when Excel data fails validation."""
-    pass
 
 
 # =============================================================================
@@ -159,9 +134,9 @@ def validate_row(row: Dict[str, Any], row_num: int) -> List[str]:
     return errors
 
 
-def validate_excel_data(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+def validate_csv_data(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Validate all rows in the Excel file.
+    Validate all rows in the CSV file.
     Returns validation report with errors and warnings.
     """
     report = {
@@ -192,32 +167,13 @@ def validate_excel_data(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 # =============================================================================
-# EXCEL READING
+# CSV READING
 # =============================================================================
 
-def read_excel_file(file_path: str) -> List[Dict[str, Any]]:
-    """
-    Read Excel or CSV file and return list of row dictionaries.
-    Uses pandas if available, falls back to openpyxl (Excel) or csv (CSV).
-    """
+def read_csv_file(file_path: str) -> List[Dict[str, Any]]:
+    """Read CSV file and return list of row dictionaries."""
     if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File not found: {file_path}")
-
-    # Handle CSV files
-    if file_path.lower().endswith('.csv'):
-        return _read_csv(file_path)
-
-    if PANDAS_AVAILABLE:
-        return _read_with_pandas(file_path)
-    elif OPENPYXL_AVAILABLE:
-        return _read_with_openpyxl(file_path)
-    else:
-        raise ImportError("Neither pandas nor openpyxl installed. Install with: pip install pandas openpyxl")
-
-
-def _read_csv(file_path: str) -> List[Dict[str, Any]]:
-    """Read CSV file using stdlib csv module."""
-    import csv
+        raise FileNotFoundError(f"CSV file not found: {file_path}")
 
     rows = []
     with open(file_path, 'r', encoding='utf-8') as f:
@@ -233,54 +189,11 @@ def _read_csv(file_path: str) -> List[Dict[str, Any]]:
     return rows
 
 
-def _read_with_pandas(file_path: str) -> List[Dict[str, Any]]:
-    """Read Excel using pandas."""
-    import pandas as pd
-
-    df = pd.read_excel(file_path, engine='openpyxl')
-
-    # Normalize column names (lowercase, strip whitespace)
-    df.columns = [str(c).strip().lower().replace(' ', '_') for c in df.columns]
-
-    # Convert to list of dicts
-    rows = df.to_dict('records')
-
-    return rows
-
-
-def _read_with_openpyxl(file_path: str) -> List[Dict[str, Any]]:
-    """Read Excel using openpyxl directly."""
-    wb = load_workbook(file_path, read_only=True)
-    ws = wb.active
-
-    rows = []
-    headers = None
-
-    for i, row in enumerate(ws.iter_rows(values_only=True)):
-        if i == 0:
-            # First row is header
-            headers = [str(c).strip().lower().replace(' ', '_') if c else f'col_{j}'
-                      for j, c in enumerate(row)]
-            continue
-
-        if not any(row):  # Skip empty rows
-            continue
-
-        row_dict = {}
-        for j, value in enumerate(row):
-            if j < len(headers):
-                row_dict[headers[j]] = value
-        rows.append(row_dict)
-
-    wb.close()
-    return rows
-
-
 # =============================================================================
-# DATABASE IMPORT
+# DATABASE UPLOAD
 # =============================================================================
 
-def load_new_launches_excel(
+def upload_new_launches(
     file_path: str,
     db_session=None,
     dry_run: bool = False,
@@ -288,17 +201,17 @@ def load_new_launches_excel(
     year: int = 2026
 ) -> Dict[str, Any]:
     """
-    Load new launches from Excel file into database.
+    Upload new launches from CSV file into database.
 
     Args:
-        file_path: Path to Excel file
+        file_path: Path to CSV file
         db_session: SQLAlchemy session
         dry_run: If True, validate only without saving
         reset: If True, delete existing records for the year first
         year: Launch year (default 2026)
 
     Returns:
-        Import statistics and any errors
+        Upload statistics and any errors
     """
     from models.new_launch import NewLaunch
     from models.database import db
@@ -318,26 +231,26 @@ def load_new_launches_excel(
     }
 
     print(f"\n{'='*60}")
-    print(f"Excel Import: {file_path}")
+    print(f"New Launch Upload: {file_path}")
     print(f"{'='*60}")
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE'}")
     print(f"Reset: {'Yes' if reset else 'No'}")
     print(f"Year: {year}")
     print(f"{'='*60}\n")
 
-    # Read Excel file
+    # Read CSV file
     try:
-        rows = read_excel_file(file_path)
+        rows = read_csv_file(file_path)
         stats['rows_read'] = len(rows)
-        print(f"Read {len(rows)} rows from Excel")
+        print(f"Read {len(rows)} rows from CSV")
     except Exception as e:
-        stats['errors'].append(f"Failed to read Excel: {e}")
-        print(f"Error reading Excel: {e}")
+        stats['errors'].append(f"Failed to read CSV: {e}")
+        print(f"Error reading CSV: {e}")
         return stats
 
     # Validate data
     print("\nValidating data...")
-    validation = validate_excel_data(rows)
+    validation = validate_csv_data(rows)
     stats['validation_errors'] = validation['errors']
 
     if validation['errors']:
@@ -348,7 +261,7 @@ def load_new_launches_excel(
             print(f"  ... and {len(validation['errors']) - 20} more")
 
         if not dry_run:
-            print("\nImport aborted due to validation errors. Fix errors and retry.")
+            print("\nUpload aborted due to validation errors. Fix errors and retry.")
             return stats
 
     if validation['warnings']:
@@ -370,8 +283,8 @@ def load_new_launches_excel(
         db_session.commit()
         print(f"\nDeleted {deleted} existing records for {year}")
 
-    # Import valid rows
-    print("\nImporting data...")
+    # Upload valid rows
+    print("\nUploading data...")
     existing_names = {
         r[0].lower(): r[1] for r in
         db_session.query(NewLaunch.project_name, NewLaunch.id).filter(
@@ -393,12 +306,12 @@ def load_new_launches_excel(
                 # Update existing
                 existing = db_session.query(NewLaunch).get(existing_names[name_lower])
                 if existing:
-                    _update_from_excel(existing, row)
+                    _update_from_csv(existing, row)
                     stats['updated'] += 1
                     print(f"  Updated: {project_name}")
             else:
                 # Insert new
-                new_launch = _create_from_excel(row, year)
+                new_launch = _create_from_csv(row, year)
                 db_session.add(new_launch)
                 stats['inserted'] += 1
                 print(f"  Inserted: {project_name}")
@@ -411,7 +324,7 @@ def load_new_launches_excel(
             print(f"  Error: {project_name} - {e}")
 
     print(f"\n{'='*60}")
-    print("Import Complete")
+    print("Upload Complete")
     print(f"{'='*60}")
     print(f"Inserted: {stats['inserted']}")
     print(f"Updated: {stats['updated']}")
@@ -422,8 +335,8 @@ def load_new_launches_excel(
     return stats
 
 
-def _create_from_excel(row: Dict[str, Any], year: int):
-    """Create a NewLaunch record from Excel row."""
+def _create_from_csv(row: Dict[str, Any], year: int):
+    """Create a NewLaunch record from CSV row."""
     from models.new_launch import NewLaunch
 
     district = str(row['district']).strip().upper()
@@ -444,7 +357,7 @@ def _create_from_excel(row: Dict[str, Any], year: int):
         launch_year=year,
         property_type='Condominium',
         land_bid_psf=float(row.get('land_bid_psf', 0)) or None if row.get('land_bid_psf') else None,
-        source_urls={'excel': str(row.get('source', 'Excel import'))},
+        source_urls={'csv': file_path if 'file_path' in dir() else 'CSV upload'},
         data_confidence=str(row.get('confidence', 'medium')).strip().lower(),
         data_source=str(row.get('source', '')).strip(),
         needs_review=False,
@@ -452,8 +365,8 @@ def _create_from_excel(row: Dict[str, Any], year: int):
     )
 
 
-def _update_from_excel(existing, row: Dict[str, Any]):
-    """Update existing NewLaunch from Excel row."""
+def _update_from_csv(existing, row: Dict[str, Any]):
+    """Update existing NewLaunch from CSV row."""
 
     existing.developer = str(row.get('developer', '')).strip() or existing.developer
 
@@ -479,45 +392,6 @@ def _update_from_excel(existing, row: Dict[str, Any]):
     if row.get('source'):
         existing.data_source = str(row['source']).strip()
 
-    existing.source_urls = {'excel': str(row.get('source', 'Excel import'))}
+    existing.source_urls = {'csv': 'CSV upload'}
     existing.needs_review = False
     existing.updated_at = datetime.utcnow()
-
-
-# =============================================================================
-# CLI INTEGRATION
-# =============================================================================
-
-def main():
-    """CLI entry point for Excel import."""
-    import argparse
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-    from app import create_app
-    from models.database import db
-
-    parser = argparse.ArgumentParser(description='Import new launches from Excel')
-    parser.add_argument('file', help='Path to Excel file')
-    parser.add_argument('--year', type=int, default=2026, help='Launch year (default: 2026)')
-    parser.add_argument('--dry-run', action='store_true', help='Validate without importing')
-    parser.add_argument('--reset', action='store_true', help='Delete existing records first')
-
-    args = parser.parse_args()
-
-    app = create_app()
-    with app.app_context():
-        stats = load_new_launches_excel(
-            file_path=args.file,
-            db_session=db.session,
-            dry_run=args.dry_run,
-            reset=args.reset,
-            year=args.year
-        )
-
-        if stats['errors'] or stats['validation_errors']:
-            sys.exit(1)
-
-
-if __name__ == '__main__':
-    main()
