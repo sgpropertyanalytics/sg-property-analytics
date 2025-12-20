@@ -265,10 +265,14 @@ def find_sample_csv(rawdata_path: str) -> Optional[str]:
 
 
 def _safe_str(value, default='') -> str:
-    """Safely convert a value to string, handling NaN/None."""
+    """Safely convert a value to string, handling NaN/None/'None'/'nan'."""
     if pd.isna(value) or value is None:
         return default
-    return str(value).strip() if str(value).strip() != 'nan' else default
+    s = str(value).strip()
+    # Normalize various null representations to empty
+    if s.lower() in ('nan', 'none', 'null', '<na>', 'nat'):
+        return default
+    return s
 
 
 def _safe_float(value, default=0.0) -> float:
@@ -362,10 +366,11 @@ def create_staging_table(logger: UploadLogger):
     db.session.execute(text(f"DROP TABLE IF EXISTS {STAGING_TABLE} CASCADE"))
 
     # Create staging table with same schema as transactions
+    # Use TEXT for variable-length fields to avoid "value too long" errors
     db.session.execute(text(f"""
         CREATE TABLE {STAGING_TABLE} (
             id SERIAL PRIMARY KEY,
-            project_name VARCHAR(255) NOT NULL,
+            project_name TEXT NOT NULL,
             transaction_date DATE NOT NULL,
             contract_date VARCHAR(10),
             price FLOAT NOT NULL,
@@ -373,19 +378,19 @@ def create_staging_table(logger: UploadLogger):
             psf FLOAT NOT NULL,
             district VARCHAR(10) NOT NULL,
             bedroom_count INTEGER NOT NULL,
-            property_type VARCHAR(100) DEFAULT 'Condominium',
+            property_type TEXT DEFAULT 'Condominium',
             sale_type VARCHAR(50),
             tenure TEXT,
             lease_start_year INTEGER,
             remaining_lease INTEGER,
             created_at TIMESTAMP DEFAULT NOW(),
             street_name TEXT,
-            floor_range VARCHAR(20),
-            floor_level VARCHAR(20),
+            floor_range TEXT,
+            floor_level TEXT,
             num_units INTEGER,
             nett_price FLOAT,
-            type_of_area VARCHAR(20),
-            market_segment VARCHAR(10),
+            type_of_area TEXT,
+            market_segment TEXT,
             is_outlier BOOLEAN DEFAULT false
         )
     """))
@@ -529,27 +534,42 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
                     continue
 
             if values:
-                # Bulk insert into staging
-                db.session.execute(
-                    text(f"""
-                        INSERT INTO {STAGING_TABLE} (
-                            project_name, transaction_date, contract_date, price, area_sqft,
-                            psf, district, bedroom_count, property_type, sale_type,
-                            tenure, lease_start_year, remaining_lease, street_name,
-                            floor_range, floor_level, num_units, nett_price, type_of_area,
-                            market_segment
-                        ) VALUES (
-                            :project_name, :transaction_date, :contract_date, :price, :area_sqft,
-                            :psf, :district, :bedroom_count, :property_type, :sale_type,
-                            :tenure, :lease_start_year, :remaining_lease, :street_name,
-                            :floor_range, :floor_level, :num_units, :nett_price, :type_of_area,
-                            :market_segment
-                        )
-                    """),
-                    values
-                )
-                db.session.commit()
-                saved += len(values)
+                # Bulk insert into staging with error handling
+                try:
+                    db.session.execute(
+                        text(f"""
+                            INSERT INTO {STAGING_TABLE} (
+                                project_name, transaction_date, contract_date, price, area_sqft,
+                                psf, district, bedroom_count, property_type, sale_type,
+                                tenure, lease_start_year, remaining_lease, street_name,
+                                floor_range, floor_level, num_units, nett_price, type_of_area,
+                                market_segment
+                            ) VALUES (
+                                :project_name, :transaction_date, :contract_date, :price, :area_sqft,
+                                :psf, :district, :bedroom_count, :property_type, :sale_type,
+                                :tenure, :lease_start_year, :remaining_lease, :street_name,
+                                :floor_range, :floor_level, :num_units, :nett_price, :type_of_area,
+                                :market_segment
+                            )
+                        """),
+                        values
+                    )
+                    db.session.commit()
+                    saved += len(values)
+                except Exception as sql_err:
+                    db.session.rollback()
+                    error_msg = str(sql_err)
+                    # Log the SQL error with context
+                    logger.log(f"  ❌ SQL INSERT failed at batch {idx//batch_size + 1}: {error_msg[:200]}")
+                    # Check for common issues
+                    if 'value too long' in error_msg.lower():
+                        # Find which value is too long
+                        for v in values[:1]:  # Check first row
+                            for key, val in v.items():
+                                if val and isinstance(val, str) and len(val) > 50:
+                                    logger.log(f"      Long value: {key}={len(val)} chars: '{val[:50]}...'")
+                    insert_rejection_reasons['sql_error'] = insert_rejection_reasons.get('sql_error', 0) + len(values)
+                    insert_rejected += len(values)
 
         # Log results with rejection details
         if insert_rejected > 0:
