@@ -709,10 +709,10 @@ def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
         logger.log(f"  Stage 1: Marked {enbloc_count:,} en-bloc sales (area > {EN_BLOC_AREA_THRESHOLD:,} sqft)")
 
     # ==========================================================================
-    # STAGE 2: Price-based IQR outlier detection (3x IQR - relaxed)
+    # STAGE 2: Price-based IQR outlier detection (5x IQR - relaxed)
     # ==========================================================================
     # Calculate IQR on NON-enbloc records only (exclude already-marked outliers)
-    IQR_MULTIPLIER = 3.0  # Relaxed from 1.5x to allow luxury condos
+    IQR_MULTIPLIER = 5.0  # Relaxed from 1.5x to include luxury condos up to ~$7.6M
 
     result = db.session.execute(text(f"""
         SELECT
