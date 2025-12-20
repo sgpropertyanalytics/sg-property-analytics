@@ -6,8 +6,8 @@ import { DISTRICT_NAMES } from '../constants';
  * ValueParityPanel - Budget-based property search tool
  *
  * Features:
- * - Budget input (required)
- * - Optional filters: Bedroom, Region (CCR/RCR/OCR), District
+ * - Budget slider (required)
+ * - Optional filters: Bedroom, Region, District, Tenure, Sale Type
  * - Shows transactions where price <= budget
  * - Reuses same table structure as TransactionDataTable
  */
@@ -22,6 +22,8 @@ export function ValueParityPanel() {
   const [bedroom, setBedroom] = useState('');
   const [region, setRegion] = useState('');
   const [district, setDistrict] = useState('');
+  const [tenure, setTenure] = useState('');
+  const [saleType, setSaleType] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
 
   // Filter options from API
@@ -92,6 +94,12 @@ export function ValueParityPanel() {
       if (district) {
         params.district = district;
       }
+      if (tenure) {
+        params.tenure = tenure;
+      }
+      if (saleType) {
+        params.sale_type = saleType;
+      }
 
       const response = await getTransactionsList(params);
       setData(response.data.transactions || []);
@@ -107,7 +115,7 @@ export function ValueParityPanel() {
     } finally {
       setLoading(false);
     }
-  }, [budget, bedroom, region, district, pagination.limit, sortConfig]);
+  }, [budget, bedroom, region, district, tenure, saleType, pagination.limit, sortConfig]);
 
   // Handle search
   const handleSearch = (e) => {
@@ -146,6 +154,9 @@ export function ValueParityPanel() {
     }
     return `$${(value / 1000).toFixed(0)}K`;
   };
+
+  // Calculate slider percentage for visual position
+  const sliderPercent = ((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
 
   // Format date - show only month and year
   const formatDate = (dateStr) => {
@@ -198,9 +209,6 @@ export function ValueParityPanel() {
   // Filter districts by selected region
   const filteredDistricts = filterOptions.districts.filter(d => {
     if (!region) return true;
-    // CCR: D01, D02, D06, D09, D10, D11
-    // RCR: D03, D04, D05, D07, D08, D12, D13, D14, D15
-    // OCR: D16, D17, D18, D19, D20, D21, D22, D23, D24, D25, D26, D27, D28
     const ccrDistricts = ['D01', 'D02', 'D06', 'D09', 'D10', 'D11'];
     const rcrDistricts = ['D03', 'D04', 'D05', 'D07', 'D08', 'D12', 'D13', 'D14', 'D15'];
 
@@ -210,135 +218,171 @@ export function ValueParityPanel() {
     return true;
   });
 
+  // Tick marks with positions (percentage based on actual value position in range)
+  const tickMarks = [
+    { value: 500000, label: '$500K', percent: 0 },
+    { value: 1000000, label: '$1M', percent: ((1000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 2000000, label: '$2M', percent: ((2000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 3000000, label: '$3M', percent: ((3000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 4000000, label: '$4M', percent: ((4000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 5000000, label: '$5M', percent: ((5000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 6000000, label: '$6M', percent: ((6000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 7000000, label: '$7M', percent: ((7000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 8000000, label: '$8M', percent: 100 },
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Input Panel */}
       <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4 md:p-6">
-        <p className="text-sm text-[#547792] mb-4">Benchmark realized transaction prices across your target budget</p>
+        <p className="text-sm text-[#547792] mb-5">Benchmark realized transaction prices across your target budget</p>
 
         <form onSubmit={handleSearch}>
-          {/* Desktop: 6 columns - Slider(2) + Bedroom(1) + Region(1) + District(1) + Search(1) */}
-          {/* Tablet/Mobile: Stack appropriately */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 lg:gap-4 items-end">
-            {/* Budget Slider - spans 2 columns on all breakpoints */}
-            <div className="col-span-2">
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-medium text-[#547792]">
-                  Budget (SGD)
-                </label>
-                <span className="text-lg font-bold text-[#213448]">
-                  {formatBudgetDisplay(budget)}
-                </span>
-              </div>
-              <div className="relative pt-1">
-                <input
-                  type="range"
-                  min={BUDGET_MIN}
-                  max={BUDGET_MAX}
-                  step={BUDGET_STEP}
-                  value={budget}
-                  onChange={(e) => setBudget(parseInt(e.target.value))}
-                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb"
-                />
-                <div className="flex justify-between text-xs text-[#547792] mt-1.5 font-medium">
-                  <span>$500K</span>
-                  <span>$1M</span>
-                  <span>$2M</span>
-                  <span>$3M</span>
-                  <span>$4M</span>
-                  <span>$5M</span>
-                  <span>$6M</span>
-                  <span>$8M</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Bedroom Dropdown - Optional */}
-            <div>
-              <label className="block text-xs font-medium text-[#547792] mb-1.5">
-                Bedroom
+          {/* Budget Slider Section - Required */}
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-[#213448]">
+                Budget (SGD)
               </label>
-              <select
-                value={bedroom}
-                onChange={(e) => setBedroom(e.target.value)}
-                className="w-full px-3 py-2.5 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-              >
-                <option value="">All</option>
-                <option value="1">1B</option>
-                <option value="2">2B</option>
-                <option value="3">3B</option>
-                <option value="4">4B+</option>
-              </select>
+              <span className="text-xl font-bold text-[#213448]">
+                {formatBudgetDisplay(budget)}
+              </span>
             </div>
-
-            {/* Region Dropdown - Optional */}
-            <div>
-              <label className="block text-xs font-medium text-[#547792] mb-1.5">
-                Region
-              </label>
-              <select
-                value={region}
-                onChange={(e) => {
-                  setRegion(e.target.value);
-                  setDistrict(''); // Reset district when region changes
+            <div className="relative">
+              <input
+                type="range"
+                min={BUDGET_MIN}
+                max={BUDGET_MAX}
+                step={BUDGET_STEP}
+                value={budget}
+                onChange={(e) => setBudget(parseInt(e.target.value))}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb"
+                style={{
+                  background: `linear-gradient(to right, #94B4C1 0%, #94B4C1 6.67%, #213448 6.67%, #213448 93.33%, #94B4C1 93.33%, #94B4C1 100%)`
                 }}
-                className="w-full px-3 py-2.5 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-              >
-                <option value="">All</option>
-                <option value="CCR">CCR (Core Central)</option>
-                <option value="RCR">RCR (Rest of Central)</option>
-                <option value="OCR">OCR (Outside Central)</option>
-              </select>
-            </div>
-
-            {/* District Dropdown - Optional */}
-            <div>
-              <label className="block text-xs font-medium text-[#547792] mb-1.5">
-                District
-              </label>
-              <select
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-                className="w-full px-3 py-2.5 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
-                disabled={filterOptions.loading}
-              >
-                <option value="">All</option>
-                {filteredDistricts.map(d => {
-                  const areaName = DISTRICT_NAMES[d];
-                  const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
-                  return (
-                    <option key={d} value={d}>
-                      {d}{areaName ? ` (${shortName})` : ''}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
-            {/* Search Button */}
-            <div>
-              <label className="block text-xs font-medium text-[#547792] mb-1.5 invisible">Search</label>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Searching...
+              />
+              {/* Tick marks positioned absolutely based on actual value */}
+              <div className="relative w-full h-5 mt-1">
+                {tickMarks.map((tick, idx) => (
+                  <span
+                    key={tick.value}
+                    className="absolute text-xs text-[#547792] font-medium transform -translate-x-1/2"
+                    style={{ left: `${tick.percent}%` }}
+                  >
+                    {tick.label}
                   </span>
-                ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    Search
-                  </span>
-                )}
-              </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Optional Filters Section */}
+          <div className="border-t border-[#94B4C1]/30 pt-4">
+            <p className="text-xs text-[#547792] mb-3">Optional filters</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {/* Bedroom */}
+              <div>
+                <label className="block text-xs font-medium text-[#547792] mb-1">Bedroom</label>
+                <select
+                  value={bedroom}
+                  onChange={(e) => setBedroom(e.target.value)}
+                  className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                >
+                  <option value="">All</option>
+                  <option value="1">1B</option>
+                  <option value="2">2B</option>
+                  <option value="3">3B</option>
+                  <option value="4">4B+</option>
+                </select>
+              </div>
+
+              {/* Region */}
+              <div>
+                <label className="block text-xs font-medium text-[#547792] mb-1">Region</label>
+                <select
+                  value={region}
+                  onChange={(e) => {
+                    setRegion(e.target.value);
+                    setDistrict('');
+                  }}
+                  className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                >
+                  <option value="">All</option>
+                  <option value="CCR">CCR</option>
+                  <option value="RCR">RCR</option>
+                  <option value="OCR">OCR</option>
+                </select>
+              </div>
+
+              {/* District */}
+              <div>
+                <label className="block text-xs font-medium text-[#547792] mb-1">District</label>
+                <select
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                  disabled={filterOptions.loading}
+                >
+                  <option value="">All</option>
+                  {filteredDistricts.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tenure */}
+              <div>
+                <label className="block text-xs font-medium text-[#547792] mb-1">Tenure</label>
+                <select
+                  value={tenure}
+                  onChange={(e) => setTenure(e.target.value)}
+                  className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                >
+                  <option value="">All</option>
+                  <option value="Freehold">Freehold</option>
+                  <option value="99-year">99-year</option>
+                  <option value="999-year">999-year</option>
+                </select>
+              </div>
+
+              {/* Sale Type */}
+              <div>
+                <label className="block text-xs font-medium text-[#547792] mb-1">Sale Type</label>
+                <select
+                  value={saleType}
+                  onChange={(e) => setSaleType(e.target.value)}
+                  className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                >
+                  <option value="">All</option>
+                  <option value="New Sale">New Sale</option>
+                  <option value="Resale">Resale</option>
+                </select>
+              </div>
+
+              {/* Search Button */}
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full px-4 py-2 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Searching...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      Search
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </form>
@@ -350,10 +394,10 @@ export function ValueParityPanel() {
           {/* Header */}
           <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-[#213448]">Properties Within Budget</h3>
+              <h3 className="font-semibold text-[#213448]">Benchmark realized transaction prices across your target budget</h3>
               <p className="text-xs text-[#547792]">
-                {loading ? 'Loading...' : `${pagination.totalRecords.toLocaleString()} properties found`}
-                {budget && <span className="text-[#547792] font-medium ml-1">(max {formatBudgetDisplay(budget)})</span>}
+                {loading ? 'Loading...' : `${pagination.totalRecords.toLocaleString()} transactions found`}
+                {budget && <span className="font-medium ml-1">(max {formatBudgetDisplay(budget)})</span>}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -403,7 +447,6 @@ export function ValueParityPanel() {
                 </thead>
                 <tbody>
                   {loading ? (
-                    // Loading skeleton
                     [...Array(pagination.limit)].map((_, i) => (
                       <tr key={i} className="animate-pulse">
                         {columns.map(col => (
@@ -416,7 +459,7 @@ export function ValueParityPanel() {
                   ) : data.length === 0 ? (
                     <tr>
                       <td colSpan={columns.length} className="px-3 py-8 text-center text-slate-500">
-                        No properties found within your budget. Try increasing your budget or adjusting filters.
+                        No transactions found within your budget. Try increasing your budget or adjusting filters.
                       </td>
                     </tr>
                   ) : (
