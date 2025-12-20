@@ -223,8 +223,8 @@ export function ValueParityPanel() {
   });
 
   // Tick marks with positions (percentage based on actual value position in range)
+  // Remove $0.5M, show only round millions
   const tickMarks = [
-    { value: 500000, label: '$0.5M', percent: 0 },
     { value: 1000000, label: '$1M', percent: ((1000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
     { value: 2000000, label: '$2M', percent: ((2000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
     { value: 3000000, label: '$3M', percent: ((3000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
@@ -247,13 +247,6 @@ export function ValueParityPanel() {
 
             {/* LEFT: Budget Slider + Search Button (50% width on desktop) */}
             <div className="flex-1 min-w-0">
-              {/* Budget Label + Interpretive hint */}
-              <label className="block text-xs font-medium text-[#547792] mb-0.5">
-                Maximum Budget (SGD)
-              </label>
-              <p className="text-[10px] text-[#547792]/70 mb-2">
-                Showing realized transactions priced at or below your selected value
-              </p>
 
               {/* Slider with floating value */}
               <div className="relative mb-3">
@@ -281,14 +274,14 @@ export function ValueParityPanel() {
                   }}
                 />
                 {/* Tick marks - padded to align with slider thumb radius */}
-                <div className="relative w-full h-4 mt-1 px-1">
+                <div className="relative w-full h-5 mt-1 px-1">
                   {tickMarks.map((tick, index) => {
                     const isFirst = index === 0;
                     const isLast = index === tickMarks.length - 1;
                     return (
                       <span
                         key={tick.value}
-                        className={`absolute text-[10px] text-[#547792] ${
+                        className={`absolute text-xs text-[#547792] ${
                           isFirst ? 'left-0 text-left' :
                           isLast ? 'right-0 text-right' :
                           'transform -translate-x-1/2'
@@ -300,6 +293,7 @@ export function ValueParityPanel() {
                     );
                   })}
                 </div>
+                <p className="text-[10px] text-[#547792]/60 mt-1">$500K intervals</p>
               </div>
 
               {/* Compact action button - secondary style */}
@@ -313,14 +307,14 @@ export function ValueParityPanel() {
                     <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Finding...
+                    Searching...
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    Find Properties
+                    Search
                   </span>
                 )}
               </button>
@@ -444,7 +438,7 @@ export function ValueParityPanel() {
                 {loading ? 'Loading...' : (
                   <>
                     <span className="font-semibold text-[#213448]">{pagination.totalRecords.toLocaleString()}</span>
-                    {' '}comparable transactions within this price band
+                    {' '}realized transactions priced at or below {formatBudgetDisplay(budget)}
                   </>
                 )}
               </p>
