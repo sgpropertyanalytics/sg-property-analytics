@@ -53,6 +53,19 @@ def extract_projects_from_transactions(app):
     print("STEP 1: Extracting unique projects from transactions")
     print("="*60)
 
+    # Generic/placeholder project names that appear across multiple districts
+    # These should be skipped as they're not real unique projects
+    GENERIC_NAMES = {
+        'RESIDENTIAL APARTMENTS',
+        'APARTMENT',
+        'APARTMENTS',
+        'RESIDENTIAL',
+        'UNKNOWN',
+        'N.A.',
+        'NA',
+        '-',
+    }
+
     with app.app_context():
         # Create tables if needed
         db.create_all()
@@ -71,7 +84,7 @@ def extract_projects_from_transactions(app):
 
         print(f"Found {len(project_stats)} unique project-district combinations")
 
-        # Get existing projects
+        # Get existing projects as a mutable set
         existing_projects = set(
             p[0] for p in db.session.query(ProjectLocation.project_name).all()
         )
@@ -79,13 +92,19 @@ def extract_projects_from_transactions(app):
 
         new_count = 0
         updated_count = 0
+        skipped_generic = 0
 
         for stat in project_stats:
             project_name = stat.project_name
             if not project_name or not project_name.strip():
                 continue
 
-            # Check if exists
+            # Skip generic/placeholder names
+            if project_name.strip().upper() in GENERIC_NAMES:
+                skipped_generic += 1
+                continue
+
+            # Check if exists (including ones we just added in this run)
             if project_name in existing_projects:
                 # Update existing record
                 project = db.session.query(ProjectLocation).filter_by(
@@ -93,12 +112,14 @@ def extract_projects_from_transactions(app):
                 ).first()
 
                 if project:
-                    # Update transaction stats
-                    project.transaction_count = stat.transaction_count
+                    # Update transaction stats (aggregate if same project in multiple districts)
+                    project.transaction_count = (project.transaction_count or 0) + stat.transaction_count
                     if stat.first_date:
-                        project.first_transaction_date = stat.first_date
+                        if not project.first_transaction_date or stat.first_date < project.first_transaction_date:
+                            project.first_transaction_date = stat.first_date
                     if stat.last_date:
-                        project.last_transaction_date = stat.last_date
+                        if not project.last_transaction_date or stat.last_date > project.last_transaction_date:
+                            project.last_transaction_date = stat.last_date
                     updated_count += 1
 
             else:
@@ -115,12 +136,17 @@ def extract_projects_from_transactions(app):
                     last_transaction_date=stat.last_date
                 )
                 db.session.add(project)
+
+                # IMPORTANT: Add to set so we don't try to insert again
+                existing_projects.add(project_name)
                 new_count += 1
 
         db.session.commit()
 
         print(f"\nAdded {new_count} new projects")
         print(f"Updated {updated_count} existing projects")
+        if skipped_generic > 0:
+            print(f"Skipped {skipped_generic} generic/placeholder names")
 
         return new_count
 
