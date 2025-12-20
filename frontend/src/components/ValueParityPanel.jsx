@@ -257,14 +257,12 @@ export function ValueParityPanel() {
     <div className="space-y-6 animate-fade-in">
       {/* Input Panel */}
       <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-        <p className="text-sm text-[#547792] px-4 md:px-5 pt-4 md:pt-5 pb-4">Benchmark realized transaction prices across your target budget</p>
-
         <form onSubmit={handleSearch}>
           {/* 50/50 Two-column layout: Budget+Search (left) | Optional Filters (right) */}
           <div className="grid grid-cols-1 lg:grid-cols-2">
 
             {/* LEFT: Budget Slider + Search */}
-            <div className="min-w-0 px-4 md:px-5 pb-4 md:pb-5 lg:pr-6">
+            <div className="min-w-0 px-4 md:px-5 py-4 md:py-5 lg:pr-6">
               {/* Slider with floating value */}
               <div className="relative mb-4 pt-8">
                 {/* Floating budget value - clamped to stay within bounds */}
@@ -458,12 +456,12 @@ export function ValueParityPanel() {
           {/* Header */}
           <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-[#213448]">Comparable Transactions</h3>
+              <h3 className="font-semibold text-[#213448]">Benchmark realized transaction prices across your target budget</h3>
               <p className="text-xs text-[#547792]">
                 {loading ? 'Loading...' : (
                   <>
                     <span className="font-semibold text-[#213448]">{pagination.totalRecords.toLocaleString()}</span>
-                    {' '}realized transactions priced at or below {formatBudgetDisplay(budget)}
+                    {' '}transactions at or below {formatBudgetDisplay(budget)}
                   </>
                 )}
               </p>
