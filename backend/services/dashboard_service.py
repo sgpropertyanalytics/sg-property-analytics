@@ -560,6 +560,8 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
 
     # Single-pass query using window functions for min/max
     # PostgreSQL computes the window aggregates in one table scan
+    # CRITICAL: Must exclude outliers (is_outlier = true) to prevent extreme values
+    # like $890M from skewing the histogram. This matches build_filter_conditions().
     sql = text(f"""
         WITH base_data AS (
             SELECT
@@ -567,7 +569,10 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
                 MIN(price) OVER () as min_price,
                 MAX(price) OVER () as max_price
             FROM transactions
-            WHERE {where_clause} AND price IS NOT NULL AND price > 0
+            WHERE {where_clause}
+              AND price IS NOT NULL
+              AND price > 0
+              AND (is_outlier = false OR is_outlier IS NULL)
         ),
         binned AS (
             SELECT

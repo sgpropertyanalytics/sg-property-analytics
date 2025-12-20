@@ -840,3 +840,102 @@ const DISTRICT_REGION_MAP = {
 | 3 | 3-Bedroom |
 | 4 | 4-Bedroom |
 | 5+ | 5+ Bedroom / Penthouse |
+
+---
+
+## Problem-Solving & Bug-Fixing Rules (MANDATORY)
+
+When diagnosing or fixing any issue, Claude MUST follow these rules:
+
+### 1. Fix the **class of problem**, not just the symptom
+- Do not patch a single line without checking whether the same logic exists elsewhere.
+- Assume similar bugs may exist in other files, layers, or execution paths.
+
+### 2. Always ask: "Where else could this fail?"
+- Before implementing a fix, scan for:
+  - duplicate logic
+  - repeated assumptions
+  - parallel code paths
+- If the fix applies in multiple places, refactor or centralize it.
+
+### 3. Prefer invariant enforcement over conditional patches
+- Add guardrails, assertions, or validations that prevent invalid states.
+- Do not rely on "this probably won't happen again."
+
+### 4. Avoid non-deterministic behavior
+- A fix must produce the same result on every run.
+- Startup behavior, background tasks, or repeated executions must not change outcomes unless explicitly intended.
+
+### 5. No hidden side effects
+- Fixes must not silently mutate data, state, or configuration unless explicitly requested.
+- If a fix changes behavior outside the immediate issue, it must be stated clearly.
+
+### 6. Think in terms of lifecycle, not moment
+- Consider:
+  - first run
+  - re-run
+  - restart
+  - future data
+  - future contributors
+- A fix that only works "right now" is incomplete.
+
+### 7. Default to future safety
+- Assume future features will reuse this logic.
+- Assume future data will be messier than today's.
+- Fixes should degrade safely, not catastrophically.
+
+### 8. Explain tradeoffs explicitly
+- If a fix is chosen because it's simpler, faster, or temporary, say so.
+- Never hide limitations.
+
+### 9. If unsure, stop and ask
+- If a change might affect unrelated behavior, ask before proceeding.
+- Do not guess silently.
+
+### 10. Optimize for correctness first, elegance second
+- Correct, boring, explicit code is preferred over clever shortcuts.
+
+---
+
+## Outlier Exclusion Standard (Single Source of Truth)
+
+### The Rule
+
+> **All analytics queries MUST exclude outliers using `WHERE is_outlier = false` or equivalent.**
+
+### Where Outliers Are Marked
+
+Outliers are marked during data upload in `scripts/upload.py`:
+- Uses Global IQR method to identify extreme prices
+- Sets `is_outlier = true` on affected rows (soft-delete, not hard-delete)
+- Records are preserved but excluded from analytics
+
+### Outlier Exclusion Checklist
+
+Every query that aggregates transaction data MUST exclude outliers:
+
+| Layer | File | How to Exclude |
+|-------|------|----------------|
+| **Dashboard Service** | `services/dashboard_service.py` | `WHERE is_outlier = false` in SQL |
+| **Analytics Routes** | `routes/analytics.py` | `WHERE is_outlier = false` in SQL |
+| **Data Computation** | `services/data_computation.py` | `WHERE is_outlier = false` in SQL |
+| **Transaction Model** | `models/transaction.py` | Use `.filter(Transaction.is_outlier == False)` |
+
+### Anti-Pattern: Forgetting Outlier Exclusion
+
+```python
+# ❌ BAD - Includes outliers, will show $890M transactions
+query = db.session.query(func.count(Transaction.id)).all()
+
+# ✅ GOOD - Excludes outliers
+query = db.session.query(func.count(Transaction.id)).filter(
+    or_(Transaction.is_outlier == False, Transaction.is_outlier == None)
+).all()
+```
+
+### Validation
+
+When adding new analytics endpoints or charts:
+1. Check if query touches `transactions` table
+2. If yes, add `is_outlier = false` filter
+3. Test with known outlier data to confirm exclusion
