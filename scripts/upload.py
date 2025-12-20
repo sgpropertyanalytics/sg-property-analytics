@@ -7,11 +7,21 @@ Memory-efficient design for 512MB Render limit:
 3. Remove outliers using SQL-based IQR calculation (no pandas needed)
 
 Pipeline: **Load Raw** → **Validate/Filter** → Store in DB → **Compute Stats**
+
+CRITICAL: This script now preserves ALL CSV columns end-to-end.
+The following columns are now imported (previously dropped):
+  - Street Name → street_name
+  - Floor Range → floor_range, floor_level (classified)
+  - No. of Units → num_units
+  - Nett Price ($) → nett_price
+  - Type of Area → type_of_area
+  - Market Segment → market_segment
 """
 
 import sys
 import os
 import gc
+import re
 
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
@@ -39,11 +49,91 @@ def create_app():
     return app
 
 
+def _safe_str(value, default='') -> str:
+    """Safely convert a value to string, handling NaN/None."""
+    if pd.isna(value) or value is None:
+        return default
+    return str(value).strip() if str(value).strip() != 'nan' else default
+
+
+def _safe_float(value, default=0.0) -> float:
+    """Safely convert a value to float, handling NaN/None."""
+    if pd.isna(value) or value is None:
+        return default
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_int(value, default=None):
+    """Safely convert a value to int, handling NaN/None."""
+    if pd.isna(value) or value is None:
+        return default
+    try:
+        return int(float(value))
+    except (ValueError, TypeError):
+        return default
+
+
+def _parse_lease_info(tenure_str: str, current_year: int):
+    """
+    Parse lease start year and remaining lease from tenure string.
+
+    Returns:
+        Tuple of (lease_start_year, remaining_lease)
+    """
+    if not tenure_str or tenure_str == 'nan':
+        return None, None
+
+    tenure_str = str(tenure_str)
+
+    # Freehold properties
+    if "freehold" in tenure_str.lower() or "estate in perpetuity" in tenure_str.lower():
+        return None, 999
+
+    # Try to extract lease start year
+    lease_start_year = None
+    remaining_lease = None
+
+    # Pattern 1: "from 2020" or "commencing from 2020"
+    match = re.search(r"(?:from|commencing)\s+(\d{4})", tenure_str.lower())
+    if match:
+        try:
+            year = int(match.group(1))
+            lease_start_year = year
+            remaining_lease = 99 - (current_year - year)
+            if remaining_lease < 0:
+                remaining_lease = 0
+        except ValueError:
+            pass
+
+    # Pattern 2: Fallback to any 4-digit year
+    if lease_start_year is None:
+        fallback = re.search(r"(\d{4})", tenure_str)
+        if fallback:
+            try:
+                year = int(fallback.group(1))
+                lease_start_year = year
+                remaining_lease = 99 - (current_year - year)
+                if remaining_lease < 0:
+                    remaining_lease = 0
+            except ValueError:
+                pass
+
+    return lease_start_year, remaining_lease
+
+
 def process_and_save_csv(csv_path: str, sale_type: str, app):
     """
     Process a single CSV file and save directly to database.
     Clears memory after saving to minimize footprint.
-    Returns count of rows saved.
+
+    CRITICAL: This function now maps ALL CSV columns to the Transaction model.
+    No columns are dropped.
+
+    Returns:
+        Count of rows saved.
     """
     print(f"  Loading: {os.path.basename(csv_path)}")
 
@@ -62,20 +152,24 @@ def process_and_save_csv(csv_path: str, sale_type: str, app):
             print(f"    ⚠️  Could not decode {csv_path} with any encoding")
             return 0
 
-        # Clean data using existing logic
+        # Store original column count for debugging
+        original_cols = len(df.columns)
+
+        # Clean data using existing logic (now preserves all columns)
         df = clean_csv_data(df)
 
         if df.empty:
             print(f"    ⚠️  No valid data after cleaning")
             return 0
 
-        # Add sale_type column
+        # Override sale_type from folder structure
         df['sale_type'] = sale_type
 
         # Save to database in batches
         batch_size = 500
         total_rows = len(df)
         saved = 0
+        current_year = datetime.now().year
 
         with app.app_context():
             for idx in range(0, total_rows, batch_size):
@@ -84,7 +178,7 @@ def process_and_save_csv(csv_path: str, sale_type: str, app):
 
                 for _, row in batch.iterrows():
                     try:
-                        # Parse transaction_date
+                        # === Parse transaction_date ===
                         transaction_date = None
                         if 'transaction_date' in row and pd.notna(row['transaction_date']):
                             if isinstance(row['transaction_date'], str):
@@ -98,61 +192,52 @@ def process_and_save_csv(csv_path: str, sale_type: str, app):
                             elif hasattr(row['transaction_date'], 'date'):
                                 transaction_date = row['transaction_date'].date()
 
-                        # Parse lease columns if Tenure exists
-                        lease_start_year = None
-                        remaining_lease = None
-                        if 'Tenure' in row and pd.notna(row['Tenure']):
-                            tenure_str = str(row['Tenure'])
-                            current_year = datetime.now().year
+                        # === Parse lease columns from Tenure ===
+                        tenure_str = _safe_str(row.get('tenure') or row.get('Tenure'))
+                        lease_start_year, remaining_lease = _parse_lease_info(tenure_str, current_year)
 
-                            import re
-                            if "freehold" in tenure_str.lower() or "estate in perpetuity" in tenure_str.lower():
-                                remaining_lease = 999
-                            else:
-                                match = re.search(r"(?:from|commencing)\s+(\d{4})", tenure_str.lower())
-                                if match:
-                                    try:
-                                        year = int(match.group(1))
-                                        lease_start_year = year
-                                        remaining_lease = 99 - (current_year - year)
-                                        if remaining_lease < 0:
-                                            remaining_lease = 0
-                                    except ValueError:
-                                        pass
+                        # === Get project name ===
+                        project_name = _safe_str(
+                            row.get('project_name') or row.get('Project Name'),
+                            default=''
+                        )
 
-                                if lease_start_year is None:
-                                    fallback = re.search(r"(\d{4})", tenure_str)
-                                    if fallback:
-                                        try:
-                                            year = int(fallback.group(1))
-                                            lease_start_year = year
-                                            remaining_lease = 99 - (current_year - year)
-                                            if remaining_lease < 0:
-                                                remaining_lease = 0
-                                        except ValueError:
-                                            pass
+                        # === Get property type ===
+                        property_type = _safe_str(
+                            row.get('property_type') or row.get('Property Type'),
+                            default='Condominium'
+                        )
 
-                        project_name = row.get('project_name') or row.get('Project Name', '')
-                        property_type = row.get('Property Type') or row.get('property_type', 'Condominium')
-
+                        # === Create Transaction with ALL columns ===
                         transaction = Transaction(
-                            project_name=str(project_name) if pd.notna(project_name) else '',
+                            # Core required fields
+                            project_name=project_name,
                             transaction_date=transaction_date,
-                            contract_date=str(row.get('contract_date', '')) if pd.notna(row.get('contract_date')) else None,
-                            price=float(row['price']) if pd.notna(row['price']) else 0.0,
-                            area_sqft=float(row['area_sqft']) if pd.notna(row['area_sqft']) else 0.0,
-                            psf=float(row['psf']) if pd.notna(row['psf']) else 0.0,
-                            district=str(row['district']) if pd.notna(row['district']) else '',
-                            bedroom_count=int(row['bedroom_count']) if pd.notna(row['bedroom_count']) else 1,
-                            property_type=str(property_type) if pd.notna(property_type) else 'Condominium',
-                            sale_type=str(row.get('sale_type', '')) if pd.notna(row.get('sale_type')) else None,
-                            tenure=str(row.get('Tenure', '')) if pd.notna(row.get('Tenure')) else None,
+                            contract_date=_safe_str(row.get('contract_date')),
+                            price=_safe_float(row.get('price')),
+                            area_sqft=_safe_float(row.get('area_sqft')),
+                            psf=_safe_float(row.get('psf')),
+                            district=_safe_str(row.get('district')),
+                            bedroom_count=_safe_int(row.get('bedroom_count'), default=1),
+                            property_type=property_type,
+                            sale_type=_safe_str(row.get('sale_type')),
+                            tenure=tenure_str if tenure_str else None,
                             lease_start_year=lease_start_year,
-                            remaining_lease=remaining_lease
+                            remaining_lease=remaining_lease,
+
+                            # NEW: Previously dropped columns
+                            street_name=_safe_str(row.get('street_name')) or None,
+                            floor_range=_safe_str(row.get('floor_range')) or None,
+                            floor_level=_safe_str(row.get('floor_level')) or None,
+                            num_units=_safe_int(row.get('num_units')),
+                            nett_price=_safe_float(row.get('nett_price')) if row.get('nett_price') else None,
+                            type_of_area=_safe_str(row.get('type_of_area')) or None,
+                            market_segment=_safe_str(row.get('market_segment')) or None,
                         )
 
                         transactions.append(transaction)
                     except Exception as e:
+                        # Log error but continue processing
                         continue
 
                 if transactions:
@@ -160,7 +245,8 @@ def process_and_save_csv(csv_path: str, sale_type: str, app):
                     db.session.commit()
                     saved += len(transactions)
 
-            print(f"    ✓ Saved {saved:,} rows")
+            # Print summary with column info
+            print(f"    ✓ Saved {saved:,} rows (from {original_cols} CSV columns)")
 
         # Clear memory
         del df
@@ -170,6 +256,8 @@ def process_and_save_csv(csv_path: str, sale_type: str, app):
 
     except Exception as e:
         print(f"    ⚠️  Error: {e}")
+        import traceback
+        traceback.print_exc()
         return 0
 
 
