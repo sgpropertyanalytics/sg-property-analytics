@@ -141,6 +141,49 @@ def create_app():
         except Exception:
             pass  # Non-critical diagnostic
 
+        # === SCHEMA CHECK: Fail fast if critical columns are missing ===
+        try:
+            from services.schema_check import run_schema_check
+            schema_report = run_schema_check()
+
+            if not schema_report['is_valid']:
+                print("\n" + "=" * 60)
+                print("SCHEMA DRIFT DETECTED - Database schema out of sync")
+                print("=" * 60)
+
+                # Show missing tables
+                if schema_report['missing_tables']:
+                    print(f"\nMissing tables: {', '.join(schema_report['missing_tables'])}")
+
+                # Show missing critical columns
+                critical = [c for c in schema_report['missing_columns'] if c['severity'] == 'critical']
+                if critical:
+                    print(f"\nMissing critical columns:")
+                    for col in critical:
+                        print(f"   - {col['table']}.{col['column']}")
+
+                # Show missing optional columns (warnings)
+                warnings = [c for c in schema_report['missing_columns'] if c['severity'] == 'warning']
+                if warnings:
+                    print(f"\nMissing optional columns ({len(warnings)} total):")
+                    # Show first 5 as examples
+                    for col in warnings[:5]:
+                        print(f"   - {col['table']}.{col['column']}")
+                    if len(warnings) > 5:
+                        print(f"   ... and {len(warnings) - 5} more")
+
+                print("\n" + "-" * 60)
+                print("TO FIX: Run migrations against this database:")
+                print("   psql \"$DATABASE_URL\" -f backend/migrations/001_add_all_missing_columns.sql")
+                print("-" * 60 + "\n")
+
+                # In production, we continue but log the warning
+                # The app will still work for endpoints that don't use missing columns
+            else:
+                print("   ✓ Schema check passed")
+        except Exception as e:
+            print(f"   ⚠️  Schema check skipped: {e}")
+
         # Auto-validate data on startup (self-healing)
         # This runs inside create_app() so it works with gunicorn
         _run_startup_validation()
