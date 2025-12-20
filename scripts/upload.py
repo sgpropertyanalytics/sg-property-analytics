@@ -415,11 +415,25 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
             logger.log(f"  ⚠️  Could not decode with any encoding")
             return 0
 
+        raw_rows = len(df)
         original_cols = len(df.columns)
-        df = clean_csv_data(df)
+
+        # Clean with verbose diagnostics
+        df = clean_csv_data(df, verbose=True)
+
+        # Show diagnostics
+        if hasattr(df, 'attrs') and 'diagnostics' in df.attrs:
+            diag = df.attrs['diagnostics']
+            if diag.get('total_rejected', 0) > 0:
+                logger.log(f"  📊 Cleaning: {diag['initial_rows']} raw -> {diag.get('final_rows', 0)} valid")
+                for reason, count in diag.get('rejected', {}).items():
+                    logger.log(f"      - {reason}: {count} rejected")
+                # Show sample rejected rows
+                for sample in diag.get('sample_rejected', [])[:3]:
+                    logger.log(f"      Sample: {sample}")
 
         if df.empty:
-            logger.log(f"  ⚠️  No valid data after cleaning")
+            logger.log(f"  ⚠️  No valid data after cleaning ({raw_rows} raw rows all rejected)")
             return 0
 
         df['sale_type'] = sale_type
@@ -428,6 +442,9 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
         batch_size = 500
         total_rows = len(df)
         saved = 0
+        insert_rejected = 0
+        insert_rejection_reasons = {}
+        sample_insert_rejected = []
         current_year = datetime.now().year
 
         for idx in range(0, total_rows, batch_size):
@@ -436,12 +453,13 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
 
             for _, row in batch.iterrows():
                 try:
+                    # Parse transaction_date - REQUIRED field
                     transaction_date = None
                     if 'transaction_date' in row and pd.notna(row['transaction_date']):
                         if isinstance(row['transaction_date'], str):
                             try:
                                 transaction_date = pd.to_datetime(row['transaction_date']).date()
-                            except:
+                            except Exception:
                                 year, month = parse_date_flexible(row['transaction_date'])
                                 if year and month:
                                     from datetime import date
@@ -449,20 +467,48 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
                         elif hasattr(row['transaction_date'], 'date'):
                             transaction_date = row['transaction_date'].date()
 
+                    # Skip rows missing required fields
+                    project_name = _safe_str(row.get('project_name') or row.get('Project Name'), default='')
+                    district = _safe_str(row.get('district'))
+                    price = _safe_float(row.get('price'))
+                    area_sqft = _safe_float(row.get('area_sqft'))
+
+                    # Validate required fields
+                    if not project_name:
+                        insert_rejection_reasons['missing_project_name'] = insert_rejection_reasons.get('missing_project_name', 0) + 1
+                        insert_rejected += 1
+                        continue
+                    if not transaction_date:
+                        insert_rejection_reasons['missing_transaction_date'] = insert_rejection_reasons.get('missing_transaction_date', 0) + 1
+                        if len(sample_insert_rejected) < 3:
+                            sample_insert_rejected.append({'reason': 'missing_transaction_date', 'raw_date': row.get('transaction_date'), 'project': project_name[:30]})
+                        insert_rejected += 1
+                        continue
+                    if not district:
+                        insert_rejection_reasons['missing_district'] = insert_rejection_reasons.get('missing_district', 0) + 1
+                        insert_rejected += 1
+                        continue
+                    if price <= 0:
+                        insert_rejection_reasons['invalid_price'] = insert_rejection_reasons.get('invalid_price', 0) + 1
+                        insert_rejected += 1
+                        continue
+                    if area_sqft <= 0:
+                        insert_rejection_reasons['invalid_area'] = insert_rejection_reasons.get('invalid_area', 0) + 1
+                        insert_rejected += 1
+                        continue
+
                     tenure_str = _safe_str(row.get('tenure') or row.get('Tenure'))
                     lease_start_year, remaining_lease = _parse_lease_info(tenure_str, current_year)
-
-                    project_name = _safe_str(row.get('project_name') or row.get('Project Name'), default='')
                     property_type = _safe_str(row.get('property_type') or row.get('Property Type'), default='Condominium')
 
                     values.append({
                         'project_name': project_name,
                         'transaction_date': transaction_date,
                         'contract_date': _safe_str(row.get('contract_date')),
-                        'price': _safe_float(row.get('price')),
-                        'area_sqft': _safe_float(row.get('area_sqft')),
+                        'price': price,
+                        'area_sqft': area_sqft,
                         'psf': _safe_float(row.get('psf')),
-                        'district': _safe_str(row.get('district')),
+                        'district': district,
                         'bedroom_count': _safe_int(row.get('bedroom_count'), default=1),
                         'property_type': property_type,
                         'sale_type': _safe_str(row.get('sale_type')),
@@ -477,7 +523,9 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
                         'type_of_area': _safe_str(row.get('type_of_area')) or None,
                         'market_segment': _safe_str(row.get('market_segment')) or None,
                     })
-                except Exception:
+                except Exception as e:
+                    insert_rejection_reasons['exception'] = insert_rejection_reasons.get('exception', 0) + 1
+                    insert_rejected += 1
                     continue
 
             if values:
@@ -503,7 +551,15 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
                 db.session.commit()
                 saved += len(values)
 
-        logger.log(f"  ✓ Saved {saved:,} rows (from {original_cols} CSV columns)")
+        # Log results with rejection details
+        if insert_rejected > 0:
+            logger.log(f"  ✓ Saved {saved:,} rows, rejected {insert_rejected:,} during insert")
+            for reason, count in insert_rejection_reasons.items():
+                logger.log(f"      - {reason}: {count}")
+            for sample in sample_insert_rejected[:3]:
+                logger.log(f"      Sample: {sample}")
+        else:
+            logger.log(f"  ✓ Saved {saved:,} rows (from {original_cols} CSV columns)")
 
         del df
         gc.collect()

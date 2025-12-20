@@ -117,7 +117,7 @@ def parse_date_flexible(date_str):
     return None, None
 
 
-def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
+def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
     """
     Clean and process CSV data while preserving ALL original columns.
 
@@ -125,33 +125,29 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
     It adds computed columns (transaction_date, district, price, etc.) but
     NEVER drops original columns from the CSV.
 
-    Three-tier bedroom classification:
-    - Tier 1: New Sale (Post-Harmonization, >= June 1, 2023) - Ultra Compact
-    - Tier 2: New Sale (Pre-Harmonization, < June 1, 2023) - Modern Compact
-    - Tier 3: Resale (Any Date) - Legacy Sizes
-
-    Floor level classification:
-    - 01-05: Low
-    - 06-10: Mid-Low
-    - 11-15: Mid
-    - 16-20: Mid-High
-    - 21-30: High
-    - 31+: Luxury
-
     Args:
         df: Raw DataFrame from CSV file
+        verbose: If True, print diagnostic info about rejected rows
 
     Returns:
         Cleaned DataFrame with ALL original columns plus computed columns
+        Also sets df.attrs['diagnostics'] with rejection counts if verbose=True
     """
     if df.empty:
         return pd.DataFrame()
+
+    diagnostics = {
+        'initial_rows': len(df),
+        'rejected': {},
+        'sample_rejected': []
+    }
 
     # Store original columns for later preservation
     original_columns = list(df.columns)
 
     # Filter: Private condos and apartments only (exclude EC, HDB, public housing)
     if 'Property Type' in df.columns:
+        before = len(df)
         prop_type_lower = df['Property Type'].astype(str).str.lower()
         df = df[
             (prop_type_lower.str.contains('condo', na=False) |
@@ -161,24 +157,51 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
             ~prop_type_lower.str.contains('hdb', na=False) &
             ~prop_type_lower.str.contains('public', na=False)
         ].copy()
+        rejected = before - len(df)
+        if rejected > 0:
+            diagnostics['rejected']['property_type_filter'] = rejected
 
     # Filter: Non-empty project names
     if 'Project Name' in df.columns:
+        before = len(df)
         df = df[df['Project Name'].astype(str).str.strip() != ''].copy()
         df = df[df['Project Name'].astype(str).str.strip() != 'nan'].copy()
+        rejected = before - len(df)
+        if rejected > 0:
+            diagnostics['rejected']['empty_project_name'] = rejected
 
     # Parse dates (vectorized)
     if 'Sale Date' not in df.columns:
+        diagnostics['rejected']['no_sale_date_column'] = len(df)
+        if verbose:
+            print(f"    ⚠️  No 'Sale Date' column found in CSV")
         return pd.DataFrame()
 
     date_results = df['Sale Date'].apply(parse_date_flexible)
     df['parsed_year'] = date_results.apply(lambda x: x[0] if x[0] is not None else None)
     df['parsed_month'] = date_results.apply(lambda x: x[1] if x[1] is not None else None)
 
+    # Track rows with invalid dates before filtering
+    before = len(df)
+    invalid_date_mask = df['parsed_year'].isna() | df['parsed_month'].isna()
+    if invalid_date_mask.any() and verbose:
+        sample_invalid = df[invalid_date_mask].head(3)
+        for _, row in sample_invalid.iterrows():
+            diagnostics['sample_rejected'].append({
+                'reason': 'invalid_date',
+                'sale_date': row.get('Sale Date'),
+                'project': row.get('Project Name', '')[:30]
+            })
+
     # Filter out failed dates
     df = df[df['parsed_year'].notna() & df['parsed_month'].notna()].copy()
+    rejected = before - len(df)
+    if rejected > 0:
+        diagnostics['rejected']['invalid_date'] = rejected
 
     if df.empty:
+        if verbose:
+            print(f"    ⚠️  All rows rejected due to invalid dates")
         return pd.DataFrame()
 
     # Create transaction_date (YYYY-MM-DD format)
@@ -220,8 +243,21 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
 
     # Parse district from Postal District
     if 'Postal District' in df.columns:
+        before = len(df)
         df['district'] = df['Postal District'].astype(str).str.extract(r'(\d+)', expand=False)
+        invalid_district_mask = df['district'].isna()
+        if invalid_district_mask.any() and verbose:
+            sample_invalid = df[invalid_district_mask].head(3)
+            for _, row in sample_invalid.iterrows():
+                diagnostics['sample_rejected'].append({
+                    'reason': 'invalid_district',
+                    'postal_district': row.get('Postal District'),
+                    'project': row.get('Project Name', '')[:30]
+                })
         df = df[df['district'].notna()].copy()
+        rejected = before - len(df)
+        if rejected > 0:
+            diagnostics['rejected']['invalid_district'] = rejected
         df['district'] = 'D' + df['district'].str.zfill(2)
 
     # === Parse price fields ===
@@ -276,7 +312,21 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
         df['psf'] = (df['price'] / df['area_sqft']).fillna(0)
 
     # Filter valid prices/areas
+    before = len(df)
+    invalid_price_mask = (df['price'] <= 0) | (df['area_sqft'] <= 0)
+    if invalid_price_mask.any() and verbose:
+        sample_invalid = df[invalid_price_mask].head(3)
+        for _, row in sample_invalid.iterrows():
+            diagnostics['sample_rejected'].append({
+                'reason': 'invalid_price_or_area',
+                'price': row.get('price'),
+                'area': row.get('area_sqft'),
+                'project': row.get('Project Name', '')[:30]
+            })
     df = df[(df['price'] > 0) & (df['area_sqft'] > 0)].copy()
+    rejected = before - len(df)
+    if rejected > 0:
+        diagnostics['rejected']['invalid_price_or_area'] = rejected
 
     # === NEW: Parse No. of Units if it exists ===
     if 'No. of Units' in df.columns:
@@ -374,6 +424,16 @@ def clean_csv_data(df: pd.DataFrame) -> pd.DataFrame:
 
     # Drop the temporary datetime column used for classification
     df = df.drop(columns=['transaction_date_dt'], errors='ignore')
+
+    # Store diagnostics for the caller
+    diagnostics['final_rows'] = len(df)
+    diagnostics['total_rejected'] = diagnostics['initial_rows'] - len(df)
+    df.attrs['diagnostics'] = diagnostics
+
+    if verbose and diagnostics['total_rejected'] > 0:
+        print(f"    Diagnostics: {diagnostics['initial_rows']} initial -> {len(df)} final")
+        for reason, count in diagnostics['rejected'].items():
+            print(f"      - {reason}: {count}")
 
     return df
 
