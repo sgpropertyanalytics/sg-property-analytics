@@ -768,6 +768,52 @@ def run_schema_check(rawdata_path: str) -> bool:
 # MAIN ENTRY POINT
 # =============================================================================
 
+def discover_csv_files(csv_folder: str) -> Tuple[List[str], List[str]]:
+    """
+    Discover CSV files BEFORE any database operations.
+
+    Returns:
+        Tuple of (new_sale_files, resale_files)
+    """
+    new_sale_files = []
+    resale_files = []
+
+    new_sale_folder = os.path.join(csv_folder, 'New Sale')
+    if os.path.exists(new_sale_folder):
+        new_sale_files = [
+            os.path.join(new_sale_folder, f)
+            for f in sorted(os.listdir(new_sale_folder))
+            if f.endswith('.csv')
+        ]
+
+    resale_folder = os.path.join(csv_folder, 'Resale')
+    if os.path.exists(resale_folder):
+        resale_files = [
+            os.path.join(resale_folder, f)
+            for f in sorted(os.listdir(resale_folder))
+            if f.endswith('.csv')
+        ]
+
+    return new_sale_files, resale_files
+
+
+def safe_release_advisory_lock():
+    """
+    Safely release advisory lock with proper transaction handling.
+
+    Must rollback any failed transaction first, then release lock.
+    """
+    try:
+        # Always rollback first to ensure clean transaction state
+        db.session.rollback()
+        # Now safe to release lock
+        db.session.execute(text(f"SELECT pg_advisory_unlock({ADVISORY_LOCK_ID})"))
+        db.session.commit()
+    except Exception as e:
+        # Log but don't raise - cleanup should not fail the script
+        print(f"   Warning: Advisory lock release failed: {e}")
+
+
 def main():
     """Main upload function with staging + atomic publish."""
     parser = argparse.ArgumentParser(
@@ -813,6 +859,7 @@ def main():
     # Generate run ID for this upload
     run_id = str(uuid.uuid4())
     logger = UploadLogger(run_id)
+    exit_code = 0  # Track exit code instead of calling sys.exit() mid-flow
 
     print("=" * 60)
     print("CSV Upload Script - Zero Downtime Architecture")
@@ -820,32 +867,53 @@ def main():
     print("=" * 60)
 
     csv_folder = os.path.join(os.path.dirname(__file__), '..', 'rawdata')
+
+    # === PRE-FLIGHT CHECKS (before any DB operations) ===
+
+    # Check CSV folder exists
+    if not os.path.exists(csv_folder):
+        print(f"\n❌ Error: CSV folder not found: {csv_folder}")
+        sys.exit(1)
+
+    # Discover CSV files BEFORE touching the database
+    # This prevents "no files found" errors after DB work has started
+    if not args.check and not args.publish and not args.rollback:
+        new_sale_files, resale_files = discover_csv_files(csv_folder)
+        total_csv_files = len(new_sale_files) + len(resale_files)
+
+        if total_csv_files == 0 and not args.dry_run:
+            print(f"\n❌ No CSV files found in {csv_folder}")
+            print(f"   Expected: rawdata/New Sale/*.csv and/or rawdata/Resale/*.csv")
+            sys.exit(1)
+
+        print(f"\n📂 Found {total_csv_files} CSV files")
+        print(f"   New Sale: {len(new_sale_files)} files")
+        print(f"   Resale: {len(resale_files)} files")
+
     app = create_app()
 
-    # Schema check mode
+    # Schema check mode (read-only, no lock needed)
     if args.check:
         with app.app_context():
             success = run_schema_check(csv_folder)
             sys.exit(0 if success else 1)
 
-    # Dry run mode
+    # Dry run mode (read-only, no lock needed)
     if args.dry_run:
         with app.app_context():
             from models.transaction import Transaction
             existing_count = db.session.query(Transaction).count()
 
-            new_sale_folder = os.path.join(csv_folder, 'New Sale')
-            resale_folder = os.path.join(csv_folder, 'Resale')
-
-            new_sale_count = len([f for f in os.listdir(new_sale_folder) if f.endswith('.csv')]) if os.path.exists(new_sale_folder) else 0
-            resale_count = len([f for f in os.listdir(resale_folder) if f.endswith('.csv')]) if os.path.exists(resale_folder) else 0
+            new_sale_files, resale_files = discover_csv_files(csv_folder)
 
             print(f"\n📂 DRY RUN - No changes will be made")
             print(f"   Current production rows: {existing_count:,}")
-            print(f"   New Sale CSV files: {new_sale_count}")
-            print(f"   Resale CSV files: {resale_count}")
-            print(f"   Total CSV files: {new_sale_count + resale_count}")
-            return
+            print(f"   New Sale CSV files: {len(new_sale_files)}")
+            print(f"   Resale CSV files: {len(resale_files)}")
+            print(f"   Total CSV files: {len(new_sale_files) + len(resale_files)}")
+        sys.exit(0)
+
+    # === MAIN UPLOAD FLOW (requires advisory lock) ===
 
     with app.app_context():
         # Acquire advisory lock
@@ -861,15 +929,18 @@ def main():
                     response = input("\n⚠️  Are you sure you want to rollback? (yes/no): ")
                     if response.lower() != 'yes':
                         print("Rollback cancelled.")
-                        return
+                        exit_code = 0
+                        raise SystemExit(exit_code)
 
                 success = rollback_to_previous(logger)
 
                 if success:
                     logger.stage("RECOMPUTE STATS")
                     recompute_all_stats()
-
-                sys.exit(0 if success else 1)
+                    exit_code = 0
+                else:
+                    exit_code = 1
+                raise SystemExit(exit_code)
 
             # Publish-only mode
             if args.publish:
@@ -886,73 +957,67 @@ def main():
                 if not staging_exists:
                     print(f"\n❌ Staging table '{STAGING_TABLE}' does not exist.")
                     print("   Run without --publish first to load data to staging.")
-                    sys.exit(1)
+                    exit_code = 1
+                    raise SystemExit(exit_code)
 
                 success = atomic_publish(logger)
 
                 if success:
                     logger.stage("RECOMPUTE STATS")
                     recompute_all_stats()
+                    exit_code = 0
+                else:
+                    exit_code = 1
 
                 # Print summary
                 summary = logger.summary()
                 print(f"\n📊 Run Summary: {json.dumps(summary, indent=2)}")
+                raise SystemExit(exit_code)
 
-                sys.exit(0 if success else 1)
+            # === Full upload: Staging → Validate → Publish ===
 
-            # Full upload: Staging → Validate → Publish
-
-            # === STAGE 1: Create staging table ===
+            # STAGE 1: Create staging table
             logger.stage("CREATE STAGING TABLE")
             db.create_all()  # Ensure production schema exists
             create_staging_table(logger)
 
-            # === STAGE 2: Load CSV data to staging ===
+            # STAGE 2: Load CSV data to staging
             logger.stage("LOAD CSV TO STAGING")
-
-            if not os.path.exists(csv_folder):
-                logger.log(f"❌ CSV folder not found: {csv_folder}")
-                sys.exit(1)
 
             total_saved = 0
 
             # Process New Sale CSVs
-            new_sale_folder = os.path.join(csv_folder, 'New Sale')
-            if os.path.exists(new_sale_folder):
+            if new_sale_files:
                 logger.log("Processing New Sale data...")
-                for filename in sorted(os.listdir(new_sale_folder)):
-                    if filename.endswith('.csv'):
-                        csv_path = os.path.join(new_sale_folder, filename)
-                        saved = insert_to_staging(csv_path, 'New Sale', logger)
-                        total_saved += saved
-                        gc.collect()
+                for csv_path in new_sale_files:
+                    saved = insert_to_staging(csv_path, 'New Sale', logger)
+                    total_saved += saved
+                    gc.collect()
 
             # Process Resale CSVs
-            resale_folder = os.path.join(csv_folder, 'Resale')
-            if os.path.exists(resale_folder):
+            if resale_files:
                 logger.log("Processing Resale data...")
-                for filename in sorted(os.listdir(resale_folder)):
-                    if filename.endswith('.csv'):
-                        csv_path = os.path.join(resale_folder, filename)
-                        saved = insert_to_staging(csv_path, 'Resale', logger)
-                        total_saved += saved
-                        gc.collect()
+                for csv_path in resale_files:
+                    saved = insert_to_staging(csv_path, 'Resale', logger)
+                    total_saved += saved
+                    gc.collect()
 
             if total_saved == 0:
-                logger.log("❌ No CSV files found or all files were empty.")
-                sys.exit(1)
+                logger.log("❌ All CSV files were empty or had no valid data.")
+                exit_code = 1
+                raise SystemExit(exit_code)
 
             logger.log(f"Total rows loaded to staging: {total_saved:,}")
 
-            # === STAGE 3: Deduplicate staging ===
+            # STAGE 3: Deduplicate staging
             logger.stage("DEDUPLICATE STAGING")
             duplicates_removed = remove_duplicates_staging(logger)
 
-            # === STAGE 4: Remove outliers from staging ===
+            # STAGE 4: Remove outliers from staging
             logger.stage("REMOVE OUTLIERS")
             outliers_removed, _ = filter_outliers_staging(logger)
 
-            # === STAGE 5: Validate staging ===
+            # STAGE 5: Validate staging
             logger.stage("VALIDATE STAGING")
             if not args.skip_validation:
                 is_valid, issues = validate_staging(logger)
@@ -960,11 +1025,12 @@ def main():
                 if not is_valid:
                     logger.log("❌ Validation failed! Staging data not published.")
                     logger.log("   Fix the issues and re-run, or use --skip-validation")
-                    sys.exit(1)
+                    exit_code = 1
+                    raise SystemExit(exit_code)
             else:
                 logger.log("⚠️  Skipping validation (--skip-validation)")
 
-            # === STAGE 6: Publish (unless staging-only) ===
+            # STAGE 6: Publish (unless staging-only)
             if args.staging_only:
                 logger.log("Staging-only mode: Skipping publish")
                 logger.log(f"Data is ready in '{STAGING_TABLE}' table")
@@ -975,13 +1041,14 @@ def main():
 
                 if not success:
                     logger.log("❌ Publish failed!")
-                    sys.exit(1)
+                    exit_code = 1
+                    raise SystemExit(exit_code)
 
-                # === STAGE 7: Recompute stats ===
+                # STAGE 7: Recompute stats
                 logger.stage("RECOMPUTE STATS")
                 recompute_all_stats()
 
-                # === STAGE 8: Update project locations (optional) ===
+                # STAGE 8: Update project locations (optional)
                 try:
                     from services.project_location_service import run_incremental_update
                     logger.stage("UPDATE PROJECT LOCATIONS")
@@ -1000,9 +1067,20 @@ def main():
             print(f"Total time: {summary['total_elapsed_seconds']:.1f} seconds")
             print(f"Stages completed: {len(summary['stages'])}")
 
+        except SystemExit as e:
+            # Controlled exit - extract exit code
+            exit_code = e.code if isinstance(e.code, int) else 1
+        except Exception as e:
+            # Unexpected error
+            logger.log(f"❌ Unexpected error: {e}")
+            import traceback
+            traceback.print_exc()
+            exit_code = 1
         finally:
-            # Always release the lock
-            release_advisory_lock()
+            # ALWAYS cleanup: rollback any pending transaction, then release lock
+            safe_release_advisory_lock()
+
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
