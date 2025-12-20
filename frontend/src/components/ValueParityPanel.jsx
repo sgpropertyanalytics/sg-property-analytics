@@ -7,7 +7,7 @@ import { DISTRICT_NAMES } from '../constants';
  *
  * Features:
  * - Budget slider (required)
- * - Optional filters: Bedroom, Region, District, Tenure, Sale Type
+ * - Optional filters: Bedroom, Region, District, Tenure, Sale Type, Lease Age
  * - Shows transactions where price <= budget
  * - Reuses same table structure as TransactionDataTable
  */
@@ -24,6 +24,7 @@ export function ValueParityPanel() {
   const [district, setDistrict] = useState('');
   const [tenure, setTenure] = useState('');
   const [saleType, setSaleType] = useState('');
+  const [leaseAge, setLeaseAge] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
 
   // Filter options from API
@@ -100,6 +101,9 @@ export function ValueParityPanel() {
       if (saleType) {
         params.sale_type = saleType;
       }
+      if (leaseAge) {
+        params.lease_age = leaseAge;
+      }
 
       const response = await getTransactionsList(params);
       setData(response.data.transactions || []);
@@ -115,7 +119,7 @@ export function ValueParityPanel() {
     } finally {
       setLoading(false);
     }
-  }, [budget, bedroom, region, district, tenure, saleType, pagination.limit, sortConfig]);
+  }, [budget, bedroom, region, district, tenure, saleType, leaseAge, pagination.limit, sortConfig]);
 
   // Handle search
   const handleSearch = (e) => {
@@ -220,7 +224,7 @@ export function ValueParityPanel() {
 
   // Tick marks with positions (percentage based on actual value position in range)
   const tickMarks = [
-    { value: 500000, label: '$500K', percent: 0 },
+    { value: 500000, label: '$0.5M', percent: 0 },
     { value: 1000000, label: '$1M', percent: ((1000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
     { value: 2000000, label: '$2M', percent: ((2000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
     { value: 3000000, label: '$3M', percent: ((3000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
@@ -388,6 +392,22 @@ export function ValueParityPanel() {
                     <option value="">All</option>
                     <option value="New Sale">New Sale</option>
                     <option value="Resale">Resale</option>
+                  </select>
+                </div>
+
+                {/* Lease Age */}
+                <div>
+                  <label className="block text-xs font-medium text-[#547792] mb-1">Lease Age</label>
+                  <select
+                    value={leaseAge}
+                    onChange={(e) => setLeaseAge(e.target.value)}
+                    className="w-full px-2 py-2 text-sm border border-[#94B4C1] rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                  >
+                    <option value="">All</option>
+                    <option value="0-5">0-5 years</option>
+                    <option value="5-10">5-10 years</option>
+                    <option value="10-20">10-20 years</option>
+                    <option value="20+">20+ years</option>
                   </select>
                 </div>
               </div>
