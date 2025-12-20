@@ -146,6 +146,7 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
     original_columns = list(df.columns)
 
     # Filter: Private condos and apartments only (exclude EC, HDB, public housing)
+    # Use word boundary regex for "ec" to avoid matching words containing "ec" (like "sector")
     if 'Property Type' in df.columns:
         before = len(df)
         prop_type_lower = df['Property Type'].astype(str).str.lower()
@@ -153,7 +154,7 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
             (prop_type_lower.str.contains('condo', na=False) |
              prop_type_lower.str.contains('apartment', na=False)) &
             ~prop_type_lower.str.contains('executive condominium', na=False) &
-            ~prop_type_lower.str.contains('ec', na=False) &
+            ~prop_type_lower.str.contains(r'\bec\b', na=False, regex=True) &  # Word boundary
             ~prop_type_lower.str.contains('hdb', na=False) &
             ~prop_type_lower.str.contains('public', na=False)
         ].copy()
@@ -335,22 +336,29 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
             errors='coerce'
         ).fillna(1).astype(int)
 
+    # Helper to normalize null-like strings to empty
+    def _normalize_null_str(s):
+        if pd.isna(s):
+            return ''
+        s = str(s).strip()
+        return '' if s.lower() in ('nan', 'none', 'null', '<na>', 'nat') else s
+
     # === NEW: Preserve Street Name ===
     if 'Street Name' in df.columns:
-        df['street_name'] = df['Street Name'].astype(str).replace('nan', '')
+        df['street_name'] = df['Street Name'].apply(_normalize_null_str)
 
     # === NEW: Preserve Type of Area ===
     if 'Type of Area' in df.columns:
-        df['type_of_area'] = df['Type of Area'].astype(str).replace('nan', '')
+        df['type_of_area'] = df['Type of Area'].apply(_normalize_null_str)
 
     # === NEW: Preserve Market Segment ===
     if 'Market Segment' in df.columns:
-        df['market_segment'] = df['Market Segment'].astype(str).replace('nan', '')
+        df['market_segment'] = df['Market Segment'].apply(_normalize_null_str)
 
     # === NEW: Preserve and classify Floor Range ===
     if 'Floor Range' in df.columns:
-        df['floor_range'] = df['Floor Range'].astype(str).replace('nan', '')
-        # Apply floor level classification
+        df['floor_range'] = df['Floor Range'].apply(_normalize_null_str)
+        # Apply floor level classification (handles empty strings)
         df['floor_level'] = df['floor_range'].apply(classify_floor_level)
 
     # Classify bedrooms using consolidated three-tier logic from classifier.py

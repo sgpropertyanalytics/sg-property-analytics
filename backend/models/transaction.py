@@ -53,12 +53,12 @@ class Transaction(db.Model):
 
     # === NEW: Previously Dropped CSV Columns (all nullable for backward compat) ===
     street_name = db.Column(db.Text)  # Full address from "Street Name" column
-    floor_range = db.Column(db.String(20))  # Raw floor range, e.g., "01 to 05"
-    floor_level = db.Column(db.String(20), index=True)  # Classified: Low, Mid, High, etc.
+    floor_range = db.Column(db.Text)  # Raw floor range, e.g., "01 to 05"
+    floor_level = db.Column(db.Text, index=True)  # Classified: Low, Mid, High, etc.
     num_units = db.Column(db.Integer)  # "No. of Units" - for new sale bulk transactions
     nett_price = db.Column(db.Float)  # "Nett Price ($)" - alternative price metric
-    type_of_area = db.Column(db.String(20))  # "Type of Area" - Strata or Land
-    market_segment = db.Column(db.String(10))  # URA's CCR/RCR/OCR classification
+    type_of_area = db.Column(db.Text)  # "Type of Area" - Strata or Land
+    market_segment = db.Column(db.Text)  # URA's CCR/RCR/OCR - e.g., "Core Central Region"
 
     # Outlier flag - soft-delete approach instead of hard-deleting outliers
     # Records marked as outliers are excluded from analytics but kept for audit
