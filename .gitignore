@@ -86,6 +86,8 @@ Desktop.ini
 data/
 rawdata/
 *.csv
+# Exception: template files for upload scripts
+!templates/*.csv
 *.db
 *.sqlite
 *.sqlite3
