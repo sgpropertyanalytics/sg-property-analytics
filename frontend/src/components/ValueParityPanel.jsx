@@ -346,8 +346,8 @@ export function ValueParityPanel() {
             </div>
 
             {/* RIGHT: Optional Filters - grey zone extends to card edges */}
-            <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03]">
-              <div className="px-4 md:px-5 py-4 md:py-5">
+            <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03] flex items-center">
+              <div className="px-4 md:px-5 py-4 md:py-5 w-full">
                 <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {/* Bedroom */}
