@@ -120,6 +120,8 @@ def create_app():
         from models.transaction import Transaction
         from models.gls_tender import GLSTender
         from models.new_launch import NewLaunch
+        from models.popular_school import PopularSchool
+        from models.project_location import ProjectLocation
 
         db.create_all()
         print("✓ Database initialized - using SQL-only aggregation for memory efficiency")
@@ -155,6 +157,10 @@ def create_app():
     # New Launches (2026 condo launches) routes
     from routes.new_launches import new_launches_bp
     app.register_blueprint(new_launches_bp, url_prefix='/api/new-launches')
+
+    # Projects routes (school proximity, geocoding)
+    from routes.projects import projects_bp
+    app.register_blueprint(projects_bp, url_prefix='/api')
 
     # Serve dashboard.html at root
     @app.route("/", methods=["GET"])
