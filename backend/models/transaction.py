@@ -26,6 +26,7 @@ CSV Column Mapping (URA REALIS format):
 """
 from models.database import db
 from datetime import datetime
+from sqlalchemy import or_
 
 
 class Transaction(db.Model):
@@ -62,6 +63,34 @@ class Transaction(db.Model):
     # Outlier flag - soft-delete approach instead of hard-deleting outliers
     # Records marked as outliers are excluded from analytics but kept for audit
     is_outlier = db.Column(db.Boolean, default=False, index=True)
+
+    @classmethod
+    def active_query(cls):
+        """
+        Return a base query that excludes outliers.
+
+        Use this instead of db.session.query(Transaction) for all analytics queries.
+        This ensures outliers (is_outlier=true) are never included in results.
+
+        Example:
+            query = Transaction.active_query()
+            query = query.filter(Transaction.district == 'D09')
+            results = query.all()
+        """
+        return db.session.query(cls).filter(
+            or_(cls.is_outlier == False, cls.is_outlier.is_(None))
+        )
+
+    @classmethod
+    def outlier_filter(cls):
+        """
+        Return the filter condition to exclude outliers.
+
+        Use this when building filter lists for complex queries:
+            filter_conditions = [Transaction.outlier_filter()]
+            filter_conditions.append(Transaction.district == 'D09')
+        """
+        return or_(cls.is_outlier == False, cls.is_outlier.is_(None))
 
     def to_dict(self):
         """Convert to dictionary for JSON serialization"""
