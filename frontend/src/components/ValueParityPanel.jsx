@@ -260,58 +260,87 @@ export function ValueParityPanel() {
         <p className="text-sm text-[#547792] mb-4">Benchmark realized transaction prices across your target budget</p>
 
         <form onSubmit={handleSearch}>
-          {/* Budget Slider - Full Width Primary Control */}
-          <div className="mb-4">
-            {/* Slider with floating value */}
-            <div className="relative mb-3">
-              {/* Floating budget value - anchored to thumb position */}
-              <div
-                className="absolute -top-1 transform -translate-x-1/2 pointer-events-none"
-                style={{ left: `${((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100}%` }}
+          {/* 50/50 Two-column layout: Budget+Search (left) | Optional Filters (right) */}
+          <div className="flex flex-col lg:flex-row gap-6">
+
+            {/* LEFT: Budget Slider + Search (flex-1 for 50% fluid width) */}
+            <div className="flex-1 min-w-0">
+              {/* Slider with floating value */}
+              <div className="relative mb-4">
+                {/* Floating budget value - anchored to thumb position */}
+                <div
+                  className="absolute -top-1 transform -translate-x-1/2 pointer-events-none"
+                  style={{ left: `${((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100}%` }}
+                >
+                  <span className="text-2xl font-semibold text-[#213448] bg-white px-1">
+                    {formatBudgetDisplay(budget)}
+                  </span>
+                </div>
+
+                {/* Slider input - gradient shows active trading range ($1.5M-$3.5M darker) */}
+                <input
+                  type="range"
+                  min={BUDGET_MIN}
+                  max={BUDGET_MAX}
+                  step={BUDGET_STEP}
+                  value={budget}
+                  onChange={(e) => setBudget(parseInt(e.target.value))}
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb mt-8"
+                  style={{ background: sliderGradient }}
+                />
+                {/* Tick marks */}
+                <div className="relative w-full h-5 mt-1">
+                  {tickMarks.map((tick, index) => {
+                    const isFirst = index === 0;
+                    const isLast = index === tickMarks.length - 1;
+                    return (
+                      <span
+                        key={tick.value}
+                        className={`absolute text-xs text-[#547792] ${
+                          isFirst ? 'left-0 text-left' :
+                          isLast ? 'right-0 text-right' :
+                          'transform -translate-x-1/2'
+                        }`}
+                        style={!isFirst && !isLast ? { left: `${tick.percent}%` } : undefined}
+                      >
+                        {tick.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Search Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
               >
-                <span className="text-2xl font-semibold text-[#213448] bg-white px-1">
-                  {formatBudgetDisplay(budget)}
-                </span>
-              </div>
-
-              {/* Slider input - gradient shows active trading range ($1.5M-$3.5M darker) */}
-              <input
-                type="range"
-                min={BUDGET_MIN}
-                max={BUDGET_MAX}
-                step={BUDGET_STEP}
-                value={budget}
-                onChange={(e) => setBudget(parseInt(e.target.value))}
-                className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb mt-8"
-                style={{ background: sliderGradient }}
-              />
-              {/* Tick marks - padded to align with slider thumb radius */}
-              <div className="relative w-full h-5 mt-1 px-1">
-                {tickMarks.map((tick, index) => {
-                  const isFirst = index === 0;
-                  const isLast = index === tickMarks.length - 1;
-                  return (
-                    <span
-                      key={tick.value}
-                      className={`absolute text-xs text-[#547792] ${
-                        isFirst ? 'left-0 text-left' :
-                        isLast ? 'right-0 text-right' :
-                        'transform -translate-x-1/2'
-                      }`}
-                      style={!isFirst && !isLast ? { left: `${tick.percent}%` } : undefined}
-                    >
-                      {tick.label}
-                    </span>
-                  );
-                })}
-              </div>
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Searching...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Search
+                  </span>
+                )}
+              </button>
             </div>
-          </div>
 
-          {/* Optional Filters - Full-width horizontal band */}
-          <div className="bg-[#F8FAFB]/50 -mx-4 md:-mx-5 px-4 md:px-5 py-3 mb-4 border-y border-[#94B4C1]/10">
-            <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            {/* Divider - visible on desktop */}
+            <div className="hidden lg:block w-px bg-[#94B4C1]/20 self-stretch" />
+
+            {/* RIGHT: Optional Filters (flex-1 for 50% fluid width) */}
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {/* Bedroom */}
                 <div>
                   <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Bedroom</label>
@@ -406,31 +435,9 @@ export function ValueParityPanel() {
                     <option value="20+">20+ years</option>
                   </select>
                 </div>
+              </div>
             </div>
           </div>
-
-          {/* Search Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Searching...
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                Search
-              </span>
-            )}
-          </button>
         </form>
       </div>
 
