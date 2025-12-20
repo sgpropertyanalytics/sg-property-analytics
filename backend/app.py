@@ -131,6 +131,16 @@ def create_app():
         db.create_all()
         print("✓ Database initialized - using SQL-only aggregation for memory efficiency")
 
+        # Print database connection info for verification
+        try:
+            from sqlalchemy import text
+            db_info = db.session.execute(text(
+                "SELECT current_database(), inet_server_addr(), inet_server_port()"
+            )).fetchone()
+            print(f"   Database: {db_info[0]} @ {db_info[1] or 'localhost'}:{db_info[2] or 5432}")
+        except Exception:
+            pass  # Non-critical diagnostic
+
         # Auto-validate data on startup (self-healing)
         # This runs inside create_app() so it works with gunicorn
         _run_startup_validation()
