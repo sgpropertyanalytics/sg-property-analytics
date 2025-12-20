@@ -452,48 +452,58 @@ def remove_duplicates_staging(logger: UploadLogger) -> int:
 
 
 def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
-    """Remove outliers from staging using IQR method."""
+    """
+    Remove outliers from staging using GLOBAL IQR method.
+
+    Uses global IQR (across all transactions) to catch extreme outliers
+    like $890M transactions that would skew the price distribution chart.
+    This matches the original filter_outliers_sql behavior.
+    """
     before = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
 
-    # Get distinct district/bedroom combinations
-    combos = db.session.execute(text(f"""
-        SELECT DISTINCT district, bedroom_count FROM {STAGING_TABLE}
-    """)).fetchall()
+    # Calculate GLOBAL IQR bounds (across all transactions)
+    # This catches extreme outliers that per-group IQR would miss
+    result = db.session.execute(text(f"""
+        SELECT
+            PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) as q1,
+            PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) as q3
+        FROM {STAGING_TABLE}
+        WHERE price > 0
+    """)).fetchone()
 
-    total_removed = 0
-    stats = {}
+    if not result or not result.q1 or not result.q3:
+        logger.log("⚠️  Could not calculate IQR bounds")
+        return 0, {'before': before, 'after': before}
 
-    for district, bedroom in combos:
-        # Calculate IQR bounds
-        result = db.session.execute(text(f"""
-            SELECT
-                PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) as q1,
-                PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) as q3
-            FROM {STAGING_TABLE}
-            WHERE district = :district AND bedroom_count = :bedroom
-        """), {'district': district, 'bedroom': bedroom}).fetchone()
+    q1, q3 = float(result.q1), float(result.q3)
+    iqr = q3 - q1
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
 
-        if result and result.q1 and result.q3:
-            q1, q3 = result.q1, result.q3
-            iqr = q3 - q1
-            lower = q1 - 1.5 * iqr
-            upper = q3 + 1.5 * iqr
+    logger.log(f"  Global IQR bounds: Q1=${q1:,.0f}, Q3=${q3:,.0f}, IQR=${iqr:,.0f}")
+    logger.log(f"  Valid range: ${lower_bound:,.0f} - ${upper_bound:,.0f}")
 
-            deleted = db.session.execute(text(f"""
-                DELETE FROM {STAGING_TABLE}
-                WHERE district = :district
-                  AND bedroom_count = :bedroom
-                  AND (price < :lower OR price > :upper)
-            """), {'district': district, 'bedroom': bedroom, 'lower': lower, 'upper': upper})
+    # Delete outliers outside global bounds
+    deleted = db.session.execute(text(f"""
+        DELETE FROM {STAGING_TABLE}
+        WHERE price < :lower_bound OR price > :upper_bound
+    """), {'lower_bound': lower_bound, 'upper_bound': upper_bound})
 
-            total_removed += deleted.rowcount
-
+    total_removed = deleted.rowcount
     db.session.commit()
 
     after = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
-    logger.log(f"✓ Removed {total_removed:,} outliers from staging")
+    logger.log(f"✓ Removed {total_removed:,} outliers from staging (global IQR)")
 
-    return total_removed, {'before': before, 'after': after}
+    return total_removed, {
+        'before': before,
+        'after': after,
+        'q1': q1,
+        'q3': q3,
+        'iqr': iqr,
+        'lower_bound': lower_bound,
+        'upper_bound': upper_bound
+    }
 
 
 def validate_staging(logger: UploadLogger) -> Tuple[bool, List[str]]:
