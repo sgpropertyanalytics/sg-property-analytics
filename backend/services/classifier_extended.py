@@ -195,10 +195,10 @@ def classify_floor_level(floor_range: Optional[str]) -> str:
     Floor Classification Tiers:
         01 – 05  → Low
         06 – 10  → Mid-Low
-        11 – 15  → Mid
-        16 – 20  → Mid-High
-        21 – 30  → High
-        31+      → Luxury
+        11 – 20  → Mid
+        21 – 30  → Mid-High
+        31 – 40  → High
+        41+      → Luxury
 
     Args:
         floor_range: URA floor range string, e.g., "01 to 05", "06 to 10"
@@ -210,9 +210,9 @@ def classify_floor_level(floor_range: Optional[str]) -> str:
         >>> classify_floor_level("01 to 05")
         'Low'
         >>> classify_floor_level("16 to 20")
-        'Mid-High'
+        'Mid'
         >>> classify_floor_level("36 to 40")
-        'Luxury'
+        'High'
     """
     if not floor_range:
         return "Unknown"
@@ -243,11 +243,11 @@ def classify_floor_level(floor_range: Optional[str]) -> str:
             return "Low"
         if low_floor <= 10:
             return "Mid-Low"
-        if low_floor <= 15:
-            return "Mid"
         if low_floor <= 20:
-            return "Mid-High"
+            return "Mid"
         if low_floor <= 30:
+            return "Mid-High"
+        if low_floor <= 40:
             return "High"
         return "Luxury"
 
