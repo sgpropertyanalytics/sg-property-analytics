@@ -979,7 +979,7 @@ def main():
 
                 # === STAGE 7: Recompute stats ===
                 logger.stage("RECOMPUTE STATS")
-                recompute_all_stats(outliers_excluded=outliers_removed)
+                recompute_all_stats()
 
                 # === STAGE 8: Update project locations (optional) ===
                 try:
