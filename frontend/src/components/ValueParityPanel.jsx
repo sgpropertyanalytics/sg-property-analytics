@@ -263,6 +263,7 @@ export function ValueParityPanel() {
 
             {/* LEFT: Budget Slider + Search */}
             <div className="min-w-0 px-4 md:px-5 py-4 md:py-5 lg:pr-6">
+              <p className="text-sm text-[#547792] mb-4">Target price (S$) - Show transactions priced at or below this amount</p>
               {/* Slider with floating value */}
               <div className="relative mb-4 pt-8">
                 {/* Floating budget value - clamped to stay within bounds */}
