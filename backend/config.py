@@ -82,3 +82,17 @@ class Config:
     SQLALCHEMY_DATABASE_URI = _get_database_url()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Connection pool settings for resilience against timeouts
+    # Especially important for remote databases (Render, AWS RDS, etc.)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,      # Verify connection is alive before using
+        'pool_recycle': 300,        # Recycle connections every 5 minutes
+        'pool_timeout': 30,         # Wait up to 30s for a connection from pool
+        'pool_size': 5,             # Maintain 5 connections in pool
+        'max_overflow': 10,         # Allow up to 10 additional connections
+        'connect_args': {
+            'connect_timeout': 30,  # Connection timeout in seconds
+            'options': '-c statement_timeout=120000',  # 2 min query timeout
+        }
+    }
+

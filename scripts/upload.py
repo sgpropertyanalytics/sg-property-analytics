@@ -30,6 +30,7 @@ import re
 import argparse
 import uuid
 import json
+import time
 from datetime import datetime
 from typing import Set, List, Tuple, Dict, Any, Optional
 
@@ -334,6 +335,68 @@ def _parse_lease_info(tenure_str: str, current_year: int):
     return lease_start_year, remaining_lease
 
 
+def _execute_with_retry(session, sql, values, logger, batch_num: int, max_retries: int = 3) -> Tuple[bool, int]:
+    """
+    Execute SQL INSERT with retry logic and exponential backoff.
+
+    Args:
+        session: SQLAlchemy session
+        sql: SQL statement to execute
+        values: List of value dicts for the INSERT
+        logger: UploadLogger instance
+        batch_num: Batch number for logging
+        max_retries: Maximum number of retry attempts
+
+    Returns:
+        Tuple of (success: bool, rows_inserted: int)
+    """
+    for attempt in range(max_retries):
+        try:
+            session.execute(sql, values)
+            session.commit()
+            return True, len(values)
+
+        except OperationalError as e:
+            session.rollback()
+            error_msg = str(e)
+
+            # Check if it's a recoverable timeout/connection error
+            is_timeout = any(err in error_msg.lower() for err in [
+                'timeout', 'timed out', 'connection reset', 'ssl syscall',
+                'could not receive data', 'server closed the connection',
+                'connection refused', 'broken pipe'
+            ])
+
+            if is_timeout and attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # 1s, 2s, 4s exponential backoff
+                logger.log(f"  ⚠️  Batch {batch_num} timeout (attempt {attempt + 1}/{max_retries}), "
+                          f"retrying in {wait_time}s...")
+
+                time.sleep(wait_time)
+
+                # Force session refresh - dispose old connection and get fresh one
+                try:
+                    session.close()
+                    # The next execute will get a fresh connection from the pool
+                except Exception:
+                    pass  # Connection may already be dead
+
+                continue  # Retry
+
+            else:
+                # Non-timeout error or final attempt
+                logger.log(f"  ❌ Batch {batch_num} failed after {attempt + 1} attempts: "
+                          f"{error_msg[:150]}")
+                return False, 0
+
+        except SQLAlchemyError as e:
+            session.rollback()
+            logger.log(f"  ❌ Batch {batch_num} SQL error: {str(e)[:150]}")
+            return False, 0
+
+    return False, 0
+
+
 # =============================================================================
 # ADVISORY LOCK FOR CONCURRENCY SAFETY
 # =============================================================================
@@ -444,7 +507,8 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
         df['sale_type'] = sale_type
 
         # Insert in batches using raw SQL for staging table
-        batch_size = 500
+        # Use smaller batch size for remote connections to avoid timeouts
+        batch_size = 100
         total_rows = len(df)
         saved = 0
         insert_rejected = 0
@@ -534,40 +598,31 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
                     continue
 
             if values:
-                # Bulk insert into staging with error handling
-                try:
-                    db.session.execute(
-                        text(f"""
-                            INSERT INTO {STAGING_TABLE} (
-                                project_name, transaction_date, contract_date, price, area_sqft,
-                                psf, district, bedroom_count, property_type, sale_type,
-                                tenure, lease_start_year, remaining_lease, street_name,
-                                floor_range, floor_level, num_units, nett_price, type_of_area,
-                                market_segment
-                            ) VALUES (
-                                :project_name, :transaction_date, :contract_date, :price, :area_sqft,
-                                :psf, :district, :bedroom_count, :property_type, :sale_type,
-                                :tenure, :lease_start_year, :remaining_lease, :street_name,
-                                :floor_range, :floor_level, :num_units, :nett_price, :type_of_area,
-                                :market_segment
-                            )
-                        """),
-                        values
+                # Bulk insert into staging with retry logic for timeout resilience
+                batch_num = idx // batch_size + 1
+                insert_sql = text(f"""
+                    INSERT INTO {STAGING_TABLE} (
+                        project_name, transaction_date, contract_date, price, area_sqft,
+                        psf, district, bedroom_count, property_type, sale_type,
+                        tenure, lease_start_year, remaining_lease, street_name,
+                        floor_range, floor_level, num_units, nett_price, type_of_area,
+                        market_segment
+                    ) VALUES (
+                        :project_name, :transaction_date, :contract_date, :price, :area_sqft,
+                        :psf, :district, :bedroom_count, :property_type, :sale_type,
+                        :tenure, :lease_start_year, :remaining_lease, :street_name,
+                        :floor_range, :floor_level, :num_units, :nett_price, :type_of_area,
+                        :market_segment
                     )
-                    db.session.commit()
-                    saved += len(values)
-                except Exception as sql_err:
-                    db.session.rollback()
-                    error_msg = str(sql_err)
-                    # Log the SQL error with context
-                    logger.log(f"  ❌ SQL INSERT failed at batch {idx//batch_size + 1}: {error_msg[:200]}")
-                    # Check for common issues
-                    if 'value too long' in error_msg.lower():
-                        # Find which value is too long
-                        for v in values[:1]:  # Check first row
-                            for key, val in v.items():
-                                if val and isinstance(val, str) and len(val) > 50:
-                                    logger.log(f"      Long value: {key}={len(val)} chars: '{val[:50]}...'")
+                """)
+
+                success, rows_inserted = _execute_with_retry(
+                    db.session, insert_sql, values, logger, batch_num, max_retries=3
+                )
+
+                if success:
+                    saved += rows_inserted
+                else:
                     insert_rejection_reasons['sql_error'] = insert_rejection_reasons.get('sql_error', 0) + len(values)
                     insert_rejected += len(values)
 
