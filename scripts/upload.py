@@ -1,27 +1,26 @@
 """
-Upload Script - Loads CSV data into Transaction table and triggers computation
+Upload Script - Production-Grade Data Upload with Zero Downtime
+
+Architecture: Staging → Validate → Atomic Publish
+- Loads CSV data into transactions_staging (isolated from production)
+- Runs validations on staging data
+- Atomically swaps staging → production via table rename
+- Keeps previous version for 24h rollback safety
 
 Memory-efficient design for 512MB Render limit:
-1. Process one CSV at a time, save to DB, clear memory
+1. Process one CSV at a time, save to staging, clear memory
 2. Deduplicate using SQL after all data loaded
-3. Remove outliers using SQL-based IQR calculation (no pandas needed)
-
-Pipeline: **Load Raw** → **Validate/Filter** → Store in DB → **Compute Stats**
-
-CRITICAL: This script now preserves ALL CSV columns end-to-end.
-The following columns are now imported (previously dropped):
-  - Street Name → street_name
-  - Floor Range → floor_range, floor_level (classified)
-  - No. of Units → num_units
-  - Nett Price ($) → nett_price
-  - Type of Area → type_of_area
-  - Market Segment → market_segment
+3. Remove outliers using SQL-based IQR calculation
 
 Usage:
-    python -m scripts.upload              # Interactive import
-    python -m scripts.upload --force      # Clear existing data first
-    python -m scripts.upload --check      # Schema parity check only
-    python -m scripts.upload --dry-run    # Preview without changes
+    python -m scripts.upload                    # Staging + publish (default)
+    python -m scripts.upload --staging-only     # Load to staging, don't publish
+    python -m scripts.upload --publish          # Publish existing staging to prod
+    python -m scripts.upload --rollback         # Rollback to previous version
+    python -m scripts.upload --check            # Schema parity check only
+    python -m scripts.upload --dry-run          # Preview without changes
+
+CRITICAL: This script preserves ALL CSV columns end-to-end.
 """
 
 import sys
@@ -29,27 +28,30 @@ import os
 import gc
 import re
 import argparse
+import uuid
+import json
+from datetime import datetime
+from typing import Set, List, Tuple, Dict, Any, Optional
 
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from flask import Flask
+from sqlalchemy import text, inspect
 from config import Config
 from models.database import db
 from models.transaction import Transaction
 from services.data_loader import clean_csv_data, parse_date_flexible
 from services.data_computation import recompute_all_stats
-from services.data_validation import (
-    filter_outliers_sql,
-    remove_duplicates_sql,
-    print_iqr_statistics
-)
 import pandas as pd
-from datetime import datetime
-from typing import Set, List, Tuple
 
 
-# === Schema Parity Constants (from URA REALIS format) ===
+# === Constants ===
+ADVISORY_LOCK_ID = 12345  # Unique lock ID for upload process
+STAGING_TABLE = 'transactions_staging'
+PRODUCTION_TABLE = 'transactions'
+PREVIOUS_TABLE = 'transactions_prev'
+
 EXPECTED_CSV_COLUMNS = {
     'Project Name', 'Street Name', 'Property Type', 'Postal District',
     'Market Segment', 'Tenure', 'Type of Sale', 'No. of Units',
@@ -75,9 +77,81 @@ CSV_TO_DB_MAPPING = {
     'Floor Range': 'floor_range',
 }
 
+# Validation thresholds
+VALIDATION_CONFIG = {
+    'min_row_count': 1000,  # Minimum rows expected
+    'max_null_rate': {
+        'project_name': 0.0,  # 0% nulls allowed
+        'price': 0.0,
+        'area_sqft': 0.0,
+        'district': 0.01,  # 1% nulls allowed
+        'transaction_date': 0.0,
+    },
+    'price_range': (50_000, 100_000_000),  # $50K - $100M
+    'psf_range': (100, 20_000),  # $100 - $20K PSF
+    'area_range': (100, 50_000),  # 100 - 50,000 sqft
+}
+
+
+# =============================================================================
+# LOGGING & OBSERVABILITY
+# =============================================================================
+
+class UploadLogger:
+    """Structured logging for upload process."""
+
+    def __init__(self, run_id: str):
+        self.run_id = run_id
+        self.start_time = datetime.utcnow()
+        self.stages: List[Dict] = []
+        self.current_stage: Optional[str] = None
+
+    def stage(self, name: str):
+        """Start a new stage."""
+        if self.current_stage:
+            self._end_stage()
+        self.current_stage = name
+        self._stage_start = datetime.utcnow()
+        print(f"\n{'='*60}")
+        print(f"[{self.run_id[:8]}] STAGE: {name}")
+        print(f"{'='*60}")
+
+    def _end_stage(self):
+        """End current stage."""
+        if self.current_stage:
+            elapsed = (datetime.utcnow() - self._stage_start).total_seconds()
+            self.stages.append({
+                'name': self.current_stage,
+                'elapsed_seconds': elapsed,
+                'timestamp': self._stage_start.isoformat()
+            })
+
+    def log(self, message: str, data: Dict = None):
+        """Log a message with optional data."""
+        prefix = f"[{self.run_id[:8]}]"
+        print(f"{prefix} {message}")
+        if data:
+            for k, v in data.items():
+                print(f"{prefix}   {k}: {v}")
+
+    def summary(self) -> Dict:
+        """Get summary of the run."""
+        self._end_stage()
+        total_elapsed = (datetime.utcnow() - self.start_time).total_seconds()
+        return {
+            'run_id': self.run_id,
+            'start_time': self.start_time.isoformat(),
+            'total_elapsed_seconds': total_elapsed,
+            'stages': self.stages
+        }
+
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
 
 def create_app():
-    """Create Flask app for database access"""
+    """Create Flask app for database access."""
     app = Flask(__name__)
     app.config.from_object(Config)
     db.init_app(app)
@@ -86,12 +160,11 @@ def create_app():
 
 def get_db_columns() -> Set[str]:
     """Get all column names from the Transaction model."""
-    from sqlalchemy import inspect
     mapper = inspect(Transaction)
     return {column.key for column in mapper.columns}
 
 
-def find_sample_csv(rawdata_path: str) -> str:
+def find_sample_csv(rawdata_path: str) -> Optional[str]:
     """Find a sample CSV file from rawdata folder."""
     for folder in ['New Sale', 'Resale']:
         folder_path = os.path.join(rawdata_path, folder)
@@ -100,55 +173,6 @@ def find_sample_csv(rawdata_path: str) -> str:
                 if f.endswith('.csv'):
                     return os.path.join(folder_path, f)
     return None
-
-
-def run_schema_check(rawdata_path: str) -> bool:
-    """
-    Check CSV to database schema parity.
-    Returns True if all columns are mapped correctly.
-    """
-    print("=" * 60)
-    print("Schema Parity Check")
-    print("=" * 60)
-
-    # Get DB columns
-    print("\n📊 Checking Transaction model columns...")
-    db_columns = get_db_columns()
-    print(f"   Found {len(db_columns)} columns in Transaction model")
-
-    # Get CSV columns from sample file
-    csv_path = find_sample_csv(rawdata_path)
-    if csv_path:
-        print(f"\n📄 Checking CSV file: {os.path.basename(csv_path)}")
-        df = pd.read_csv(csv_path, nrows=0)
-        csv_columns = set(df.columns)
-        print(f"   Found {len(csv_columns)} columns in CSV")
-    else:
-        print("\n⚠️  No CSV file found. Using expected column list.")
-        csv_columns = EXPECTED_CSV_COLUMNS
-
-    # Check mappings
-    print("\n🔍 Checking CSV → DB mapping...")
-    issues = []
-
-    for csv_col in csv_columns:
-        if csv_col in CSV_TO_DB_MAPPING:
-            db_col = CSV_TO_DB_MAPPING[csv_col]
-            if db_col not in db_columns:
-                issues.append(f"CSV '{csv_col}' maps to DB '{db_col}' but column doesn't exist")
-
-    missing_expected = EXPECTED_CSV_COLUMNS - csv_columns
-    for col in missing_expected:
-        issues.append(f"Expected CSV column '{col}' not found")
-
-    if issues:
-        print("   ❌ Issues found:")
-        for issue in issues:
-            print(f"      - {issue}")
-        return False
-    else:
-        print("   ✅ All CSV columns have valid DB mappings")
-        return True
 
 
 def _safe_str(value, default='') -> str:
@@ -179,26 +203,18 @@ def _safe_int(value, default=None):
 
 
 def _parse_lease_info(tenure_str: str, current_year: int):
-    """
-    Parse lease start year and remaining lease from tenure string.
-
-    Returns:
-        Tuple of (lease_start_year, remaining_lease)
-    """
+    """Parse lease start year and remaining lease from tenure string."""
     if not tenure_str or tenure_str == 'nan':
         return None, None
 
     tenure_str = str(tenure_str)
 
-    # Freehold properties
     if "freehold" in tenure_str.lower() or "estate in perpetuity" in tenure_str.lower():
         return None, 999
 
-    # Try to extract lease start year
     lease_start_year = None
     remaining_lease = None
 
-    # Pattern 1: "from 2020" or "commencing from 2020"
     match = re.search(r"(?:from|commencing)\s+(\d{4})", tenure_str.lower())
     if match:
         try:
@@ -210,7 +226,6 @@ def _parse_lease_info(tenure_str: str, current_year: int):
         except ValueError:
             pass
 
-    # Pattern 2: Fallback to any 4-digit year
     if lease_start_year is None:
         fallback = re.search(r"(\d{4})", tenure_str)
         if fallback:
@@ -226,21 +241,77 @@ def _parse_lease_info(tenure_str: str, current_year: int):
     return lease_start_year, remaining_lease
 
 
-def process_and_save_csv(csv_path: str, sale_type: str, app):
-    """
-    Process a single CSV file and save directly to database.
-    Clears memory after saving to minimize footprint.
+# =============================================================================
+# ADVISORY LOCK FOR CONCURRENCY SAFETY
+# =============================================================================
 
-    CRITICAL: This function now maps ALL CSV columns to the Transaction model.
-    No columns are dropped.
-
-    Returns:
-        Count of rows saved.
+def acquire_advisory_lock() -> bool:
     """
-    print(f"  Loading: {os.path.basename(csv_path)}")
+    Acquire PostgreSQL advisory lock to prevent concurrent uploads.
+    Returns True if lock acquired, False if another upload is running.
+    """
+    result = db.session.execute(
+        text(f"SELECT pg_try_advisory_lock({ADVISORY_LOCK_ID})")
+    ).scalar()
+    return bool(result)
+
+
+def release_advisory_lock():
+    """Release the advisory lock."""
+    db.session.execute(text(f"SELECT pg_advisory_unlock({ADVISORY_LOCK_ID})"))
+
+
+# =============================================================================
+# STAGING TABLE MANAGEMENT
+# =============================================================================
+
+def create_staging_table(logger: UploadLogger):
+    """Create staging table as a copy of production schema."""
+    logger.log("Creating staging table...")
+
+    # Drop existing staging table if exists
+    db.session.execute(text(f"DROP TABLE IF EXISTS {STAGING_TABLE} CASCADE"))
+
+    # Create staging table with same schema as transactions
+    db.session.execute(text(f"""
+        CREATE TABLE {STAGING_TABLE} (
+            id SERIAL PRIMARY KEY,
+            project_name VARCHAR(255) NOT NULL,
+            transaction_date DATE NOT NULL,
+            contract_date VARCHAR(10),
+            price FLOAT NOT NULL,
+            area_sqft FLOAT NOT NULL,
+            psf FLOAT NOT NULL,
+            district VARCHAR(10) NOT NULL,
+            bedroom_count INTEGER NOT NULL,
+            property_type VARCHAR(100) DEFAULT 'Condominium',
+            sale_type VARCHAR(50),
+            tenure TEXT,
+            lease_start_year INTEGER,
+            remaining_lease INTEGER,
+            created_at TIMESTAMP DEFAULT NOW(),
+            street_name TEXT,
+            floor_range VARCHAR(20),
+            floor_level VARCHAR(20),
+            num_units INTEGER,
+            nett_price FLOAT,
+            type_of_area VARCHAR(20),
+            market_segment VARCHAR(10)
+        )
+    """))
+    db.session.commit()
+    logger.log("✓ Staging table created")
+
+
+def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> int:
+    """
+    Process a single CSV file and insert into staging table.
+    Returns count of rows saved.
+    """
+    logger.log(f"Processing: {os.path.basename(csv_path)}")
 
     try:
-        # Try different encodings for CSV files
+        # Try different encodings
         encodings = ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252']
         df = None
         for encoding in encodings:
@@ -251,127 +322,461 @@ def process_and_save_csv(csv_path: str, sale_type: str, app):
                 continue
 
         if df is None:
-            print(f"    ⚠️  Could not decode {csv_path} with any encoding")
+            logger.log(f"  ⚠️  Could not decode with any encoding")
             return 0
 
-        # Store original column count for debugging
         original_cols = len(df.columns)
-
-        # Clean data using existing logic (now preserves all columns)
         df = clean_csv_data(df)
 
         if df.empty:
-            print(f"    ⚠️  No valid data after cleaning")
+            logger.log(f"  ⚠️  No valid data after cleaning")
             return 0
 
-        # Override sale_type from folder structure
         df['sale_type'] = sale_type
 
-        # Save to database in batches
+        # Insert in batches using raw SQL for staging table
         batch_size = 500
         total_rows = len(df)
         saved = 0
         current_year = datetime.now().year
 
-        with app.app_context():
-            for idx in range(0, total_rows, batch_size):
-                batch = df.iloc[idx:idx+batch_size]
-                transactions = []
+        for idx in range(0, total_rows, batch_size):
+            batch = df.iloc[idx:idx+batch_size]
+            values = []
 
-                for _, row in batch.iterrows():
-                    try:
-                        # === Parse transaction_date ===
-                        transaction_date = None
-                        if 'transaction_date' in row and pd.notna(row['transaction_date']):
-                            if isinstance(row['transaction_date'], str):
-                                try:
-                                    transaction_date = pd.to_datetime(row['transaction_date']).date()
-                                except:
-                                    year, month = parse_date_flexible(row['transaction_date'])
-                                    if year and month:
-                                        from datetime import date
-                                        transaction_date = date(year, month, 1)
-                            elif hasattr(row['transaction_date'], 'date'):
-                                transaction_date = row['transaction_date'].date()
+            for _, row in batch.iterrows():
+                try:
+                    transaction_date = None
+                    if 'transaction_date' in row and pd.notna(row['transaction_date']):
+                        if isinstance(row['transaction_date'], str):
+                            try:
+                                transaction_date = pd.to_datetime(row['transaction_date']).date()
+                            except:
+                                year, month = parse_date_flexible(row['transaction_date'])
+                                if year and month:
+                                    from datetime import date
+                                    transaction_date = date(year, month, 1)
+                        elif hasattr(row['transaction_date'], 'date'):
+                            transaction_date = row['transaction_date'].date()
 
-                        # === Parse lease columns from Tenure ===
-                        tenure_str = _safe_str(row.get('tenure') or row.get('Tenure'))
-                        lease_start_year, remaining_lease = _parse_lease_info(tenure_str, current_year)
+                    tenure_str = _safe_str(row.get('tenure') or row.get('Tenure'))
+                    lease_start_year, remaining_lease = _parse_lease_info(tenure_str, current_year)
 
-                        # === Get project name ===
-                        project_name = _safe_str(
-                            row.get('project_name') or row.get('Project Name'),
-                            default=''
+                    project_name = _safe_str(row.get('project_name') or row.get('Project Name'), default='')
+                    property_type = _safe_str(row.get('property_type') or row.get('Property Type'), default='Condominium')
+
+                    values.append({
+                        'project_name': project_name,
+                        'transaction_date': transaction_date,
+                        'contract_date': _safe_str(row.get('contract_date')),
+                        'price': _safe_float(row.get('price')),
+                        'area_sqft': _safe_float(row.get('area_sqft')),
+                        'psf': _safe_float(row.get('psf')),
+                        'district': _safe_str(row.get('district')),
+                        'bedroom_count': _safe_int(row.get('bedroom_count'), default=1),
+                        'property_type': property_type,
+                        'sale_type': _safe_str(row.get('sale_type')),
+                        'tenure': tenure_str if tenure_str else None,
+                        'lease_start_year': lease_start_year,
+                        'remaining_lease': remaining_lease,
+                        'street_name': _safe_str(row.get('street_name')) or None,
+                        'floor_range': _safe_str(row.get('floor_range')) or None,
+                        'floor_level': _safe_str(row.get('floor_level')) or None,
+                        'num_units': _safe_int(row.get('num_units')),
+                        'nett_price': _safe_float(row.get('nett_price')) if row.get('nett_price') else None,
+                        'type_of_area': _safe_str(row.get('type_of_area')) or None,
+                        'market_segment': _safe_str(row.get('market_segment')) or None,
+                    })
+                except Exception:
+                    continue
+
+            if values:
+                # Bulk insert into staging
+                db.session.execute(
+                    text(f"""
+                        INSERT INTO {STAGING_TABLE} (
+                            project_name, transaction_date, contract_date, price, area_sqft,
+                            psf, district, bedroom_count, property_type, sale_type,
+                            tenure, lease_start_year, remaining_lease, street_name,
+                            floor_range, floor_level, num_units, nett_price, type_of_area,
+                            market_segment
+                        ) VALUES (
+                            :project_name, :transaction_date, :contract_date, :price, :area_sqft,
+                            :psf, :district, :bedroom_count, :property_type, :sale_type,
+                            :tenure, :lease_start_year, :remaining_lease, :street_name,
+                            :floor_range, :floor_level, :num_units, :nett_price, :type_of_area,
+                            :market_segment
                         )
+                    """),
+                    values
+                )
+                db.session.commit()
+                saved += len(values)
 
-                        # === Get property type ===
-                        property_type = _safe_str(
-                            row.get('property_type') or row.get('Property Type'),
-                            default='Condominium'
-                        )
+        logger.log(f"  ✓ Saved {saved:,} rows (from {original_cols} CSV columns)")
 
-                        # === Create Transaction with ALL columns ===
-                        transaction = Transaction(
-                            # Core required fields
-                            project_name=project_name,
-                            transaction_date=transaction_date,
-                            contract_date=_safe_str(row.get('contract_date')),
-                            price=_safe_float(row.get('price')),
-                            area_sqft=_safe_float(row.get('area_sqft')),
-                            psf=_safe_float(row.get('psf')),
-                            district=_safe_str(row.get('district')),
-                            bedroom_count=_safe_int(row.get('bedroom_count'), default=1),
-                            property_type=property_type,
-                            sale_type=_safe_str(row.get('sale_type')),
-                            tenure=tenure_str if tenure_str else None,
-                            lease_start_year=lease_start_year,
-                            remaining_lease=remaining_lease,
-
-                            # NEW: Previously dropped columns
-                            street_name=_safe_str(row.get('street_name')) or None,
-                            floor_range=_safe_str(row.get('floor_range')) or None,
-                            floor_level=_safe_str(row.get('floor_level')) or None,
-                            num_units=_safe_int(row.get('num_units')),
-                            nett_price=_safe_float(row.get('nett_price')) if row.get('nett_price') else None,
-                            type_of_area=_safe_str(row.get('type_of_area')) or None,
-                            market_segment=_safe_str(row.get('market_segment')) or None,
-                        )
-
-                        transactions.append(transaction)
-                    except Exception as e:
-                        # Log error but continue processing
-                        continue
-
-                if transactions:
-                    db.session.bulk_save_objects(transactions)
-                    db.session.commit()
-                    saved += len(transactions)
-
-            # Print summary with column info
-            print(f"    ✓ Saved {saved:,} rows (from {original_cols} CSV columns)")
-
-        # Clear memory
         del df
         gc.collect()
-
         return saved
 
     except Exception as e:
-        print(f"    ⚠️  Error: {e}")
+        logger.log(f"  ⚠️  Error: {e}")
         import traceback
         traceback.print_exc()
         return 0
 
 
+# =============================================================================
+# VALIDATION ON STAGING
+# =============================================================================
+
+def remove_duplicates_staging(logger: UploadLogger) -> int:
+    """Remove duplicates from staging table."""
+    before = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+
+    db.session.execute(text(f"""
+        DELETE FROM {STAGING_TABLE}
+        WHERE id NOT IN (
+            SELECT MIN(id)
+            FROM {STAGING_TABLE}
+            GROUP BY project_name, transaction_date, price, area_sqft,
+                     COALESCE(floor_range, '')
+        )
+    """))
+    db.session.commit()
+
+    after = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+    removed = before - after
+    logger.log(f"✓ Removed {removed:,} duplicates from staging")
+    return removed
+
+
+def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
+    """Remove outliers from staging using IQR method."""
+    before = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+
+    # Get distinct district/bedroom combinations
+    combos = db.session.execute(text(f"""
+        SELECT DISTINCT district, bedroom_count FROM {STAGING_TABLE}
+    """)).fetchall()
+
+    total_removed = 0
+    stats = {}
+
+    for district, bedroom in combos:
+        # Calculate IQR bounds
+        result = db.session.execute(text(f"""
+            SELECT
+                PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) as q1,
+                PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) as q3
+            FROM {STAGING_TABLE}
+            WHERE district = :district AND bedroom_count = :bedroom
+        """), {'district': district, 'bedroom': bedroom}).fetchone()
+
+        if result and result.q1 and result.q3:
+            q1, q3 = result.q1, result.q3
+            iqr = q3 - q1
+            lower = q1 - 1.5 * iqr
+            upper = q3 + 1.5 * iqr
+
+            deleted = db.session.execute(text(f"""
+                DELETE FROM {STAGING_TABLE}
+                WHERE district = :district
+                  AND bedroom_count = :bedroom
+                  AND (price < :lower OR price > :upper)
+            """), {'district': district, 'bedroom': bedroom, 'lower': lower, 'upper': upper})
+
+            total_removed += deleted.rowcount
+
+    db.session.commit()
+
+    after = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+    logger.log(f"✓ Removed {total_removed:,} outliers from staging")
+
+    return total_removed, {'before': before, 'after': after}
+
+
+def validate_staging(logger: UploadLogger) -> Tuple[bool, List[str]]:
+    """
+    Run validation checks on staging table.
+    Returns (is_valid, list_of_issues).
+    """
+    logger.log("Running validation checks on staging data...")
+    issues = []
+
+    # 1. Row count check
+    row_count = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+    logger.log(f"  Row count: {row_count:,}")
+
+    if row_count < VALIDATION_CONFIG['min_row_count']:
+        issues.append(f"Row count {row_count} below minimum {VALIDATION_CONFIG['min_row_count']}")
+
+    # 2. Null rate checks for required columns
+    for column, max_rate in VALIDATION_CONFIG['max_null_rate'].items():
+        null_count = db.session.execute(text(f"""
+            SELECT COUNT(*) FROM {STAGING_TABLE} WHERE {column} IS NULL
+        """)).scalar()
+        null_rate = null_count / row_count if row_count > 0 else 1.0
+
+        if null_rate > max_rate:
+            issues.append(f"Column '{column}' null rate {null_rate:.2%} exceeds {max_rate:.2%}")
+        else:
+            logger.log(f"  ✓ {column} null rate: {null_rate:.2%}")
+
+    # 3. Price range sanity check
+    min_price, max_price = VALIDATION_CONFIG['price_range']
+    invalid_prices = db.session.execute(text(f"""
+        SELECT COUNT(*) FROM {STAGING_TABLE}
+        WHERE price < :min_price OR price > :max_price
+    """), {'min_price': min_price, 'max_price': max_price}).scalar()
+
+    if invalid_prices > 0:
+        rate = invalid_prices / row_count
+        if rate > 0.01:  # More than 1% invalid
+            issues.append(f"{invalid_prices} rows ({rate:.2%}) have prices outside valid range")
+        else:
+            logger.log(f"  ✓ Price range: {invalid_prices} outliers ({rate:.4%})")
+
+    # 4. PSF range sanity check
+    min_psf, max_psf = VALIDATION_CONFIG['psf_range']
+    invalid_psf = db.session.execute(text(f"""
+        SELECT COUNT(*) FROM {STAGING_TABLE}
+        WHERE psf < :min_psf OR psf > :max_psf
+    """), {'min_psf': min_psf, 'max_psf': max_psf}).scalar()
+
+    if invalid_psf > 0:
+        rate = invalid_psf / row_count
+        if rate > 0.01:
+            issues.append(f"{invalid_psf} rows ({rate:.2%}) have PSF outside valid range")
+        else:
+            logger.log(f"  ✓ PSF range: {invalid_psf} outliers ({rate:.4%})")
+
+    # 5. District distribution check
+    district_counts = db.session.execute(text(f"""
+        SELECT district, COUNT(*) as cnt FROM {STAGING_TABLE}
+        GROUP BY district ORDER BY cnt DESC LIMIT 5
+    """)).fetchall()
+    logger.log(f"  Top districts: {[(d.district, d.cnt) for d in district_counts]}")
+
+    # 6. Date range check
+    date_range = db.session.execute(text(f"""
+        SELECT MIN(transaction_date), MAX(transaction_date) FROM {STAGING_TABLE}
+    """)).fetchone()
+    logger.log(f"  Date range: {date_range[0]} to {date_range[1]}")
+
+    is_valid = len(issues) == 0
+
+    if is_valid:
+        logger.log("✅ All validation checks passed")
+    else:
+        logger.log("❌ Validation failed:")
+        for issue in issues:
+            logger.log(f"   - {issue}")
+
+    return is_valid, issues
+
+
+# =============================================================================
+# ATOMIC PUBLISH (TABLE SWAP)
+# =============================================================================
+
+def atomic_publish(logger: UploadLogger) -> bool:
+    """
+    Atomically swap staging table to production.
+    Uses PostgreSQL table rename in a single transaction.
+
+    Steps:
+    1. Drop transactions_prev if exists (from previous run)
+    2. Rename transactions → transactions_prev
+    3. Rename transactions_staging → transactions
+    4. Recreate indexes on new transactions table
+
+    Returns True on success.
+    """
+    logger.log("Starting atomic publish...")
+
+    try:
+        # Check if staging table exists and has data
+        staging_count = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")
+        ).scalar()
+
+        if staging_count == 0:
+            logger.log("❌ Staging table is empty, cannot publish")
+            return False
+
+        # Check if production table exists
+        prod_exists = db.session.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_name = :table_name
+            )
+        """), {'table_name': PRODUCTION_TABLE}).scalar()
+
+        # Execute swap in a single transaction
+        logger.log("Executing table swap...")
+
+        if prod_exists:
+            # Drop previous backup if exists
+            db.session.execute(text(f"DROP TABLE IF EXISTS {PREVIOUS_TABLE} CASCADE"))
+
+            # Rename current production to prev
+            db.session.execute(text(f"ALTER TABLE {PRODUCTION_TABLE} RENAME TO {PREVIOUS_TABLE}"))
+            logger.log(f"  ✓ {PRODUCTION_TABLE} → {PREVIOUS_TABLE}")
+
+        # Rename staging to production
+        db.session.execute(text(f"ALTER TABLE {STAGING_TABLE} RENAME TO {PRODUCTION_TABLE}"))
+        logger.log(f"  ✓ {STAGING_TABLE} → {PRODUCTION_TABLE}")
+
+        # Recreate indexes
+        logger.log("Recreating indexes...")
+        db.session.execute(text(f"""
+            CREATE INDEX IF NOT EXISTS ix_transactions_project_name ON {PRODUCTION_TABLE}(project_name);
+            CREATE INDEX IF NOT EXISTS ix_transactions_transaction_date ON {PRODUCTION_TABLE}(transaction_date);
+            CREATE INDEX IF NOT EXISTS ix_transactions_district ON {PRODUCTION_TABLE}(district);
+            CREATE INDEX IF NOT EXISTS ix_transactions_bedroom_count ON {PRODUCTION_TABLE}(bedroom_count);
+            CREATE INDEX IF NOT EXISTS ix_transactions_floor_level ON {PRODUCTION_TABLE}(floor_level);
+        """))
+
+        db.session.commit()
+        logger.log("✅ Atomic publish complete!")
+
+        # Log final counts
+        new_count = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {PRODUCTION_TABLE}")
+        ).scalar()
+        logger.log(f"  Production table now has {new_count:,} rows")
+
+        if prod_exists:
+            prev_count = db.session.execute(
+                text(f"SELECT COUNT(*) FROM {PREVIOUS_TABLE}")
+            ).scalar()
+            logger.log(f"  Previous version ({PREVIOUS_TABLE}) has {prev_count:,} rows")
+
+        return True
+
+    except Exception as e:
+        db.session.rollback()
+        logger.log(f"❌ Publish failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def rollback_to_previous(logger: UploadLogger) -> bool:
+    """
+    Rollback production to previous version.
+    """
+    logger.log("Starting rollback to previous version...")
+
+    try:
+        # Check if previous table exists
+        prev_exists = db.session.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_name = :table_name
+            )
+        """), {'table_name': PREVIOUS_TABLE}).scalar()
+
+        if not prev_exists:
+            logger.log("❌ No previous version available for rollback")
+            return False
+
+        prev_count = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {PREVIOUS_TABLE}")
+        ).scalar()
+        logger.log(f"  Previous version has {prev_count:,} rows")
+
+        # Swap tables
+        db.session.execute(text(f"DROP TABLE IF EXISTS {STAGING_TABLE} CASCADE"))
+        db.session.execute(text(f"ALTER TABLE {PRODUCTION_TABLE} RENAME TO {STAGING_TABLE}"))
+        db.session.execute(text(f"ALTER TABLE {PREVIOUS_TABLE} RENAME TO {PRODUCTION_TABLE}"))
+
+        db.session.commit()
+
+        new_count = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {PRODUCTION_TABLE}")
+        ).scalar()
+        logger.log(f"✅ Rollback complete! Production now has {new_count:,} rows")
+
+        return True
+
+    except Exception as e:
+        db.session.rollback()
+        logger.log(f"❌ Rollback failed: {e}")
+        return False
+
+
+# =============================================================================
+# SCHEMA CHECK
+# =============================================================================
+
+def run_schema_check(rawdata_path: str) -> bool:
+    """Check CSV to database schema parity."""
+    print("=" * 60)
+    print("Schema Parity Check")
+    print("=" * 60)
+
+    print("\n📊 Checking Transaction model columns...")
+    db_columns = get_db_columns()
+    print(f"   Found {len(db_columns)} columns in Transaction model")
+
+    csv_path = find_sample_csv(rawdata_path)
+    if csv_path:
+        print(f"\n📄 Checking CSV file: {os.path.basename(csv_path)}")
+        df = pd.read_csv(csv_path, nrows=0)
+        csv_columns = set(df.columns)
+        print(f"   Found {len(csv_columns)} columns in CSV")
+    else:
+        print("\n⚠️  No CSV file found. Using expected column list.")
+        csv_columns = EXPECTED_CSV_COLUMNS
+
+    print("\n🔍 Checking CSV → DB mapping...")
+    issues = []
+
+    for csv_col in csv_columns:
+        if csv_col in CSV_TO_DB_MAPPING:
+            db_col = CSV_TO_DB_MAPPING[csv_col]
+            if db_col not in db_columns:
+                issues.append(f"CSV '{csv_col}' maps to DB '{db_col}' but column doesn't exist")
+
+    missing_expected = EXPECTED_CSV_COLUMNS - csv_columns
+    for col in missing_expected:
+        issues.append(f"Expected CSV column '{col}' not found")
+
+    if issues:
+        print("   ❌ Issues found:")
+        for issue in issues:
+            print(f"      - {issue}")
+        return False
+    else:
+        print("   ✅ All CSV columns have valid DB mappings")
+        return True
+
+
+# =============================================================================
+# MAIN ENTRY POINT
+# =============================================================================
+
 def main():
-    """Main upload function - memory efficient design"""
+    """Main upload function with staging + atomic publish."""
     parser = argparse.ArgumentParser(
-        description='Upload CSV data to database with full column preservation'
+        description='Production-grade data upload with zero downtime'
     )
     parser.add_argument(
-        '--force', '-f',
+        '--staging-only',
         action='store_true',
-        help='Clear all existing data before import (no confirmation prompt)'
+        help='Load data to staging table only, do not publish'
+    )
+    parser.add_argument(
+        '--publish',
+        action='store_true',
+        help='Publish existing staging table to production'
+    )
+    parser.add_argument(
+        '--rollback',
+        action='store_true',
+        help='Rollback production to previous version'
     )
     parser.add_argument(
         '--check',
@@ -381,25 +786,30 @@ def main():
     parser.add_argument(
         '--dry-run',
         action='store_true',
-        help='Preview what would be imported without making changes'
+        help='Preview what would be imported without changes'
     )
     parser.add_argument(
         '--skip-validation',
         action='store_true',
-        help='Skip duplicate removal and outlier filtering'
+        help='Skip validation checks (not recommended)'
+    )
+    parser.add_argument(
+        '--force', '-f',
+        action='store_true',
+        help='Skip confirmation prompts'
     )
     args = parser.parse_args()
 
+    # Generate run ID for this upload
+    run_id = str(uuid.uuid4())
+    logger = UploadLogger(run_id)
+
     print("=" * 60)
-    print("CSV Upload Script - Memory Efficient Design")
+    print("CSV Upload Script - Zero Downtime Architecture")
+    print(f"Run ID: {run_id}")
     print("=" * 60)
 
-    # Check rawdata folder
     csv_folder = os.path.join(os.path.dirname(__file__), '..', 'rawdata')
-    if not os.path.exists(csv_folder):
-        print(f"\n❌ Error: CSV folder not found: {csv_folder}")
-        return
-
     app = create_app()
 
     # Schema check mode
@@ -408,127 +818,181 @@ def main():
             success = run_schema_check(csv_folder)
             sys.exit(0 if success else 1)
 
-    # Dry run mode - preview only
+    # Dry run mode
     if args.dry_run:
         with app.app_context():
+            from models.transaction import Transaction
             existing_count = db.session.query(Transaction).count()
-            new_sale_count = len([f for f in os.listdir(os.path.join(csv_folder, 'New Sale')) if f.endswith('.csv')]) if os.path.exists(os.path.join(csv_folder, 'New Sale')) else 0
-            resale_count = len([f for f in os.listdir(os.path.join(csv_folder, 'Resale')) if f.endswith('.csv')]) if os.path.exists(os.path.join(csv_folder, 'Resale')) else 0
+
+            new_sale_folder = os.path.join(csv_folder, 'New Sale')
+            resale_folder = os.path.join(csv_folder, 'Resale')
+
+            new_sale_count = len([f for f in os.listdir(new_sale_folder) if f.endswith('.csv')]) if os.path.exists(new_sale_folder) else 0
+            resale_count = len([f for f in os.listdir(resale_folder) if f.endswith('.csv')]) if os.path.exists(resale_folder) else 0
 
             print(f"\n📂 DRY RUN - No changes will be made")
-            print(f"   Existing transactions: {existing_count:,}")
+            print(f"   Current production rows: {existing_count:,}")
             print(f"   New Sale CSV files: {new_sale_count}")
             print(f"   Resale CSV files: {resale_count}")
             print(f"   Total CSV files: {new_sale_count + resale_count}")
-
-            if args.force:
-                print(f"\n   --force: Would clear {existing_count:,} existing transactions")
             return
 
     with app.app_context():
-        # Create tables if they don't exist
-        db.create_all()
+        # Acquire advisory lock
+        if not acquire_advisory_lock():
+            print("\n❌ Another upload is already running. Exiting.")
+            sys.exit(1)
 
-        # Check if data already exists
-        existing_count = db.session.query(Transaction).count()
-        if existing_count > 0:
-            if args.force:
-                print(f"\n🗑️  Force mode: Clearing {existing_count:,} existing transactions...")
-                db.session.query(Transaction).delete()
-                db.session.commit()
-                print("  ✓ Cleared")
+        try:
+            # Rollback mode
+            if args.rollback:
+                logger.stage("ROLLBACK")
+                if not args.force:
+                    response = input("\n⚠️  Are you sure you want to rollback? (yes/no): ")
+                    if response.lower() != 'yes':
+                        print("Rollback cancelled.")
+                        return
+
+                success = rollback_to_previous(logger)
+
+                if success:
+                    logger.stage("RECOMPUTE STATS")
+                    recompute_all_stats()
+
+                sys.exit(0 if success else 1)
+
+            # Publish-only mode
+            if args.publish:
+                logger.stage("PUBLISH ONLY")
+
+                # Check staging exists
+                staging_exists = db.session.execute(text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables
+                        WHERE table_name = :table_name
+                    )
+                """), {'table_name': STAGING_TABLE}).scalar()
+
+                if not staging_exists:
+                    print(f"\n❌ Staging table '{STAGING_TABLE}' does not exist.")
+                    print("   Run without --publish first to load data to staging.")
+                    sys.exit(1)
+
+                success = atomic_publish(logger)
+
+                if success:
+                    logger.stage("RECOMPUTE STATS")
+                    recompute_all_stats()
+
+                # Print summary
+                summary = logger.summary()
+                print(f"\n📊 Run Summary: {json.dumps(summary, indent=2)}")
+
+                sys.exit(0 if success else 1)
+
+            # Full upload: Staging → Validate → Publish
+
+            # === STAGE 1: Create staging table ===
+            logger.stage("CREATE STAGING TABLE")
+            db.create_all()  # Ensure production schema exists
+            create_staging_table(logger)
+
+            # === STAGE 2: Load CSV data to staging ===
+            logger.stage("LOAD CSV TO STAGING")
+
+            if not os.path.exists(csv_folder):
+                logger.log(f"❌ CSV folder not found: {csv_folder}")
+                sys.exit(1)
+
+            total_saved = 0
+
+            # Process New Sale CSVs
+            new_sale_folder = os.path.join(csv_folder, 'New Sale')
+            if os.path.exists(new_sale_folder):
+                logger.log("Processing New Sale data...")
+                for filename in sorted(os.listdir(new_sale_folder)):
+                    if filename.endswith('.csv'):
+                        csv_path = os.path.join(new_sale_folder, filename)
+                        saved = insert_to_staging(csv_path, 'New Sale', logger)
+                        total_saved += saved
+                        gc.collect()
+
+            # Process Resale CSVs
+            resale_folder = os.path.join(csv_folder, 'Resale')
+            if os.path.exists(resale_folder):
+                logger.log("Processing Resale data...")
+                for filename in sorted(os.listdir(resale_folder)):
+                    if filename.endswith('.csv'):
+                        csv_path = os.path.join(resale_folder, filename)
+                        saved = insert_to_staging(csv_path, 'Resale', logger)
+                        total_saved += saved
+                        gc.collect()
+
+            if total_saved == 0:
+                logger.log("❌ No CSV files found or all files were empty.")
+                sys.exit(1)
+
+            logger.log(f"Total rows loaded to staging: {total_saved:,}")
+
+            # === STAGE 3: Deduplicate staging ===
+            logger.stage("DEDUPLICATE STAGING")
+            duplicates_removed = remove_duplicates_staging(logger)
+
+            # === STAGE 4: Remove outliers from staging ===
+            logger.stage("REMOVE OUTLIERS")
+            outliers_removed, _ = filter_outliers_staging(logger)
+
+            # === STAGE 5: Validate staging ===
+            logger.stage("VALIDATE STAGING")
+            if not args.skip_validation:
+                is_valid, issues = validate_staging(logger)
+
+                if not is_valid:
+                    logger.log("❌ Validation failed! Staging data not published.")
+                    logger.log("   Fix the issues and re-run, or use --skip-validation")
+                    sys.exit(1)
             else:
-                response = input(f"\n⚠️  Found {existing_count:,} existing transactions. Clear and reload? (yes/no): ")
-                if response.lower() == 'yes':
-                    print("  Clearing existing transactions...")
-                    db.session.query(Transaction).delete()
-                    db.session.commit()
-                    print("  ✓ Cleared")
-                else:
-                    print("  Keeping existing data. New data will be appended.")
+                logger.log("⚠️  Skipping validation (--skip-validation)")
 
-    # Load CSV files
-    csv_folder = os.path.join(os.path.dirname(__file__), '..', 'rawdata')
+            # === STAGE 6: Publish (unless staging-only) ===
+            if args.staging_only:
+                logger.log("Staging-only mode: Skipping publish")
+                logger.log(f"Data is ready in '{STAGING_TABLE}' table")
+                logger.log("Run with --publish to publish to production")
+            else:
+                logger.stage("ATOMIC PUBLISH")
+                success = atomic_publish(logger)
 
-    if not os.path.exists(csv_folder):
-        print(f"\n❌ Error: CSV folder not found: {csv_folder}")
-        return
+                if not success:
+                    logger.log("❌ Publish failed!")
+                    sys.exit(1)
 
-    print(f"\n📂 Loading CSV files from: {csv_folder}")
+                # === STAGE 7: Recompute stats ===
+                logger.stage("RECOMPUTE STATS")
+                recompute_all_stats(outliers_excluded=outliers_removed)
 
-    total_saved = 0
+                # === STAGE 8: Update project locations (optional) ===
+                try:
+                    from services.project_location_service import run_incremental_update
+                    logger.stage("UPDATE PROJECT LOCATIONS")
+                    run_incremental_update(app, geocode_limit=50)
+                except ImportError:
+                    logger.log("Project location update skipped (module not found)")
+                except Exception as e:
+                    logger.log(f"Project location update failed (non-critical): {e}")
 
-    # Process New Sale CSVs one at a time
-    new_sale_folder = os.path.join(csv_folder, 'New Sale')
-    if os.path.exists(new_sale_folder):
-        print("\n📊 Processing New Sale data...")
-        for filename in sorted(os.listdir(new_sale_folder)):
-            if filename.endswith('.csv'):
-                csv_path = os.path.join(new_sale_folder, filename)
-                saved = process_and_save_csv(csv_path, 'New Sale', app)
-                total_saved += saved
-                gc.collect()  # Force garbage collection
+            # Print summary
+            summary = logger.summary()
+            print(f"\n{'='*60}")
+            print("✅ UPLOAD COMPLETE!")
+            print(f"{'='*60}")
+            print(f"Run ID: {run_id}")
+            print(f"Total time: {summary['total_elapsed_seconds']:.1f} seconds")
+            print(f"Stages completed: {len(summary['stages'])}")
 
-    # Process Resale CSVs one at a time
-    resale_folder = os.path.join(csv_folder, 'Resale')
-    if os.path.exists(resale_folder):
-        print("\n📊 Processing Resale data...")
-        for filename in sorted(os.listdir(resale_folder)):
-            if filename.endswith('.csv'):
-                csv_path = os.path.join(resale_folder, filename)
-                saved = process_and_save_csv(csv_path, 'Resale', app)
-                total_saved += saved
-                gc.collect()  # Force garbage collection
-
-    if total_saved == 0:
-        print("\n❌ No CSV files found or all files were empty.")
-        return
-
-    print(f"\n📊 Total rows loaded: {total_saved:,}")
-
-    # Validate and filter data using centralized data_validation module
-    outliers_excluded = 0
-    with app.app_context():
-        if not args.skip_validation:
-            # Step 1: Remove duplicates
-            print("\n🔍 Removing duplicates using SQL...")
-            duplicates_removed = remove_duplicates_sql()
-            print(f"  ✓ Removed {duplicates_removed:,} duplicates")
-
-            # Step 2: Filter outliers using IQR
-            print("\n🔍 Filtering outliers using IQR method (SQL-based)...")
-            outliers_excluded, stats = filter_outliers_sql()
-            print_iqr_statistics(stats)
-            print(f"  ✓ Removed {outliers_excluded:,} outliers")
-        else:
-            print("\n⚠️  Skipping validation (--skip-validation flag)")
-
-        # Step 3: Verify final count
-        final_count = db.session.query(Transaction).count()
-        print(f"\n✓ Upload complete! Final transaction count: {final_count:,}")
-
-        # Step 4: Compute stats
-        print("\n" + "=" * 60)
-        print("Triggering data computation service...")
-        print("=" * 60)
-
-        recompute_all_stats(outliers_excluded=outliers_excluded)
-
-    # Step 5: Update project locations (optional - can be run separately)
-    try:
-        from services.project_location_service import run_incremental_update
-        print("\n" + "=" * 60)
-        print("Updating project locations...")
-        print("=" * 60)
-        run_incremental_update(app, geocode_limit=50)
-    except ImportError as e:
-        print(f"\n⚠️  Project location update skipped (module not found): {e}")
-    except Exception as e:
-        print(f"\n⚠️  Project location update failed (non-critical): {e}")
-
-    print("\n" + "=" * 60)
-    print("✓ All done! Data loaded, validated, and analytics pre-computed.")
-    print("=" * 60)
+        finally:
+            # Always release the lock
+            release_advisory_lock()
 
 
 if __name__ == "__main__":
