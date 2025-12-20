@@ -23,40 +23,42 @@ migrate = Migrate()
 
 def _run_startup_validation():
     """
-    Run data validation on startup.
+    Run READ-ONLY data validation report on startup.
 
-    Called from within create_app() so it works with gunicorn.
-    Safe to run repeatedly - if data is clean, does nothing.
+    IMPORTANT: App startup must NOT mutate the database.
+    - No DELETE, UPDATE, or INSERT operations on transactions table
+    - Outlier filtering happens ONCE during upload pipeline (staging), not here
+    - This ensures deterministic, reproducible datasets
+
+    This function only REPORTS potential issues for logging/monitoring.
     """
     from models.transaction import Transaction
-    from services.data_validation import run_all_validations
-    from services.data_computation import recompute_all_stats, get_metadata
+    from services.data_validation import run_validation_report
 
     count = db.session.query(Transaction).count()
     if count == 0:
         return  # No data to validate
 
     try:
-        # Run all validations
-        results = run_all_validations()
+        # Run READ-ONLY validation report (no mutations)
+        report = run_validation_report()
 
-        # If any data was cleaned, recompute stats
-        if results['total_cleaned'] > 0:
-            # Accumulate with previous validation counts
-            existing_metadata = get_metadata()
-            validation_results = {
-                'invalid_removed': existing_metadata.get('invalid_removed', 0) + results['invalid_removed'],
-                'duplicates_removed': existing_metadata.get('duplicates_removed', 0) + results['duplicates_removed'],
-                'outliers_removed': existing_metadata.get('outliers_excluded', 0) + results['outliers_removed'],
-            }
-
-            total_removed = validation_results['invalid_removed'] + validation_results['duplicates_removed'] + validation_results['outliers_removed']
-            print(f"   Recomputing stats (total records removed: {total_removed:,})...")
-            recompute_all_stats(validation_results)
-            print(f"   ✓ Stats recomputed")
+        # Log the report (informational only)
+        if report['is_clean']:
+            print(f"   ✓ Data validation: {report['total_count']:,} records, all clean")
+        else:
+            issues = report['potential_issues']
+            print(f"   ℹ️  Data validation report ({report['total_count']:,} records):")
+            if issues['invalid_records'] > 0:
+                print(f"      - Invalid records: {issues['invalid_records']:,}")
+            if issues['potential_duplicates'] > 0:
+                print(f"      - Potential duplicates: {issues['potential_duplicates']:,}")
+            if issues['potential_outliers'] > 0:
+                print(f"      - Potential outliers: {issues['potential_outliers']:,}")
+            print(f"      Note: Run upload script to clean data if needed")
 
     except Exception as e:
-        print(f"\n⚠️  Auto-validation skipped: {e}")
+        print(f"\n⚠️  Validation report skipped: {e}")
         # Don't fail startup if validation fails
 
 

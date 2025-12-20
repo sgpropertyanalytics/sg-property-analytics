@@ -347,7 +347,10 @@ def run_all_validations() -> Dict[str, Any]:
     """
     Run all data validation and cleaning operations.
 
-    This is the main entry point for data validation on startup.
+    DEPRECATED: Use run_validation_report() for read-only checks on startup.
+    This function mutates the database and should only be called from upload scripts.
+
+    This is the main entry point for data validation during uploads.
     Runs all checks in order:
     1. Remove invalid/corrupted records
     2. Remove duplicates
@@ -425,3 +428,93 @@ def run_all_validations() -> Dict[str, Any]:
         print(f"   ✓ Total cleaned: {results['total_cleaned']:,} records")
 
     return results
+
+
+def run_validation_report() -> Dict[str, Any]:
+    """
+    Read-only data validation report - NO DATABASE MUTATIONS.
+
+    This function is safe to call on app startup. It only reports
+    potential issues without modifying any data.
+
+    Outlier filtering happens ONCE during the upload pipeline (staging),
+    not on app startup. This ensures deterministic, reproducible datasets.
+
+    Returns:
+        Dictionary with validation report:
+        {
+            'total_count': int,
+            'potential_issues': {
+                'invalid_records': int,
+                'potential_duplicates': int,
+                'potential_outliers': int,
+            },
+            'iqr_stats': dict,
+            'is_clean': bool
+        }
+    """
+    report = {
+        'total_count': 0,
+        'potential_issues': {
+            'invalid_records': 0,
+            'potential_duplicates': 0,
+            'potential_outliers': 0,
+        },
+        'iqr_stats': {},
+        'is_clean': True
+    }
+
+    total_count = db.session.query(Transaction).count()
+    report['total_count'] = total_count
+
+    if total_count == 0:
+        return report
+
+    # Check for invalid records (READ-ONLY - just count)
+    try:
+        invalid_sql = text("""
+            SELECT COUNT(*) FROM transactions
+            WHERE price IS NULL OR price <= 0
+               OR area_sqft IS NULL OR area_sqft <= 0
+               OR psf IS NULL OR psf <= 0
+               OR project_name IS NULL
+        """)
+        invalid_count = db.session.execute(invalid_sql).scalar()
+        report['potential_issues']['invalid_records'] = invalid_count
+    except Exception:
+        pass
+
+    # Check for potential duplicates (READ-ONLY - just count)
+    try:
+        # Count records that would be duplicates
+        dup_sql = text("""
+            SELECT COUNT(*) - COUNT(DISTINCT (project_name, transaction_date, price, area_sqft))
+            FROM transactions
+        """)
+        # Simpler approach - count total minus distinct combinations
+        total = db.session.execute(text("SELECT COUNT(*) FROM transactions")).scalar()
+        distinct = db.session.execute(text("""
+            SELECT COUNT(*) FROM (
+                SELECT DISTINCT project_name, transaction_date, price, area_sqft
+                FROM transactions
+            ) t
+        """)).scalar()
+        dup_count = total - distinct
+        report['potential_issues']['potential_duplicates'] = dup_count
+    except Exception:
+        pass
+
+    # Check for potential outliers (READ-ONLY - just count)
+    try:
+        lower_bound, upper_bound, iqr_stats = calculate_iqr_bounds()
+        outlier_count = count_outliers(lower_bound, upper_bound)
+        report['potential_issues']['potential_outliers'] = outlier_count
+        report['iqr_stats'] = iqr_stats
+    except Exception:
+        pass
+
+    # Determine if data is clean
+    total_issues = sum(report['potential_issues'].values())
+    report['is_clean'] = total_issues == 0
+
+    return report
