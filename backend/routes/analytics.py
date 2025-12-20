@@ -292,7 +292,7 @@ def filter_outliers_endpoint():
             outliers_removed, filter_stats = filter_outliers_sql()
 
             # Recompute stats with outlier count
-            recompute_all_stats(outliers_excluded=outliers_removed)
+            recompute_all_stats({'outliers_removed': outliers_removed})
 
             response_data["action"] = "deleted"
             response_data["outliers_removed"] = outliers_removed

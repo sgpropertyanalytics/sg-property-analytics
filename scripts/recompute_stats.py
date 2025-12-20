@@ -47,16 +47,30 @@ def main():
             print("   Please run: python scripts/upload.py first")
             return
 
-        # Preserve existing outliers_excluded count from metadata
+        # Preserve existing validation counts from metadata
         existing_metadata = get_metadata()
-        outliers_excluded = existing_metadata.get('outliers_excluded', 0)
+        invalid_removed = existing_metadata.get('invalid_removed', 0)
+        duplicates_removed = existing_metadata.get('duplicates_removed', 0)
+        outliers_removed = existing_metadata.get('outliers_excluded', 0)
+        total_removed = invalid_removed + duplicates_removed + outliers_removed
 
         print(f"\n📊 Found {count:,} transactions in database")
-        if outliers_excluded > 0:
-            print(f"   Preserving outliers_excluded count: {outliers_excluded:,}")
+        if total_removed > 0:
+            print(f"   Preserving validation counts:")
+            if invalid_removed > 0:
+                print(f"     - Invalid removed: {invalid_removed:,}")
+            if duplicates_removed > 0:
+                print(f"     - Duplicates removed: {duplicates_removed:,}")
+            if outliers_removed > 0:
+                print(f"     - Outliers removed: {outliers_removed:,}")
         print("   Starting data computation...\n")
 
-        recompute_all_stats(outliers_excluded=outliers_excluded)
+        validation_results = {
+            'invalid_removed': invalid_removed,
+            'duplicates_removed': duplicates_removed,
+            'outliers_removed': outliers_removed
+        }
+        recompute_all_stats(validation_results)
 
         print("\n" + "=" * 60)
         print("✓ Data computation complete!")

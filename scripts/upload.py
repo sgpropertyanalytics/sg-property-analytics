@@ -946,7 +946,15 @@ def main():
 
                 if success:
                     logger.stage("RECOMPUTE STATS")
-                    recompute_all_stats()
+                    # Preserve existing validation counts (we don't know counts for rolled-back data)
+                    from services.data_computation import get_metadata
+                    existing_metadata = get_metadata()
+                    validation_results = {
+                        'invalid_removed': existing_metadata.get('invalid_removed', 0),
+                        'duplicates_removed': existing_metadata.get('duplicates_removed', 0),
+                        'outliers_removed': existing_metadata.get('outliers_excluded', 0)
+                    }
+                    recompute_all_stats(validation_results)
                     exit_code = 0
                 else:
                     exit_code = 1
@@ -974,7 +982,15 @@ def main():
 
                 if success:
                     logger.stage("RECOMPUTE STATS")
-                    recompute_all_stats()
+                    # Preserve existing validation counts (staging validation happened in separate run)
+                    from services.data_computation import get_metadata
+                    existing_metadata = get_metadata()
+                    validation_results = {
+                        'invalid_removed': existing_metadata.get('invalid_removed', 0),
+                        'duplicates_removed': existing_metadata.get('duplicates_removed', 0),
+                        'outliers_removed': existing_metadata.get('outliers_excluded', 0)
+                    }
+                    recompute_all_stats(validation_results)
                     exit_code = 0
                 else:
                     exit_code = 1
@@ -1068,7 +1084,11 @@ def main():
 
                 # STAGE 7: Recompute stats
                 logger.stage("RECOMPUTE STATS")
-                recompute_all_stats()
+                validation_results = {
+                    'duplicates_removed': duplicates_removed,
+                    'outliers_removed': outliers_removed
+                }
+                recompute_all_stats(validation_results)
 
                 # STAGE 8: Update project locations (optional)
                 try:
