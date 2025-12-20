@@ -15,6 +15,9 @@ import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
 import { KPICard } from '../components/ui';
+// View toggle and Value Parity components
+import { ViewToggle } from '../components/ViewToggle';
+import { ValueParityPanel } from '../components/ValueParityPanel';
 
 /**
  * Macro Overview Page - Power BI-style Dashboard
@@ -27,8 +30,10 @@ import { KPICard } from '../components/ui';
  *   - Location: region -> district (global hierarchy stops here)
  * - Project drill-through: Opens ProjectDetailPanel without affecting global charts
  * - Drill-through to transaction details
+ * - View Toggle: Analytics (dashboard) vs Value Parity (budget search)
  */
-function MacroOverviewContent() {
+function MacroOverviewContent({ view = 'analytics' }) {
+  const isValueParity = view === 'value-parity';
   const { apiMetadata } = useData();
   const {
     crossFilter,
@@ -106,8 +111,8 @@ function MacroOverviewContent() {
 
   return (
     <div className="flex h-screen bg-[#EAE0CF]/30">
-      {/* Filter Sidebar - Hidden on mobile, shown on lg+ */}
-      <div className="hidden lg:block">
+      {/* Filter Sidebar - Hidden on mobile, shown on lg+ | Hidden when in Value Parity view */}
+      <div className={`hidden lg:block transition-all duration-200 ${isValueParity ? 'lg:hidden' : ''}`}>
         <PowerBIFilterSidebar
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -116,22 +121,34 @@ function MacroOverviewContent() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        {/* Mobile Filter Toggle - Shows on mobile/tablet only */}
-        <div className="lg:hidden sticky top-0 z-40 bg-[#213448] px-3 py-2 flex items-center justify-between">
-          <button
-            onClick={() => setMobileDrawerOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 bg-[#547792]/30 text-white rounded-lg text-sm min-h-[44px]"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            <span>Filters</span>
-          </button>
-          <h1 className="text-white font-semibold text-sm truncate ml-3">SG Property Analytics</h1>
+        {/* Mobile Header - Shows on mobile/tablet only */}
+        <div className="lg:hidden sticky top-0 z-40 bg-[#213448] px-3 py-2">
+          <div className="flex items-center justify-between">
+            {/* Filter button - only show in Analytics view */}
+            {!isValueParity ? (
+              <button
+                onClick={() => setMobileDrawerOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-[#547792]/30 text-white rounded-lg text-sm min-h-[44px]"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                <span>Filters</span>
+              </button>
+            ) : (
+              <div /> // Spacer for alignment
+            )}
+            <h1 className="text-white font-semibold text-sm truncate">SG Property Analytics</h1>
+            <div /> {/* Spacer for alignment */}
+          </div>
+          {/* Mobile View Toggle - full width below header */}
+          <div className="mt-2 flex justify-center">
+            <ViewToggle />
+          </div>
         </div>
 
-        {/* Mobile Sidebar Drawer - uses separate state, closed by default */}
-        {mobileDrawerOpen && (
+        {/* Mobile Sidebar Drawer - uses separate state, closed by default | Only in Analytics view */}
+        {mobileDrawerOpen && !isValueParity && (
           <div className="lg:hidden fixed inset-0 z-50">
             <div className="absolute inset-0 bg-black/50" onClick={() => setMobileDrawerOpen(false)} />
             <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] animate-slide-in-left">
@@ -148,7 +165,9 @@ function MacroOverviewContent() {
           <div className="mb-4 md:mb-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-2">
               <div className="min-w-0">
-                <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">Singapore Property Market Analytics</h1>
+                <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
+                  {isValueParity ? 'Value Parity Tool' : 'Singapore Property Market Analytics'}
+                </h1>
                 {/* Data source info - shows raw database count and date range */}
                 {apiMetadata && (
                   <p className="text-[#547792] text-xs md:text-sm italic truncate">
@@ -170,9 +189,13 @@ function MacroOverviewContent() {
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Highlight indicator (visual emphasis on time, no filtering) */}
-                {highlight.value && (
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Desktop View Toggle - hidden on mobile (shown in mobile header above) */}
+                <div className="hidden lg:block">
+                  <ViewToggle />
+                </div>
+                {/* Highlight indicator (visual emphasis on time, no filtering) - only in Analytics view */}
+                {!isValueParity && highlight.value && (
                   <button
                     onClick={clearHighlight}
                     className="flex items-center gap-2 px-3 py-1.5 bg-[#213448]/10 text-[#213448] rounded-lg hover:bg-[#213448]/20 transition-colors text-sm border border-[#213448]/20"
@@ -187,8 +210,8 @@ function MacroOverviewContent() {
                     </svg>
                   </button>
                 )}
-                {/* Cross-filter indicator (actual data filtering) */}
-                {crossFilter.value && (
+                {/* Cross-filter indicator (actual data filtering) - only in Analytics view */}
+                {!isValueParity && crossFilter.value && (
                   <button
                     onClick={clearCrossFilter}
                     className="flex items-center gap-2 px-3 py-1.5 bg-[#547792]/20 text-[#213448] rounded-lg hover:bg-[#547792]/30 transition-colors text-sm"
@@ -202,117 +225,130 @@ function MacroOverviewContent() {
               </div>
             </div>
 
-            {/* Breadcrumb navigation */}
-            <DrillBreadcrumb />
+            {/* Breadcrumb navigation - only in Analytics view */}
+            {!isValueParity && <DrillBreadcrumb />}
           </div>
 
-          {/* KPI Summary Cards - Last 30 Days Market Snapshot */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
-            <KPICard
-              title="Total New Sales"
-              subtitle="past 30 days"
-              value={kpis.newSalesCount.toLocaleString()}
-              loading={kpis.loading}
-              icon={
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              }
-            />
-            <KPICard
-              title="Total Resales"
-              subtitle="past 30 days"
-              value={kpis.resalesCount.toLocaleString()}
-              loading={kpis.loading}
-              icon={
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              }
-            />
-            <KPICard
-              title="Total Quantum Value"
-              subtitle="past 30 days"
-              value={kpis.totalQuantum >= 1000000000
-                ? `$${(kpis.totalQuantum / 1000000000).toFixed(2)}B`
-                : `$${(kpis.totalQuantum / 1000000).toFixed(0)}M`
-              }
-              loading={kpis.loading}
-              className="col-span-2 md:col-span-1"
-              icon={
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              }
-            />
-          </div>
-
-          {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
-            {/* Time Trend Chart - Full width on all screens */}
-            <div className="lg:col-span-2">
-              {/* Chart component - DO NOT MODIFY PROPS (ui-freeze) */}
-              <TimeTrendChart
-                onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
-                height={280}
-              />
+          {/* Conditional Content based on view */}
+          {isValueParity ? (
+            /* Value Parity View - Budget search tool */
+            <div className="animate-view-enter">
+              <ValueParityPanel />
             </div>
+          ) : (
+            /* Analytics View - Dashboard with charts */
+            <div className="animate-view-enter">
+              {/* KPI Summary Cards - Last 30 Days Market Snapshot */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
+                <KPICard
+                  title="Total New Sales"
+                  subtitle="past 30 days"
+                  value={kpis.newSalesCount.toLocaleString()}
+                  loading={kpis.loading}
+                  icon={
+                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  }
+                />
+                <KPICard
+                  title="Total Resales"
+                  subtitle="past 30 days"
+                  value={kpis.resalesCount.toLocaleString()}
+                  loading={kpis.loading}
+                  icon={
+                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  }
+                />
+                <KPICard
+                  title="Total Quantum Value"
+                  subtitle="past 30 days"
+                  value={kpis.totalQuantum >= 1000000000
+                    ? `$${(kpis.totalQuantum / 1000000000).toFixed(2)}B`
+                    : `$${(kpis.totalQuantum / 1000000).toFixed(0)}M`
+                  }
+                  loading={kpis.loading}
+                  className="col-span-2 md:col-span-1"
+                  icon={
+                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  }
+                />
+              </div>
 
-            {/* Volume by Location - Chart component unchanged */}
-            <VolumeByLocationChart
-              onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
-              height={350}
-              maxBars={12}
-            />
+              {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+                {/* Time Trend Chart - Full width on all screens */}
+                <div className="lg:col-span-2">
+                  {/* Chart component - DO NOT MODIFY PROPS (ui-freeze) */}
+                  <TimeTrendChart
+                    onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
+                    height={280}
+                  />
+                </div>
 
-            {/* Price Distribution - Chart component unchanged */}
-            <PriceDistributionChart
-              onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
-              height={350}
-            />
+                {/* Volume by Location - Chart component unchanged */}
+                <VolumeByLocationChart
+                  onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
+                  height={350}
+                  maxBars={12}
+                />
 
-            {/* New Launch vs Resale Comparison - Full width */}
-            <div className="lg:col-span-2">
-              <NewVsResaleChart height={350} />
+                {/* Price Distribution - Chart component unchanged */}
+                <PriceDistributionChart
+                  onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
+                  height={350}
+                />
+
+                {/* New Launch vs Resale Comparison - Full width */}
+                <div className="lg:col-span-2">
+                  <NewVsResaleChart height={350} />
+                </div>
+              </div>
+
+              {/* GLS Data Table - Government Land Sales */}
+              <div className="mb-4 md:mb-6">
+                <GLSDataTable height={350} />
+              </div>
+
+              {/* 2026 New Launch Projects Table */}
+              <div className="mb-4 md:mb-6">
+                <NewLaunchDataTable height={350} />
+              </div>
+
+              {/* Transaction Data Table - Component unchanged */}
+              <div className="mb-4 md:mb-6">
+                <TransactionDataTable height={400} />
+              </div>
             </div>
-          </div>
-
-          {/* GLS Data Table - Government Land Sales */}
-          <div className="mb-4 md:mb-6">
-            <GLSDataTable height={350} />
-          </div>
-
-          {/* 2026 New Launch Projects Table */}
-          <div className="mb-4 md:mb-6">
-            <NewLaunchDataTable height={350} />
-          </div>
-
-          {/* Transaction Data Table - Component unchanged */}
-          <div className="mb-4 md:mb-6">
-            <TransactionDataTable height={400} />
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Transaction Detail Modal */}
-      <TransactionDetailModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={modalTitle}
-        additionalFilters={modalFilters}
-      />
+      {/* Transaction Detail Modal - only in Analytics view */}
+      {!isValueParity && (
+        <TransactionDetailModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title={modalTitle}
+          additionalFilters={modalFilters}
+        />
+      )}
 
-      {/* Project Detail Panel - Drill-through view (does NOT affect global charts) */}
-      <ProjectDetailPanel />
+      {/* Project Detail Panel - Drill-through view (does NOT affect global charts) - only in Analytics view */}
+      {!isValueParity && <ProjectDetailPanel />}
     </div>
   );
 }
 
 // Export wrapped with provider
-export default function MacroOverview() {
+export default function MacroOverview({ view = 'analytics' }) {
   return (
     <PowerBIFilterProvider>
-      <MacroOverviewContent />
+      <MacroOverviewContent view={view} />
     </PowerBIFilterProvider>
   );
 }

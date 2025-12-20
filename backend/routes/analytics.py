@@ -1383,7 +1383,8 @@ def aggregate():
 @analytics_bp.route("/transactions/list", methods=["GET"])
 def transactions_list():
     """
-    Paginated transaction list endpoint for drill-through and histogram analysis.
+    Paginated transaction list endpoint for drill-through, histogram analysis,
+    and Value Parity Tool budget search.
 
     Query params:
       - Same filters as /aggregate
@@ -1391,6 +1392,9 @@ def transactions_list():
       - limit: records per page (default 50, max 10000 for histogram use cases)
       - sort_by: column to sort (default transaction_date)
       - sort_order: asc or desc (default desc)
+      - price_min: minimum price filter (for budget search)
+      - price_max: maximum price filter (for budget search)
+      - lease_age: lease age range filter (0-5, 5-10, 10-20, 20+)
 
     Returns:
       {
@@ -1485,6 +1489,31 @@ def transactions_list():
         query = query.filter(Transaction.area_sqft >= float(size_min))
     if size_max:
         query = query.filter(Transaction.area_sqft <= float(size_max))
+
+    # Price range filter (for Value Parity Tool budget filter)
+    price_min = request.args.get("price_min")
+    price_max = request.args.get("price_max")
+    if price_min:
+        query = query.filter(Transaction.price >= float(price_min))
+    if price_max:
+        query = query.filter(Transaction.price <= float(price_max))
+
+    # Lease age filter (years since lease started)
+    lease_age = request.args.get("lease_age")
+    if lease_age:
+        from datetime import datetime
+        current_year = datetime.now().year
+        if lease_age == "0-5":
+            # Lease started within last 5 years
+            query = query.filter(Transaction.lease_start_year >= current_year - 5)
+        elif lease_age == "5-10":
+            query = query.filter(Transaction.lease_start_year >= current_year - 10)
+            query = query.filter(Transaction.lease_start_year < current_year - 5)
+        elif lease_age == "10-20":
+            query = query.filter(Transaction.lease_start_year >= current_year - 20)
+            query = query.filter(Transaction.lease_start_year < current_year - 10)
+        elif lease_age == "20+":
+            query = query.filter(Transaction.lease_start_year < current_year - 20)
 
     # Tenure filter
     tenure = request.args.get("tenure")

@@ -81,6 +81,92 @@ canvas {
   animation: fade-in 0.2s ease-out;
 }
 
+/* View enter animation - for Analytics/Value Parity view transitions */
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-view-enter {
+  animation: view-enter 0.15s ease-out;
+}
+
+/* ====== Budget Slider Styling ====== */
+
+/* Custom slider thumb styling - teal only at extreme 15% ends */
+input[type="range"].slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(to right,
+    #94B4C1 0%,
+    #94B4C1 15%,
+    #213448 15%,
+    #213448 85%,
+    #94B4C1 85%,
+    #94B4C1 100%
+  );
+  background-size: 100% 100%;
+  border-radius: 0.5rem;
+  height: 8px;
+}
+
+input[type="range"].slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #213448;
+  border: 3px solid white;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 6px rgba(33, 52, 72, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"].slider-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(33, 52, 72, 0.4);
+}
+
+input[type="range"].slider-thumb::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+}
+
+input[type="range"].slider-thumb::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #213448;
+  border: 3px solid white;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 6px rgba(33, 52, 72, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"].slider-thumb::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(33, 52, 72, 0.4);
+}
+
+input[type="range"].slider-thumb::-moz-range-track {
+  background: #94B4C1;
+  border-radius: 0.5rem;
+  height: 8px;
+}
+
+input[type="range"].slider-thumb::-moz-range-progress {
+  background: #213448;
+  border-radius: 0.5rem;
+  height: 8px;
+}
+
 /* ====== Responsive Layout Utilities ====== */
 
 /* Hide scrollbars but allow scrolling */
