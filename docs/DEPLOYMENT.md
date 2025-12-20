@@ -59,17 +59,13 @@ All migrations are **idempotent** - safe to run multiple times.
 
 For each deploy, Render should:
 
-1. **Run migrations** (add to Build Command or use a release command)
+1. **Run migrations** (in Start Command, NOT Build Command)
 2. **Start the app**
 
-#### Option A: Build Command (Simple)
+> **Important:** Do NOT run migrations in Build Command. The build environment
+> may not have network access to your database. Always run migrations at runtime.
 
-In Render dashboard, set Build Command:
-```bash
-pip install -r requirements.txt && psql "$DATABASE_URL" -f backend/migrations/001_add_all_missing_columns.sql
-```
-
-#### Option B: Startup Script (Recommended)
+#### Startup Script (Recommended)
 
 Create `scripts/start.sh`:
 ```bash
@@ -83,22 +79,30 @@ echo "Starting application..."
 cd backend && gunicorn app:app --bind 0.0.0.0:$PORT
 ```
 
-Set Start Command: `bash scripts/start.sh`
+Set Start Command in Render: `bash scripts/start.sh`
+
+#### Alternative: Inline Start Command
+
+If you prefer not to create a script:
+```bash
+psql "$DATABASE_URL" -f backend/migrations/001_add_all_missing_columns.sql && cd backend && gunicorn app:app --bind 0.0.0.0:$PORT
+```
 
 ## Schema Check on Startup
 
-The app automatically checks schema on startup and reports any drift:
+The app automatically checks schema on startup and **fails fast** if critical columns are missing.
 
+**Healthy startup:**
 ```
 ✓ Database initialized - using SQL-only aggregation for memory efficiency
    Database: sg_property_db @ dpg-xxx.render.com:5432
    ✓ Schema check passed
 ```
 
-If schema drift is detected:
+**Schema drift detected (app will NOT start):**
 ```
 ============================================================
-SCHEMA DRIFT DETECTED - Database schema out of sync
+FATAL: SCHEMA DRIFT DETECTED
 ============================================================
 
 Missing critical columns:
@@ -106,10 +110,15 @@ Missing critical columns:
    - new_launches.data_source
 
 ------------------------------------------------------------
-TO FIX: Run migrations against this database:
+TO FIX: Run migrations before starting the app:
    psql "$DATABASE_URL" -f backend/migrations/001_add_all_missing_columns.sql
 ------------------------------------------------------------
+
+RuntimeError: Schema drift: 0 missing tables, 2 missing critical columns.
+Run migrations before starting the app.
 ```
+
+This **hard fail** behavior prevents serving broken APIs with silent 500 errors.
 
 ## Troubleshooting
 

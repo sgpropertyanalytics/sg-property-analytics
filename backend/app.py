@@ -148,7 +148,7 @@ def create_app():
 
             if not schema_report['is_valid']:
                 print("\n" + "=" * 60)
-                print("SCHEMA DRIFT DETECTED - Database schema out of sync")
+                print("FATAL: SCHEMA DRIFT DETECTED")
                 print("=" * 60)
 
                 # Show missing tables
@@ -173,15 +173,24 @@ def create_app():
                         print(f"   ... and {len(warnings) - 5} more")
 
                 print("\n" + "-" * 60)
-                print("TO FIX: Run migrations against this database:")
+                print("TO FIX: Run migrations before starting the app:")
                 print("   psql \"$DATABASE_URL\" -f backend/migrations/001_add_all_missing_columns.sql")
                 print("-" * 60 + "\n")
 
-                # In production, we continue but log the warning
-                # The app will still work for endpoints that don't use missing columns
+                # HARD FAIL: Don't serve broken APIs
+                # This prevents silent 500 errors from missing columns
+                raise RuntimeError(
+                    f"Schema drift: {len(schema_report['missing_tables'])} missing tables, "
+                    f"{len(critical)} missing critical columns. "
+                    "Run migrations before starting the app."
+                )
             else:
                 print("   ✓ Schema check passed")
+        except RuntimeError:
+            # Re-raise schema errors (don't catch our own RuntimeError)
+            raise
         except Exception as e:
+            # Other errors (e.g., can't connect to check schema) - warn but continue
             print(f"   ⚠️  Schema check skipped: {e}")
 
         # Auto-validate data on startup (self-healing)
