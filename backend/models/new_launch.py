@@ -89,6 +89,10 @@ class NewLaunch(db.Model):
     needs_review = db.Column(db.Boolean, default=False, index=True)
     review_reason = db.Column(db.Text)
 
+    # Data provenance (Excel-based curation)
+    data_source = db.Column(db.String(255))  # e.g., "EdgeProp, URA press release"
+    data_confidence = db.Column(db.String(20))  # 'high', 'medium', 'low'
+
     # Validation timestamps
     last_scraped = db.Column(db.DateTime, default=datetime.utcnow)
     last_validated = db.Column(db.DateTime)  # For bi-weekly validation job
@@ -138,6 +142,8 @@ class NewLaunch(db.Model):
             'land_bid_psf': float(self.land_bid_psf) if self.land_bid_psf else None,
             'needs_review': self.needs_review,
             'review_reason': self.review_reason,
+            'data_source': self.data_source,
+            'data_confidence': self.data_confidence,
             'last_validated': self.last_validated.isoformat() if self.last_validated else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,

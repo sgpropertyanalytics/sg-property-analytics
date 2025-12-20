@@ -19,6 +19,7 @@ Discrepancy Tolerance:
 - developer: Exact match → Flag immediately
 """
 import re
+import sys
 import requests
 from datetime import datetime
 from typing import Optional, Dict, List, Any, Tuple
@@ -1417,6 +1418,184 @@ def validate_new_launches(db_session=None) -> Dict[str, Any]:
     print(f"Flagged for review: {stats['flagged_for_review']}")
 
     return stats
+
+
+# =============================================================================
+# SUGGESTION GENERATOR (Scraper as diff tool)
+# =============================================================================
+
+def generate_suggestions(
+    target_year: int = 2026,
+    db_session=None
+) -> Dict[str, Any]:
+    """
+    Run scraper and generate suggestions for human review.
+
+    Instead of saving directly to database, this compares scraped data
+    against existing records and outputs a diff for human approval.
+
+    Returns:
+        Dict with:
+        - new_projects: Projects found in scrape but not in DB
+        - updated_projects: Projects with changed data
+        - removed_projects: Projects in DB but not found in scrape
+        - unchanged: Count of unchanged projects
+    """
+    from models.new_launch import NewLaunch
+    from models.database import db
+
+    if db_session is None:
+        db_session = db.session
+
+    suggestions = {
+        'timestamp': datetime.utcnow().isoformat(),
+        'target_year': target_year,
+        'new_projects': [],
+        'updated_projects': [],
+        'removed_projects': [],
+        'unchanged_count': 0,
+        'sources_scraped': {
+            'edgeprop': 0,
+            'propnex': 0,
+            'era': 0,
+        },
+        'warnings': [],
+    }
+
+    print(f"\n{'='*60}", file=sys.stderr)
+    print(f"Generating Suggestions for {target_year}", file=sys.stderr)
+    print(f"{'='*60}", file=sys.stderr)
+
+    # Scrape all sources
+    edgeprop_projects = scrape_edgeprop(target_year)
+    suggestions['sources_scraped']['edgeprop'] = len(edgeprop_projects)
+    time.sleep(RATE_LIMIT_DELAY)
+
+    propnex_projects = scrape_propnex(target_year)
+    suggestions['sources_scraped']['propnex'] = len(propnex_projects)
+    time.sleep(RATE_LIMIT_DELAY)
+
+    era_projects = scrape_era(target_year)
+    suggestions['sources_scraped']['era'] = len(era_projects)
+
+    # Merge scraped projects
+    scraped = {}
+    for p in edgeprop_projects + propnex_projects + era_projects:
+        name = normalize_project_name(p.get('project_name', ''))
+        if name:
+            if name not in scraped:
+                scraped[name] = {'sources': [], 'data': {}}
+            scraped[name]['sources'].append(p.get('source', 'unknown'))
+            # Merge data (later sources override earlier)
+            scraped[name]['data'].update(p)
+
+    # Load existing data from database
+    existing = {}
+    for launch in db_session.query(NewLaunch).filter(NewLaunch.launch_year == target_year).all():
+        name = normalize_project_name(launch.project_name)
+        existing[name] = launch
+
+    # Compare and generate suggestions
+    scraped_names = set(scraped.keys())
+    existing_names = set(existing.keys())
+
+    # New projects (in scraped but not in DB)
+    for name in scraped_names - existing_names:
+        project = scraped[name]
+        suggestions['new_projects'].append({
+            'project_name': project['data'].get('project_name'),
+            'scraped_data': project['data'],
+            'sources': project['sources'],
+            'confidence': 'low',  # Scraped data starts at low confidence
+            'action': 'ADD',
+            'reason': f"New project found in {', '.join(set(project['sources']))}",
+        })
+
+    # Potentially removed projects (in DB but not in scraped)
+    for name in existing_names - scraped_names:
+        launch = existing[name]
+        # Don't suggest removal if data is high-confidence or manually entered
+        if launch.data_confidence == 'high':
+            suggestions['warnings'].append(
+                f"'{launch.project_name}' not found in scrape but has high-confidence data - keeping"
+            )
+            continue
+
+        suggestions['removed_projects'].append({
+            'project_name': launch.project_name,
+            'current_data': {
+                'developer': launch.developer,
+                'total_units': launch.total_units,
+                'psf_low': float(launch.indicative_psf_low) if launch.indicative_psf_low else None,
+                'psf_high': float(launch.indicative_psf_high) if launch.indicative_psf_high else None,
+                'data_source': launch.data_source,
+                'data_confidence': launch.data_confidence,
+            },
+            'action': 'REMOVE?',
+            'reason': "Not found in any scrape source - verify if project cancelled or renamed",
+        })
+
+    # Updated projects (in both, check for changes)
+    for name in scraped_names & existing_names:
+        project = scraped[name]
+        launch = existing[name]
+        changes = []
+
+        # Check total_units
+        scraped_units = project['data'].get('total_units')
+        if scraped_units and launch.total_units:
+            diff = abs(scraped_units - launch.total_units)
+            if diff > TOLERANCE['total_units']:
+                changes.append({
+                    'field': 'total_units',
+                    'current': launch.total_units,
+                    'scraped': scraped_units,
+                    'diff': diff,
+                })
+
+        # Check PSF
+        scraped_psf = project['data'].get('psf_low')
+        if scraped_psf and launch.indicative_psf_low:
+            diff = abs(scraped_psf - float(launch.indicative_psf_low))
+            if diff > TOLERANCE['indicative_psf']:
+                changes.append({
+                    'field': 'indicative_psf_low',
+                    'current': float(launch.indicative_psf_low),
+                    'scraped': scraped_psf,
+                    'diff': diff,
+                })
+
+        # Check developer
+        scraped_dev = project['data'].get('developer', '').lower().strip()
+        current_dev = (launch.developer or '').lower().strip()
+        if scraped_dev and current_dev and scraped_dev != current_dev:
+            # Check if one contains the other (e.g., "UOL" vs "UOL Group")
+            if scraped_dev not in current_dev and current_dev not in scraped_dev:
+                changes.append({
+                    'field': 'developer',
+                    'current': launch.developer,
+                    'scraped': project['data'].get('developer'),
+                })
+
+        if changes:
+            suggestions['updated_projects'].append({
+                'project_name': launch.project_name,
+                'changes': changes,
+                'sources': project['sources'],
+                'current_confidence': launch.data_confidence,
+                'action': 'UPDATE?',
+                'reason': f"Data differs in scrape from {', '.join(set(project['sources']))}",
+            })
+        else:
+            suggestions['unchanged_count'] += 1
+
+    print(f"\nSuggestions generated:", file=sys.stderr)
+    print(f"  New: {len(suggestions['new_projects'])}", file=sys.stderr)
+    print(f"  Updates: {len(suggestions['updated_projects'])}", file=sys.stderr)
+    print(f"  Removals: {len(suggestions['removed_projects'])}", file=sys.stderr)
+    print(f"  Unchanged: {suggestions['unchanged_count']}", file=sys.stderr)
+
+    return suggestions
 
 
 # =============================================================================

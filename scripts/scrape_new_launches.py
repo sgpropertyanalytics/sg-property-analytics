@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
 """
-CLI runner for new launches scraper.
+CLI runner for new launches data management.
 
-Scrapes 2026 private condo launches from 3 sources:
-- EdgeProp (primary, research-grade)
-- PropNex (agency source)
-- ERA (agency source)
+Primary method: Excel import (source-of-truth)
+    python scripts/scrape_new_launches.py --excel data/new_launches_2026.xlsx
+
+Fallback: Seed data
+    python scripts/scrape_new_launches.py --seed
+
+Optional: Scraper as suggestion generator
+    python scripts/scrape_new_launches.py --suggest   # Generate suggestions only
+
+Legacy: Direct scraping (not recommended)
+    python scripts/scrape_new_launches.py             # Scrape from web sources
 
 Uses Playwright for JavaScript rendering. Install with:
     pip install playwright && playwright install chromium
 
-Cross-validates data and stores in database.
-
 Usage:
-    python scripts/scrape_new_launches.py                # Scrape from web sources
-    python scripts/scrape_new_launches.py --seed         # Load seed data (fallback)
-    python scripts/scrape_new_launches.py --seed --reset # Reset and reload seed data
+    python scripts/scrape_new_launches.py --excel data/new_launches_2026.xlsx
+    python scripts/scrape_new_launches.py --excel data/new_launches_2026.xlsx --reset
+    python scripts/scrape_new_launches.py --seed
+    python scripts/scrape_new_launches.py --suggest > suggestions.json
     python scripts/scrape_new_launches.py --year 2026
     python scripts/scrape_new_launches.py --dry-run
-    python scripts/scrape_new_launches.py --reset
 """
 import argparse
 import sys
@@ -34,18 +39,29 @@ from services.new_launch_scraper import scrape_new_launches, seed_new_launches
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Scrape 2026 new launches from EdgeProp, PropNex, ERA'
+        description='Manage 2026 new launches data (Excel import, seed, or scrape)'
     )
     parser.add_argument(
         '--year',
         type=int,
         default=2026,
-        help='Target year to scrape (default: 2026)'
+        help='Target year (default: 2026)'
+    )
+    parser.add_argument(
+        '--excel',
+        type=str,
+        metavar='FILE',
+        help='Import from Excel file (recommended - source-of-truth)'
     )
     parser.add_argument(
         '--seed',
         action='store_true',
-        help='Load seed data instead of scraping (fallback when scraping fails)'
+        help='Load seed data (fallback when Excel not available)'
+    )
+    parser.add_argument(
+        '--suggest',
+        action='store_true',
+        help='Run scraper as suggestion generator only (outputs JSON diff)'
     )
     parser.add_argument(
         '--dry-run',
@@ -55,7 +71,7 @@ def main():
     parser.add_argument(
         '--reset',
         action='store_true',
-        help='Delete existing records for the year before scraping/seeding'
+        help='Delete existing records for the year first'
     )
     parser.add_argument(
         '--verbose',
@@ -70,6 +86,37 @@ def main():
     app = create_app()
 
     with app.app_context():
+        # Priority: Excel > Suggest > Seed > Scrape
+        if args.excel:
+            # Excel import (recommended)
+            from services.excel_loader import load_new_launches_excel
+
+            stats = load_new_launches_excel(
+                file_path=args.excel,
+                db_session=db.session,
+                dry_run=args.dry_run,
+                reset=args.reset,
+                year=args.year
+            )
+
+            if stats.get('errors') or stats.get('validation_errors'):
+                sys.exit(1)
+            return
+
+        if args.suggest:
+            # Suggestion mode - scrape and output diff only
+            from services.new_launch_scraper import generate_suggestions
+            import json
+
+            suggestions = generate_suggestions(
+                target_year=args.year,
+                db_session=db.session
+            )
+
+            # Output as JSON for human review
+            print(json.dumps(suggestions, indent=2, default=str))
+            return
+
         if args.seed:
             # Load seed data (fallback - use when scraping fails)
             print(f"\n{'='*60}")
