@@ -1,5 +1,6 @@
 import os
 import sys
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,18 +13,7 @@ def _get_database_url():
     PostgreSQL is REQUIRED for all environments (local, staging, production).
     SQLite is NOT supported due to schema drift and production-only bugs.
 
-    Local development setup:
-        # Option 1: Docker (recommended)
-        docker run -d --name sg-property-db -p 5432:5432 \
-            -e POSTGRES_DB=sg_property -e POSTGRES_USER=dev -e POSTGRES_PASSWORD=dev \
-            postgres:15
-
-        # Then set in .env:
-        DATABASE_URL=postgresql://dev:dev@localhost:5432/sg_property
-
-        # Option 2: Local PostgreSQL installation
-        createdb sg_property
-        DATABASE_URL=postgresql://localhost/sg_property
+    For Render/cloud PostgreSQL, automatically adds sslmode=require if missing.
     """
     database_url = os.getenv('DATABASE_URL')
 
@@ -57,6 +47,23 @@ def _get_database_url():
     # Handle Render's postgres:// format (SQLAlchemy requires postgresql://)
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+    # For cloud PostgreSQL (non-localhost), ensure SSL is enabled
+    parsed = urlparse(database_url)
+    is_localhost = parsed.hostname in ('localhost', '127.0.0.1', None)
+
+    if not is_localhost:
+        # Parse existing query params
+        query_params = parse_qs(parsed.query)
+
+        # Add sslmode=require if not already set
+        if 'sslmode' not in query_params:
+            query_params['sslmode'] = ['require']
+            new_query = urlencode(query_params, doseq=True)
+            database_url = urlunparse((
+                parsed.scheme, parsed.netloc, parsed.path,
+                parsed.params, new_query, parsed.fragment
+            ))
 
     return database_url
 

@@ -38,12 +38,101 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from flask import Flask
 from sqlalchemy import text, inspect
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
+from urllib.parse import urlparse
 from config import Config
 from models.database import db
 from models.transaction import Transaction
 from services.data_loader import clean_csv_data, parse_date_flexible
 from services.data_computation import recompute_all_stats
 import pandas as pd
+
+
+def preflight_db_check(app) -> bool:
+    """
+    Preflight database connectivity check with clear error messages.
+
+    Returns True if connection successful, exits with error otherwise.
+    """
+    # Print connection info (redact password)
+    db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    parsed = urlparse(db_url)
+    safe_url = f"{parsed.scheme}://{parsed.username}:****@{parsed.hostname}:{parsed.port or 5432}{parsed.path}"
+    print(f"\n🔗 Database URL: {safe_url}")
+
+    try:
+        with app.app_context():
+            # Simple connectivity test
+            result = db.session.execute(text("SELECT 1")).scalar()
+            if result != 1:
+                raise RuntimeError("SELECT 1 did not return expected result")
+
+            # Get database info
+            db_info = db.session.execute(text(
+                "SELECT current_database(), current_user, version()"
+            )).fetchone()
+
+            print(f"✅ Database connection successful!")
+            print(f"   Database: {db_info[0]}")
+            print(f"   User: {db_info[1]}")
+            print(f"   PostgreSQL: {db_info[2].split(',')[0]}")
+
+            # Check if transactions table exists
+            table_exists = db.session.execute(text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_name = 'transactions'
+                )
+            """)).scalar()
+            if table_exists:
+                count = db.session.execute(text("SELECT COUNT(*) FROM transactions")).scalar()
+                print(f"   Existing records: {count:,}")
+            else:
+                print(f"   Transactions table: (will be created)")
+
+            return True
+
+    except OperationalError as e:
+        error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
+        print(f"\n❌ DATABASE CONNECTION FAILED")
+        print(f"=" * 60)
+
+        if 'SSL' in error_msg.upper() or 'ssl' in error_msg:
+            print(f"Error: SSL/TLS connection required but not configured")
+            print(f"\nFix: Add ?sslmode=require to your DATABASE_URL")
+            print(f"Example: postgresql://user:pass@host:5432/db?sslmode=require")
+        elif 'authentication failed' in error_msg.lower() or 'password' in error_msg.lower():
+            print(f"Error: Authentication failed - check username/password")
+            print(f"\nVerify DATABASE_URL credentials are correct")
+        elif 'could not connect' in error_msg.lower() or 'connection refused' in error_msg.lower():
+            print(f"Error: Cannot reach database server")
+            print(f"\nPossible causes:")
+            print(f"  - Database server not running")
+            print(f"  - Wrong host/port in DATABASE_URL")
+            print(f"  - Firewall blocking connection")
+            print(f"  - Using internal URL instead of external URL (Render)")
+        elif 'timeout' in error_msg.lower():
+            print(f"Error: Connection timeout")
+            print(f"\nPossible causes:")
+            print(f"  - Database server overloaded")
+            print(f"  - Network issues")
+            print(f"  - Wrong host (internal vs external URL)")
+        else:
+            print(f"Error: {error_msg}")
+
+        print(f"\nDATABASE_URL format: postgresql://user:pass@host:port/database")
+        print(f"=" * 60)
+        sys.exit(1)
+
+    except SQLAlchemyError as e:
+        print(f"\n❌ DATABASE ERROR: {e}")
+        sys.exit(1)
+
+    except Exception as e:
+        print(f"\n❌ UNEXPECTED ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 # === Constants ===
@@ -810,16 +899,29 @@ def safe_release_advisory_lock():
     Safely release advisory lock with proper transaction handling.
 
     Must rollback any failed transaction first, then release lock.
+    Handles connection failures gracefully - if connection is dead,
+    the advisory lock is automatically released by PostgreSQL.
     """
     try:
         # Always rollback first to ensure clean transaction state
-        db.session.rollback()
-        # Now safe to release lock
-        db.session.execute(text(f"SELECT pg_advisory_unlock({ADVISORY_LOCK_ID})"))
-        db.session.commit()
+        try:
+            db.session.rollback()
+        except Exception:
+            pass  # Connection may be dead, that's okay
+
+        # Try to release lock - if connection is dead, lock is auto-released
+        try:
+            db.session.execute(text(f"SELECT pg_advisory_unlock({ADVISORY_LOCK_ID})"))
+            db.session.commit()
+        except OperationalError:
+            # Connection lost - PostgreSQL auto-releases advisory locks on disconnect
+            print(f"   Note: Connection lost, advisory lock auto-released by PostgreSQL")
+        except Exception as e:
+            print(f"   Warning: Advisory lock release issue: {e}")
+
     except Exception as e:
-        # Log but don't raise - cleanup should not fail the script
-        print(f"   Warning: Advisory lock release failed: {e}")
+        # Outer catch-all - cleanup should never crash the script
+        print(f"   Warning: Cleanup failed: {e}")
 
 
 def main():
@@ -900,15 +1002,10 @@ def main():
 
     app = create_app()
 
-    # Print database connection info for verification
-    with app.app_context():
-        db_info = db.session.execute(text(
-            "SELECT current_database(), inet_server_addr(), inet_server_port()"
-        )).fetchone()
-        print(f"\n🔗 Database Connection:")
-        print(f"   Database: {db_info[0]}")
-        print(f"   Host: {db_info[1] or 'localhost'}")
-        print(f"   Port: {db_info[2] or 5432}")
+    # === PREFLIGHT DATABASE CHECK ===
+    # Run connectivity check BEFORE any operations
+    # This fails fast with clear error messages
+    preflight_db_check(app)
 
     # Schema check mode (read-only, no lock needed)
     if args.check:
