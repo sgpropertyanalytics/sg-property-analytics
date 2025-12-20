@@ -238,9 +238,23 @@ WHERE id NOT IN (
 
 ### Stage 4: Remove Outliers
 
-Uses IQR method per (district, bedroom_count) group:
-- Calculate Q1, Q3, IQR
-- Remove: price < Q1 - 1.5×IQR OR price > Q3 + 1.5×IQR
+Uses **GLOBAL IQR method** (across all transactions):
+
+```sql
+-- Calculate global bounds
+Q1 = PERCENTILE_CONT(0.25) across ALL transactions
+Q3 = PERCENTILE_CONT(0.75) across ALL transactions
+IQR = Q3 - Q1
+
+-- Remove outliers
+DELETE FROM transactions_staging
+WHERE price < (Q1 - 1.5 * IQR) OR price > (Q3 + 1.5 * IQR)
+```
+
+**Why Global IQR?**
+- Catches extreme outliers (e.g., $890M transactions) that per-group IQR would miss
+- Ensures consistent price distribution charts
+- Typical bounds: ~$0 - $4M for Singapore condos
 
 ### Stage 5: Validate
 
@@ -281,6 +295,57 @@ Before publishing, the script validates staging data:
 
 ```bash
 python -m scripts.upload --skip-validation
+```
+
+---
+
+## Outlier Handling Architecture
+
+### Key Principle: Outlier Filtering Happens ONCE
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              OUTLIER FILTERING - SINGLE LOCATION                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  UPLOAD PIPELINE (staging):                                     │
+│    Stage 4: filter_outliers_staging()                           │
+│    ✅ ONLY place outliers are removed                           │
+│    ✅ Uses global IQR method                                    │
+│    ✅ Runs ONCE per upload                                      │
+│                                                                 │
+│  APP STARTUP:                                                   │
+│    _run_startup_validation()                                    │
+│    ✅ READ-ONLY - reports issues, NO deletions                  │
+│    ✅ Ensures deterministic datasets                            │
+│    ✅ Same row count after every restart                        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Why This Design?
+
+| Problem | Solution |
+|---------|----------|
+| IQR drift (recalculating bounds creates new outliers) | Filter once in staging, never again |
+| Non-deterministic datasets | App startup is read-only |
+| Debugging difficulty | Single location for outlier logic |
+| Reproducibility | Same upload → same output |
+
+### Files Involved
+
+| File | Function | Mutates DB? |
+|------|----------|-------------|
+| `scripts/upload.py` | `filter_outliers_staging()` | ✅ Yes (staging only) |
+| `backend/app.py` | `_run_startup_validation()` | ❌ No (read-only) |
+| `backend/services/data_validation.py` | `run_validation_report()` | ❌ No (read-only) |
+| `backend/services/data_validation.py` | `run_all_validations()` | ⚠️ Yes (deprecated, upload only) |
+
+### Test Coverage
+
+```bash
+# Verify app restart doesn't change row counts
+pytest tests/test_startup_no_mutations.py -v
 ```
 
 ---

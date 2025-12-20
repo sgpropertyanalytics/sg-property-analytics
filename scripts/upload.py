@@ -452,48 +452,58 @@ def remove_duplicates_staging(logger: UploadLogger) -> int:
 
 
 def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
-    """Remove outliers from staging using IQR method."""
+    """
+    Remove outliers from staging using GLOBAL IQR method.
+
+    Uses global IQR (across all transactions) to catch extreme outliers
+    like $890M transactions that would skew the price distribution chart.
+    This matches the original filter_outliers_sql behavior.
+    """
     before = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
 
-    # Get distinct district/bedroom combinations
-    combos = db.session.execute(text(f"""
-        SELECT DISTINCT district, bedroom_count FROM {STAGING_TABLE}
-    """)).fetchall()
+    # Calculate GLOBAL IQR bounds (across all transactions)
+    # This catches extreme outliers that per-group IQR would miss
+    result = db.session.execute(text(f"""
+        SELECT
+            PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) as q1,
+            PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) as q3
+        FROM {STAGING_TABLE}
+        WHERE price > 0
+    """)).fetchone()
 
-    total_removed = 0
-    stats = {}
+    if not result or not result.q1 or not result.q3:
+        logger.log("⚠️  Could not calculate IQR bounds")
+        return 0, {'before': before, 'after': before}
 
-    for district, bedroom in combos:
-        # Calculate IQR bounds
-        result = db.session.execute(text(f"""
-            SELECT
-                PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) as q1,
-                PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) as q3
-            FROM {STAGING_TABLE}
-            WHERE district = :district AND bedroom_count = :bedroom
-        """), {'district': district, 'bedroom': bedroom}).fetchone()
+    q1, q3 = float(result.q1), float(result.q3)
+    iqr = q3 - q1
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
 
-        if result and result.q1 and result.q3:
-            q1, q3 = result.q1, result.q3
-            iqr = q3 - q1
-            lower = q1 - 1.5 * iqr
-            upper = q3 + 1.5 * iqr
+    logger.log(f"  Global IQR bounds: Q1=${q1:,.0f}, Q3=${q3:,.0f}, IQR=${iqr:,.0f}")
+    logger.log(f"  Valid range: ${lower_bound:,.0f} - ${upper_bound:,.0f}")
 
-            deleted = db.session.execute(text(f"""
-                DELETE FROM {STAGING_TABLE}
-                WHERE district = :district
-                  AND bedroom_count = :bedroom
-                  AND (price < :lower OR price > :upper)
-            """), {'district': district, 'bedroom': bedroom, 'lower': lower, 'upper': upper})
+    # Delete outliers outside global bounds
+    deleted = db.session.execute(text(f"""
+        DELETE FROM {STAGING_TABLE}
+        WHERE price < :lower_bound OR price > :upper_bound
+    """), {'lower_bound': lower_bound, 'upper_bound': upper_bound})
 
-            total_removed += deleted.rowcount
-
+    total_removed = deleted.rowcount
     db.session.commit()
 
     after = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
-    logger.log(f"✓ Removed {total_removed:,} outliers from staging")
+    logger.log(f"✓ Removed {total_removed:,} outliers from staging (global IQR)")
 
-    return total_removed, {'before': before, 'after': after}
+    return total_removed, {
+        'before': before,
+        'after': after,
+        'q1': q1,
+        'q3': q3,
+        'iqr': iqr,
+        'lower_bound': lower_bound,
+        'upper_bound': upper_bound
+    }
 
 
 def validate_staging(logger: UploadLogger) -> Tuple[bool, List[str]]:
@@ -758,6 +768,52 @@ def run_schema_check(rawdata_path: str) -> bool:
 # MAIN ENTRY POINT
 # =============================================================================
 
+def discover_csv_files(csv_folder: str) -> Tuple[List[str], List[str]]:
+    """
+    Discover CSV files BEFORE any database operations.
+
+    Returns:
+        Tuple of (new_sale_files, resale_files)
+    """
+    new_sale_files = []
+    resale_files = []
+
+    new_sale_folder = os.path.join(csv_folder, 'New Sale')
+    if os.path.exists(new_sale_folder):
+        new_sale_files = [
+            os.path.join(new_sale_folder, f)
+            for f in sorted(os.listdir(new_sale_folder))
+            if f.endswith('.csv')
+        ]
+
+    resale_folder = os.path.join(csv_folder, 'Resale')
+    if os.path.exists(resale_folder):
+        resale_files = [
+            os.path.join(resale_folder, f)
+            for f in sorted(os.listdir(resale_folder))
+            if f.endswith('.csv')
+        ]
+
+    return new_sale_files, resale_files
+
+
+def safe_release_advisory_lock():
+    """
+    Safely release advisory lock with proper transaction handling.
+
+    Must rollback any failed transaction first, then release lock.
+    """
+    try:
+        # Always rollback first to ensure clean transaction state
+        db.session.rollback()
+        # Now safe to release lock
+        db.session.execute(text(f"SELECT pg_advisory_unlock({ADVISORY_LOCK_ID})"))
+        db.session.commit()
+    except Exception as e:
+        # Log but don't raise - cleanup should not fail the script
+        print(f"   Warning: Advisory lock release failed: {e}")
+
+
 def main():
     """Main upload function with staging + atomic publish."""
     parser = argparse.ArgumentParser(
@@ -803,6 +859,7 @@ def main():
     # Generate run ID for this upload
     run_id = str(uuid.uuid4())
     logger = UploadLogger(run_id)
+    exit_code = 0  # Track exit code instead of calling sys.exit() mid-flow
 
     print("=" * 60)
     print("CSV Upload Script - Zero Downtime Architecture")
@@ -810,32 +867,53 @@ def main():
     print("=" * 60)
 
     csv_folder = os.path.join(os.path.dirname(__file__), '..', 'rawdata')
+
+    # === PRE-FLIGHT CHECKS (before any DB operations) ===
+
+    # Check CSV folder exists
+    if not os.path.exists(csv_folder):
+        print(f"\n❌ Error: CSV folder not found: {csv_folder}")
+        sys.exit(1)
+
+    # Discover CSV files BEFORE touching the database
+    # This prevents "no files found" errors after DB work has started
+    if not args.check and not args.publish and not args.rollback:
+        new_sale_files, resale_files = discover_csv_files(csv_folder)
+        total_csv_files = len(new_sale_files) + len(resale_files)
+
+        if total_csv_files == 0 and not args.dry_run:
+            print(f"\n❌ No CSV files found in {csv_folder}")
+            print(f"   Expected: rawdata/New Sale/*.csv and/or rawdata/Resale/*.csv")
+            sys.exit(1)
+
+        print(f"\n📂 Found {total_csv_files} CSV files")
+        print(f"   New Sale: {len(new_sale_files)} files")
+        print(f"   Resale: {len(resale_files)} files")
+
     app = create_app()
 
-    # Schema check mode
+    # Schema check mode (read-only, no lock needed)
     if args.check:
         with app.app_context():
             success = run_schema_check(csv_folder)
             sys.exit(0 if success else 1)
 
-    # Dry run mode
+    # Dry run mode (read-only, no lock needed)
     if args.dry_run:
         with app.app_context():
             from models.transaction import Transaction
             existing_count = db.session.query(Transaction).count()
 
-            new_sale_folder = os.path.join(csv_folder, 'New Sale')
-            resale_folder = os.path.join(csv_folder, 'Resale')
-
-            new_sale_count = len([f for f in os.listdir(new_sale_folder) if f.endswith('.csv')]) if os.path.exists(new_sale_folder) else 0
-            resale_count = len([f for f in os.listdir(resale_folder) if f.endswith('.csv')]) if os.path.exists(resale_folder) else 0
+            new_sale_files, resale_files = discover_csv_files(csv_folder)
 
             print(f"\n📂 DRY RUN - No changes will be made")
             print(f"   Current production rows: {existing_count:,}")
-            print(f"   New Sale CSV files: {new_sale_count}")
-            print(f"   Resale CSV files: {resale_count}")
-            print(f"   Total CSV files: {new_sale_count + resale_count}")
-            return
+            print(f"   New Sale CSV files: {len(new_sale_files)}")
+            print(f"   Resale CSV files: {len(resale_files)}")
+            print(f"   Total CSV files: {len(new_sale_files) + len(resale_files)}")
+        sys.exit(0)
+
+    # === MAIN UPLOAD FLOW (requires advisory lock) ===
 
     with app.app_context():
         # Acquire advisory lock
@@ -851,15 +929,18 @@ def main():
                     response = input("\n⚠️  Are you sure you want to rollback? (yes/no): ")
                     if response.lower() != 'yes':
                         print("Rollback cancelled.")
-                        return
+                        exit_code = 0
+                        raise SystemExit(exit_code)
 
                 success = rollback_to_previous(logger)
 
                 if success:
                     logger.stage("RECOMPUTE STATS")
                     recompute_all_stats()
-
-                sys.exit(0 if success else 1)
+                    exit_code = 0
+                else:
+                    exit_code = 1
+                raise SystemExit(exit_code)
 
             # Publish-only mode
             if args.publish:
@@ -876,73 +957,67 @@ def main():
                 if not staging_exists:
                     print(f"\n❌ Staging table '{STAGING_TABLE}' does not exist.")
                     print("   Run without --publish first to load data to staging.")
-                    sys.exit(1)
+                    exit_code = 1
+                    raise SystemExit(exit_code)
 
                 success = atomic_publish(logger)
 
                 if success:
                     logger.stage("RECOMPUTE STATS")
                     recompute_all_stats()
+                    exit_code = 0
+                else:
+                    exit_code = 1
 
                 # Print summary
                 summary = logger.summary()
                 print(f"\n📊 Run Summary: {json.dumps(summary, indent=2)}")
+                raise SystemExit(exit_code)
 
-                sys.exit(0 if success else 1)
+            # === Full upload: Staging → Validate → Publish ===
 
-            # Full upload: Staging → Validate → Publish
-
-            # === STAGE 1: Create staging table ===
+            # STAGE 1: Create staging table
             logger.stage("CREATE STAGING TABLE")
             db.create_all()  # Ensure production schema exists
             create_staging_table(logger)
 
-            # === STAGE 2: Load CSV data to staging ===
+            # STAGE 2: Load CSV data to staging
             logger.stage("LOAD CSV TO STAGING")
-
-            if not os.path.exists(csv_folder):
-                logger.log(f"❌ CSV folder not found: {csv_folder}")
-                sys.exit(1)
 
             total_saved = 0
 
             # Process New Sale CSVs
-            new_sale_folder = os.path.join(csv_folder, 'New Sale')
-            if os.path.exists(new_sale_folder):
+            if new_sale_files:
                 logger.log("Processing New Sale data...")
-                for filename in sorted(os.listdir(new_sale_folder)):
-                    if filename.endswith('.csv'):
-                        csv_path = os.path.join(new_sale_folder, filename)
-                        saved = insert_to_staging(csv_path, 'New Sale', logger)
-                        total_saved += saved
-                        gc.collect()
+                for csv_path in new_sale_files:
+                    saved = insert_to_staging(csv_path, 'New Sale', logger)
+                    total_saved += saved
+                    gc.collect()
 
             # Process Resale CSVs
-            resale_folder = os.path.join(csv_folder, 'Resale')
-            if os.path.exists(resale_folder):
+            if resale_files:
                 logger.log("Processing Resale data...")
-                for filename in sorted(os.listdir(resale_folder)):
-                    if filename.endswith('.csv'):
-                        csv_path = os.path.join(resale_folder, filename)
-                        saved = insert_to_staging(csv_path, 'Resale', logger)
-                        total_saved += saved
-                        gc.collect()
+                for csv_path in resale_files:
+                    saved = insert_to_staging(csv_path, 'Resale', logger)
+                    total_saved += saved
+                    gc.collect()
 
             if total_saved == 0:
-                logger.log("❌ No CSV files found or all files were empty.")
-                sys.exit(1)
+                logger.log("❌ All CSV files were empty or had no valid data.")
+                exit_code = 1
+                raise SystemExit(exit_code)
 
             logger.log(f"Total rows loaded to staging: {total_saved:,}")
 
-            # === STAGE 3: Deduplicate staging ===
+            # STAGE 3: Deduplicate staging
             logger.stage("DEDUPLICATE STAGING")
             duplicates_removed = remove_duplicates_staging(logger)
 
-            # === STAGE 4: Remove outliers from staging ===
+            # STAGE 4: Remove outliers from staging
             logger.stage("REMOVE OUTLIERS")
             outliers_removed, _ = filter_outliers_staging(logger)
 
-            # === STAGE 5: Validate staging ===
+            # STAGE 5: Validate staging
             logger.stage("VALIDATE STAGING")
             if not args.skip_validation:
                 is_valid, issues = validate_staging(logger)
@@ -950,11 +1025,12 @@ def main():
                 if not is_valid:
                     logger.log("❌ Validation failed! Staging data not published.")
                     logger.log("   Fix the issues and re-run, or use --skip-validation")
-                    sys.exit(1)
+                    exit_code = 1
+                    raise SystemExit(exit_code)
             else:
                 logger.log("⚠️  Skipping validation (--skip-validation)")
 
-            # === STAGE 6: Publish (unless staging-only) ===
+            # STAGE 6: Publish (unless staging-only)
             if args.staging_only:
                 logger.log("Staging-only mode: Skipping publish")
                 logger.log(f"Data is ready in '{STAGING_TABLE}' table")
@@ -965,13 +1041,14 @@ def main():
 
                 if not success:
                     logger.log("❌ Publish failed!")
-                    sys.exit(1)
+                    exit_code = 1
+                    raise SystemExit(exit_code)
 
-                # === STAGE 7: Recompute stats ===
+                # STAGE 7: Recompute stats
                 logger.stage("RECOMPUTE STATS")
-                recompute_all_stats(outliers_excluded=outliers_removed)
+                recompute_all_stats()
 
-                # === STAGE 8: Update project locations (optional) ===
+                # STAGE 8: Update project locations (optional)
                 try:
                     from services.project_location_service import run_incremental_update
                     logger.stage("UPDATE PROJECT LOCATIONS")
@@ -990,9 +1067,20 @@ def main():
             print(f"Total time: {summary['total_elapsed_seconds']:.1f} seconds")
             print(f"Stages completed: {len(summary['stages'])}")
 
+        except SystemExit as e:
+            # Controlled exit - extract exit code
+            exit_code = e.code if isinstance(e.code, int) else 1
+        except Exception as e:
+            # Unexpected error
+            logger.log(f"❌ Unexpected error: {e}")
+            import traceback
+            traceback.print_exc()
+            exit_code = 1
         finally:
-            # Always release the lock
-            release_advisory_lock()
+            # ALWAYS cleanup: rollback any pending transaction, then release lock
+            safe_release_advisory_lock()
+
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
