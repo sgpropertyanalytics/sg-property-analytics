@@ -130,42 +130,6 @@ def create_app():
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         return response
 
-    # =========================================================================
-    # TEMPORARY DEBUG ENDPOINT - List all registered routes
-    # Remove this endpoint after debugging is complete
-    # =========================================================================
-    @app.route('/api/debug/routes', methods=['GET'])
-    def list_routes():
-        """
-        TEMPORARY: List all registered routes for debugging.
-        Remove this endpoint after verifying route registration.
-        """
-        import os
-        # Only allow in development or if explicitly enabled
-        if os.environ.get('FLASK_ENV') == 'production' and not os.environ.get('ENABLE_DEBUG_ROUTES'):
-            return jsonify({"error": "Debug routes disabled in production"}), 403
-
-        routes = []
-        for rule in app.url_map.iter_rules():
-            routes.append({
-                "endpoint": rule.endpoint,
-                "methods": sorted([m for m in rule.methods if m not in ('HEAD', 'OPTIONS')]),
-                "path": str(rule)
-            })
-
-        # Sort by path for easier reading
-        routes.sort(key=lambda x: x['path'])
-
-        # Filter to just /api routes for relevance
-        api_routes = [r for r in routes if r['path'].startswith('/api')]
-
-        return jsonify({
-            "total_routes": len(routes),
-            "api_routes": len(api_routes),
-            "routes": api_routes,
-            "note": "TEMPORARY DEBUG ENDPOINT - Remove after verification"
-        })
-
     # Initialize SQLAlchemy
     db.init_app(app)
 
