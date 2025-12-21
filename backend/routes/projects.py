@@ -541,7 +541,7 @@ def get_inventory_status():
             "projects_with_inventory": projects_with_data,
             "projects_missing_inventory": len(projects_missing),
             "coverage_percent": round(coverage, 1),
-            "csv_file": "rawdata/new_launch_units.csv",
+            "csv_file": "backend/data/new_launch_units.csv",
             "top_missing": projects_missing[:10],
             "elapsed_seconds": round(elapsed, 2)
         })

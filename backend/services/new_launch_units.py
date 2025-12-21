@@ -1,9 +1,9 @@
 """
 New Launch Units Service - CSV Lookup
 
-Reads total_units data from: rawdata/new_launch_units.csv
+Reads total_units data from: backend/data/new_launch_units.csv
 
-To add new projects, edit the CSV file directly in Excel/Google Sheets.
+To add new projects, edit the CSV file and commit to git.
 
 Usage:
     from services.new_launch_units import get_units_for_project
@@ -17,10 +17,10 @@ import csv
 from typing import Dict, Any, List
 
 
-# Path to CSV file in rawdata folder
+# Path to CSV file in backend/data folder (tracked in git)
 CSV_FILE = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    'rawdata',
+    os.path.dirname(os.path.dirname(__file__)),
+    'data',
     'new_launch_units.csv'
 )
 

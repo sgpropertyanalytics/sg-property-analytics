@@ -83,11 +83,11 @@ Thumbs.db
 Desktop.ini
 
 # Data files - EXCLUDE raw data and databases
-data/
 rawdata/
 *.csv
-# Exception: template files for upload scripts
-!templates/*.csv
+# Exception: backend/data for static lookup files (tracked in git)
+!backend/data/
+!backend/data/*.csv
 *.db
 *.sqlite
 *.sqlite3
