@@ -517,6 +517,61 @@ def get_hot_projects():
         return jsonify({"error": str(e)}), 500
 
 
+@projects_bp.route("/projects/cleanup-new-launches", methods=["DELETE"])
+def cleanup_new_launches_from_transactions():
+    """
+    Delete new_launches entries that were auto-populated from transactions.
+
+    These entries have data_source='transactions' and contain misleading
+    total_units values (set to transaction count instead of actual units).
+
+    The correct source of truth for total_units is project_inventory table.
+    """
+    import time
+    start = time.time()
+
+    try:
+        from models.new_launch import NewLaunch
+        from sqlalchemy import func
+
+        # Count before delete
+        count_before = db.session.query(NewLaunch).filter(
+            NewLaunch.data_source == 'transactions'
+        ).count()
+
+        if count_before == 0:
+            return jsonify({
+                "success": True,
+                "deleted": 0,
+                "message": "No transaction-populated entries found to delete"
+            })
+
+        # Delete entries populated from transactions
+        deleted = db.session.query(NewLaunch).filter(
+            NewLaunch.data_source == 'transactions'
+        ).delete()
+
+        db.session.commit()
+
+        elapsed = time.time() - start
+        print(f"DELETE /api/projects/cleanup-new-launches took: {elapsed:.4f}s (deleted {deleted} entries)")
+
+        return jsonify({
+            "success": True,
+            "deleted": deleted,
+            "elapsed_seconds": round(elapsed, 2),
+            "message": f"Removed {deleted} entries with data_source='transactions'. "
+                       f"Use project_inventory for accurate total_units."
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"DELETE /api/projects/cleanup-new-launches ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @projects_bp.route("/projects/populate-new-launches", methods=["POST"])
 def populate_new_launches_from_transactions():
     """
