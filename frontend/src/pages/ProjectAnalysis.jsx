@@ -5,7 +5,7 @@ import { HotProjectsTable } from '../components/powerbi/HotProjectsTable';
  * Project Analysis Page
  *
  * Shows ACTIVE NEW SALES - Projects that have ALREADY LAUNCHED and are selling.
- * (For upcoming/pre-launch projects, see NewLaunchDataTable on MacroOverview)
+ * (For upcoming/pre-launch projects, see UpcomingLaunchesTable on MacroOverview)
  *
  * Features:
  * - Active New Sales table showing sales progress for launched projects

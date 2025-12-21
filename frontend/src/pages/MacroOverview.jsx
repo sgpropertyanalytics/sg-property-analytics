@@ -8,7 +8,7 @@ import { TransactionDetailModal } from '../components/powerbi/TransactionDetailM
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
 import { GLSDataTable } from '../components/powerbi/GLSDataTable';
-import { NewLaunchDataTable } from '../components/powerbi/NewLaunchDataTable';
+import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
@@ -260,9 +260,9 @@ export function MacroOverviewContent() {
                 <GLSDataTable height={350} />
               </div>
 
-              {/* Upcoming New Launches Table - Pre-launch projects (not yet launched) */}
+              {/* Upcoming Launches Table - Pre-launch projects (not yet launched) */}
               <div className="mb-4 md:mb-6">
-                <NewLaunchDataTable height={350} />
+                <UpcomingLaunchesTable height={350} />
               </div>
 
               {/* Transaction Data Table - Component unchanged */}

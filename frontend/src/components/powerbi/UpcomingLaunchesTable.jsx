@@ -2,11 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { getUpcomingLaunchesAll } from '../../api/client';
 
 /**
- * Upcoming New Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
+ * Upcoming Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
  *
  * SEMANTIC CLARIFICATION:
- * - "Upcoming New Launches" = Projects that have NOT YET LAUNCHED
- * - For ACTIVE sales data (already launched), see HotProjectsTable / Active New Sales
+ * - "Upcoming Launches" = Projects that have NOT YET LAUNCHED
+ * - For ACTIVE sales data (already launched), see ActiveNewSalesTable (HotProjectsTable)
  *
  * Displays:
  * - Potential Launch Date (expected_launch_date or created from launch_year)
@@ -16,9 +16,9 @@ import { getUpcomingLaunchesAll } from '../../api/client';
  * - PSF (PPR) - from linked GLS tender land bid
  * - Implied Launch PSF - indicative pricing range
  *
- * Data Source: /api/new-launches/* (EdgeProp, PropNex, ERA)
+ * Data Source: /api/upcoming-launches/* (EdgeProp, PropNex, ERA)
  */
-export function NewLaunchDataTable({ height = 400 }) {
+export function UpcomingLaunchesTable({ height = 400 }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,7 +47,7 @@ export function NewLaunchDataTable({ height = 400 }) {
       const response = await getUpcomingLaunchesAll(params);
       setData(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching new launches data:', err);
+      console.error('Error fetching upcoming launches data:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -132,12 +132,12 @@ export function NewLaunchDataTable({ height = 400 }) {
   }, {});
 
   return (
-    <div id="new-launch-data-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div id="upcoming-launches-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h3 className="font-semibold text-[#213448]">Upcoming New Launches</h3>
+            <h3 className="font-semibold text-[#213448]">Upcoming Launches</h3>
             <p className="text-xs text-[#547792]">
               {loading ? 'Loading...' : `${data.length} projects`}
               {!loading && data.length > 0 && (
@@ -222,7 +222,7 @@ export function NewLaunchDataTable({ height = 400 }) {
               ) : data.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-3 py-8 text-center">
-                    <div className="text-slate-500">No upcoming new launches found.</div>
+                    <div className="text-slate-500">No upcoming launches found.</div>
                     <p className="text-xs text-slate-400 mt-1">
                       Run the scraper to fetch pre-launch data from EdgeProp, PropNex, ERA.
                     </p>
@@ -313,4 +313,4 @@ export function NewLaunchDataTable({ height = 400 }) {
   );
 }
 
-export default NewLaunchDataTable;
+export default UpcomingLaunchesTable;
