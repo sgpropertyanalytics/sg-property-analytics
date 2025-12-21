@@ -79,10 +79,20 @@ def create_app():
          send_wildcard=True)  # Always send '*' instead of echoing Origin header
 
     # Global error handlers to ensure CORS headers are present on error responses
-    @app.errorhandler(500)
-    def handle_500(error):
-        response = jsonify({"error": "Internal server error", "details": str(error)})
-        response.status_code = 500
+    from werkzeug.exceptions import HTTPException
+
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(error):
+        """
+        Handle HTTP exceptions (404, 405, etc.) - preserve their status codes.
+        DO NOT convert these to 500.
+        """
+        response = jsonify({
+            "error": error.name,
+            "details": error.description,
+            "status_code": error.code
+        })
+        response.status_code = error.code
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
@@ -90,11 +100,18 @@ def create_app():
 
     @app.errorhandler(Exception)
     def handle_exception(error):
+        """
+        Handle non-HTTP exceptions (real 500s) - actual internal errors.
+        """
         # Log the error for debugging
         import traceback
         traceback.print_exc()
 
-        response = jsonify({"error": "Server error", "details": str(error)})
+        # Check if it's an HTTPException that somehow got here (shouldn't happen, but be safe)
+        if isinstance(error, HTTPException):
+            return handle_http_exception(error)
+
+        response = jsonify({"error": "Internal server error", "details": str(error)})
         response.status_code = 500
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
@@ -112,6 +129,42 @@ def create_app():
         if 'Access-Control-Allow-Headers' not in response.headers:
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         return response
+
+    # =========================================================================
+    # TEMPORARY DEBUG ENDPOINT - List all registered routes
+    # Remove this endpoint after debugging is complete
+    # =========================================================================
+    @app.route('/api/debug/routes', methods=['GET'])
+    def list_routes():
+        """
+        TEMPORARY: List all registered routes for debugging.
+        Remove this endpoint after verifying route registration.
+        """
+        import os
+        # Only allow in development or if explicitly enabled
+        if os.environ.get('FLASK_ENV') == 'production' and not os.environ.get('ENABLE_DEBUG_ROUTES'):
+            return jsonify({"error": "Debug routes disabled in production"}), 403
+
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                "endpoint": rule.endpoint,
+                "methods": sorted([m for m in rule.methods if m not in ('HEAD', 'OPTIONS')]),
+                "path": str(rule)
+            })
+
+        # Sort by path for easier reading
+        routes.sort(key=lambda x: x['path'])
+
+        # Filter to just /api routes for relevance
+        api_routes = [r for r in routes if r['path'].startswith('/api')]
+
+        return jsonify({
+            "total_routes": len(routes),
+            "api_routes": len(api_routes),
+            "routes": api_routes,
+            "note": "TEMPORARY DEBUG ENDPOINT - Remove after verification"
+        })
 
     # Initialize SQLAlchemy
     db.init_app(app)
