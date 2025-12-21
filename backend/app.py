@@ -144,7 +144,7 @@ def create_app():
         from models.upcoming_launch import UpcomingLaunch
         from models.popular_school import PopularSchool
         from models.project_location import ProjectLocation
-        from models.project_inventory import ProjectInventory
+        # Note: ProjectInventory removed - total_units now in static JSON file
 
         db.create_all()
         print("✓ Database initialized - using SQL-only aggregation for memory efficiency")

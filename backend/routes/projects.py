@@ -366,7 +366,7 @@ def get_hot_projects():
 
     Data Sources:
     - units_sold: COUNT(transactions WHERE sale_type='New Sale') - DETERMINISTIC
-    - total_units: project_inventory.total_units (from URA API or manual) - AUTHORITATIVE
+    - total_units: Static JSON file (new_launch_units.json) - AUTHORITATIVE
     - has_popular_school: from project_locations table
 
     Calculation:
@@ -389,7 +389,7 @@ def get_hot_projects():
 
     try:
         from models.transaction import Transaction
-        from models.project_inventory import ProjectInventory
+        from services.new_launch_units import get_units_for_project
         from sqlalchemy import func, case, text, literal_column
         from constants import get_region_for_district
 
@@ -421,12 +421,9 @@ def get_hot_projects():
                 ps.total_value,
                 ps.avg_psf,
                 ps.last_new_sale,
-                pi.total_units,
-                pi.units_available as unsold_inventory_ura,
                 pl.has_popular_school_1km,
                 pl.market_segment
             FROM project_stats ps
-            LEFT JOIN project_inventory pi ON LOWER(TRIM(ps.project_name)) = LOWER(TRIM(pi.project_name))
             LEFT JOIN project_locations pl ON LOWER(TRIM(ps.project_name)) = LOWER(TRIM(pl.project_name))
             ORDER BY ps.units_sold DESC
             LIMIT :limit
@@ -434,13 +431,16 @@ def get_hot_projects():
 
         results = db.session.execute(sql, {"limit": limit}).fetchall()
 
-        # Format response
+        # Format response - use JSON lookup for total_units
         projects = []
         for row in results:
             district = row.district or ''
             market_seg = row.market_segment or get_region_for_district(district)
             units_sold = row.units_sold or 0
-            total_units = row.total_units or 0
+
+            # Lookup total_units from static JSON file (runtime lookup, no DB)
+            lookup = get_units_for_project(row.project_name)
+            total_units = lookup.get("total_units") or 0
 
             # Calculate percent_sold and unsold if total_units available
             if total_units > 0:
@@ -497,111 +497,52 @@ def get_hot_projects():
         return jsonify({"error": str(e)}), 500
 
 
-# =============================================================================
-# INVENTORY SCRAPING ENDPOINTS
-# =============================================================================
-
-@projects_bp.route("/projects/inventory/scrape", methods=["POST"])
-def scrape_project_inventory():
-    """
-    [DEPRECATED] Scrape endpoint removed - use static data file instead.
-
-    Use: from services.new_launch_units import get_units_for_project
-    """
-    project_name = request.args.get("project_name", "")
-
-    # Try to look up in static data
-    try:
-        from services.new_launch_units import get_units_for_project
-        result = get_units_for_project(project_name)
-
-        if result["total_units"]:
-            return jsonify({
-                "project_name": project_name,
-                "total_units": result["total_units"],
-                "source": result["source"],
-                "message": "Found in static data file"
-            })
-        else:
-            return jsonify({
-                "project_name": project_name,
-                "total_units": None,
-                "message": "Not found. Add to data/new_launch_units.json",
-                "needs_review": True
-            })
-    except Exception as e:
-        return jsonify({
-            "error": str(e),
-            "message": "Scraping deprecated. Use static data file."
-        }), 400
-
-
-@projects_bp.route("/projects/inventory/scrape-missing", methods=["POST"])
-def scrape_missing_inventory():
-    """
-    [DEPRECATED] Bulk scrape removed - use static data sync instead.
-
-    Use: from services.new_launch_units import sync_new_launch_units
-    """
-    return jsonify({
-        "success": False,
-        "message": "Scraping deprecated. Use sync_new_launch_units() instead.",
-        "hint": "from services.new_launch_units import sync_new_launch_units; sync_new_launch_units()"
-    }), 400
-
-
 @projects_bp.route("/projects/inventory/status", methods=["GET"])
 def get_inventory_status():
     """
     Get inventory data coverage status.
 
-    Returns summary of how many projects have total_units data vs missing.
-
-    Returns:
-        {
-            "total_projects_with_new_sales": N,
-            "projects_with_inventory": N,
-            "projects_missing_inventory": N,
-            "coverage_percent": X.X,
-            "by_source": {...}
-        }
+    Shows how many projects have total_units data in rawdata/new_launch_units.csv
     """
     import time
     start = time.time()
 
     try:
         from models.transaction import Transaction
-        from models.project_inventory import ProjectInventory
+        from services.new_launch_units import get_units_for_project, list_all_projects
         from sqlalchemy import func
 
         # Count projects with New Sale transactions
-        total_with_sales = db.session.query(
-            func.count(func.distinct(Transaction.project_name))
+        new_sale_projects = db.session.query(
+            func.distinct(Transaction.project_name)
         ).filter(
             Transaction.sale_type == 'New Sale',
             Transaction.is_outlier == False
-        ).scalar() or 0
+        ).all()
 
-        # Count projects with inventory data
-        inventory_stats = db.session.query(
-            ProjectInventory.data_source,
-            func.count(ProjectInventory.id)
-        ).group_by(ProjectInventory.data_source).all()
+        total_with_sales = len(new_sale_projects)
 
-        by_source = {src: count for src, count in inventory_stats}
-        total_with_inventory = sum(by_source.values())
+        # Check how many have data in CSV
+        projects_with_data = 0
+        projects_missing = []
+        for (project_name,) in new_sale_projects:
+            lookup = get_units_for_project(project_name)
+            if lookup.get("total_units"):
+                projects_with_data += 1
+            else:
+                projects_missing.append(project_name)
 
-        missing = total_with_sales - total_with_inventory
-        coverage = (total_with_inventory / total_with_sales * 100) if total_with_sales > 0 else 0
+        coverage = (projects_with_data / total_with_sales * 100) if total_with_sales > 0 else 0
 
         elapsed = time.time() - start
 
         return jsonify({
             "total_projects_with_new_sales": total_with_sales,
-            "projects_with_inventory": total_with_inventory,
-            "projects_missing_inventory": max(0, missing),
+            "projects_with_inventory": projects_with_data,
+            "projects_missing_inventory": len(projects_missing),
             "coverage_percent": round(coverage, 1),
-            "by_source": by_source,
+            "csv_file": "rawdata/new_launch_units.csv",
+            "top_missing": projects_missing[:10],
             "elapsed_seconds": round(elapsed, 2)
         })
 
@@ -613,242 +554,37 @@ def get_inventory_status():
 @projects_bp.route("/projects/cleanup-upcoming-launches", methods=["DELETE"])
 def cleanup_upcoming_launches_from_transactions():
     """
-    Delete new_launches entries that were auto-populated from transactions.
+    [DEPRECATED] This endpoint is no longer needed.
 
-    These entries have data_source='transactions' and contain misleading
-    total_units values (set to transaction count instead of actual units).
-
-    The correct source of truth for total_units is project_inventory table.
+    The upcoming_launches table is now only for future projects (2026+).
+    For total_units data, use the static JSON file (new_launch_units.json).
     """
-    import time
-    start = time.time()
-
-    try:
-        from models.new_launch import NewLaunch
-        from sqlalchemy import func
-
-        # Count before delete
-        count_before = db.session.query(NewLaunch).filter(
-            NewLaunch.data_source == 'transactions'
-        ).count()
-
-        if count_before == 0:
-            return jsonify({
-                "success": True,
-                "deleted": 0,
-                "message": "No transaction-populated entries found to delete"
-            })
-
-        # Delete entries populated from transactions
-        deleted = db.session.query(NewLaunch).filter(
-            NewLaunch.data_source == 'transactions'
-        ).delete()
-
-        db.session.commit()
-
-        elapsed = time.time() - start
-        print(f"DELETE /api/projects/cleanup-upcoming-launches took: {elapsed:.4f}s (deleted {deleted} entries)")
-
-        return jsonify({
-            "success": True,
-            "deleted": deleted,
-            "elapsed_seconds": round(elapsed, 2),
-            "message": f"Removed {deleted} entries with data_source='transactions'. "
-                       f"Use project_inventory for accurate total_units."
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        print(f"DELETE /api/projects/cleanup-upcoming-launches ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+    return jsonify({
+        "status": "deprecated",
+        "message": "This endpoint is deprecated. upcoming_launches is for future projects only.",
+        "instructions": [
+            "For total_units data, use backend/data/new_launch_units.json",
+            "For upcoming launches (2026+), use /api/upcoming-launches endpoints"
+        ]
+    }), 200
 
 
 @projects_bp.route("/projects/populate-upcoming-launches", methods=["POST"])
 def populate_upcoming_launches_from_transactions():
     """
-    Populate new_launches table from transactions with sale_type='New Sale'.
+    [DEPRECATED] This endpoint is no longer needed.
 
-    This extracts unique projects from New Sale transactions and creates
-    entries in the new_launches table with available data.
+    The upcoming_launches table should NOT be populated from transactions.
+    - Transactions = projects that have ALREADY launched
+    - Upcoming launches = projects that have NOT YET launched (future 2026+)
 
-    Fields populated:
-    - project_name: From transactions
-    - district: Most common district for the project
-    - market_segment: Derived from district (CCR/RCR/OCR)
-    - total_units: Count of New Sale transactions (estimate)
-    - tenure: Most common tenure for the project
-    - property_type: Most common property type
-    - launch_year: Year of first transaction
-    - data_source: 'transactions'
-
-    Returns:
-        {
-            "created": N,
-            "updated": N,
-            "skipped": N,
-            "projects": [...]
-        }
+    For total_units data, use the static JSON file (new_launch_units.json).
     """
-    import time
-    start = time.time()
-
-    try:
-        from models.transaction import Transaction
-        from models.new_launch import NewLaunch
-        from sqlalchemy import func, text
-        from constants import get_region_for_district
-
-        # Query: Get all New Sale projects with aggregated data
-        query = db.session.query(
-            Transaction.project_name,
-            Transaction.district,
-            Transaction.tenure,
-            Transaction.property_type,
-            func.count(Transaction.id).label('units_sold'),
-            func.min(Transaction.transaction_date).label('first_sale_date'),
-            func.max(Transaction.transaction_date).label('last_sale_date'),
-            func.avg(Transaction.psf).label('avg_psf')
-        ).filter(
-            Transaction.sale_type == 'New Sale',
-            Transaction.is_outlier == False
-        ).group_by(
-            Transaction.project_name,
-            Transaction.district,
-            Transaction.tenure,
-            Transaction.property_type
-        ).order_by(
-            func.count(Transaction.id).desc()
-        )
-
-        results = query.all()
-
-        # Group by project_name to handle multiple districts/tenures per project
-        projects_data = {}
-        for row in results:
-            name = row.project_name
-            if name not in projects_data:
-                projects_data[name] = {
-                    'project_name': name,
-                    'districts': {},
-                    'tenures': {},
-                    'property_types': {},
-                    'total_units': 0,
-                    'first_sale': row.first_sale_date,
-                    'avg_psf': row.avg_psf
-                }
-
-            # Accumulate counts by district
-            if row.district:
-                projects_data[name]['districts'][row.district] = \
-                    projects_data[name]['districts'].get(row.district, 0) + row.units_sold
-
-            # Accumulate by tenure
-            if row.tenure:
-                projects_data[name]['tenures'][row.tenure] = \
-                    projects_data[name]['tenures'].get(row.tenure, 0) + row.units_sold
-
-            # Accumulate by property type
-            if row.property_type:
-                projects_data[name]['property_types'][row.property_type] = \
-                    projects_data[name]['property_types'].get(row.property_type, 0) + row.units_sold
-
-            projects_data[name]['total_units'] += row.units_sold
-
-            # Track earliest first sale
-            if row.first_sale_date:
-                if projects_data[name]['first_sale'] is None or \
-                   row.first_sale_date < projects_data[name]['first_sale']:
-                    projects_data[name]['first_sale'] = row.first_sale_date
-
-        # Now insert/update new_launches
-        created = 0
-        updated = 0
-        skipped = 0
-        processed = []
-
-        for name, data in projects_data.items():
-            # Get most common district
-            district = max(data['districts'], key=data['districts'].get) if data['districts'] else None
-
-            # Get most common tenure
-            tenure = max(data['tenures'], key=data['tenures'].get) if data['tenures'] else None
-
-            # Get most common property type
-            property_type = max(data['property_types'], key=data['property_types'].get) \
-                if data['property_types'] else 'Condominium'
-
-            # Derive market segment from district
-            market_segment = get_region_for_district(district) if district else None
-
-            # Get launch year from first sale
-            launch_year = data['first_sale'].year if data['first_sale'] else None
-
-            # Check if already exists
-            existing = db.session.query(NewLaunch).filter(
-                func.lower(NewLaunch.project_name) == name.lower()
-            ).first()
-
-            if existing:
-                # Update only if we have more data
-                if data['total_units'] > (existing.total_units or 0):
-                    existing.total_units = data['total_units']
-                    existing.updated_at = func.now()
-                    updated += 1
-                    processed.append({
-                        'project_name': name,
-                        'action': 'updated',
-                        'total_units': data['total_units']
-                    })
-                else:
-                    skipped += 1
-            else:
-                # Create new entry
-                new_launch = NewLaunch(
-                    project_name=name,
-                    district=district,
-                    market_segment=market_segment,
-                    total_units=data['total_units'],
-                    tenure=tenure,
-                    property_type=property_type,
-                    launch_year=launch_year,
-                    data_source='transactions',
-                    data_confidence='medium',
-                    needs_review=True,
-                    review_reason='Auto-populated from transactions. Verify total_units and add developer.'
-                )
-                db.session.add(new_launch)
-                created += 1
-                processed.append({
-                    'project_name': name,
-                    'action': 'created',
-                    'district': district,
-                    'market_segment': market_segment,
-                    'total_units': data['total_units'],
-                    'launch_year': launch_year
-                })
-
-        db.session.commit()
-
-        elapsed = time.time() - start
-        print(f"POST /api/projects/populate-upcoming-launches took: {elapsed:.4f}s "
-              f"(created={created}, updated={updated}, skipped={skipped})")
-
-        return jsonify({
-            "success": True,
-            "created": created,
-            "updated": updated,
-            "skipped": skipped,
-            "total_projects": len(projects_data),
-            "elapsed_seconds": round(elapsed, 2),
-            "projects": processed[:50],  # Return first 50 for preview
-            "note": "Developer field needs manual entry. total_units is based on transaction count."
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        print(f"POST /api/projects/populate-upcoming-launches ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+    return jsonify({
+        "status": "deprecated",
+        "message": "This endpoint is deprecated. upcoming_launches is for FUTURE projects only, not existing ones.",
+        "instructions": [
+            "For total_units of existing projects, use backend/data/new_launch_units.json",
+            "For upcoming launches (2026+), upload CSV via /api/upcoming-launches/upload"
+        ]
+    }), 200
