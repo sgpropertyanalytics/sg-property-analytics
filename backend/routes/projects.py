@@ -508,3 +508,192 @@ def get_hot_projects():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+@projects_bp.route("/projects/populate-new-launches", methods=["POST"])
+def populate_new_launches_from_transactions():
+    """
+    Populate new_launches table from transactions with sale_type='New Sale'.
+
+    This extracts unique projects from New Sale transactions and creates
+    entries in the new_launches table with available data.
+
+    Fields populated:
+    - project_name: From transactions
+    - district: Most common district for the project
+    - market_segment: Derived from district (CCR/RCR/OCR)
+    - total_units: Count of New Sale transactions (estimate)
+    - tenure: Most common tenure for the project
+    - property_type: Most common property type
+    - launch_year: Year of first transaction
+    - data_source: 'transactions'
+
+    Returns:
+        {
+            "created": N,
+            "updated": N,
+            "skipped": N,
+            "projects": [...]
+        }
+    """
+    import time
+    start = time.time()
+
+    try:
+        from models.transaction import Transaction
+        from models.new_launch import NewLaunch
+        from sqlalchemy import func, text
+        from constants import get_region_for_district
+
+        # Query: Get all New Sale projects with aggregated data
+        query = db.session.query(
+            Transaction.project_name,
+            Transaction.district,
+            Transaction.tenure,
+            Transaction.property_type,
+            func.count(Transaction.id).label('units_sold'),
+            func.min(Transaction.transaction_date).label('first_sale_date'),
+            func.max(Transaction.transaction_date).label('last_sale_date'),
+            func.avg(Transaction.psf).label('avg_psf')
+        ).filter(
+            Transaction.sale_type == 'New Sale',
+            Transaction.is_outlier == False
+        ).group_by(
+            Transaction.project_name,
+            Transaction.district,
+            Transaction.tenure,
+            Transaction.property_type
+        ).order_by(
+            func.count(Transaction.id).desc()
+        )
+
+        results = query.all()
+
+        # Group by project_name to handle multiple districts/tenures per project
+        projects_data = {}
+        for row in results:
+            name = row.project_name
+            if name not in projects_data:
+                projects_data[name] = {
+                    'project_name': name,
+                    'districts': {},
+                    'tenures': {},
+                    'property_types': {},
+                    'total_units': 0,
+                    'first_sale': row.first_sale_date,
+                    'avg_psf': row.avg_psf
+                }
+
+            # Accumulate counts by district
+            if row.district:
+                projects_data[name]['districts'][row.district] = \
+                    projects_data[name]['districts'].get(row.district, 0) + row.units_sold
+
+            # Accumulate by tenure
+            if row.tenure:
+                projects_data[name]['tenures'][row.tenure] = \
+                    projects_data[name]['tenures'].get(row.tenure, 0) + row.units_sold
+
+            # Accumulate by property type
+            if row.property_type:
+                projects_data[name]['property_types'][row.property_type] = \
+                    projects_data[name]['property_types'].get(row.property_type, 0) + row.units_sold
+
+            projects_data[name]['total_units'] += row.units_sold
+
+            # Track earliest first sale
+            if row.first_sale_date:
+                if projects_data[name]['first_sale'] is None or \
+                   row.first_sale_date < projects_data[name]['first_sale']:
+                    projects_data[name]['first_sale'] = row.first_sale_date
+
+        # Now insert/update new_launches
+        created = 0
+        updated = 0
+        skipped = 0
+        processed = []
+
+        for name, data in projects_data.items():
+            # Get most common district
+            district = max(data['districts'], key=data['districts'].get) if data['districts'] else None
+
+            # Get most common tenure
+            tenure = max(data['tenures'], key=data['tenures'].get) if data['tenures'] else None
+
+            # Get most common property type
+            property_type = max(data['property_types'], key=data['property_types'].get) \
+                if data['property_types'] else 'Condominium'
+
+            # Derive market segment from district
+            market_segment = get_region_for_district(district) if district else None
+
+            # Get launch year from first sale
+            launch_year = data['first_sale'].year if data['first_sale'] else None
+
+            # Check if already exists
+            existing = db.session.query(NewLaunch).filter(
+                func.lower(NewLaunch.project_name) == name.lower()
+            ).first()
+
+            if existing:
+                # Update only if we have more data
+                if data['total_units'] > (existing.total_units or 0):
+                    existing.total_units = data['total_units']
+                    existing.updated_at = func.now()
+                    updated += 1
+                    processed.append({
+                        'project_name': name,
+                        'action': 'updated',
+                        'total_units': data['total_units']
+                    })
+                else:
+                    skipped += 1
+            else:
+                # Create new entry
+                new_launch = NewLaunch(
+                    project_name=name,
+                    district=district,
+                    market_segment=market_segment,
+                    total_units=data['total_units'],
+                    tenure=tenure,
+                    property_type=property_type,
+                    launch_year=launch_year,
+                    data_source='transactions',
+                    data_confidence='medium',
+                    needs_review=True,
+                    review_reason='Auto-populated from transactions. Verify total_units and add developer.'
+                )
+                db.session.add(new_launch)
+                created += 1
+                processed.append({
+                    'project_name': name,
+                    'action': 'created',
+                    'district': district,
+                    'market_segment': market_segment,
+                    'total_units': data['total_units'],
+                    'launch_year': launch_year
+                })
+
+        db.session.commit()
+
+        elapsed = time.time() - start
+        print(f"POST /api/projects/populate-new-launches took: {elapsed:.4f}s "
+              f"(created={created}, updated={updated}, skipped={skipped})")
+
+        return jsonify({
+            "success": True,
+            "created": created,
+            "updated": updated,
+            "skipped": skipped,
+            "total_projects": len(projects_data),
+            "elapsed_seconds": round(elapsed, 2),
+            "projects": processed[:50],  # Return first 50 for preview
+            "note": "Developer field needs manual entry. total_units is based on transaction count."
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"POST /api/projects/populate-new-launches ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
