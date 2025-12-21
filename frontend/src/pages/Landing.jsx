@@ -6,8 +6,8 @@ import {
   Building2,
   Map,
   ShieldCheck,
-  TrendingUp,
-  LineChart
+  LineChart,
+  Lock
 } from 'lucide-react';
 
 /**
@@ -18,18 +18,15 @@ import {
  *
  * Design: Warm backgrounds (Sand/Cream) with Deep Navy typography
  * and Sky/Ocean Blue accents for a premium, distinctive feel.
+ *
+ * Refinements:
+ * - Browser chrome frame around dashboard mockup
+ * - Meaningful visualizations in Bento cards
+ * - Tight typography with tracking-tight
+ * - Enhanced hover states with shadows
  */
 const LandingPage = () => {
   const navigate = useNavigate();
-
-  // Color palette from ColorHunt
-  const colors = {
-    navy: '#213448',    // Deep Navy - headings, primary text
-    ocean: '#547792',   // Ocean Blue - secondary text, labels
-    sky: '#94B4C1',     // Sky Blue - borders, icons
-    sand: '#EAE0CF',    // Sand/Cream - backgrounds, hover
-    bg: '#FDFBF7',      // Light tint of Sand for background
-  };
 
   // Animation variants for staggered reveal
   const heroVariants = {
@@ -45,43 +42,8 @@ const LandingPage = () => {
     }),
   };
 
-  // Feature cards data
-  const features = [
-    {
-      title: 'District Heatmaps',
-      description: 'Visualize rental yield and price compression across CCR, RCR, and OCR instantly.',
-      icon: Map,
-      span: 'col-span-1 md:col-span-2',
-      variant: 'light',
-    },
-    {
-      title: 'Supply Cliffs',
-      description: 'Predict price impact based on upcoming project TOP dates.',
-      icon: BarChart3,
-      span: 'col-span-1',
-      variant: 'dark',
-    },
-    {
-      title: 'Unit Mix Analysis',
-      description: 'Compare profitability of different unit types within a project.',
-      icon: Building2,
-      span: 'col-span-1',
-      variant: 'light',
-    },
-    {
-      title: 'Cleaned & Validated Data',
-      description: 'We process thousands of transaction records, removing outliers to give you a true picture of the market.',
-      icon: ShieldCheck,
-      span: 'col-span-1 md:col-span-2',
-      variant: 'light',
-    },
-  ];
-
   return (
-    <div
-      className="min-h-screen min-h-[100dvh] font-sans selection:bg-[#94B4C1]/30 text-[#213448] overflow-x-hidden"
-      style={{ backgroundColor: colors.bg }}
-    >
+    <div className="min-h-screen min-h-[100dvh] font-sans selection:bg-[#94B4C1]/30 text-[#213448] overflow-x-hidden bg-[#FDFBF7]">
       {/* === NAV === */}
       <nav className="fixed w-full z-50 px-4 md:px-6 py-3 md:py-4 backdrop-blur-md border-b border-[#94B4C1]/20 bg-[#FDFBF7]/80">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -90,7 +52,7 @@ const LandingPage = () => {
             <div className="w-8 h-8 bg-[#213448] rounded-lg flex items-center justify-center">
               <LineChart className="w-5 h-5 text-[#EAE0CF]" />
             </div>
-            <span className="font-bold tracking-tight text-lg md:text-xl text-[#213448]">
+            <span className="font-bold tracking-tighter text-lg md:text-xl text-[#213448]">
               PropAnalytics.sg
             </span>
           </div>
@@ -99,13 +61,13 @@ const LandingPage = () => {
           <div className="flex gap-2 md:gap-4">
             <button
               onClick={() => navigate('/login')}
-              className="hidden md:block px-4 py-2 text-sm font-medium text-[#547792] hover:text-[#213448] transition-colors min-h-[44px]"
+              className="hidden md:flex items-center px-4 py-2 text-sm font-medium text-[#547792] hover:text-[#213448] transition-colors min-h-[44px]"
             >
               Log In
             </button>
             <button
               onClick={() => navigate('/market-pulse')}
-              className="px-4 md:px-5 py-2 text-sm font-medium bg-[#213448] text-[#EAE0CF] rounded-lg hover:bg-[#547792] active:scale-[0.98] transition-all shadow-lg shadow-[#213448]/10 min-h-[44px] touch-action-manipulation"
+              className="px-4 md:px-5 py-2 text-sm font-medium bg-[#213448] text-[#EAE0CF] rounded-lg hover:bg-[#547792] hover:shadow-lg active:scale-[0.98] transition-all shadow-lg shadow-[#213448]/10 min-h-[44px] touch-action-manipulation"
             >
               Get Started
             </button>
@@ -133,13 +95,13 @@ const LandingPage = () => {
             </span>
           </motion.div>
 
-          {/* Headline */}
+          {/* Headline - Tightened typography */}
           <motion.h1
             custom={1}
             initial="hidden"
             animate="visible"
             variants={heroVariants}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight text-[#213448] mb-4 md:mb-6 leading-[1.1]"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter text-[#213448] mb-4 md:mb-6 leading-[1.05]"
           >
             The new standard for{' '}
             <br className="hidden sm:block" />
@@ -168,111 +130,130 @@ const LandingPage = () => {
           >
             <button
               onClick={() => navigate('/market-pulse')}
-              className="group w-full sm:w-auto px-6 md:px-8 py-3 md:py-3.5 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#547792] active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center justify-center gap-2 min-h-[48px] touch-action-manipulation"
+              className="group w-full sm:w-auto px-6 md:px-8 py-3 md:py-3.5 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#547792] hover:shadow-2xl active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center justify-center gap-2 min-h-[48px] touch-action-manipulation"
             >
               Explore the Dashboard
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
             <button
               onClick={() => navigate('/analytics-view')}
-              className="w-full sm:w-auto px-6 md:px-8 py-3 md:py-3.5 rounded-xl bg-white border border-[#94B4C1]/50 text-[#547792] hover:bg-[#EAE0CF]/50 active:scale-[0.98] transition-all font-medium min-h-[48px] touch-action-manipulation"
+              className="w-full sm:w-auto px-6 md:px-8 py-3 md:py-3.5 rounded-xl bg-white border border-[#94B4C1]/40 text-[#547792] hover:border-[#547792] hover:shadow-lg active:scale-[0.98] transition-all font-medium min-h-[48px] touch-action-manipulation"
             >
               View Analytics Demo
             </button>
           </motion.div>
         </div>
 
-        {/* === TILTED DASHBOARD MOCKUP === */}
+        {/* === BROWSER CHROME DASHBOARD MOCKUP === */}
         <motion.div
-          initial={{ opacity: 0, y: 60, rotateX: 15 }}
-          animate={{ opacity: 1, y: 0, rotateX: 0 }}
+          initial={{ opacity: 0, y: 60 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, type: 'spring', bounce: 0.3 }}
           className="mt-12 md:mt-20 max-w-6xl mx-auto"
-          style={{ perspective: '1000px' }}
         >
-          <div className="relative rounded-xl md:rounded-2xl border border-[#94B4C1]/40 bg-white/80 shadow-2xl shadow-[#213448]/10 overflow-hidden backdrop-blur-sm p-1.5 md:p-2">
-            {/* Glass effect overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/40 to-white/0 pointer-events-none z-20" />
+          {/* Browser Window Container */}
+          <div className="relative rounded-xl md:rounded-2xl border border-[#94B4C1]/40 bg-white shadow-2xl shadow-[#213448]/20 overflow-hidden">
+            {/* Browser Chrome Header */}
+            <div className="h-8 md:h-10 bg-[#FDFBF7] border-b border-[#EAE0CF] flex items-center px-3 md:px-4 gap-2">
+              {/* Traffic Lights */}
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#EAE0CF] border border-[#d4c5ad]" />
+                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#EAE0CF] border border-[#d4c5ad]" />
+                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#EAE0CF] border border-[#d4c5ad]" />
+              </div>
+              {/* Address Bar */}
+              <div className="ml-3 md:ml-4 h-5 md:h-6 flex-1 max-w-xs bg-white border border-[#EAE0CF] rounded text-[9px] md:text-[10px] flex items-center px-2 text-[#94B4C1]">
+                <Lock className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1.5 text-[#547792]" />
+                propanalytics.sg/dashboard
+              </div>
+            </div>
 
-            {/* Dashboard Screenshot Placeholder */}
-            <div className="aspect-[16/9] bg-[#FDFBF7] rounded-lg md:rounded-xl border border-[#EAE0CF] overflow-hidden relative">
+            {/* Dashboard Screenshot Area */}
+            <div className="relative bg-[#FDFBF7]">
               {/*
-                PLACEHOLDER FOR DASHBOARD SCREENSHOT
-                Replace this div with your actual dashboard image:
+                PLACEHOLDER FOR YOUR DASHBOARD SCREENSHOT
+                Replace this entire div with:
                 <img
                   src="/dashboard-screenshot.png"
                   alt="Singapore Property Analytics Dashboard"
-                  className="w-full h-full object-cover"
+                  className="w-full h-auto"
                 />
               */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 bg-gradient-to-br from-[#FDFBF7] to-[#EAE0CF]/30">
-                {/* Simulated Dashboard Header */}
-                <div className="w-full max-w-4xl">
-                  <div className="flex items-center gap-3 mb-4 md:mb-6">
-                    <div className="w-6 h-6 md:w-8 md:h-8 bg-[#213448] rounded-lg" />
-                    <div className="h-4 md:h-5 w-32 md:w-48 bg-[#213448] rounded" />
+              <div className="aspect-[16/9] flex flex-col items-center justify-center p-4 md:p-8">
+                {/* Simulated Dashboard */}
+                <div className="w-full max-w-5xl">
+                  {/* Dashboard Header */}
+                  <div className="flex items-center justify-between mb-4 md:mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 md:w-8 md:h-8 bg-[#213448] rounded-lg" />
+                      <div className="h-4 md:h-5 w-40 md:w-56 bg-[#213448] rounded" />
+                    </div>
+                    <div className="hidden md:flex gap-2">
+                      <div className="h-8 w-20 bg-[#EAE0CF] rounded-lg" />
+                      <div className="h-8 w-20 bg-[#EAE0CF] rounded-lg" />
+                    </div>
                   </div>
 
                   {/* KPI Cards Row */}
                   <div className="grid grid-cols-3 gap-2 md:gap-4 mb-4 md:mb-6">
-                    {[1, 2, 3].map((i) => (
+                    {[
+                      { label: 'Total New Sales', value: '33', period: 'past 30 days' },
+                      { label: 'Total Resales', value: '136', period: 'past 30 days' },
+                      { label: 'Total Value', value: '$356M', period: 'past 30 days' },
+                    ].map((kpi, i) => (
                       <div key={i} className="bg-white rounded-lg p-2 md:p-4 border border-[#94B4C1]/30 shadow-sm">
-                        <div className="h-2 md:h-3 w-12 md:w-16 bg-[#94B4C1]/50 rounded mb-1 md:mb-2" />
-                        <div className="h-4 md:h-6 w-16 md:w-24 bg-[#213448] rounded" />
+                        <div className="text-[8px] md:text-xs text-[#94B4C1] mb-0.5 md:mb-1 truncate">{kpi.label}</div>
+                        <div className="text-sm md:text-2xl font-bold text-[#213448] font-mono">{kpi.value}</div>
                       </div>
                     ))}
                   </div>
 
                   {/* Chart Area */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
-                    {/* Main Chart */}
-                    <div className="bg-white rounded-lg p-3 md:p-4 border border-[#94B4C1]/30 shadow-sm md:col-span-1">
-                      <div className="h-2 md:h-3 w-20 md:w-28 bg-[#547792] rounded mb-2 md:mb-4" />
-                      <div className="flex items-end gap-1 md:gap-2 h-16 md:h-32">
-                        {[40, 60, 45, 80, 65, 90, 55, 70, 85, 50].map((h, i) => (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
+                    {/* Main Time Series Chart */}
+                    <div className="md:col-span-2 bg-white rounded-lg p-3 md:p-4 border border-[#94B4C1]/30 shadow-sm">
+                      <div className="flex items-center justify-between mb-2 md:mb-4">
+                        <div className="h-2 md:h-3 w-24 md:w-32 bg-[#547792] rounded" />
+                        <div className="flex gap-1">
+                          <div className="w-4 h-4 md:w-5 md:h-5 bg-[#EAE0CF] rounded" />
+                          <div className="w-4 h-4 md:w-5 md:h-5 bg-[#EAE0CF] rounded" />
+                        </div>
+                      </div>
+                      <div className="flex items-end gap-0.5 md:gap-1 h-20 md:h-36">
+                        {[35, 45, 40, 55, 50, 65, 60, 75, 70, 85, 80, 90, 85, 95, 88].map((h, i) => (
                           <div
                             key={i}
-                            className="flex-1 bg-gradient-to-t from-[#213448] to-[#547792] rounded-t transition-all"
+                            className="flex-1 bg-gradient-to-t from-[#213448] to-[#547792] rounded-t opacity-90"
                             style={{ height: `${h}%` }}
                           />
                         ))}
                       </div>
                     </div>
 
-                    {/* Secondary Chart */}
-                    <div className="bg-white rounded-lg p-3 md:p-4 border border-[#94B4C1]/30 shadow-sm md:col-span-1">
-                      <div className="h-2 md:h-3 w-20 md:w-24 bg-[#547792] rounded mb-2 md:mb-4" />
-                      <div className="space-y-1 md:space-y-2">
+                    {/* Volume by Region */}
+                    <div className="bg-white rounded-lg p-3 md:p-4 border border-[#94B4C1]/30 shadow-sm">
+                      <div className="h-2 md:h-3 w-20 md:w-28 bg-[#547792] rounded mb-2 md:mb-4" />
+                      <div className="space-y-2 md:space-y-3">
                         <div className="flex items-center gap-2">
-                          <div className="h-4 md:h-8 bg-[#213448] rounded" style={{ width: '80%' }} />
-                          <span className="text-[8px] md:text-xs text-[#547792]">OCR</span>
+                          <div className="h-5 md:h-8 bg-[#213448] rounded flex-1" style={{ maxWidth: '85%' }} />
+                          <span className="text-[8px] md:text-xs text-[#547792] font-medium">OCR</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="h-4 md:h-8 bg-[#547792] rounded" style={{ width: '65%' }} />
-                          <span className="text-[8px] md:text-xs text-[#547792]">RCR</span>
+                          <div className="h-5 md:h-8 bg-[#547792] rounded flex-1" style={{ maxWidth: '65%' }} />
+                          <span className="text-[8px] md:text-xs text-[#547792] font-medium">RCR</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="h-4 md:h-8 bg-[#94B4C1] rounded" style={{ width: '45%' }} />
-                          <span className="text-[8px] md:text-xs text-[#547792]">CCR</span>
+                          <div className="h-5 md:h-8 bg-[#94B4C1] rounded flex-1" style={{ maxWidth: '40%' }} />
+                          <span className="text-[8px] md:text-xs text-[#547792] font-medium">CCR</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Overlay Text */}
-                <div className="absolute inset-0 flex items-center justify-center bg-[#213448]/5 backdrop-blur-[1px]">
-                  <div className="text-center">
-                    <TrendingUp className="w-8 h-8 md:w-12 md:h-12 text-[#547792] mx-auto mb-2" />
-                    <p className="text-sm md:text-base text-[#547792] font-medium">
-                      Dashboard Preview
-                    </p>
-                    <p className="text-xs text-[#94B4C1] mt-1">
-                      Replace with actual screenshot
-                    </p>
-                  </div>
-                </div>
               </div>
+
+              {/* Glass Reflection Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-white/10 to-transparent pointer-events-none" />
             </div>
           </div>
         </motion.div>
@@ -288,7 +269,7 @@ const LandingPage = () => {
             {['URA', 'REALIS', 'HDB', 'SLA'].map((source) => (
               <div
                 key={source}
-                className="text-xl md:text-2xl font-bold text-[#213448] tracking-tight"
+                className="text-xl md:text-2xl font-bold text-[#213448] tracking-tighter"
               >
                 {source}
               </div>
@@ -300,9 +281,9 @@ const LandingPage = () => {
       {/* === BENTO GRID FEATURE SECTION === */}
       <section className="py-16 md:py-24 px-4 md:px-6 bg-white">
         <div className="max-w-7xl mx-auto">
-          {/* Section Header */}
+          {/* Section Header - Tightened typography */}
           <div className="mb-10 md:mb-16 text-center">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-3 md:mb-4">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-3 md:mb-4 tracking-tight">
               Everything you need to
               <br className="hidden sm:block" /> underwrite a deal.
             </h2>
@@ -313,10 +294,18 @@ const LandingPage = () => {
           </div>
 
           {/* Bento Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 auto-rows-[250px] md:auto-rows-[300px]">
-            {features.map((feature, index) => (
-              <FeatureCard key={index} feature={feature} />
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 auto-rows-[280px] md:auto-rows-[320px]">
+            {/* Card 1: District Heatmaps - Large span with GitHub-style grid */}
+            <HeatmapCard />
+
+            {/* Card 2: Supply Cliffs - Dark card */}
+            <SupplyCliffCard />
+
+            {/* Card 3: Unit Mix Analysis */}
+            <UnitMixCard />
+
+            {/* Card 4: Cleaned & Validated Data - Matrix effect */}
+            <DataValidationCard />
           </div>
         </div>
       </section>
@@ -324,7 +313,7 @@ const LandingPage = () => {
       {/* === CTA SECTION === */}
       <section className="py-16 md:py-24 px-4 md:px-6 bg-[#FDFBF7]">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-4">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-4 tracking-tight">
             Ready to get started?
           </h2>
           <p className="text-[#547792] text-base md:text-lg mb-8 max-w-xl mx-auto">
@@ -333,7 +322,7 @@ const LandingPage = () => {
           </p>
           <button
             onClick={() => navigate('/market-pulse')}
-            className="group px-8 py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#547792] active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center gap-2 mx-auto min-h-[48px] touch-action-manipulation"
+            className="group px-8 py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#547792] hover:shadow-2xl active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center gap-2 mx-auto min-h-[48px] touch-action-manipulation"
           >
             Access the Dashboard
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -356,24 +345,15 @@ const LandingPage = () => {
 
           {/* Footer Links */}
           <div className="flex gap-6 md:gap-8">
-            <a
-              href="#"
-              className="text-[#547792] hover:text-[#213448] text-sm font-medium transition-colors min-h-[44px] flex items-center"
-            >
-              Methodology
-            </a>
-            <a
-              href="#"
-              className="text-[#547792] hover:text-[#213448] text-sm font-medium transition-colors min-h-[44px] flex items-center"
-            >
-              Pricing
-            </a>
-            <a
-              href="#"
-              className="text-[#547792] hover:text-[#213448] text-sm font-medium transition-colors min-h-[44px] flex items-center"
-            >
-              Contact
-            </a>
+            {['Methodology', 'Pricing', 'Contact'].map((link) => (
+              <a
+                key={link}
+                href="#"
+                className="text-[#547792] hover:text-[#213448] text-sm font-medium transition-colors min-h-[44px] flex items-center"
+              >
+                {link}
+              </a>
+            ))}
           </div>
         </div>
       </footer>
@@ -382,100 +362,282 @@ const LandingPage = () => {
 };
 
 /**
- * Feature Card Component for Bento Grid
+ * District Heatmaps Card - GitHub-style contribution grid
  */
-function FeatureCard({ feature }) {
-  const { title, description, icon: Icon, span, variant } = feature;
+function HeatmapCard() {
+  // Generate a grid of "districts" with varying intensity
+  const generateHeatmapData = () => {
+    const intensities = [
+      [0.9, 0.8, 0.5, 0.3, 0.2, 0.3, 0.4],
+      [0.7, 0.9, 0.6, 0.4, 0.3, 0.2, 0.3],
+      [0.5, 0.7, 0.8, 0.6, 0.4, 0.3, 0.2],
+      [0.3, 0.5, 0.6, 0.7, 0.5, 0.4, 0.3],
+      [0.2, 0.3, 0.4, 0.5, 0.6, 0.5, 0.4],
+    ];
+    return intensities;
+  };
 
-  if (variant === 'dark') {
-    return (
-      <motion.div
-        whileHover={{ y: -5 }}
-        className={`${span} rounded-2xl md:rounded-3xl bg-[#213448] p-6 md:p-8 relative overflow-hidden text-[#EAE0CF] flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:shadow-[#213448]/20`}
-      >
-        <div>
-          <Icon className="w-6 h-6 md:w-8 md:h-8 mb-3 md:mb-4 text-[#94B4C1]" />
-          <h3 className="text-xl md:text-2xl font-bold mb-2">{title}</h3>
-          <p className="text-[#94B4C1]/80 text-sm md:text-base">
-            {description}
-          </p>
-        </div>
+  const heatmapData = generateHeatmapData();
 
-        {/* Bar chart visualization */}
-        <div className="w-full h-24 md:h-32 flex items-end gap-1 md:gap-2 mt-4">
-          {[40, 60, 30, 80, 50].map((h, i) => (
-            <div
-              key={i}
-              className={`flex-1 rounded-t-md transition-all ${
-                i === 2
-                  ? 'bg-[#EAE0CF] animate-pulse'
-                  : 'bg-[#547792]'
-              }`}
-              style={{ height: `${h}%` }}
-            />
-          ))}
-        </div>
-      </motion.div>
-    );
-  }
-
-  // Light variant (default)
   return (
     <motion.div
-      whileHover={{ y: -5 }}
-      className={`${span} rounded-2xl md:rounded-3xl border border-[#94B4C1]/30 bg-[#FDFBF7] p-6 md:p-8 relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-[#94B4C1]/10`}
+      whileHover={{ y: -5, boxShadow: '0 25px 50px -12px rgba(148, 180, 193, 0.25)' }}
+      className="col-span-1 md:col-span-2 rounded-2xl md:rounded-3xl border border-[#94B4C1]/30 bg-[#FDFBF7] p-6 md:p-8 relative overflow-hidden transition-all duration-300 group"
     >
       {/* Icon badge */}
-      <div className="absolute top-6 md:top-8 right-6 md:right-8 p-2 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-[#EAE0CF]">
-        <Icon className="w-5 h-5 md:w-6 md:h-6 text-[#547792]" />
+      <div className="absolute top-6 md:top-8 right-6 md:right-8 p-2 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-[#EAE0CF] z-10">
+        <Map className="w-5 h-5 md:w-6 md:h-6 text-[#547792]" />
       </div>
 
-      <h3 className="text-xl md:text-2xl font-bold text-[#213448] mb-2 pr-12">
-        {title}
+      <h3 className="text-xl md:text-2xl font-bold text-[#213448] mb-2 tracking-tight pr-16">
+        District Heatmaps
       </h3>
       <p className="text-[#547792] text-sm md:text-base max-w-sm">
-        {description}
+        Visualize rental yield and price compression across CCR, RCR, and OCR instantly.
       </p>
 
-      {/* Conditional visualization based on feature */}
-      {title === 'District Heatmaps' && (
-        <div className="absolute bottom-0 right-0 w-2/3 h-2/3 translate-x-8 md:translate-x-12 translate-y-8 md:translate-y-12 bg-white rounded-tl-2xl md:rounded-tl-3xl border-l border-t border-[#94B4C1]/30 shadow-lg p-3 md:p-4 group-hover:translate-x-8 group-hover:translate-y-8 transition-transform duration-500">
-          <div className="w-full h-full bg-[#EAE0CF]/20 rounded-lg md:rounded-xl grid grid-cols-4 gap-1 md:gap-2 p-2">
-            <div className="bg-[#213448] opacity-90 rounded-lg col-span-2 row-span-2" />
-            <div className="bg-[#547792] opacity-70 rounded-lg" />
-            <div className="bg-[#547792] opacity-60 rounded-lg" />
-            <div className="bg-[#94B4C1] opacity-50 rounded-lg" />
-            <div className="bg-[#94B4C1] opacity-30 rounded-lg" />
-          </div>
+      {/* GitHub-style Heatmap Grid */}
+      <div className="absolute bottom-4 md:bottom-6 right-4 md:right-6 bg-white rounded-xl md:rounded-2xl border border-[#94B4C1]/30 shadow-lg p-3 md:p-4 group-hover:scale-105 transition-transform duration-500">
+        <div className="flex gap-0.5 md:gap-1">
+          {heatmapData[0].map((_, colIndex) => (
+            <div key={colIndex} className="flex flex-col gap-0.5 md:gap-1">
+              {heatmapData.map((row, rowIndex) => {
+                const intensity = row[colIndex];
+                // Color from Sand (low) to Navy (high)
+                const bgColor = intensity > 0.7
+                  ? 'bg-[#213448]'
+                  : intensity > 0.5
+                    ? 'bg-[#547792]'
+                    : intensity > 0.3
+                      ? 'bg-[#94B4C1]'
+                      : 'bg-[#EAE0CF]';
+                return (
+                  <div
+                    key={rowIndex}
+                    className={`w-4 h-4 md:w-5 md:h-5 rounded-sm ${bgColor} transition-all duration-300`}
+                    style={{ opacity: 0.3 + intensity * 0.7 }}
+                  />
+                );
+              })}
+            </div>
+          ))}
         </div>
-      )}
-
-      {title === 'Unit Mix Analysis' && (
-        <div className="mt-8 md:mt-10 space-y-2 md:space-y-3">
-          <div className="w-full h-8 md:h-10 bg-[#FDFBF7] rounded-lg overflow-hidden flex border border-[#EAE0CF]">
-            <div
-              className="bg-[rgba(247,190,129,0.9)]"
-              style={{ width: '30%' }}
-              title="1 Bedroom"
-            />
-            <div
-              className="bg-[rgba(79,129,189,0.9)]"
-              style={{ width: '45%' }}
-              title="2 Bedrooms"
-            />
-            <div
-              className="bg-[rgba(40,82,122,0.9)]"
-              style={{ width: '25%' }}
-              title="3 Bedrooms"
-            />
+        {/* Legend */}
+        <div className="flex items-center justify-between mt-2 text-[8px] md:text-[10px] text-[#94B4C1]">
+          <span>Low</span>
+          <div className="flex gap-0.5">
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-sm bg-[#EAE0CF]" />
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-sm bg-[#94B4C1]" />
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-sm bg-[#547792]" />
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-sm bg-[#213448]" />
           </div>
-          <div className="flex justify-between text-xs md:text-sm font-medium text-[#547792]">
+          <span>High</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/**
+ * Supply Cliffs Card - Dark card with 3D bars and average line
+ */
+function SupplyCliffCard() {
+  const barData = [
+    { height: 65, label: '2024' },
+    { height: 80, label: '2025' },
+    { height: 45, label: '2026', isCliff: true },
+    { height: 70, label: '2027' },
+    { height: 55, label: '2028' },
+  ];
+  const avgHeight = 60;
+
+  return (
+    <motion.div
+      whileHover={{ y: -5, boxShadow: '0 25px 50px -12px rgba(33, 52, 72, 0.4)' }}
+      className="col-span-1 rounded-2xl md:rounded-3xl bg-[#213448] p-6 md:p-8 relative overflow-hidden text-[#EAE0CF] flex flex-col justify-between transition-all duration-300"
+    >
+      <div>
+        <BarChart3 className="w-6 h-6 md:w-8 md:h-8 mb-3 md:mb-4 text-[#94B4C1]" />
+        <h3 className="text-xl md:text-2xl font-bold mb-2 tracking-tight">Supply Cliffs</h3>
+        <p className="text-[#94B4C1]/80 text-sm md:text-base">
+          Predict price impact based on upcoming project TOP dates.
+        </p>
+      </div>
+
+      {/* Bar Chart with Average Line */}
+      <div className="relative w-full h-28 md:h-36 mt-4">
+        {/* Average Supply Line */}
+        <div
+          className="absolute left-0 right-0 border-t-2 border-dashed border-[#94B4C1]/50 z-10"
+          style={{ bottom: `${avgHeight}%` }}
+        >
+          <span className="absolute -top-3 right-0 text-[8px] md:text-[10px] text-[#94B4C1]">
+            Avg Supply
+          </span>
+        </div>
+
+        {/* Bars */}
+        <div className="absolute inset-0 flex items-end gap-1.5 md:gap-2">
+          {barData.map((bar, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center">
+              <div
+                className={`w-full rounded-t-md transition-all duration-300 ${
+                  bar.isCliff
+                    ? 'bg-gradient-to-t from-[#EAE0CF] to-[#d4c5ad] animate-pulse'
+                    : 'bg-gradient-to-t from-[#547792] to-[#6b8da8]'
+                }`}
+                style={{
+                  height: `${bar.height}%`,
+                  boxShadow: 'inset -2px 0 4px rgba(0,0,0,0.1)',
+                }}
+              />
+              <span className="text-[8px] md:text-[10px] text-[#94B4C1] mt-1">{bar.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/**
+ * Unit Mix Analysis Card
+ */
+function UnitMixCard() {
+  return (
+    <motion.div
+      whileHover={{ y: -5, boxShadow: '0 25px 50px -12px rgba(148, 180, 193, 0.25)' }}
+      className="col-span-1 rounded-2xl md:rounded-3xl border border-[#94B4C1]/30 bg-white p-6 md:p-8 relative overflow-hidden transition-all duration-300"
+    >
+      {/* Icon badge */}
+      <div className="absolute top-6 md:top-8 right-6 md:right-8 p-2 md:p-3 bg-[#FDFBF7] rounded-xl md:rounded-2xl border border-[#EAE0CF]">
+        <Building2 className="w-5 h-5 md:w-6 md:h-6 text-[#547792]" />
+      </div>
+
+      <h3 className="text-xl md:text-2xl font-bold text-[#213448] mb-2 tracking-tight pr-14">
+        Unit Mix Analysis
+      </h3>
+      <p className="text-[#547792] text-sm md:text-base">
+        Compare profitability of different unit types within a project.
+      </p>
+
+      {/* Stacked bar visualization */}
+      <div className="mt-8 md:mt-12 space-y-3">
+        {/* Stacked bar */}
+        <div className="w-full h-10 md:h-12 bg-[#FDFBF7] rounded-lg overflow-hidden flex border border-[#EAE0CF] shadow-inner">
+          <div
+            className="h-full bg-gradient-to-b from-[rgba(247,190,129,0.95)] to-[rgba(237,170,100,0.95)]"
+            style={{ width: '28%' }}
+          />
+          <div
+            className="h-full bg-gradient-to-b from-[rgba(79,129,189,0.95)] to-[rgba(60,105,160,0.95)]"
+            style={{ width: '47%' }}
+          />
+          <div
+            className="h-full bg-gradient-to-b from-[rgba(40,82,122,0.95)] to-[rgba(30,62,95,0.95)]"
+            style={{ width: '25%' }}
+          />
+        </div>
+
+        {/* Labels */}
+        <div className="flex justify-between text-xs md:text-sm font-medium text-[#547792]">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-[rgba(247,190,129,0.9)]" />
             <span>1BR</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-[rgba(79,129,189,0.9)]" />
             <span>2BR</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-[rgba(40,82,122,0.9)]" />
             <span>3BR</span>
           </div>
         </div>
-      )}
+      </div>
+    </motion.div>
+  );
+}
+
+/**
+ * Cleaned & Validated Data Card - Matrix terminal effect
+ */
+function DataValidationCard() {
+  // Sample validation log entries
+  const logEntries = [
+    { id: 'TXN_9918', status: 'VALID' },
+    { id: 'TXN_9919', status: 'VALID' },
+    { id: 'TXN_9920', status: 'VALID' },
+    { id: 'TXN_9921', status: 'EXCLUDED', reason: 'Outlier' },
+    { id: 'TXN_9922', status: 'VALID' },
+    { id: 'TXN_9923', status: 'VALID' },
+    { id: 'TXN_9924', status: 'EXCLUDED', reason: 'Non-market' },
+    { id: 'TXN_9925', status: 'VALID' },
+    { id: 'TXN_9926', status: 'VALID' },
+    { id: 'TXN_9927', status: 'VALID' },
+    { id: 'TXN_9928', status: 'VALID' },
+    { id: 'TXN_9929', status: 'EXCLUDED', reason: 'Outlier' },
+    { id: 'TXN_9930', status: 'VALID' },
+  ];
+
+  return (
+    <motion.div
+      whileHover={{ y: -5, boxShadow: '0 25px 50px -12px rgba(148, 180, 193, 0.25)' }}
+      className="col-span-1 md:col-span-2 rounded-2xl md:rounded-3xl border border-[#94B4C1]/30 bg-[#FDFBF7] p-6 md:p-8 relative overflow-hidden transition-all duration-300 group"
+    >
+      {/* Icon badge */}
+      <div className="absolute top-6 md:top-8 right-6 md:right-8 p-2 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-[#EAE0CF] z-10">
+        <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-[#547792]" />
+      </div>
+
+      <div className="relative z-10">
+        <h3 className="text-xl md:text-2xl font-bold text-[#213448] mb-2 tracking-tight pr-16">
+          Cleaned & Validated Data
+        </h3>
+        <p className="text-[#547792] text-sm md:text-base max-w-md">
+          We automatically flag and remove non-market outliers from{' '}
+          <span className="font-semibold text-[#213448]">103,379</span> transaction records.
+        </p>
+      </div>
+
+      {/* Matrix Terminal Effect */}
+      <div className="absolute right-0 top-0 w-1/2 md:w-2/5 h-full opacity-40 group-hover:opacity-60 transition-opacity pointer-events-none select-none overflow-hidden font-mono text-[9px] md:text-[10px] leading-relaxed text-[#213448] p-4 text-right">
+        <div className="animate-scroll-up space-y-1">
+          {[...logEntries, ...logEntries].map((entry, i) => (
+            <p
+              key={i}
+              className={
+                entry.status === 'EXCLUDED'
+                  ? 'text-red-600/80 font-semibold'
+                  : 'text-[#547792]/60'
+              }
+            >
+              {entry.id}...{' '}
+              {entry.status === 'EXCLUDED' ? (
+                <span>EXCLUDED ({entry.reason})</span>
+              ) : (
+                'VALID'
+              )}
+            </p>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="absolute bottom-6 md:bottom-8 left-6 md:left-8 right-6 md:right-8 flex gap-4 md:gap-8">
+        <div>
+          <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">Records Processed</div>
+          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono">103,379</div>
+        </div>
+        <div>
+          <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">Outliers Removed</div>
+          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono">789</div>
+        </div>
+        <div>
+          <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">Accuracy</div>
+          <div className="text-lg md:text-2xl font-bold text-[#547792] font-mono">99.2%</div>
+        </div>
+      </div>
     </motion.div>
   );
 }
