@@ -199,8 +199,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           </div>
 
           {/* Classification Tiers Info */}
-          <div className="text-[10px] text-slate-500 mt-2 space-y-1.5 italic">
-            <div className="text-slate-500">Bedroom Classification (sqft): Post-harm: after AC ledge removal | Pre-harm: before</div>
+          <div className="text-[10px] text-slate-500 mt-2 space-y-1.5 italic overflow-hidden">
+            <div className="text-slate-500 break-words">Bedroom Classification (sqft): Post-harm: after AC ledge removal | Pre-harm: before</div>
+            <div className="overflow-x-auto">
             <table className="w-full text-[10px] border-collapse border border-dotted border-slate-400">
               <thead>
                 <tr className="text-slate-600 bg-slate-50/50">
@@ -235,6 +236,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
         </FilterSection>
 
@@ -250,47 +252,45 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           onToggle={() => toggleSection('date')}
           activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
         >
-          <FilterGroup label="Date Range">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 w-10">From</span>
-                <input
-                  type="month"
-                  value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
-                  onChange={(e) => setDateRange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
-                  className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
-                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 w-10">To</span>
-                <input
-                  type="month"
-                  value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      // Get last day of the selected month (e.g., Sep has 30, Feb has 28/29)
-                      // month from input is 1-based (01-12), day 0 trick gives last day of that month
-                      const [year, month] = e.target.value.split('-');
-                      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-                      setDateRange(filters.dateRange.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
-                    } else {
-                      setDateRange(filters.dateRange.start, null);
-                    }
-                  }}
-                  className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
-                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
-                />
-              </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 w-10">From</span>
+              <input
+                type="month"
+                value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
+                onChange={(e) => setDateRange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
+                className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
+                max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
+              />
             </div>
-            {filterOptions.dateRange.min && filterOptions.dateRange.max && (
-              <div className="text-[10px] text-slate-500 mt-2 italic">
-                Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
-              </div>
-            )}
-          </FilterGroup>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 w-10">To</span>
+              <input
+                type="month"
+                value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    // Get last day of the selected month (e.g., Sep has 30, Feb has 28/29)
+                    // month from input is 1-based (01-12), day 0 trick gives last day of that month
+                    const [year, month] = e.target.value.split('-');
+                    const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+                    setDateRange(filters.dateRange.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
+                  } else {
+                    setDateRange(filters.dateRange.start, null);
+                  }
+                }}
+                className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
+                max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
+              />
+            </div>
+          </div>
+          {filterOptions.dateRange.min && filterOptions.dateRange.max && (
+            <div className="text-[10px] text-slate-500 mt-2 italic">
+              Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+            </div>
+          )}
         </FilterSection>
 
         {/* Property Details Section */}
