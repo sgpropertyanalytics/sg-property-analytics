@@ -147,25 +147,25 @@ const LandingPage = () => {
 
 /**
  * Hero Section - "Midday" Style Dashboard Showcase
- * Goldilocks sizing with floor mask for clean edge fade
+ * Two-container rig: Outer handles positioning, Inner handles rotation
  */
 function HeroSection({ navigate }) {
   return (
-    <section className="relative bg-[#FDFBF7] pt-28 sm:pt-32 lg:pt-28 pb-16 sm:pb-20 overflow-hidden min-h-[600px] lg:min-h-[90vh] flex items-center">
+    <section className="relative bg-[#FDFBF7] pt-24 sm:pt-28 lg:pt-24 pb-12 sm:pb-16 overflow-hidden min-h-[600px] lg:min-h-[90vh] flex items-center justify-center">
       {/* Background Gradients */}
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#94B4C1]/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 left-20 w-[600px] h-[600px] bg-[#547792]/5 rounded-full blur-[100px] -z-10" />
 
-      {/* Grid Container - balanced 6/6 split with gap-12 */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-10 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center h-full">
+      {/* Main Grid - items-center forces same vertical midpoint for both columns */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-10 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
 
-        {/* --- LEFT CONTENT (Cols 1-6 - Balanced) --- */}
-        <div className="lg:col-span-6 relative z-20 flex flex-col justify-center">
+        {/* --- LEFT COLUMN (Text) --- */}
+        <div className="lg:col-span-5 relative z-20">
           {/* Trust Badge */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="self-start inline-flex items-center gap-2 px-3 py-1.5 mb-6 sm:mb-8 rounded-full border border-[#94B4C1]/40 bg-white/60 backdrop-blur-md shadow-sm"
+            className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 sm:mb-8 rounded-full border border-[#94B4C1]/40 bg-white/60 backdrop-blur-md shadow-sm"
           >
             <span className="w-2 h-2 rounded-full bg-[#547792] animate-pulse" />
             <span className="text-xs font-bold text-[#213448] tracking-wide uppercase">
@@ -178,7 +178,7 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-[4.5rem] font-bold tracking-tight text-[#213448] mb-6 sm:mb-8 leading-[1]"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-[4.5rem] font-bold tracking-tight text-[#213448] mb-4 sm:mb-6 leading-[1.1]"
           >
             Property data, <br />
             <span className="text-[#547792]">clarified.</span>
@@ -189,7 +189,7 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-base sm:text-lg text-[#547792] mb-8 sm:mb-10 max-w-lg leading-relaxed"
+            className="text-base sm:text-lg text-[#547792] mb-6 sm:mb-8 max-w-md leading-relaxed"
           >
             Stop relying on outdated spreadsheets. Access institutional-grade transaction records and supply cliffs in real-time.
           </motion.p>
@@ -199,18 +199,18 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-12 sm:mb-16"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-10 sm:mb-12"
           >
             <button
               onClick={() => navigate('/market-pulse')}
-              className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#324b66] active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center justify-center gap-2 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+              className="group px-6 sm:px-8 py-3.5 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#324b66] active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center justify-center gap-2 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
             >
               Explore Dashboard
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform opacity-80" />
             </button>
             <button
               onClick={() => navigate('/analytics-view')}
-              className="px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-white/80 border border-[#EAE0CF] text-[#547792] font-medium hover:bg-white active:scale-[0.98] active:bg-[#EAE0CF]/30 transition-all flex items-center justify-center gap-2 backdrop-blur-sm shadow-sm min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+              className="px-6 sm:px-8 py-3.5 rounded-xl bg-white/80 border border-[#EAE0CF] text-[#547792] font-medium hover:bg-white active:scale-[0.98] active:bg-[#EAE0CF]/30 transition-all flex items-center justify-center gap-2 backdrop-blur-sm shadow-sm min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
             >
               View Demo
             </button>
@@ -233,7 +233,7 @@ function HeroSection({ navigate }) {
             </div>
           </motion.div>
 
-          {/* Mobile Dashboard Preview - Shows on tablet/mobile */}
+          {/* Mobile Dashboard Preview */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -257,38 +257,40 @@ function HeroSection({ navigate }) {
           </motion.div>
         </div>
 
-        {/* --- RIGHT VISUAL (Cols 7-12) - Goldilocks sizing --- */}
-        <div className="hidden lg:block lg:col-span-6 relative h-[800px] flex items-center">
+        {/* --- RIGHT COLUMN (Visual) - Two-container rig --- */}
+        <div className="hidden lg:block lg:col-span-7 relative h-[600px] w-full flex items-center">
+          {/* OUTER RIG: Handles positioning only */}
           <motion.div
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
-            className="absolute left-0 w-[115%]"
+            className="absolute right-[-25%] top-1/2 -translate-y-1/2 w-[130%]"
             style={{ perspective: '2000px' }}
           >
-            {/* Left edge fade mask - protects text from collision */}
-            <div className="absolute inset-y-0 left-0 z-20 bg-gradient-to-r from-[#FDFBF7] via-[#FDFBF7]/40 to-transparent w-[15%]" />
+            {/* Left mask - blends into text area */}
+            <div className="absolute inset-y-0 left-0 z-20 bg-gradient-to-r from-[#FDFBF7] via-[#FDFBF7]/50 to-transparent w-[20%]" />
 
-            {/* Bottom floor mask - fades dashboard into floor cleanly */}
-            <div className="absolute bottom-0 left-0 right-0 z-20 h-[25%] bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7] to-transparent" />
+            {/* Bottom floor mask - solid at bottom to delete cutoff line */}
+            <div className="absolute bottom-[-2px] left-0 right-0 z-30 h-[30%] bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7] to-transparent" />
 
-            {/* Dashboard Transform */}
+            {/* INNER RIG: Handles rotation only */}
             <div
-              className="w-full rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/20"
+              className="w-full rounded-xl"
               style={{
-                transform: 'rotateY(-12deg) rotateX(6deg) rotateZ(2deg) translateX(10px) scale(1)',
-                transformOrigin: 'center left',
-                backgroundColor: 'white'
+                transform: 'rotateY(-12deg) rotateX(10deg) rotateZ(4deg)',
+                transformStyle: 'preserve-3d'
               }}
             >
-              <img
-                src="/dashboard-screenshot.png"
-                alt="Dashboard Preview"
-                className="w-full h-auto object-cover"
-              />
+              <div className="relative rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/20 bg-white border border-[#94B4C1]/20">
+                <img
+                  src="/dashboard-screenshot.png"
+                  alt="Dashboard Preview"
+                  className="w-full h-auto object-cover"
+                />
 
-              {/* Gloss Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/30 pointer-events-none mix-blend-overlay" />
+                {/* Gloss Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/40 pointer-events-none mix-blend-overlay" />
+              </div>
             </div>
           </motion.div>
         </div>
