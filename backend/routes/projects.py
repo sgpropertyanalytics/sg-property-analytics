@@ -361,7 +361,8 @@ def get_hot_projects():
 
     Joins:
     - Transactions (sale_type='New Sale') for units_sold
-    - NewLaunch for developer, total_units (if available)
+    - ProjectInventory for total_units (primary source - from URA API)
+    - NewLaunch for developer (fallback for total_units)
     - ProjectLocation for school flag
 
     Query params:
@@ -381,25 +382,30 @@ def get_hot_projects():
     try:
         from models.transaction import Transaction
         from models.new_launch import NewLaunch
-        from sqlalchemy import func
+        from models.project_inventory import ProjectInventory
+        from sqlalchemy import func, case
         from constants import get_region_for_district
 
         # Get filter params
         limit = int(request.args.get("limit", 50))
 
-        # Query: Group New Sale transactions by project, join with NewLaunch for metadata
+        # Query: Group New Sale transactions by project, join with ProjectInventory for actual total_units
         query = db.session.query(
             Transaction.project_name,
             Transaction.district,
             func.count(Transaction.id).label('units_sold'),
             func.sum(Transaction.price).label('total_value'),
             func.avg(Transaction.psf).label('avg_psf'),
-            # From NewLaunch (may be NULL if not in new_launches table)
+            # From NewLaunch (for developer)
             NewLaunch.developer,
-            NewLaunch.total_units,
+            # Use ProjectInventory.total_units as primary source, fallback to NewLaunch.total_units
+            func.coalesce(ProjectInventory.total_units, NewLaunch.total_units).label('total_units'),
             # From ProjectLocation
             ProjectLocation.has_popular_school_1km,
             ProjectLocation.market_segment
+        ).outerjoin(
+            ProjectInventory,
+            func.lower(func.trim(Transaction.project_name)) == func.lower(func.trim(ProjectInventory.project_name))
         ).outerjoin(
             NewLaunch,
             func.lower(func.trim(Transaction.project_name)) == func.lower(func.trim(NewLaunch.project_name))
@@ -436,6 +442,7 @@ def get_hot_projects():
             Transaction.project_name,
             Transaction.district,
             NewLaunch.developer,
+            ProjectInventory.total_units,
             NewLaunch.total_units,
             ProjectLocation.has_popular_school_1km,
             ProjectLocation.market_segment
