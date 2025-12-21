@@ -147,16 +147,16 @@ const LandingPage = () => {
 
 /**
  * Hero Section - "Midday" Style Dashboard Showcase
- * Dramatic 3D tilt with premium browser chrome details
+ * Grid-based alignment with 3D tilt that angles away from text
  */
 function HeroSection({ navigate }) {
   return (
-    <section className="relative bg-[#FDFBF7] pt-28 sm:pt-32 lg:pt-40 pb-16 sm:pb-20 overflow-hidden min-h-[600px] lg:min-h-[850px] flex items-center">
+    <section className="relative bg-[#FDFBF7] pt-28 sm:pt-32 lg:pt-28 pb-16 sm:pb-20 overflow-hidden min-h-[600px] lg:min-h-[90vh] flex items-center">
       {/* Background Gradients */}
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#94B4C1]/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 left-20 w-[600px] h-[600px] bg-[#547792]/5 rounded-full blur-[100px] -z-10" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-10 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center h-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-10 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
 
         {/* --- LEFT CONTENT (Span 5 cols for breathing room) --- */}
         <div className="lg:col-span-5 relative z-20 flex flex-col justify-center">
@@ -240,7 +240,6 @@ function HeroSection({ navigate }) {
             className="lg:hidden mt-8 sm:mt-12"
           >
             <div className="rounded-xl overflow-hidden shadow-xl shadow-[#213448]/10 border border-[#94B4C1]/20 bg-white">
-              {/* Minimal Browser Chrome */}
               <div className="h-6 sm:h-8 bg-[#FDFBF7] border-b border-[#EAE0CF] flex items-center px-3 sm:px-4 gap-2">
                 <div className="flex gap-1">
                   <div className="w-2 h-2 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
@@ -248,7 +247,6 @@ function HeroSection({ navigate }) {
                   <div className="w-2 h-2 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
                 </div>
               </div>
-              {/* Dashboard Screenshot */}
               <img
                 src="/dashboard-screenshot.png"
                 alt="Dashboard Preview"
@@ -258,61 +256,40 @@ function HeroSection({ navigate }) {
           </motion.div>
         </div>
 
-        {/* --- RIGHT VISUAL - "Midday" Style Dramatic Tilt --- */}
-        <div className="hidden lg:block absolute top-[10%] right-[-120px] w-[65%] h-[1200px] z-10 pointer-events-none">
+        {/* --- RIGHT VISUAL - Grid-based with "Away" Tilt --- */}
+        <div className="hidden lg:block lg:col-span-7 relative h-[700px] flex items-center">
           <motion.div
-            initial={{ opacity: 0, rotateX: 20, rotateY: 10, x: 100 }}
-            animate={{ opacity: 1, rotateX: 0, rotateY: 0, x: 0 }}
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
-            className="relative w-full h-full"
-            style={{ perspective: '2500px' }}
+            className="absolute right-[-100px] w-[130%]"
+            style={{ perspective: '2000px' }}
           >
-            {/* Soft fade mask on left edge */}
-            <div className="absolute inset-y-0 left-0 z-20 bg-gradient-to-r from-[#FDFBF7] via-[#FDFBF7]/60 to-transparent w-[20%]" />
+            {/* Left edge fade mask */}
+            <div className="absolute inset-y-0 left-0 z-20 bg-gradient-to-r from-[#FDFBF7] via-[#FDFBF7]/40 to-transparent w-[15%]" />
 
-            {/* The Dashboard Container - Midday tilt formula */}
+            {/* Dashboard Transform - tilts AWAY from text */}
             <div
-              className="w-full"
+              className="w-full rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/20"
               style={{
-                transform: 'rotateX(12deg) rotateY(-18deg) rotateZ(-4deg) scale(1)',
-                transformOrigin: 'top left',
-                boxShadow: '-50px 60px 100px -20px rgba(33, 52, 72, 0.2)'
+                transform: 'rotateY(-15deg) rotateX(10deg) rotateZ(4deg) scale(1)',
+                transformOrigin: 'center left',
+                backgroundColor: 'white'
               }}
             >
-              {/* Border Wrapper - Simulates screen thickness */}
-              <div className="p-1 rounded-2xl bg-gradient-to-b from-white to-[#94B4C1]/30 shadow-sm">
-                <div className="rounded-xl overflow-hidden bg-white border-[3px] border-white relative">
-                  {/* Premium Browser Chrome with URL bar */}
-                  <div className="h-10 bg-[#FDFBF7] border-b border-[#EAE0CF] flex items-center px-4 gap-3">
-                    <div className="flex gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
-                      <div className="w-3 h-3 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
-                      <div className="w-3 h-3 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
-                    </div>
-                    <div className="flex-1 text-center">
-                      <div className="bg-white border border-[#EAE0CF] rounded-md py-0.5 px-3 inline-block shadow-sm">
-                        <span className="text-[10px] text-[#94B4C1] font-semibold tracking-wide flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                          propanalytics.sg
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+              {/* Clean dashboard image */}
+              <img
+                src="/dashboard-screenshot.png"
+                alt="Dashboard Preview"
+                className="w-full h-auto object-cover"
+              />
 
-                  {/* Dashboard Screenshot */}
-                  <img
-                    src="/dashboard-screenshot.png"
-                    alt="Dashboard Preview"
-                    className="w-full h-auto object-cover"
-                  />
-
-                  {/* Gloss Overlay - diagonal reflection effect */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/30 pointer-events-none" />
-                </div>
-              </div>
+              {/* Gloss Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/30 pointer-events-none mix-blend-overlay" />
             </div>
           </motion.div>
         </div>
+
       </div>
     </section>
   );
