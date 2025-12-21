@@ -97,17 +97,17 @@ export function HotProjectsTable({ height = 400 }) {
   };
 
   // Column definitions
-  // Note: Shows ACTIVE NEW SALES (already launched projects)
-  // - units_sold: deterministic count from transactions
-  // - resale_count: count of resale transactions (0 = true new launch)
-  // - total_units: from project_inventory (URA API)
+  // Note: Shows ACTIVE NEW SALES (projects with New Sale transactions but NO resales yet)
+  // - units_sold: count of New Sale transactions
+  // - total_units: from project_inventory (URA API or manual entry)
+  // - Only shows projects with ZERO resale transactions (true new launches)
   const columns = [
-    { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-52' },
+    { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-48' },
     { key: 'district', label: 'Region / District', sortable: true, width: 'w-28' },
-    { key: 'units_sold', label: 'New Sales', sortable: true, width: 'w-20', align: 'right' },
-    { key: 'resale_count', label: 'Resales', sortable: true, width: 'w-20', align: 'right' },
+    { key: 'units_sold', label: 'Units Sold', sortable: true, width: 'w-24', align: 'right' },
     { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-24', align: 'right' },
     { key: 'percent_sold', label: '% Sold', sortable: true, width: 'w-20', align: 'right' },
+    { key: 'unsold_inventory', label: 'Unsold', sortable: true, width: 'w-20', align: 'right' },
   ];
 
   return (
@@ -185,25 +185,20 @@ export function HotProjectsTable({ height = 400 }) {
                     key={project.project_name || idx}
                     className="hover:bg-slate-50 transition-colors"
                   >
-                    {/* Project Name with Tags */}
+                    {/* Project Name with School Tag */}
                     <td className="px-3 py-2 border-b border-slate-100">
                       <div className="flex flex-col gap-1">
-                        <span className="font-medium text-slate-800 truncate max-w-[200px]" title={project.project_name}>
+                        <span className="font-medium text-slate-800 truncate max-w-[180px]" title={project.project_name}>
                           {project.project_name || '-'}
                         </span>
-                        <div className="flex flex-wrap gap-1">
-                          {/* True New Launch indicator - no resales yet */}
-                          {project.is_true_new_launch && (
-                            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-full w-fit">
-                              <span>New Launch</span>
-                            </span>
-                          )}
-                          {project.has_popular_school && (
-                            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full w-fit">
-                              <span>Popular School</span>
-                            </span>
-                          )}
-                        </div>
+                        {project.has_popular_school && (
+                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full w-fit">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                            </svg>
+                            <span>Popular School</span>
+                          </span>
+                        )}
                       </div>
                     </td>
 
@@ -215,16 +210,9 @@ export function HotProjectsTable({ height = 400 }) {
                       </div>
                     </td>
 
-                    {/* Units Sold (New Sales) */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right font-medium">
+                    {/* Units Sold */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right font-medium">
                       {project.units_sold?.toLocaleString() || '0'}
-                    </td>
-
-                    {/* Resale Count */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-right">
-                      <span className={project.resale_count === 0 ? 'text-slate-400' : 'text-slate-600'}>
-                        {project.resale_count?.toLocaleString() || '0'}
-                      </span>
                     </td>
 
                     {/* Total Units */}
@@ -244,6 +232,15 @@ export function HotProjectsTable({ height = 400 }) {
                         <span className="text-slate-400 text-xs italic">N/A</span>
                       )}
                     </td>
+
+                    {/* Unsold Inventory */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
+                      {project.unsold_inventory !== null && project.unsold_inventory !== undefined ? (
+                        project.unsold_inventory.toLocaleString()
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">N/A</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -257,10 +254,6 @@ export function HotProjectsTable({ height = 400 }) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-[#547792]">
           <div className="flex items-center flex-wrap gap-3">
             <span className="flex items-center gap-1">
-              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px]">New Launch</span>
-              <span>= 0 resales</span>
-            </span>
-            <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-red-400 rounded-full"></span>
               <span>80%+ Sold</span>
             </span>
@@ -272,9 +265,13 @@ export function HotProjectsTable({ height = 400 }) {
               <span className="w-2 h-2 bg-green-400 rounded-full"></span>
               <span>&lt;50%</span>
             </span>
+            <span className="flex items-center gap-1">
+              <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px]">🎓</span>
+              <span>Popular School nearby</span>
+            </span>
           </div>
           <span className="text-[#547792]/70 text-[10px]">
-            N/A = Total units data unavailable
+            Only projects with 0 resales shown • N/A = data unavailable
           </span>
         </div>
       </div>

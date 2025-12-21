@@ -357,20 +357,17 @@ DISTRICT_TO_REGION = {
 @projects_bp.route("/projects/hot", methods=["GET"])
 def get_hot_projects():
     """
-    Get ACTIVE NEW SALES projects with sales progress.
+    Get ACTIVE NEW SALES projects - projects with New Sale transactions but NO resales yet.
 
     SEMANTIC CLARIFICATION:
     - "Active New Sales" = Projects that have ALREADY LAUNCHED and are selling
-    - NOT "Upcoming Launches" (pre-launch projects in new_launches table)
-
-    Active projects are those where:
-    - percent_sold < 100% (still selling), OR
-    - resale_count == 0 (true new launch - no secondary market activity yet)
+    - Only shows projects with ZERO resale transactions (true new launches)
+    - Once a project has any resale, it's no longer a "new launch"
 
     Data Sources:
     - units_sold: COUNT(transactions WHERE sale_type='New Sale') - DETERMINISTIC
-    - resale_count: COUNT(transactions WHERE sale_type='Resale') - DETERMINISTIC
-    - total_units: project_inventory.total_units (from URA API) - AUTHORITATIVE
+    - total_units: project_inventory.total_units (from URA API or manual) - AUTHORITATIVE
+    - has_popular_school: from project_locations table
 
     Calculation:
     - percent_sold = (units_sold / total_units) * 100
@@ -380,7 +377,6 @@ def get_hot_projects():
         - market_segment: filter by CCR, RCR, OCR
         - district: filter by district (comma-separated)
         - limit: max results (default 100)
-        - include_completed: if 'true', include projects that are 100% sold
 
     Returns:
         {
@@ -399,12 +395,9 @@ def get_hot_projects():
 
         # Get filter params
         limit = int(request.args.get("limit", 100))
-        include_completed = request.args.get("include_completed", "").lower() == "true"
 
-        # First, get all projects with New Sale transactions using a subquery approach
-        # that also counts resales for each project
-        #
-        # Using raw SQL for efficiency since we need both sale types in one query
+        # Query: Get projects with New Sale transactions but NO resales
+        # This ensures we only show true "new launches" - projects still in developer sales phase
         sql = text("""
             WITH project_stats AS (
                 SELECT
@@ -419,16 +412,17 @@ def get_hot_projects():
                 WHERE t.is_outlier = false
                 GROUP BY t.project_name, t.district
                 HAVING COUNT(CASE WHEN t.sale_type = 'New Sale' THEN 1 END) > 0
+                   AND COUNT(CASE WHEN t.sale_type = 'Resale' THEN 1 END) = 0
             )
             SELECT
                 ps.project_name,
                 ps.district,
                 ps.units_sold,
-                ps.resale_count,
                 ps.total_value,
                 ps.avg_psf,
                 ps.last_new_sale,
                 pi.total_units,
+                pi.units_available as unsold_inventory_ura,
                 pl.has_popular_school_1km,
                 pl.market_segment
             FROM project_stats ps
@@ -438,36 +432,26 @@ def get_hot_projects():
             LIMIT :limit
         """)
 
-        results = db.session.execute(sql, {"limit": limit * 2}).fetchall()  # Fetch extra to allow filtering
+        results = db.session.execute(sql, {"limit": limit}).fetchall()
 
-        # Format response and filter active projects
+        # Format response
         projects = []
         for row in results:
             district = row.district or ''
             market_seg = row.market_segment or get_region_for_district(district)
             units_sold = row.units_sold or 0
-            resale_count = row.resale_count or 0
             total_units = row.total_units or 0
 
             # Calculate percent_sold and unsold if total_units available
             if total_units > 0:
                 percent_sold = round((units_sold * 100.0 / total_units), 1)
+                # Cap percent_sold at 100% (in case more units sold than total due to data issues)
+                percent_sold = min(percent_sold, 100.0)
                 unsold_inventory = max(0, total_units - units_sold)
             else:
                 # No total_units data - can't calculate percent
                 percent_sold = None
                 unsold_inventory = None
-
-            # Determine if this is an "active" new sale project
-            # Active if: still selling (< 100% or no total_units data) OR no resales yet (true new launch)
-            is_active = True
-            if not include_completed:
-                # Completed projects: 100% sold AND have resales (secondary market started)
-                if percent_sold is not None and percent_sold >= 100 and resale_count > 0:
-                    is_active = False
-
-            if not is_active:
-                continue
 
             projects.append({
                 "project_name": row.project_name,
@@ -476,31 +460,16 @@ def get_hot_projects():
                 "market_segment": market_seg,
                 "total_units": total_units if total_units > 0 else None,
                 "units_sold": units_sold,
-                "resale_count": resale_count,
                 "percent_sold": percent_sold,
                 "unsold_inventory": unsold_inventory,
                 "total_value": float(row.total_value) if row.total_value else 0,
                 "avg_psf": round(float(row.avg_psf), 2) if row.avg_psf else 0,
                 "has_popular_school": row.has_popular_school_1km or False,
                 "last_new_sale": row.last_new_sale.isoformat() if row.last_new_sale else None,
-                "is_true_new_launch": resale_count == 0  # No resales = still in developer phase
             })
 
-            # Stop once we have enough
-            if len(projects) >= limit:
-                break
-
-        # Sort by:
-        # 1. True new launches first (no resales)
-        # 2. Then by percent_sold descending (if available)
-        # 3. Then by units_sold descending
-        projects.sort(
-            key=lambda x: (
-                0 if x['is_true_new_launch'] else 1,  # True new launches first
-                -(x['percent_sold'] if x['percent_sold'] is not None else 0),
-                -x['units_sold']
-            )
-        )
+        # Sort by units_sold descending (most active first)
+        projects.sort(key=lambda x: -x['units_sold'])
 
         from datetime import datetime
         result = {
@@ -510,10 +479,9 @@ def get_hot_projects():
                 "limit": limit,
                 "market_segment": request.args.get("market_segment"),
                 "district": request.args.get("district"),
-                "include_completed": include_completed
             },
-            "data_note": "Projects without total_units data cannot show % sold. " +
-                        "Resale count = 0 indicates a true new launch (no secondary market yet).",
+            "data_note": "Only shows projects with New Sale transactions and ZERO resales (true new launches). " +
+                        "Projects without total_units data show N/A for % sold.",
             "last_updated": datetime.utcnow().isoformat() + "Z"
         }
 
