@@ -1,8 +1,12 @@
 """
-New Launches API Routes
+UPCOMING Launches API Routes
+
+SEMANTIC CLARIFICATION:
+- "Upcoming Launches" = Projects that have NOT YET LAUNCHED (pre-sale info)
+- For ACTIVE sales data, use /api/projects/hot endpoint instead
 
 Provides endpoints for:
-- 2026 new private condo launches
+- 2026+ new private condo launches (pre-launch)
 - Cross-validated data from EdgeProp, PropNex, ERA
 - Links to GLS tender data for land bid prices
 

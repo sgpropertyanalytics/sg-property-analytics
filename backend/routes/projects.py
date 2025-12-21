@@ -357,13 +357,20 @@ DISTRICT_TO_REGION = {
 @projects_bp.route("/projects/hot", methods=["GET"])
 def get_hot_projects():
     """
-    Get hot projects (new launches) with sales progress.
+    Get ACTIVE NEW SALES projects with sales progress.
 
-    Joins:
-    - Transactions (sale_type='New Sale') for units_sold
-    - ProjectInventory for total_units (primary source - from URA API)
-    - NewLaunch for developer (fallback for total_units)
-    - ProjectLocation for school flag
+    SEMANTIC CLARIFICATION:
+    - "Active New Sales" = Projects that have ALREADY LAUNCHED and are selling
+    - NOT "Upcoming Launches" (pre-launch projects in new_launches table)
+
+    Data Sources:
+    - units_sold: COUNT(transactions WHERE sale_type='New Sale') - DETERMINISTIC
+    - total_units: project_inventory.total_units (from URA API) - AUTHORITATIVE
+    - developer: From project metadata (manual entry)
+
+    Calculation:
+    - percent_sold = (units_sold / total_units) * 100
+    - unsold_inventory = total_units - units_sold
 
     Query params:
         - market_segment: filter by CCR, RCR, OCR
@@ -381,34 +388,30 @@ def get_hot_projects():
 
     try:
         from models.transaction import Transaction
-        from models.new_launch import NewLaunch
         from models.project_inventory import ProjectInventory
-        from sqlalchemy import func, case
+        from sqlalchemy import func
         from constants import get_region_for_district
 
         # Get filter params
         limit = int(request.args.get("limit", 50))
 
-        # Query: Group New Sale transactions by project, join with ProjectInventory for actual total_units
+        # Query: Group New Sale transactions by project
+        # - units_sold: COUNT of transactions (deterministic)
+        # - total_units: from project_inventory (URA API - authoritative source)
         query = db.session.query(
             Transaction.project_name,
             Transaction.district,
             func.count(Transaction.id).label('units_sold'),
             func.sum(Transaction.price).label('total_value'),
             func.avg(Transaction.psf).label('avg_psf'),
-            # From NewLaunch (for developer)
-            NewLaunch.developer,
-            # Use ProjectInventory.total_units as primary source, fallback to NewLaunch.total_units
-            func.coalesce(ProjectInventory.total_units, NewLaunch.total_units).label('total_units'),
+            # From ProjectInventory (authoritative source for total_units)
+            ProjectInventory.total_units,
             # From ProjectLocation
             ProjectLocation.has_popular_school_1km,
             ProjectLocation.market_segment
         ).outerjoin(
             ProjectInventory,
             func.lower(func.trim(Transaction.project_name)) == func.lower(func.trim(ProjectInventory.project_name))
-        ).outerjoin(
-            NewLaunch,
-            func.lower(func.trim(Transaction.project_name)) == func.lower(func.trim(NewLaunch.project_name))
         ).outerjoin(
             ProjectLocation,
             func.lower(func.trim(Transaction.project_name)) == func.lower(func.trim(ProjectLocation.project_name))
@@ -421,10 +424,7 @@ def get_hot_projects():
         market_segment = request.args.get("market_segment")
         if market_segment:
             query = query.filter(
-                db.or_(
-                    ProjectLocation.market_segment == market_segment.upper(),
-                    NewLaunch.market_segment == market_segment.upper()
-                )
+                ProjectLocation.market_segment == market_segment.upper()
             )
 
         districts_param = request.args.get("district")
@@ -441,9 +441,7 @@ def get_hot_projects():
         query = query.group_by(
             Transaction.project_name,
             Transaction.district,
-            NewLaunch.developer,
             ProjectInventory.total_units,
-            NewLaunch.total_units,
             ProjectLocation.has_popular_school_1km,
             ProjectLocation.market_segment
         )
@@ -465,6 +463,8 @@ def get_hot_projects():
             total_units = row.total_units or 0
 
             # Calculate percent_sold and unsold if total_units available
+            # total_units from project_inventory (URA API) is authoritative
+            # units_sold from transaction count is deterministic
             if total_units > 0:
                 percent_sold = round((units_sold * 100.0 / total_units), 1)
                 unsold_inventory = max(0, total_units - units_sold)
@@ -477,7 +477,6 @@ def get_hot_projects():
                 "region": DISTRICT_TO_REGION.get(district, None),
                 "district": district,
                 "market_segment": market_seg,
-                "developer": row.developer,
                 "total_units": total_units if total_units > 0 else None,
                 "units_sold": units_sold,
                 "percent_sold": percent_sold,

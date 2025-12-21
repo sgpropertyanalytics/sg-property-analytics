@@ -2,18 +2,23 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { getHotProjects } from '../../api/client';
 
 /**
- * Hot Projects Table - Shows active new launch projects with sales progress
+ * Active New Sales Table - Shows LAUNCHED projects with sales progress
+ *
+ * SEMANTIC CLARIFICATION:
+ * - "Active New Sales" = Projects that have ALREADY LAUNCHED and are selling
+ * - NOT "Upcoming Launches" (pre-launch projects in new_launches table)
+ *
+ * Data Sources:
+ * - units_sold: COUNT(transactions WHERE sale_type='New Sale') - DETERMINISTIC
+ * - total_units: project_inventory.total_units (from URA API) - AUTHORITATIVE
  *
  * Displays:
  * - Project Name (with Popular School tag)
  * - Region / District (stacked)
- * - Developer
- * - Total Units
- * - Units Sold
+ * - Total Units (from URA API)
+ * - Units Sold (transaction count)
  * - % Sold (color-coded)
- * - Unsold Inventory
- *
- * Data derived from transactions (sale_type='New Sale') joined with new_launches.
+ * - Unsold Inventory (calculated)
  */
 export function HotProjectsTable({ height = 400 }) {
   const [data, setData] = useState([]);
@@ -92,10 +97,12 @@ export function HotProjectsTable({ height = 400 }) {
   };
 
   // Column definitions
+  // Note: Shows ACTIVE NEW SALES (already launched projects)
+  // - units_sold: deterministic count from transactions
+  // - total_units: from project_inventory (URA API)
   const columns = [
     { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-52' },
     { key: 'district', label: 'Region / District', sortable: true, width: 'w-28' },
-    { key: 'developer', label: 'Developer', sortable: true, width: 'w-40' },
     { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-24', align: 'right' },
     { key: 'units_sold', label: 'Units Sold', sortable: true, width: 'w-24', align: 'right' },
     { key: 'percent_sold', label: '% Sold', sortable: true, width: 'w-20', align: 'right' },
@@ -107,9 +114,9 @@ export function HotProjectsTable({ height = 400 }) {
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-[#213448]">Hot Projects - Market Inventory</h3>
+          <h3 className="font-semibold text-[#213448]">Active New Sales</h3>
           <p className="text-xs text-[#547792]">
-            {loading ? 'Loading...' : `${data.length} projects`}
+            {loading ? 'Loading...' : `${data.length} launched projects with sales activity`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -197,11 +204,6 @@ export function HotProjectsTable({ height = 400 }) {
                         <span className="font-medium text-slate-700">{project.region || '-'}</span>
                         <span className="text-xs text-slate-500">{project.district || '-'}</span>
                       </div>
-                    </td>
-
-                    {/* Developer */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 truncate max-w-[180px]" title={project.developer}>
-                      {project.developer || '-'}
                     </td>
 
                     {/* Total Units */}
