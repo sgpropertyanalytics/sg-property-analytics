@@ -408,6 +408,45 @@ export const getNewLaunchesSupplyPipeline = (params = {}) =>
 export const getNewLaunchesStats = () =>
   apiClient.get('/new-launches/stats');
 
+// ===== Project Inventory API Functions =====
+
+/**
+ * Get inventory data for a specific project (unsold units calculation)
+ * @param {string} projectName - The project name
+ * @returns {Promise<{
+ *   project_name: string,
+ *   total_units: number|null,
+ *   cumulative_new_sales: number,
+ *   cumulative_resales: number,
+ *   estimated_unsold: number|null,
+ *   data_source: string,
+ *   confidence: string,
+ *   disclaimer: string
+ * }>}
+ */
+export const getProjectInventory = (projectName) =>
+  apiClient.get(`/projects/${encodeURIComponent(projectName)}/inventory`);
+
+/**
+ * Trigger inventory sync for new projects (fetches from URA API)
+ * Requires URA_API_ACCESS_KEY to be configured on the server
+ * @returns {Promise<{status: string, synced: number, pending: number, errors: Array}>}
+ */
+export const syncInventory = () =>
+  apiClient.post('/inventory/sync');
+
+/**
+ * Manually add inventory data for a project
+ * @param {Object} data - Inventory data
+ * @param {string} data.project_name - The project name
+ * @param {number} data.total_units - Total units in the development
+ * @param {string} data.source_url - Optional URL to source (PropertyGuru/EdgeProp)
+ * @param {string} data.verified_by - Optional name of who verified this data
+ * @returns {Promise<{status: string, message: string, data: Object}>}
+ */
+export const addManualInventory = (data) =>
+  apiClient.post('/inventory/manual', data);
+
 // ===== Auth API Functions =====
 
 export const register = (email, password) => {

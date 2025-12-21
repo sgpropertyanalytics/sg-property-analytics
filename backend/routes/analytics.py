@@ -1934,3 +1934,146 @@ def new_vs_resale():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+
+# ============================================================================
+# PROJECT INVENTORY ENDPOINTS
+# ============================================================================
+
+@analytics_bp.route("/projects/<path:project_name>/inventory", methods=["GET"])
+def get_project_inventory(project_name):
+    """
+    Get inventory data for a specific project.
+
+    Returns:
+        - total_units: Total units in the development (from URA/manual)
+        - cumulative_new_sales: Units sold by developer (from our transactions)
+        - cumulative_resales: Secondary market transactions
+        - estimated_unsold: total_units - cumulative_new_sales
+        - data_source: URA_API, MANUAL, or PENDING
+        - confidence: high, medium, or none
+
+    Note: estimated_unsold is only available if total_units data exists.
+    """
+    start = time.time()
+    from services.inventory_sync import get_inventory_sync
+
+    try:
+        sync_service = get_inventory_sync()
+        result = sync_service.get_inventory_with_sales(project_name)
+
+        if result:
+            result["disclaimer"] = "Estimated based on transaction data; not official URA figures"
+
+        elapsed = time.time() - start
+        print(f"GET /api/projects/{project_name}/inventory took: {elapsed:.4f}s")
+
+        return jsonify(result)
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/projects/{project_name}/inventory ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@analytics_bp.route("/inventory/sync", methods=["POST"])
+def sync_inventory():
+    """
+    Trigger inventory sync for new projects.
+
+    This endpoint:
+    1. Finds projects in transactions without inventory data
+    2. Fetches total units from URA Developer Sales API
+    3. Stores in project_inventory table
+
+    Requires URA_API_ACCESS_KEY environment variable to be set.
+    """
+    start = time.time()
+    from services.inventory_sync import get_inventory_sync
+
+    try:
+        sync_service = get_inventory_sync()
+
+        if not sync_service.is_configured():
+            return jsonify({
+                "status": "not_configured",
+                "message": "URA API not configured. Set URA_API_ACCESS_KEY environment variable."
+            }), 200
+
+        results = sync_service.sync_new_projects()
+
+        elapsed = time.time() - start
+        print(f"POST /api/inventory/sync took: {elapsed:.4f}s - synced={results.get('synced', 0)}, pending={results.get('pending', 0)}")
+
+        return jsonify({
+            "status": "success",
+            **results
+        })
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"POST /api/inventory/sync ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@analytics_bp.route("/inventory/manual", methods=["POST"])
+def add_manual_inventory():
+    """
+    Manually add inventory data for a project.
+
+    JSON body:
+        - project_name: Required. The project name (must match transactions)
+        - total_units: Required. Total units in the development
+        - source_url: Optional. URL to PropertyGuru/EdgeProp page
+        - verified_by: Optional. Who verified this data
+
+    Use this when:
+    - URA API doesn't have data for older projects
+    - You want to add data from PropertyGuru/EdgeProp manually
+    """
+    start = time.time()
+    from models.project_inventory import ProjectInventory
+
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "JSON body required"}), 400
+
+        project_name = data.get("project_name")
+        total_units = data.get("total_units")
+
+        if not project_name:
+            return jsonify({"error": "project_name is required"}), 400
+        if not total_units:
+            return jsonify({"error": "total_units is required"}), 400
+
+        try:
+            total_units = int(total_units)
+        except (ValueError, TypeError):
+            return jsonify({"error": "total_units must be an integer"}), 400
+
+        record = ProjectInventory.upsert_manual(
+            project_name=project_name,
+            total_units=total_units,
+            source_url=data.get("source_url"),
+            verified_by=data.get("verified_by")
+        )
+
+        elapsed = time.time() - start
+        print(f"POST /api/inventory/manual took: {elapsed:.4f}s - {project_name} = {total_units} units")
+
+        return jsonify({
+            "status": "success",
+            "message": f"Added {total_units} total units for {project_name}",
+            "data": record.to_dict()
+        })
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"POST /api/inventory/manual ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500

@@ -127,6 +127,7 @@ def create_app():
         from models.new_launch import NewLaunch
         from models.popular_school import PopularSchool
         from models.project_location import ProjectLocation
+        from models.project_inventory import ProjectInventory
 
         db.create_all()
         print("✓ Database initialized - using SQL-only aggregation for memory efficiency")

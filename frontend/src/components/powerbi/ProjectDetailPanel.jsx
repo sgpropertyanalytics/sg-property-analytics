@@ -13,7 +13,7 @@ import {
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
-import { getAggregate } from '../../api/client';
+import { getAggregate, getProjectInventory } from '../../api/client';
 import { DISTRICT_NAMES } from '../../constants';
 
 ChartJS.register(
@@ -82,6 +82,11 @@ function ProjectDetailPanelInner({
   error,
   setError,
 }) {
+  // State for cumulative sales by sale type
+  const [salesByType, setSalesByType] = useState({ newSale: 0, resale: 0 });
+  // State for inventory data (total units, unsold estimation)
+  const [inventoryData, setInventoryData] = useState(null);
+
   // Fetch project-specific data
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -96,7 +101,7 @@ function ProjectDetailPanelInner({
           project: selectedProject.name,
         };
 
-        // Apply sidebar filters (but not highlight - this is project-specific view)
+        // Apply sidebar filters for trend/price views (but not highlight)
         if (filters.dateRange.start) baseParams.date_from = filters.dateRange.start;
         if (filters.dateRange.end) baseParams.date_to = filters.dateRange.end;
         if (filters.bedroomTypes.length > 0) {
@@ -118,9 +123,11 @@ function ProjectDetailPanelInner({
           metrics: 'count,median_psf,avg_psf,min_psf,max_psf',
         };
 
-        const [trendResponse, priceResponse] = await Promise.all([
+        // Fetch all data in parallel, including inventory
+        const [trendResponse, priceResponse, inventoryResponse] = await Promise.all([
           getAggregate(trendParams),
           getAggregate(priceParams),
+          getProjectInventory(selectedProject.name),
         ]);
 
         // Sort trend data by month
@@ -132,6 +139,14 @@ function ProjectDetailPanelInner({
         const sortedPrice = (priceResponse.data.data || [])
           .filter(d => d.count > 0)
           .sort((a, b) => (a.bedroom || 0) - (b.bedroom || 0));
+
+        // Extract inventory data (includes cumulative sales from backend)
+        const inventory = inventoryResponse.data;
+        setSalesByType({
+          newSale: inventory.cumulative_new_sales || 0,
+          resale: inventory.cumulative_resales || 0
+        });
+        setInventoryData(inventory);
 
         setTrendData(sortedTrend);
         setPriceData(sortedPrice);
@@ -321,21 +336,97 @@ function ProjectDetailPanelInner({
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Summary Stats */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
-                  <p className="text-sm text-[#547792]">Total Transactions</p>
-                  <p className="text-2xl font-semibold text-[#213448]">
-                    {totalTransactions.toLocaleString()}
+              {/* Inventory Stats - Show when total units available */}
+              {inventoryData?.total_units ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div>
+                      <p className="text-sm text-green-700">Total Units</p>
+                      <p className="text-2xl font-semibold text-green-800">
+                        {inventoryData.total_units.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        Source: {inventoryData.data_source}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-green-700">Sold (New Sale)</p>
+                      <p className="text-2xl font-semibold text-green-800">
+                        {salesByType.newSale.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">Developer sales</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-green-700">% Sold</p>
+                      <p className="text-2xl font-semibold text-green-800">
+                        {inventoryData.percent_sold ?? 'N/A'}%
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">New Sales / Total</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-green-700">Est. Unsold</p>
+                      <p className="text-2xl font-semibold text-green-800">
+                        {inventoryData.estimated_unsold?.toLocaleString() || 'N/A'}
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        {inventoryData.confidence === 'high' ? 'High confidence' : 'Medium confidence'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-green-700">Resales</p>
+                      <p className="text-2xl font-semibold text-green-800">
+                        {salesByType.resale.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">Secondary market</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-green-600 mt-3 text-center">
+                    {inventoryData.disclaimer}
                   </p>
                 </div>
-                <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
-                  <p className="text-sm text-[#547792]">Overall Median PSF</p>
-                  <p className="text-2xl font-semibold text-[#213448]">
-                    ${overallMedianPsf.toLocaleString()}
-                  </p>
-                </div>
-              </div>
+              ) : (
+                <>
+                  {/* Summary Stats - Fallback when no inventory data */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
+                      <p className="text-sm text-[#547792]">Cumulative New Sales</p>
+                      <p className="text-2xl font-semibold text-[#213448]">
+                        {salesByType.newSale.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-[#547792] mt-1">Units sold by developer</p>
+                    </div>
+                    <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
+                      <p className="text-sm text-[#547792]">Cumulative Resales</p>
+                      <p className="text-2xl font-semibold text-[#213448]">
+                        {salesByType.resale.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-[#547792] mt-1">Secondary market</p>
+                    </div>
+                    <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
+                      <p className="text-sm text-[#547792]">Total Transactions</p>
+                      <p className="text-2xl font-semibold text-[#213448]">
+                        {(salesByType.newSale + salesByType.resale).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-[#547792] mt-1">All time</p>
+                    </div>
+                    <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
+                      <p className="text-sm text-[#547792]">Median PSF</p>
+                      <p className="text-2xl font-semibold text-[#213448]">
+                        ${overallMedianPsf.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-[#547792] mt-1">Current filter</p>
+                    </div>
+                  </div>
+
+                  {/* Inventory Data Not Available Note */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-xs text-gray-600">
+                      <strong>Note:</strong> Total units data not available for this project.
+                      Unsold inventory cannot be calculated without total project units from URA/PropertyGuru/EdgeProp.
+                    </p>
+                  </div>
+                </>
+              )}
 
               {/* Trend Chart */}
               <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4">
