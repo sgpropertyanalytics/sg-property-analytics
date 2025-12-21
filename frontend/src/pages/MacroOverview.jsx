@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
-import { PowerBIFilterSidebar } from '../components/powerbi/PowerBIFilterSidebar';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { VolumeByLocationChart } from '../components/powerbi/VolumeByLocationChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
@@ -15,12 +14,9 @@ import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
 import { KPICard } from '../components/ui';
-// View toggle and Value Parity components
-import { ViewToggle } from '../components/ViewToggle';
-import { ValueParityPanel } from '../components/ValueParityPanel';
 
 /**
- * Macro Overview Page - Power BI-style Dashboard
+ * Macro Overview Page - Power BI-style Dashboard (Market Pulse)
  *
  * Features:
  * - Dynamic filtering with sidebar controls
@@ -30,10 +26,14 @@ import { ValueParityPanel } from '../components/ValueParityPanel';
  *   - Location: region -> district (global hierarchy stops here)
  * - Project drill-through: Opens ProjectDetailPanel without affecting global charts
  * - Drill-through to transaction details
- * - View Toggle: Analytics (dashboard) vs Value Parity (budget search)
+ *
+ * NOTE: This component is designed to be wrapped by DashboardLayout which provides:
+ * - PowerBIFilterProvider context
+ * - PowerBIFilterSidebar (secondary sidebar)
+ * - GlobalNavRail (primary navigation)
+ * - Mobile responsive header and drawers
  */
-function MacroOverviewContent({ view = 'analytics' }) {
-  const isValueParity = view === 'value-parity';
+export function MacroOverviewContent() {
   const { apiMetadata } = useData();
   const {
     crossFilter,
@@ -42,8 +42,6 @@ function MacroOverviewContent({ view = 'analytics' }) {
     clearHighlight,
   } = usePowerBIFilters();
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false); // Separate state for mobile drawer
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalFilters, setModalFilters] = useState({});
@@ -116,63 +114,16 @@ function MacroOverviewContent({ view = 'analytics' }) {
   };
 
   return (
-    <div className="flex h-screen bg-[#EAE0CF]/30">
-      {/* Filter Sidebar - Hidden on mobile, shown on lg+ | Hidden when in Value Parity view */}
-      <div className={`hidden lg:block transition-all duration-200 ${isValueParity ? 'lg:hidden' : ''}`}>
-        <PowerBIFilterSidebar
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {/* Mobile Header - Shows on mobile/tablet only */}
-        <div className="lg:hidden sticky top-0 z-40 bg-[#213448] px-3 py-2">
-          <div className="flex items-center justify-between">
-            {/* Filter button - only show in Analytics view */}
-            {!isValueParity ? (
-              <button
-                onClick={() => setMobileDrawerOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-[#547792]/30 text-white rounded-lg text-sm min-h-[44px]"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-                <span>Filters</span>
-              </button>
-            ) : (
-              <div /> // Spacer for alignment
-            )}
-            <h1 className="text-white font-semibold text-sm truncate">SG Property Analytics</h1>
-            <div /> {/* Spacer for alignment */}
-          </div>
-          {/* Mobile View Toggle - full width below header */}
-          <div className="mt-2 flex justify-center">
-            <ViewToggle />
-          </div>
-        </div>
-
-        {/* Mobile Sidebar Drawer - uses separate state, closed by default | Only in Analytics view */}
-        {mobileDrawerOpen && !isValueParity && (
-          <div className="lg:hidden fixed inset-0 z-50">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileDrawerOpen(false)} />
-            <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] animate-slide-in-left">
-              <PowerBIFilterSidebar
-                collapsed={false}
-                onToggle={() => setMobileDrawerOpen(false)}
-              />
-            </div>
-          </div>
-        )}
-
+    <div className="h-full">
+      {/* Main Content Area - Scrollable */}
+      <div className="h-full overflow-auto">
         <div className="p-3 md:p-4 lg:p-6">
           {/* Header */}
           <div className="mb-4 md:mb-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-2">
               <div className="min-w-0">
                 <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
-                  {isValueParity ? 'Value Parity Tool' : 'Singapore Property Market Analytics'}
+                  Singapore Property Market Analytics
                 </h1>
                 {/* Data source info - shows raw database count and date range */}
                 {apiMetadata && (
@@ -196,12 +147,8 @@ function MacroOverviewContent({ view = 'analytics' }) {
                 )}
               </div>
               <div className="flex items-center gap-3 flex-wrap">
-                {/* Desktop View Toggle - hidden on mobile (shown in mobile header above) */}
-                <div className="hidden lg:block">
-                  <ViewToggle />
-                </div>
-                {/* Highlight indicator (visual emphasis on time, no filtering) - only in Analytics view */}
-                {!isValueParity && highlight.value && (
+                {/* Highlight indicator (visual emphasis on time, no filtering) */}
+                {highlight.value && (
                   <button
                     onClick={clearHighlight}
                     className="flex items-center gap-2 px-3 py-1.5 bg-[#213448]/10 text-[#213448] rounded-lg hover:bg-[#213448]/20 transition-colors text-sm border border-[#213448]/20"
@@ -216,8 +163,8 @@ function MacroOverviewContent({ view = 'analytics' }) {
                     </svg>
                   </button>
                 )}
-                {/* Cross-filter indicator (actual data filtering) - only in Analytics view */}
-                {!isValueParity && crossFilter.value && (
+                {/* Cross-filter indicator (actual data filtering) */}
+                {crossFilter.value && (
                   <button
                     onClick={clearCrossFilter}
                     className="flex items-center gap-2 px-3 py-1.5 bg-[#547792]/20 text-[#213448] rounded-lg hover:bg-[#547792]/30 transition-colors text-sm"
@@ -231,19 +178,12 @@ function MacroOverviewContent({ view = 'analytics' }) {
               </div>
             </div>
 
-            {/* Breadcrumb navigation - only in Analytics view */}
-            {!isValueParity && <DrillBreadcrumb />}
+            {/* Breadcrumb navigation */}
+            <DrillBreadcrumb />
           </div>
 
-          {/* Conditional Content based on view */}
-          {isValueParity ? (
-            /* Value Parity View - Budget search tool */
-            <div className="animate-view-enter">
-              <ValueParityPanel />
-            </div>
-          ) : (
-            /* Analytics View - Dashboard with charts */
-            <div className="animate-view-enter">
+          {/* Analytics View - Dashboard with charts */}
+          <div className="animate-view-enter">
               {/* KPI Summary Cards - Last 30 Days Market Snapshot */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
                 <KPICard
@@ -329,32 +269,36 @@ function MacroOverviewContent({ view = 'analytics' }) {
               <div className="mb-4 md:mb-6">
                 <TransactionDataTable height={400} />
               </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Transaction Detail Modal - only in Analytics view */}
-      {!isValueParity && (
-        <TransactionDetailModal
-          isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
-          title={modalTitle}
-          additionalFilters={modalFilters}
-        />
-      )}
+      {/* Transaction Detail Modal */}
+      <TransactionDetailModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={modalTitle}
+        additionalFilters={modalFilters}
+      />
 
-      {/* Project Detail Panel - Drill-through view (does NOT affect global charts) - only in Analytics view */}
-      {!isValueParity && <ProjectDetailPanel />}
+      {/* Project Detail Panel - Drill-through view (does NOT affect global charts) */}
+      <ProjectDetailPanel />
     </div>
   );
 }
 
-// Export wrapped with provider
-export default function MacroOverview({ view = 'analytics' }) {
+/**
+ * Standalone MacroOverview (Legacy Support)
+ *
+ * This export provides backward compatibility for direct usage without DashboardLayout.
+ * Wraps content with its own PowerBIFilterProvider.
+ *
+ * For new code, prefer using MacroOverviewContent inside DashboardLayout.
+ */
+export default function MacroOverview() {
   return (
     <PowerBIFilterProvider>
-      <MacroOverviewContent view={view} />
+      <MacroOverviewContent />
     </PowerBIFilterProvider>
   );
 }

@@ -40,17 +40,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
 
   if (collapsed) {
     return (
-      <div className="w-12 bg-[#EAE0CF] border-r border-[#94B4C1] flex flex-col items-center py-4">
-        <button
-          type="button"
-          onClick={(e) => { e.preventDefault(); onToggle(); }}
-          className="p-2 rounded-lg hover:bg-[#94B4C1]/30 transition-colors"
-          title="Expand filters"
-        >
-          <svg className="w-5 h-5 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="w-12 bg-[#EAE0CF] border-r border-[#94B4C1]/30 flex flex-col items-center py-4 h-full">
+        {/* Filter icon */}
+        <div className="p-2">
+          <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
-        </button>
+        </div>
         {activeFilterCount > 0 && (
           <span className="mt-2 bg-[#547792] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
             {activeFilterCount}
@@ -61,41 +57,30 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
   }
 
   return (
-    <div className="w-72 bg-[#EAE0CF] border-r border-[#94B4C1] flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-[#94B4C1] flex items-center justify-between bg-[#213448]">
+    <div className="w-full sm:w-72 bg-[#EAE0CF] border-r border-[#94B4C1]/30 flex flex-col h-full overflow-hidden">
+      {/* Header - Sand/Cream background with Navy text */}
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between bg-[#EAE0CF]">
         <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
-          <span className="font-semibold text-white">Filters</span>
+          <span className="font-semibold text-[#213448]">Filters</span>
           {activeFilterCount > 0 && (
             <span className="bg-[#547792] text-white text-xs px-2 py-0.5 rounded-full">
               {activeFilterCount}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
-          {activeFilterCount > 0 && (
-            <button
-              type="button"
-              onClick={(e) => { e.preventDefault(); resetFilters(); }}
-              className="text-xs text-[#94B4C1] hover:text-white px-2 py-1 rounded hover:bg-[#547792]/30"
-            >
-              Clear all
-            </button>
-          )}
+        {/* Clear all button - only show when filters are active */}
+        {activeFilterCount > 0 && (
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); onToggle(); }}
-            className="p-1.5 rounded hover:bg-[#547792]/30 transition-colors"
-            title="Collapse filters"
+            onClick={(e) => { e.preventDefault(); resetFilters(); }}
+            className="text-xs text-[#547792] hover:text-[#213448] px-2 py-1 rounded hover:bg-[#94B4C1]/30 transition-colors"
           >
-            <svg className="w-4 h-4 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-            </svg>
+            Clear all
           </button>
-        </div>
+        )}
       </div>
 
       {/* Cross-filter indicator */}
