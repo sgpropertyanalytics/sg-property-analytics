@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider } from './context/DataContext';
+import LandingPage from './pages/Landing';
 import Login from './pages/Login';
 import { DashboardLayout } from './components/layout';
 import { MacroOverviewContent } from './pages/MacroOverview';
@@ -9,27 +10,36 @@ import { InsightsContent } from './pages/Insights';
 import { ValueParityPanel } from './components/ValueParityPanel';
 
 /**
- * App Component with Double-Sidebar Navigation
+ * App Component with Landing Page and Dashboard Navigation
  *
  * Layout Structure:
- * - DashboardLayout wraps all dashboard pages
+ * - Landing page at / and /landing (public)
+ * - DashboardLayout wraps all dashboard pages (premium features)
  * - GlobalNavRail (64px) provides primary navigation
  * - PowerBIFilterSidebar (280px) provides contextual filtering
- * - Main content area displays page-specific content
  *
  * Routes:
- * - /market-pulse: Market analytics dashboard (default)
- * - /project-analysis: Individual project deep-dives
- * - /value-parity: Budget search tool (no filter sidebar)
- * - /analytics-view: Power BI-style analytics (pinned filter sidebar)
- * - /insights: AI-powered market insights
+ * - /: Landing page (public)
+ * - /landing: Landing page (public)
+ * - /login: User authentication
+ * - /market-pulse: Market analytics dashboard (premium)
+ * - /project-analysis: Individual project deep-dives (premium)
+ * - /value-parity: Budget search tool (premium)
+ * - /analytics-view: Power BI-style analytics (premium)
+ * - /insights: AI-powered market insights (premium)
  */
 function App() {
   return (
     <DataProvider>
       <BrowserRouter>
         <Routes>
-          {/* Login - No dashboard layout */}
+          {/* ===== Public Routes (No Dashboard Layout) ===== */}
+
+          {/* Landing Page - Public home page */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/landing" element={<LandingPage />} />
+
+          {/* Login - Authentication */}
           <Route path="/login" element={<Login />} />
 
           {/* ===== Dashboard Routes with Double-Sidebar Layout ===== */}
@@ -102,16 +112,13 @@ function App() {
 
           {/* ===== Redirects ===== */}
 
-          {/* Default route -> Market Pulse */}
-          <Route path="/" element={<Navigate to="/market-pulse" replace />} />
-
           {/* Legacy route redirects */}
           <Route path="/analytics" element={<Navigate to="/market-pulse" replace />} />
           <Route path="/dashboard" element={<Navigate to="/market-pulse" replace />} />
           <Route path="/macro-overview" element={<Navigate to="/market-pulse" replace />} />
 
-          {/* Catch-all -> Market Pulse */}
-          <Route path="*" element={<Navigate to="/market-pulse" replace />} />
+          {/* Catch-all -> Landing Page */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </DataProvider>
