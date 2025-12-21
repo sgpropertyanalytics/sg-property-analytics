@@ -2,7 +2,10 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 /**
- * Firebase Configuration
+ * Firebase Configuration - Lazy Initialization
+ *
+ * Firebase is only initialized when actually needed (during sign-in).
+ * This prevents blocking the landing page when API keys aren't configured.
  *
  * To set up Firebase:
  * 1. Go to https://console.firebase.google.com/
@@ -19,26 +22,59 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
  * VITE_FIREBASE_APP_ID=your-app-id
  */
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
+// Cached instances
+let app = null;
+let auth = null;
+let googleProvider = null;
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+/**
+ * Check if Firebase is configured
+ */
+export function isFirebaseConfigured() {
+  return !!(
+    import.meta.env.VITE_FIREBASE_API_KEY &&
+    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN &&
+    import.meta.env.VITE_FIREBASE_PROJECT_ID
+  );
+}
 
-// Initialize Firebase Authentication
-export const auth = getAuth(app);
+/**
+ * Get Firebase Auth instance (lazy initialization)
+ * Only initializes Firebase when actually called
+ */
+export function getFirebaseAuth() {
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase is not configured. Please add Firebase credentials to your .env file.');
+  }
 
-// Google Auth Provider
-export const googleProvider = new GoogleAuthProvider();
+  if (!app) {
+    const firebaseConfig = {
+      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    };
 
-// Add Google OAuth scopes if needed
-googleProvider.addScope('email');
-googleProvider.addScope('profile');
+    app = initializeApp(firebaseConfig);
+  }
 
-export default app;
+  if (!auth) {
+    auth = getAuth(app);
+  }
+
+  return auth;
+}
+
+/**
+ * Get Google Auth Provider (lazy initialization)
+ */
+export function getGoogleProvider() {
+  if (!googleProvider) {
+    googleProvider = new GoogleAuthProvider();
+    googleProvider.addScope('email');
+    googleProvider.addScope('profile');
+  }
+  return googleProvider;
+}
