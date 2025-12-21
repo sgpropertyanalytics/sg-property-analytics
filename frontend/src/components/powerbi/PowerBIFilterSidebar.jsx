@@ -139,7 +139,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 </button>
               ))}
             </div>
-            <p className="text-[9px] text-[#547792]/70 mt-1.5 italic">
+            <p className="text-xs text-slate-500 mt-2 font-normal">
               CCR/RCR/OCR follows market convention; select areas may differ at planning-area level.
             </p>
           </FilterGroup>
@@ -219,43 +219,43 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           </FilterGroup>
 
           {/* Classification Tiers Info */}
-          <div className="text-xs text-gray-500 mt-3 space-y-1.5">
-            <div className="font-medium text-gray-600">Bedroom Classification (sqft):</div>
-            <table className="w-full text-[10px] border-collapse border border-dotted border-gray-400">
+          <div className="text-xs text-slate-500 mt-2 space-y-1.5">
+            <div className="font-normal text-slate-500">Bedroom Classification (sqft):</div>
+            <table className="w-full text-[10px] border-collapse border border-dotted border-slate-400">
               <thead>
-                <tr className="text-gray-600 bg-gray-50/50">
-                  <th className="text-left font-medium p-1.5 border border-dotted border-gray-400">Type</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">1B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">2B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">3B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">4B+</th>
+                <tr className="text-slate-600 bg-slate-50/50">
+                  <th className="text-left font-medium p-1.5 border border-dotted border-slate-400">Type</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">1B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">2B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">3B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">4B+</th>
                 </tr>
               </thead>
-              <tbody className="text-gray-500">
+              <tbody className="text-slate-500">
                 <tr title="Post-harmonization: AC ledge rules changed">
-                  <td className="text-left p-1.5 border border-dotted border-gray-400">New ≥Jun'23</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;580</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;780</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;1150</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">≥1150</td>
+                  <td className="text-left p-1.5 border border-dotted border-slate-400">New ≥Jun'23</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;580</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;780</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;1150</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">≥1150</td>
                 </tr>
                 <tr title="Pre-harmonization: Before AC ledge rule changes">
-                  <td className="text-left p-1.5 border border-dotted border-gray-400">New &lt;Jun'23</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;600</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;850</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;1200</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">≥1200</td>
+                  <td className="text-left p-1.5 border border-dotted border-slate-400">New &lt;Jun'23</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;600</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;850</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;1200</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">≥1200</td>
                 </tr>
                 <tr title="Resale units: Legacy larger sizes">
-                  <td className="text-left p-1.5 border border-dotted border-gray-400">Resale</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;600</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;950</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;1350</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">≥1350</td>
+                  <td className="text-left p-1.5 border border-dotted border-slate-400">Resale</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;600</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;950</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;1350</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">≥1350</td>
                 </tr>
               </tbody>
             </table>
-            <div className="text-[9px] text-gray-500 italic">
+            <div className="text-xs text-slate-500 font-normal mt-1">
               Post-harm: after AC ledge removal | Pre-harm: before
             </div>
           </div>
@@ -309,7 +309,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
               </div>
             </div>
             {filterOptions.dateRange.min && filterOptions.dateRange.max && (
-              <div className="text-xs text-slate-500 mt-2">
+              <div className="text-xs text-slate-500 mt-2 font-normal">
                 Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
               </div>
             )}
