@@ -6,9 +6,7 @@ import {
   Building2,
   Map,
   ShieldCheck,
-  LineChart,
-  Lock,
-  CheckCircle2
+  LineChart
 } from 'lucide-react';
 
 /**
@@ -148,148 +146,125 @@ const LandingPage = () => {
 };
 
 /**
- * Hero Section - Isometric Tilted Dashboard Showcase
- * Isolated component so the rest of the page scrolls normally
+ * Hero Section - Clean Dashboard Showcase
+ * Focused on the primary value proposition: the dashboard itself
  */
 function HeroSection({ navigate }) {
   return (
-    <section className="relative bg-[#FDFBF7] overflow-hidden pt-32 pb-24">
+    <section className="relative bg-[#FDFBF7] pt-32 pb-32 overflow-hidden min-h-[800px] flex items-center">
       {/* Background Gradients */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#94B4C1]/10 rounded-full blur-[120px] -z-10" />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#547792]/10 rounded-full blur-[100px] -z-10" />
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#94B4C1]/10 rounded-full blur-[120px] -z-10" />
+      <div className="absolute bottom-0 left-20 w-[600px] h-[600px] bg-[#547792]/5 rounded-full blur-[100px] -z-10" />
 
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+      <div className="max-w-7xl mx-auto px-6 w-full relative z-10 grid lg:grid-cols-12 gap-12 items-center">
 
-          {/* --- LEFT COLUMN: Content --- */}
-          <div className="relative z-10">
-            {/* Trust Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 mb-8 rounded-full border border-[#94B4C1]/40 bg-white/80 backdrop-blur-sm shadow-sm"
+        {/* --- LEFT CONTENT (Span 6 cols) --- */}
+        <div className="lg:col-span-6 relative z-20">
+          {/* Trust Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 mb-8 rounded-full border border-[#94B4C1]/40 bg-white/60 backdrop-blur-md shadow-sm"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#547792] animate-pulse" />
+            <span className="text-xs font-bold text-[#213448] tracking-wide uppercase">
+              Live Market Sync
+            </span>
+          </motion.div>
+
+          {/* Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-5xl lg:text-7xl font-bold tracking-tight text-[#213448] mb-6 leading-[1.1]"
+          >
+            Property data, <br />
+            <span className="text-[#547792]">clarified.</span>
+          </motion.h1>
+
+          {/* Subtext */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-lg text-[#547792] mb-10 max-w-lg leading-relaxed"
+          >
+            Stop relying on outdated spreadsheets. Access institutional-grade transaction records and supply cliffs in real-time.
+          </motion.p>
+
+          {/* Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex flex-col sm:flex-row gap-4 mb-16"
+          >
+            <button
+              onClick={() => navigate('/market-pulse')}
+              className="group px-8 py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#324b66] transition-all shadow-xl shadow-[#213448]/20 flex items-center justify-center gap-2"
             >
-              <span className="w-2 h-2 rounded-full bg-[#547792] animate-pulse" />
-              <span className="text-xs font-bold text-[#213448] tracking-wide uppercase">
-                Direct URA Data Connection
-              </span>
-            </motion.div>
-
-            {/* Headline */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-[#213448] mb-6 leading-[1.1]"
+              Explore Dashboard
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform opacity-80" />
+            </button>
+            <button
+              onClick={() => navigate('/analytics-view')}
+              className="px-8 py-4 rounded-xl bg-white/80 border border-[#EAE0CF] text-[#547792] font-medium hover:bg-white transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
             >
-              The new standard for <br />
-              <span className="text-[#547792]">Singapore property analysis.</span>
-            </motion.h1>
+              View Demo
+            </button>
+          </motion.div>
 
-            {/* Subtext */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-lg text-[#547792] mb-10 max-w-lg leading-relaxed"
-            >
-              Institutional-grade tools for the modern investor. Visualize price gaps, model rental yields, and spot undervalued districts instantly.
-            </motion.p>
+          {/* Metrics - Simplified to 2 */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="flex gap-12 border-t border-[#213448]/10 pt-8"
+          >
+            <div>
+              <div className="text-3xl font-bold text-[#213448] font-mono">$2.8B+</div>
+              <div className="text-xs text-[#94B4C1] uppercase tracking-wider mt-1 font-medium">Value Analyzed</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-[#213448] font-mono">103k</div>
+              <div className="text-xs text-[#94B4C1] uppercase tracking-wider mt-1 font-medium">Records</div>
+            </div>
+          </motion.div>
+        </div>
 
-            {/* Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-4 mb-16"
-            >
-              <button
-                onClick={() => navigate('/market-pulse')}
-                className="group px-8 py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#324b66] transition-all shadow-xl shadow-[#213448]/20 flex items-center justify-center gap-2"
-              >
-                Explore the Dashboard
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform opacity-80" />
-              </button>
-              <button
-                onClick={() => navigate('/analytics-view')}
-                className="px-8 py-4 rounded-xl bg-white border border-[#EAE0CF] text-[#547792] font-medium hover:border-[#94B4C1] hover:shadow-sm transition-all flex items-center justify-center gap-2"
-              >
-                View Analytics Demo
-              </button>
-            </motion.div>
+        {/* --- RIGHT VISUAL (The Clean Dashboard) --- */}
+        <div className="hidden lg:block absolute top-1/2 -translate-y-1/2 right-[-100px] w-[65%] h-[800px] z-10 pointer-events-none">
+          <motion.div
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+            className="relative w-full h-full perspective-[2000px]"
+          >
+            {/* Fade-out Mask Gradients */}
+            <div className="absolute inset-0 z-20 bg-gradient-to-r from-[#FDFBF7] via-[#FDFBF7]/20 to-transparent w-[30%] h-full" />
+            <div className="absolute inset-0 z-20 bg-gradient-to-b from-[#FDFBF7] via-transparent to-[#FDFBF7] h-full" />
 
-            {/* Social Proof Metrics */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="grid grid-cols-3 gap-6 border-t border-[#94B4C1]/20 pt-8"
-            >
-              <div>
-                <div className="text-2xl md:text-3xl font-bold text-[#213448] font-mono">$2.8B+</div>
-                <div className="text-xs text-[#94B4C1] uppercase tracking-wider mt-1 font-medium">Value Analyzed</div>
-              </div>
-              <div>
-                <div className="text-2xl md:text-3xl font-bold text-[#213448] font-mono">5 Years</div>
-                <div className="text-xs text-[#94B4C1] uppercase tracking-wider mt-1 font-medium">Historical Data</div>
-              </div>
-              <div>
-                <div className="text-2xl md:text-3xl font-bold text-[#213448] font-mono">28</div>
-                <div className="text-xs text-[#94B4C1] uppercase tracking-wider mt-1 font-medium">Districts</div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* --- RIGHT COLUMN: Tilted Isometric Image --- */}
-          <div className="relative hidden lg:block perspective-[2000px] z-20">
-            {/* The Tilted Container */}
-            <motion.div
-              initial={{ opacity: 0, rotateX: 20, rotateY: -10, scale: 0.9 }}
-              animate={{ opacity: 1, rotateX: 6, rotateY: -12, rotateZ: 1, scale: 1 }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
-              className="relative w-[120%] rounded-2xl bg-[#213448] shadow-2xl shadow-[#213448]/30 border border-[#547792]/30 overflow-hidden transform-gpu"
-            >
-              {/* Fake Browser Chrome */}
-              <div className="h-9 bg-[#FDFBF7] border-b border-[#EAE0CF] flex items-center px-4 gap-2">
-                <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
+            {/* The Dashboard Container */}
+            <div className="w-full h-full transform rotate-y-[-12deg] rotate-x-[5deg] scale-90 origin-center-left">
+              <div className="rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/10 border border-[#94B4C1]/20 bg-white">
+                {/* Minimal Browser Chrome */}
+                <div className="h-8 bg-white border-b border-gray-100 flex items-center px-4 gap-2">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-gray-200"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-gray-200"></div>
+                  </div>
                 </div>
-                <div className="flex-1 text-center text-[10px] text-[#94B4C1] font-medium flex items-center justify-center gap-1">
-                  <Lock className="w-3 h-3" /> propanalytics.sg/dashboard
-                </div>
-              </div>
 
-              {/* Dashboard Image */}
-              <div className="aspect-[16/10] bg-[#FDFBF7] relative">
+                {/* Dashboard Screenshot */}
                 <img
                   src="/dashboard-screenshot.png"
-                  alt="PropAnalytics Dashboard"
-                  className="w-full h-full object-cover object-left-top"
+                  alt="Dashboard Preview"
+                  className="w-full h-auto opacity-95 bg-gray-50"
                 />
-                {/* Gloss Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#213448]/5 via-white/10 to-transparent pointer-events-none mix-blend-overlay" />
               </div>
-            </motion.div>
-
-            {/* Floating Element (Parallax Pop-out) */}
-            <motion.div
-              initial={{ x: 50, opacity: 0 }}
-              animate={{ x: -40, y: 40, opacity: 1 }}
-              transition={{ delay: 0.6, duration: 0.8 }}
-              className="absolute bottom-0 left-0 bg-white/80 backdrop-blur-md border border-white/40 p-4 rounded-xl shadow-[0_20px_40px_-15px_rgba(33,52,72,0.2)] text-[#213448] max-w-xs z-30"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-1.5 bg-[#547792] rounded-lg">
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-medium text-[#547792]">Data Integrity Check</span>
-              </div>
-              <div className="text-2xl font-bold mb-0.5">103,379</div>
-              <div className="text-xs text-[#94B4C1] font-medium">Verified transaction records loaded</div>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </section>
