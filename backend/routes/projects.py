@@ -357,11 +357,13 @@ DISTRICT_TO_REGION = {
 @projects_bp.route("/projects/hot", methods=["GET"])
 def get_hot_projects():
     """
-    Get hot projects with sales progress derived from transactions.
+    Get hot projects (new launches) derived from transactions with sale_type='New Sale'.
 
     Query params:
         - market_segment: filter by CCR, RCR, OCR
         - district: filter by district (comma-separated)
+        - min_units: minimum units sold (default 5)
+        - limit: max results (default 50)
 
     Returns:
         {
@@ -373,36 +375,39 @@ def get_hot_projects():
     start = time.time()
 
     try:
-        from models.new_launch import NewLaunch
         from models.transaction import Transaction
-        from sqlalchemy import func, literal
+        from sqlalchemy import func
+        from constants import get_region_for_district
 
-        # Build the query using SQLAlchemy
-        # Join new_launches with transactions count and project_locations for school flag
+        # Get filter params
+        min_units = int(request.args.get("min_units", 5))
+        limit = int(request.args.get("limit", 50))
+
+        # Query transactions with sale_type = 'New Sale', grouped by project
+        # This gives us "hot" new launch projects based on actual sales volume
         query = db.session.query(
-            NewLaunch.project_name,
-            NewLaunch.district,
-            NewLaunch.planning_area,
-            NewLaunch.market_segment,
-            NewLaunch.developer,
-            NewLaunch.total_units,
+            Transaction.project_name,
+            Transaction.district,
             func.count(Transaction.id).label('units_sold'),
-            ProjectLocation.has_popular_school_1km
-        ).outerjoin(
-            Transaction,
-            func.lower(func.trim(NewLaunch.project_name)) == func.lower(func.trim(Transaction.project_name))
+            func.sum(Transaction.price).label('total_value'),
+            func.avg(Transaction.psf).label('avg_psf'),
+            func.min(Transaction.contract_date).label('first_sale'),
+            func.max(Transaction.contract_date).label('last_sale'),
+            ProjectLocation.has_popular_school_1km,
+            ProjectLocation.market_segment
         ).outerjoin(
             ProjectLocation,
-            func.lower(func.trim(NewLaunch.project_name)) == func.lower(func.trim(ProjectLocation.project_name))
+            func.lower(func.trim(Transaction.project_name)) == func.lower(func.trim(ProjectLocation.project_name))
         ).filter(
-            NewLaunch.total_units.isnot(None),
-            NewLaunch.total_units > 0
+            Transaction.sale_type == 'New Sale',
+            Transaction.is_outlier == False
         )
 
         # Apply filters
         market_segment = request.args.get("market_segment")
         if market_segment:
-            query = query.filter(NewLaunch.market_segment == market_segment.upper())
+            # Filter by market segment from ProjectLocation or derive from district
+            query = query.filter(ProjectLocation.market_segment == market_segment.upper())
 
         districts_param = request.args.get("district")
         if districts_param:
@@ -412,49 +417,56 @@ def get_hot_projects():
                 if not d.startswith("D"):
                     d = f"D{d.zfill(2)}"
                 normalized.append(d)
-            query = query.filter(NewLaunch.district.in_(normalized))
+            query = query.filter(Transaction.district.in_(normalized))
 
-        # Group by and execute
+        # Group by project
         query = query.group_by(
-            NewLaunch.project_name,
-            NewLaunch.district,
-            NewLaunch.planning_area,
-            NewLaunch.market_segment,
-            NewLaunch.developer,
-            NewLaunch.total_units,
-            ProjectLocation.has_popular_school_1km
+            Transaction.project_name,
+            Transaction.district,
+            ProjectLocation.has_popular_school_1km,
+            ProjectLocation.market_segment
         )
+
+        # Filter by minimum units sold
+        query = query.having(func.count(Transaction.id) >= min_units)
+
+        # Order by units sold descending (hottest projects first)
+        query = query.order_by(func.count(Transaction.id).desc())
+
+        # Apply limit
+        query = query.limit(limit)
 
         results = query.all()
 
         # Format response
         projects = []
         for row in results:
-            total_units = row.total_units or 0
-            units_sold = row.units_sold or 0
-            percent_sold = round((units_sold * 100.0 / total_units), 1) if total_units > 0 else 0
-            unsold = total_units - units_sold
+            district = row.district or ''
+            market_seg = row.market_segment or get_region_for_district(district)
 
             projects.append({
                 "project_name": row.project_name,
-                "region": DISTRICT_TO_REGION.get(row.district, None),
-                "district": row.district,
-                "market_segment": row.market_segment,
-                "developer": row.developer,
-                "total_units": total_units,
-                "units_sold": units_sold,
-                "percent_sold": percent_sold,
-                "unsold_inventory": unsold,
+                "region": DISTRICT_TO_REGION.get(district, None),
+                "district": district,
+                "market_segment": market_seg,
+                "units_sold": row.units_sold or 0,
+                "total_value": float(row.total_value) if row.total_value else 0,
+                "avg_psf": round(float(row.avg_psf), 2) if row.avg_psf else 0,
+                "first_sale": row.first_sale.isoformat() if row.first_sale else None,
+                "last_sale": row.last_sale.isoformat() if row.last_sale else None,
                 "has_popular_school": row.has_popular_school_1km or False
             })
-
-        # Sort by percent_sold descending
-        projects.sort(key=lambda x: x['percent_sold'], reverse=True)
 
         from datetime import datetime
         result = {
             "projects": projects,
             "total_count": len(projects),
+            "filters_applied": {
+                "min_units": min_units,
+                "limit": limit,
+                "market_segment": market_segment,
+                "district": districts_param
+            },
             "last_updated": datetime.utcnow().isoformat() + "Z"
         }
 

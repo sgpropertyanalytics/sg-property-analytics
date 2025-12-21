@@ -2,25 +2,25 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { getHotProjects } from '../../api/client';
 
 /**
- * Hot Projects Table - Shows active new launch projects with sales progress
+ * Hot Projects Table - Shows active new launch projects based on New Sale transactions
  *
  * Displays:
  * - Project Name (with Popular School tag)
  * - Region / District (stacked)
- * - Developer
- * - Total Units
- * - Units Sold
- * - % Sold (color-coded)
- * - Unsold Inventory
+ * - Market Segment (CCR/RCR/OCR)
+ * - Units Sold (transaction count)
+ * - Total Value
+ * - Avg PSF
+ * - Sales Period (first to last sale date)
  *
- * Data derived from transactions table joined with new_launches.
+ * Data derived from transactions where sale_type = 'New Sale'.
  */
 export function HotProjectsTable({ height = 400 }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortConfig, setSortConfig] = useState({
-    column: 'percent_sold',
+    column: 'units_sold',
     order: 'desc',
   });
 
@@ -63,11 +63,20 @@ export function HotProjectsTable({ height = 400 }) {
     return sortConfig.order === 'desc' ? bVal - aVal : aVal - bVal;
   });
 
-  // Color coding for % sold
-  const getPercentClass = (percent) => {
-    if (percent >= 80) return 'bg-red-100 text-red-700';      // Almost sold out
-    if (percent >= 50) return 'bg-amber-100 text-amber-700';  // Selling well
-    return 'bg-green-100 text-green-700';                      // Available
+  // Format currency
+  const formatCurrency = (value) => {
+    if (!value) return '-';
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
+    return `$${value.toLocaleString()}`;
+  };
+
+  // Format date range
+  const formatDateRange = (first, last) => {
+    if (!first) return '-';
+    const formatDate = (d) => new Date(d).toLocaleDateString('en-SG', { month: 'short', year: '2-digit' });
+    if (first === last) return formatDate(first);
+    return `${formatDate(first)} - ${formatDate(last)}`;
   };
 
   // Sort indicator
@@ -93,12 +102,12 @@ export function HotProjectsTable({ height = 400 }) {
   // Column definitions
   const columns = [
     { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-52' },
-    { key: 'district', label: 'Region / District', sortable: true, width: 'w-28' },
-    { key: 'developer', label: 'Developer', sortable: true, width: 'w-40' },
-    { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-24', align: 'right' },
+    { key: 'district', label: 'Location', sortable: true, width: 'w-28' },
+    { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-20' },
     { key: 'units_sold', label: 'Units Sold', sortable: true, width: 'w-24', align: 'right' },
-    { key: 'percent_sold', label: '% Sold', sortable: true, width: 'w-20', align: 'right' },
-    { key: 'unsold_inventory', label: 'Unsold', sortable: true, width: 'w-20', align: 'right' },
+    { key: 'total_value', label: 'Total Value', sortable: true, width: 'w-28', align: 'right' },
+    { key: 'avg_psf', label: 'Avg PSF', sortable: true, width: 'w-24', align: 'right' },
+    { key: 'first_sale', label: 'Sales Period', sortable: true, width: 'w-32' },
   ];
 
   return (
@@ -190,7 +199,7 @@ export function HotProjectsTable({ height = 400 }) {
                       </div>
                     </td>
 
-                    {/* Region / District - stacked */}
+                    {/* Location - Region / District stacked */}
                     <td className="px-3 py-2 border-b border-slate-100">
                       <div className="flex flex-col">
                         <span className="font-medium text-slate-700">{project.region || '-'}</span>
@@ -198,31 +207,35 @@ export function HotProjectsTable({ height = 400 }) {
                       </div>
                     </td>
 
-                    {/* Developer */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 truncate max-w-[180px]" title={project.developer}>
-                      {project.developer || '-'}
-                    </td>
-
-                    {/* Total Units */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      {project.total_units?.toLocaleString() || '-'}
-                    </td>
-
-                    {/* Units Sold */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      {project.units_sold?.toLocaleString() || '0'}
-                    </td>
-
-                    {/* % Sold with color coding */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-right">
-                      <span className={`inline-block px-1.5 py-0.5 text-xs font-semibold rounded ${getPercentClass(project.percent_sold)}`}>
-                        {project.percent_sold?.toFixed(1) || '0.0'}%
+                    {/* Market Segment */}
+                    <td className="px-3 py-2 border-b border-slate-100">
+                      <span className={`inline-block px-1.5 py-0.5 text-xs font-medium rounded ${
+                        project.market_segment === 'CCR' ? 'bg-[#213448]/10 text-[#213448]' :
+                        project.market_segment === 'RCR' ? 'bg-[#547792]/10 text-[#547792]' :
+                        'bg-[#94B4C1]/20 text-[#547792]'
+                      }`}>
+                        {project.market_segment || '-'}
                       </span>
                     </td>
 
-                    {/* Unsold */}
+                    {/* Units Sold */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right font-medium">
+                      {project.units_sold?.toLocaleString() || '0'}
+                    </td>
+
+                    {/* Total Value */}
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      {project.unsold_inventory?.toLocaleString() || '-'}
+                      {formatCurrency(project.total_value)}
+                    </td>
+
+                    {/* Avg PSF */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
+                      {project.avg_psf ? `$${project.avg_psf.toLocaleString()}` : '-'}
+                    </td>
+
+                    {/* Sales Period */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-500 text-xs">
+                      {formatDateRange(project.first_sale, project.last_sale)}
                     </td>
                   </tr>
                 ))
@@ -232,25 +245,25 @@ export function HotProjectsTable({ height = 400 }) {
         )}
       </div>
 
-      {/* Footer with legend */}
+      {/* Footer */}
       <div className="px-4 py-2 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30">
         <div className="flex items-center justify-between text-xs text-[#547792]">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-red-400 rounded-full"></span>
-              <span>80%+ Sold</span>
+              <span className="px-1.5 py-0.5 bg-[#213448]/10 text-[#213448] rounded text-[10px]">CCR</span>
+              <span>Core Central</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-              <span>50-79% Sold</span>
+              <span className="px-1.5 py-0.5 bg-[#547792]/10 text-[#547792] rounded text-[10px]">RCR</span>
+              <span>Rest of Central</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-              <span>&lt;50% Available</span>
+              <span className="px-1.5 py-0.5 bg-[#94B4C1]/20 text-[#547792] rounded text-[10px]">OCR</span>
+              <span>Outside Central</span>
             </span>
           </div>
           <span className="text-[#547792]/70">
-            Sales derived from transactions
+            New Sale transactions only
           </span>
         </div>
       </div>
