@@ -433,7 +433,7 @@ def get_hot_projects():
                 pl.market_segment
             FROM project_stats ps
             LEFT JOIN project_inventory pi ON LOWER(TRIM(ps.project_name)) = LOWER(TRIM(pi.project_name))
-            LEFT JOIN project_location pl ON LOWER(TRIM(ps.project_name)) = LOWER(TRIM(pl.project_name))
+            LEFT JOIN project_locations pl ON LOWER(TRIM(ps.project_name)) = LOWER(TRIM(pl.project_name))
             ORDER BY ps.units_sold DESC
             LIMIT :limit
         """)
