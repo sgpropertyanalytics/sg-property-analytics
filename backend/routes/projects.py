@@ -340,3 +340,131 @@ def get_school(school_id: int):
     except Exception as e:
         print(f"GET /api/schools/{school_id} ERROR: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+# District to Region mapping
+DISTRICT_TO_REGION = {
+    'D01': 'Central', 'D02': 'Central', 'D03': 'Central', 'D04': 'Central',
+    'D05': 'West', 'D06': 'Central', 'D07': 'Central', 'D08': 'Central',
+    'D09': 'Central', 'D10': 'Central', 'D11': 'Central', 'D12': 'Central',
+    'D13': 'Central', 'D14': 'East', 'D15': 'East', 'D16': 'East',
+    'D17': 'East', 'D18': 'East', 'D19': 'North-East', 'D20': 'North',
+    'D21': 'Central', 'D22': 'West', 'D23': 'West', 'D24': 'West',
+    'D25': 'North', 'D26': 'North', 'D27': 'North', 'D28': 'North-East',
+}
+
+
+@projects_bp.route("/projects/hot", methods=["GET"])
+def get_hot_projects():
+    """
+    Get hot projects with sales progress derived from transactions.
+
+    Query params:
+        - market_segment: filter by CCR, RCR, OCR
+        - district: filter by district (comma-separated)
+
+    Returns:
+        {
+            "projects": [...],
+            "total_count": N,
+            "last_updated": "2025-12-21T00:00:00Z"
+        }
+    """
+    start = time.time()
+
+    try:
+        from models.new_launch import NewLaunch
+        from models.transaction import Transaction
+        from sqlalchemy import func, literal
+
+        # Build the query using SQLAlchemy
+        # Join new_launches with transactions count and project_locations for school flag
+        query = db.session.query(
+            NewLaunch.project_name,
+            NewLaunch.district,
+            NewLaunch.planning_area,
+            NewLaunch.market_segment,
+            NewLaunch.developer,
+            NewLaunch.total_units,
+            func.count(Transaction.id).label('units_sold'),
+            ProjectLocation.has_popular_school_1km
+        ).outerjoin(
+            Transaction,
+            func.lower(func.trim(NewLaunch.project_name)) == func.lower(func.trim(Transaction.project_name))
+        ).outerjoin(
+            ProjectLocation,
+            func.lower(func.trim(NewLaunch.project_name)) == func.lower(func.trim(ProjectLocation.project_name))
+        ).filter(
+            NewLaunch.total_units.isnot(None),
+            NewLaunch.total_units > 0
+        )
+
+        # Apply filters
+        market_segment = request.args.get("market_segment")
+        if market_segment:
+            query = query.filter(NewLaunch.market_segment == market_segment.upper())
+
+        districts_param = request.args.get("district")
+        if districts_param:
+            districts = [d.strip().upper() for d in districts_param.split(",") if d.strip()]
+            normalized = []
+            for d in districts:
+                if not d.startswith("D"):
+                    d = f"D{d.zfill(2)}"
+                normalized.append(d)
+            query = query.filter(NewLaunch.district.in_(normalized))
+
+        # Group by and execute
+        query = query.group_by(
+            NewLaunch.project_name,
+            NewLaunch.district,
+            NewLaunch.planning_area,
+            NewLaunch.market_segment,
+            NewLaunch.developer,
+            NewLaunch.total_units,
+            ProjectLocation.has_popular_school_1km
+        )
+
+        results = query.all()
+
+        # Format response
+        projects = []
+        for row in results:
+            total_units = row.total_units or 0
+            units_sold = row.units_sold or 0
+            percent_sold = round((units_sold * 100.0 / total_units), 1) if total_units > 0 else 0
+            unsold = total_units - units_sold
+
+            projects.append({
+                "project_name": row.project_name,
+                "region": DISTRICT_TO_REGION.get(row.district, None),
+                "district": row.district,
+                "market_segment": row.market_segment,
+                "developer": row.developer,
+                "total_units": total_units,
+                "units_sold": units_sold,
+                "percent_sold": percent_sold,
+                "unsold_inventory": unsold,
+                "has_popular_school": row.has_popular_school_1km or False
+            })
+
+        # Sort by percent_sold descending
+        projects.sort(key=lambda x: x['percent_sold'], reverse=True)
+
+        from datetime import datetime
+        result = {
+            "projects": projects,
+            "total_count": len(projects),
+            "last_updated": datetime.utcnow().isoformat() + "Z"
+        }
+
+        elapsed = time.time() - start
+        print(f"GET /api/projects/hot took: {elapsed:.4f} seconds (returned {len(projects)} projects)")
+
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"GET /api/projects/hot ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
