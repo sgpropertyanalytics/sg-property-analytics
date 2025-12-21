@@ -147,7 +147,7 @@ const LandingPage = () => {
 
 /**
  * Hero Section - "Midday" Style Dashboard Showcase
- * Collision-proof grid with enforced gap between text and image
+ * Goldilocks sizing with floor mask for clean edge fade
  */
 function HeroSection({ navigate }) {
   return (
@@ -156,11 +156,11 @@ function HeroSection({ navigate }) {
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#94B4C1]/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 left-20 w-[600px] h-[600px] bg-[#547792]/5 rounded-full blur-[100px] -z-10" />
 
-      {/* Grid Container - gap-8 on mobile, gap-16 on desktop for collision prevention */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-10 grid lg:grid-cols-12 gap-8 lg:gap-16 items-center h-full">
+      {/* Grid Container - balanced 6/6 split with gap-12 */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-10 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center h-full">
 
-        {/* --- LEFT CONTENT (Cols 1-5) --- */}
-        <div className="lg:col-span-5 relative z-20 flex flex-col justify-center">
+        {/* --- LEFT CONTENT (Cols 1-6 - Balanced) --- */}
+        <div className="lg:col-span-6 relative z-20 flex flex-col justify-center">
           {/* Trust Badge */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -189,7 +189,7 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-base sm:text-lg text-[#547792] mb-8 sm:mb-10 max-w-md leading-relaxed"
+            className="text-base sm:text-lg text-[#547792] mb-8 sm:mb-10 max-w-lg leading-relaxed"
           >
             Stop relying on outdated spreadsheets. Access institutional-grade transaction records and supply cliffs in real-time.
           </motion.p>
@@ -257,24 +257,26 @@ function HeroSection({ navigate }) {
           </motion.div>
         </div>
 
-        {/* --- RIGHT VISUAL (Cols 6-12) - Collision-proof placement --- */}
-        {/* Image starts at Column 6's edge - physically cannot overlap text in Column 5 */}
-        <div className="hidden lg:block lg:col-span-7 relative h-[800px] flex items-center">
+        {/* --- RIGHT VISUAL (Cols 7-12) - Goldilocks sizing --- */}
+        <div className="hidden lg:block lg:col-span-6 relative h-[800px] flex items-center">
           <motion.div
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
-            className="absolute left-4 w-[140%]"
+            className="absolute left-0 w-[115%]"
             style={{ perspective: '2000px' }}
           >
-            {/* Left edge fade mask */}
+            {/* Left edge fade mask - protects text from collision */}
             <div className="absolute inset-y-0 left-0 z-20 bg-gradient-to-r from-[#FDFBF7] via-[#FDFBF7]/40 to-transparent w-[15%]" />
 
-            {/* Dashboard Transform - translateX pushes deeper right for extra air */}
+            {/* Bottom floor mask - fades dashboard into floor cleanly */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 h-[25%] bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7] to-transparent" />
+
+            {/* Dashboard Transform */}
             <div
               className="w-full rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/20"
               style={{
-                transform: 'rotateY(-12deg) rotateX(6deg) rotateZ(2deg) translateX(40px) scale(1)',
+                transform: 'rotateY(-12deg) rotateX(6deg) rotateZ(2deg) translateX(10px) scale(1)',
                 transformOrigin: 'center left',
                 backgroundColor: 'white'
               }}
