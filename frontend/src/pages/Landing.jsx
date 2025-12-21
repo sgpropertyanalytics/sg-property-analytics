@@ -146,25 +146,25 @@ const LandingPage = () => {
 };
 
 /**
- * Hero Section - Clean Dashboard Showcase
- * Focused on the primary value proposition: the dashboard itself
+ * Hero Section - "Midday" Style Dashboard Showcase
+ * Dramatic 3D tilt with premium browser chrome details
  */
 function HeroSection({ navigate }) {
   return (
-    <section className="relative bg-[#FDFBF7] pt-24 sm:pt-28 lg:pt-32 pb-16 sm:pb-20 lg:pb-20 overflow-hidden min-h-[600px] lg:min-h-[750px] flex items-center">
+    <section className="relative bg-[#FDFBF7] pt-28 sm:pt-32 lg:pt-40 pb-16 sm:pb-20 overflow-hidden min-h-[600px] lg:min-h-[850px] flex items-center">
       {/* Background Gradients */}
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#94B4C1]/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 left-20 w-[600px] h-[600px] bg-[#547792]/5 rounded-full blur-[100px] -z-10" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-10 grid lg:grid-cols-12 gap-8 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-10 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center h-full">
 
         {/* --- LEFT CONTENT (Span 5 cols for breathing room) --- */}
-        <div className="lg:col-span-5 relative z-20 flex flex-col justify-center h-full">
+        <div className="lg:col-span-5 relative z-20 flex flex-col justify-center">
           {/* Trust Badge */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="self-start inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-[#94B4C1]/40 bg-white/60 backdrop-blur-md shadow-sm"
+            className="self-start inline-flex items-center gap-2 px-3 py-1.5 mb-6 sm:mb-8 rounded-full border border-[#94B4C1]/40 bg-white/60 backdrop-blur-md shadow-sm"
           >
             <span className="w-2 h-2 rounded-full bg-[#547792] animate-pulse" />
             <span className="text-xs font-bold text-[#213448] tracking-wide uppercase">
@@ -177,7 +177,7 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-[4rem] font-bold tracking-tight text-[#213448] mb-4 sm:mb-6 leading-[1.1]"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-[4.5rem] font-bold tracking-tight text-[#213448] mb-6 sm:mb-8 leading-[1]"
           >
             Property data, <br />
             <span className="text-[#547792]">clarified.</span>
@@ -188,7 +188,7 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-base sm:text-lg text-[#547792] mb-8 max-w-md leading-relaxed"
+            className="text-base sm:text-lg text-[#547792] mb-8 sm:mb-10 max-w-md leading-relaxed"
           >
             Stop relying on outdated spreadsheets. Access institutional-grade transaction records and supply cliffs in real-time.
           </motion.p>
@@ -198,37 +198,37 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-10 sm:mb-12"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-12 sm:mb-16"
           >
             <button
               onClick={() => navigate('/market-pulse')}
-              className="group px-6 sm:px-8 py-3.5 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#324b66] active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center justify-center gap-2 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+              className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#324b66] active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center justify-center gap-2 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
             >
               Explore Dashboard
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform opacity-80" />
             </button>
             <button
               onClick={() => navigate('/analytics-view')}
-              className="px-6 sm:px-8 py-3.5 rounded-xl bg-white/80 border border-[#EAE0CF] text-[#547792] font-medium hover:bg-white active:scale-[0.98] active:bg-[#EAE0CF]/30 transition-all flex items-center justify-center gap-2 backdrop-blur-sm shadow-sm min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+              className="px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-white/80 border border-[#EAE0CF] text-[#547792] font-medium hover:bg-white active:scale-[0.98] active:bg-[#EAE0CF]/30 transition-all flex items-center justify-center gap-2 backdrop-blur-sm shadow-sm min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
             >
               View Demo
             </button>
           </motion.div>
 
-          {/* Metrics - Tighter spacing */}
+          {/* Metrics */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="flex gap-8 sm:gap-10 border-t border-[#213448]/10 pt-6"
+            className="flex gap-8 sm:gap-12 border-t border-[#213448]/10 pt-6 sm:pt-8"
           >
             <div>
               <div className="text-2xl sm:text-3xl font-bold text-[#213448] font-mono tabular-nums tracking-tight">$2.8B+</div>
-              <div className="text-[10px] sm:text-xs text-[#94B4C1] uppercase tracking-wider mt-1 font-bold">Value Analyzed</div>
+              <div className="text-[10px] sm:text-[11px] text-[#94B4C1] uppercase tracking-wider mt-1 font-bold">Value Analyzed</div>
             </div>
             <div>
               <div className="text-2xl sm:text-3xl font-bold text-[#213448] font-mono tabular-nums tracking-tight">103k</div>
-              <div className="text-[10px] sm:text-xs text-[#94B4C1] uppercase tracking-wider mt-1 font-bold">Records</div>
+              <div className="text-[10px] sm:text-[11px] text-[#94B4C1] uppercase tracking-wider mt-1 font-bold">Records</div>
             </div>
           </motion.div>
 
@@ -241,11 +241,11 @@ function HeroSection({ navigate }) {
           >
             <div className="rounded-xl overflow-hidden shadow-xl shadow-[#213448]/10 border border-[#94B4C1]/20 bg-white">
               {/* Minimal Browser Chrome */}
-              <div className="h-6 sm:h-8 bg-white border-b border-gray-100 flex items-center px-3 sm:px-4 gap-2">
+              <div className="h-6 sm:h-8 bg-[#FDFBF7] border-b border-[#EAE0CF] flex items-center px-3 sm:px-4 gap-2">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-200"></div>
+                  <div className="w-2 h-2 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
+                  <div className="w-2 h-2 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
+                  <div className="w-2 h-2 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
                 </div>
               </div>
               {/* Dashboard Screenshot */}
@@ -258,39 +258,57 @@ function HeroSection({ navigate }) {
           </motion.div>
         </div>
 
-        {/* --- RIGHT VISUAL - Desktop only (pushed further right, subtler tilt) --- */}
-        <div className="hidden lg:block absolute top-[55%] -translate-y-1/2 right-[-180px] w-[60%] h-[800px] z-10 pointer-events-none">
+        {/* --- RIGHT VISUAL - "Midday" Style Dramatic Tilt --- */}
+        <div className="hidden lg:block absolute top-[10%] right-[-120px] w-[65%] h-[1200px] z-10 pointer-events-none">
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1.0, ease: "easeOut" }}
+            initial={{ opacity: 0, rotateX: 20, rotateY: 10, x: 100 }}
+            animate={{ opacity: 1, rotateX: 0, rotateY: 0, x: 0 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
             className="relative w-full h-full"
-            style={{ perspective: '2000px' }}
+            style={{ perspective: '2500px' }}
           >
-            {/* Thin fade mask - less aggressive */}
-            <div className="absolute inset-y-0 left-0 z-20 bg-gradient-to-r from-[#FDFBF7] via-[#FDFBF7]/80 to-transparent w-[15%]" />
+            {/* Soft fade mask on left edge */}
+            <div className="absolute inset-y-0 left-0 z-20 bg-gradient-to-r from-[#FDFBF7] via-[#FDFBF7]/60 to-transparent w-[20%]" />
 
-            {/* The Dashboard Container - subtler tilt */}
+            {/* The Dashboard Container - Midday tilt formula */}
             <div
-              className="w-full h-full"
-              style={{ transform: 'rotateY(-10deg) rotateX(4deg) scale(0.95)', transformOrigin: 'center left' }}
+              className="w-full"
+              style={{
+                transform: 'rotateX(12deg) rotateY(-18deg) rotateZ(-4deg) scale(1)',
+                transformOrigin: 'top left',
+                boxShadow: '-50px 60px 100px -20px rgba(33, 52, 72, 0.2)'
+              }}
             >
-              <div className="rounded-xl overflow-hidden shadow-[0_40px_80px_-20px_rgba(33,52,72,0.15)] border border-[#94B4C1]/20 bg-white">
-                {/* Minimal Browser Chrome */}
-                <div className="h-8 bg-white border-b border-gray-100 flex items-center px-4 gap-2">
-                  <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-gray-200"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-gray-200"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-gray-200"></div>
+              {/* Border Wrapper - Simulates screen thickness */}
+              <div className="p-1 rounded-2xl bg-gradient-to-b from-white to-[#94B4C1]/30 shadow-sm">
+                <div className="rounded-xl overflow-hidden bg-white border-[3px] border-white relative">
+                  {/* Premium Browser Chrome with URL bar */}
+                  <div className="h-10 bg-[#FDFBF7] border-b border-[#EAE0CF] flex items-center px-4 gap-3">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
+                      <div className="w-3 h-3 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
+                      <div className="w-3 h-3 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
+                    </div>
+                    <div className="flex-1 text-center">
+                      <div className="bg-white border border-[#EAE0CF] rounded-md py-0.5 px-3 inline-block shadow-sm">
+                        <span className="text-[10px] text-[#94B4C1] font-semibold tracking-wide flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                          propanalytics.sg
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                {/* Dashboard Screenshot - full opacity */}
-                <img
-                  src="/dashboard-screenshot.png"
-                  alt="Dashboard Preview"
-                  className="w-full h-auto"
-                />
+                  {/* Dashboard Screenshot */}
+                  <img
+                    src="/dashboard-screenshot.png"
+                    alt="Dashboard Preview"
+                    className="w-full h-auto object-cover"
+                  />
+
+                  {/* Gloss Overlay - diagonal reflection effect */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/30 pointer-events-none" />
+                </div>
               </div>
             </div>
           </motion.div>
