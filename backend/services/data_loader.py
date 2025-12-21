@@ -26,15 +26,15 @@ CSV Column Mapping (URA REALIS format):
   Market Segment          → market_segment      Direct copy (NEW)
   Tenure                  → tenure              Direct copy
   Type of Sale            → sale_type           Direct copy
-  No. of Units            → num_units           Parse as integer (NEW)
-  Nett Price ($)          → nett_price          Parse as float (NEW)
+  Number of Units         → num_units           Parse as integer (NEW)
+  Nett Price($)           → nett_price          Parse as float (NEW)
   Transacted Price ($)    → price               Parse as float
   Area (SQFT)             → area_sqft           Parse as float
   Type of Area            → type_of_area        Direct copy (NEW)
   Unit Price ($ PSF)      → psf                 Parse as float
   Sale Date               → transaction_date    Parse to YYYY-MM-DD
-  Floor Range             → floor_range         Direct copy (NEW)
-  (computed)              → floor_level         Classified from floor_range (NEW)
+  Floor Level             → floor_range         Direct copy (renamed from Floor Level)
+  (computed)              → floor_level         Classified from floor_range
   (computed)              → bedroom_count       Classified from area_sqft
   (computed)              → contract_date       Derived from transaction_date
   (computed)              → lease_start_year    Parsed from tenure
@@ -273,10 +273,11 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
             .astype(float)
         )
 
-    # NEW: Parse Nett Price if it exists
-    if 'Nett Price ($)' in df.columns:
+    # NEW: Parse Nett Price if it exists (handle both column name variants)
+    nett_price_col = 'Nett Price($)' if 'Nett Price($)' in df.columns else 'Nett Price ($)'
+    if nett_price_col in df.columns:
         df['nett_price'] = pd.to_numeric(
-            df['Nett Price ($)']
+            df[nett_price_col]
             .astype(str)
             .str.replace(',', '', regex=False)
             .str.replace('$', '', regex=False)
@@ -329,10 +330,11 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
     if rejected > 0:
         diagnostics['rejected']['invalid_price_or_area'] = rejected
 
-    # === NEW: Parse No. of Units if it exists ===
-    if 'No. of Units' in df.columns:
+    # === NEW: Parse Number of Units if it exists (handle both column name variants) ===
+    num_units_col = 'Number of Units' if 'Number of Units' in df.columns else 'No. of Units'
+    if num_units_col in df.columns:
         df['num_units'] = pd.to_numeric(
-            df['No. of Units'].astype(str).str.strip().replace(['nan', ''], '0'),
+            df[num_units_col].astype(str).str.strip().replace(['nan', ''], '0'),
             errors='coerce'
         ).fillna(1).astype(int)
 
@@ -355,9 +357,11 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
     if 'Market Segment' in df.columns:
         df['market_segment'] = df['Market Segment'].apply(_normalize_null_str)
 
-    # === NEW: Preserve and classify Floor Range ===
-    if 'Floor Range' in df.columns:
-        df['floor_range'] = df['Floor Range'].apply(_normalize_null_str)
+    # === NEW: Preserve and classify Floor Level (handle both column name variants) ===
+    # CSV has "Floor Level" but we store as "floor_range" for backwards compatibility
+    floor_col = 'Floor Level' if 'Floor Level' in df.columns else 'Floor Range'
+    if floor_col in df.columns:
+        df['floor_range'] = df[floor_col].apply(_normalize_null_str)
         # Apply floor level classification (handles empty strings)
         df['floor_level'] = df['floor_range'].apply(classify_floor_level)
 

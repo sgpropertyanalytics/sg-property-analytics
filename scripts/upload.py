@@ -144,9 +144,9 @@ PREVIOUS_TABLE = 'transactions_prev'
 
 EXPECTED_CSV_COLUMNS = {
     'Project Name', 'Street Name', 'Property Type', 'Postal District',
-    'Market Segment', 'Tenure', 'Type of Sale', 'No. of Units',
-    'Nett Price ($)', 'Transacted Price ($)', 'Area (SQFT)',
-    'Type of Area', 'Unit Price ($ PSF)', 'Sale Date', 'Floor Range',
+    'Market Segment', 'Tenure', 'Type of Sale', 'Number of Units',
+    'Nett Price($)', 'Transacted Price ($)', 'Area (SQFT)',
+    'Type of Area', 'Unit Price ($ PSF)', 'Sale Date', 'Floor Level',
 }
 
 CSV_TO_DB_MAPPING = {
@@ -157,14 +157,14 @@ CSV_TO_DB_MAPPING = {
     'Market Segment': 'market_segment',
     'Tenure': 'tenure',
     'Type of Sale': 'sale_type',
-    'No. of Units': 'num_units',
-    'Nett Price ($)': 'nett_price',
+    'Number of Units': 'num_units',
+    'Nett Price($)': 'nett_price',
     'Transacted Price ($)': 'price',
     'Area (SQFT)': 'area_sqft',
     'Type of Area': 'type_of_area',
     'Unit Price ($ PSF)': 'psf',
     'Sale Date': 'transaction_date',
-    'Floor Range': 'floor_range',
+    'Floor Level': 'floor_range',  # CSV column "Floor Level" maps to DB column "floor_range"
 }
 
 # Validation thresholds
