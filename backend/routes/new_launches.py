@@ -322,7 +322,7 @@ def trigger_scrape():
     dry_run = request.args.get("dry_run", "").lower() == "true"
 
     try:
-        from services.new_launch_scraper import scrape_new_launches
+        from services.property_scraper import scrape_new_launches
 
         stats = scrape_new_launches(target_year=year, dry_run=dry_run)
 
@@ -358,7 +358,7 @@ def trigger_validation():
     start = time.time()
 
     try:
-        from services.new_launch_scraper import validate_new_launches
+        from services.property_scraper import validate_new_launches
 
         stats = validate_new_launches()
 
@@ -403,7 +403,7 @@ def reset_and_rescrape():
         }), 400
 
     try:
-        from services.new_launch_scraper import scrape_new_launches
+        from services.property_scraper import scrape_new_launches
         from sqlalchemy import text
 
         # Delete all existing records for the year

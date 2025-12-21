@@ -532,9 +532,9 @@ def scrape_project_inventory():
     save = request.args.get("save", "").lower() == "true"
 
     try:
-        from services.project_scraper import ProjectScraper
+        from services.property_scraper import PropertyScraper
 
-        scraper = ProjectScraper()
+        scraper = PropertyScraper()
 
         if save:
             result = scraper.scrape_and_save(project_name)
@@ -594,7 +594,7 @@ def scrape_missing_inventory():
     dry_run = request.args.get("dry_run", "").lower() == "true"
 
     try:
-        from services.project_scraper import scrape_missing_projects
+        from services.property_scraper import scrape_missing_projects
 
         if dry_run:
             # Just report what would be scraped

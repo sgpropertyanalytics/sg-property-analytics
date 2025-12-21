@@ -198,8 +198,8 @@ class InventorySyncService:
         scraper = None
         if not self._ura_cache and use_scraper_fallback:
             try:
-                from services.project_scraper import ProjectScraper
-                scraper = ProjectScraper()
+                from services.property_scraper import PropertyScraper
+                scraper = PropertyScraper()
                 print("  URA API not configured - using multi-source scraper fallback")
             except ImportError:
                 print("  Warning: project_scraper not available")
