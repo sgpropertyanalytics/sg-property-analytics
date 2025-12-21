@@ -90,9 +90,9 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
               className="absolute inset-0 bg-black/50"
               onClick={handleMobileNavClose}
             />
-            {/* Nav Drawer */}
+            {/* Nav Drawer - Expanded mode with labels */}
             <div className="absolute inset-y-0 left-0 w-64 animate-slide-in-left">
-              <GlobalNavRail activePage={activePage} />
+              <GlobalNavRail activePage={activePage} expanded={true} />
               {/* Close button overlay */}
               <button
                 onClick={handleMobileNavClose}

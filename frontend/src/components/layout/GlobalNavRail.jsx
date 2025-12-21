@@ -72,7 +72,7 @@ export const NAV_ITEMS = [
   },
 ];
 
-export function GlobalNavRail({ activePage, onPageChange }) {
+export function GlobalNavRail({ activePage, onPageChange, expanded = false }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -91,37 +91,44 @@ export function GlobalNavRail({ activePage, onPageChange }) {
 
   return (
     <nav
-      className="w-16 bg-[#213448] flex flex-col items-center py-4 flex-shrink-0 h-full"
+      className={`bg-[#213448] flex flex-col py-4 flex-shrink-0 h-full ${expanded ? 'w-64 px-3' : 'w-16 items-center'}`}
       aria-label="Main navigation"
     >
       {/* Logo / Home - Links to Market Pulse */}
       <button
         onClick={() => navigate('/market-pulse')}
-        className="group relative mb-8 flex items-center justify-center"
+        className={`group relative mb-8 flex items-center ${expanded ? 'gap-3 w-full px-2' : 'justify-center'}`}
         aria-label="Go to Market Pulse"
       >
-        <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center transition-all duration-200 group-hover:bg-[#547792]/50 group-hover:scale-105">
+        <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center transition-all duration-200 group-hover:bg-[#547792]/50 group-hover:scale-105 flex-shrink-0">
           <svg className="w-6 h-6 text-[#EAE0CF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
         </div>
 
-        {/* Tooltip */}
-        <div className="
-          absolute left-full ml-4 px-3 py-2
-          bg-[#213448] text-[#EAE0CF] text-sm font-medium
-          rounded-lg shadow-xl
-          opacity-0 invisible group-hover:opacity-100 group-hover:visible
-          pointer-events-none transition-all duration-200 delay-100
-          whitespace-nowrap z-50 border border-[#94B4C1]/30
-        ">
-          Home
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-[#213448] rotate-45 border-l border-b border-[#94B4C1]/30" />
-        </div>
+        {/* Label when expanded */}
+        {expanded && (
+          <span className="text-[#EAE0CF] font-medium text-sm">Home</span>
+        )}
+
+        {/* Tooltip - only shown when collapsed */}
+        {!expanded && (
+          <div className="
+            absolute left-full ml-4 px-3 py-2
+            bg-[#213448] text-[#EAE0CF] text-sm font-medium
+            rounded-lg shadow-xl
+            opacity-0 invisible group-hover:opacity-100 group-hover:visible
+            pointer-events-none transition-all duration-200 delay-100
+            whitespace-nowrap z-50 border border-[#94B4C1]/30
+          ">
+            Home
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-[#213448] rotate-45 border-l border-b border-[#94B4C1]/30" />
+          </div>
+        )}
       </button>
 
       {/* Navigation Items */}
-      <div className="flex-1 flex flex-col gap-2 w-full px-2">
+      <div className={`flex-1 flex flex-col gap-2 w-full ${expanded ? 'px-1' : 'px-2'}`}>
         {NAV_ITEMS.map((item) => {
           const isActive = activeItem === item.id;
 
@@ -130,8 +137,8 @@ export function GlobalNavRail({ activePage, onPageChange }) {
               key={item.id}
               onClick={() => handleNavClick(item)}
               className={`
-                group relative flex flex-col items-center justify-center
-                w-full aspect-square rounded-xl
+                group relative flex items-center
+                ${expanded ? 'gap-3 px-3 py-3 rounded-lg' : 'flex-col justify-center w-full aspect-square rounded-xl'}
                 transition-all duration-200 ease-out
                 ${isActive
                   ? 'bg-[#547792]/40 text-[#EAE0CF]'
@@ -147,51 +154,69 @@ export function GlobalNavRail({ activePage, onPageChange }) {
               )}
 
               {/* Icon */}
-              <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}>
+              <span className={`transition-transform duration-200 flex-shrink-0 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}>
                 {item.icon}
               </span>
 
-              {/* Tooltip on hover - positioned to the right */}
-              <div className="
-                absolute left-full ml-4 px-3 py-2
-                bg-[#213448] text-[#EAE0CF] text-sm font-medium
-                rounded-lg shadow-xl
-                opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                pointer-events-none transition-all duration-200 delay-100
-                whitespace-nowrap z-50 border border-[#94B4C1]/30
-              ">
-                {item.label}
-                {/* Arrow pointing left */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-[#213448] rotate-45 border-l border-b border-[#94B4C1]/30" />
-              </div>
+              {/* Label when expanded */}
+              {expanded && (
+                <span className="text-sm font-medium truncate">{item.label}</span>
+              )}
+
+              {/* Tooltip on hover - only when collapsed */}
+              {!expanded && (
+                <div className="
+                  absolute left-full ml-4 px-3 py-2
+                  bg-[#213448] text-[#EAE0CF] text-sm font-medium
+                  rounded-lg shadow-xl
+                  opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                  pointer-events-none transition-all duration-200 delay-100
+                  whitespace-nowrap z-50 border border-[#94B4C1]/30
+                ">
+                  {item.label}
+                  {/* Arrow pointing left */}
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-[#213448] rotate-45 border-l border-b border-[#94B4C1]/30" />
+                </div>
+              )}
             </button>
           );
         })}
       </div>
 
       {/* Bottom section - Settings/Help */}
-      <div className="mt-auto pt-4 w-full px-2">
+      <div className={`mt-auto pt-4 w-full ${expanded ? 'px-1' : 'px-2'}`}>
         <button
-          className="group relative flex flex-col items-center justify-center w-full aspect-square rounded-xl text-[#94B4C1]/60 hover:bg-[#547792]/30 hover:text-[#EAE0CF] transition-all duration-200"
+          className={`
+            group relative flex items-center
+            ${expanded ? 'gap-3 px-3 py-3 rounded-lg w-full' : 'flex-col justify-center w-full aspect-square rounded-xl'}
+            text-[#94B4C1]/60 hover:bg-[#547792]/30 hover:text-[#EAE0CF] transition-all duration-200
+          `}
           aria-label="Settings"
         >
-          <svg className="w-5 h-5 group-hover:scale-105 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 group-hover:scale-105 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
 
-          {/* Tooltip */}
-          <div className="
-            absolute left-full ml-4 px-3 py-2
-            bg-[#213448] text-[#EAE0CF] text-sm font-medium
-            rounded-lg shadow-xl
-            opacity-0 invisible group-hover:opacity-100 group-hover:visible
-            pointer-events-none transition-all duration-200 delay-100
-            whitespace-nowrap z-50 border border-[#94B4C1]/30
-          ">
-            Settings
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-[#213448] rotate-45 border-l border-b border-[#94B4C1]/30" />
-          </div>
+          {/* Label when expanded */}
+          {expanded && (
+            <span className="text-sm font-medium">Settings</span>
+          )}
+
+          {/* Tooltip - only when collapsed */}
+          {!expanded && (
+            <div className="
+              absolute left-full ml-4 px-3 py-2
+              bg-[#213448] text-[#EAE0CF] text-sm font-medium
+              rounded-lg shadow-xl
+              opacity-0 invisible group-hover:opacity-100 group-hover:visible
+              pointer-events-none transition-all duration-200 delay-100
+              whitespace-nowrap z-50 border border-[#94B4C1]/30
+            ">
+              Settings
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-[#213448] rotate-45 border-l border-b border-[#94B4C1]/30" />
+            </div>
+          )}
         </button>
       </div>
     </nav>

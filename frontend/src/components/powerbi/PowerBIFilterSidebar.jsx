@@ -57,7 +57,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
   }
 
   return (
-    <div className="w-72 bg-[#EAE0CF] border-r border-[#94B4C1]/30 flex flex-col h-full overflow-hidden">
+    <div className="w-full sm:w-72 bg-[#EAE0CF] border-r border-[#94B4C1]/30 flex flex-col h-full overflow-hidden">
       {/* Header - Sand/Cream background with Navy text */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between bg-[#EAE0CF]">
         <div className="flex items-center gap-2">
