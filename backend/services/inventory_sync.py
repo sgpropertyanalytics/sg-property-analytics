@@ -167,27 +167,46 @@ class InventorySyncService:
         # Return projects that need lookup
         return list(transaction_project_names - inventory_project_names)
 
-    def sync_new_projects(self):
+    def sync_new_projects(self, use_scraper_fallback: bool = True):
         """
         Sync inventory data for new projects from URA API.
 
+        If URA API is not configured, falls back to multi-source scraper
+        (project_scraper.py) which cross-validates data from 10 sources:
+        EdgeProp, 99.co, PropertyGuru, SRX, PropNex, ERA, Huttons, OrangeTee, ST Property, URA
+
+        Args:
+            use_scraper_fallback: If True, use project_scraper when URA unavailable
+
         Returns:
-            Dict with sync results: {synced: int, pending: int, errors: []}
+            Dict with sync results: {synced: int, pending: int, scraped: int, errors: []}
         """
         new_projects = self.get_new_projects()
         if not new_projects:
-            return {"synced": 0, "pending": 0, "errors": [], "message": "No new projects to sync"}
+            return {"synced": 0, "pending": 0, "scraped": 0, "errors": [], "message": "No new projects to sync"}
 
         print(f"Found {len(new_projects)} new projects to sync")
 
-        # Fetch URA data (cached)
-        if self._ura_cache is None:
-            self._ura_cache = self._fetch_ura_developer_sales()
+        results = {"synced": 0, "pending": 0, "scraped": 0, "errors": []}
 
-        results = {"synced": 0, "pending": 0, "errors": []}
+        # Try URA API first if configured
+        if self.is_configured():
+            if self._ura_cache is None:
+                self._ura_cache = self._fetch_ura_developer_sales()
+
+        # Initialize scraper if URA not available and fallback enabled
+        scraper = None
+        if not self._ura_cache and use_scraper_fallback:
+            try:
+                from services.project_scraper import ProjectScraper
+                scraper = ProjectScraper()
+                print("  URA API not configured - using multi-source scraper fallback")
+            except ImportError:
+                print("  Warning: project_scraper not available")
 
         for project_name in new_projects:
             try:
+                # Try URA API first
                 if self._ura_cache:
                     match = self._find_ura_match(project_name, self._ura_cache)
                     if match:
@@ -198,10 +217,20 @@ class InventorySyncService:
                             "projectId": match.get("projectId")
                         })
                         results["synced"] += 1
-                        print(f"  Synced: {project_name} ({match.get('launchedToDate')} units)")
+                        print(f"  Synced (URA): {project_name} ({match.get('launchedToDate')} units)")
                         continue
 
-                # No match found or no URA data - mark as pending
+                # Fallback to multi-source scraper
+                if scraper:
+                    scrape_result = scraper.scrape_and_save(project_name)
+                    if scrape_result.get("status") == "saved":
+                        results["scraped"] += 1
+                        print(f"  Scraped: {project_name} ({scrape_result.get('total_units')} units, {scrape_result.get('confidence')})")
+                        continue
+                    elif scrape_result.get("status") == "low_confidence":
+                        print(f"  Low confidence: {project_name} - {scrape_result.get('total_units')} units (not saved)")
+
+                # No match found - mark as pending
                 ProjectInventory.get_or_create(project_name)
                 results["pending"] += 1
                 print(f"  Pending: {project_name}")

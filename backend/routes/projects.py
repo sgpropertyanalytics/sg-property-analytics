@@ -497,6 +497,214 @@ def get_hot_projects():
         return jsonify({"error": str(e)}), 500
 
 
+# =============================================================================
+# INVENTORY SCRAPING ENDPOINTS
+# =============================================================================
+
+@projects_bp.route("/projects/inventory/scrape", methods=["POST"])
+def scrape_project_inventory():
+    """
+    Scrape total_units for a specific project from 10 sources.
+
+    This uses project_scraper.py to cross-validate data from:
+    EdgeProp, 99.co, PropertyGuru, SRX, PropNex, ERA, Huttons, OrangeTee, ST Property, URA
+
+    Query params:
+        - project_name: Project name to scrape (required)
+        - save: If 'true', save to project_inventory table (default: false)
+
+    Returns:
+        {
+            "project_name": "...",
+            "total_units": N,
+            "confidence": "high|medium|low|none",
+            "sources": ["EdgeProp", "99.co", ...],
+            "discrepancies": [...]
+        }
+    """
+    import time
+    start = time.time()
+
+    project_name = request.args.get("project_name")
+    if not project_name:
+        return jsonify({"error": "project_name parameter required"}), 400
+
+    save = request.args.get("save", "").lower() == "true"
+
+    try:
+        from services.project_scraper import ProjectScraper
+
+        scraper = ProjectScraper()
+
+        if save:
+            result = scraper.scrape_and_save(project_name)
+        else:
+            validated = scraper.scrape_project(project_name)
+            result = {
+                "project_name": validated.project_name,
+                "total_units": validated.total_units,
+                "confidence": validated.total_units_confidence,
+                "sources": validated.total_units_sources,
+                "sources_checked": validated.sources_checked,
+                "sources_with_data": validated.sources_with_data,
+                "discrepancies": validated.discrepancies,
+                "developer": validated.developer,
+                "tenure": validated.tenure,
+            }
+
+        elapsed = time.time() - start
+        result["elapsed_seconds"] = round(elapsed, 2)
+
+        print(f"POST /api/projects/inventory/scrape took: {elapsed:.4f}s ({project_name})")
+
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"POST /api/projects/inventory/scrape ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@projects_bp.route("/projects/inventory/scrape-missing", methods=["POST"])
+def scrape_missing_inventory():
+    """
+    Scrape total_units for projects missing inventory data.
+
+    Finds projects with New Sale transactions but no total_units in project_inventory,
+    then scrapes from 10 sources to populate the data.
+
+    Query params:
+        - limit: Max projects to scrape (default: 20)
+        - dry_run: If 'true', don't save to database (default: false)
+
+    Returns:
+        {
+            "scraped": N,
+            "saved": N,
+            "low_confidence": N,
+            "not_found": N,
+            "errors": [...]
+        }
+    """
+    import time
+    start = time.time()
+
+    limit = int(request.args.get("limit", 20))
+    dry_run = request.args.get("dry_run", "").lower() == "true"
+
+    try:
+        from services.project_scraper import scrape_missing_projects
+
+        if dry_run:
+            # Just report what would be scraped
+            from models.transaction import Transaction
+            from models.project_inventory import ProjectInventory
+            from sqlalchemy import func
+
+            # Get projects with New Sale transactions but no inventory
+            projects_with_sales = db.session.query(
+                Transaction.project_name,
+                func.count(Transaction.id).label('sales_count')
+            ).filter(
+                Transaction.sale_type == 'New Sale',
+                Transaction.is_outlier == False
+            ).group_by(Transaction.project_name).subquery()
+
+            missing = db.session.query(projects_with_sales.c.project_name).outerjoin(
+                ProjectInventory,
+                projects_with_sales.c.project_name == ProjectInventory.project_name
+            ).filter(
+                ProjectInventory.id.is_(None)
+            ).order_by(
+                projects_with_sales.c.sales_count.desc()
+            ).limit(limit).all()
+
+            elapsed = time.time() - start
+            return jsonify({
+                "dry_run": True,
+                "projects_to_scrape": [p[0] for p in missing],
+                "count": len(missing),
+                "elapsed_seconds": round(elapsed, 2)
+            })
+
+        # Actually scrape
+        stats = scrape_missing_projects(limit=limit)
+
+        elapsed = time.time() - start
+        stats["elapsed_seconds"] = round(elapsed, 2)
+
+        print(f"POST /api/projects/inventory/scrape-missing took: {elapsed:.4f}s")
+
+        return jsonify(stats)
+
+    except Exception as e:
+        print(f"POST /api/projects/inventory/scrape-missing ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@projects_bp.route("/projects/inventory/status", methods=["GET"])
+def get_inventory_status():
+    """
+    Get inventory data coverage status.
+
+    Returns summary of how many projects have total_units data vs missing.
+
+    Returns:
+        {
+            "total_projects_with_new_sales": N,
+            "projects_with_inventory": N,
+            "projects_missing_inventory": N,
+            "coverage_percent": X.X,
+            "by_source": {...}
+        }
+    """
+    import time
+    start = time.time()
+
+    try:
+        from models.transaction import Transaction
+        from models.project_inventory import ProjectInventory
+        from sqlalchemy import func
+
+        # Count projects with New Sale transactions
+        total_with_sales = db.session.query(
+            func.count(func.distinct(Transaction.project_name))
+        ).filter(
+            Transaction.sale_type == 'New Sale',
+            Transaction.is_outlier == False
+        ).scalar() or 0
+
+        # Count projects with inventory data
+        inventory_stats = db.session.query(
+            ProjectInventory.data_source,
+            func.count(ProjectInventory.id)
+        ).group_by(ProjectInventory.data_source).all()
+
+        by_source = {src: count for src, count in inventory_stats}
+        total_with_inventory = sum(by_source.values())
+
+        missing = total_with_sales - total_with_inventory
+        coverage = (total_with_inventory / total_with_sales * 100) if total_with_sales > 0 else 0
+
+        elapsed = time.time() - start
+
+        return jsonify({
+            "total_projects_with_new_sales": total_with_sales,
+            "projects_with_inventory": total_with_inventory,
+            "projects_missing_inventory": max(0, missing),
+            "coverage_percent": round(coverage, 1),
+            "by_source": by_source,
+            "elapsed_seconds": round(elapsed, 2)
+        })
+
+    except Exception as e:
+        print(f"GET /api/projects/inventory/status ERROR: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @projects_bp.route("/projects/cleanup-upcoming-launches", methods=["DELETE"])
 def cleanup_upcoming_launches_from_transactions():
     """
