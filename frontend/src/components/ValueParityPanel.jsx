@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { getTransactionsList, getFilterOptions } from '../api/client';
-import { DISTRICT_NAMES } from '../constants';
+import { DISTRICT_NAMES, isDistrictInRegion } from '../constants';
 
 /**
  * ValueParityPanel - Budget-based property search tool
@@ -214,16 +214,10 @@ export function ValueParityPanel() {
     { key: 'sale_type', label: 'Type', sortable: true, width: 'w-20' },
   ];
 
-  // Filter districts by selected region
+  // Filter districts by selected region - use centralized constants (SINGLE SOURCE OF TRUTH)
   const filteredDistricts = filterOptions.districts.filter(d => {
     if (!region) return true;
-    const ccrDistricts = ['D01', 'D02', 'D06', 'D09', 'D10', 'D11'];
-    const rcrDistricts = ['D03', 'D04', 'D05', 'D07', 'D08', 'D12', 'D13', 'D14', 'D15'];
-
-    if (region === 'CCR') return ccrDistricts.includes(d);
-    if (region === 'RCR') return rcrDistricts.includes(d);
-    if (region === 'OCR') return !ccrDistricts.includes(d) && !rcrDistricts.includes(d);
-    return true;
+    return isDistrictInRegion(d, region);
   });
 
   // Tick marks at $500k intervals

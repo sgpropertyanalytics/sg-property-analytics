@@ -616,25 +616,92 @@ const bedroomColors = {
 
 # 6. REFERENCE APPENDIX
 
-## A. District to Region Mapping
+## A. District to Region Mapping (SINGLE SOURCE OF TRUTH)
+
+> **CRITICAL: These mappings are centralized. NEVER duplicate them in code.**
+>
+> - **Backend**: Import from `backend/constants.py`
+> - **Frontend**: Import from `frontend/src/constants/index.js`
+
+### The Authoritative Mapping
+
+| Region | Districts | Description |
+|--------|-----------|-------------|
+| **CCR** | D01, D02, D06, D07, D09, D10, D11 | Core Central Region (Premium) |
+| **RCR** | D03, D04, D05, D08, D12, D13, D14, D15, D20 | Rest of Central Region (City fringe) |
+| **OCR** | D16, D17, D18, D19, D21, D22, D23, D24, D25, D26, D27, D28 | Outside Central Region (Suburban) |
+
+### Backend Usage
+
+```python
+# backend/constants.py - SINGLE SOURCE OF TRUTH
+from constants import (
+    CCR_DISTRICTS,           # ['D01', 'D02', 'D06', 'D07', 'D09', 'D10', 'D11']
+    RCR_DISTRICTS,           # ['D03', 'D04', 'D05', 'D08', 'D12', 'D13', 'D14', 'D15', 'D20']
+    OCR_DISTRICTS,           # ['D16', ..., 'D28']
+    get_region_for_district, # 'D07' → 'CCR'
+    get_districts_for_region # 'CCR' → ['D01', 'D02', ...]
+)
+
+# Example: Get region for a district
+region = get_region_for_district('D07')  # Returns 'CCR'
+
+# Example: Get all districts for a region
+districts = get_districts_for_region('RCR')  # Returns ['D03', 'D04', ...]
+```
+
+### Frontend Usage
 
 ```javascript
-const DISTRICT_REGION_MAP = {
-  // CCR - Core Central Region (Premium)
-  '01': 'CCR', '02': 'CCR', '06': 'CCR', '07': 'CCR',
-  '09': 'CCR', '10': 'CCR', '11': 'CCR',
+// frontend/src/constants/index.js - SINGLE SOURCE OF TRUTH
+import {
+  CCR_DISTRICTS,
+  RCR_DISTRICTS,
+  OCR_DISTRICTS,
+  getRegionForDistrict,
+  getDistrictsForRegion,
+  isDistrictInRegion
+} from '../constants';
 
-  // RCR - Rest of Central Region (City fringe)
-  '03': 'RCR', '04': 'RCR', '05': 'RCR', '08': 'RCR',
-  '12': 'RCR', '13': 'RCR', '14': 'RCR', '15': 'RCR',
-  '20': 'RCR', '21': 'RCR',
+// Example: Check if district is in region
+const isCCR = isDistrictInRegion('D07', 'CCR');  // true
 
-  // OCR - Outside Central Region (Suburban)
-  '16': 'OCR', '17': 'OCR', '18': 'OCR', '19': 'OCR',
-  '22': 'OCR', '23': 'OCR', '24': 'OCR', '25': 'OCR',
-  '26': 'OCR', '27': 'OCR', '28': 'OCR',
-};
+// Example: Get region for district
+const region = getRegionForDistrict('D15');  // 'RCR'
+
+// Example: Filter districts by region
+const ccrDistricts = getDistrictsForRegion('CCR');
 ```
+
+### Anti-Patterns (DO NOT DO THIS)
+
+```python
+# ❌ BAD - Hardcoded mappings that can become stale
+if district in ['D01', 'D02', 'D06', 'D09', 'D10', 'D11']:  # Missing D07!
+    region = 'CCR'
+
+# ❌ BAD - SQL CASE statements with hardcoded values
+CASE
+  WHEN district IN ('D01', 'D02', 'D06', 'D07', 'D09', 'D10', 'D11') THEN 'CCR'
+  -- This can drift from the source of truth
+END
+
+# ✅ GOOD - Use centralized constants
+from constants import get_region_for_district
+region = get_region_for_district(district)
+```
+
+### Files Using Centralized Constants
+
+| File | Usage |
+|------|-------|
+| `backend/constants.py` | **SOURCE OF TRUTH** - definitions |
+| `backend/routes/analytics.py` | Imports for SQL CASE statements |
+| `backend/services/dashboard_service.py` | Imports for aggregation |
+| `backend/services/data_processor.py` | Imports for data processing |
+| `backend/models/project_location.py` | Imports for model methods |
+| `frontend/src/constants/index.js` | **SOURCE OF TRUTH** - frontend |
+| `frontend/src/components/ValueParityPanel.jsx` | Imports for filtering |
 
 ## B. Bedroom Classification
 

@@ -1441,14 +1441,11 @@ def aggregate():
         elif g == "region":
             # Map districts to regions using CASE statement
             from sqlalchemy import case, literal
-            # CCR districts
-            ccr_districts = ['D01', 'D02', 'D06', 'D09', 'D10', 'D11']
-            # RCR districts
-            rcr_districts = ['D03', 'D04', 'D05', 'D07', 'D08', 'D12', 'D13', 'D14', 'D15', 'D20']
-            # OCR is everything else
+            # Import from centralized constants (SINGLE SOURCE OF TRUTH)
+            from constants import CCR_DISTRICTS, RCR_DISTRICTS
             region_case = case(
-                (Transaction.district.in_(ccr_districts), literal('CCR')),
-                (Transaction.district.in_(rcr_districts), literal('RCR')),
+                (Transaction.district.in_(CCR_DISTRICTS), literal('CCR')),
+                (Transaction.district.in_(RCR_DISTRICTS), literal('RCR')),
                 else_=literal('OCR')
             )
             group_columns.append(region_case)

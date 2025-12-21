@@ -139,6 +139,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 </button>
               ))}
             </div>
+            <p className="text-[9px] text-[#547792]/70 mt-1.5 italic">
+              CCR/RCR/OCR follows market convention; select areas may differ at planning-area level.
+            </p>
           </FilterGroup>
 
           {/* Districts Multi-select */}

@@ -108,27 +108,14 @@ class ProjectLocation(db.Model):
     def get_market_segment(district: str) -> Optional[str]:
         """
         Map Singapore postal district to Market Segment.
-        Consistent with data_processor._get_market_segment()
+        Uses centralized constants (SINGLE SOURCE OF TRUTH).
         """
         if not district:
             return None
 
-        d = str(district).strip().upper()
-        if not d.startswith("D"):
-            d = f"D{d.zfill(2)}"
-
-        # Core Central Region (CCR)
-        ccr_districts = ["D01", "D02", "D06", "D07", "D09", "D10", "D11"]
-        if d in ccr_districts:
-            return "CCR"
-
-        # Rest of Central Region (RCR)
-        rcr_districts = ["D03", "D04", "D05", "D08", "D12", "D13", "D14", "D15", "D20"]
-        if d in rcr_districts:
-            return "RCR"
-
-        # Outside Central Region (OCR)
-        return "OCR"
+        # Use centralized constants
+        from constants import get_region_for_district
+        return get_region_for_district(district)
 
     def __repr__(self):
         school_flag = "Yes" if self.has_popular_school_1km else "No"

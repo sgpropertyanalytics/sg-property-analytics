@@ -93,37 +93,19 @@ def _add_lease_columns(df: pd.DataFrame) -> None:
 def _get_market_segment(district: str) -> Optional[str]:
     """
     Map Singapore postal district to Market Segment.
-    
+
     Args:
         district: District code (e.g., "D01", "D09")
-        
+
     Returns:
         "CCR", "RCR", "OCR", or None if unknown
     """
     if not district:
         return None
-    
-    # Normalize district format
-    d = str(district).strip().upper()
-    if not d.startswith("D"):
-        d = f"D{d.zfill(2)}"
-    
-    # Core Central Region (CCR)
-    ccr_districts = ["D01", "D02", "D06", "D07", "D09", "D10", "D11"]
-    if d in ccr_districts:
-        return "CCR"
-    
-    # Rest of Core Central Region (RCR)
-    rcr_districts = ["D03", "D04", "D05", "D08", "D12", "D13", "D14", "D15", "D20"]
-    if d in rcr_districts:
-        return "RCR"
-    
-    # Outside Core Central Region (OCR)
-    ocr_districts = ["D16", "D17", "D18", "D19", "D21", "D22", "D23", "D24", "D25", "D26", "D27", "D28"]
-    if d in ocr_districts:
-        return "OCR"
-    
-    return None
+
+    # Use centralized constants (SINGLE SOURCE OF TRUTH)
+    from constants import get_region_for_district
+    return get_region_for_district(district)
 
 
 def parse_contract_date(date_str: str) -> Optional[str]:
@@ -1697,18 +1679,9 @@ def get_new_vs_resale_comparison(
             params[f"district_{i}"] = d
     elif segment:
         # Fallback to segment if no districts specified
-        ccr_districts = ["D01", "D02", "D06", "D07", "D09", "D10", "D11"]
-        rcr_districts = ["D03", "D04", "D05", "D08", "D12", "D13", "D14", "D15", "D20"]
-        ocr_districts = ["D16", "D17", "D18", "D19", "D21", "D22", "D23", "D24", "D25", "D26", "D27", "D28"]
-
-        if segment.upper() == "CCR":
-            segment_districts = ccr_districts
-        elif segment.upper() == "RCR":
-            segment_districts = rcr_districts
-        elif segment.upper() == "OCR":
-            segment_districts = ocr_districts
-        else:
-            segment_districts = []
+        # Use centralized constants (SINGLE SOURCE OF TRUTH)
+        from constants import get_districts_for_region
+        segment_districts = get_districts_for_region(segment)
 
         if segment_districts:
             placeholders = ", ".join([f":segment_district_{i}" for i in range(len(segment_districts))])

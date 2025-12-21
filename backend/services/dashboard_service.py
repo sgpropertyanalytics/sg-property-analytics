@@ -56,10 +56,11 @@ MAX_LOCATION_RESULTS = 50
 CACHE_TTL_SECONDS = 300  # 5 minutes
 CACHE_MAX_SIZE = 500
 
-# District to region mapping
-CCR_DISTRICTS = ['D01', 'D02', 'D06', 'D07', 'D09', 'D10', 'D11']
-RCR_DISTRICTS = ['D03', 'D04', 'D05', 'D08', 'D12', 'D13', 'D14', 'D15', 'D20']
-# OCR = everything else
+# District to region mapping - import from centralized constants (SINGLE SOURCE OF TRUTH)
+from constants import (
+    CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS,
+    get_region_for_district, get_districts_for_region
+)
 
 # ============================================================================
 # CACHING
@@ -259,29 +260,12 @@ def normalize_district(district: str) -> str:
     return d
 
 
-def get_region_for_district(district: str) -> str:
-    """Map district to market segment (CCR/RCR/OCR)."""
-    d = normalize_district(district)
-    if d in CCR_DISTRICTS:
-        return 'CCR'
-    elif d in RCR_DISTRICTS:
-        return 'RCR'
-    else:
-        return 'OCR'
-
+# get_region_for_district is imported from constants.py (SINGLE SOURCE OF TRUTH)
+# get_districts_for_region is imported from constants.py (SINGLE SOURCE OF TRUTH)
 
 def get_districts_for_segment(segment: str) -> List[str]:
-    """Get all districts for a market segment."""
-    segment = segment.upper()
-    if segment == 'CCR':
-        return CCR_DISTRICTS
-    elif segment == 'RCR':
-        return RCR_DISTRICTS
-    elif segment == 'OCR':
-        # OCR is everything not CCR or RCR
-        return [f"D{i:02d}" for i in range(1, 29)
-                if f"D{i:02d}" not in CCR_DISTRICTS and f"D{i:02d}" not in RCR_DISTRICTS]
-    return []
+    """Get all districts for a market segment. Wrapper for get_districts_for_region."""
+    return get_districts_for_region(segment)
 
 
 def build_filter_conditions(filters: Dict[str, Any]) -> List:
