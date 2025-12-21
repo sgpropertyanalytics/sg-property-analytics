@@ -61,12 +61,6 @@ const LandingPage = () => {
           <div className="flex gap-2 md:gap-4">
             <button
               onClick={() => navigate('/login')}
-              className="hidden md:flex items-center px-4 py-2 text-sm font-medium text-[#547792] hover:text-[#213448] transition-colors min-h-[44px]"
-            >
-              Log In
-            </button>
-            <button
-              onClick={() => navigate('/market-pulse')}
               className="px-4 md:px-5 py-2 text-sm font-medium bg-[#213448] text-[#EAE0CF] rounded-lg hover:bg-[#547792] hover:shadow-lg active:scale-[0.98] transition-all shadow-lg shadow-[#213448]/10 min-h-[44px] touch-action-manipulation"
             >
               Get Started

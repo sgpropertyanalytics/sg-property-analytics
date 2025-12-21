@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider } from './context/DataContext';
+import { AuthProvider } from './context/AuthContext';
 import LandingPage from './pages/Landing';
 import Login from './pages/Login';
 import { DashboardLayout } from './components/layout';
@@ -30,9 +31,10 @@ import { ValueParityPanel } from './components/ValueParityPanel';
  */
 function App() {
   return (
-    <DataProvider>
-      <BrowserRouter>
-        <Routes>
+    <AuthProvider>
+      <DataProvider>
+        <BrowserRouter>
+          <Routes>
           {/* ===== Public Routes (No Dashboard Layout) ===== */}
 
           {/* Landing Page - Public home page */}
@@ -117,11 +119,12 @@ function App() {
           <Route path="/dashboard" element={<Navigate to="/market-pulse" replace />} />
           <Route path="/macro-overview" element={<Navigate to="/market-pulse" replace />} />
 
-          {/* Catch-all -> Landing Page */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </DataProvider>
+            {/* Catch-all -> Landing Page */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </DataProvider>
+    </AuthProvider>
   );
 }
 
