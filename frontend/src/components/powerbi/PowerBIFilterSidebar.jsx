@@ -220,7 +220,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
 
           {/* Classification Tiers Info */}
           <div className="text-[10px] text-slate-500 mt-2 space-y-1.5 italic">
-            <div className="text-slate-500">Bedroom Classification (sqft):</div>
+            <div className="text-slate-500">Bedroom Classification (sqft): Post-harm: after AC ledge removal | Pre-harm: before</div>
             <table className="w-full text-[10px] border-collapse border border-dotted border-slate-400">
               <thead>
                 <tr className="text-slate-600 bg-slate-50/50">
@@ -255,9 +255,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 </tr>
               </tbody>
             </table>
-            <div className="text-[10px] text-slate-500 italic mt-1">
-              Post-harm: after AC ledge removal | Pre-harm: before
-            </div>
           </div>
         </FilterSection>
 
