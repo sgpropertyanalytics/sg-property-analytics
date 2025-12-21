@@ -21,6 +21,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     toggleBedroomType,
     setSegment,
     setSaleType,
+    setTenure,
+    setPropertyAge,
     resetFilters,
     clearCrossFilter,
   } = usePowerBIFilters();
@@ -29,6 +31,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     location: true,
     date: true,
     roomSize: true,
+    propertyDetails: true,
   });
 
   const toggleSection = (section) => {
@@ -104,7 +107,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
       )}
 
       {/* Filter sections */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {/* Location Section */}
         <FilterSection
           title="Location"
@@ -129,7 +132,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                   type="button"
                   key={seg}
                   onClick={(e) => { e.preventDefault(); setSegment(filters.segment === seg ? null : seg); }}
-                  className={`py-2 text-sm rounded-md border transition-colors ${
+                  className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
                     filters.segment === seg
                       ? 'bg-[#547792] text-white border-[#547792]'
                       : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
@@ -139,7 +142,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 </button>
               ))}
             </div>
-            <p className="text-[9px] text-[#547792]/70 mt-1.5 italic">
+            <p className="text-[10px] text-slate-500 mt-2 italic">
               CCR/RCR/OCR follows market convention; select areas may differ at planning-area level.
             </p>
           </FilterGroup>
@@ -173,10 +176,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           }
           expanded={expandedSections.roomSize}
           onToggle={() => toggleSection('roomSize')}
-          activeCount={
-            (filters.bedroomTypes.length > 0 ? 1 : 0) +
-            (filters.saleType ? 1 : 0)
-          }
+          activeCount={filters.bedroomTypes.length > 0 ? 1 : 0}
         >
           {/* Bedroom Type Buttons - centered with consistent width */}
           <div className="grid grid-cols-4 gap-2">
@@ -185,7 +185,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 type="button"
                 key={br}
                 onClick={(e) => { e.preventDefault(); toggleBedroomType(br); }}
-                className={`py-2 text-sm rounded-md border transition-colors ${
+                className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
                   filters.bedroomTypes.includes(br)
                     ? 'bg-[#547792] text-white border-[#547792]'
                     : filters.bedroomTypes.length === 0
@@ -198,65 +198,44 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
             ))}
           </div>
 
-          {/* Sale Type Buttons */}
-          <FilterGroup label="Sale Type">
-            <div className="grid grid-cols-2 gap-2">
-              {[{ value: 'New Sale', label: 'New Sale' }, { value: 'Resale', label: 'Resale' }].map(type => (
-                <button
-                  type="button"
-                  key={type.value}
-                  onClick={(e) => { e.preventDefault(); setSaleType(filters.saleType === type.value ? null : type.value); }}
-                  className={`py-2 text-sm rounded-md border transition-colors ${
-                    filters.saleType === type.value
-                      ? 'bg-[#547792] text-white border-[#547792]'
-                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
-                  }`}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-          </FilterGroup>
-
           {/* Classification Tiers Info */}
-          <div className="text-xs text-gray-500 mt-3 space-y-1.5">
-            <div className="font-medium text-gray-600">Bedroom Classification (sqft):</div>
-            <table className="w-full text-[10px] border-collapse border border-dotted border-gray-400">
+          <div className="text-[10px] text-slate-500 mt-2 space-y-1.5 italic overflow-hidden">
+            <div className="text-slate-500 break-words">Bedroom Classification (sqft): Post-harm: after AC ledge removal | Pre-harm: before</div>
+            <div className="overflow-x-auto">
+            <table className="w-full text-[10px] border-collapse border border-dotted border-slate-400">
               <thead>
-                <tr className="text-gray-600 bg-gray-50/50">
-                  <th className="text-left font-medium p-1.5 border border-dotted border-gray-400">Type</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">1B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">2B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">3B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-gray-400">4B+</th>
+                <tr className="text-slate-600 bg-slate-50/50">
+                  <th className="text-left font-medium p-1.5 border border-dotted border-slate-400">Type</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">1B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">2B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">3B</th>
+                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">4B+</th>
                 </tr>
               </thead>
-              <tbody className="text-gray-500">
+              <tbody className="text-slate-500">
                 <tr title="Post-harmonization: AC ledge rules changed">
-                  <td className="text-left p-1.5 border border-dotted border-gray-400">New ≥Jun'23</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;580</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;780</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;1150</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">≥1150</td>
+                  <td className="text-left p-1.5 border border-dotted border-slate-400">New ≥Jun'23</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;580</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;780</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;1150</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">≥1150</td>
                 </tr>
                 <tr title="Pre-harmonization: Before AC ledge rule changes">
-                  <td className="text-left p-1.5 border border-dotted border-gray-400">New &lt;Jun'23</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;600</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;850</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;1200</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">≥1200</td>
+                  <td className="text-left p-1.5 border border-dotted border-slate-400">New &lt;Jun'23</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;600</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;850</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;1200</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">≥1200</td>
                 </tr>
                 <tr title="Resale units: Legacy larger sizes">
-                  <td className="text-left p-1.5 border border-dotted border-gray-400">Resale</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;600</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;950</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">&lt;1350</td>
-                  <td className="text-center p-1.5 border border-dotted border-gray-400">≥1350</td>
+                  <td className="text-left p-1.5 border border-dotted border-slate-400">Resale</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;600</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;950</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;1350</td>
+                  <td className="text-center p-1.5 border border-dotted border-slate-400">≥1350</td>
                 </tr>
               </tbody>
             </table>
-            <div className="text-[9px] text-gray-500 italic">
-              Post-harm: after AC ledge removal | Pre-harm: before
             </div>
           </div>
         </FilterSection>
@@ -273,46 +252,131 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           onToggle={() => toggleSection('date')}
           activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
         >
-          <FilterGroup label="Date Range">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 w-10">From</span>
-                <input
-                  type="month"
-                  value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
-                  onChange={(e) => setDateRange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
-                  className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
-                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 w-10">To</span>
-                <input
-                  type="month"
-                  value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      // Get last day of the selected month (e.g., Sep has 30, Feb has 28/29)
-                      // month from input is 1-based (01-12), day 0 trick gives last day of that month
-                      const [year, month] = e.target.value.split('-');
-                      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-                      setDateRange(filters.dateRange.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
-                    } else {
-                      setDateRange(filters.dateRange.start, null);
-                    }
-                  }}
-                  className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
-                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
-                />
-              </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 w-10">From</span>
+              <input
+                type="month"
+                value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
+                onChange={(e) => setDateRange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
+                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
+                max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
+              />
             </div>
-            {filterOptions.dateRange.min && filterOptions.dateRange.max && (
-              <div className="text-xs text-slate-500 mt-2">
-                Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 w-10">To</span>
+              <input
+                type="month"
+                value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    // Get last day of the selected month (e.g., Sep has 30, Feb has 28/29)
+                    // month from input is 1-based (01-12), day 0 trick gives last day of that month
+                    const [year, month] = e.target.value.split('-');
+                    const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+                    setDateRange(filters.dateRange.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
+                  } else {
+                    setDateRange(filters.dateRange.start, null);
+                  }
+                }}
+                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
+                max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
+              />
+            </div>
+          </div>
+          {filterOptions.dateRange.min && filterOptions.dateRange.max && (
+            <div className="text-[10px] text-slate-500 mt-2 italic">
+              Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+            </div>
+          )}
+        </FilterSection>
+
+        {/* Property Details Section */}
+        <FilterSection
+          title="Property Details"
+          icon={
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          }
+          expanded={expandedSections.propertyDetails}
+          onToggle={() => toggleSection('propertyDetails')}
+          activeCount={
+            (filters.saleType ? 1 : 0) +
+            (filters.tenure ? 1 : 0) +
+            (filters.propertyAge.min !== null || filters.propertyAge.max !== null ? 1 : 0)
+          }
+        >
+          {/* Sale Type Buttons */}
+          <FilterGroup label="Sale Type">
+            <div className="grid grid-cols-2 gap-2">
+              {[{ value: 'New Sale', label: 'New Sale' }, { value: 'Resale', label: 'Resale' }].map(type => (
+                <button
+                  type="button"
+                  key={type.value}
+                  onClick={(e) => { e.preventDefault(); setSaleType(filters.saleType === type.value ? null : type.value); }}
+                  className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
+                    filters.saleType === type.value
+                      ? 'bg-[#547792] text-white border-[#547792]'
+                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+                  }`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </FilterGroup>
+
+          {/* Tenure Buttons */}
+          <FilterGroup label="Tenure">
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: '99-year', label: '99yr' },
+                { value: '999-year', label: '999yr' },
+                { value: 'Freehold', label: 'FH' }
+              ].map(type => (
+                <button
+                  type="button"
+                  key={type.value}
+                  onClick={(e) => { e.preventDefault(); setTenure(filters.tenure === type.value ? null : type.value); }}
+                  className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
+                    filters.tenure === type.value
+                      ? 'bg-[#547792] text-white border-[#547792]'
+                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+                  }`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </FilterGroup>
+
+          {/* Property Age Range */}
+          <FilterGroup label="Property Age (years)">
+            <div className="flex gap-2 items-center">
+              <input
+                type="number"
+                value={filters.propertyAge.min ?? ''}
+                onChange={(e) => setPropertyAge(e.target.value ? parseInt(e.target.value) : null, filters.propertyAge.max)}
+                placeholder="Min"
+                min={0}
+                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-slate-400">-</span>
+              <input
+                type="number"
+                value={filters.propertyAge.max ?? ''}
+                onChange={(e) => setPropertyAge(filters.propertyAge.min, e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="Max"
+                min={0}
+                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <p className="text-[10px] text-slate-500 mt-2 italic">
+              Age calculated from TOP date to transaction date.
+            </p>
           </FilterGroup>
         </FilterSection>
       </div>
@@ -323,7 +387,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           type="button"
           onClick={(e) => { e.preventDefault(); resetFilters(); }}
           disabled={activeFilterCount === 0}
-          className={`w-full py-2 text-sm rounded-md transition-colors ${
+          className={`w-full min-h-[44px] py-2.5 text-sm rounded-md transition-colors ${
             activeFilterCount > 0
               ? 'bg-[#213448] text-white hover:bg-[#547792]'
               : 'bg-[#94B4C1]/30 text-[#547792] cursor-not-allowed'
@@ -417,7 +481,7 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
-        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <span className={selected.length > 0 ? 'text-slate-800 truncate' : 'text-slate-500'}>
           {getDisplayText()}
