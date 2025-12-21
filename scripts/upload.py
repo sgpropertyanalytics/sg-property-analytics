@@ -588,7 +588,7 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
                         'floor_range': _safe_str(row.get('floor_range')) or None,
                         'floor_level': _safe_str(row.get('floor_level')) or None,
                         'num_units': _safe_int(row.get('num_units')),
-                        'nett_price': _safe_float(row.get('nett_price')) if row.get('nett_price') else None,
+                        'nett_price': _safe_float(row.get('nett_price')),  # 0.0 is valid, don't convert to None
                         'type_of_area': _safe_str(row.get('type_of_area')) or None,
                         'market_segment': _safe_str(row.get('market_segment')) or None,
                     })
