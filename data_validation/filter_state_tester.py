@@ -25,6 +25,14 @@ try:
 except ImportError:
     PSYCOPG2_AVAILABLE = False
 
+# Import centralized constants (SINGLE SOURCE OF TRUTH)
+from backend.constants import (
+    CCR_DISTRICTS as CCR_DISTRICTS_LIST,
+    RCR_DISTRICTS as RCR_DISTRICTS_LIST,
+    OCR_DISTRICTS as OCR_DISTRICTS_LIST,
+    get_region_for_district,
+)
+
 
 @dataclass
 class FilterState:
@@ -69,20 +77,15 @@ class ValidationResult:
         }
 
 
-# Region mapping
-CCR_DISTRICTS = {'D01', 'D02', 'D06', 'D09', 'D10', 'D11'}
-RCR_DISTRICTS = {'D03', 'D04', 'D05', 'D07', 'D08', 'D12', 'D13', 'D14', 'D15', 'D20'}
+# Region mapping - use centralized constants (converted to sets for O(1) lookup)
+CCR_DISTRICTS = set(CCR_DISTRICTS_LIST)
+RCR_DISTRICTS = set(RCR_DISTRICTS_LIST)
+OCR_DISTRICTS = set(OCR_DISTRICTS_LIST)
 
 
 def get_market_segment(district: str) -> str:
-    """Map district to market segment"""
-    d = district.upper()
-    if d in CCR_DISTRICTS:
-        return 'CCR'
-    elif d in RCR_DISTRICTS:
-        return 'RCR'
-    else:
-        return 'OCR'
+    """Map district to market segment - delegates to centralized function"""
+    return get_region_for_district(district)
 
 
 class FilterStateValidator:
@@ -443,8 +446,8 @@ class FilterStateValidator:
                     SELECT
                         district,
                         CASE
-                            WHEN district IN ('D01', 'D02', 'D06', 'D09', 'D10', 'D11') THEN 'CCR'
-                            WHEN district IN ('D03', 'D04', 'D05', 'D07', 'D08', 'D12', 'D13', 'D14', 'D15', 'D20') THEN 'RCR'
+                            WHEN district IN ('D01', 'D02', 'D06', 'D07', 'D09', 'D10', 'D11') THEN 'CCR'
+                            WHEN district IN ('D03', 'D04', 'D05', 'D08', 'D12', 'D13', 'D14', 'D15', 'D20') THEN 'RCR'
                             ELSE 'OCR'
                         END AS region,
                         SUM(price) AS total,

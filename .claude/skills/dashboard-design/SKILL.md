@@ -126,16 +126,17 @@ const bedroomColors = {
 
 ## 3. Typography
 
-### Font Stack
+### Font Stack (Current Implementation)
 
 ```css
---font-display: 'Outfit', 'Syne', 'Cabinet Grotesk';
---font-body: 'DM Sans', 'Plus Jakarta Sans', 'Satoshi';
---font-mono: 'JetBrains Mono', 'IBM Plex Mono';
+/* frontend/src/index.css */
+--font-sans: "Inter", system-ui, -apple-system, sans-serif;
 ```
 
-### NEVER Use
-Inter, Roboto, Arial, Helvetica, Space Grotesk, Poppins
+Inter is the primary UI font. For monospace numbers in data displays, use:
+```tsx
+<span className="font-mono tabular-nums">1,234,567</span>
+```
 
 ### Responsive Typography
 
