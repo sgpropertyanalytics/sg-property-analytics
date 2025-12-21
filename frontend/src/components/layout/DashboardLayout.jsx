@@ -124,10 +124,10 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
               />
             </div>
 
-            {/* Collapse Handle - Chevron at border */}
+            {/* Collapse Handle - Chevron at border (Sand/Cream styling) */}
             <button
               onClick={() => setFilterSidebarCollapsed(!filterSidebarCollapsed)}
-              className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-white border border-[#94B4C1]/30 rounded-r-lg shadow-sm flex items-center justify-center hover:bg-[#EAE0CF] transition-colors group"
+              className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-[#EAE0CF] border border-[#94B4C1]/30 rounded-r-lg shadow-sm flex items-center justify-center hover:bg-[#94B4C1]/30 transition-colors"
               aria-label={filterSidebarCollapsed ? 'Expand filters' : 'Collapse filters'}
             >
               <svg

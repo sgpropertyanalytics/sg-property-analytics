@@ -94,14 +94,31 @@ export function GlobalNavRail({ activePage, onPageChange }) {
       className="w-16 bg-[#213448] flex flex-col items-center py-4 flex-shrink-0 h-full"
       aria-label="Main navigation"
     >
-      {/* Logo / Brand */}
-      <div className="mb-8 flex items-center justify-center">
-        <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center">
+      {/* Logo / Home - Links to Market Pulse */}
+      <button
+        onClick={() => navigate('/market-pulse')}
+        className="group relative mb-8 flex items-center justify-center"
+        aria-label="Go to Market Pulse"
+      >
+        <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center transition-all duration-200 group-hover:bg-[#547792]/50 group-hover:scale-105">
           <svg className="w-6 h-6 text-[#EAE0CF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
         </div>
-      </div>
+
+        {/* Tooltip */}
+        <div className="
+          absolute left-full ml-4 px-3 py-2
+          bg-[#213448] text-[#EAE0CF] text-sm font-medium
+          rounded-lg shadow-xl
+          opacity-0 invisible group-hover:opacity-100 group-hover:visible
+          pointer-events-none transition-all duration-200 delay-100
+          whitespace-nowrap z-50 border border-[#94B4C1]/30
+        ">
+          Home
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-[#213448] rotate-45 border-l border-b border-[#94B4C1]/30" />
+        </div>
+      </button>
 
       {/* Navigation Items */}
       <div className="flex-1 flex flex-col gap-2 w-full px-2">
