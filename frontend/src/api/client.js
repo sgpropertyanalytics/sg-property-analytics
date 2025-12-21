@@ -1,27 +1,30 @@
 /**
  * API Client - Axios instance with JWT token interceptor
- * 
- * Uses Vite environment variable VITE_API_URL for base URL.
- * Falls back to production URL in production, localhost for development.
- * 
- * For production: Set VITE_API_URL=https://sg-property-analyzer.onrender.com/api
- * For local development: Leave unset or set to http://localhost:5000/api
+ *
+ * Production (Vercel): Uses relative URL '/api' - Vercel proxy forwards to Render
+ * Development (localhost): Uses 'http://localhost:5000/api'
+ *
+ * This eliminates CORS issues in production since all requests go through Vercel's proxy.
+ * See frontend/vercel.json for the rewrite rule.
  */
 import axios from 'axios';
 
 // Determine API base URL
-// Priority: 1. VITE_API_URL env var, 2. Production URL if in production, 3. Localhost for dev
+// Production: Use relative URL (Vercel proxy handles CORS)
+// Development: Use localhost directly
 const getApiBase = () => {
+  // Allow override via environment variable
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  
-  // Check if we're in production (Vercel)
+
+  // Production (Vercel): Use relative URL - proxy handles forwarding to Render
+  // This eliminates CORS issues completely
   if (import.meta.env.PROD || window.location.hostname !== 'localhost') {
-    return 'https://sg-property-analyzer.onrender.com/api';
+    return '/api';
   }
-  
-  // Default to localhost for development
+
+  // Development: Direct to local Flask server
   return 'http://localhost:5000/api';
 };
 
