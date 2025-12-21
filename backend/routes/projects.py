@@ -444,6 +444,14 @@ def get_hot_projects():
             district = row.district or ''
             market_seg = row.market_segment or get_region_for_district(district)
 
+            # Handle dates - may be string or datetime depending on DB
+            first_sale = row.first_sale
+            last_sale = row.last_sale
+            if first_sale and hasattr(first_sale, 'isoformat'):
+                first_sale = first_sale.isoformat()
+            if last_sale and hasattr(last_sale, 'isoformat'):
+                last_sale = last_sale.isoformat()
+
             projects.append({
                 "project_name": row.project_name,
                 "region": DISTRICT_TO_REGION.get(district, None),
@@ -452,8 +460,8 @@ def get_hot_projects():
                 "units_sold": row.units_sold or 0,
                 "total_value": float(row.total_value) if row.total_value else 0,
                 "avg_psf": round(float(row.avg_psf), 2) if row.avg_psf else 0,
-                "first_sale": row.first_sale.isoformat() if row.first_sale else None,
-                "last_sale": row.last_sale.isoformat() if row.last_sale else None,
+                "first_sale": first_sale,
+                "last_sale": last_sale,
                 "has_popular_school": row.has_popular_school_1km or False
             })
 
