@@ -363,10 +363,14 @@ def get_hot_projects():
     - "Active New Sales" = Projects that have ALREADY LAUNCHED and are selling
     - NOT "Upcoming Launches" (pre-launch projects in new_launches table)
 
+    Active projects are those where:
+    - percent_sold < 100% (still selling), OR
+    - resale_count == 0 (true new launch - no secondary market activity yet)
+
     Data Sources:
     - units_sold: COUNT(transactions WHERE sale_type='New Sale') - DETERMINISTIC
+    - resale_count: COUNT(transactions WHERE sale_type='Resale') - DETERMINISTIC
     - total_units: project_inventory.total_units (from URA API) - AUTHORITATIVE
-    - developer: From project metadata (manual entry)
 
     Calculation:
     - percent_sold = (units_sold / total_units) * 100
@@ -375,7 +379,8 @@ def get_hot_projects():
     Query params:
         - market_segment: filter by CCR, RCR, OCR
         - district: filter by district (comma-separated)
-        - limit: max results (default 50)
+        - limit: max results (default 100)
+        - include_completed: if 'true', include projects that are 100% sold
 
     Returns:
         {
@@ -389,88 +394,80 @@ def get_hot_projects():
     try:
         from models.transaction import Transaction
         from models.project_inventory import ProjectInventory
-        from sqlalchemy import func
+        from sqlalchemy import func, case, text, literal_column
         from constants import get_region_for_district
 
         # Get filter params
-        limit = int(request.args.get("limit", 50))
+        limit = int(request.args.get("limit", 100))
+        include_completed = request.args.get("include_completed", "").lower() == "true"
 
-        # Query: Group New Sale transactions by project
-        # - units_sold: COUNT of transactions (deterministic)
-        # - total_units: from project_inventory (URA API - authoritative source)
-        query = db.session.query(
-            Transaction.project_name,
-            Transaction.district,
-            func.count(Transaction.id).label('units_sold'),
-            func.sum(Transaction.price).label('total_value'),
-            func.avg(Transaction.psf).label('avg_psf'),
-            # From ProjectInventory (authoritative source for total_units)
-            ProjectInventory.total_units,
-            # From ProjectLocation
-            ProjectLocation.has_popular_school_1km,
-            ProjectLocation.market_segment
-        ).outerjoin(
-            ProjectInventory,
-            func.lower(func.trim(Transaction.project_name)) == func.lower(func.trim(ProjectInventory.project_name))
-        ).outerjoin(
-            ProjectLocation,
-            func.lower(func.trim(Transaction.project_name)) == func.lower(func.trim(ProjectLocation.project_name))
-        ).filter(
-            Transaction.sale_type == 'New Sale',
-            Transaction.is_outlier == False
-        )
-
-        # Apply filters
-        market_segment = request.args.get("market_segment")
-        if market_segment:
-            query = query.filter(
-                ProjectLocation.market_segment == market_segment.upper()
+        # First, get all projects with New Sale transactions using a subquery approach
+        # that also counts resales for each project
+        #
+        # Using raw SQL for efficiency since we need both sale types in one query
+        sql = text("""
+            WITH project_stats AS (
+                SELECT
+                    t.project_name,
+                    t.district,
+                    COUNT(CASE WHEN t.sale_type = 'New Sale' THEN 1 END) as units_sold,
+                    COUNT(CASE WHEN t.sale_type = 'Resale' THEN 1 END) as resale_count,
+                    SUM(CASE WHEN t.sale_type = 'New Sale' THEN t.price ELSE 0 END) as total_value,
+                    AVG(CASE WHEN t.sale_type = 'New Sale' THEN t.psf END) as avg_psf,
+                    MAX(CASE WHEN t.sale_type = 'New Sale' THEN t.transaction_date END) as last_new_sale
+                FROM transactions t
+                WHERE t.is_outlier = false
+                GROUP BY t.project_name, t.district
+                HAVING COUNT(CASE WHEN t.sale_type = 'New Sale' THEN 1 END) > 0
             )
+            SELECT
+                ps.project_name,
+                ps.district,
+                ps.units_sold,
+                ps.resale_count,
+                ps.total_value,
+                ps.avg_psf,
+                ps.last_new_sale,
+                pi.total_units,
+                pl.has_popular_school_1km,
+                pl.market_segment
+            FROM project_stats ps
+            LEFT JOIN project_inventory pi ON LOWER(TRIM(ps.project_name)) = LOWER(TRIM(pi.project_name))
+            LEFT JOIN project_location pl ON LOWER(TRIM(ps.project_name)) = LOWER(TRIM(pl.project_name))
+            ORDER BY ps.units_sold DESC
+            LIMIT :limit
+        """)
 
-        districts_param = request.args.get("district")
-        if districts_param:
-            districts = [d.strip().upper() for d in districts_param.split(",") if d.strip()]
-            normalized = []
-            for d in districts:
-                if not d.startswith("D"):
-                    d = f"D{d.zfill(2)}"
-                normalized.append(d)
-            query = query.filter(Transaction.district.in_(normalized))
+        results = db.session.execute(sql, {"limit": limit * 2}).fetchall()  # Fetch extra to allow filtering
 
-        # Group by project
-        query = query.group_by(
-            Transaction.project_name,
-            Transaction.district,
-            ProjectInventory.total_units,
-            ProjectLocation.has_popular_school_1km,
-            ProjectLocation.market_segment
-        )
-
-        # Order by units sold descending (hottest projects first)
-        query = query.order_by(func.count(Transaction.id).desc())
-
-        # Apply limit
-        query = query.limit(limit)
-
-        results = query.all()
-
-        # Format response
+        # Format response and filter active projects
         projects = []
         for row in results:
             district = row.district or ''
             market_seg = row.market_segment or get_region_for_district(district)
             units_sold = row.units_sold or 0
+            resale_count = row.resale_count or 0
             total_units = row.total_units or 0
 
             # Calculate percent_sold and unsold if total_units available
-            # total_units from project_inventory (URA API) is authoritative
-            # units_sold from transaction count is deterministic
             if total_units > 0:
                 percent_sold = round((units_sold * 100.0 / total_units), 1)
                 unsold_inventory = max(0, total_units - units_sold)
             else:
+                # No total_units data - can't calculate percent
                 percent_sold = None
                 unsold_inventory = None
+
+            # Determine if this is an "active" new sale project
+            # Active if: still selling (< 100% or no total_units data) OR no resales yet (true new launch)
+            is_active = True
+            if not include_completed:
+                # Completed projects: 100% sold AND have resales (secondary market started)
+                if percent_sold is not None and percent_sold >= 100 and resale_count > 0:
+                    is_active = False
+
+            if not is_active:
+                continue
 
             projects.append({
                 "project_name": row.project_name,
@@ -479,17 +476,30 @@ def get_hot_projects():
                 "market_segment": market_seg,
                 "total_units": total_units if total_units > 0 else None,
                 "units_sold": units_sold,
+                "resale_count": resale_count,
                 "percent_sold": percent_sold,
                 "unsold_inventory": unsold_inventory,
                 "total_value": float(row.total_value) if row.total_value else 0,
                 "avg_psf": round(float(row.avg_psf), 2) if row.avg_psf else 0,
-                "has_popular_school": row.has_popular_school_1km or False
+                "has_popular_school": row.has_popular_school_1km or False,
+                "last_new_sale": row.last_new_sale.isoformat() if row.last_new_sale else None,
+                "is_true_new_launch": resale_count == 0  # No resales = still in developer phase
             })
 
-        # Sort by percent_sold if available, otherwise by units_sold
+            # Stop once we have enough
+            if len(projects) >= limit:
+                break
+
+        # Sort by:
+        # 1. True new launches first (no resales)
+        # 2. Then by percent_sold descending (if available)
+        # 3. Then by units_sold descending
         projects.sort(
-            key=lambda x: (x['percent_sold'] if x['percent_sold'] is not None else -1, x['units_sold']),
-            reverse=True
+            key=lambda x: (
+                0 if x['is_true_new_launch'] else 1,  # True new launches first
+                -(x['percent_sold'] if x['percent_sold'] is not None else 0),
+                -x['units_sold']
+            )
         )
 
         from datetime import datetime
@@ -498,9 +508,12 @@ def get_hot_projects():
             "total_count": len(projects),
             "filters_applied": {
                 "limit": limit,
-                "market_segment": market_segment,
-                "district": districts_param
+                "market_segment": request.args.get("market_segment"),
+                "district": request.args.get("district"),
+                "include_completed": include_completed
             },
+            "data_note": "Projects without total_units data cannot show % sold. " +
+                        "Resale count = 0 indicates a true new launch (no secondary market yet).",
             "last_updated": datetime.utcnow().isoformat() + "Z"
         }
 

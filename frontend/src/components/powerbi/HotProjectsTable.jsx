@@ -25,7 +25,7 @@ export function HotProjectsTable({ height = 400 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortConfig, setSortConfig] = useState({
-    column: 'percent_sold',
+    column: 'units_sold',  // Default: sort by most units sold
     order: 'desc',
   });
 
@@ -99,14 +99,15 @@ export function HotProjectsTable({ height = 400 }) {
   // Column definitions
   // Note: Shows ACTIVE NEW SALES (already launched projects)
   // - units_sold: deterministic count from transactions
+  // - resale_count: count of resale transactions (0 = true new launch)
   // - total_units: from project_inventory (URA API)
   const columns = [
     { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-52' },
     { key: 'district', label: 'Region / District', sortable: true, width: 'w-28' },
+    { key: 'units_sold', label: 'New Sales', sortable: true, width: 'w-20', align: 'right' },
+    { key: 'resale_count', label: 'Resales', sortable: true, width: 'w-20', align: 'right' },
     { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-24', align: 'right' },
-    { key: 'units_sold', label: 'Units Sold', sortable: true, width: 'w-24', align: 'right' },
     { key: 'percent_sold', label: '% Sold', sortable: true, width: 'w-20', align: 'right' },
-    { key: 'unsold_inventory', label: 'Unsold', sortable: true, width: 'w-20', align: 'right' },
   ];
 
   return (
@@ -184,17 +185,25 @@ export function HotProjectsTable({ height = 400 }) {
                     key={project.project_name || idx}
                     className="hover:bg-slate-50 transition-colors"
                   >
-                    {/* Project Name with School Tag */}
+                    {/* Project Name with Tags */}
                     <td className="px-3 py-2 border-b border-slate-100">
                       <div className="flex flex-col gap-1">
                         <span className="font-medium text-slate-800 truncate max-w-[200px]" title={project.project_name}>
                           {project.project_name || '-'}
                         </span>
-                        {project.has_popular_school && (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full w-fit">
-                            <span>Popular School</span>
-                          </span>
-                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {/* True New Launch indicator - no resales yet */}
+                          {project.is_true_new_launch && (
+                            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-full w-fit">
+                              <span>New Launch</span>
+                            </span>
+                          )}
+                          {project.has_popular_school && (
+                            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full w-fit">
+                              <span>Popular School</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </td>
 
@@ -206,28 +215,34 @@ export function HotProjectsTable({ height = 400 }) {
                       </div>
                     </td>
 
-                    {/* Total Units */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      {project.total_units?.toLocaleString() || '-'}
+                    {/* Units Sold (New Sales) */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right font-medium">
+                      {project.units_sold?.toLocaleString() || '0'}
                     </td>
 
-                    {/* Units Sold */}
+                    {/* Resale Count */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-right">
+                      <span className={project.resale_count === 0 ? 'text-slate-400' : 'text-slate-600'}>
+                        {project.resale_count?.toLocaleString() || '0'}
+                      </span>
+                    </td>
+
+                    {/* Total Units */}
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      {project.units_sold?.toLocaleString() || '0'}
+                      {project.total_units?.toLocaleString() || (
+                        <span className="text-slate-400 text-xs italic">N/A</span>
+                      )}
                     </td>
 
                     {/* % Sold with color coding */}
                     <td className="px-3 py-2 border-b border-slate-100 text-right">
-                      <span className={`inline-block px-1.5 py-0.5 text-xs font-semibold rounded ${getPercentClass(project.percent_sold)}`}>
-                        {project.percent_sold !== null && project.percent_sold !== undefined
-                          ? `${project.percent_sold.toFixed(1)}%`
-                          : '-'}
-                      </span>
-                    </td>
-
-                    {/* Unsold */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      {project.unsold_inventory?.toLocaleString() || '-'}
+                      {project.percent_sold !== null && project.percent_sold !== undefined ? (
+                        <span className={`inline-block px-1.5 py-0.5 text-xs font-semibold rounded ${getPercentClass(project.percent_sold)}`}>
+                          {project.percent_sold.toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">N/A</span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -239,23 +254,27 @@ export function HotProjectsTable({ height = 400 }) {
 
       {/* Footer with legend */}
       <div className="px-4 py-2 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30">
-        <div className="flex items-center justify-between text-xs text-[#547792]">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-[#547792]">
+          <div className="flex items-center flex-wrap gap-3">
+            <span className="flex items-center gap-1">
+              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px]">New Launch</span>
+              <span>= 0 resales</span>
+            </span>
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-red-400 rounded-full"></span>
               <span>80%+ Sold</span>
             </span>
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-              <span>50-79% Sold</span>
+              <span>50-79%</span>
             </span>
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-              <span>&lt;50% Available</span>
+              <span>&lt;50%</span>
             </span>
           </div>
-          <span className="text-[#547792]/70">
-            Sales derived from transactions
+          <span className="text-[#547792]/70 text-[10px]">
+            N/A = Total units data unavailable
           </span>
         </div>
       </div>
