@@ -1,320 +1,202 @@
-# Complete Guide: Responsive Dashboard Development with Claude Skills
+# Dashboard Development Skills Guide
 
-## For Andy's Singapore Property Analytics Dashboard
-
----
-
-## 1. Understanding Claude Skills
-
-### What They Are
-Claude Skills are markdown files (SKILL.md) with YAML frontmatter that guide Claude's behavior when working on specific tasks. They work in both:
-- **Claude.ai** (web interface) - Upload as custom skills
-- **Claude Code** (CLI) - Place in `.claude/skills/` directory
-
-### How They Get Activated
-Claude reads the `name` and `description` in the YAML frontmatter to decide when to use a skill. Good descriptions are critical.
-
-### Your Skill Set for Dashboard Work
-
-| Skill | Purpose | When It Activates |
-|-------|---------|-------------------|
-| `ui-freeze` | Protects existing charts/filters from breaking | Any edit to files with chart/filter code |
-| `responsive-layout-system` | Desktop-first responsive patterns | Creating/modifying page layouts |
-| `filter-ux-pattern` | Filter bar and drawer patterns | Working on filter components |
-| `chart-container-contract` | Rules for chart wrappers | Wrapping charts in responsive containers |
-| `responsive-dod` | Final verification checklist | Before marking any responsive work done |
-| `frontend-design` (Anthropic's) | High-quality aesthetic design | Any frontend creation work |
+## For Singapore Property Analytics Dashboard
 
 ---
 
-## 2. Setup Instructions
+## Overview
 
-### For Claude Code (CLI) - Recommended
+Three consolidated skills for responsive, platform-agnostic dashboard development:
 
-```bash
-# In your project root
-mkdir -p .claude/skills
-
-# Copy skill files
-cp -r ~/skills/* .claude/skills/
-
-# Your structure should look like:
-# .claude/
-# └── skills/
-#     ├── ui-freeze/
-#     │   └── SKILL.md
-#     ├── responsive-layout-system/
-#     │   └── SKILL.md
-#     ├── filter-ux-pattern/
-#     │   └── SKILL.md
-#     ├── chart-container-contract/
-#     │   └── SKILL.md
-#     └── responsive-dod/
-#         └── SKILL.md
-
-# Also add Anthropic's frontend-design skill
-# Via Claude Code plugin marketplace:
-# claude code plugin add anthropics/skills/frontend-design
-```
-
-### For Claude.ai (Web Interface)
-
-1. Go to claude.ai/settings/capabilities
-2. Find "Skills" section
-3. Click "Upload skill"
-4. Upload each SKILL.md file as a ZIP (one folder per skill)
+| Skill | Purpose | When to Use |
+|-------|---------|-------------|
+| `dashboard-layout` | Responsive containers, grids, charts, overflow prevention | Creating/modifying layouts |
+| `dashboard-design` | Colors, typography, filters, components, touch interactions | Styling and UI components |
+| `dashboard-guardrails` | Protection rules + verification checklists | Before AND after any changes |
 
 ---
 
-## 3. Workflow: How to Use These Skills
+## Quick Start
 
-### Scenario A: Building a NEW Dashboard Page
+### In Claude Code CLI
 
-**Prompt approach:**
+Skills are automatically available in `.claude/skills/` directory.
+
+### Invoking Skills
+
 ```
-I need to build a new analytics page for my Singapore condo dashboard. 
-This page should show:
-- 4 KPI cards at the top (total transactions, avg PSF, median price, YoY change)
-- Filter bar with district, property type, bedroom, date range
-- 2 main charts side by side (volume chart, price trend chart)
-- 1 full-width distribution chart below
+# Explicit invocation
+"Use dashboard-layout skill for the grid structure"
+"Apply dashboard-design patterns to this filter"
+"Run dashboard-guardrails checklist before I merge"
 
-Use responsive-layout-system skill for layout patterns.
-Use filter-ux-pattern skill for the filter bar.
-Use chart-container-contract skill for chart wrappers.
-Use frontend-design skill for aesthetic quality.
-
-Target: Desktop-first, but presentable on tablet/mobile.
-```
-
-**What Claude will do:**
-1. Read `frontend-design` skill → Choose distinctive aesthetic
-2. Read `responsive-layout-system` → Apply desktop-first grid
-3. Read `filter-ux-pattern` → Build proper filter bar + mobile drawer
-4. Read `chart-container-contract` → Create proper ChartCard wrappers
-5. Generate code following all patterns
-
----
-
-### Scenario B: Making EXISTING Page Responsive
-
-**Prompt approach:**
-```
-I have an existing dashboard page at `src/pages/MarketOverview.tsx`. 
-It looks good on desktop but breaks on tablet/mobile.
-
-Use ui-freeze skill to ensure charts don't break.
-Use responsive-layout-system skill for layout fixes.
-Use responsive-dod skill for final verification.
-
-DO NOT modify:
-- Any chart configuration or props
-- Filter state logic
-- API calls or data transformations
-
-ONLY modify:
-- Layout wrapper classes
-- CSS for responsive behavior
-- Container padding/margins
-```
-
-**What Claude will do:**
-1. Read `ui-freeze` → Understand what NOT to touch
-2. Read `responsive-layout-system` → Know the breakpoint strategy
-3. Analyze existing code
-4. Make ONLY wrapper-level changes
-5. Provide verification checklist from `responsive-dod`
-
----
-
-### Scenario C: Adding a New Chart to Existing Page
-
-**Prompt approach:**
-```
-I want to add a new "Bedroom Distribution" pie chart to my existing 
-MarketOverview page, between the volume chart and the full-width chart.
-
-Use chart-container-contract skill for the wrapper.
-Use ui-freeze skill to ensure I don't break existing charts.
-
-The new chart should use the same ChartCard component pattern 
-as existing charts on the page.
+# Skills auto-activate when you mention:
+- "responsive", "mobile", "tablet", "breakpoint"
+- "filters", "filter bar", "drawer"
+- "charts", "dashboard", "layout"
 ```
 
 ---
 
-### Scenario D: Fixing a Specific Responsive Bug
+## The Three Skills
 
-**Prompt approach:**
+### 1. dashboard-layout
+
+**Covers:**
+- Breakpoint strategy (desktop-first)
+- Multi-platform support (desktop, laptop, tablet, iPad, iPhone, Android)
+- Device-specific considerations (safe areas, orientation, virtual keyboard)
+- Overflow prevention (CRITICAL)
+- Page containers and grids
+- Chart container contract (wrapper approach)
+- Responsive component patterns (tables, nav, KPI cards)
+
+**Use when:**
+- Creating new dashboard pages
+- Making existing pages responsive
+- Wrapping charts in responsive containers
+- Fixing overflow issues
+
+### 2. dashboard-design
+
+**Covers:**
+- Color palette (project-specific)
+- Typography (fonts, scale)
+- Component styling (buttons, cards, tables)
+- Filter UX patterns (desktop bar, mobile drawer)
+- Touch interactions (44px targets, active states)
+- Motion and animations
+- Empty/loading/error states
+- Accessibility
+
+**Use when:**
+- Styling dashboard components
+- Building filter panels
+- Ensuring touch-friendly interactions
+- Applying consistent visual design
+
+### 3. dashboard-guardrails
+
+**Covers:**
+- UI Freeze: What NOT to touch (chart internals, filter logic)
+- Safe Zone: What you CAN modify (wrappers, layout)
+- Definition of "breaking" changes
+- Multi-platform verification checklists
+- Required output format for changes
+- Emergency recovery procedures
+
+**Use when:**
+- BEFORE modifying any existing dashboard code
+- AFTER completing changes (for verification)
+- When touching files with charts or filters
+
+---
+
+## Workflow Examples
+
+### Scenario A: New Dashboard Page
+
 ```
-On my dashboard, the filter dropdown menus are getting cut off 
-on iPad (768px viewport). The dropdown opens but extends beyond 
-the screen edge.
+I need to build a new analytics page with:
+- 4 KPI cards at top
+- Filter bar with district, bedroom, date
+- 2 charts side by side
+- Full-width table below
 
-Use filter-ux-pattern skill for the fix approach.
-Use ui-freeze skill to ensure I don't break filter logic.
+Use dashboard-layout for the grid structure.
+Use dashboard-design for styling and filter patterns.
+Use dashboard-guardrails to verify across platforms.
+```
 
-Current code is in: src/components/filters/FilterDropdown.tsx
+### Scenario B: Making Existing Page Responsive
+
+```
+My dashboard at src/pages/Overview.tsx breaks on mobile.
+
+Use dashboard-guardrails to understand what NOT to touch.
+Use dashboard-layout for responsive fixes.
+Run the verification checklist when done.
+
+DO NOT modify chart internals or filter logic.
+```
+
+### Scenario C: Adding New Filter
+
+```
+Add a "sale type" filter to the existing filter bar.
+
+Use dashboard-design for the filter component pattern.
+Use dashboard-guardrails to ensure I don't break existing filters.
+Make sure it works on both desktop (bar) and mobile (drawer).
 ```
 
 ---
 
-## 4. Key Principles to Remember
+## Core Principles
 
-### The Golden Rules
+### 1. Desktop is PRIMARY
+Build for 1440px+ first, then adapt down.
 
-1. **Desktop is PRIMARY** - Build for 1440px first, then adapt down
-2. **Charts are PROTECTED** - Never change chart internals for responsiveness
-3. **Wrappers are SAFE** - All responsive magic happens in containers
-4. **Test at REAL widths** - 375px, 768px, 1024px, 1440px minimum
-5. **URL = State** - Filters should persist in URL params
+### 2. Charts are PROTECTED
+Never change chart internals for responsiveness. Use wrappers.
 
-### The "Do Not Touch" List
+### 3. Touch Targets are MANDATORY
+Minimum 44px on all interactive elements.
 
-```
-❌ NEVER modify for responsiveness:
-- Chart axis configurations
-- Chart color schemes
-- Tooltip logic/content
-- Legend positioning (internal to chart)
-- Data transformation functions
-- Filter state management
-- Cross-filter binding logic
-- API call parameters
-```
+### 4. No Hover-Only Interactions
+Always provide `active:` states for touch devices.
 
-### The "Safe Zone" for Changes
+### 5. Verify Across Platforms
+Desktop (1440px), Tablet (768px), Mobile (375px) minimum.
 
-```
-✅ SAFE to modify for responsiveness:
+---
+
+## Quick Reference
+
+### Safe to Change
 - Grid column counts
 - Container padding/margins
-- Gap between elements
 - Card wrapper styling
 - Breakpoint-based visibility
-- Navigation collapse behavior
-- Filter panel open/close state
 - Touch target sizes
+
+### NEVER Change
+- Chart axis configurations
+- Filter state logic
+- Data transformations
+- Tooltip content
+- Click handler logic
+
+---
+
+## Verification Checklist (Summary)
+
+Before marking any work complete:
+
+```markdown
+### Sign-Off
+
+#### UI Freeze Compliance
+- [ ] No chart internals modified
+- [ ] No filter logic modified
+- [ ] Only wrapper changes made
+
+#### Platform Verification
+- [ ] Desktop (1440px): Working
+- [ ] Tablet (768px): Working
+- [ ] Mobile (375px): Working
+- [ ] No horizontal overflow
+- [ ] Touch targets ≥ 44px
 ```
 
 ---
 
-## 5. Common Patterns Reference
-
-### Responsive Grid (Desktop-First)
-```tsx
-<div className="
-  grid gap-4
-  grid-cols-1      // Mobile: 1 column
-  md:grid-cols-2   // Tablet: 2 columns
-  lg:grid-cols-4   // Desktop: 4 columns
-">
-```
-
-### Filter Bar → Drawer Switch
-```tsx
-{/* Desktop: inline */}
-<div className="hidden lg:flex gap-4">
-  <FilterDropdown />
-</div>
-
-{/* Mobile: drawer */}
-<div className="lg:hidden">
-  <FilterDrawerTrigger />
-</div>
-```
-
-### Chart Container
-```tsx
-<ChartCard title="Volume" minHeight={300}>
-  <ResponsiveContainer width="100%" height="100%">
-    <BarChart data={data}>
-      {/* Chart config stays fixed */}
-    </BarChart>
-  </ResponsiveContainer>
-</ChartCard>
-```
-
----
-
-## 6. Triggering Skills in Conversation
-
-### Explicit Activation
-You can explicitly tell Claude to use specific skills:
+## File Structure
 
 ```
-"Use the ui-freeze skill when reviewing my code"
-"Apply responsive-layout-system patterns to this component"
-"Run through the responsive-dod checklist"
+.claude/skills/
+├── GUIDE.md                      # This file
+├── dashboard-layout/SKILL.md     # Layout & responsiveness
+├── dashboard-design/SKILL.md     # Styling & components
+└── dashboard-guardrails/SKILL.md # Protection & verification
 ```
-
-### Implicit Activation
-Skills auto-activate based on their descriptions when you:
-- Mention "responsive", "mobile", "tablet", "breakpoint"
-- Ask about filters, filter bars, filter drawers
-- Work with charts, visualizations, dashboards
-- Request layout changes or grid modifications
-
----
-
-## 7. Verification Before Shipping
-
-### Minimum Test Viewports
-1. **375px** (iPhone SE) - Mobile baseline
-2. **768px** (iPad portrait) - Tablet baseline
-3. **1024px** (iPad landscape) - Desktop baseline
-4. **1440px** (MacBook) - Primary target
-
-### Quick Browser Check
-1. Open DevTools → Toggle device toolbar
-2. Set to 375px width → Scroll through entire page
-3. Set to 768px → Check filter bar, chart grid
-4. Set to 1440px → Confirm desktop layout
-
-### Before Every PR
-- [ ] No new horizontal scrollbars
-- [ ] All charts render at all sizes
-- [ ] Filters accessible at all sizes
-- [ ] Touch targets ≥ 44px on mobile
-- [ ] No console errors about responsive behavior
-
----
-
-## 8. Troubleshooting Common Issues
-
-### "Charts overflow on mobile"
-→ Check if chart has fixed width. Use `ResponsiveContainer` with 100% width.
-
-### "Filter dropdowns cut off on tablet"
-→ Add `dropdown-content` positioning logic. Consider flip to top when near bottom.
-
-### "Layout jumps when resizing"
-→ Use CSS `min-width` instead of `width` for flexible containers.
-
-### "Sidebar disappears and no hamburger shows"
-→ Ensure mobile nav trigger is `lg:hidden` not `hidden lg:block`.
-
----
-
-## 9. Next Steps
-
-1. **Upload skills** to your Claude Code project (`.claude/skills/`)
-2. **Test** with a simple prompt asking to review your current dashboard
-3. **Iterate** - Refine skill descriptions if they don't activate when expected
-4. **Add custom rules** - Extend skills with your specific component names/patterns
-
----
-
-## File Locations (for this guide)
-
-```
-/home/claude/skills/
-├── ui-freeze/SKILL.md
-├── responsive-layout-system/SKILL.md
-├── filter-ux-pattern/SKILL.md
-├── chart-container-contract/SKILL.md
-├── responsive-dod/SKILL.md
-└── GUIDE.md (this file)
-```
-
-Copy these to your project's `.claude/skills/` directory to use with Claude Code.
