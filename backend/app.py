@@ -239,9 +239,9 @@ def create_app():
     from routes.gls import gls_bp
     app.register_blueprint(gls_bp, url_prefix='/api/gls')
 
-    # New Launches (2026 condo launches) routes
+    # Upcoming Launches (pre-launch condo projects) routes
     from routes.new_launches import new_launches_bp
-    app.register_blueprint(new_launches_bp, url_prefix='/api/new-launches')
+    app.register_blueprint(new_launches_bp, url_prefix='/api/upcoming-launches')
 
     # Projects routes (school proximity, geocoding)
     from routes.projects import projects_bp

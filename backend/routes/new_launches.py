@@ -1,9 +1,11 @@
 """
 UPCOMING Launches API Routes
 
+Endpoint: /api/upcoming-launches/*
+
 SEMANTIC CLARIFICATION:
 - "Upcoming Launches" = Projects that have NOT YET LAUNCHED (pre-sale info)
-- For ACTIVE sales data, use /api/projects/hot endpoint instead
+- For ACTIVE sales data (already launched), use /api/projects/hot instead
 
 Provides endpoints for:
 - 2026+ new private condo launches (pre-launch)

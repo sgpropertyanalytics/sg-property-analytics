@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { getNewLaunchesAll } from '../../api/client';
+import { getUpcomingLaunchesAll } from '../../api/client';
 
 /**
  * Upcoming New Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
@@ -44,7 +44,7 @@ export function NewLaunchDataTable({ height = 400 }) {
         params.market_segment = segmentFilter;
       }
 
-      const response = await getNewLaunchesAll(params);
+      const response = await getUpcomingLaunchesAll(params);
       setData(response.data.data || []);
     } catch (err) {
       console.error('Error fetching new launches data:', err);

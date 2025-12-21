@@ -372,12 +372,13 @@ export const getGLSPriceFloor = (params = {}) =>
 export const getGLSStats = () =>
   apiClient.get('/gls/stats');
 
-// ===== UPCOMING New Launches API Functions =====
+// ===== UPCOMING Launches API Functions =====
 // These endpoints are for projects that have NOT YET LAUNCHED (pre-sale info)
 // Data source: EdgeProp, PropNex, ERA scraping
+// Endpoint: /api/upcoming-launches/*
 
 /**
- * Get all UPCOMING new launch projects (pre-launch, not yet selling)
+ * Get all UPCOMING launch projects (pre-launch, not yet selling)
  * @param {Object} params - Query parameters
  * @param {string} params.market_segment - CCR, RCR, or OCR
  * @param {string} params.district - Filter by district (e.g. D09)
@@ -387,31 +388,34 @@ export const getGLSStats = () =>
  * @param {string} params.sort - Field to sort by
  * @param {string} params.order - asc or desc
  */
-export const getNewLaunchesAll = (params = {}) =>
-  apiClient.get(`/new-launches/all?${buildQueryString(params)}`);
+export const getUpcomingLaunchesAll = (params = {}) =>
+  apiClient.get(`/upcoming-launches/all?${buildQueryString(params)}`);
+
+// Backward compatibility alias
+export const getNewLaunchesAll = getUpcomingLaunchesAll;
 
 /**
- * Get UPCOMING new launches grouped by segment
+ * Get UPCOMING launches grouped by segment
  * @param {Object} params - Query parameters
  * @param {number} params.launch_year - Filter by launch year (default 2026)
  */
-export const getNewLaunchesBySegment = (params = {}) =>
-  apiClient.get(`/new-launches/by-segment?${buildQueryString(params)}`);
+export const getUpcomingLaunchesBySegment = (params = {}) =>
+  apiClient.get(`/upcoming-launches/by-segment?${buildQueryString(params)}`);
 
 /**
- * Get UPCOMING new launches supply pipeline
+ * Get UPCOMING launches supply pipeline
  * @param {Object} params - Query parameters
  * @param {number} params.launch_year - Filter by launch year (default 2026)
  * @param {string} params.market_segment - CCR, RCR, or OCR
  */
-export const getNewLaunchesSupplyPipeline = (params = {}) =>
-  apiClient.get(`/new-launches/supply-pipeline?${buildQueryString(params)}`);
+export const getUpcomingLaunchesSupplyPipeline = (params = {}) =>
+  apiClient.get(`/upcoming-launches/supply-pipeline?${buildQueryString(params)}`);
 
 /**
- * Get UPCOMING new launches statistics summary
+ * Get UPCOMING launches statistics summary
  */
-export const getNewLaunchesStats = () =>
-  apiClient.get('/new-launches/stats');
+export const getUpcomingLaunchesStats = () =>
+  apiClient.get('/upcoming-launches/stats');
 
 // ===== ACTIVE New Sales API Functions =====
 // These endpoints are for projects that have ALREADY LAUNCHED and are selling
