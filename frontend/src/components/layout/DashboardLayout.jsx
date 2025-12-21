@@ -19,20 +19,21 @@ import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
  * - Mobile: Both sidebars hidden, hamburger menu + filter button
  *
  * Sidebar Behavior by Page:
- * - Market Pulse: Filter sidebar VISIBLE (default open)
- * - Project Analysis: Filter sidebar VISIBLE
- * - Value Parity: Filter sidebar HIDDEN (full-width mode)
- * - Analytics View: Filter sidebar PINNED open
- * - Insights: Filter sidebar HIDDEN
+ * - Market Pulse: Filter sidebar VISIBLE (Power BI filters for analytics)
+ * - All Other Pages: Filter sidebar HIDDEN (full-width canvas)
+ *
+ * NOTE: The Power BI filter functionality is specific to Market Pulse.
+ * Other pages get a clean, full-width canvas for their content.
  */
 
 // Page configurations for sidebar behavior
+// Only Market Pulse uses the Power BI filter sidebar
 const PAGE_CONFIG = {
-  'market-pulse': { showFilterSidebar: true, pinnedFilter: false },
-  'project-analysis': { showFilterSidebar: true, pinnedFilter: false },
-  'value-parity': { showFilterSidebar: false, pinnedFilter: false },
-  'analytics-view': { showFilterSidebar: true, pinnedFilter: true },
-  'insights': { showFilterSidebar: false, pinnedFilter: false },
+  'market-pulse': { showFilterSidebar: true },
+  'project-analysis': { showFilterSidebar: false },
+  'value-parity': { showFilterSidebar: false },
+  'analytics-view': { showFilterSidebar: false },
+  'insights': { showFilterSidebar: false },
 };
 
 export function DashboardLayout({ children, activePage: propActivePage }) {
@@ -71,7 +72,6 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
 
   // Determine if filter sidebar should be visible
   const showFilterSidebar = pageConfig.showFilterSidebar;
-  const isPinnedFilter = pageConfig.pinnedFilter;
 
   return (
     <PowerBIFilterProvider>
@@ -107,20 +107,38 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
           </div>
         )}
 
-        {/* ===== FILTER SIDEBAR (Secondary Sidebar) ===== */}
-        {/* Desktop: Visible based on page config | Mobile: Drawer */}
+        {/* ===== FILTER SIDEBAR (Secondary Sidebar - Market Pulse Only) ===== */}
+        {/* Desktop: Visible with collapse handle | Mobile: Drawer */}
         {showFilterSidebar && (
-          <div
-            className={`
-              hidden lg:block flex-shrink-0
-              transition-all duration-200 ease-out
-              ${filterSidebarCollapsed && !isPinnedFilter ? 'w-12' : 'w-72'}
-            `}
-          >
-            <PowerBIFilterSidebar
-              collapsed={filterSidebarCollapsed && !isPinnedFilter}
-              onToggle={() => !isPinnedFilter && setFilterSidebarCollapsed(!filterSidebarCollapsed)}
-            />
+          <div className="hidden lg:flex flex-shrink-0 relative">
+            {/* Filter Sidebar */}
+            <div
+              className={`
+                transition-all duration-200 ease-out
+                ${filterSidebarCollapsed ? 'w-12' : 'w-72'}
+              `}
+            >
+              <PowerBIFilterSidebar
+                collapsed={filterSidebarCollapsed}
+                onToggle={() => setFilterSidebarCollapsed(!filterSidebarCollapsed)}
+              />
+            </div>
+
+            {/* Collapse Handle - Chevron at border */}
+            <button
+              onClick={() => setFilterSidebarCollapsed(!filterSidebarCollapsed)}
+              className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-white border border-[#94B4C1]/30 rounded-r-lg shadow-sm flex items-center justify-center hover:bg-[#EAE0CF] transition-colors group"
+              aria-label={filterSidebarCollapsed ? 'Expand filters' : 'Collapse filters'}
+            >
+              <svg
+                className={`w-4 h-4 text-[#547792] transition-transform duration-200 ${filterSidebarCollapsed ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
           </div>
         )}
 
