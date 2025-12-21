@@ -372,10 +372,12 @@ export const getGLSPriceFloor = (params = {}) =>
 export const getGLSStats = () =>
   apiClient.get('/gls/stats');
 
-// ===== New Launches API Functions =====
+// ===== UPCOMING New Launches API Functions =====
+// These endpoints are for projects that have NOT YET LAUNCHED (pre-sale info)
+// Data source: EdgeProp, PropNex, ERA scraping
 
 /**
- * Get all new launch projects
+ * Get all UPCOMING new launch projects (pre-launch, not yet selling)
  * @param {Object} params - Query parameters
  * @param {string} params.market_segment - CCR, RCR, or OCR
  * @param {string} params.district - Filter by district (e.g. D09)
@@ -389,7 +391,7 @@ export const getNewLaunchesAll = (params = {}) =>
   apiClient.get(`/new-launches/all?${buildQueryString(params)}`);
 
 /**
- * Get new launches grouped by segment
+ * Get UPCOMING new launches grouped by segment
  * @param {Object} params - Query parameters
  * @param {number} params.launch_year - Filter by launch year (default 2026)
  */
@@ -397,7 +399,7 @@ export const getNewLaunchesBySegment = (params = {}) =>
   apiClient.get(`/new-launches/by-segment?${buildQueryString(params)}`);
 
 /**
- * Get new launches supply pipeline
+ * Get UPCOMING new launches supply pipeline
  * @param {Object} params - Query parameters
  * @param {number} params.launch_year - Filter by launch year (default 2026)
  * @param {string} params.market_segment - CCR, RCR, or OCR
@@ -406,13 +408,19 @@ export const getNewLaunchesSupplyPipeline = (params = {}) =>
   apiClient.get(`/new-launches/supply-pipeline?${buildQueryString(params)}`);
 
 /**
- * Get new launches statistics summary
+ * Get UPCOMING new launches statistics summary
  */
 export const getNewLaunchesStats = () =>
   apiClient.get('/new-launches/stats');
 
+// ===== ACTIVE New Sales API Functions =====
+// These endpoints are for projects that have ALREADY LAUNCHED and are selling
+// Data source: transactions (sale_type='New Sale') + project_inventory (URA API)
+
 /**
- * Get hot projects with sales progress
+ * Get ACTIVE new sales projects with sales progress (already launched)
+ * - units_sold: deterministic count from transactions
+ * - total_units: from project_inventory (URA API)
  * @param {Object} params - Query parameters
  * @param {string} params.market_segment - CCR, RCR, or OCR
  * @param {string} params.district - Comma-separated districts (D01,D02,...)

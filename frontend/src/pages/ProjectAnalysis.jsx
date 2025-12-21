@@ -4,8 +4,11 @@ import { HotProjectsTable } from '../components/powerbi/HotProjectsTable';
 /**
  * Project Analysis Page
  *
+ * Shows ACTIVE NEW SALES - Projects that have ALREADY LAUNCHED and are selling.
+ * (For upcoming/pre-launch projects, see NewLaunchDataTable on MacroOverview)
+ *
  * Features:
- * - Hot Projects table showing sales progress for new launches
+ * - Active New Sales table showing sales progress for launched projects
  * - Individual project deep-dives (coming soon)
  * - Unit-level transaction history (coming soon)
  */
@@ -19,11 +22,11 @@ export function ProjectAnalysisContent() {
             Project Analysis
           </h1>
           <p className="text-[#547792] text-sm mt-1">
-            Track new launch sales progress and market inventory
+            Track active new sales progress and market inventory
           </p>
         </div>
 
-        {/* Hot Projects Table */}
+        {/* Active New Sales Table - Projects already launched and selling */}
         <HotProjectsTable height={500} />
       </div>
     </div>

@@ -260,7 +260,7 @@ export function MacroOverviewContent() {
                 <GLSDataTable height={350} />
               </div>
 
-              {/* 2026 New Launch Projects Table */}
+              {/* Upcoming New Launches Table - Pre-launch projects (not yet launched) */}
               <div className="mb-4 md:mb-6">
                 <NewLaunchDataTable height={350} />
               </div>

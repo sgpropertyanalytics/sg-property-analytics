@@ -2,7 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { getNewLaunchesAll } from '../../api/client';
 
 /**
- * New Launch Data Table - Shows 2026 Private Condo Launches
+ * Upcoming New Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
+ *
+ * SEMANTIC CLARIFICATION:
+ * - "Upcoming New Launches" = Projects that have NOT YET LAUNCHED
+ * - For ACTIVE sales data (already launched), see HotProjectsTable / Active New Sales
  *
  * Displays:
  * - Potential Launch Date (expected_launch_date or created from launch_year)
@@ -12,7 +16,7 @@ import { getNewLaunchesAll } from '../../api/client';
  * - PSF (PPR) - from linked GLS tender land bid
  * - Implied Launch PSF - indicative pricing range
  *
- * Data cross-validated from EdgeProp, PropNex, ERA
+ * Data Source: /api/new-launches/* (EdgeProp, PropNex, ERA)
  */
 export function NewLaunchDataTable({ height = 400 }) {
   const [data, setData] = useState([]);
@@ -133,7 +137,7 @@ export function NewLaunchDataTable({ height = 400 }) {
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h3 className="font-semibold text-[#213448]">2026 New Launch Projects</h3>
+            <h3 className="font-semibold text-[#213448]">Upcoming New Launches</h3>
             <p className="text-xs text-[#547792]">
               {loading ? 'Loading...' : `${data.length} projects`}
               {!loading && data.length > 0 && (
@@ -218,9 +222,9 @@ export function NewLaunchDataTable({ height = 400 }) {
               ) : data.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-3 py-8 text-center">
-                    <div className="text-slate-500">No 2026 new launch projects found.</div>
+                    <div className="text-slate-500">No upcoming new launches found.</div>
                     <p className="text-xs text-slate-400 mt-1">
-                      Run the scraper to fetch data from EdgeProp, PropNex, ERA.
+                      Run the scraper to fetch pre-launch data from EdgeProp, PropNex, ERA.
                     </p>
                   </td>
                 </tr>
