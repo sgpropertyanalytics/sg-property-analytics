@@ -28,6 +28,7 @@ export function PowerBIFilterProvider({ children }) {
     psfRange: { min: null, max: null },      // null = no restriction
     sizeRange: { min: null, max: null },     // null = no restriction
     tenure: null,                            // null = all, 'Freehold' | '99-year' | '999-year'
+    propertyAge: { min: null, max: null },   // null = no restriction, property age in years
     project: null,                           // null = all, project name filter
   });
 
@@ -203,6 +204,13 @@ export function PowerBIFilterProvider({ children }) {
     setFilters(prev => ({ ...prev, tenure }));
   }, []);
 
+  const setPropertyAge = useCallback((min, max) => {
+    setFilters(prev => ({
+      ...prev,
+      propertyAge: { min, max }
+    }));
+  }, []);
+
   const setProject = useCallback((project) => {
     setFilters(prev => ({ ...prev, project }));
   }, []);
@@ -217,6 +225,7 @@ export function PowerBIFilterProvider({ children }) {
       psfRange: { min: null, max: null },
       sizeRange: { min: null, max: null },
       tenure: null,
+      propertyAge: { min: null, max: null },
       project: null,
     });
     setCrossFilter({ source: null, dimension: null, value: null });
@@ -629,6 +638,12 @@ export function PowerBIFilterProvider({ children }) {
     if (activeFilters.tenure) {
       params.tenure = activeFilters.tenure;
     }
+    if (activeFilters.propertyAge?.min !== null) {
+      params.property_age_min = activeFilters.propertyAge.min;
+    }
+    if (activeFilters.propertyAge?.max !== null) {
+      params.property_age_max = activeFilters.propertyAge.max;
+    }
     if (activeFilters.project) {
       params.project = activeFilters.project;
     }
@@ -647,6 +662,7 @@ export function PowerBIFilterProvider({ children }) {
     if (filters.psfRange.min !== null || filters.psfRange.max !== null) count++;
     if (filters.sizeRange.min !== null || filters.sizeRange.max !== null) count++;
     if (filters.tenure) count++;
+    if (filters.propertyAge.min !== null || filters.propertyAge.max !== null) count++;
     if (filters.project) count++;
     if (crossFilter.value) count++;
     if (highlight.value) count++;  // Include time highlight in active filter count
@@ -677,6 +693,7 @@ export function PowerBIFilterProvider({ children }) {
     setPsfRange,
     setSizeRange,
     setTenure,
+    setPropertyAge,
     setProject,
     resetFilters,
 

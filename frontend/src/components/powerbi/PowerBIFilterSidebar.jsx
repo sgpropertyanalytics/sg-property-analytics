@@ -21,6 +21,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     toggleBedroomType,
     setSegment,
     setSaleType,
+    setTenure,
+    setPropertyAge,
     resetFilters,
     clearCrossFilter,
   } = usePowerBIFilters();
@@ -29,6 +31,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     location: true,
     date: true,
     roomSize: true,
+    propertyDetails: true,
   });
 
   const toggleSection = (section) => {
@@ -173,10 +176,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           }
           expanded={expandedSections.roomSize}
           onToggle={() => toggleSection('roomSize')}
-          activeCount={
-            (filters.bedroomTypes.length > 0 ? 1 : 0) +
-            (filters.saleType ? 1 : 0)
-          }
+          activeCount={filters.bedroomTypes.length > 0 ? 1 : 0}
         >
           {/* Bedroom Type Buttons - centered with consistent width */}
           <div className="grid grid-cols-4 gap-2">
@@ -197,26 +197,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
               </button>
             ))}
           </div>
-
-          {/* Sale Type Buttons */}
-          <FilterGroup label="Sale Type">
-            <div className="grid grid-cols-2 gap-2">
-              {[{ value: 'New Sale', label: 'New Sale' }, { value: 'Resale', label: 'Resale' }].map(type => (
-                <button
-                  type="button"
-                  key={type.value}
-                  onClick={(e) => { e.preventDefault(); setSaleType(filters.saleType === type.value ? null : type.value); }}
-                  className={`py-2 text-sm rounded-md border transition-colors ${
-                    filters.saleType === type.value
-                      ? 'bg-[#547792] text-white border-[#547792]'
-                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
-                  }`}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-          </FilterGroup>
 
           {/* Classification Tiers Info */}
           <div className="text-[10px] text-slate-500 mt-2 space-y-1.5 italic">
@@ -310,6 +290,93 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
               </div>
             )}
+          </FilterGroup>
+        </FilterSection>
+
+        {/* Property Details Section */}
+        <FilterSection
+          title="Property Details"
+          icon={
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          }
+          expanded={expandedSections.propertyDetails}
+          onToggle={() => toggleSection('propertyDetails')}
+          activeCount={
+            (filters.saleType ? 1 : 0) +
+            (filters.tenure ? 1 : 0) +
+            (filters.propertyAge.min !== null || filters.propertyAge.max !== null ? 1 : 0)
+          }
+        >
+          {/* Sale Type Buttons */}
+          <FilterGroup label="Sale Type">
+            <div className="grid grid-cols-2 gap-2">
+              {[{ value: 'New Sale', label: 'New Sale' }, { value: 'Resale', label: 'Resale' }].map(type => (
+                <button
+                  type="button"
+                  key={type.value}
+                  onClick={(e) => { e.preventDefault(); setSaleType(filters.saleType === type.value ? null : type.value); }}
+                  className={`py-2 text-sm rounded-md border transition-colors ${
+                    filters.saleType === type.value
+                      ? 'bg-[#547792] text-white border-[#547792]'
+                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+                  }`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </FilterGroup>
+
+          {/* Tenure Buttons */}
+          <FilterGroup label="Tenure">
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: '99-year', label: '99yr' },
+                { value: '999-year', label: '999yr' },
+                { value: 'Freehold', label: 'FH' }
+              ].map(type => (
+                <button
+                  type="button"
+                  key={type.value}
+                  onClick={(e) => { e.preventDefault(); setTenure(filters.tenure === type.value ? null : type.value); }}
+                  className={`py-2 text-sm rounded-md border transition-colors ${
+                    filters.tenure === type.value
+                      ? 'bg-[#547792] text-white border-[#547792]'
+                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+                  }`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </FilterGroup>
+
+          {/* Property Age Range */}
+          <FilterGroup label="Property Age (years)">
+            <div className="flex gap-2 items-center">
+              <input
+                type="number"
+                value={filters.propertyAge.min ?? ''}
+                onChange={(e) => setPropertyAge(e.target.value ? parseInt(e.target.value) : null, filters.propertyAge.max)}
+                placeholder="Min"
+                min={0}
+                className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-slate-400">-</span>
+              <input
+                type="number"
+                value={filters.propertyAge.max ?? ''}
+                onChange={(e) => setPropertyAge(filters.propertyAge.min, e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="Max"
+                min={0}
+                className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <p className="text-[10px] text-slate-500 mt-2 italic">
+              Age calculated from TOP date to transaction date.
+            </p>
           </FilterGroup>
         </FilterSection>
       </div>
