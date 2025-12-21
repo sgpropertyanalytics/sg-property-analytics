@@ -504,145 +504,50 @@ def get_hot_projects():
 @projects_bp.route("/projects/inventory/scrape", methods=["POST"])
 def scrape_project_inventory():
     """
-    Scrape total_units for a specific project from 10 sources.
+    [DEPRECATED] Scrape endpoint removed - use static data file instead.
 
-    This uses project_scraper.py to cross-validate data from:
-    EdgeProp, 99.co, PropertyGuru, SRX, PropNex, ERA, Huttons, OrangeTee, ST Property, URA
-
-    Query params:
-        - project_name: Project name to scrape (required)
-        - save: If 'true', save to project_inventory table (default: false)
-
-    Returns:
-        {
-            "project_name": "...",
-            "total_units": N,
-            "confidence": "high|medium|low|none",
-            "sources": ["EdgeProp", "99.co", ...],
-            "discrepancies": [...]
-        }
+    Use: from services.new_launch_units import get_units_for_project
     """
-    import time
-    start = time.time()
+    project_name = request.args.get("project_name", "")
 
-    project_name = request.args.get("project_name")
-    if not project_name:
-        return jsonify({"error": "project_name parameter required"}), 400
-
-    save = request.args.get("save", "").lower() == "true"
-
+    # Try to look up in static data
     try:
-        from services.property_scraper import PropertyScraper
+        from services.new_launch_units import get_units_for_project
+        result = get_units_for_project(project_name)
 
-        scraper = PropertyScraper()
-
-        if save:
-            result = scraper.scrape_and_save(project_name)
+        if result["total_units"]:
+            return jsonify({
+                "project_name": project_name,
+                "total_units": result["total_units"],
+                "source": result["source"],
+                "message": "Found in static data file"
+            })
         else:
-            validated = scraper.scrape_project(project_name)
-            result = {
-                "project_name": validated.project_name,
-                "total_units": validated.total_units,
-                "confidence": validated.total_units_confidence,
-                "sources": validated.total_units_sources,
-                "sources_checked": validated.sources_checked,
-                "sources_with_data": validated.sources_with_data,
-                "discrepancies": validated.discrepancies,
-                "developer": validated.developer,
-                "tenure": validated.tenure,
-            }
-
-        elapsed = time.time() - start
-        result["elapsed_seconds"] = round(elapsed, 2)
-
-        print(f"POST /api/projects/inventory/scrape took: {elapsed:.4f}s ({project_name})")
-
-        return jsonify(result)
-
+            return jsonify({
+                "project_name": project_name,
+                "total_units": None,
+                "message": "Not found. Add to data/new_launch_units.json",
+                "needs_review": True
+            })
     except Exception as e:
-        print(f"POST /api/projects/inventory/scrape ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": str(e),
+            "message": "Scraping deprecated. Use static data file."
+        }), 400
 
 
 @projects_bp.route("/projects/inventory/scrape-missing", methods=["POST"])
 def scrape_missing_inventory():
     """
-    Scrape total_units for projects missing inventory data.
+    [DEPRECATED] Bulk scrape removed - use static data sync instead.
 
-    Finds projects with New Sale transactions but no total_units in project_inventory,
-    then scrapes from 10 sources to populate the data.
-
-    Query params:
-        - limit: Max projects to scrape (default: 20)
-        - dry_run: If 'true', don't save to database (default: false)
-
-    Returns:
-        {
-            "scraped": N,
-            "saved": N,
-            "low_confidence": N,
-            "not_found": N,
-            "errors": [...]
-        }
+    Use: from services.new_launch_units import sync_new_launch_units
     """
-    import time
-    start = time.time()
-
-    limit = int(request.args.get("limit", 20))
-    dry_run = request.args.get("dry_run", "").lower() == "true"
-
-    try:
-        from services.property_scraper import scrape_missing_projects
-
-        if dry_run:
-            # Just report what would be scraped
-            from models.transaction import Transaction
-            from models.project_inventory import ProjectInventory
-            from sqlalchemy import func
-
-            # Get projects with New Sale transactions but no inventory
-            projects_with_sales = db.session.query(
-                Transaction.project_name,
-                func.count(Transaction.id).label('sales_count')
-            ).filter(
-                Transaction.sale_type == 'New Sale',
-                Transaction.is_outlier == False
-            ).group_by(Transaction.project_name).subquery()
-
-            missing = db.session.query(projects_with_sales.c.project_name).outerjoin(
-                ProjectInventory,
-                projects_with_sales.c.project_name == ProjectInventory.project_name
-            ).filter(
-                ProjectInventory.id.is_(None)
-            ).order_by(
-                projects_with_sales.c.sales_count.desc()
-            ).limit(limit).all()
-
-            elapsed = time.time() - start
-            return jsonify({
-                "dry_run": True,
-                "projects_to_scrape": [p[0] for p in missing],
-                "count": len(missing),
-                "elapsed_seconds": round(elapsed, 2)
-            })
-
-        # Actually scrape
-        stats = scrape_missing_projects(limit=limit)
-
-        elapsed = time.time() - start
-        stats["elapsed_seconds"] = round(elapsed, 2)
-
-        print(f"POST /api/projects/inventory/scrape-missing took: {elapsed:.4f}s")
-
-        return jsonify(stats)
-
-    except Exception as e:
-        print(f"POST /api/projects/inventory/scrape-missing ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+    return jsonify({
+        "success": False,
+        "message": "Scraping deprecated. Use sync_new_launch_units() instead.",
+        "hint": "from services.new_launch_units import sync_new_launch_units; sync_new_launch_units()"
+    }), 400
 
 
 @projects_bp.route("/projects/inventory/status", methods=["GET"])

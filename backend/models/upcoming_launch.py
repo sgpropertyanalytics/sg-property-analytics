@@ -1,5 +1,5 @@
 """
-New Launch Model - Upcoming Private Condo Launches
+Upcoming Launch Model - Upcoming Private Condo Launches (2026+)
 
 Data source: CSV upload (source-of-truth)
 
@@ -12,8 +12,8 @@ from datetime import datetime
 from typing import Dict, Any
 
 
-class NewLaunch(db.Model):
-    __tablename__ = 'new_launches'
+class UpcomingLaunch(db.Model):
+    __tablename__ = 'upcoming_launches'
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -63,7 +63,7 @@ class NewLaunch(db.Model):
     # GLS TENDER LINKING
     # ==========================================================================
     gls_tender_id = db.Column(db.Integer, db.ForeignKey('gls_tenders.id'), nullable=True)
-    gls_tender = db.relationship('GLSTender', backref='new_launches')
+    gls_tender = db.relationship('GLSTender', backref='upcoming_launches')
     land_bid_psf = db.Column(db.Numeric(12, 2))  # From linked GLS tender
 
     # ==========================================================================
@@ -84,15 +84,19 @@ class NewLaunch(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Legacy fields (for migration compatibility)
+    last_scraped = db.Column(db.DateTime)
+    last_validated = db.Column(db.DateTime)
+
     # ==========================================================================
     # INDEXES
     # ==========================================================================
     __table_args__ = (
-        db.Index('ix_new_launches_segment_year', 'market_segment', 'launch_year'),
-        db.Index('ix_new_launches_district_year', 'district', 'launch_year'),
+        db.Index('ix_upcoming_launches_segment_year', 'market_segment', 'launch_year'),
+        db.Index('ix_upcoming_launches_district_year', 'district', 'launch_year'),
     )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, include_sources: bool = False) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         result = {
             'id': self.id,
@@ -131,4 +135,4 @@ class NewLaunch(db.Model):
         return result
 
     def __repr__(self):
-        return f"<NewLaunch {self.project_name} ({self.launch_year})>"
+        return f"<UpcomingLaunch {self.project_name} ({self.launch_year})>"

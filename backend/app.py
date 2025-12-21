@@ -141,7 +141,7 @@ def create_app():
         # Import all models before create_all to ensure tables are created
         from models.transaction import Transaction
         from models.gls_tender import GLSTender
-        from models.new_launch import NewLaunch
+        from models.upcoming_launch import UpcomingLaunch
         from models.popular_school import PopularSchool
         from models.project_location import ProjectLocation
         from models.project_inventory import ProjectInventory
@@ -249,8 +249,8 @@ def create_app():
     app.register_blueprint(gls_bp, url_prefix='/api/gls')
 
     # Upcoming Launches (pre-launch condo projects) routes
-    from routes.new_launches import new_launches_bp
-    app.register_blueprint(new_launches_bp, url_prefix='/api/upcoming-launches')
+    from routes.upcoming_launches import upcoming_launches_bp
+    app.register_blueprint(upcoming_launches_bp, url_prefix='/api/upcoming-launches')
 
     # Projects routes (school proximity, geocoding)
     from routes.projects import projects_bp

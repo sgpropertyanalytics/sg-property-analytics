@@ -38,7 +38,7 @@ EXPECTED_SCHEMA = {
             'nett_price', 'type_of_area', 'market_segment'
         ]
     },
-    'new_launches': {
+    'upcoming_launches': {
         'required': ['id', 'project_name', 'created_at'],
         'optional': [
             'developer', 'district', 'planning_area', 'market_segment',
@@ -47,7 +47,8 @@ EXPECTED_SCHEMA = {
             'indicative_psf_high', 'tenure', 'property_type', 'launch_year',
             'expected_launch_date', 'expected_top_date', 'site_area_sqft',
             'gls_tender_id', 'land_bid_psf', 'data_source', 'data_confidence',
-            'needs_review', 'review_reason', 'updated_at'
+            'needs_review', 'review_reason', 'updated_at',
+            'last_scraped', 'last_validated'
         ]
     },
     'gls_tenders': {

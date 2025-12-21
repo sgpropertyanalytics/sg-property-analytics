@@ -18,16 +18,16 @@ from flask import Blueprint, request, jsonify
 import time
 from datetime import datetime
 from models.database import db
-from models.new_launch import NewLaunch
+from models.upcoming_launch import UpcomingLaunch
 from sqlalchemy import desc, asc
 
-new_launches_bp = Blueprint('new_launches', __name__)
+upcoming_launches_bp = Blueprint('upcoming_launches', __name__)
 
 
-@new_launches_bp.route("/all", methods=["GET"])
+@upcoming_launches_bp.route("/all", methods=["GET"])
 def get_all():
     """
-    Get all new launch projects.
+    Get all upcoming launch projects.
 
     Query params:
         - market_segment: CCR, RCR, or OCR (optional)
@@ -52,27 +52,27 @@ def get_all():
     order = request.args.get("order", "asc")
 
     try:
-        query = db.session.query(NewLaunch)
+        query = db.session.query(UpcomingLaunch)
 
         # Apply filters
         if launch_year:
-            query = query.filter(NewLaunch.launch_year == int(launch_year))
+            query = query.filter(UpcomingLaunch.launch_year == int(launch_year))
 
         if market_segment:
-            query = query.filter(NewLaunch.market_segment == market_segment.upper())
+            query = query.filter(UpcomingLaunch.market_segment == market_segment.upper())
 
         if district:
             # Normalize district format
             d = district.upper()
             if not d.startswith("D"):
                 d = f"D{d.zfill(2)}"
-            query = query.filter(NewLaunch.district == d)
+            query = query.filter(UpcomingLaunch.district == d)
 
         if needs_review:
-            query = query.filter(NewLaunch.needs_review == True)
+            query = query.filter(UpcomingLaunch.needs_review == True)
 
         # Apply sorting
-        sort_col = getattr(NewLaunch, sort_by, NewLaunch.project_name)
+        sort_col = getattr(UpcomingLaunch, sort_by, UpcomingLaunch.project_name)
         if order.lower() == 'desc':
             query = query.order_by(desc(sort_col))
         else:
@@ -84,7 +84,7 @@ def get_all():
         # Get last checked timestamp (most recent)
         last_checked = None
         if launches:
-            dates = [l.last_validated or l.last_scraped for l in launches if l.last_validated or l.last_scraped]
+            dates = [l.last_validated or l.last_scraped for l in launches if hasattr(l, 'last_validated') and (l.last_validated or l.last_scraped)]
             if dates:
                 last_checked = max(dates)
 
@@ -121,10 +121,10 @@ def get_all():
         return jsonify({"error": str(e)}), 500
 
 
-@new_launches_bp.route("/by-segment", methods=["GET"])
+@upcoming_launches_bp.route("/by-segment", methods=["GET"])
 def get_by_segment():
     """
-    Get new launches grouped by market segment.
+    Get upcoming launches grouped by market segment.
 
     Query params:
         - launch_year: Filter by launch year (default: 2026)
@@ -137,9 +137,9 @@ def get_by_segment():
     launch_year = int(request.args.get("launch_year", 2026))
 
     try:
-        launches = db.session.query(NewLaunch).filter(
-            NewLaunch.launch_year == launch_year
-        ).order_by(NewLaunch.market_segment, NewLaunch.project_name).all()
+        launches = db.session.query(UpcomingLaunch).filter(
+            UpcomingLaunch.launch_year == launch_year
+        ).order_by(UpcomingLaunch.market_segment, UpcomingLaunch.project_name).all()
 
         # Group by segment
         by_segment = {'CCR': [], 'RCR': [], 'OCR': [], 'Unknown': []}
@@ -171,10 +171,10 @@ def get_by_segment():
         return jsonify({"error": str(e)}), 500
 
 
-@new_launches_bp.route("/supply-pipeline", methods=["GET"])
+@upcoming_launches_bp.route("/supply-pipeline", methods=["GET"])
 def get_supply_pipeline():
     """
-    Get aggregate supply pipeline from new launches.
+    Get aggregate supply pipeline from upcoming launches.
 
     Query params:
         - launch_year: Filter by launch year (default: 2026)
@@ -192,19 +192,19 @@ def get_supply_pipeline():
         from sqlalchemy import func
 
         query = db.session.query(
-            NewLaunch.market_segment,
-            func.sum(NewLaunch.total_units).label('total_units'),
-            func.count(NewLaunch.id).label('project_count'),
-            func.avg(NewLaunch.indicative_psf_low).label('avg_psf_low'),
-            func.avg(NewLaunch.indicative_psf_high).label('avg_psf_high'),
+            UpcomingLaunch.market_segment,
+            func.sum(UpcomingLaunch.total_units).label('total_units'),
+            func.count(UpcomingLaunch.id).label('project_count'),
+            func.avg(UpcomingLaunch.indicative_psf_low).label('avg_psf_low'),
+            func.avg(UpcomingLaunch.indicative_psf_high).label('avg_psf_high'),
         ).filter(
-            NewLaunch.launch_year == launch_year
+            UpcomingLaunch.launch_year == launch_year
         )
 
         if market_segment:
-            query = query.filter(NewLaunch.market_segment == market_segment.upper())
+            query = query.filter(UpcomingLaunch.market_segment == market_segment.upper())
 
-        query = query.group_by(NewLaunch.market_segment)
+        query = query.group_by(UpcomingLaunch.market_segment)
         results = query.all()
 
         pipeline = {
@@ -240,7 +240,7 @@ def get_supply_pipeline():
         return jsonify({"error": str(e)}), 500
 
 
-@new_launches_bp.route("/project/<project_name>", methods=["GET"])
+@upcoming_launches_bp.route("/project/<project_name>", methods=["GET"])
 def get_project_detail(project_name: str):
     """
     Get details for a specific project.
@@ -257,8 +257,8 @@ def get_project_detail(project_name: str):
         from urllib.parse import unquote
         decoded_name = unquote(project_name)
 
-        launch = db.session.query(NewLaunch).filter(
-            NewLaunch.project_name.ilike(f"%{decoded_name}%")
+        launch = db.session.query(UpcomingLaunch).filter(
+            UpcomingLaunch.project_name.ilike(f"%{decoded_name}%")
         ).first()
 
         if not launch:
@@ -275,7 +275,7 @@ def get_project_detail(project_name: str):
         return jsonify({"error": str(e)}), 500
 
 
-@new_launches_bp.route("/needs-review", methods=["GET"])
+@upcoming_launches_bp.route("/needs-review", methods=["GET"])
 def get_needs_review():
     """
     Get projects that need manual review.
@@ -286,9 +286,9 @@ def get_needs_review():
     start = time.time()
 
     try:
-        launches = db.session.query(NewLaunch).filter(
-            NewLaunch.needs_review == True
-        ).order_by(desc(NewLaunch.updated_at)).all()
+        launches = db.session.query(UpcomingLaunch).filter(
+            UpcomingLaunch.needs_review == True
+        ).order_by(desc(UpcomingLaunch.updated_at)).all()
 
         elapsed = time.time() - start
         print(f"GET /api/upcoming-launches/needs-review took: {elapsed:.4f} seconds (returned {len(launches)} projects)")
@@ -304,92 +304,53 @@ def get_needs_review():
         return jsonify({"error": str(e)}), 500
 
 
-@new_launches_bp.route("/scrape", methods=["POST"])
+@upcoming_launches_bp.route("/scrape", methods=["POST"])
 def trigger_scrape():
     """
-    Trigger a new launches scrape (admin endpoint).
+    Trigger an upcoming launches scrape (admin endpoint).
 
-    Query params:
-        - year: Year to scrape (default: 2026)
-        - dry_run: If 'true', don't save to database
+    NOTE: Scraping is deprecated. Use CSV upload instead via:
+        from services.upcoming_launch_upload import upload_upcoming_launches
+        upload_upcoming_launches('data/upcoming_launches_2026.csv')
 
     Returns:
-        Scrape statistics
+        Message indicating scraping is not available
     """
-    start = time.time()
-
-    year = int(request.args.get("year", 2026))
-    dry_run = request.args.get("dry_run", "").lower() == "true"
-
-    try:
-        from services.property_scraper import scrape_new_launches
-
-        stats = scrape_new_launches(target_year=year, dry_run=dry_run)
-
-        elapsed = time.time() - start
-        print(f"POST /api/upcoming-launches/scrape took: {elapsed:.4f} seconds")
-
-        return jsonify({
-            "success": True,
-            "year": year,
-            "dry_run": dry_run,
-            "elapsed_seconds": round(elapsed, 2),
-            "statistics": stats
-        })
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"POST /api/upcoming-launches/scrape ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+    return jsonify({
+        "success": False,
+        "message": "Scraping is deprecated. Use CSV upload instead.",
+        "hint": "Upload data via: upload_upcoming_launches('data/upcoming_launches_2026.csv')"
+    }), 400
 
 
-@new_launches_bp.route("/validate", methods=["POST"])
+@upcoming_launches_bp.route("/validate", methods=["POST"])
 def trigger_validation():
     """
-    Trigger bi-weekly validation job (admin endpoint).
+    Trigger validation of upcoming launches data.
 
-    Compares stored values against fresh scrapes and flags discrepancies.
+    NOTE: Validation via scraping is deprecated.
 
     Returns:
-        Validation statistics
+        Message indicating validation is not available
     """
-    start = time.time()
-
-    try:
-        from services.property_scraper import validate_new_launches
-
-        stats = validate_new_launches()
-
-        elapsed = time.time() - start
-        print(f"POST /api/upcoming-launches/validate took: {elapsed:.4f} seconds")
-
-        return jsonify({
-            "success": True,
-            "elapsed_seconds": round(elapsed, 2),
-            "statistics": stats
-        })
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"POST /api/upcoming-launches/validate ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+    return jsonify({
+        "success": False,
+        "message": "Scrape-based validation is deprecated.",
+        "hint": "Data is now managed via CSV upload with manual verification."
+    }), 400
 
 
-@new_launches_bp.route("/reset", methods=["POST"])
-def reset_and_rescrape():
+@upcoming_launches_bp.route("/reset", methods=["POST"])
+def reset_data():
     """
-    Reset new launches data and rescrape from all sources.
+    Reset upcoming launches data for a given year.
 
     Query params:
-        - year: Year to scrape (default: 2026)
+        - year: Year to reset (default: 2026)
         - confirm: Must be 'yes' to proceed
 
     Returns:
-        Scrape statistics after reset
+        Number of records deleted
     """
     start = time.time()
 
@@ -398,23 +359,16 @@ def reset_and_rescrape():
 
     if confirm != "yes":
         return jsonify({
-            "error": "Must pass confirm=yes to reset all new launches data",
-            "warning": "This will DELETE all existing new launch records"
+            "error": "Must pass confirm=yes to reset all upcoming launches data",
+            "warning": "This will DELETE all existing upcoming launch records"
         }), 400
 
     try:
-        from services.property_scraper import scrape_new_launches
-        from sqlalchemy import text
-
         # Delete all existing records for the year
-        deleted = db.session.query(NewLaunch).filter(
-            NewLaunch.launch_year == year
+        deleted = db.session.query(UpcomingLaunch).filter(
+            UpcomingLaunch.launch_year == year
         ).delete()
         db.session.commit()
-        print(f"Deleted {deleted} existing new launch records for {year}")
-
-        # Rescrape
-        stats = scrape_new_launches(target_year=year, dry_run=False)
 
         elapsed = time.time() - start
         print(f"POST /api/upcoming-launches/reset took: {elapsed:.4f} seconds")
@@ -424,7 +378,8 @@ def reset_and_rescrape():
             "year": year,
             "deleted": deleted,
             "elapsed_seconds": round(elapsed, 2),
-            "statistics": stats
+            "message": "Data deleted. Use CSV upload to repopulate.",
+            "hint": "upload_upcoming_launches('data/upcoming_launches_2026.csv')"
         })
 
     except Exception as e:
@@ -436,10 +391,10 @@ def reset_and_rescrape():
         return jsonify({"error": str(e)}), 500
 
 
-@new_launches_bp.route("/stats", methods=["GET"])
+@upcoming_launches_bp.route("/stats", methods=["GET"])
 def get_stats():
     """
-    Get summary statistics for new launches data.
+    Get summary statistics for upcoming launches data.
 
     Returns:
         Overview of project counts and values
@@ -450,16 +405,16 @@ def get_stats():
         from sqlalchemy import func
 
         # Total counts
-        total = db.session.query(NewLaunch).count()
-        needs_review = db.session.query(NewLaunch).filter(NewLaunch.needs_review == True).count()
-        with_gls_link = db.session.query(NewLaunch).filter(NewLaunch.gls_tender_id.isnot(None)).count()
+        total = db.session.query(UpcomingLaunch).count()
+        needs_review = db.session.query(UpcomingLaunch).filter(UpcomingLaunch.needs_review == True).count()
+        with_gls_link = db.session.query(UpcomingLaunch).filter(UpcomingLaunch.gls_tender_id.isnot(None)).count()
 
         # By year
         by_year = db.session.query(
-            NewLaunch.launch_year,
-            func.count(NewLaunch.id).label('count'),
-            func.sum(NewLaunch.total_units).label('total_units')
-        ).group_by(NewLaunch.launch_year).all()
+            UpcomingLaunch.launch_year,
+            func.count(UpcomingLaunch.id).label('count'),
+            func.sum(UpcomingLaunch.total_units).label('total_units')
+        ).group_by(UpcomingLaunch.launch_year).all()
 
         year_stats = {
             row.launch_year: {
@@ -471,12 +426,12 @@ def get_stats():
 
         # By segment for 2026
         by_segment = db.session.query(
-            NewLaunch.market_segment,
-            func.count(NewLaunch.id).label('count'),
-            func.sum(NewLaunch.total_units).label('total_units')
+            UpcomingLaunch.market_segment,
+            func.count(UpcomingLaunch.id).label('count'),
+            func.sum(UpcomingLaunch.total_units).label('total_units')
         ).filter(
-            NewLaunch.launch_year == 2026
-        ).group_by(NewLaunch.market_segment).all()
+            UpcomingLaunch.launch_year == 2026
+        ).group_by(UpcomingLaunch.market_segment).all()
 
         segment_stats = {
             (row.market_segment or 'Unknown'): {
@@ -488,7 +443,7 @@ def get_stats():
 
         # Last updated
         last_updated = db.session.query(
-            func.max(NewLaunch.updated_at)
+            func.max(UpcomingLaunch.updated_at)
         ).scalar()
 
         elapsed = time.time() - start

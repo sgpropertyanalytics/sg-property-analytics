@@ -1,13 +1,13 @@
 """
-New Launch Condo Upload Service
+Upcoming Launch Condo Upload Service
 
-Uploads new launch condo data from CSV file (source-of-truth).
+Uploads upcoming launch condo data from CSV file (source-of-truth).
 
 Usage:
-    from services.new_launch_upload import upload_new_launches
+    from services.upcoming_launch_upload import upload_upcoming_launches
 
-    stats = upload_new_launches(
-        file_path='data/new_launches_2026.csv',
+    stats = upload_upcoming_launches(
+        file_path='data/upcoming_launches_2026.csv',
         db_session=db.session,
         dry_run=False
     )
@@ -193,7 +193,7 @@ def read_csv_file(file_path: str) -> List[Dict[str, Any]]:
 # DATABASE UPLOAD
 # =============================================================================
 
-def upload_new_launches(
+def upload_upcoming_launches(
     file_path: str,
     db_session=None,
     dry_run: bool = False,
@@ -201,7 +201,7 @@ def upload_new_launches(
     year: int = 2026
 ) -> Dict[str, Any]:
     """
-    Upload new launches from CSV file into database.
+    Upload upcoming launches from CSV file into database.
 
     Args:
         file_path: Path to CSV file
@@ -213,7 +213,7 @@ def upload_new_launches(
     Returns:
         Upload statistics and any errors
     """
-    from models.new_launch import NewLaunch
+    from models.upcoming_launch import UpcomingLaunch
     from models.database import db
 
     if db_session is None:
@@ -231,7 +231,7 @@ def upload_new_launches(
     }
 
     print(f"\n{'='*60}")
-    print(f"New Launch Upload: {file_path}")
+    print(f"Upcoming Launch Upload: {file_path}")
     print(f"{'='*60}")
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE'}")
     print(f"Reset: {'Yes' if reset else 'No'}")
@@ -277,8 +277,8 @@ def upload_new_launches(
 
     # Reset existing data if requested
     if reset:
-        deleted = db_session.query(NewLaunch).filter(
-            NewLaunch.launch_year == year
+        deleted = db_session.query(UpcomingLaunch).filter(
+            UpcomingLaunch.launch_year == year
         ).delete()
         db_session.commit()
         print(f"\nDeleted {deleted} existing records for {year}")
@@ -287,8 +287,8 @@ def upload_new_launches(
     print("\nUploading data...")
     existing_names = {
         r[0].lower(): r[1] for r in
-        db_session.query(NewLaunch.project_name, NewLaunch.id).filter(
-            NewLaunch.launch_year == year
+        db_session.query(UpcomingLaunch.project_name, UpcomingLaunch.id).filter(
+            UpcomingLaunch.launch_year == year
         ).all()
     }
 
@@ -304,15 +304,15 @@ def upload_new_launches(
         try:
             if name_lower in existing_names:
                 # Update existing
-                existing = db_session.query(NewLaunch).get(existing_names[name_lower])
+                existing = db_session.query(UpcomingLaunch).get(existing_names[name_lower])
                 if existing:
                     _update_from_csv(existing, row)
                     stats['updated'] += 1
                     print(f"  Updated: {project_name}")
             else:
                 # Insert new
-                new_launch = _create_from_csv(row, year)
-                db_session.add(new_launch)
+                upcoming_launch = _create_from_csv(row, year)
+                db_session.add(upcoming_launch)
                 stats['inserted'] += 1
                 print(f"  Inserted: {project_name}")
 
@@ -336,14 +336,14 @@ def upload_new_launches(
 
 
 def _create_from_csv(row: Dict[str, Any], year: int):
-    """Create a NewLaunch record from CSV row."""
-    from models.new_launch import NewLaunch
+    """Create an UpcomingLaunch record from CSV row."""
+    from models.upcoming_launch import UpcomingLaunch
 
     district = str(row['district']).strip().upper()
     if not district.startswith('D'):
         district = f"D{district.zfill(2)}"
 
-    return NewLaunch(
+    return UpcomingLaunch(
         project_name=str(row['project_name']).strip(),
         developer=str(row.get('developer', '')).strip() or None,
         district=district,
@@ -364,7 +364,7 @@ def _create_from_csv(row: Dict[str, Any], year: int):
 
 
 def _update_from_csv(existing, row: Dict[str, Any]):
-    """Update existing NewLaunch from CSV row."""
+    """Update existing UpcomingLaunch from CSV row."""
 
     existing.developer = str(row.get('developer', '')).strip() or existing.developer
 
