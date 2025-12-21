@@ -411,6 +411,15 @@ export const getNewLaunchesSupplyPipeline = (params = {}) =>
 export const getNewLaunchesStats = () =>
   apiClient.get('/new-launches/stats');
 
+/**
+ * Get hot projects with sales progress
+ * @param {Object} params - Query parameters
+ * @param {string} params.market_segment - CCR, RCR, or OCR
+ * @param {string} params.district - Comma-separated districts (D01,D02,...)
+ */
+export const getHotProjects = (params = {}) =>
+  apiClient.get(`/projects/hot?${buildQueryString(params)}`);
+
 // ===== Project Inventory API Functions =====
 
 /**
