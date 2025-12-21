@@ -23,7 +23,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen min-h-[100dvh] font-sans selection:bg-[#94B4C1]/30 text-[#213448] bg-[#FDFBF7]">
+    <div className="min-h-screen min-h-[100dvh] font-sans selection:bg-[#94B4C1]/30 text-[#213448] bg-[#FDFBF7] overflow-x-hidden">
       {/* === NAV === */}
       <nav className="fixed w-full z-50 px-4 md:px-6 py-3 md:py-4 backdrop-blur-md border-b border-[#94B4C1]/20 bg-[#FDFBF7]/80">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -41,7 +41,7 @@ const LandingPage = () => {
           <div className="flex gap-2 md:gap-4">
             <button
               onClick={() => navigate('/login')}
-              className="px-4 md:px-5 py-2 text-sm font-medium bg-[#213448] text-[#EAE0CF] rounded-lg hover:bg-[#547792] hover:shadow-lg active:scale-[0.98] transition-all shadow-lg shadow-[#213448]/10 min-h-[44px] touch-action-manipulation"
+              className="px-4 md:px-5 py-2 text-sm font-medium bg-[#213448] text-[#EAE0CF] rounded-lg hover:bg-[#547792] hover:shadow-lg active:scale-[0.98] transition-all shadow-lg shadow-[#213448]/10 min-h-[44px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
             >
               Get Started
             </button>
@@ -108,7 +108,7 @@ const LandingPage = () => {
           </p>
           <button
             onClick={() => navigate('/market-pulse')}
-            className="group px-8 py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#547792] hover:shadow-2xl active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center gap-2 mx-auto min-h-[48px] touch-action-manipulation"
+            className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#547792] hover:shadow-2xl active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center gap-2 mx-auto min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
           >
             Access the Dashboard
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -133,7 +133,7 @@ const LandingPage = () => {
               <a
                 key={link}
                 href="#"
-                className="text-[#547792] hover:text-[#213448] text-sm font-medium transition-colors min-h-[44px] flex items-center"
+                className="text-[#547792] hover:text-[#213448] active:text-[#213448] text-sm font-medium transition-colors min-h-[44px] flex items-center touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:rounded focus:outline-none"
               >
                 {link}
               </a>
@@ -151,12 +151,12 @@ const LandingPage = () => {
  */
 function HeroSection({ navigate }) {
   return (
-    <section className="relative bg-[#FDFBF7] pt-32 pb-32 overflow-hidden min-h-[800px] flex items-center">
+    <section className="relative bg-[#FDFBF7] pt-24 sm:pt-28 lg:pt-32 pb-16 sm:pb-24 lg:pb-32 overflow-hidden min-h-[600px] lg:min-h-[800px] flex items-center">
       {/* Background Gradients */}
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#94B4C1]/10 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-0 left-20 w-[600px] h-[600px] bg-[#547792]/5 rounded-full blur-[100px] -z-10" />
 
-      <div className="max-w-7xl mx-auto px-6 w-full relative z-10 grid lg:grid-cols-12 gap-12 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full relative z-10 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
 
         {/* --- LEFT CONTENT (Span 6 cols) --- */}
         <div className="lg:col-span-6 relative z-20">
@@ -177,7 +177,7 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-5xl lg:text-7xl font-bold tracking-tight text-[#213448] mb-6 leading-[1.1]"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight text-[#213448] mb-4 sm:mb-6 leading-[1.1]"
           >
             Property data, <br />
             <span className="text-[#547792]">clarified.</span>
@@ -188,7 +188,7 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-lg text-[#547792] mb-10 max-w-lg leading-relaxed"
+            className="text-base sm:text-lg text-[#547792] mb-8 sm:mb-10 max-w-lg leading-relaxed"
           >
             Stop relying on outdated spreadsheets. Access institutional-grade transaction records and supply cliffs in real-time.
           </motion.p>
@@ -198,18 +198,18 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4 mb-16"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-12 sm:mb-16"
           >
             <button
               onClick={() => navigate('/market-pulse')}
-              className="group px-8 py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#324b66] transition-all shadow-xl shadow-[#213448]/20 flex items-center justify-center gap-2"
+              className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#324b66] active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center justify-center gap-2 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
             >
               Explore Dashboard
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform opacity-80" />
             </button>
             <button
               onClick={() => navigate('/analytics-view')}
-              className="px-8 py-4 rounded-xl bg-white/80 border border-[#EAE0CF] text-[#547792] font-medium hover:bg-white transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
+              className="px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-white/80 border border-[#EAE0CF] text-[#547792] font-medium hover:bg-white active:scale-[0.98] active:bg-[#EAE0CF]/30 transition-all flex items-center justify-center gap-2 backdrop-blur-sm min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
             >
               View Demo
             </button>
@@ -220,33 +220,61 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="flex gap-12 border-t border-[#213448]/10 pt-8"
+            className="flex gap-8 sm:gap-12 border-t border-[#213448]/10 pt-6 sm:pt-8"
           >
             <div>
-              <div className="text-3xl font-bold text-[#213448] font-mono">$2.8B+</div>
-              <div className="text-xs text-[#94B4C1] uppercase tracking-wider mt-1 font-medium">Value Analyzed</div>
+              <div className="text-2xl sm:text-3xl font-bold text-[#213448] font-mono tabular-nums">$2.8B+</div>
+              <div className="text-[10px] sm:text-xs text-[#94B4C1] uppercase tracking-wider mt-1 font-medium">Value Analyzed</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-[#213448] font-mono">103k</div>
-              <div className="text-xs text-[#94B4C1] uppercase tracking-wider mt-1 font-medium">Records</div>
+              <div className="text-2xl sm:text-3xl font-bold text-[#213448] font-mono tabular-nums">103k</div>
+              <div className="text-[10px] sm:text-xs text-[#94B4C1] uppercase tracking-wider mt-1 font-medium">Records</div>
+            </div>
+          </motion.div>
+
+          {/* Mobile Dashboard Preview */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="lg:hidden mt-8 sm:mt-12"
+          >
+            <div className="rounded-xl overflow-hidden shadow-xl shadow-[#213448]/10 border border-[#94B4C1]/20 bg-white">
+              {/* Minimal Browser Chrome */}
+              <div className="h-6 sm:h-8 bg-white border-b border-gray-100 flex items-center px-3 sm:px-4 gap-2">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 rounded-full bg-gray-200"></div>
+                  <div className="w-2 h-2 rounded-full bg-gray-200"></div>
+                </div>
+              </div>
+              {/* Dashboard Screenshot */}
+              <img
+                src="/dashboard-screenshot.png"
+                alt="Dashboard Preview"
+                className="w-full h-auto opacity-95 bg-gray-50"
+              />
             </div>
           </motion.div>
         </div>
 
-        {/* --- RIGHT VISUAL (The Clean Dashboard) --- */}
+        {/* --- RIGHT VISUAL (The Clean Dashboard) - Desktop only --- */}
         <div className="hidden lg:block absolute top-1/2 -translate-y-1/2 right-[-100px] w-[65%] h-[800px] z-10 pointer-events-none">
           <motion.div
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
-            className="relative w-full h-full perspective-[2000px]"
+            className="relative w-full h-full"
+            style={{ perspective: '2000px' }}
           >
             {/* Fade-out Mask Gradients */}
             <div className="absolute inset-0 z-20 bg-gradient-to-r from-[#FDFBF7] via-[#FDFBF7]/20 to-transparent w-[30%] h-full" />
             <div className="absolute inset-0 z-20 bg-gradient-to-b from-[#FDFBF7] via-transparent to-[#FDFBF7] h-full" />
 
             {/* The Dashboard Container */}
-            <div className="w-full h-full transform rotate-y-[-12deg] rotate-x-[5deg] scale-90 origin-center-left">
+            <div
+              className="w-full h-full"
+              style={{ transform: 'rotateY(-12deg) rotateX(5deg) scale(0.9)', transformOrigin: 'center left' }}
+            >
               <div className="rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/10 border border-[#94B4C1]/20 bg-white">
                 {/* Minimal Browser Chrome */}
                 <div className="h-8 bg-white border-b border-gray-100 flex items-center px-4 gap-2">
