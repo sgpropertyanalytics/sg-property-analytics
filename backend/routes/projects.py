@@ -516,8 +516,8 @@ def get_hot_projects():
         return jsonify({"error": str(e)}), 500
 
 
-@projects_bp.route("/projects/cleanup-new-launches", methods=["DELETE"])
-def cleanup_new_launches_from_transactions():
+@projects_bp.route("/projects/cleanup-upcoming-launches", methods=["DELETE"])
+def cleanup_upcoming_launches_from_transactions():
     """
     Delete new_launches entries that were auto-populated from transactions.
 
@@ -553,7 +553,7 @@ def cleanup_new_launches_from_transactions():
         db.session.commit()
 
         elapsed = time.time() - start
-        print(f"DELETE /api/projects/cleanup-new-launches took: {elapsed:.4f}s (deleted {deleted} entries)")
+        print(f"DELETE /api/projects/cleanup-upcoming-launches took: {elapsed:.4f}s (deleted {deleted} entries)")
 
         return jsonify({
             "success": True,
@@ -565,14 +565,14 @@ def cleanup_new_launches_from_transactions():
 
     except Exception as e:
         db.session.rollback()
-        print(f"DELETE /api/projects/cleanup-new-launches ERROR: {e}")
+        print(f"DELETE /api/projects/cleanup-upcoming-launches ERROR: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
-@projects_bp.route("/projects/populate-new-launches", methods=["POST"])
-def populate_new_launches_from_transactions():
+@projects_bp.route("/projects/populate-upcoming-launches", methods=["POST"])
+def populate_upcoming_launches_from_transactions():
     """
     Populate new_launches table from transactions with sale_type='New Sale'.
 
@@ -738,7 +738,7 @@ def populate_new_launches_from_transactions():
         db.session.commit()
 
         elapsed = time.time() - start
-        print(f"POST /api/projects/populate-new-launches took: {elapsed:.4f}s "
+        print(f"POST /api/projects/populate-upcoming-launches took: {elapsed:.4f}s "
               f"(created={created}, updated={updated}, skipped={skipped})")
 
         return jsonify({
@@ -754,7 +754,7 @@ def populate_new_launches_from_transactions():
 
     except Exception as e:
         db.session.rollback()
-        print(f"POST /api/projects/populate-new-launches ERROR: {e}")
+        print(f"POST /api/projects/populate-upcoming-launches ERROR: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500

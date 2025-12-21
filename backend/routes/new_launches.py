@@ -89,7 +89,7 @@ def get_all():
                 last_checked = max(dates)
 
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/all took: {elapsed:.4f} seconds (returned {len(launches)} launches)")
+        print(f"GET /api/upcoming-launches/all took: {elapsed:.4f} seconds (returned {len(launches)} launches)")
 
         # Count by segment
         segment_counts = {}
@@ -117,7 +117,7 @@ def get_all():
 
     except Exception as e:
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/all ERROR (took {elapsed:.4f}s): {e}")
+        print(f"GET /api/upcoming-launches/all ERROR (took {elapsed:.4f}s): {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -157,7 +157,7 @@ def get_by_segment():
             }
 
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/by-segment took: {elapsed:.4f} seconds")
+        print(f"GET /api/upcoming-launches/by-segment took: {elapsed:.4f} seconds")
 
         return jsonify({
             "launch_year": launch_year,
@@ -167,7 +167,7 @@ def get_by_segment():
 
     except Exception as e:
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/by-segment ERROR (took {elapsed:.4f}s): {e}")
+        print(f"GET /api/upcoming-launches/by-segment ERROR (took {elapsed:.4f}s): {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -230,13 +230,13 @@ def get_supply_pipeline():
             pipeline['total_projects'] += count
 
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/supply-pipeline took: {elapsed:.4f} seconds")
+        print(f"GET /api/upcoming-launches/supply-pipeline took: {elapsed:.4f} seconds")
 
         return jsonify(pipeline)
 
     except Exception as e:
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/supply-pipeline ERROR (took {elapsed:.4f}s): {e}")
+        print(f"GET /api/upcoming-launches/supply-pipeline ERROR (took {elapsed:.4f}s): {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -265,13 +265,13 @@ def get_project_detail(project_name: str):
             return jsonify({"error": f"Project not found: {decoded_name}"}), 404
 
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/project/{project_name} took: {elapsed:.4f} seconds")
+        print(f"GET /api/upcoming-launches/project/{project_name} took: {elapsed:.4f} seconds")
 
         return jsonify(launch.to_dict(include_sources=True))
 
     except Exception as e:
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/project/{project_name} ERROR (took {elapsed:.4f}s): {e}")
+        print(f"GET /api/upcoming-launches/project/{project_name} ERROR (took {elapsed:.4f}s): {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -291,7 +291,7 @@ def get_needs_review():
         ).order_by(desc(NewLaunch.updated_at)).all()
 
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/needs-review took: {elapsed:.4f} seconds (returned {len(launches)} projects)")
+        print(f"GET /api/upcoming-launches/needs-review took: {elapsed:.4f} seconds (returned {len(launches)} projects)")
 
         return jsonify({
             "count": len(launches),
@@ -300,7 +300,7 @@ def get_needs_review():
 
     except Exception as e:
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/needs-review ERROR (took {elapsed:.4f}s): {e}")
+        print(f"GET /api/upcoming-launches/needs-review ERROR (took {elapsed:.4f}s): {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -327,7 +327,7 @@ def trigger_scrape():
         stats = scrape_new_launches(target_year=year, dry_run=dry_run)
 
         elapsed = time.time() - start
-        print(f"POST /api/new-launches/scrape took: {elapsed:.4f} seconds")
+        print(f"POST /api/upcoming-launches/scrape took: {elapsed:.4f} seconds")
 
         return jsonify({
             "success": True,
@@ -339,7 +339,7 @@ def trigger_scrape():
 
     except Exception as e:
         elapsed = time.time() - start
-        print(f"POST /api/new-launches/scrape ERROR (took {elapsed:.4f}s): {e}")
+        print(f"POST /api/upcoming-launches/scrape ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -363,7 +363,7 @@ def trigger_validation():
         stats = validate_new_launches()
 
         elapsed = time.time() - start
-        print(f"POST /api/new-launches/validate took: {elapsed:.4f} seconds")
+        print(f"POST /api/upcoming-launches/validate took: {elapsed:.4f} seconds")
 
         return jsonify({
             "success": True,
@@ -373,7 +373,7 @@ def trigger_validation():
 
     except Exception as e:
         elapsed = time.time() - start
-        print(f"POST /api/new-launches/validate ERROR (took {elapsed:.4f}s): {e}")
+        print(f"POST /api/upcoming-launches/validate ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -417,7 +417,7 @@ def reset_and_rescrape():
         stats = scrape_new_launches(target_year=year, dry_run=False)
 
         elapsed = time.time() - start
-        print(f"POST /api/new-launches/reset took: {elapsed:.4f} seconds")
+        print(f"POST /api/upcoming-launches/reset took: {elapsed:.4f} seconds")
 
         return jsonify({
             "success": True,
@@ -430,7 +430,7 @@ def reset_and_rescrape():
     except Exception as e:
         elapsed = time.time() - start
         db.session.rollback()
-        print(f"POST /api/new-launches/reset ERROR (took {elapsed:.4f}s): {e}")
+        print(f"POST /api/upcoming-launches/reset ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -492,7 +492,7 @@ def get_stats():
         ).scalar()
 
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/stats took: {elapsed:.4f} seconds")
+        print(f"GET /api/upcoming-launches/stats took: {elapsed:.4f} seconds")
 
         return jsonify({
             "total_projects": total,
@@ -505,5 +505,5 @@ def get_stats():
 
     except Exception as e:
         elapsed = time.time() - start
-        print(f"GET /api/new-launches/stats ERROR (took {elapsed:.4f}s): {e}")
+        print(f"GET /api/upcoming-launches/stats ERROR (took {elapsed:.4f}s): {e}")
         return jsonify({"error": str(e)}), 500

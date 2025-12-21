@@ -6,7 +6,7 @@ import { getHotProjects } from '../../api/client';
  *
  * SEMANTIC CLARIFICATION:
  * - "Active New Sales" = Projects that have ALREADY LAUNCHED and are selling
- * - NOT "Upcoming Launches" (pre-launch projects in new_launches table)
+ * - NOT "Upcoming Launches" (see UpcomingLaunchesTable component)
  *
  * Data Sources:
  * - units_sold: COUNT(transactions WHERE sale_type='New Sale') - DETERMINISTIC
