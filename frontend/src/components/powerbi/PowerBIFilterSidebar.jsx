@@ -107,7 +107,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
       )}
 
       {/* Filter sections */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {/* Location Section */}
         <FilterSection
           title="Location"
@@ -132,7 +132,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                   type="button"
                   key={seg}
                   onClick={(e) => { e.preventDefault(); setSegment(filters.segment === seg ? null : seg); }}
-                  className={`py-2 text-sm rounded-md border transition-colors ${
+                  className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
                     filters.segment === seg
                       ? 'bg-[#547792] text-white border-[#547792]'
                       : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
@@ -185,7 +185,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 type="button"
                 key={br}
                 onClick={(e) => { e.preventDefault(); toggleBedroomType(br); }}
-                className={`py-2 text-sm rounded-md border transition-colors ${
+                className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
                   filters.bedroomTypes.includes(br)
                     ? 'bg-[#547792] text-white border-[#547792]'
                     : filters.bedroomTypes.length === 0
@@ -259,7 +259,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 type="month"
                 value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
                 onChange={(e) => setDateRange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
-                className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                 max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
               />
@@ -280,7 +280,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                     setDateRange(filters.dateRange.start, null);
                   }
                 }}
-                className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                 max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
               />
@@ -317,7 +317,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                   type="button"
                   key={type.value}
                   onClick={(e) => { e.preventDefault(); setSaleType(filters.saleType === type.value ? null : type.value); }}
-                  className={`py-2 text-sm rounded-md border transition-colors ${
+                  className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
                     filters.saleType === type.value
                       ? 'bg-[#547792] text-white border-[#547792]'
                       : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
@@ -341,7 +341,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                   type="button"
                   key={type.value}
                   onClick={(e) => { e.preventDefault(); setTenure(filters.tenure === type.value ? null : type.value); }}
-                  className={`py-2 text-sm rounded-md border transition-colors ${
+                  className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
                     filters.tenure === type.value
                       ? 'bg-[#547792] text-white border-[#547792]'
                       : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
@@ -362,7 +362,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 onChange={(e) => setPropertyAge(e.target.value ? parseInt(e.target.value) : null, filters.propertyAge.max)}
                 placeholder="Min"
                 min={0}
-                className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <span className="text-slate-400">-</span>
               <input
@@ -371,7 +371,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 onChange={(e) => setPropertyAge(filters.propertyAge.min, e.target.value ? parseInt(e.target.value) : null)}
                 placeholder="Max"
                 min={0}
-                className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <p className="text-[10px] text-slate-500 mt-2 italic">
@@ -387,7 +387,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           type="button"
           onClick={(e) => { e.preventDefault(); resetFilters(); }}
           disabled={activeFilterCount === 0}
-          className={`w-full py-2 text-sm rounded-md transition-colors ${
+          className={`w-full min-h-[44px] py-2.5 text-sm rounded-md transition-colors ${
             activeFilterCount > 0
               ? 'bg-[#213448] text-white hover:bg-[#547792]'
               : 'bg-[#94B4C1]/30 text-[#547792] cursor-not-allowed'
@@ -481,7 +481,7 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
-        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <span className={selected.length > 0 ? 'text-slate-800 truncate' : 'text-slate-500'}>
           {getDisplayText()}
