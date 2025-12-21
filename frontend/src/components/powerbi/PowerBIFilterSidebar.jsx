@@ -139,7 +139,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-slate-500 mt-2 font-normal">
+            <p className="text-[10px] text-slate-500 mt-2 italic">
               CCR/RCR/OCR follows market convention; select areas may differ at planning-area level.
             </p>
           </FilterGroup>
@@ -219,8 +219,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           </FilterGroup>
 
           {/* Classification Tiers Info */}
-          <div className="text-xs text-slate-500 mt-2 space-y-1.5">
-            <div className="font-normal text-slate-500">Bedroom Classification (sqft):</div>
+          <div className="text-[10px] text-slate-500 mt-2 space-y-1.5 italic">
+            <div className="text-slate-500">Bedroom Classification (sqft):</div>
             <table className="w-full text-[10px] border-collapse border border-dotted border-slate-400">
               <thead>
                 <tr className="text-slate-600 bg-slate-50/50">
@@ -255,7 +255,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                 </tr>
               </tbody>
             </table>
-            <div className="text-xs text-slate-500 font-normal mt-1">
+            <div className="text-[10px] text-slate-500 italic mt-1">
               Post-harm: after AC ledge removal | Pre-harm: before
             </div>
           </div>
@@ -309,7 +309,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
               </div>
             </div>
             {filterOptions.dateRange.min && filterOptions.dateRange.max && (
-              <div className="text-xs text-slate-500 mt-2 font-normal">
+              <div className="text-[10px] text-slate-500 mt-2 italic">
                 Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
               </div>
             )}
