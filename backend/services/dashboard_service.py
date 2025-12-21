@@ -540,64 +540,74 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
         params['size_max'] = float(filters['size_max'])
 
     where_clause = " AND ".join(where_parts) if where_parts else "1=1"
+
+    # Base filter for outliers (always applied)
+    outlier_filter = "(is_outlier = false OR is_outlier IS NULL)"
+
+    # OPTIMIZED: Two-step approach instead of window functions
+    # Step 1: Get min/max in a single fast query (uses indexes, no window functions)
+    bounds_sql = text(f"""
+        SELECT MIN(price) as min_price, MAX(price) as max_price
+        FROM transactions
+        WHERE {where_clause}
+          AND price IS NOT NULL
+          AND price > 0
+          AND {outlier_filter}
+    """)
+
+    bounds_result = db.session.execute(bounds_sql, params).fetchone()
+
+    if not bounds_result or bounds_result.min_price is None:
+        logger.warning(f"Histogram query returned no results. Filters: {filters}")
+        return []
+
+    min_price = float(bounds_result.min_price)
+    max_price = float(bounds_result.max_price)
+
+    # Handle edge case: all prices are the same
+    if max_price == min_price:
+        return [{
+            'bin': 1,
+            'bin_start': round(min_price, 0),
+            'bin_end': round(max_price, 0),
+            'count': 1
+        }]
+
+    bin_width = (max_price - min_price) / num_bins
+
+    # Step 2: Compute histogram bins using pre-calculated bounds
+    params['min_price'] = min_price
+    params['bin_width'] = bin_width
     params['num_bins'] = num_bins
 
-    # Single-pass query using window functions for min/max
-    # PostgreSQL computes the window aggregates in one table scan
-    # CRITICAL: Must exclude outliers (is_outlier = true) to prevent extreme values
-    # like $890M from skewing the histogram. This matches build_filter_conditions().
-    sql = text(f"""
-        WITH base_data AS (
-            SELECT
-                price,
-                MIN(price) OVER () as min_price,
-                MAX(price) OVER () as max_price
-            FROM transactions
-            WHERE {where_clause}
-              AND price IS NOT NULL
-              AND price > 0
-              AND (is_outlier = false OR is_outlier IS NULL)
-        ),
-        binned AS (
-            SELECT
-                CASE
-                    WHEN max_price = min_price THEN 1
-                    ELSE LEAST(
-                        GREATEST(
-                            FLOOR((price - min_price) / NULLIF((max_price - min_price) / :num_bins, 0)) + 1,
-                            1
-                        )::INTEGER,
-                        :num_bins
-                    )
-                END as bin_num,
-                min_price,
-                (max_price - min_price) / :num_bins as bin_width
-            FROM base_data
-        )
+    histogram_sql = text(f"""
         SELECT
-            bin_num as bin,
-            MIN(min_price) as min_price,
-            MIN(bin_width) as bin_width,
+            LEAST(
+                GREATEST(
+                    FLOOR((price - :min_price) / :bin_width) + 1,
+                    1
+                )::INTEGER,
+                :num_bins
+            ) as bin_num,
             COUNT(*) as count
-        FROM binned
+        FROM transactions
+        WHERE {where_clause}
+          AND price IS NOT NULL
+          AND price > 0
+          AND {outlier_filter}
         GROUP BY bin_num
         ORDER BY bin_num
     """)
 
-    # Execute PostgreSQL CTE query (SQLite is not supported)
-    results = db.session.execute(sql, params).fetchall()
+    results = db.session.execute(histogram_sql, params).fetchall()
 
     if not results:
-        logger.warning(f"Histogram query returned no results. Filters: {filters}")
+        logger.warning(f"Histogram binning returned no results. Filters: {filters}")
         return []
-
-    # Get min_price and bin_width from first row (same for all rows)
-    min_price = float(results[0].min_price) if results[0].min_price else 0
-    bin_width = float(results[0].bin_width) if results[0].bin_width else 0
 
     histogram = []
     for r in results:
-        bin_num = r.bin if r.bin else 1
+        bin_num = r.bin_num if r.bin_num else 1
         bin_start = min_price + (bin_num - 1) * bin_width
         bin_end = min_price + bin_num * bin_width
         histogram.append({
@@ -846,7 +856,10 @@ def get_dashboard_data(
                 cached['meta']['elapsed_ms'] = round(elapsed, 1)
                 return cached
 
-        # Execute queries for each panel
+        # Execute queries for each panel SEQUENTIALLY
+        # Note: Parallel execution was tested but caused contention on remote DB
+        # with limited connection pool, making queries slower overall.
+        # Sequential is faster for remote databases with high latency.
         data = {}
         for panel in panels:
             query_fn = PANEL_QUERIES.get(panel)

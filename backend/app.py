@@ -222,6 +222,15 @@ def create_app():
         except Exception as e:
             print(f"⚠️  GLS startup check skipped: {e}")
 
+        # Cache warming: Pre-populate dashboard cache for common queries
+        # Prevents cold-start lag on Render (after 15 min idle, cache is empty)
+        try:
+            from services.dashboard_service import warm_cache_for_common_queries
+            warm_cache_for_common_queries()
+            print("   ✓ Dashboard cache warmed for common queries")
+        except Exception as e:
+            print(f"   ⚠️  Cache warming skipped: {e}")
+
     # Register routes
     # Analytics routes (PUBLIC - no authentication required)
     from routes.analytics import analytics_bp
