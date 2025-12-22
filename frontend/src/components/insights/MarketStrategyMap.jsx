@@ -4,12 +4,17 @@
  * Target Aesthetic: Bloomberg Terminal meets Modern SaaS
  * Core UX: Fixed-context dashboard that allows exploration but prevents getting lost
  *
+ * Key Design Decisions:
+ * - HARD-CODED center (shifted north to 1.3650) - pushes island UP to clear bottom UI
+ * - HARD-CODED zoom (10.6) - "Goldilocks zone" for full visibility on all screens
+ * - NO fitBounds - auto-calculation is unreliable across screen aspect ratios
+ * - Layer order: Fill FIRST, Line SECOND (line renders on top)
+ *
  * Features:
- * - "Safe Zone" camera with asymmetric padding (clears header/footer UI)
  * - Bounded exploration ("Playpen") - drag enabled with elastic maxBounds
  * - Price/Volume view mode toggle for different insights
  * - Zoom-responsive markers (dots at overview, pills when zoomed)
- * - High-contrast "Blueprint" style boundaries
+ * - High-contrast "Blueprint" style white boundaries
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -20,44 +25,29 @@ import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 
 // =============================================================================
-// MAP CONFIGURATION - "Institutional Grade" Physics
+// MAP CONFIGURATION - "Hard-Coded" Foolproof Setup
 // =============================================================================
 
 const MAP_CONFIG = {
-  // "Safe Zone" Camera - Singapore bounding box for fitBounds
-  fitBounds: [
-    [103.60, 1.20],  // Southwest
-    [104.04, 1.48],  // Northeast
-  ],
-
-  // Asymmetric padding - pushes map into "safe zone" between UI elements
-  // 280px bottom is CRITICAL to clear the filter bar + legend
-  fitPadding: {
-    top: 80,
-    bottom: 280,
-    left: 40,
-    right: 40,
+  // "Hard-Coded" Default View - No fitBounds auto-calculation
+  // Center is shifted NORTH (~0.013 deg) to push island UP and clear bottom UI
+  adjustedCenter: {
+    longitude: 103.8198,
+    latitude: 1.3650,  // Shifted north from 1.3521 to clear filter bar
   },
 
+  // Goldilocks zoom - 10.6 guarantees full visibility on standard screens
+  defaultZoom: 10.6,
+
   // "Playpen" - elastic walls that prevent users from getting lost
-  // Slightly larger than fitBounds to allow exploration
   maxBounds: [
-    [103.50, 1.15],  // Southwest (allows slight pan toward Batam)
-    [104.10, 1.50],  // Northeast (allows slight pan toward Johor)
+    [103.55, 1.15],  // Southwest (allows slight pan toward Batam)
+    [104.15, 1.50],  // Northeast (allows slight pan toward Johor)
   ],
 
   // Zoom constraints
-  minZoom: 10.5,   // Prevents zooming out to world view
+  minZoom: 10,     // Prevents zooming out to world view
   maxZoom: 16,     // Allows street-level inspection
-
-  // Initial view (before fitBounds kicks in)
-  initialView: {
-    longitude: SINGAPORE_CENTER.lng,
-    latitude: SINGAPORE_CENTER.lat,
-    zoom: 11,
-    pitch: 0,
-    bearing: 0,
-  },
 };
 
 // Theme colors (Warm Precision palette)
@@ -426,7 +416,14 @@ export default function MarketStrategyMap() {
   const [viewMode, setViewMode] = useState('PRICE'); // 'PRICE' or 'VOLUME'
   const mapRef = useRef(null);
 
-  const [viewState, setViewState] = useState(MAP_CONFIG.initialView);
+  // Hard-coded initial view - shifted north to clear bottom UI
+  const [viewState, setViewState] = useState({
+    longitude: MAP_CONFIG.adjustedCenter.longitude,
+    latitude: MAP_CONFIG.adjustedCenter.latitude,
+    zoom: MAP_CONFIG.defaultZoom,
+    pitch: 0,
+    bearing: 0,
+  });
 
   // Fetch district PSF data
   const fetchData = useCallback(async () => {
@@ -501,15 +498,17 @@ export default function MarketStrategyMap() {
     [districtData, viewMode, maxVolume]
   );
 
-  // "Blueprint" boundary lines - high-contrast white dotted
+  // "Blueprint" boundary lines - MUST render AFTER fill layer for visibility
+  // Using pure white with explicit opacity for maximum contrast
   const lineLayer = useMemo(
     () => ({
       id: 'district-line',
       type: 'line',
       paint: {
-        'line-color': 'rgba(255, 255, 255, 0.5)',
-        'line-width': 1.5,
-        'line-dasharray': [2, 3], // Tight technical dotted line
+        'line-color': '#FFFFFF',      // Pure White
+        'line-width': 1.5,            // Thick enough to see
+        'line-opacity': 0.5,          // Semi-transparent
+        'line-dasharray': [2, 1],     // Tight Blueprint Dash
       },
       layout: {
         'line-cap': 'round',
@@ -519,15 +518,10 @@ export default function MarketStrategyMap() {
     []
   );
 
-  // Handle map load - fit to "Safe Zone" with asymmetric padding
+  // Handle map load - no fitBounds needed, using hard-coded center
   const handleMapLoad = useCallback(() => {
-    const map = mapRef.current?.getMap();
-    if (map) {
-      map.fitBounds(MAP_CONFIG.fitBounds, {
-        padding: MAP_CONFIG.fitPadding,
-        duration: 0, // Snap immediately, no animation
-      });
-    }
+    // Map is already positioned correctly via initialViewState
+    // No fitBounds auto-calculation needed - it's unreliable across screen sizes
   }, []);
 
   // Calculate stats ranges
@@ -679,6 +673,7 @@ export default function MarketStrategyMap() {
         >
           {/* District polygons - fill first, then line on top */}
           <Source id="districts" type="geojson" data={singaporeDistrictsGeoJSON}>
+            {/* CRITICAL: Layer order matters! Fill first (bottom), Line second (top) */}
             <Layer {...fillLayer} />
             <Layer {...lineLayer} />
           </Source>
