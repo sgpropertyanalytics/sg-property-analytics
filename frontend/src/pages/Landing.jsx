@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -6,7 +6,8 @@ import {
   Building2,
   Map,
   ShieldCheck,
-  LineChart
+  LineChart,
+  TrendingUp
 } from 'lucide-react';
 
 /**
@@ -146,24 +147,34 @@ const LandingPage = () => {
 };
 
 /**
- * Hero Section - "Horizon Plane" Layout
- * Dashboard raised to eliminate dead zone - "Raise the Titanic" pattern
+ * Hero Section - "Aligned Glass Slab" Layout
+ * Grid-aligned dashboard with metrics as pillars - no collision, perfect structure
  */
 function HeroSection({ navigate }) {
+  // Parallax for floating card
+  const { scrollY } = useScroll();
+  const floatingCardY = useTransform(scrollY, [0, 500], [0, -60]);
+
   return (
-    <section className="relative bg-[#FDFBF7] pt-28 sm:pt-32 overflow-hidden min-h-screen flex flex-col items-center">
+    <section className="relative bg-[#FDFBF7] pt-28 sm:pt-32 overflow-hidden min-h-screen flex flex-col items-center border-b border-[#94B4C1]/20">
 
-      {/* Background Glow - Positioned higher to backlight the text */}
-      <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[1200px] h-[800px] bg-[#94B4C1]/15 rounded-full blur-[120px] pointer-events-none" />
+      {/* Background Noise Texture */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.12] z-0"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+      />
 
-      {/* --- TEXT CONTENT (z-30 ensures text stays on top if dashboard overlaps) --- */}
-      <div className="relative z-30 text-center max-w-4xl px-6 flex flex-col items-center">
+      {/* Background Glow */}
+      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#94B4C1]/20 rounded-full blur-[120px] pointer-events-none z-0" />
+
+      {/* --- TEXT CONTENT (Centered) --- */}
+      <div className="relative z-20 text-center max-w-4xl px-6 flex flex-col items-center mb-16">
 
         {/* Trust Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-[#94B4C1]/40 bg-white/60 backdrop-blur-md shadow-sm"
+          className="inline-flex items-center gap-2 px-3 py-1.5 mb-8 rounded-full border border-[#94B4C1]/40 bg-white/60 backdrop-blur-md shadow-sm"
         >
           <span className="w-2 h-2 rounded-full bg-[#547792] animate-pulse" />
           <span className="text-xs font-bold text-[#213448] tracking-wide uppercase">
@@ -178,8 +189,8 @@ function HeroSection({ navigate }) {
           transition={{ delay: 0.1 }}
           className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-[#213448] mb-6 leading-[1.1]"
         >
-          The entire market,<br/>
-          <span className="text-[#547792]">at a glance.</span>
+          The market, <br/>
+          <span className="text-[#547792]">clarified.</span>
         </motion.h1>
 
         {/* Subtext */}
@@ -187,7 +198,7 @@ function HeroSection({ navigate }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-base sm:text-lg text-[#547792] mb-10 max-w-2xl mx-auto leading-relaxed"
+          className="text-base sm:text-lg md:text-xl text-[#547792] mb-10 max-w-2xl mx-auto leading-relaxed"
         >
           Institutional-grade transaction records, supply cliffs, and rental yields.
           Visualized for the modern investor.
@@ -198,7 +209,7 @@ function HeroSection({ navigate }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12"
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center"
         >
           <button
             onClick={() => navigate('/market-pulse')}
@@ -214,62 +225,88 @@ function HeroSection({ navigate }) {
             View Analytics Demo
           </button>
         </motion.div>
+      </div>
 
-        {/* Metrics - Tight to buttons */}
+
+      {/* --- ALIGNED CONTAINER (max-w-7xl matches Navbar) --- */}
+      <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10" style={{ perspective: '2000px' }}>
+
+        {/* METRICS ROW - Pillars framing the dashboard */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="flex gap-12 sm:gap-16 border-t border-[#213448]/10 pt-8"
+          className="flex justify-between items-end mb-6 sm:mb-8 px-2 sm:px-4"
         >
-          <div className="text-center">
-            <div className="text-2xl sm:text-3xl font-bold text-[#213448] font-mono tabular-nums tracking-tight">$2.8B+</div>
-            <div className="text-[10px] sm:text-[11px] text-[#94B4C1] uppercase tracking-wider mt-1 font-bold">Value Analyzed</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl sm:text-3xl font-bold text-[#213448] font-mono tabular-nums tracking-tight">103k</div>
-            <div className="text-[10px] sm:text-[11px] text-[#94B4C1] uppercase tracking-wider mt-1 font-bold">Records</div>
-          </div>
+           {/* Left Metric */}
+           <div className="text-left">
+              <div className="text-3xl sm:text-4xl font-bold text-[#213448] font-mono tabular-nums tracking-tight">$2.8B+</div>
+              <div className="text-[10px] sm:text-[11px] text-[#94B4C1] uppercase tracking-wider mt-1 font-bold">Value Analyzed</div>
+           </div>
+
+           {/* Center Connector Line */}
+           <div className="hidden md:block h-px flex-1 bg-gradient-to-r from-transparent via-[#94B4C1]/40 to-transparent mx-8 sm:mx-12 mb-4" />
+
+           {/* Right Metric */}
+           <div className="text-right">
+              <div className="text-3xl sm:text-4xl font-bold text-[#213448] font-mono tabular-nums tracking-tight">103k</div>
+              <div className="text-[10px] sm:text-[11px] text-[#94B4C1] uppercase tracking-wider mt-1 font-bold">Records</div>
+           </div>
         </motion.div>
-      </div>
 
 
-      {/* --- THE HORIZON DASHBOARD --- */}
-      {/* -mt-20 pulls dashboard UP into the dead zone, z-10 keeps it behind text */}
-      <div className="relative w-full flex-1 flex items-start justify-center -mt-16 sm:-mt-20 z-10"
-           style={{ perspective: '2500px' }}>
-
+        {/* --- THE DASHBOARD SLAB --- */}
         <motion.div
           initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
-          className="relative w-[95%] max-w-[1600px]"
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          className="relative w-full"
           style={{
-             transform: 'rotateX(25deg)',
-             transformOrigin: 'top center',
+             transformStyle: 'preserve-3d',
+             transform: 'rotateX(20deg)',
+             transformOrigin: 'top center'
           }}
         >
-           {/* DASHBOARD SLAB */}
-           <div className="relative rounded-t-xl overflow-hidden shadow-[0_-50px_100px_-20px_rgba(33,52,72,0.25)] border-t border-x border-white/50 bg-white ring-1 ring-[#94B4C1]/20">
+           {/* Glass Container */}
+           <div className="relative rounded-t-2xl overflow-hidden shadow-[0_-20px_80px_-20px_rgba(33,52,72,0.15)] bg-white ring-1 ring-[#213448]/5 border border-white">
 
-             {/* Glass Header - cleaner than browser chrome */}
-             <div className="h-3 sm:h-4 bg-gradient-to-b from-[#FDFBF7] to-white border-b border-[#EAE0CF]/50 w-full" />
+             {/* Header Shine Line */}
+             <div className="absolute top-0 inset-x-0 h-px bg-white/80 z-20" />
 
              {/* Dashboard Image */}
              <img
                src="/dashboard-screenshot.png"
-               alt="Property Analytics Dashboard"
-               className="w-full h-auto"
+               alt="PropAnalytics Dashboard"
+               className="w-full h-auto object-cover"
              />
 
-             {/* Gloss Overlay */}
-             <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-transparent pointer-events-none mix-blend-overlay" />
+             {/* Inner Shadow (Vignette) */}
+             <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(33,52,72,0.05)] pointer-events-none rounded-t-2xl" />
+
+             {/* Reflection Overlay */}
+             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/30 pointer-events-none mix-blend-overlay" />
            </div>
 
-           {/* Bottom Fade - deeper fade to blend into page */}
-           <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7] to-transparent pointer-events-none" />
+
+           {/* --- FLOATING NOTIFICATION CARD (Parallax) --- */}
+           <motion.div
+             style={{ y: floatingCardY }}
+             className="absolute -top-10 sm:-top-12 right-[5%] sm:right-[10%] bg-[#213448] text-[#EAE0CF] p-3 sm:p-4 rounded-xl shadow-2xl border border-[#547792]/30 z-30 flex items-center gap-3 sm:gap-4 max-w-[200px] sm:max-w-xs"
+           >
+              <div className="p-2 sm:p-2.5 bg-[#547792] rounded-lg flex-shrink-0">
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] sm:text-[10px] opacity-70 uppercase tracking-wider font-bold mb-0.5">Market Alert</div>
+                <div className="font-bold text-xs sm:text-sm leading-tight truncate">D15 Rental Yield +4.2%</div>
+              </div>
+           </motion.div>
 
         </motion.div>
+
+        {/* Bottom Fade Mask */}
+        <div className="absolute -bottom-20 left-0 right-0 h-48 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7] to-transparent z-20 pointer-events-none" />
+
       </div>
 
     </section>
