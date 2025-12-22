@@ -201,7 +201,7 @@ export default function DealCheckerContent() {
   return (
     <div className="space-y-6">
       {/* Input Form Card */}
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50">
         <div className="px-4 py-3 border-b border-[#94B4C1]/30">
           <h3 className="font-semibold text-[#213448]">Check Your Deal</h3>
           <p className="text-xs text-[#547792] mt-0.5">
