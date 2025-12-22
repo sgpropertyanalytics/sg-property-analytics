@@ -416,30 +416,43 @@ def get_multi_scope_comparison():
     scope_1km = compute_scope_stats(projects_1km, bedroom, buyer_price)
     scope_2km = compute_scope_stats(projects_2km, bedroom, buyer_price)
 
-    # Get transaction counts per project for map display
-    tx_counts = db.session.query(
+    # Get transaction stats per project for map display and table
+    # Includes count, median price, and median sqft
+    tx_stats = db.session.query(
         Transaction.project_name,
-        func.count(Transaction.id).label('count')
+        func.count(Transaction.id).label('count'),
+        func.percentile_cont(0.5).within_group(Transaction.price).label('median_price'),
+        func.percentile_cont(0.5).within_group(Transaction.area_sqft).label('median_sqft')
     ).filter(
         or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
         Transaction.project_name.in_(projects_2km),
         Transaction.bedroom_count == bedroom
     ).group_by(Transaction.project_name).all()
 
-    tx_count_map = {t.project_name: t.count for t in tx_counts}
+    tx_stats_map = {
+        t.project_name: {
+            'count': t.count,
+            'median_price': round(t.median_price) if t.median_price else None,
+            'median_sqft': round(t.median_sqft) if t.median_sqft else None
+        }
+        for t in tx_stats
+    }
 
     # Categorize nearby projects for map with transaction counts
     projects_in_1km = []
     projects_in_2km_only = []  # Projects between 1-2km
 
     for p in all_nearby:
+        stats = tx_stats_map.get(p['project_name'], {'count': 0, 'median_price': None, 'median_sqft': None})
         p_data = {
             'project_name': p['project_name'],
             'latitude': p['latitude'],
             'longitude': p['longitude'],
             'district': p['district'],
             'distance_km': p['distance_km'],
-            'transaction_count': tx_count_map.get(p['project_name'], 0)
+            'transaction_count': stats['count'],
+            'median_price': stats['median_price'],
+            'median_sqft': stats['median_sqft']
         }
 
         if p['distance_km'] <= 1.0:

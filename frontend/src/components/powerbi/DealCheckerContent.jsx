@@ -409,7 +409,7 @@ export default function DealCheckerContent() {
           {/* Map and Nearby Projects Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Map */}
-            <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+            <div className="bg-white rounded-lg border border-[#94B4C1]/50">
               <div className="px-4 py-3 border-b border-[#94B4C1]/30">
                 <h3 className="font-semibold text-[#213448]">Nearby Projects</h3>
                 <p className="text-xs text-[#547792]">
@@ -430,7 +430,7 @@ export default function DealCheckerContent() {
               <div className="px-4 py-3 border-b border-[#94B4C1]/30">
                 <h3 className="font-semibold text-[#213448]">Projects Within 2km</h3>
                 <p className="text-xs text-[#547792]">
-                  Sorted by distance from {result.project.name}
+                  Sorted by distance from {result.project.name} • {bedroom}BR median values
                 </p>
               </div>
               <div className="overflow-x-auto" style={{ maxHeight: 350 }}>
@@ -438,8 +438,10 @@ export default function DealCheckerContent() {
                   <thead className="bg-slate-50 sticky top-0">
                     <tr>
                       <th className="px-3 py-2 text-left font-medium text-slate-600 border-b">Project</th>
-                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Distance</th>
-                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">{bedroom}BR</th>
+                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Dist</th>
+                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Txns</th>
+                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Median Price</th>
+                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Sqft</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -458,18 +460,24 @@ export default function DealCheckerContent() {
                             )}
                             <div className="text-xs text-[#94B4C1]">{p.district}</div>
                           </td>
-                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600">
+                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
                             {p.distance_km === 0 ? '-' : `${(p.distance_km * 1000).toFixed(0)}m`}
                           </td>
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600">
                             {p.transaction_count || 0}
+                          </td>
+                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
+                            {p.median_price ? `$${(p.median_price / 1000000).toFixed(2)}M` : '-'}
+                          </td>
+                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600">
+                            {p.median_sqft ? p.median_sqft.toLocaleString() : '-'}
                           </td>
                         </tr>
                       );
                     })}
                     {getAllNearbyProjects().length === 0 && (
                       <tr>
-                        <td colSpan={3} className="px-3 py-6 text-center text-slate-500">
+                        <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
                           No nearby projects found
                         </td>
                       </tr>

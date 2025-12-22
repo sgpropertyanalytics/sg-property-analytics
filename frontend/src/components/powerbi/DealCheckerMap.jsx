@@ -224,8 +224,9 @@ export default function DealCheckerMap({
           closeButton={true}
           closeOnClick={false}
           className="deal-checker-popup"
+          maxWidth="280px"
         >
-          <div className="p-2 min-w-[150px]">
+          <div className="p-2 min-w-[180px]">
             <h4 className="font-semibold text-[#213448] text-sm mb-1">
               {popupInfo.project_name}
             </h4>
@@ -233,9 +234,17 @@ export default function DealCheckerMap({
               <p>District: {popupInfo.district}</p>
               <p>Distance: {(popupInfo.distance_km * 1000).toFixed(0)}m</p>
               {popupInfo.transaction_count > 0 && (
-                <p>Transactions: {popupInfo.transaction_count}</p>
+                <>
+                  <p>Transactions: {popupInfo.transaction_count}</p>
+                  {popupInfo.median_price && (
+                    <p>Median Price: ${(popupInfo.median_price / 1000000).toFixed(2)}M</p>
+                  )}
+                  {popupInfo.median_sqft && (
+                    <p>Median Size: {popupInfo.median_sqft.toLocaleString()} sqft</p>
+                  )}
+                </>
               )}
-              <p className="text-[#94B4C1]">
+              <p className="text-[#94B4C1] mt-1">
                 {popupInfo.tier === '1km' ? 'Within 1km' : 'Within 2km'}
               </p>
             </div>
