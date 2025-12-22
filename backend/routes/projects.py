@@ -409,6 +409,8 @@ def get_hot_projects():
                     COUNT(CASE WHEN t.sale_type = 'Resale' THEN 1 END) as resale_count,
                     SUM(CASE WHEN t.sale_type = 'New Sale' THEN t.price ELSE 0 END) as total_value,
                     AVG(CASE WHEN t.sale_type = 'New Sale' THEN t.psf END) as avg_psf,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = 'New Sale' THEN t.price END) as median_price,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = 'New Sale' THEN t.psf END) as median_psf,
                     MAX(CASE WHEN t.sale_type = 'New Sale' THEN t.transaction_date END) as last_new_sale
                 FROM transactions t
                 WHERE t.is_outlier = false
@@ -422,6 +424,8 @@ def get_hot_projects():
                 ps.units_sold,
                 ps.total_value,
                 ps.avg_psf,
+                ps.median_price,
+                ps.median_psf,
                 ps.last_new_sale,
                 pl.has_popular_school_1km,
                 pl.market_segment,
@@ -456,9 +460,10 @@ def get_hot_projects():
             market_seg = row.market_segment or get_region_for_district(district)
             units_sold = row.units_sold or 0
 
-            # Lookup total_units from static JSON file (runtime lookup, no DB)
+            # Lookup total_units and developer from static CSV file (runtime lookup, no DB)
             lookup = get_units_for_project(row.project_name)
             total_units = lookup.get("total_units") or 0
+            developer = lookup.get("developer") or None
 
             # Calculate percent_sold and unsold if total_units available
             # Flag data discrepancy when units_sold > total_units (indicates URA data issues)
@@ -495,6 +500,7 @@ def get_hot_projects():
 
             projects.append({
                 "project_name": row.project_name,
+                "developer": developer,
                 "region": DISTRICT_TO_REGION.get(district, None),
                 "district": district,
                 "district_name": district_name,
@@ -506,6 +512,8 @@ def get_hot_projects():
                 "data_discrepancy": data_discrepancy,  # True if units_sold > total_units
                 "total_value": float(row.total_value) if row.total_value else 0,
                 "avg_psf": round(float(row.avg_psf), 2) if row.avg_psf else 0,
+                "median_price": round(float(row.median_price)) if row.median_price else None,
+                "median_psf": round(float(row.median_psf), 2) if row.median_psf else None,
                 "has_popular_school": row.has_popular_school_1km or False,
                 "nearby_schools": nearby_schools,  # List of school names within 1km
                 "last_new_sale": row.last_new_sale.isoformat() if row.last_new_sale else None,

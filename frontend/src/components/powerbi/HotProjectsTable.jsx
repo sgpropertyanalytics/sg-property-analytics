@@ -103,11 +103,15 @@ export function HotProjectsTable({ height = 400 }) {
   // - Only shows projects with ZERO resale transactions (true new launches)
   const columns = [
     { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-56' },
+    { key: 'developer', label: 'Developer', sortable: true, width: 'w-40' },
     { key: 'district', label: 'Location', sortable: true, width: 'w-36' },
-    { key: 'units_sold', label: 'Units Sold', sortable: true, width: 'w-24', align: 'right' },
-    { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-24', align: 'right' },
+    { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-20' },
+    { key: 'units_sold', label: 'Units Sold', sortable: true, width: 'w-20', align: 'right' },
+    { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-20', align: 'right' },
     { key: 'percent_sold', label: '% Sold', sortable: true, width: 'w-20', align: 'right' },
-    { key: 'unsold_inventory', label: 'Unsold', sortable: true, width: 'w-20', align: 'right' },
+    { key: 'unsold_inventory', label: 'Unsold', sortable: true, width: 'w-16', align: 'right' },
+    { key: 'median_price', label: 'Median Price', sortable: true, width: 'w-28', align: 'right' },
+    { key: 'median_psf', label: 'Median PSF', sortable: true, width: 'w-24', align: 'right' },
   ];
 
   return (
@@ -210,12 +214,30 @@ export function HotProjectsTable({ height = 400 }) {
                       </div>
                     </td>
 
+                    {/* Developer */}
+                    <td className="px-3 py-2 border-b border-slate-100">
+                      <span className="text-slate-600 text-xs truncate max-w-[150px] block">
+                        {project.developer || <span className="text-slate-400 italic">-</span>}
+                      </span>
+                    </td>
+
                     {/* Region / District - stacked with full name */}
                     <td className="px-3 py-2 border-b border-slate-100">
                       <div className="flex flex-col">
                         <span className="font-medium text-slate-700">{project.district_name || project.region || '-'}</span>
                         <span className="text-xs text-slate-500">{project.district || '-'}</span>
                       </div>
+                    </td>
+
+                    {/* Market Segment */}
+                    <td className="px-3 py-2 border-b border-slate-100">
+                      <span className={`inline-block px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                        project.market_segment === 'CCR' ? 'bg-[#213448] text-white' :
+                        project.market_segment === 'RCR' ? 'bg-[#547792] text-white' :
+                        'bg-[#94B4C1] text-[#213448]'
+                      }`}>
+                        {project.market_segment || '-'}
+                      </span>
                     </td>
 
                     {/* Units Sold */}
@@ -259,6 +281,26 @@ export function HotProjectsTable({ height = 400 }) {
                         <span className="text-slate-400 text-xs italic">N/A</span>
                       )}
                     </td>
+
+                    {/* Median Price */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right">
+                      {project.median_price ? (
+                        <span className="font-medium">
+                          ${(project.median_price / 1000000).toFixed(2)}M
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">N/A</span>
+                      )}
+                    </td>
+
+                    {/* Median PSF */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right">
+                      {project.median_psf ? (
+                        <span>${project.median_psf.toLocaleString()}</span>
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">N/A</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -270,7 +312,8 @@ export function HotProjectsTable({ height = 400 }) {
       {/* Footer with legend and footnotes */}
       <div className="px-4 py-3 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30">
         {/* Legend row */}
-        <div className="flex items-center flex-wrap gap-3 text-xs text-[#547792] mb-2">
+        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-[#547792] mb-2">
+          {/* % Sold legend */}
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 bg-red-400 rounded-full"></span>
             <span>80%+ Sold</span>
@@ -282,6 +325,18 @@ export function HotProjectsTable({ height = 400 }) {
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 bg-green-400 rounded-full"></span>
             <span>&lt;50%</span>
+          </span>
+          <span className="border-l border-[#94B4C1]/50 pl-3 flex items-center gap-1">
+            <span className="px-1 py-0.5 bg-[#213448] text-white text-[9px] rounded">CCR</span>
+            <span>Core Central</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="px-1 py-0.5 bg-[#547792] text-white text-[9px] rounded">RCR</span>
+            <span>Rest of Central</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="px-1 py-0.5 bg-[#94B4C1] text-[#213448] text-[9px] rounded">OCR</span>
+            <span>Outside Central</span>
           </span>
         </div>
         {/* Footnotes */}
