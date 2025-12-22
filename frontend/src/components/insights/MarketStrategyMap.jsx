@@ -709,19 +709,18 @@ export default function MarketStrategyMap() {
 
             <div className="h-px bg-[#94B4C1]/30 my-2" />
 
-            <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-2">
+            <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-1.5">
               Volume Activity
             </p>
-            <div className="flex items-center gap-1">
-              {/* Gradient bar from red to yellow */}
-              <div
-                className="w-16 h-3 rounded"
-                style={{
-                  background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15)'
-                }}
-              />
-            </div>
-            <div className="flex justify-between mt-1 px-0.5" style={{ width: '64px' }}>
+            {/* Gradient bar from red to yellow - full width */}
+            <div
+              className="h-2.5 rounded-sm"
+              style={{
+                background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15)',
+                width: '100%'
+              }}
+            />
+            <div className="flex justify-between mt-1">
               <span className="text-[8px] text-[#547792]">High</span>
               <span className="text-[8px] text-[#547792]">Low</span>
             </div>
