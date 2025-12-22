@@ -4,10 +4,10 @@
  * A fixed-viewport strategy board showing district PSF values at a glance.
  * Features:
  * - Locked panning (dragPan=false), zoom only for inspection
- * - 2D flat polygons with color gradient (Sky Blue → Deep Navy)
- * - "Data Flag" markers at district centroids showing PSF values
- * - Hover tooltips with transactions and YoY trends
- * - Dark mode base map for contrast
+ * - Real interlocking polygons (jigsaw-style, no overlap)
+ * - Solid fills (100% opacity) with clean 1px borders
+ * - High-contrast "Data Flag" markers as the hero element
+ * - Polylabel algorithm ensures markers stay inside polygons
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -27,94 +27,147 @@ const COLORS = {
 
 // Singapore bounds - strict constraint
 const SINGAPORE_BOUNDS = [
-  [103.6, 1.15],  // Southwest
-  [104.1, 1.47],  // Northeast
+  [103.60, 1.20],  // Southwest
+  [104.05, 1.48],  // Northeast
 ];
 
-// Calculate centroid of a polygon
-function calculateCentroid(coordinates) {
-  // Handle nested polygon structure (first array is outer ring)
-  const ring = coordinates[0];
-  if (!ring || ring.length === 0) return null;
+/**
+ * Polylabel Algorithm - Find visual center of polygon
+ * Finds the point inside a polygon that is farthest from any edge.
+ * This ensures markers don't float in the ocean for U-shaped districts.
+ */
+function polylabel(polygon, precision = 0.001) {
+  const ring = polygon[0];
+  if (!ring || ring.length < 4) return null;
 
-  let sumLng = 0;
-  let sumLat = 0;
-  const n = ring.length - 1; // Exclude closing point (same as first)
-
-  for (let i = 0; i < n; i++) {
-    sumLng += ring[i][0];
-    sumLat += ring[i][1];
+  // Calculate bounding box
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of ring) {
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
   }
 
-  return {
-    lng: sumLng / n,
-    lat: sumLat / n,
-  };
+  const width = maxX - minX;
+  const height = maxY - minY;
+  const cellSize = Math.min(width, height);
+
+  if (cellSize === 0) {
+    return { lng: minX, lat: minY };
+  }
+
+  // Use centroid as initial best guess
+  let bestX = 0, bestY = 0, bestDist = -Infinity;
+  let sumX = 0, sumY = 0, sumArea = 0;
+
+  // Calculate centroid
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [x1, y1] = ring[i];
+    const [x2, y2] = ring[j];
+    const cross = x1 * y2 - x2 * y1;
+    sumX += (x1 + x2) * cross;
+    sumY += (y1 + y2) * cross;
+    sumArea += cross;
+  }
+
+  if (sumArea !== 0) {
+    sumArea *= 3;
+    bestX = sumX / sumArea;
+    bestY = sumY / sumArea;
+  } else {
+    bestX = (minX + maxX) / 2;
+    bestY = (minY + maxY) / 2;
+  }
+
+  // Check if centroid is inside polygon
+  if (pointInPolygon([bestX, bestY], ring)) {
+    return { lng: bestX, lat: bestY };
+  }
+
+  // Grid search for better point
+  const step = cellSize / 10;
+  for (let x = minX; x <= maxX; x += step) {
+    for (let y = minY; y <= maxY; y += step) {
+      if (pointInPolygon([x, y], ring)) {
+        const dist = distanceToEdge([x, y], ring);
+        if (dist > bestDist) {
+          bestDist = dist;
+          bestX = x;
+          bestY = y;
+        }
+      }
+    }
+  }
+
+  return { lng: bestX, lat: bestY };
 }
 
-// Get fill color based on PSF value
-function getPsfColor(psf) {
-  if (!psf) return 'rgba(80, 80, 100, 0.3)'; // Ghost
+// Ray casting algorithm to check if point is inside polygon
+function pointInPolygon(point, ring) {
+  const [x, y] = point;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+// Calculate minimum distance from point to polygon edges
+function distanceToEdge(point, ring) {
+  const [px, py] = point;
+  let minDist = Infinity;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [x1, y1] = ring[i];
+    const [x2, y2] = ring[j];
+    const dist = pointToSegmentDistance(px, py, x1, y1, x2, y2);
+    minDist = Math.min(minDist, dist);
+  }
+  return minDist;
+}
+
+// Distance from point to line segment
+function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const lengthSq = dx * dx + dy * dy;
+
+  if (lengthSq === 0) {
+    return Math.sqrt((px - x1) ** 2 + (py - y1) ** 2);
+  }
+
+  let t = ((px - x1) * dx + (py - y1) * dy) / lengthSq;
+  t = Math.max(0, Math.min(1, t));
+
+  const nearX = x1 + t * dx;
+  const nearY = y1 + t * dy;
+
+  return Math.sqrt((px - nearX) ** 2 + (py - nearY) ** 2);
+}
+
+// Get solid fill color based on PSF value (100% opacity)
+function getPsfColor(psf, hasData) {
+  if (!hasData || !psf) return '#3a3a4a'; // Ghost - dark gray
   if (psf < 1400) return COLORS.skyBlue;
   if (psf < 2200) return COLORS.oceanBlue;
   return COLORS.deepNavy;
 }
 
-// Get marker background based on region
-function getMarkerStyle(region, hasData) {
-  if (!hasData) {
-    return {
-      bg: 'bg-gray-600/60',
-      border: 'border-gray-500/50',
-      text: 'text-gray-400',
-    };
-  }
-  switch (region) {
-    case 'CCR':
-      return {
-        bg: 'bg-[#213448]/95',
-        border: 'border-[#94B4C1]/60',
-        text: 'text-white',
-      };
-    case 'RCR':
-      return {
-        bg: 'bg-[#547792]/95',
-        border: 'border-[#EAE0CF]/60',
-        text: 'text-white',
-      };
-    default: // OCR
-      return {
-        bg: 'bg-[#EAE0CF]/95',
-        border: 'border-[#547792]/60',
-        text: 'text-[#213448]',
-      };
-  }
-}
-
-// Build color expression for flat fill
+// Build color expression for solid fills
 function getColorExpression(districtData) {
   const colorStops = ['case'];
 
   districtData.forEach((d) => {
     colorStops.push(['==', ['get', 'district'], d.district_id]);
-    colorStops.push(getPsfColor(d.has_data ? d.median_psf : null));
+    colorStops.push(getPsfColor(d.median_psf, d.has_data));
   });
 
-  colorStops.push('rgba(80, 80, 100, 0.3)');
+  colorStops.push('#3a3a4a'); // Default ghost color
   return colorStops;
-}
-
-// Build opacity expression
-function getOpacityExpression(districtData) {
-  const opacityStops = ['case'];
-
-  districtData.forEach((d) => {
-    opacityStops.push(['==', ['get', 'district'], d.district_id]);
-    opacityStops.push(d.has_data ? 0.7 : 0.2);
-  });
-
-  opacityStops.push(0.2);
-  return opacityStops;
 }
 
 // Format currency
@@ -123,22 +176,12 @@ function formatPsf(value) {
   return `$${Math.round(value).toLocaleString()}`;
 }
 
-// Format compact PSF for marker
-function formatPsfCompact(value) {
-  if (!value) return '-';
-  const rounded = Math.round(value);
-  if (rounded >= 1000) {
-    return `$${(rounded / 1000).toFixed(1)}k`;
-  }
-  return `$${rounded}`;
-}
-
 // Format percentage with arrow
 function formatYoY(value) {
   if (value === null || value === undefined) return null;
   const arrow = value >= 0 ? '↑' : '↓';
-  const colorClass = value >= 0 ? 'text-emerald-400' : 'text-rose-400';
-  return { text: `${arrow} ${Math.abs(value).toFixed(1)}%`, colorClass };
+  const colorClass = value >= 0 ? 'text-emerald-500' : 'text-rose-500';
+  return { text: `${arrow}${Math.abs(value).toFixed(1)}%`, colorClass };
 }
 
 // Bedroom filter options
@@ -162,63 +205,70 @@ const PERIOD_OPTIONS = [
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 /**
- * DataFlag Marker Component
- * Displays PSF value at district centroid with hover tooltip
+ * DataFlag - High-Contrast Marker Component
+ * The "hero" element showing PSF values at a glance
  */
 function DataFlag({ district, data, currentFilter }) {
   const [isHovered, setIsHovered] = useState(false);
-  const style = getMarkerStyle(district.region, data?.has_data);
   const yoy = data?.yoy_pct !== null ? formatYoY(data.yoy_pct) : null;
+
+  // High contrast styling: white bg default, navy for hotspots (>$2.5k)
+  const isHotspot = data?.has_data && data?.median_psf >= 2500;
+  const hasData = data?.has_data;
 
   return (
     <div
-      className="relative cursor-pointer"
+      className="relative cursor-pointer select-none"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Main Flag/Pill */}
+      {/* Main Pill/Flag */}
       <motion.div
         animate={{
-          scale: isHovered ? 1.15 : 1,
-          y: isHovered ? -4 : 0,
+          scale: isHovered ? 1.12 : 1,
+          y: isHovered ? -3 : 0,
         }}
-        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         className={`
-          px-2 py-1 rounded-lg
-          ${style.bg} ${style.border} border
-          shadow-lg backdrop-blur-sm
-          whitespace-nowrap
+          px-2.5 py-1 rounded-full
+          font-bold text-xs
+          shadow-lg
+          border
           transition-shadow duration-200
-          ${isHovered ? 'shadow-xl shadow-black/40' : 'shadow-md shadow-black/20'}
+          ${hasData
+            ? isHotspot
+              ? 'bg-[#213448] text-white border-[#94B4C1]/50 shadow-[#213448]/40'
+              : 'bg-white text-slate-900 border-slate-200 shadow-black/20'
+            : 'bg-slate-700/80 text-slate-400 border-slate-600/50 shadow-black/10'
+          }
+          ${isHovered ? 'shadow-xl' : ''}
         `}
       >
-        <span className={`text-xs font-bold ${style.text} font-mono`}>
-          {data?.has_data ? formatPsfCompact(data.median_psf) : '-'}
-        </span>
+        {hasData ? formatPsf(data.median_psf) : '-'}
       </motion.div>
 
       {/* Hover Tooltip */}
       <AnimatePresence>
-        {isHovered && data?.has_data && (
+        {isHovered && hasData && (
           <motion.div
-            initial={{ opacity: 0, y: 5, scale: 0.95 }}
+            initial={{ opacity: 0, y: 8, scale: 0.92 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 5, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50"
+            exit={{ opacity: 0, y: 8, scale: 0.92 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 z-50"
           >
-            <div className="bg-[#16162a]/95 backdrop-blur-md rounded-lg p-3 min-w-[180px] border border-[#94B4C1]/40 shadow-2xl">
+            <div className="bg-white rounded-xl p-3.5 min-w-[190px] border border-slate-200 shadow-2xl">
               {/* Header */}
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-white text-sm">
+                <span className="font-bold text-slate-900 text-sm">
                   {district.district}
                 </span>
                 <span
                   className={`
-                    text-[10px] px-1.5 py-0.5 rounded font-medium
+                    text-[10px] px-2 py-0.5 rounded-full font-semibold
                     ${
                       district.region === 'CCR'
-                        ? 'bg-[#213448] text-[#94B4C1]'
+                        ? 'bg-[#213448] text-white'
                         : district.region === 'RCR'
                         ? 'bg-[#547792] text-white'
                         : 'bg-[#94B4C1] text-[#213448]'
@@ -230,41 +280,46 @@ function DataFlag({ district, data, currentFilter }) {
               </div>
 
               {/* District Name */}
-              <p className="text-[11px] text-[#94B4C1] mb-2 line-clamp-1">
+              <p className="text-xs text-slate-500 mb-2.5 leading-tight">
                 {district.name}
               </p>
 
-              {/* Filter Label */}
-              <p className="text-[9px] text-[#547792] mb-2 uppercase tracking-wider">
-                {currentFilter}
-              </p>
+              {/* Divider */}
+              <div className="h-px bg-slate-100 mb-2.5" />
 
               {/* Stats */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#94B4C1]">Median PSF</span>
-                  <span className="font-bold text-white font-mono">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-500">Median PSF</span>
+                  <span className="font-bold text-slate-900 text-sm">
                     {formatPsf(data.median_psf)}
                   </span>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#94B4C1]">Transactions</span>
-                  <span className="font-medium text-white font-mono">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-500">Transactions</span>
+                  <span className="font-semibold text-slate-700 text-sm">
                     {data.tx_count?.toLocaleString() || 0} sold
                   </span>
                 </div>
                 {yoy && (
-                  <div className="flex justify-between text-xs">
-                    <span className="text-[#94B4C1]">YoY Change</span>
-                    <span className={`font-medium font-mono ${yoy.colorClass}`}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-slate-500">YoY Change</span>
+                    <span className={`font-bold text-sm ${yoy.colorClass}`}>
                       {yoy.text}
                     </span>
                   </div>
                 )}
               </div>
 
+              {/* Filter Label */}
+              <div className="mt-2.5 pt-2 border-t border-slate-100">
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider text-center">
+                  {currentFilter}
+                </p>
+              </div>
+
               {/* Tooltip Arrow */}
-              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#16162a]/95 border-r border-b border-[#94B4C1]/40 rotate-45" />
+              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-slate-200 rotate-45" />
             </div>
           </motion.div>
         )}
@@ -323,10 +378,10 @@ export default function MarketStrategyMap() {
     return map;
   }, [districtData]);
 
-  // Calculate centroids for each district
+  // Calculate visual centroids using polylabel algorithm
   const districtCentroids = useMemo(() => {
     return singaporeDistrictsGeoJSON.features.map((feature) => {
-      const centroid = calculateCentroid(feature.geometry.coordinates);
+      const centroid = polylabel(feature.geometry.coordinates);
       return {
         district: feature.properties.district,
         name: feature.properties.name,
@@ -336,29 +391,28 @@ export default function MarketStrategyMap() {
     }).filter((d) => d.centroid !== null);
   }, []);
 
-  // Flat fill layer for district polygons
+  // Solid fill layer (100% opacity)
   const fillLayer = useMemo(
     () => ({
       id: 'district-fill',
       type: 'fill',
       paint: {
         'fill-color': getColorExpression(districtData),
-        'fill-opacity': getOpacityExpression(districtData),
-        'fill-opacity-transition': { duration: 300 },
+        'fill-opacity': 1, // Solid fill - no transparency
       },
     }),
     [districtData]
   );
 
-  // Grout line layer for borders
+  // Clean border line layer
   const lineLayer = useMemo(
     () => ({
       id: 'district-line',
       type: 'line',
       paint: {
-        'line-color': COLORS.sand,
-        'line-width': 1.5,
-        'line-opacity': 0.6,
+        'line-color': COLORS.skyBlue,
+        'line-width': 1,
+        'line-opacity': 0.8,
       },
       layout: {
         'line-cap': 'round',
@@ -385,15 +439,15 @@ export default function MarketStrategyMap() {
     BEDROOM_OPTIONS.find((o) => o.value === selectedBed)?.fullLabel || 'All Types';
 
   return (
-    <div className="bg-[#1a1a2e] rounded-xl border border-[#94B4C1]/20 shadow-lg overflow-hidden">
+    <div className="bg-slate-900 rounded-xl border border-slate-700 shadow-xl overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 md:px-6 md:py-4 border-b border-[#94B4C1]/20 bg-[#16162a]">
+      <div className="px-4 py-3 md:px-6 md:py-4 border-b border-slate-700 bg-slate-800">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
-            <h2 className="text-lg md:text-xl font-semibold text-white">
+            <h2 className="text-lg md:text-xl font-bold text-white">
               District PSF Overview
             </h2>
-            <p className="text-xs md:text-sm text-[#94B4C1] mt-0.5">
+            <p className="text-xs md:text-sm text-slate-400 mt-0.5">
               Median price per sqft by postal district
             </p>
           </div>
@@ -405,12 +459,12 @@ export default function MarketStrategyMap() {
                 key={option.value}
                 onClick={() => setSelectedPeriod(option.value)}
                 className={`
-                  px-2.5 py-1 text-xs font-medium rounded-md
+                  px-3 py-1.5 text-xs font-semibold rounded-lg
                   transition-all duration-150
                   ${
                     selectedPeriod === option.value
-                      ? 'bg-[#547792] text-white'
-                      : 'bg-white/10 text-[#94B4C1] hover:bg-white/20'
+                      ? 'bg-[#547792] text-white shadow-lg'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   }
                 `}
               >
@@ -422,7 +476,7 @@ export default function MarketStrategyMap() {
       </div>
 
       {/* Map Container */}
-      <div className="relative" style={{ height: '500px' }}>
+      <div className="relative" style={{ height: '520px' }}>
         {/* Loading Overlay */}
         <AnimatePresence>
           {loading && (
@@ -430,11 +484,11 @@ export default function MarketStrategyMap() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-[#1a1a2e]/90 z-30 flex items-center justify-center"
+              className="absolute inset-0 bg-slate-900/95 z-30 flex items-center justify-center"
             >
               <div className="flex flex-col items-center gap-3">
-                <div className="w-10 h-10 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-[#94B4C1]">Loading map data...</span>
+                <div className="w-10 h-10 border-3 border-[#547792] border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-slate-400 font-medium">Loading map...</span>
               </div>
             </motion.div>
           )}
@@ -442,12 +496,12 @@ export default function MarketStrategyMap() {
 
         {/* Error State */}
         {error && !loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#1a1a2e] z-30">
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-900 z-30">
             <div className="text-center">
-              <p className="text-[#94B4C1]">{error}</p>
+              <p className="text-slate-400">{error}</p>
               <button
                 onClick={fetchData}
-                className="mt-2 text-sm text-[#547792] hover:underline"
+                className="mt-3 px-4 py-2 bg-[#547792] text-white text-sm font-medium rounded-lg hover:bg-[#6389a3] transition-colors"
               >
                 Try again
               </button>
@@ -455,7 +509,7 @@ export default function MarketStrategyMap() {
           </div>
         )}
 
-        {/* MapLibre GL Map - Fixed Viewport (no pan, zoom only) */}
+        {/* MapLibre GL Map - Fixed Viewport */}
         <Map
           ref={mapRef}
           {...viewState}
@@ -473,13 +527,13 @@ export default function MarketStrategyMap() {
           maxZoom={13}
           maxPitch={0}
         >
-          {/* District polygons - flat 2D fill */}
+          {/* District polygons - solid 2D fill */}
           <Source id="districts" type="geojson" data={singaporeDistrictsGeoJSON}>
             <Layer {...fillLayer} />
             <Layer {...lineLayer} />
           </Source>
 
-          {/* Data Flag Markers at centroids */}
+          {/* Data Flag Markers at visual centroids */}
           {!loading && districtCentroids.map((district) => {
             const data = districtMap[district.district];
             return (
@@ -499,22 +553,15 @@ export default function MarketStrategyMap() {
           })}
         </Map>
 
-        {/* Glass-morphic Filter Bar (Floating) */}
+        {/* Glass-morphic Filter Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20"
         >
-          <div
-            className="
-              flex items-center gap-1 md:gap-2 p-1.5
-              bg-white/10 backdrop-blur-lg
-              border border-white/20
-              rounded-xl shadow-2xl
-            "
-          >
-            <span className="text-xs text-white/70 px-2 hidden sm:inline">
+          <div className="flex items-center gap-1.5 p-1.5 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-2xl">
+            <span className="text-xs text-slate-400 px-2 hidden sm:inline font-medium">
               Unit Type:
             </span>
             {BEDROOM_OPTIONS.map((option) => (
@@ -523,15 +570,14 @@ export default function MarketStrategyMap() {
                 onClick={() => setSelectedBed(option.value)}
                 whileTap={{ scale: 0.95 }}
                 className={`
-                  min-h-[36px] md:min-h-[40px]
-                  px-3 md:px-4 py-1.5 md:py-2
-                  text-xs md:text-sm font-medium
+                  min-h-[38px] px-3.5 py-2
+                  text-xs font-semibold
                   rounded-lg
                   transition-all duration-200
                   ${
                     selectedBed === option.value
-                      ? 'bg-[#547792] text-white shadow-lg shadow-[#547792]/30'
-                      : 'bg-transparent text-white/80 hover:bg-white/10'
+                      ? 'bg-[#547792] text-white shadow-lg'
+                      : 'bg-transparent text-slate-300 hover:bg-slate-700'
                   }
                 `}
               >
@@ -541,69 +587,44 @@ export default function MarketStrategyMap() {
           </div>
         </motion.div>
 
-        {/* Legend (Floating) */}
+        {/* Legend */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
           className="absolute top-4 right-4 z-20"
         >
-          <div
-            className="
-              p-3 bg-[#16162a]/90 backdrop-blur-md
-              border border-[#94B4C1]/30
-              rounded-lg shadow-xl
-            "
-          >
-            <p className="text-[10px] text-[#94B4C1] uppercase tracking-wider mb-2">
-              Region / PSF Tier
+          <div className="p-3 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
+              PSF Legend
             </p>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <div
-                  className="w-4 h-4 rounded"
-                  style={{ backgroundColor: COLORS.skyBlue }}
-                />
-                <span className="text-xs text-white/80">OCR / &lt; $1,400</span>
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: COLORS.skyBlue }} />
+                <span className="text-xs text-slate-300">&lt; $1,400</span>
               </div>
               <div className="flex items-center gap-2">
-                <div
-                  className="w-4 h-4 rounded"
-                  style={{ backgroundColor: COLORS.oceanBlue }}
-                />
-                <span className="text-xs text-white/80">RCR / $1,400-$2,200</span>
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: COLORS.oceanBlue }} />
+                <span className="text-xs text-slate-300">$1,400 - $2,200</span>
               </div>
               <div className="flex items-center gap-2">
-                <div
-                  className="w-4 h-4 rounded"
-                  style={{ backgroundColor: COLORS.deepNavy }}
-                />
-                <span className="text-xs text-white/80">CCR / &gt; $2,200</span>
-              </div>
-              <div className="flex items-center gap-2 pt-1 border-t border-white/10">
-                <div className="w-4 h-4 rounded bg-gray-500/30" />
-                <span className="text-xs text-white/50">No data</span>
+                <div className="w-4 h-4 rounded" style={{ backgroundColor: COLORS.deepNavy }} />
+                <span className="text-xs text-slate-300">&gt; $2,200</span>
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Instructions (Floating) */}
+        {/* Instructions */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5 }}
           className="absolute top-4 left-4 z-20"
         >
-          <div
-            className="
-              px-3 py-2 bg-[#16162a]/90 backdrop-blur-md
-              border border-[#94B4C1]/30
-              rounded-lg shadow-xl
-            "
-          >
-            <p className="text-[10px] text-[#94B4C1] uppercase tracking-wider">
-              Scroll to zoom &bull; Hover flags for details
+          <div className="px-3 py-2 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">
+              Scroll to zoom &bull; Hover for details
             </p>
           </div>
         </motion.div>
@@ -611,29 +632,29 @@ export default function MarketStrategyMap() {
 
       {/* Stats Summary */}
       {!loading && !error && districtData.length > 0 && (
-        <div className="px-4 py-3 md:px-6 md:py-4 bg-[#16162a] border-t border-[#94B4C1]/20">
+        <div className="px-4 py-4 md:px-6 bg-slate-800 border-t border-slate-700">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-[10px] text-[#94B4C1] uppercase tracking-wider">
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
                 Lowest PSF
               </p>
-              <p className="text-sm md:text-base font-semibold text-white font-mono">
+              <p className="text-base md:text-lg font-bold text-white mt-0.5">
                 {formatPsf(psfRange.min)}
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-[#94B4C1] uppercase tracking-wider">
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
                 Districts
               </p>
-              <p className="text-sm md:text-base font-semibold text-white font-mono">
+              <p className="text-base md:text-lg font-bold text-white mt-0.5">
                 {districtData.filter((d) => d.has_data).length} / 28
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-[#94B4C1] uppercase tracking-wider">
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
                 Highest PSF
               </p>
-              <p className="text-sm md:text-base font-semibold text-white font-mono">
+              <p className="text-base md:text-lg font-bold text-white mt-0.5">
                 {formatPsf(psfRange.max)}
               </p>
             </div>
@@ -641,7 +662,7 @@ export default function MarketStrategyMap() {
         </div>
       )}
 
-      {/* Custom MapLibre styles */}
+      {/* Hide MapLibre attribution */}
       <style>{`
         .maplibregl-ctrl-attrib {
           display: none !important;
