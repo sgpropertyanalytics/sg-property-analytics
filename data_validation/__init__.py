@@ -5,20 +5,24 @@ This module provides comprehensive filter state validation to ensure
 data completeness and accuracy across all dashboard filter combinations.
 
 Components:
-- filter_state_tester.py: Core validation framework
+- filter_state_tester.py: Core validation framework (database-level)
 - validate_api_endpoints.py: API endpoint validation
+- market_pulse_filter_tester.py: Market Pulse dashboard filter validation (API-level)
 - filter_checks.sql: SQL validation query templates
+- FILTER_VALIDATION_REPORT.md: Latest validation report
 
 Usage:
-    from data_validation.filter_state_tester import FilterStateValidator, FilterState
-    from data_validation.validate_api_endpoints import APIValidator
+    # API-level Market Pulse validation (recommended for quick checks)
+    python data_validation/market_pulse_filter_tester.py
 
-    # Database validation
+    # Database validation (requires DATABASE_URL)
+    from data_validation.filter_state_tester import FilterStateValidator, FilterState
     with FilterStateValidator() as validator:
         results = validator.run_all_checks(FilterState(year=2024, quarter=3))
         print(validator.generate_report(results))
 
     # API validation
+    from data_validation.validate_api_endpoints import APIValidator
     with APIValidator("http://localhost:5000") as api_validator:
         results = api_validator.run_full_validation()
         print(api_validator.generate_report(results))

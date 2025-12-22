@@ -11,7 +11,7 @@ import {
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { DISTRICT_NAMES } from '../../constants';
+import { DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
 import { DrillButtons } from './DrillButtons';
 
 ChartJS.register(
@@ -178,16 +178,15 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       return color;
     }
 
-    // For district level, color by region based on district number
+    // For district level, color by region using centralized mapping
     if (displayMode === 'district') {
-      const districtNum = parseInt(location?.replace('D', '') || '0');
-      if (districtNum >= 1 && districtNum <= 11) {
-        return `rgba(33, 52, 72, ${alpha})`;   // CCR - #213448
-      } else if ([12, 13, 14, 15, 20, 21].includes(districtNum)) {
-        return `rgba(84, 119, 146, ${alpha})`;  // RCR - #547792
-      } else {
-        return `rgba(148, 180, 193, ${alpha})`; // OCR - #94B4C1
-      }
+      const region = getRegionForDistrict(location);
+      const colors = {
+        CCR: `rgba(33, 52, 72, ${alpha})`,   // #213448 - Dark navy
+        RCR: `rgba(84, 119, 146, ${alpha})`, // #547792 - Medium blue
+        OCR: `rgba(148, 180, 193, ${alpha})`, // #94B4C1 - Light blue
+      };
+      return colors[region] || colors.OCR;
     }
 
     // For project level (local view), use consistent color
