@@ -1,13 +1,15 @@
 /**
- * MarketStrategyMap - "Command Center" View for Singapore Property Market
+ * MarketStrategyMap - "Institutional Grade" Command Center
  *
- * A "Set and Forget" dashboard view - perfectly framed, no dragging needed.
+ * Target Aesthetic: Bloomberg Terminal meets Modern SaaS
+ * Core UX: Fixed-context dashboard that allows exploration but prevents getting lost
+ *
  * Features:
- * - Static viewport with heavy asymmetric padding (clears header/footer UI)
+ * - "Safe Zone" camera with asymmetric padding (clears header/footer UI)
+ * - Bounded exploration ("Playpen") - drag enabled with elastic maxBounds
  * - Price/Volume view mode toggle for different insights
- * - Real interlocking polygons (jigsaw-style, no overlap)
- * - Zoom-responsive markers (compact at overview, detailed when zoomed)
- * - High-contrast "Blueprint" style inner boundaries
+ * - Zoom-responsive markers (dots at overview, pills when zoomed)
+ * - High-contrast "Blueprint" style boundaries
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -17,12 +19,54 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 
+// =============================================================================
+// MAP CONFIGURATION - "Institutional Grade" Physics
+// =============================================================================
+
+const MAP_CONFIG = {
+  // "Safe Zone" Camera - Singapore bounding box for fitBounds
+  fitBounds: [
+    [103.60, 1.20],  // Southwest
+    [104.04, 1.48],  // Northeast
+  ],
+
+  // Asymmetric padding - pushes map into "safe zone" between UI elements
+  // 280px bottom is CRITICAL to clear the filter bar + legend
+  fitPadding: {
+    top: 80,
+    bottom: 280,
+    left: 40,
+    right: 40,
+  },
+
+  // "Playpen" - elastic walls that prevent users from getting lost
+  // Slightly larger than fitBounds to allow exploration
+  maxBounds: [
+    [103.50, 1.15],  // Southwest (allows slight pan toward Batam)
+    [104.10, 1.50],  // Northeast (allows slight pan toward Johor)
+  ],
+
+  // Zoom constraints
+  minZoom: 10.5,   // Prevents zooming out to world view
+  maxZoom: 16,     // Allows street-level inspection
+
+  // Initial view (before fitBounds kicks in)
+  initialView: {
+    longitude: SINGAPORE_CENTER.lng,
+    latitude: SINGAPORE_CENTER.lat,
+    zoom: 11,
+    pitch: 0,
+    bearing: 0,
+  },
+};
+
 // Theme colors (Warm Precision palette)
 const COLORS = {
   deepNavy: '#213448',
   oceanBlue: '#547792',
   skyBlue: '#94B4C1',
   sand: '#EAE0CF',
+  void: '#0f172a',  // Deep dark background
 };
 
 // Volume "Hot" gradient colors
@@ -32,22 +76,7 @@ const VOLUME_COLORS = {
   high: '#B91C1C',     // Red
 };
 
-// Singapore bounding box - expanded slightly to ensure full island visibility
-const SINGAPORE_BOUNDS = [
-  [103.60, 1.13],  // Southwest (expanded south for Sentosa)
-  [104.08, 1.47],  // Northeast (expanded for Changi/Punggol)
-];
-
-// Heavy asymmetric padding - clears header UI (top) and filter bar (bottom)
-// This forces the map to shrink until Singapore fits in the "safe zone"
-const MAP_PADDING = {
-  top: 120,      // Clear the "District PSF Overview" header
-  bottom: 250,   // CRITICAL: Clear the filter bar + legend at bottom
-  left: 50,
-  right: 50,
-};
-
-// Manual marker offsets for crowded central districts (D09, D10, D11)
+// Manual marker offsets for crowded central districts
 const MARKER_OFFSETS = {
   'D09': { lng: -0.008, lat: 0.006 },
   'D10': { lng: 0.008, lat: 0.003 },
@@ -55,6 +84,10 @@ const MARKER_OFFSETS = {
   'D01': { lng: -0.003, lat: 0.004 },
   'D02': { lng: 0.004, lat: -0.003 },
 };
+
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
 
 /**
  * Polylabel Algorithm - Find visual center of polygon
@@ -75,9 +108,7 @@ function polylabel(polygon) {
   const height = maxY - minY;
   const cellSize = Math.min(width, height);
 
-  if (cellSize === 0) {
-    return { lng: minX, lat: minY };
-  }
+  if (cellSize === 0) return { lng: minX, lat: minY };
 
   let bestX = 0, bestY = 0, bestDist = -Infinity;
   let sumX = 0, sumY = 0, sumArea = 0;
@@ -151,9 +182,7 @@ function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
   const dy = y2 - y1;
   const lengthSq = dx * dx + dy * dy;
 
-  if (lengthSq === 0) {
-    return Math.sqrt((px - x1) ** 2 + (py - y1) ** 2);
-  }
+  if (lengthSq === 0) return Math.sqrt((px - x1) ** 2 + (py - y1) ** 2);
 
   let t = ((px - x1) * dx + (py - y1) * dy) / lengthSq;
   t = Math.max(0, Math.min(1, t));
@@ -164,15 +193,15 @@ function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
   return Math.sqrt((px - nearX) ** 2 + (py - nearY) ** 2);
 }
 
-// Get fill color based on PSF value (Price Mode)
+// Color functions for Price mode
 function getPsfColor(psf, hasData) {
   if (!hasData || !psf) return '#3a3a4a';
-  if (psf < 1400) return COLORS.skyBlue;
-  if (psf < 2200) return COLORS.oceanBlue;
-  return COLORS.deepNavy;
+  if (psf < 1400) return COLORS.skyBlue;    // OCR
+  if (psf < 2200) return COLORS.oceanBlue;  // RCR
+  return COLORS.deepNavy;                    // CCR
 }
 
-// Get fill color based on transaction volume (Volume Mode)
+// Color functions for Volume mode
 function getVolumeColor(txCount, hasData, maxVolume) {
   if (!hasData || !txCount) return '#3a3a4a';
   const ratio = txCount / maxVolume;
@@ -181,7 +210,7 @@ function getVolumeColor(txCount, hasData, maxVolume) {
   return VOLUME_COLORS.high;
 }
 
-// Build color expression for Price mode
+// Build MapLibre color expression for Price mode
 function getPriceColorExpression(districtData) {
   const colorStops = ['case'];
   districtData.forEach((d) => {
@@ -192,7 +221,7 @@ function getPriceColorExpression(districtData) {
   return colorStops;
 }
 
-// Build color expression for Volume mode
+// Build MapLibre color expression for Volume mode
 function getVolumeColorExpression(districtData, maxVolume) {
   const colorStops = ['case'];
   districtData.forEach((d) => {
@@ -220,6 +249,10 @@ function formatYoY(value) {
   return { text: `${arrow}${Math.abs(value).toFixed(1)}%`, colorClass };
 }
 
+// =============================================================================
+// FILTER OPTIONS
+// =============================================================================
+
 const BEDROOM_OPTIONS = [
   { value: 'all', label: 'All', fullLabel: 'All Types' },
   { value: '1', label: '1BR', fullLabel: '1-Bedroom' },
@@ -235,31 +268,37 @@ const PERIOD_OPTIONS = [
   { value: 'all', label: 'All' },
 ];
 
+// CARTO Dark Matter - deep dark base map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+
+// =============================================================================
+// SMART MARKER COMPONENT - Zoom-Responsive
+// =============================================================================
 
 /**
  * DataFlag - Zoom-Responsive Marker Component
- * Shows PSF or Volume based on view mode
- * At low zoom: compact district ID only
- * At high zoom: full price/volume pill
+ * - Zoom < 12: Simple dot with district ID (e.g., "10")
+ * - Zoom >= 12: Full "Data Pill" with price/volume
  */
 function DataFlag({ district, data, currentFilter, viewMode, zoom }) {
   const [isHovered, setIsHovered] = useState(false);
   const yoy = data?.yoy_pct !== null ? formatYoY(data.yoy_pct) : null;
   const hasData = data?.has_data;
 
-  // Determine styling based on view mode
+  // Determine if this is a "hotspot" for special styling
   const isHotspot = viewMode === 'PRICE'
     ? hasData && data?.median_psf >= 2500
     : hasData && data?.tx_count >= 500;
 
+  // Zoom-based display mode
+  const isCompactMode = zoom < 12;
+
   // Display value based on mode and zoom level
-  const isCompactMode = zoom < 10.8;
   const displayValue = isCompactMode
-    ? district.district.replace('D', '') // Just show "09" instead of "D09"
+    ? district.district.replace('D0', '').replace('D', '') // "09" → "9", "19" → "19"
     : viewMode === 'PRICE'
       ? formatPsf(data?.median_psf)
-      : `${formatVolume(data?.tx_count)} tx`;
+      : `${formatVolume(data?.tx_count)}`;
 
   return (
     <div
@@ -270,24 +309,30 @@ function DataFlag({ district, data, currentFilter, viewMode, zoom }) {
       {/* Main Pill - Size adapts to zoom level */}
       <motion.div
         animate={{
-          scale: isHovered ? 1.1 : 1,
-          y: isHovered ? -2 : 0,
+          scale: isHovered ? 1.15 : 1,
+          y: isHovered ? -3 : 0,
         }}
         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         className={`
-          ${isCompactMode ? 'px-1 py-0.5 text-[9px]' : 'px-1.5 py-0.5 text-[10px]'}
-          rounded-full font-bold shadow-md border
-          transition-shadow duration-200 whitespace-nowrap
+          ${isCompactMode
+            ? 'w-5 h-5 text-[8px] flex items-center justify-center'
+            : 'px-2 py-0.5 text-[10px]'
+          }
+          rounded-full font-bold shadow-lg border-2
+          transition-all duration-200 whitespace-nowrap
           ${hasData
             ? isHotspot
               ? viewMode === 'PRICE'
-                ? 'bg-[#213448] text-white border-[#94B4C1]/50 shadow-[#213448]/40'
-                : 'bg-[#B91C1C] text-white border-red-300/50 shadow-red-900/40'
-              : 'bg-white text-slate-900 border-slate-200 shadow-black/20'
-            : 'bg-slate-700/80 text-slate-400 border-slate-600/50 shadow-black/10'
+                ? 'bg-[#213448] text-white border-[#94B4C1]/60 shadow-[#213448]/50'
+                : 'bg-[#B91C1C] text-white border-red-300/60 shadow-red-900/50'
+              : 'bg-white/95 text-slate-900 border-white/80 shadow-black/30'
+            : 'bg-slate-700/90 text-slate-400 border-slate-500/50 shadow-black/20'
           }
-          ${isHovered ? 'shadow-lg' : ''}
+          ${isHovered ? 'shadow-xl ring-2 ring-white/30' : ''}
         `}
+        style={{
+          backdropFilter: 'blur(4px)',
+        }}
       >
         {hasData ? displayValue : '-'}
       </motion.div>
@@ -300,9 +345,9 @@ function DataFlag({ district, data, currentFilter, viewMode, zoom }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.92 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 z-50"
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50"
           >
-            <div className="bg-white rounded-xl p-3 min-w-[175px] border border-slate-200 shadow-2xl">
+            <div className="bg-white rounded-xl p-3 min-w-[180px] border border-slate-200 shadow-2xl">
               {/* Header */}
               <div className="flex items-center justify-between mb-1.5">
                 <span className="font-bold text-slate-900 text-sm">
@@ -368,6 +413,10 @@ function DataFlag({ district, data, currentFilter, viewMode, zoom }) {
   );
 }
 
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
 export default function MarketStrategyMap() {
   const [districtData, setDistrictData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -377,14 +426,9 @@ export default function MarketStrategyMap() {
   const [viewMode, setViewMode] = useState('PRICE'); // 'PRICE' or 'VOLUME'
   const mapRef = useRef(null);
 
-  const [viewState, setViewState] = useState({
-    longitude: SINGAPORE_CENTER.lng,
-    latitude: SINGAPORE_CENTER.lat,
-    zoom: 10.5,
-    pitch: 0,
-    bearing: 0,
-  });
+  const [viewState, setViewState] = useState(MAP_CONFIG.initialView);
 
+  // Fetch district PSF data
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -408,6 +452,7 @@ export default function MarketStrategyMap() {
     fetchData();
   }, [fetchData]);
 
+  // Create district lookup map
   const districtMap = useMemo(() => {
     const map = {};
     districtData.forEach((d) => {
@@ -441,7 +486,7 @@ export default function MarketStrategyMap() {
     }).filter((d) => d.centroid !== null);
   }, []);
 
-  // Fill layer - switches between Price and Volume gradients
+  // Fill layer - flat 2D, color-coded by active metric
   const fillLayer = useMemo(
     () => ({
       id: 'district-fill',
@@ -456,15 +501,15 @@ export default function MarketStrategyMap() {
     [districtData, viewMode, maxVolume]
   );
 
-  // High-contrast "Blueprint" boundary lines - renders ABOVE fill layer
+  // "Blueprint" boundary lines - high-contrast white dotted
   const lineLayer = useMemo(
     () => ({
       id: 'district-line',
       type: 'line',
       paint: {
-        'line-color': 'rgba(255, 255, 255, 0.4)',
+        'line-color': 'rgba(255, 255, 255, 0.5)',
         'line-width': 1.5,
-        'line-dasharray': [2, 3], // Tight, technical dotted line
+        'line-dasharray': [2, 3], // Tight technical dotted line
       },
       layout: {
         'line-cap': 'round',
@@ -474,16 +519,18 @@ export default function MarketStrategyMap() {
     []
   );
 
+  // Handle map load - fit to "Safe Zone" with asymmetric padding
   const handleMapLoad = useCallback(() => {
     const map = mapRef.current?.getMap();
     if (map) {
-      map.fitBounds(SINGAPORE_BOUNDS, {
-        padding: MAP_PADDING,
-        duration: 0,
+      map.fitBounds(MAP_CONFIG.fitBounds, {
+        padding: MAP_CONFIG.fitPadding,
+        duration: 0, // Snap immediately, no animation
       });
     }
   }, []);
 
+  // Calculate stats ranges
   const psfRange = useMemo(() => {
     const validPsfs = districtData
       .filter((d) => d.median_psf)
@@ -539,7 +586,7 @@ export default function MarketStrategyMap() {
                   }
                 `}
               >
-                $ Price
+                💲 Price
               </button>
               <button
                 onClick={() => setViewMode('VOLUME')}
@@ -611,7 +658,7 @@ export default function MarketStrategyMap() {
           </div>
         )}
 
-        {/* MapLibre GL Map - Static "Set and Forget" Dashboard View */}
+        {/* MapLibre GL Map - Bounded Exploration "Playpen" */}
         <Map
           ref={mapRef}
           {...viewState}
@@ -619,14 +666,15 @@ export default function MarketStrategyMap() {
           onLoad={handleMapLoad}
           mapStyle={MAP_STYLE}
           style={{ width: '100%', height: '100%' }}
-          dragPan={false}
+          dragPan={true}
           dragRotate={false}
-          touchZoomRotate={false}
+          touchZoomRotate={true}
           scrollZoom={true}
           doubleClickZoom={true}
           keyboard={false}
-          minZoom={9.5}
-          maxZoom={13}
+          maxBounds={MAP_CONFIG.maxBounds}
+          minZoom={MAP_CONFIG.minZoom}
+          maxZoom={MAP_CONFIG.maxZoom}
           maxPitch={0}
         >
           {/* District polygons - fill first, then line on top */}
@@ -635,7 +683,7 @@ export default function MarketStrategyMap() {
             <Layer {...lineLayer} />
           </Source>
 
-          {/* Data Flag Markers - zoom-responsive */}
+          {/* Smart Markers - zoom-responsive */}
           {!loading && districtCentroids.map((district) => {
             const data = districtMap[district.district];
             return (
@@ -657,14 +705,14 @@ export default function MarketStrategyMap() {
           })}
         </Map>
 
-        {/* Slim Filter Bar - No label */}
+        {/* Living Filter Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20"
         >
-          <div className="flex items-center gap-1 p-1 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-2xl">
+          <div className="flex items-center gap-1 p-1 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-2xl">
             {BEDROOM_OPTIONS.map((option) => (
               <motion.button
                 key={option.value}
@@ -684,45 +732,54 @@ export default function MarketStrategyMap() {
           </div>
         </motion.div>
 
-        {/* Legend - Dynamic based on view mode */}
+        {/* Legend - CCR/RCR/OCR Tiers */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
           className="absolute top-4 right-4 z-20"
         >
-          <div className="p-2.5 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
-            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
-              {viewMode === 'PRICE' ? 'Price Tier' : 'Activity Level'}
+          <div className="p-3 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
+            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2.5">
+              {viewMode === 'PRICE' ? 'Market Segments' : 'Activity Level'}
             </p>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {viewMode === 'PRICE' ? (
                 <>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.deepNavy }} />
-                    <span className="text-[10px] text-white">$2,200+ psf</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.deepNavy }} />
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-white font-semibold">CCR</span>
+                      <span className="text-[9px] text-slate-400">&gt; $2,200 psf</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.oceanBlue }} />
-                    <span className="text-[10px] text-white">$1,400-2,199</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.oceanBlue }} />
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-white font-semibold">RCR</span>
+                      <span className="text-[9px] text-slate-400">$1,400 - $2,199</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.skyBlue }} />
-                    <span className="text-[10px] text-white">&lt; $1,400</span>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.skyBlue }} />
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-white font-semibold">OCR</span>
+                      <span className="text-[9px] text-slate-400">&lt; $1,400 psf</span>
+                    </div>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: VOLUME_COLORS.high }} />
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.high }} />
                     <span className="text-[10px] text-white">High activity</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: VOLUME_COLORS.medium }} />
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.medium }} />
                     <span className="text-[10px] text-white">Medium</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: VOLUME_COLORS.low }} />
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.low }} />
                     <span className="text-[10px] text-white">Low activity</span>
                   </div>
                 </>
@@ -738,15 +795,15 @@ export default function MarketStrategyMap() {
           transition={{ delay: 0.5 }}
           className="absolute top-4 left-4 z-20"
         >
-          <div className="px-2.5 py-1.5 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-lg shadow-xl">
+          <div className="px-2.5 py-1.5 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-lg shadow-xl">
             <p className="text-[9px] text-slate-400 uppercase tracking-wider font-medium">
-              Scroll to zoom &bull; Hover for details
+              Drag to explore &bull; Scroll to zoom &bull; Hover for details
             </p>
           </div>
         </motion.div>
       </div>
 
-      {/* Stats Summary - Dynamic based on view mode */}
+      {/* Stats Summary Footer */}
       {!loading && !error && districtData.length > 0 && (
         <div className="px-4 py-3 md:px-6 bg-slate-800 border-t border-slate-700">
           <div className="grid grid-cols-3 gap-4 text-center">
@@ -809,13 +866,14 @@ export default function MarketStrategyMap() {
         </div>
       )}
 
+      {/* Global Styles */}
       <style>{`
         .maplibregl-ctrl-attrib {
           display: none !important;
         }
-        /* Spotlight effect: darken the water/background so Singapore "pops" */
+        /* Deep void background - Singapore "pops" like a stage spotlight */
         .maplibregl-map {
-          background-color: #0B1121 !important;
+          background-color: ${COLORS.void} !important;
         }
       `}</style>
     </div>
