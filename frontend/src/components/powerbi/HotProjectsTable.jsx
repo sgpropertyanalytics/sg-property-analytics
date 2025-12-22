@@ -34,7 +34,7 @@ export function HotProjectsTable({ height = 400 }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await getHotProjects();
+      const response = await getHotProjects({ limit: 200 });
       setData(response.data.projects || []);
     } catch (err) {
       console.error('Error fetching hot projects:', err);
