@@ -1,9 +1,9 @@
 /**
  * MarketStrategyMap - "Command Center" View for Singapore Property Market
  *
- * A fixed-viewport strategy board showing district PSF values at a glance.
+ * A strategy board showing district PSF values at a glance.
  * Features:
- * - Locked panning (dragPan=false), zoom only for inspection
+ * - Draggable map with bounds constrained to Singapore only
  * - Real interlocking polygons (jigsaw-style, no overlap)
  * - Solid fills (100% opacity) with clean 1px borders
  * - High-contrast "Data Flag" markers as the hero element
@@ -25,9 +25,9 @@ const COLORS = {
   sand: '#EAE0CF',
 };
 
-// Singapore bounds for fitBounds (with breathing room)
+// Singapore bounds - tight constraint to prevent showing Malaysia
 const SINGAPORE_BOUNDS = [
-  [103.60, 1.20],  // Southwest
+  [103.59, 1.17],  // Southwest
   [104.05, 1.48],  // Northeast
 ];
 
@@ -537,12 +537,13 @@ export default function MarketStrategyMap() {
           onLoad={handleMapLoad}
           mapStyle={MAP_STYLE}
           style={{ width: '100%', height: '100%' }}
-          dragPan={false}
+          dragPan={true}
           dragRotate={false}
           touchZoomRotate={true}
           scrollZoom={true}
           doubleClickZoom={true}
           keyboard={false}
+          maxBounds={SINGAPORE_BOUNDS}
           minZoom={9.5}
           maxZoom={13}
           maxPitch={0}
@@ -653,7 +654,7 @@ export default function MarketStrategyMap() {
         >
           <div className="px-3 py-2 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
             <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">
-              Scroll to zoom &bull; Hover for details
+              Drag to pan &bull; Scroll to zoom &bull; Hover for details
             </p>
           </div>
         </motion.div>
