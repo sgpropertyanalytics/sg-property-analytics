@@ -127,13 +127,13 @@ export function HotProjectsTable({ height = 400 }) {
   // - total_units: from project_inventory (URA API or manual entry)
   // - Only shows projects with ZERO resale transactions (true new launches)
   const columns = [
+    { key: 'first_new_sale', label: 'Launch Date', sortable: true, width: 'w-24' },
     { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-56' },
     { key: 'developer', label: 'Developer', sortable: true, width: 'w-40' },
     { key: 'district', label: 'Location', sortable: true, width: 'w-36' },
     { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-20' },
-    { key: 'first_new_sale', label: 'Launch Date', sortable: true, width: 'w-24' },
-    { key: 'units_sold', label: 'Units Sold', sortable: true, width: 'w-20', align: 'right' },
     { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-20', align: 'right' },
+    { key: 'units_sold', label: 'Units Sold', sortable: true, width: 'w-20', align: 'right' },
     { key: 'percent_sold', label: '% Sold', sortable: true, width: 'w-20', align: 'right' },
     { key: 'unsold_inventory', label: 'Unsold Inventory', sortable: true, width: 'w-24', align: 'right' },
     { key: 'median_price', label: 'Median Price', sortable: true, width: 'w-28', align: 'right' },
@@ -215,6 +215,18 @@ export function HotProjectsTable({ height = 400 }) {
                     key={project.project_name || idx}
                     className="hover:bg-slate-50 transition-colors"
                   >
+                    {/* Launch Date */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
+                      {project.first_new_sale ? (
+                        new Date(project.first_new_sale).toLocaleDateString('en-SG', {
+                          year: 'numeric',
+                          month: 'short'
+                        })
+                      ) : (
+                        <span className="text-slate-400 italic">-</span>
+                      )}
+                    </td>
+
                     {/* Project Name with School Tag (inline) */}
                     <td className="px-3 py-2 border-b border-slate-100">
                       <div className="flex flex-col gap-1">
@@ -266,28 +278,16 @@ export function HotProjectsTable({ height = 400 }) {
                       </span>
                     </td>
 
-                    {/* Launch Date */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-xs">
-                      {project.first_new_sale ? (
-                        new Date(project.first_new_sale).toLocaleDateString('en-SG', {
-                          year: 'numeric',
-                          month: 'short'
-                        })
-                      ) : (
-                        <span className="text-slate-400 italic">-</span>
+                    {/* Total Units */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
+                      {project.total_units?.toLocaleString() || (
+                        <span className="text-slate-400 text-xs italic">N/A</span>
                       )}
                     </td>
 
                     {/* Units Sold */}
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right font-medium">
                       {project.units_sold?.toLocaleString() || '0'}
-                    </td>
-
-                    {/* Total Units */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      {project.total_units?.toLocaleString() || (
-                        <span className="text-slate-400 text-xs italic">N/A</span>
-                      )}
                     </td>
 
                     {/* % Sold with color coding */}
