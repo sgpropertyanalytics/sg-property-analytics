@@ -391,55 +391,29 @@ export function ValueParityPanel() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Tab Navigation - Two-line tabs with main label + subtitle */}
-      <div className="flex border-b border-[#94B4C1]/30">
+      {/* Tab Navigation - Card Style */}
+      <div className="flex gap-2 p-1.5 bg-[#EAE0CF]/40 rounded-xl">
         <button
           onClick={() => setActiveTab('budget')}
-          className={`px-5 py-3 border-b-2 transition-all duration-200 ${
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-all duration-200 ${
             activeTab === 'budget'
-              ? 'border-[#213448] bg-[#213448]/5'
-              : 'border-transparent hover:bg-[#94B4C1]/10 hover:border-[#94B4C1]'
+              ? 'bg-white shadow-md text-[#213448] font-semibold'
+              : 'text-[#547792] hover:bg-[#EAE0CF]/60'
           }`}
         >
-          <div className="flex items-start gap-3">
-            <span className={`text-xl ${activeTab === 'budget' ? 'opacity-100' : 'opacity-70'}`}>💰</span>
-            <div className="text-left">
-              <div className={`text-sm font-semibold ${
-                activeTab === 'budget' ? 'text-[#213448]' : 'text-[#547792]'
-              }`}>
-                Affordability
-              </div>
-              <div className={`text-xs ${
-                activeTab === 'budget' ? 'text-[#547792]' : 'text-[#94B4C1]'
-              }`}>
-                What can I buy?
-              </div>
-            </div>
-          </div>
+          <span className={`text-xl ${activeTab === 'budget' ? '' : 'opacity-60'}`}>💰</span>
+          <span className="text-sm">Affordability</span>
         </button>
         <button
           onClick={() => setActiveTab('deal-checker')}
-          className={`px-5 py-3 border-b-2 transition-all duration-200 ${
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-all duration-200 ${
             activeTab === 'deal-checker'
-              ? 'border-[#213448] bg-[#213448]/5'
-              : 'border-transparent hover:bg-[#94B4C1]/10 hover:border-[#94B4C1]'
+              ? 'bg-white shadow-md text-[#213448] font-semibold'
+              : 'text-[#547792] hover:bg-[#EAE0CF]/60'
           }`}
         >
-          <div className="flex items-start gap-3">
-            <span className={`text-xl ${activeTab === 'deal-checker' ? 'opacity-100' : 'opacity-70'}`}>⚖️</span>
-            <div className="text-left">
-              <div className={`text-sm font-semibold ${
-                activeTab === 'deal-checker' ? 'text-[#213448]' : 'text-[#547792]'
-              }`}>
-                Valuation
-              </div>
-              <div className={`text-xs ${
-                activeTab === 'deal-checker' ? 'text-[#547792]' : 'text-[#94B4C1]'
-              }`}>
-                Am I paying fairly?
-              </div>
-            </div>
-          </div>
+          <span className={`text-xl ${activeTab === 'deal-checker' ? '' : 'opacity-60'}`}>⚖️</span>
+          <span className="text-sm">Valuation</span>
         </button>
       </div>
 
