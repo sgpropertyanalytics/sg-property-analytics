@@ -20,7 +20,14 @@ import { getHotProjects } from '../../api/client';
  * - % Sold (color-coded)
  * - Unsold Inventory (calculated)
  */
-export function HotProjectsTable({ height = 400 }) {
+export function HotProjectsTable({
+  height = 400,
+  // Optional filter props - when provided, table filters by these values
+  filters = null,  // { priceMin, priceMax, bedroom, region, district }
+  compact = false, // Compact mode for embedding
+  showHeader = true, // Show/hide header
+  onDataLoad = null, // Callback with data count after loading
+}) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,20 +36,37 @@ export function HotProjectsTable({ height = 400 }) {
     order: 'desc',
   });
 
-  // Fetch data
+  // Fetch data with optional filters
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getHotProjects({ limit: 200 });
-      setData(response.data.projects || []);
+      const params = { limit: 200 };
+
+      // Apply filters if provided
+      if (filters) {
+        if (filters.priceMin) params.price_min = filters.priceMin;
+        if (filters.priceMax) params.price_max = filters.priceMax;
+        if (filters.bedroom) params.bedroom = filters.bedroom;
+        if (filters.region) params.market_segment = filters.region;
+        if (filters.district) params.district = filters.district;
+      }
+
+      const response = await getHotProjects(params);
+      const projects = response.data.projects || [];
+      setData(projects);
+
+      // Notify parent of data count
+      if (onDataLoad) {
+        onDataLoad(projects.length);
+      }
     } catch (err) {
       console.error('Error fetching hot projects:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters, onDataLoad]);
 
   useEffect(() => {
     fetchData();
@@ -141,29 +165,31 @@ export function HotProjectsTable({ height = 400 }) {
   ];
 
   return (
-    <div id="hot-projects-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold text-[#213448]">Active New Sales</h3>
-          <p className="text-xs text-[#547792]">
-            {loading ? 'Loading...' : `${data.length} launched projects with sales activity`}
-          </p>
+    <div id="hot-projects-table" className={`bg-white ${compact ? '' : 'rounded-lg border border-[#94B4C1]/50'} overflow-hidden`}>
+      {/* Header - conditionally shown */}
+      {showHeader && (
+        <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-[#213448]">Active New Sales</h3>
+            <p className="text-xs text-[#547792]">
+              {loading ? 'Loading...' : `${data.length} launched projects with sales activity`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); fetchData(); }}
+              className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
+              title="Refresh data"
+              disabled={loading}
+            >
+              <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); fetchData(); }}
-            className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
-            title="Refresh data"
-            disabled={loading}
-          >
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Table Container */}
       <div className="overflow-auto" style={{ maxHeight: height }}>

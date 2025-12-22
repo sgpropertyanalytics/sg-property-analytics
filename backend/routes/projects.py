@@ -376,8 +376,11 @@ def get_hot_projects():
     - unsold_inventory = total_units - units_sold
 
     Query params:
-        - market_segment: filter by CCR, RCR, OCR
+        - market_segment: filter by CCR, RCR, OCR (alias: region)
         - district: filter by district (comma-separated)
+        - bedroom: filter by bedroom count (1-5)
+        - price_min: minimum median price filter
+        - price_max: maximum median price filter
         - limit: max results (default 100)
 
     Returns:
@@ -393,14 +396,88 @@ def get_hot_projects():
         from models.transaction import Transaction
         from services.new_launch_units import get_units_for_project
         from sqlalchemy import func, case, text, literal_column
-        from constants import get_region_for_district
+        from constants import get_region_for_district, get_districts_for_region
 
         # Get filter params
         limit = int(request.args.get("limit", 100))
 
+        # Filter params
+        market_segment = request.args.get("market_segment") or request.args.get("region")
+        district_param = request.args.get("district")
+        bedroom = request.args.get("bedroom")
+        price_min = request.args.get("price_min")
+        price_max = request.args.get("price_max")
+
+        # Build dynamic WHERE clauses
+        where_clauses = ["t.is_outlier = false"]
+        having_clauses = [
+            "COUNT(CASE WHEN t.sale_type = 'New Sale' THEN 1 END) > 0",
+            "COUNT(CASE WHEN t.sale_type = 'Resale' THEN 1 END) = 0"
+        ]
+        outer_where_clauses = []
+        params = {"limit": limit}
+
+        # Bedroom filter - filter transactions by bedroom type
+        # Note: Frontend "4B+" sends "4" meaning "4 or more bedrooms"
+        if bedroom:
+            try:
+                bedroom_val = int(bedroom)
+                if bedroom_val >= 4:
+                    # 4B+ and 5B+ mean "this many or more"
+                    where_clauses.append(f"t.bedroom_count >= {bedroom_val}")
+                else:
+                    # 1B, 2B, 3B are exact matches
+                    where_clauses.append("t.bedroom_count = :bedroom")
+                    params["bedroom"] = bedroom_val
+            except ValueError:
+                pass
+
+        # District filter - can be comma-separated
+        if district_param:
+            districts = [d.strip().upper() for d in district_param.split(",") if d.strip()]
+            normalized = []
+            for d in districts:
+                if not d.startswith("D"):
+                    d = f"D{d.zfill(2)}"
+                normalized.append(d)
+            if normalized:
+                placeholders = ", ".join([f":district_{i}" for i in range(len(normalized))])
+                where_clauses.append(f"t.district IN ({placeholders})")
+                for i, d in enumerate(normalized):
+                    params[f"district_{i}"] = d
+
+        # Market segment (region) filter - expand to districts
+        if market_segment and market_segment.upper() in ('CCR', 'RCR', 'OCR'):
+            segment_districts = get_districts_for_region(market_segment.upper())
+            if segment_districts:
+                placeholders = ", ".join([f":seg_district_{i}" for i in range(len(segment_districts))])
+                where_clauses.append(f"t.district IN ({placeholders})")
+                for i, d in enumerate(segment_districts):
+                    params[f"seg_district_{i}"] = d
+
+        # Price filters - applied in outer query on median_price
+        if price_min:
+            try:
+                outer_where_clauses.append("ps.median_price >= :price_min")
+                params["price_min"] = float(price_min)
+            except ValueError:
+                pass
+
+        if price_max:
+            try:
+                outer_where_clauses.append("ps.median_price <= :price_max")
+                params["price_max"] = float(price_max)
+            except ValueError:
+                pass
+
+        # Build the SQL query with dynamic filters
+        where_sql = " AND ".join(where_clauses)
+        having_sql = " AND ".join(having_clauses)
+        outer_where_sql = " AND ".join(outer_where_clauses) if outer_where_clauses else "1=1"
+
         # Query: Get projects with New Sale transactions but NO resales
         # This ensures we only show true "new launches" - projects still in developer sales phase
-        sql = text("""
+        sql = text(f"""
             WITH project_stats AS (
                 SELECT
                     t.project_name,
@@ -414,10 +491,9 @@ def get_hot_projects():
                     MIN(CASE WHEN t.sale_type = 'New Sale' THEN t.transaction_date END) as first_new_sale,
                     MAX(CASE WHEN t.sale_type = 'New Sale' THEN t.transaction_date END) as last_new_sale
                 FROM transactions t
-                WHERE t.is_outlier = false
+                WHERE {where_sql}
                 GROUP BY t.project_name, t.district
-                HAVING COUNT(CASE WHEN t.sale_type = 'New Sale' THEN 1 END) > 0
-                   AND COUNT(CASE WHEN t.sale_type = 'Resale' THEN 1 END) = 0
+                HAVING {having_sql}
             )
             SELECT
                 ps.project_name,
@@ -435,6 +511,7 @@ def get_hot_projects():
                 pl.longitude
             FROM project_stats ps
             LEFT JOIN project_locations pl ON LOWER(TRIM(ps.project_name)) = LOWER(TRIM(pl.project_name))
+            WHERE {outer_where_sql}
             ORDER BY ps.units_sold DESC
             LIMIT :limit
         """)
@@ -531,8 +608,11 @@ def get_hot_projects():
             "total_count": len(projects),
             "filters_applied": {
                 "limit": limit,
-                "market_segment": request.args.get("market_segment"),
-                "district": request.args.get("district"),
+                "market_segment": market_segment,
+                "district": district_param,
+                "bedroom": bedroom,
+                "price_min": price_min,
+                "price_max": price_max,
             },
             "data_note": "Only shows projects with New Sale transactions and ZERO resales (true new launches). " +
                         "Projects without total_units data show N/A for % sold.",

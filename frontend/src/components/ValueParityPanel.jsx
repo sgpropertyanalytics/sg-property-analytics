@@ -3,6 +3,7 @@ import { getTransactionsList, getFilterOptions } from '../api/client';
 import { DISTRICT_NAMES, isDistrictInRegion } from '../constants';
 import { PriceDistributionHeroChart } from './PriceDistributionHeroChart';
 import DealCheckerContent from './powerbi/DealCheckerContent';
+import { HotProjectsTable } from './powerbi/HotProjectsTable';
 
 /**
  * ValueParityPanel - Budget-based property search tool with Deal Checker
@@ -69,6 +70,9 @@ export function ValueParityPanel() {
 
   // Selected price range from histogram click (for filtering table)
   const [selectedPriceRange, setSelectedPriceRange] = useState(null);
+
+  // Hot projects count (for section header badge)
+  const [hotProjectsCount, setHotProjectsCount] = useState(0);
 
   // Load filter options on mount
   useEffect(() => {
@@ -341,37 +345,55 @@ export function ValueParityPanel() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Tab Navigation */}
+      {/* Tab Navigation - Two-line tabs with main label + subtitle */}
       <div className="flex border-b border-[#94B4C1]/30">
         <button
           onClick={() => setActiveTab('budget')}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-5 py-3 border-b-2 transition-all duration-200 ${
             activeTab === 'budget'
-              ? 'border-[#213448] text-[#213448]'
-              : 'border-transparent text-[#547792] hover:text-[#213448] hover:border-[#94B4C1]'
+              ? 'border-[#213448] bg-[#213448]/5'
+              : 'border-transparent hover:bg-[#94B4C1]/10 hover:border-[#94B4C1]'
           }`}
         >
-          <span className="flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Budget Search
-          </span>
+          <div className="flex items-start gap-3">
+            <span className={`text-xl ${activeTab === 'budget' ? 'opacity-100' : 'opacity-70'}`}>💰</span>
+            <div className="text-left">
+              <div className={`text-sm font-semibold ${
+                activeTab === 'budget' ? 'text-[#213448]' : 'text-[#547792]'
+              }`}>
+                Affordability
+              </div>
+              <div className={`text-xs ${
+                activeTab === 'budget' ? 'text-[#547792]' : 'text-[#94B4C1]'
+              }`}>
+                What can I buy?
+              </div>
+            </div>
+          </div>
         </button>
         <button
           onClick={() => setActiveTab('deal-checker')}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-5 py-3 border-b-2 transition-all duration-200 ${
             activeTab === 'deal-checker'
-              ? 'border-[#213448] text-[#213448]'
-              : 'border-transparent text-[#547792] hover:text-[#213448] hover:border-[#94B4C1]'
+              ? 'border-[#213448] bg-[#213448]/5'
+              : 'border-transparent hover:bg-[#94B4C1]/10 hover:border-[#94B4C1]'
           }`}
         >
-          <span className="flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Deal Checker
-          </span>
+          <div className="flex items-start gap-3">
+            <span className={`text-xl ${activeTab === 'deal-checker' ? 'opacity-100' : 'opacity-70'}`}>⚖️</span>
+            <div className="text-left">
+              <div className={`text-sm font-semibold ${
+                activeTab === 'deal-checker' ? 'text-[#213448]' : 'text-[#547792]'
+              }`}>
+                Valuation
+              </div>
+              <div className={`text-xs ${
+                activeTab === 'deal-checker' ? 'text-[#547792]' : 'text-[#94B4C1]'
+              }`}>
+                Am I paying fairly?
+              </div>
+            </div>
+          </div>
         </button>
       </div>
 
@@ -576,6 +598,70 @@ export function ValueParityPanel() {
         </form>
       </div>
 
+      {/* ===== NEW LAUNCHES SECTION ===== */}
+      {hasSearched && (
+        <div className="space-y-4">
+          {/* Section Header: New Launches */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🏗️</span>
+              <div>
+                <h3 className="text-base font-semibold text-[#213448]">New Launches</h3>
+                <p className="text-xs text-[#547792]">Projects still selling from developers</p>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 bg-[#213448]/10 text-[#213448] text-xs font-medium rounded-full">
+              {hotProjectsCount} {hotProjectsCount === 1 ? 'project' : 'projects'}
+            </span>
+          </div>
+
+          {/* Hot Projects Table */}
+          <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+            <HotProjectsTable
+              height={300}
+              showHeader={false}
+              compact={true}
+              filters={{
+                priceMin: budget - 100000,
+                priceMax: budget + 100000,
+                bedroom: bedroom || null,
+                region: region || null,
+                district: district || null,
+              }}
+              onDataLoad={setHotProjectsCount}
+            />
+          </div>
+
+          {/* Visual Transition to Resale Market */}
+          <div className="flex justify-center py-2">
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#EAE0CF]/50 rounded-full border border-[#94B4C1]/30">
+              <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+              <span className="text-sm text-[#547792]">Or explore the Resale Market</span>
+              <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Section Header: Resale Transactions */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🏠</span>
+              <div>
+                <h3 className="text-base font-semibold text-[#213448]">Resale Transactions</h3>
+                <p className="text-xs text-[#547792]">Recent sales within your budget range</p>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 bg-[#213448]/10 text-[#213448] text-xs font-medium rounded-full">
+              {pagination.totalRecords.toLocaleString()} {pagination.totalRecords === 1 ? 'transaction' : 'transactions'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ===== RESALE SECTION ===== */}
       {/* Price Distribution Hero Chart - shows where buyer's price falls in the distribution */}
       {hasSearched && (
         <PriceDistributionHeroChart

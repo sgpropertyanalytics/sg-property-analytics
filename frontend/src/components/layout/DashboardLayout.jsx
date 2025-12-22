@@ -30,7 +30,6 @@ import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
 // Only Market Pulse uses the Power BI filter sidebar
 const PAGE_CONFIG = {
   'market-pulse': { showFilterSidebar: true },
-  'project-analysis': { showFilterSidebar: false },
   'value-parity': { showFilterSidebar: false },
   'analytics-view': { showFilterSidebar: false },
   'insights': { showFilterSidebar: false },
@@ -45,7 +44,6 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
     if (pathname.startsWith('/market-pulse') || pathname === '/analytics' || pathname === '/') {
       return 'market-pulse';
     }
-    if (pathname.startsWith('/project-analysis')) return 'project-analysis';
     if (pathname.startsWith('/value-parity')) return 'value-parity';
     if (pathname.startsWith('/analytics-view')) return 'analytics-view';
     if (pathname.startsWith('/insights')) return 'insights';

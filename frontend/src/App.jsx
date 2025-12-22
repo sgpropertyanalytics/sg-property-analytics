@@ -5,7 +5,6 @@ import LandingPage from './pages/Landing';
 import Login from './pages/Login';
 import { DashboardLayout } from './components/layout';
 import { MacroOverviewContent } from './pages/MacroOverview';
-import { ProjectAnalysisContent } from './pages/ProjectAnalysis';
 import { AnalyticsViewContent } from './pages/AnalyticsView';
 import { InsightsContent } from './pages/Insights';
 import { ValueParityPanel } from './components/ValueParityPanel';
@@ -24,8 +23,7 @@ import { ValueParityPanel } from './components/ValueParityPanel';
  * - /landing: Landing page (public)
  * - /login: User authentication
  * - /market-pulse: Market analytics dashboard (premium)
- * - /project-analysis: Individual project deep-dives (premium)
- * - /value-parity: Budget search tool (premium)
+ * - /value-parity: Budget search tool (premium) - includes New Launches + Resale
  * - /analytics-view: Power BI-style analytics (premium)
  * - /insights: AI-powered market insights (premium)
  */
@@ -56,15 +54,8 @@ function App() {
             }
           />
 
-          {/* Project Analysis - Placeholder */}
-          <Route
-            path="/project-analysis"
-            element={
-              <DashboardLayout activePage="project-analysis">
-                <ProjectAnalysisContent />
-              </DashboardLayout>
-            }
-          />
+          {/* Project Analysis - Redirects to Value Parity (content merged) */}
+          <Route path="/project-analysis" element={<Navigate to="/value-parity" replace />} />
 
           {/* Value Parity Tool - No filter sidebar */}
           <Route

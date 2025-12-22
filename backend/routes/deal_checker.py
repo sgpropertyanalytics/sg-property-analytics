@@ -178,6 +178,24 @@ def compute_percentile(buyer_price, prices):
     }
 
 
+def get_bedroom_filter(bedroom):
+    """
+    Get SQLAlchemy filter condition for bedroom count.
+
+    - Bedrooms 1-4: Exact match
+    - Bedroom 5+: Matches 5 or more (for "5+ BR" option in frontend)
+
+    Args:
+        bedroom: Bedroom count (int)
+
+    Returns:
+        SQLAlchemy filter condition
+    """
+    if bedroom >= 5:
+        return Transaction.bedroom_count >= 5
+    return Transaction.bedroom_count == bedroom
+
+
 @deal_checker_bp.route("/deal-checker/nearby-transactions", methods=["GET"])
 def get_nearby_transactions():
     """
@@ -239,10 +257,11 @@ def get_nearby_transactions():
 
     # Query transactions for those projects with SAME bedroom type
     # CRITICAL: Always exclude outliers
+    # Note: bedroom >= 5 handles "5+ BR" option from frontend
     query = db.session.query(Transaction.price).filter(
         or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
         Transaction.project_name.in_(nearby_project_names),
-        Transaction.bedroom_count == bedroom
+        get_bedroom_filter(bedroom)
     )
 
     transactions = query.all()
@@ -261,7 +280,7 @@ def get_nearby_transactions():
     ).filter(
         or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
         Transaction.project_name.in_(nearby_project_names),
-        Transaction.bedroom_count == bedroom
+        get_bedroom_filter(bedroom)
     ).group_by(Transaction.project_name).all()
 
     tx_count_map = {t.project_name: t.count for t in tx_counts}
@@ -320,13 +339,14 @@ def compute_scope_stats(project_names, bedroom, buyer_price):
         }
 
     # Query transactions for these projects
+    # Note: bedroom >= 5 handles "5+ BR" option from frontend
     transactions = db.session.query(
         Transaction.price,
         Transaction.psf
     ).filter(
         or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
         Transaction.project_name.in_(project_names),
-        Transaction.bedroom_count == bedroom
+        get_bedroom_filter(bedroom)
     ).all()
 
     prices = [t.price for t in transactions if t.price]
@@ -426,7 +446,7 @@ def get_multi_scope_comparison():
     ).filter(
         or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
         Transaction.project_name.in_(projects_2km),
-        Transaction.bedroom_count == bedroom
+        get_bedroom_filter(bedroom)
     ).group_by(Transaction.project_name).all()
 
     tx_stats_map = {
