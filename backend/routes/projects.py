@@ -411,6 +411,7 @@ def get_hot_projects():
                     AVG(CASE WHEN t.sale_type = 'New Sale' THEN t.psf END) as avg_psf,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = 'New Sale' THEN t.price END) as median_price,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = 'New Sale' THEN t.psf END) as median_psf,
+                    MIN(CASE WHEN t.sale_type = 'New Sale' THEN t.transaction_date END) as first_new_sale,
                     MAX(CASE WHEN t.sale_type = 'New Sale' THEN t.transaction_date END) as last_new_sale
                 FROM transactions t
                 WHERE t.is_outlier = false
@@ -426,6 +427,7 @@ def get_hot_projects():
                 ps.avg_psf,
                 ps.median_price,
                 ps.median_psf,
+                ps.first_new_sale,
                 ps.last_new_sale,
                 pl.has_popular_school_1km,
                 pl.market_segment,
@@ -516,6 +518,7 @@ def get_hot_projects():
                 "median_psf": round(float(row.median_psf), 2) if row.median_psf else None,
                 "has_popular_school": row.has_popular_school_1km or False,
                 "nearby_schools": nearby_schools,  # List of school names within 1km
+                "first_new_sale": row.first_new_sale.isoformat() if row.first_new_sale else None,
                 "last_new_sale": row.last_new_sale.isoformat() if row.last_new_sale else None,
             })
 

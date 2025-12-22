@@ -146,43 +146,15 @@ When diagnosing or fixing any issue, Claude MUST follow these rules:
 
 ## Power BI Golden Rules
 
-### The Data Model Rule
+> **Full documentation**: See [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md) for complete filter system reference.
 
-> **Slicers belong to dimensions. Facts should almost never be slicers.**
+**Key principles (quick reference):**
 
-```
-┌─────────────────┐         ┌─────────────────┐
-│   DIMENSION     │────────▶│      FACT       │
-│   (Slicers)     │         │   (Data Sink)   │
-└─────────────────┘         └─────────────────┘
-     Filters                  Gets Filtered
-     Others                   Never Filters
-```
-
-### The Interaction Rule
-
-> **If it answers "what happened when or where" → Cross-filter**
-> **If it answers "what portion is related" → Highlight**
-
-| Intent | Type | Backend Query? |
-|--------|------|----------------|
-| Time and scope | Cross-filter | ✅ Yes |
-| Composition view | Highlight | ❌ No |
-
-### The Drill Rule
-
-> **Drill ≠ Filter. Drill is visual-local by default.**
-
-| Action | Scope | Effect |
-|--------|-------|--------|
-| Drill | Single visual | Changes granularity inside one chart |
-| Filter | Cross-visual | Changes data scope across all visuals |
-
-### The Global Filter Rule
-
-> **All sidebar slicers MUST apply to every visual. No exceptions.**
-
-Global slicers: Districts, Date Range, Bedroom Types, Sale Type, PSF Range, Size Range
+1. **Data Model Rule**: Slicers belong to dimensions. Facts should almost never be slicers.
+2. **Interaction Rule**: "What happened when/where" → Cross-filter. "What portion" → Highlight.
+3. **Drill Rule**: Drill ≠ Filter. Drill is visual-local by default.
+4. **Global Filter Rule**: All sidebar slicers MUST apply to every visual. No exceptions.
+5. **Time-Series Rule**: Time-axis charts use `excludeHighlight: true` to show full timeline.
 
 ```jsx
 // ✅ CORRECT - Always use buildApiParams
@@ -230,36 +202,20 @@ const params = { region: localRegion }; // DON'T DO THIS
 
 ## Frontend State Management
 
+> **Full filter state documentation**: See [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md#3-filter-types--hierarchy)
+
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                  PowerBIFilterContext.jsx                            │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  filters (sidebar slicers)                                           │
-│  ├── dateRange, districts, bedroomTypes                              │
-│  └── segment, saleType, psfRange, sizeRange                          │
-│                                                                      │
-│  crossFilter (chart clicks → all charts)                             │
-│  └── district, region, bedroom, sale_type                            │
-│                                                                      │
-│  factFilter (dimension → fact table only)                            │
-│  └── priceRange (from Price Distribution chart)                      │
-│                                                                      │
-│  highlight (time emphasis)                                           │
-│  └── year, quarter, month                                            │
-│                                                                      │
-│  drillPath (hierarchy level)                                         │
-│  ├── time: year → quarter → month                                    │
-│  └── location: region → district (NO project in global)              │
-│                                                                      │
-│  selectedProject (drill-through only, does NOT affect charts)        │
-│  └── Opens ProjectDetailPanel with independent queries               │
-│                                                                      │
-│  buildApiParams(additionalParams, options)                           │
-│  ├── options.includeFactFilter = true (for Fact tables)              │
-│  └── options.excludeHighlight = true (for Time-series charts)        │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
+PowerBIFilterContext.jsx
+├── filters (sidebar slicers) → dateRange, districts, bedroomTypes, segment, saleType
+├── crossFilter (chart clicks) → district, region, bedroom, sale_type
+├── factFilter (price bins → fact table only) → priceRange
+├── highlight (time emphasis) → year, quarter, month
+├── drillPath (hierarchy level) → time: year→quarter→month, location: region→district
+└── selectedProject (drill-through only, independent queries)
+
+buildApiParams(additionalParams, options)
+├── options.includeFactFilter = true (for Fact tables)
+└── options.excludeHighlight = true (for Time-series charts)
 ```
 
 ## File Structure
@@ -309,6 +265,8 @@ frontend/src/
 ---
 
 # 4. IMPLEMENTATION GUIDES
+
+> **Complete implementation patterns**: See [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md#5-implementation-patterns) for full details.
 
 ## Guide: Adding a New Chart
 
@@ -715,15 +673,15 @@ region = get_region_for_district(district)
 
 ## C. Component Architecture Matrix
 
-| Component | Type | Responds to Highlight? | Cross-Filters? | Notes |
-|-----------|------|------------------------|----------------|-------|
-| PowerBIFilterSidebar | Slicer | N/A | Yes (global) | Source of global filters |
-| TimeTrendChart | Dimension | No (`excludeHighlight`) | Yes | Source of time highlights |
-| VolumeByLocationChart | Dimension | Yes | Yes | Region/district cross-filter |
-| PriceDistributionChart | Dimension | Yes | Fact-only | Sets factFilter.priceRange |
-| BedroomMixChart | Dimension | Yes | Yes | Bedroom cross-filter |
-| TransactionDataTable | **Fact** | Yes | **Never** | Pure data sink |
-| ProjectDetailPanel | Drill-through | Independent | No | Own API queries |
+> **Full matrix with interaction details**: See [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md#4-component-behavior-matrix)
+
+| Component | Type | Cross-Filters? | Notes |
+|-----------|------|----------------|-------|
+| PowerBIFilterSidebar | Slicer | Yes (global) | Source of global filters |
+| TimeTrendChart | Dimension | Yes | `excludeHighlight: true` |
+| VolumeByLocationChart | Dimension | Yes | Region/district cross-filter |
+| PriceDistributionChart | Dimension | Fact-only | Sets factFilter.priceRange |
+| TransactionDataTable | **Fact** | **Never** | Pure data sink |
 
 ## D. Outlier Detection Details
 
@@ -763,12 +721,12 @@ upper_bound = Q3 + 5.0 * IQR
 
 ## F. Interaction Behavior Reference
 
-| User Action | Behavior | Scope |
-|-------------|----------|-------|
-| Change sidebar filter | All charts re-fetch | Global |
-| Click time bar | Sets highlight → all charts re-fetch | Cross-filter |
-| Click location bar | Sets crossFilter → all charts re-fetch | Cross-filter |
-| Click bedroom segment | Sets crossFilter → all charts re-fetch | Cross-filter |
-| Click price bin | Sets factFilter → TransactionTable only | Dimension → Fact |
-| Drill up/down | Only that chart changes | Visual-local |
-| Select project | Opens ProjectDetailPanel | Drill-through |
+> **Full interaction patterns**: See [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md#4-component-behavior-matrix)
+
+| User Action | Scope |
+|-------------|-------|
+| Change sidebar filter | Global (all charts) |
+| Click time/location/bedroom bar | Cross-filter (all charts) |
+| Click price bin | Fact table only |
+| Drill up/down | Visual-local |
+| Select project | Drill-through panel |

@@ -5,6 +5,8 @@ description: Protection and verification system for dashboard development. ALWAY
 
 # Dashboard Guardrails
 
+> **Filter patterns reference**: See [POWER_BI_PATTERNS.md](../../../POWER_BI_PATTERNS.md#8-guardrails---what-not-to-touch) for complete filter guardrails.
+
 ## Purpose
 
 Prevent accidental breaking of dashboard visualizations while ensuring changes work across all platforms. This skill acts as a guardrail—not a blocker—allowing improvements while protecting critical functionality.
