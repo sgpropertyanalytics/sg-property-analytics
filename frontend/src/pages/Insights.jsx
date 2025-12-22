@@ -1,11 +1,12 @@
-import { MarketHeatmap } from '../components/insights';
+import { MarketHeatmap3D } from '../components/insights';
 
 /**
  * Insights Page - Visual Analytics for Singapore Property Market
  *
  * Features:
- * - District PSF Heatmap with bedroom filters
- * - Interactive choropleth map visualization
+ * - 3D District PSF Heatmap with bedroom filters
+ * - MapLibre GL-based 3D visualization with extruded polygons
+ * - Height represents Median PSF, color shows price tiers
  * - YoY trend analysis by district
  *
  * Future features:
@@ -30,9 +31,9 @@ export function InsightsContent() {
 
         {/* Main Content Grid */}
         <div className="space-y-6">
-          {/* Market Heatmap - Full Width */}
+          {/* 3D Market Heatmap - Full Width */}
           <div className="animate-view-enter">
-            <MarketHeatmap />
+            <MarketHeatmap3D />
           </div>
 
           {/* Coming Soon Features */}
