@@ -81,12 +81,15 @@ export function ValueParityPanel() {
     setHasSearched(true);
 
     try {
+      // +/- $100k range around the target budget
+      const priceRangeBuffer = 100000;
       const params = {
         page,
         limit: pagination.limit,
         sort_by: sortConfig.column,
         sort_order: sortConfig.order,
-        price_max: budget,
+        price_min: Math.max(0, budget - priceRangeBuffer),
+        price_max: budget + priceRangeBuffer,
       };
 
       // Add optional filters
@@ -257,7 +260,7 @@ export function ValueParityPanel() {
 
             {/* LEFT: Budget Slider + Search */}
             <div className="min-w-0 px-4 md:px-5 py-4 md:py-5 lg:pr-6">
-              <p className="text-sm text-[#547792] mb-4">Target price (S$) - Show transactions priced at or below this amount</p>
+              <p className="text-sm text-[#547792] mb-4">Target price (S$) - Show transactions within +/- $100K of this amount</p>
               {/* Slider with floating value */}
               <div className="relative mb-4 pt-8">
                 {/* Floating budget value - clamped to stay within bounds */}
@@ -456,7 +459,7 @@ export function ValueParityPanel() {
                 {loading ? 'Loading...' : (
                   <>
                     <span className="font-semibold text-[#213448]">{pagination.totalRecords.toLocaleString()}</span>
-                    {' '}transactions at or below {formatBudgetDisplay(budget)}
+                    {' '}transactions within +/- $100K of {formatBudgetDisplay(budget)}
                   </>
                 )}
               </p>
@@ -520,7 +523,7 @@ export function ValueParityPanel() {
                   ) : data.length === 0 ? (
                     <tr>
                       <td colSpan={columns.length} className="px-3 py-8 text-center text-slate-500">
-                        No transactions found within your budget. Try increasing your budget or adjusting filters.
+                        No transactions found within +/- $100K of your budget. Try adjusting your target price or filters.
                       </td>
                     </tr>
                   ) : (
