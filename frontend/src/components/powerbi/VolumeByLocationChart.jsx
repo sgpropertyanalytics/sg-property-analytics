@@ -115,7 +115,7 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       }
     };
     fetchData();
-  }, [buildApiParams, drillPath.location, maxBars, highlight, showProjectsForDistrict]);
+  }, [buildApiParams, drillPath.location, maxBars, highlight, showProjectsForDistrict, filters.segment]);
 
   // Clear local project view when global drill changes
   useEffect(() => {
@@ -356,6 +356,11 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
       const districtName = DISTRICT_NAMES[showProjectsForDistrict] || showProjectsForDistrict;
       const shortName = districtName.split(',')[0];
       return `${base} in ${showProjectsForDistrict} (${shortName})`;
+    }
+
+    // At region level with segment filter: show anchor pattern message
+    if (displayMode === 'region' && highlightedSegment) {
+      return `${base} • ${highlightedSegment} highlighted`;
     }
 
     // Add parent context from breadcrumbs

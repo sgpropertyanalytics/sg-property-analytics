@@ -562,6 +562,22 @@ function ProjectDetailPanelInner({
                     </div>
                   )}
                 </div>
+                {/* Median Price Table by Bedroom */}
+                {priceData.length > 0 && (
+                  <div className="mt-4 border-t border-[#94B4C1]/30 pt-3">
+                    <h4 className="text-xs font-medium text-[#547792] mb-2">Median Quantum by Bedroom</h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {priceData.map((d) => (
+                        <div key={d.bedroom} className="flex justify-between bg-[#EAE0CF]/20 rounded px-2 py-1">
+                          <span className="text-[#547792]">{d.bedroom}-BR</span>
+                          <span className="font-medium text-[#213448]">
+                            {d.median_price ? `$${(d.median_price / 1000000).toFixed(2)}M` : 'N/A'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Price Distribution Histogram */}
