@@ -541,7 +541,7 @@ export function PriceDistributionHeroChart({
       parts.push(activeFilters.saleType);
     }
     if (activeFilters.leaseAge) {
-      parts.push(`${activeFilters.leaseAge} yrs old`);
+      parts.push(`${activeFilters.leaseAge} yrs`);
     }
 
     return parts.length > 0 ? parts.join(' · ') : 'All properties';

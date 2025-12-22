@@ -8,7 +8,7 @@ import { PriceDistributionHeroChart } from './PriceDistributionHeroChart';
  *
  * Features:
  * - Budget slider (required)
- * - Optional filters: Bedroom, Region, District, Tenure, Sale Type, Lease Age
+ * - Optional filters: Bedroom, Region, District, Tenure, Sale Type, Property Age
  * - Shows transactions where price <= budget
  * - Reuses same table structure as TransactionDataTable
  */
@@ -507,9 +507,9 @@ export function ValueParityPanel() {
                     </select>
                   </div>
 
-                  {/* Lease Age */}
+                  {/* Property Age */}
                   <div>
-                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Lease Age</label>
+                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Property Age</label>
                     <select
                       value={leaseAge}
                       onChange={(e) => setLeaseAge(e.target.value)}
