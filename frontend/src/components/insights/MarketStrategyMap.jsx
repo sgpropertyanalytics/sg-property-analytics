@@ -40,11 +40,11 @@ const COLORS = {
   sand: '#EAE0CF',
 };
 
-// Region fill colors (very subtle)
+// Region fill colors (distinct shading for clear market segment separation)
 const REGION_FILLS = {
-  CCR: 'rgba(33, 52, 72, 0.12)',
-  RCR: 'rgba(84, 119, 146, 0.10)',
-  OCR: 'rgba(148, 180, 193, 0.08)',
+  CCR: 'rgba(33, 52, 72, 0.25)',   // Deep Navy - Premium/Core Central
+  RCR: 'rgba(84, 119, 146, 0.20)', // Ocean Blue - City Fringe
+  OCR: 'rgba(148, 180, 193, 0.15)', // Sky Blue - Suburban
 };
 
 // Filter options
@@ -115,72 +115,75 @@ function getRegionForDistrict(districtId) {
 }
 
 // =============================================================================
-// DISTRICT PIN COMPONENT
+// DISTRICT LABEL COMPONENT
 // =============================================================================
 
-function DistrictPin({ district, data, zoom, onHover, onLeave, isHovered }) {
+function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered }) {
   const hasData = data?.has_data;
   const psf = data?.median_psf || 0;
-  const isCompact = zoom < 11.5;
+  const isCompact = zoom < 11.2;
+  const showDetails = zoom >= 12;
 
   // Color based on PSF tier
-  const getPinStyle = () => {
+  const getPriceStyle = () => {
     if (!hasData) return 'bg-[#EAE0CF] text-[#94B4C1] border-[#94B4C1]/30';
     if (psf >= 2200) return 'bg-[#213448] text-white border-[#213448]';
     if (psf >= 1400) return 'bg-[#547792] text-white border-[#547792]';
     return 'bg-white text-[#213448] border-[#94B4C1]';
   };
 
-  // Get dot color
-  const getDotColor = () => {
-    if (!hasData) return 'bg-[#94B4C1]';
-    if (psf >= 2200) return 'bg-[#213448]';
-    if (psf >= 1400) return 'bg-[#547792]';
-    return 'bg-[#547792]';
+  // Truncate area name for display
+  const getShortName = (name) => {
+    if (!name) return '';
+    // Take first part before "/" or limit length
+    const parts = name.split('/');
+    const first = parts[0].trim();
+    return first.length > 12 ? first.substring(0, 11) + '…' : first;
   };
-
-  const displayValue = isCompact
-    ? district.district.replace('D0', '').replace('D', '')
-    : formatPsf(psf);
 
   return (
     <motion.div
       className="flex flex-col items-center cursor-pointer"
       onMouseEnter={() => onHover(district, data)}
       onMouseLeave={onLeave}
-      animate={{ scale: isHovered ? 1.1 : 1 }}
+      animate={{ scale: isHovered ? 1.05 : 1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
-      {/* Label pill */}
+      {/* Price pill - always shows median PSF */}
       <div
         className={`
-          px-1.5 py-0.5 rounded-md shadow-md border font-semibold
+          px-2 py-0.5 rounded-md shadow-md border font-bold
           transition-shadow duration-200
-          ${getPinStyle()}
-          ${isHovered ? 'shadow-lg' : ''}
-          ${isCompact ? 'text-[9px]' : 'text-[10px]'}
+          ${getPriceStyle()}
+          ${isHovered ? 'shadow-lg ring-2 ring-white/50' : ''}
+          ${isCompact ? 'text-[9px]' : 'text-[11px]'}
         `}
       >
-        {hasData ? displayValue : '-'}
+        {hasData ? formatPsf(psf) : '-'}
       </div>
 
-      {/* Arrow pointer */}
+      {/* District info label - shows district number and area name */}
       <div
         className={`
-          w-0 h-0 -mt-px
-          border-l-[4px] border-r-[4px] border-t-[4px]
-          border-l-transparent border-r-transparent
-          ${hasData
-            ? psf >= 1400
-              ? psf >= 2200 ? 'border-t-[#213448]' : 'border-t-[#547792]'
-              : 'border-t-white'
-            : 'border-t-[#EAE0CF]'
-          }
+          mt-0.5 px-1.5 py-0.5 rounded bg-white/90 backdrop-blur-sm
+          shadow-sm border border-[#94B4C1]/30
+          transition-all duration-200
+          ${isHovered ? 'bg-white shadow-md' : ''}
         `}
-      />
-
-      {/* Anchor dot */}
-      <div className={`w-2 h-2 rounded-full ${getDotColor()} border-2 border-white shadow-sm -mt-0.5`} />
+      >
+        <div className="flex flex-col items-center">
+          {/* District number */}
+          <span className="text-[9px] font-semibold text-[#213448]">
+            {district.district}
+          </span>
+          {/* Area name - shown when zoomed in */}
+          {!isCompact && (
+            <span className="text-[7px] text-[#547792] leading-tight text-center max-w-[60px] truncate">
+              {getShortName(district.name)}
+            </span>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -596,7 +599,7 @@ export default function MarketStrategyMap() {
             />
           </Source>
 
-          {/* District pins */}
+          {/* District labels */}
           {!loading && districtCentroids.map(district => {
             const data = districtMap[district.district];
             const isHovered = hoveredDistrict?.district?.district === district.district;
@@ -606,9 +609,9 @@ export default function MarketStrategyMap() {
                 key={district.district}
                 longitude={district.centroid.lng}
                 latitude={district.centroid.lat}
-                anchor="bottom"
+                anchor="center"
               >
-                <DistrictPin
+                <DistrictLabel
                   district={district}
                   data={data}
                   zoom={viewState.zoom}
@@ -634,24 +637,44 @@ export default function MarketStrategyMap() {
           )}
         </AnimatePresence>
 
-        {/* Legend */}
+        {/* Legend - Market Segments */}
         <div className="absolute bottom-4 left-4 z-20">
           <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-[#94B4C1]/50 shadow-md p-2.5">
             <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-2">
-              PSF Range
+              Market Segments
             </p>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-[#213448]" />
-                <span className="text-[10px] text-[#213448]">Premium (&gt;$2,200)</span>
+                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(33, 52, 72, 0.35)' }} />
+                <span className="text-[10px] text-[#213448]">CCR - Core Central</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-[#547792]" />
-                <span className="text-[10px] text-[#213448]">Mid-range ($1,400-$2,200)</span>
+                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(84, 119, 146, 0.30)' }} />
+                <span className="text-[10px] text-[#213448]">RCR - City Fringe</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-white border border-[#94B4C1]" />
-                <span className="text-[10px] text-[#213448]">Value (&lt;$1,400)</span>
+                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(148, 180, 193, 0.25)' }} />
+                <span className="text-[10px] text-[#213448]">OCR - Suburban</span>
+              </div>
+            </div>
+
+            <div className="h-px bg-[#94B4C1]/30 my-2" />
+
+            <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-2">
+              Price Tier
+            </p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-3 rounded bg-[#213448]" />
+                <span className="text-[10px] text-[#213448]">&gt;$2,200 psf</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-3 rounded bg-[#547792]" />
+                <span className="text-[10px] text-[#213448]">$1,400-$2,200</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-3 rounded bg-white border border-[#94B4C1]" />
+                <span className="text-[10px] text-[#213448]">&lt;$1,400 psf</span>
               </div>
             </div>
           </div>
