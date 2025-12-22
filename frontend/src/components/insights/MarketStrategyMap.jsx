@@ -25,11 +25,19 @@ const COLORS = {
   sand: '#EAE0CF',
 };
 
-// Singapore bounds - strict constraint
+// Singapore bounds for fitBounds (with breathing room)
 const SINGAPORE_BOUNDS = [
   [103.60, 1.20],  // Southwest
   [104.05, 1.48],  // Northeast
 ];
+
+// Padding for fitBounds - pushes map UP above filter bar
+const MAP_PADDING = {
+  top: 60,
+  bottom: 130,  // Extra space for filter bar
+  left: 60,
+  right: 60,
+};
 
 /**
  * Polylabel Algorithm - Find visual center of polygon
@@ -222,26 +230,27 @@ function DataFlag({ district, data, currentFilter }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Main Pill/Flag */}
+      {/* Main Pill/Flag - Compact for collision safety */}
       <motion.div
         animate={{
-          scale: isHovered ? 1.12 : 1,
-          y: isHovered ? -3 : 0,
+          scale: isHovered ? 1.1 : 1,
+          y: isHovered ? -2 : 0,
         }}
         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         className={`
-          px-2.5 py-1 rounded-full
-          font-bold text-xs
-          shadow-lg
+          px-2 py-0.5 rounded-full
+          font-bold text-[11px]
+          shadow-md
           border
           transition-shadow duration-200
+          whitespace-nowrap
           ${hasData
             ? isHotspot
               ? 'bg-[#213448] text-white border-[#94B4C1]/50 shadow-[#213448]/40'
               : 'bg-white text-slate-900 border-slate-200 shadow-black/20'
             : 'bg-slate-700/80 text-slate-400 border-slate-600/50 shadow-black/10'
           }
-          ${isHovered ? 'shadow-xl' : ''}
+          ${isHovered ? 'shadow-lg' : ''}
         `}
       >
         {hasData ? formatPsf(data.median_psf) : '-'}
@@ -404,15 +413,15 @@ export default function MarketStrategyMap() {
     [districtData]
   );
 
-  // Clean border line layer
+  // Dashed border line layer - "Blueprint" style
   const lineLayer = useMemo(
     () => ({
       id: 'district-line',
       type: 'line',
       paint: {
-        'line-color': COLORS.skyBlue,
-        'line-width': 1,
-        'line-opacity': 0.8,
+        'line-color': 'rgba(255, 255, 255, 0.35)',
+        'line-width': 1.5,
+        'line-dasharray': [2, 4], // Short dash, long gap
       },
       layout: {
         'line-cap': 'round',
@@ -421,6 +430,17 @@ export default function MarketStrategyMap() {
     }),
     []
   );
+
+  // Handle map load - fit to Singapore bounds with padding
+  const handleMapLoad = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (map) {
+      map.fitBounds(SINGAPORE_BOUNDS, {
+        padding: MAP_PADDING,
+        duration: 0, // Instant on load
+      });
+    }
+  }, []);
 
   // Calculate PSF range for stats
   const psfRange = useMemo(() => {
@@ -514,6 +534,7 @@ export default function MarketStrategyMap() {
           ref={mapRef}
           {...viewState}
           onMove={(evt) => setViewState(evt.viewState)}
+          onLoad={handleMapLoad}
           mapStyle={MAP_STYLE}
           style={{ width: '100%', height: '100%' }}
           dragPan={false}
@@ -522,8 +543,7 @@ export default function MarketStrategyMap() {
           scrollZoom={true}
           doubleClickZoom={true}
           keyboard={false}
-          maxBounds={SINGAPORE_BOUNDS}
-          minZoom={10}
+          minZoom={9.5}
           maxZoom={13}
           maxPitch={0}
         >
@@ -587,7 +607,7 @@ export default function MarketStrategyMap() {
           </div>
         </motion.div>
 
-        {/* Legend */}
+        {/* Legend - Market Segments */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -595,21 +615,30 @@ export default function MarketStrategyMap() {
           className="absolute top-4 right-4 z-20"
         >
           <div className="p-3 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
-              PSF Legend
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-2.5">
+              Market Segments
             </p>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: COLORS.skyBlue }} />
-                <span className="text-xs text-slate-300">&lt; $1,400</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.deepNavy }} />
+                <div className="flex flex-col">
+                  <span className="text-[11px] text-white font-medium">CCR</span>
+                  <span className="text-[9px] text-slate-400">Core Central</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: COLORS.oceanBlue }} />
-                <span className="text-xs text-slate-300">$1,400 - $2,200</span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.oceanBlue }} />
+                <div className="flex flex-col">
+                  <span className="text-[11px] text-white font-medium">RCR</span>
+                  <span className="text-[9px] text-slate-400">Rest of Central</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: COLORS.deepNavy }} />
-                <span className="text-xs text-slate-300">&gt; $2,200</span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.skyBlue }} />
+                <div className="flex flex-col">
+                  <span className="text-[11px] text-white font-medium">OCR</span>
+                  <span className="text-[9px] text-slate-400">Outside Central</span>
+                </div>
               </div>
             </div>
           </div>
