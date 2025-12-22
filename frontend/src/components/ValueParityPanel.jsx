@@ -516,10 +516,10 @@ export function ValueParityPanel() {
                       className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
                     >
                       <option value="">All</option>
-                      <option value="0-5">0-5 years</option>
-                      <option value="5-10">5-10 years</option>
-                      <option value="10-20">10-20 years</option>
-                      <option value="20+">20+ years</option>
+                      <option value="0-5">New / Almost New (≤5 yrs)</option>
+                      <option value="5-10">Young Resale (6-10 yrs)</option>
+                      <option value="10-20">Mature (11-20 yrs)</option>
+                      <option value="20+">Old (&gt;20 yrs)</option>
                     </select>
                   </div>
                 </div>

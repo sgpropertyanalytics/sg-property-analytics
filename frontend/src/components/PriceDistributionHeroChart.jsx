@@ -541,7 +541,14 @@ export function PriceDistributionHeroChart({
       parts.push(activeFilters.saleType);
     }
     if (activeFilters.leaseAge) {
-      parts.push(`${activeFilters.leaseAge} yrs`);
+      // Map lease age values to friendly labels
+      const ageLabels = {
+        '0-5': 'New / Almost New',
+        '5-10': 'Young Resale',
+        '10-20': 'Mature',
+        '20+': 'Old'
+      };
+      parts.push(ageLabels[activeFilters.leaseAge] || activeFilters.leaseAge);
     }
 
     return parts.length > 0 ? parts.join(' · ') : 'All properties';
