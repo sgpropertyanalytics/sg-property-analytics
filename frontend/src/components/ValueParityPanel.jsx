@@ -509,6 +509,24 @@ export function ValueParityPanel() {
         </form>
       </div>
 
+      {/* Price Distribution Hero Chart - shows where buyer's price falls in the distribution */}
+      {hasSearched && (
+        <PriceDistributionHeroChart
+          buyerPrice={budget}
+          transactions={chartTransactions}
+          loading={chartLoading}
+          height={280}
+          activeFilters={{
+            bedroom,
+            region,
+            district,
+            tenure,
+            saleType,
+            leaseAge
+          }}
+        />
+      )}
+
       {/* Results Table */}
       {hasSearched && (
         <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden animate-fade-in">
@@ -699,16 +717,6 @@ export function ValueParityPanel() {
             </div>
           )}
         </div>
-      )}
-
-      {/* Price Distribution Hero Chart - shows where buyer's price falls in the distribution */}
-      {hasSearched && (
-        <PriceDistributionHeroChart
-          buyerPrice={budget}
-          transactions={chartTransactions}
-          loading={chartLoading}
-          height={280}
-        />
       )}
 
       {/* Initial state - before search */}

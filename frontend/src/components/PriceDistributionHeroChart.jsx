@@ -179,10 +179,10 @@ export function computePricePercentile(buyerPrice, transactions) {
 
 /**
  * Creates histogram bins from transaction data.
- * Bins are computed with fixed intervals for visual stability.
+ * Only creates bins that cover the actual data range (no empty trailing bins).
  *
  * @param {Array<{price: number}>} transactions - Transaction data
- * @param {number} numBins - Number of histogram bins
+ * @param {number} numBins - Target number of histogram bins
  * @returns {Array<{start: number, end: number, count: number, label: string}>}
  */
 function createHistogramBins(transactions, numBins = HISTOGRAM_BINS) {
@@ -199,23 +199,28 @@ function createHistogramBins(transactions, numBins = HISTOGRAM_BINS) {
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
-  // Add small padding to ensure all values fall within bins
+  // Calculate range and bin size
   const range = maxPrice - minPrice || 1;
-  const binSize = range / numBins;
+  const rawBinSize = range / numBins;
 
   // Round bin size to a nice number for stable display
-  const roundedBinSize = binSize > 100000
-    ? Math.ceil(binSize / 50000) * 50000  // Round to $50K for large ranges
-    : Math.ceil(binSize / 10000) * 10000; // Round to $10K for smaller ranges
+  const roundedBinSize = rawBinSize > 100000
+    ? Math.ceil(rawBinSize / 50000) * 50000  // Round to $50K for large ranges
+    : Math.ceil(rawBinSize / 10000) * 10000; // Round to $10K for smaller ranges
 
   // Adjust min to align with rounded bin size
   const adjustedMin = Math.floor(minPrice / roundedBinSize) * roundedBinSize;
 
+  // Calculate how many bins we actually need to cover the data
+  const actualBinsNeeded = Math.ceil((maxPrice - adjustedMin) / roundedBinSize);
+
   const bins = [];
-  for (let i = 0; i < numBins; i++) {
+  for (let i = 0; i < actualBinsNeeded; i++) {
     const start = adjustedMin + (i * roundedBinSize);
     const end = start + roundedBinSize;
-    const count = prices.filter(p => p >= start && p < end).length;
+    // Include max price in the last bin (use <= for end)
+    const isLastBin = i === actualBinsNeeded - 1;
+    const count = prices.filter(p => p >= start && (isLastBin ? p <= end : p < end)).length;
 
     bins.push({
       start,
@@ -223,16 +228,6 @@ function createHistogramBins(transactions, numBins = HISTOGRAM_BINS) {
       count,
       label: formatPriceShort(start)
     });
-  }
-
-  // Handle edge case: if max price falls exactly on a bin boundary
-  // Count any prices at exactly maxPrice in the last bin
-  const lastBin = bins[bins.length - 1];
-  if (lastBin) {
-    const exactMaxCount = prices.filter(p => p === maxPrice && p >= lastBin.end).length;
-    if (exactMaxCount > 0) {
-      lastBin.count += exactMaxCount;
-    }
   }
 
   return bins;
@@ -269,12 +264,14 @@ function formatPriceShort(value) {
  * @param {Array<{price: number}>} props.transactions - Comparable transaction data
  * @param {number} [props.height=280] - Chart height in pixels
  * @param {boolean} [props.loading=false] - Loading state
+ * @param {Object} [props.activeFilters={}] - Currently active filters for subtitle context
  */
 export function PriceDistributionHeroChart({
   buyerPrice,
   transactions = [],
   height = 280,
-  loading = false
+  loading = false,
+  activeFilters = {}
 }) {
   const chartRef = useRef(null);
 
@@ -477,6 +474,32 @@ export function PriceDistributionHeroChart({
   // Determine if this is a good deal (paid less than most)
   const isGoodDeal = stats.percentile >= 50;
 
+  // Build filter context description
+  const getFilterDescription = () => {
+    const parts = [];
+
+    if (activeFilters.bedroom) {
+      parts.push(`${activeFilters.bedroom}BR`);
+    }
+    if (activeFilters.region) {
+      parts.push(activeFilters.region);
+    }
+    if (activeFilters.district) {
+      parts.push(`D${activeFilters.district}`);
+    }
+    if (activeFilters.tenure) {
+      parts.push(activeFilters.tenure);
+    }
+    if (activeFilters.saleType) {
+      parts.push(activeFilters.saleType);
+    }
+    if (activeFilters.leaseAge) {
+      parts.push(`${activeFilters.leaseAge} yrs old`);
+    }
+
+    return parts.length > 0 ? parts.join(' · ') : 'All properties';
+  };
+
   return (
     <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
@@ -486,6 +509,9 @@ export function PriceDistributionHeroChart({
             <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
             <p className="text-xs text-[#547792] mt-0.5">
               How your target price compares to {stats.totalCount.toLocaleString()} comparable transactions
+            </p>
+            <p className="text-xs text-[#547792]/70 mt-0.5">
+              Filters: {getFilterDescription()}
             </p>
           </div>
 
