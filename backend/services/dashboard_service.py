@@ -360,9 +360,16 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
         elif tenure_lower in ['999-year', '999']:
             conditions.append(Transaction.remaining_lease == 999)
 
-    # Project name (partial match)
+    # Project name - supports both partial match (search) and exact match (drill-through)
+    # Use project_exact for drill-through views (ProjectDetailPanel)
+    # Use project for search functionality (sidebar filter)
+    project_exact = filters.get('project_exact')
     project = filters.get('project')
-    if project:
+    if project_exact:
+        # EXACT match - for ProjectDetailPanel drill-through
+        conditions.append(Transaction.project_name == project_exact)
+    elif project:
+        # PARTIAL match - for search functionality
         conditions.append(Transaction.project_name.ilike(f'%{project}%'))
 
     return conditions

@@ -129,8 +129,10 @@ def dashboard():
             if request.args.get('tenure'):
                 filters['tenure'] = request.args.get('tenure')
 
-            # Project filter
-            if request.args.get('project'):
+            # Project filter - supports both partial match (search) and exact match (drill-through)
+            if request.args.get('project_exact'):
+                filters['project_exact'] = request.args.get('project_exact')
+            elif request.args.get('project'):
                 filters['project'] = request.args.get('project')
 
             # Panels
@@ -1372,9 +1374,17 @@ def aggregate():
             filter_conditions.append(Transaction.remaining_lease == 999)
         filters_applied["tenure"] = tenure
 
-    # Project filter (partial match)
+    # Project filter - supports both partial match (search) and exact match (drill-through)
+    # Use project_exact for drill-through views (ProjectDetailPanel)
+    # Use project for search functionality (sidebar filter)
+    project_exact = request.args.get("project_exact")
     project = request.args.get("project")
-    if project:
+    if project_exact:
+        # EXACT match - for ProjectDetailPanel drill-through
+        filter_conditions.append(Transaction.project_name == project_exact)
+        filters_applied["project_exact"] = project_exact
+    elif project:
+        # PARTIAL match - for search functionality
         filter_conditions.append(Transaction.project_name.ilike(f"%{project}%"))
         filters_applied["project"] = project
 
@@ -1707,9 +1717,14 @@ def transactions_list():
                 Transaction.remaining_lease > 0
             ))
 
-    # Project filter
+    # Project filter - supports both partial match (search) and exact match (drill-through)
+    project_exact = request.args.get("project_exact")
     project = request.args.get("project")
-    if project:
+    if project_exact:
+        # EXACT match - for ProjectDetailPanel drill-through
+        query = query.filter(Transaction.project_name == project_exact)
+    elif project:
+        # PARTIAL match - for search functionality
         query = query.filter(Transaction.project_name.ilike(f"%{project}%"))
 
     # Get total count before pagination

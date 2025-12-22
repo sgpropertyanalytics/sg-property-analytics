@@ -99,8 +99,10 @@ function ProjectDetailPanelInner({
         // Build params for project-specific queries
         // Note: We intentionally DON'T use buildApiParams from context
         // to ensure this query is independent and doesn't affect global state
+        // IMPORTANT: Use project_exact for EXACT match (not partial LIKE match)
+        // This ensures we only get data for this specific project, not similar-named projects
         const baseParams = {
-          project: selectedProject.name,
+          project_exact: selectedProject.name,
         };
 
         // Apply sidebar filters for trend/price views (but not highlight)
@@ -126,8 +128,9 @@ function ProjectDetailPanelInner({
         };
 
         // Build histogram params for project-specific price distribution
+        // IMPORTANT: Use project_exact for EXACT match (not partial LIKE match)
         const histogramParams = {
-          project: selectedProject.name,
+          project_exact: selectedProject.name,
           panels: 'price_histogram',
           histogram_bins: 20,
         };
