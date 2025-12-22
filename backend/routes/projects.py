@@ -588,3 +588,48 @@ def populate_upcoming_launches_from_transactions():
             "For upcoming launches (2026+), upload CSV via /api/upcoming-launches/upload"
         ]
     }), 200
+
+
+@projects_bp.route("/projects/compute-school-flags", methods=["POST"])
+def compute_school_flags():
+    """
+    Compute has_popular_school_1km flag for all geocoded projects.
+
+    This endpoint triggers the computation of school proximity flags
+    for all projects that have been successfully geocoded.
+
+    Returns:
+        {
+            "status": "completed",
+            "stats": {
+                "updated": N,
+                "with_school": N,
+                "without_school": N,
+                "skipped": N
+            }
+        }
+    """
+    import time
+    start = time.time()
+
+    try:
+        from flask import current_app
+        from services.school_distance import compute_school_flags_batch
+
+        # Run the batch computation
+        stats = compute_school_flags_batch(current_app._get_current_object())
+
+        elapsed = time.time() - start
+
+        return jsonify({
+            "status": "completed",
+            "stats": stats,
+            "elapsed_seconds": round(elapsed, 2),
+            "message": f"Updated {stats['updated']} projects. {stats['with_school']} have popular school within 1km."
+        })
+
+    except Exception as e:
+        print(f"POST /api/projects/compute-school-flags ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
