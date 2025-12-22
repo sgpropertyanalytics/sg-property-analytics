@@ -256,6 +256,10 @@ def create_app():
     from routes.projects import projects_bp
     app.register_blueprint(projects_bp, url_prefix='/api')
 
+    # Deal Checker routes (nearby transactions, price comparison)
+    from routes.deal_checker import deal_checker_bp
+    app.register_blueprint(deal_checker_bp, url_prefix='/api')
+
     # Insights routes (Visual Analytics Map, market intelligence)
     from routes.insights import insights_bp
     app.register_blueprint(insights_bp, url_prefix='/api/insights')

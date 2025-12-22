@@ -22,6 +22,7 @@ import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON } from '../../data/singaporeDistrictsGeoJSON';
+import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 
 // =============================================================================
 // MAP CONFIGURATION - Optimized for Right-Hand Control Stack Layout
@@ -568,12 +569,12 @@ export default function MarketStrategyMap() {
   }, []);
 
   // Create region boundary layer expression (thicker lines for region boundaries)
+  // Uses imported constants from constants/index.js (Single Source of Truth)
   const regionBorderExpression = useMemo(() => {
-    // Districts on region boundaries get highlighted
     const regionGroups = {
-      CCR: ['D01', 'D02', 'D06', 'D07', 'D09', 'D10', 'D11'],
-      RCR: ['D03', 'D04', 'D05', 'D08', 'D12', 'D13', 'D14', 'D15', 'D20'],
-      OCR: ['D16', 'D17', 'D18', 'D19', 'D22', 'D23', 'D24', 'D25', 'D26', 'D27', 'D28'],
+      CCR: CCR_DISTRICTS,
+      RCR: RCR_DISTRICTS,
+      OCR: OCR_DISTRICTS,
     };
 
     const colorExpr = ['case'];
@@ -817,23 +818,24 @@ export default function MarketStrategyMap() {
 
         {/* ============================================================= */}
         {/* RIGHT-HAND CONTROL STACK - All controls consolidated here */}
+        {/* Responsive: narrower on mobile, full width on desktop */}
         {/* ============================================================= */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
-          className="absolute top-4 right-4 z-20 flex flex-col gap-3 w-[180px]"
+          className="absolute top-2 right-2 md:top-4 md:right-4 z-20 flex flex-col gap-2 md:gap-3 w-[140px] md:w-[180px]"
         >
           {/* Row 1: View Mode Toggle */}
-          <div className="p-2 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
-            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
+          <div className="p-1.5 md:p-2 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-lg md:rounded-xl shadow-xl">
+            <p className="text-[8px] md:text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5 md:mb-2">
               View Mode
             </p>
             <div className="flex gap-1">
               <button
                 onClick={() => setViewMode('PRICE')}
                 className={`
-                  flex-1 px-2 py-1.5 text-[10px] font-semibold rounded-lg transition-all
+                  flex-1 px-1.5 md:px-2 py-1 md:py-1.5 text-[9px] md:text-[10px] font-semibold rounded-md md:rounded-lg transition-all
                   ${viewMode === 'PRICE'
                     ? 'bg-[#547792] text-white shadow'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -845,7 +847,7 @@ export default function MarketStrategyMap() {
               <button
                 onClick={() => setViewMode('VOLUME')}
                 className={`
-                  flex-1 px-2 py-1.5 text-[10px] font-semibold rounded-lg transition-all
+                  flex-1 px-1.5 md:px-2 py-1 md:py-1.5 text-[9px] md:text-[10px] font-semibold rounded-md md:rounded-lg transition-all
                   ${viewMode === 'VOLUME'
                     ? 'bg-orange-500 text-white shadow'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -858,17 +860,17 @@ export default function MarketStrategyMap() {
           </div>
 
           {/* Row 2: Unit Type Filter */}
-          <div className="p-2 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
-            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
+          <div className="p-1.5 md:p-2 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-lg md:rounded-xl shadow-xl">
+            <p className="text-[8px] md:text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5 md:mb-2">
               Unit Type
             </p>
-            <div className="grid grid-cols-5 gap-1">
+            <div className="grid grid-cols-5 gap-0.5 md:gap-1">
               {BEDROOM_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => setSelectedBed(option.value)}
                   className={`
-                    px-1 py-1.5 text-[9px] font-semibold rounded-md transition-all
+                    px-0.5 md:px-1 py-1 md:py-1.5 text-[8px] md:text-[9px] font-semibold rounded md:rounded-md transition-all
                     ${selectedBed === option.value
                       ? 'bg-[#547792] text-white shadow'
                       : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -881,76 +883,76 @@ export default function MarketStrategyMap() {
             </div>
           </div>
 
-          {/* Row 3: Legend */}
-          <div className="p-2.5 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
-            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
-              {viewMode === 'PRICE' ? 'Market Segments' : 'Activity Level'}
+          {/* Row 3: Legend - Hidden on small screens to save space */}
+          <div className="hidden sm:block p-2 md:p-2.5 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-lg md:rounded-xl shadow-xl">
+            <p className="text-[8px] md:text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5 md:mb-2">
+              {viewMode === 'PRICE' ? 'PSF Range' : 'Activity Level'}
             </p>
-            <div className="space-y-1.5">
+            <div className="space-y-1 md:space-y-1.5">
               {viewMode === 'PRICE' ? (
                 <>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.deepNavy }} />
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: COLORS.deepNavy }} />
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-white font-semibold">CCR</span>
-                      <span className="text-[8px] text-slate-400">&gt; $2,200 psf</span>
+                      <span className="text-[9px] md:text-[10px] text-white font-semibold">Premium</span>
+                      <span className="text-[7px] md:text-[8px] text-slate-400">&gt; $2,200 psf</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.oceanBlue }} />
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: COLORS.oceanBlue }} />
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-white font-semibold">RCR</span>
-                      <span className="text-[8px] text-slate-400">$1,400 - $2,199</span>
+                      <span className="text-[9px] md:text-[10px] text-white font-semibold">Mid-Range</span>
+                      <span className="text-[7px] md:text-[8px] text-slate-400">$1,400 - $2,199</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.skyBlue }} />
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: COLORS.skyBlue }} />
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-white font-semibold">OCR</span>
-                      <span className="text-[8px] text-slate-400">&lt; $1,400 psf</span>
+                      <span className="text-[9px] md:text-[10px] text-white font-semibold">Value</span>
+                      <span className="text-[7px] md:text-[8px] text-slate-400">&lt; $1,400 psf</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 pt-1 border-t border-slate-600/50 mt-1">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3a3a4a' }} />
-                    <span className="text-[10px] text-slate-400">No data</span>
+                  <div className="flex items-center gap-1.5 md:gap-2 pt-1 border-t border-slate-600/50 mt-1">
+                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: '#3a3a4a' }} />
+                    <span className="text-[9px] md:text-[10px] text-slate-400">No data</span>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.high }} />
-                    <span className="text-[10px] text-white">High activity</span>
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.high }} />
+                    <span className="text-[9px] md:text-[10px] text-white">High activity</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.medium }} />
-                    <span className="text-[10px] text-white">Medium</span>
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.medium }} />
+                    <span className="text-[9px] md:text-[10px] text-white">Medium</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.low }} />
-                    <span className="text-[10px] text-white">Low activity</span>
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.low }} />
+                    <span className="text-[9px] md:text-[10px] text-white">Low activity</span>
                   </div>
-                  <div className="flex items-center gap-2 pt-1 border-t border-slate-600/50 mt-1">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3a3a4a' }} />
-                    <span className="text-[10px] text-slate-400">No data</span>
+                  <div className="flex items-center gap-1.5 md:gap-2 pt-1 border-t border-slate-600/50 mt-1">
+                    <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: '#3a3a4a' }} />
+                    <span className="text-[9px] md:text-[10px] text-slate-400">No data</span>
                   </div>
                 </>
               )}
             </div>
           </div>
 
-          {/* Row 4: YoY Legend */}
-          <div className="p-2.5 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
-            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
+          {/* Row 4: YoY Legend - Hidden on small screens */}
+          <div className="hidden sm:block p-2 md:p-2.5 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-lg md:rounded-xl shadow-xl">
+            <p className="text-[8px] md:text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-1.5 md:mb-2">
               YoY Change
             </p>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1 md:gap-1.5">
               <div className="flex items-center gap-1">
-                <div className="w-2.5 h-2.5 rounded bg-emerald-500" />
-                <span className="text-[9px] text-slate-300">Up</span>
+                <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded bg-emerald-500" />
+                <span className="text-[8px] md:text-[9px] text-slate-300">Up</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-2.5 h-2.5 rounded bg-rose-500" />
-                <span className="text-[9px] text-slate-300">Down</span>
+                <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded bg-rose-500" />
+                <span className="text-[8px] md:text-[9px] text-slate-300">Down</span>
               </div>
             </div>
           </div>

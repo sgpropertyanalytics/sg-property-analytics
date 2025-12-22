@@ -471,6 +471,35 @@ export const syncInventory = () =>
 export const addManualInventory = (data) =>
   apiClient.post('/inventory/manual', data);
 
+// ===== Deal Checker API Functions =====
+
+/**
+ * Get project names for dropdown selection
+ * Only returns geocoded projects
+ * @returns {Promise<{projects: Array<{name, district, market_segment}>, count: number}>}
+ */
+export const getProjectNames = () =>
+  apiClient.get('/projects/names');
+
+/**
+ * Get nearby transactions for deal comparison
+ * @param {Object} params - Query parameters
+ * @param {string} params.project_name - Selected project name (required)
+ * @param {number} params.bedroom - Bedroom count 1-5 (required)
+ * @param {number} params.price - Buyer's price paid (required)
+ * @param {number} params.sqft - Unit size in sqft (optional)
+ * @param {number} params.radius_km - Search radius, default 1.0 (optional)
+ * @returns {Promise<{
+ *   project: {name, district, latitude, longitude},
+ *   filters: {bedroom, radius_km, buyer_price},
+ *   histogram: {bins: Array, total_count: number},
+ *   percentile: {rank, transactions_below, transactions_above, interpretation},
+ *   nearby_projects: Array<{project_name, latitude, longitude, distance_km, transaction_count}>
+ * }>}
+ */
+export const getDealCheckerNearbyTransactions = (params = {}) =>
+  apiClient.get(`/deal-checker/nearby-transactions?${buildQueryString(params)}`);
+
 // ===== Auth API Functions =====
 
 export const register = (email, password) => {

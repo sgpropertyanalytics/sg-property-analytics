@@ -2,9 +2,14 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getTransactionsList, getFilterOptions } from '../api/client';
 import { DISTRICT_NAMES, isDistrictInRegion } from '../constants';
 import { PriceDistributionHeroChart } from './PriceDistributionHeroChart';
+import DealCheckerContent from './powerbi/DealCheckerContent';
 
 /**
- * ValueParityPanel - Budget-based property search tool
+ * ValueParityPanel - Budget-based property search tool with Deal Checker
+ *
+ * Two tabs:
+ * 1. Budget Search - Find transactions within your budget
+ * 2. Deal Checker - Compare your purchase to nearby transactions
  *
  * Features:
  * - Budget slider (required)
@@ -22,6 +27,9 @@ const ACTIVE_RANGE_MIN = 1500000;  // $1.5M
 const ACTIVE_RANGE_MAX = 3500000;  // $3.5M
 
 export function ValueParityPanel() {
+  // Tab state
+  const [activeTab, setActiveTab] = useState('budget'); // 'budget' | 'deal-checker'
+
   // Form state - budget as number for slider
   const [budget, setBudget] = useState(1500000); // Default $1.5M
   const [bedroom, setBedroom] = useState('');
@@ -333,6 +341,45 @@ export function ValueParityPanel() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Tab Navigation */}
+      <div className="flex border-b border-[#94B4C1]/30">
+        <button
+          onClick={() => setActiveTab('budget')}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'budget'
+              ? 'border-[#213448] text-[#213448]'
+              : 'border-transparent text-[#547792] hover:text-[#213448] hover:border-[#94B4C1]'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Budget Search
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('deal-checker')}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'deal-checker'
+              ? 'border-[#213448] text-[#213448]'
+              : 'border-transparent text-[#547792] hover:text-[#213448] hover:border-[#94B4C1]'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Deal Checker
+          </span>
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'deal-checker' ? (
+        <DealCheckerContent />
+      ) : (
+        <>
       {/* Input Panel */}
       <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
         <form onSubmit={handleSearch}>
@@ -768,6 +815,8 @@ export function ValueParityPanel() {
             </p>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
