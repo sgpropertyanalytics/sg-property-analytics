@@ -561,9 +561,12 @@ export function PowerBIFilterProvider({ children }) {
   //   excludeHighlight: true - excludes time highlight filter (for time chart to show all periods)
   //   includeFactFilter: true - includes factFilter (only for Fact tables like Transaction Data Table)
   //   excludeLocationDrill: true - excludes location drill filters (Power BI best practice: drill is visual-local)
+  //   excludeOwnDimension: string - excludes a specific dimension filter (Power BI best practice: anchor charts)
+  //     Values: 'segment', 'bedroom', 'district', 'sale_type', 'date'
+  //     Use this for anchor charts that should show full distribution with visual highlight
   const buildApiParams = useCallback((additionalParams = {}, options = {}) => {
     const params = { ...additionalParams };
-    const { excludeHighlight = false, includeFactFilter = false, excludeLocationDrill = false } = options;
+    const { excludeHighlight = false, includeFactFilter = false, excludeLocationDrill = false, excludeOwnDimension = null } = options;
 
     // Apply date range - but skip if excludeHighlight and the date comes from highlight
     const highlightApplied = highlight.dimension && highlight.value;
@@ -588,29 +591,37 @@ export function PowerBIFilterProvider({ children }) {
 
     // For districts: apply sidebar filter OR location drill filter (unless excluded)
     // excludeLocationDrill implements Power BI best practice: Drill ≠ Filter (drill is visual-local)
-    if (excludeLocationDrill) {
-      // Only apply sidebar district filter, ignore location drill breadcrumbs
-      if (filters.districts.length > 0) {
-        params.district = filters.districts.join(',');
+    // Skip if this is an anchor chart for district dimension
+    if (excludeOwnDimension !== 'district') {
+      if (excludeLocationDrill) {
+        // Only apply sidebar district filter, ignore location drill breadcrumbs
+        if (filters.districts.length > 0) {
+          params.district = filters.districts.join(',');
+        }
+      } else if (activeFilters.districts.length > 0) {
+        params.district = activeFilters.districts.join(',');
       }
-    } else if (activeFilters.districts.length > 0) {
-      params.district = activeFilters.districts.join(',');
     }
     // Only filter by bedroom if user explicitly selects bedrooms
     // No default - show all bedroom types when none selected
-    if (activeFilters.bedroomTypes.length > 0) {
+    // Skip if this is an anchor chart for bedroom dimension (Power BI: same dimension = no interaction)
+    if (excludeOwnDimension !== 'bedroom' && activeFilters.bedroomTypes.length > 0) {
       params.bedroom = activeFilters.bedroomTypes.join(',');
     }
     // For segment: apply sidebar filter OR location drill filter (unless excluded)
-    if (excludeLocationDrill) {
-      // Only apply sidebar segment filter, ignore location drill breadcrumbs
-      if (filters.segment) {
-        params.segment = filters.segment;
+    // Skip if this is an anchor chart for segment dimension (Power BI: same dimension = no interaction)
+    if (excludeOwnDimension !== 'segment') {
+      if (excludeLocationDrill) {
+        // Only apply sidebar segment filter, ignore location drill breadcrumbs
+        if (filters.segment) {
+          params.segment = filters.segment;
+        }
+      } else if (activeFilters.segment) {
+        params.segment = activeFilters.segment;
       }
-    } else if (activeFilters.segment) {
-      params.segment = activeFilters.segment;
     }
-    if (activeFilters.saleType) {
+    // Skip if this is an anchor chart for sale_type dimension
+    if (excludeOwnDimension !== 'sale_type' && activeFilters.saleType) {
       params.sale_type = activeFilters.saleType;
     }
     if (activeFilters.psfRange.min !== null) {

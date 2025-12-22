@@ -259,14 +259,11 @@ const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.j
  * LevitatingFlag - Creative "Stem + Flag" Marker Design
  *
  * Structure (Flex Column):
- * - Top: The "Flag" (Price/Volume pill)
+ * - Top: The "Flag" (Price/Volume pill with YoY indicator)
  * - Middle: Vertical "Stem" (height correlates to price)
  * - Bottom: "Base" anchor (pulses for hot areas)
  *
- * Dynamic Height Logic:
- * - Price < $1,400: Short stem (8px)
- * - Price $1,400-$2,500: Medium stem (16px)
- * - Price > $2,500: Tall stem (24px) - expensive districts "stand taller"
+ * IMPROVED: Now shows YoY change and transaction count without hover
  */
 function LevitatingFlag({ district, data, viewMode, zoom, isTopExpensive, isHotVolume }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -274,48 +271,56 @@ function LevitatingFlag({ district, data, viewMode, zoom, isTopExpensive, isHotV
   const hasData = data?.has_data;
   const psf = data?.median_psf || 0;
   const txCount = data?.tx_count || 0;
+  const yoyValue = data?.yoy_pct;
 
   // Determine stem height based on price (histogram effect)
   const getStemHeight = () => {
     if (viewMode === 'VOLUME') {
-      // For volume mode, use transaction count
-      if (txCount < 200) return 'h-2';   // 8px
-      if (txCount < 500) return 'h-4';   // 16px
-      return 'h-6';                       // 24px
+      if (txCount < 200) return 'h-2';
+      if (txCount < 500) return 'h-4';
+      return 'h-6';
     }
-    // For price mode
-    if (psf < 1400) return 'h-2';        // 8px - OCR
-    if (psf < 2500) return 'h-4';        // 16px - RCR
-    return 'h-6';                         // 24px - CCR Premium
+    if (psf < 1400) return 'h-2';
+    if (psf < 2500) return 'h-4';
+    return 'h-6';
   };
 
-  // Display value based on mode and zoom
+  // Display modes based on zoom level
   const isCompactMode = zoom < 11.5;
+  const isDetailMode = zoom >= 12.5;
+
+  // Primary display value
   const displayValue = isCompactMode
     ? district.district.replace('D0', '').replace('D', '')
     : viewMode === 'PRICE'
       ? formatPsf(psf)
       : txCount.toLocaleString();
 
-  // Flag styling
+  // Flag styling with YoY-aware border glow
   const getFlagStyle = () => {
     if (!hasData) {
       return 'bg-slate-700/80 text-slate-400 border-slate-600';
     }
     if (isTopExpensive && viewMode === 'PRICE') {
-      // Gold premium styling for top 3 most expensive
       return 'bg-[#213448] text-amber-400 border-amber-400/60 shadow-amber-500/30';
     }
     if (isHotVolume && viewMode === 'VOLUME') {
-      // Fire styling for hot volume areas
       return 'bg-[#B91C1C] text-white border-orange-400/60 shadow-red-500/30';
     }
     if (psf >= 2200 && viewMode === 'PRICE') {
-      // Navy for CCR
       return 'bg-[#213448] text-white border-[#94B4C1]/50 shadow-[#213448]/40';
     }
-    // Default white
     return 'bg-white text-slate-900 border-slate-200 shadow-black/20';
+  };
+
+  // YoY indicator color
+  const getYoYStyle = () => {
+    if (!yoyValue && yoyValue !== 0) return null;
+    if (yoyValue >= 10) return 'bg-emerald-500 text-white';
+    if (yoyValue > 0) return 'bg-emerald-500/80 text-white';
+    if (yoyValue <= -10) return 'bg-rose-500 text-white';
+    if (yoyValue < 0) return 'bg-rose-500/80 text-white';
+    return 'bg-slate-500 text-white';
   };
 
   return (
@@ -324,9 +329,9 @@ function LevitatingFlag({ district, data, viewMode, zoom, isTopExpensive, isHotV
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Vertical Stack: Flag + Stem + Base */}
+      {/* Vertical Stack: Flag + YoY Badge + Stem + Base */}
       <div className="flex flex-col items-center">
-        {/* THE FLAG (Top) */}
+        {/* THE FLAG (Top) - Now with dual metrics when zoomed */}
         <motion.div
           animate={{
             y: isHovered ? -4 : 0,
@@ -334,18 +339,42 @@ function LevitatingFlag({ district, data, viewMode, zoom, isTopExpensive, isHotV
           }}
           transition={{ type: 'spring', stiffness: 400, damping: 20 }}
           className={`
-            ${isCompactMode ? 'px-1.5 py-0.5 text-[8px]' : 'px-2 py-1 text-[10px]'}
+            ${isCompactMode ? 'px-1.5 py-0.5' : 'px-2 py-1'}
             rounded-md font-bold shadow-xl border-2
             transition-all duration-200 whitespace-nowrap
-            hover:-translate-y-1
             ${getFlagStyle()}
             ${isHovered ? 'shadow-2xl ring-2 ring-white/40' : ''}
             ${isTopExpensive && viewMode === 'PRICE' ? 'ring-1 ring-amber-400/30' : ''}
           `}
           style={{ backdropFilter: 'blur(4px)' }}
         >
-          {hasData ? displayValue : '-'}
+          {hasData ? (
+            <div className="flex flex-col items-center">
+              {/* Primary value */}
+              <span className={isCompactMode ? 'text-[8px]' : 'text-[10px]'}>
+                {displayValue}
+              </span>
+              {/* Secondary: Transaction count (in Price mode, when zoomed) */}
+              {!isCompactMode && viewMode === 'PRICE' && isDetailMode && (
+                <span className="text-[7px] opacity-70 -mt-0.5">
+                  {txCount.toLocaleString()} tx
+                </span>
+              )}
+            </div>
+          ) : '-'}
         </motion.div>
+
+        {/* YoY INDICATOR - Visible without hover! */}
+        {hasData && yoyValue !== null && yoyValue !== undefined && !isCompactMode && (
+          <div
+            className={`
+              mt-0.5 px-1 py-0.5 rounded text-[7px] font-bold
+              ${getYoYStyle()}
+            `}
+          >
+            {yoyValue >= 0 ? '↑' : '↓'}{Math.abs(yoyValue).toFixed(0)}%
+          </div>
+        )}
 
         {/* THE STEM (Middle) */}
         <motion.div

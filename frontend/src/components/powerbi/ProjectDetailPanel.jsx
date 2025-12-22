@@ -124,7 +124,7 @@ function ProjectDetailPanelInner({
         const priceParams = {
           ...baseParams,
           group_by: 'bedroom',
-          metrics: 'count,median_psf,avg_psf,min_psf,max_psf',
+          metrics: 'count,median_psf,avg_psf,min_psf,max_psf,median_price',
         };
 
         // Build histogram params for project-specific price distribution
@@ -293,8 +293,10 @@ function ProjectDetailPanelInner({
         callbacks: {
           label: (context) => {
             const item = priceData[context.dataIndex];
+            const medianPrice = item.median_price ? `$${(item.median_price / 1000000).toFixed(2)}M` : 'N/A';
             return [
               `Median PSF: $${item.median_psf?.toLocaleString() || 0}`,
+              `Median Price: ${medianPrice}`,
               `Transactions: ${item.count?.toLocaleString() || 0}`,
             ];
           },

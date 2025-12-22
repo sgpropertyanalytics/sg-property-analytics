@@ -135,7 +135,7 @@ export function HotProjectsTable({ height = 400 }) {
     { key: 'units_sold', label: 'Units Sold', sortable: true, width: 'w-20', align: 'right' },
     { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-20', align: 'right' },
     { key: 'percent_sold', label: '% Sold', sortable: true, width: 'w-20', align: 'right' },
-    { key: 'unsold_inventory', label: 'Unsold', sortable: true, width: 'w-16', align: 'right' },
+    { key: 'unsold_inventory', label: 'Unsold Inventory', sortable: true, width: 'w-24', align: 'right' },
     { key: 'median_price', label: 'Median Price', sortable: true, width: 'w-28', align: 'right' },
     { key: 'median_psf', label: 'Median PSF', sortable: true, width: 'w-24', align: 'right' },
   ];

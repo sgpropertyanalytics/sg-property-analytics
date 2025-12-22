@@ -45,7 +45,8 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
     drillDown,
     breadcrumbs,
     highlight,
-    setSelectedProject
+    setSelectedProject,
+    filters,  // Access filters.segment for anchor chart highlighting
   } = usePowerBIFilters();
 
   const [data, setData] = useState([]);
@@ -81,8 +82,16 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
             metrics: 'count,median_psf,total_value',
             district: showProjectsForDistrict, // Filter to this district
           });
+        } else if (drillPath.location === 'region') {
+          // ANCHOR CHART: At region level, exclude segment filter
+          // Power BI Best Practice: Same dimension = no interaction
+          // Shows all regions (CCR, RCR, OCR) with visual highlight on selected
+          params = buildApiParams({
+            group_by: 'region',
+            metrics: 'count,median_psf,total_value'
+          }, { excludeOwnDimension: 'segment' });
         } else {
-          // GLOBAL DRILL VIEW: Show regions or districts
+          // GLOBAL DRILL VIEW: Show districts (apply all filters)
           params = buildApiParams({
             group_by: drillPath.location,
             metrics: 'count,median_psf,total_value'
@@ -146,15 +155,27 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
     setShowProjectsForDistrict(null);
   };
 
+  // Determine if this region is highlighted by the segment slicer
+  // Power BI Best Practice: Anchor charts show full distribution, highlight selected
+  const highlightedSegment = filters.segment;
+
   // Get region color using theme palette
-  const getRegionColor = (location, alpha = 0.8) => {
+  // When a segment is selected in the slicer, non-selected segments get reduced opacity
+  const getRegionColor = (location, alpha = 0.8, isForBackground = true) => {
     if (displayMode === 'region') {
       const colors = {
         CCR: `rgba(33, 52, 72, ${alpha})`,   // #213448 - Dark navy
         RCR: `rgba(84, 119, 146, ${alpha})`, // #547792 - Medium blue
         OCR: `rgba(148, 180, 193, ${alpha})`, // #94B4C1 - Light blue
       };
-      return colors[location] || `rgba(128, 128, 128, ${alpha})`;
+      let color = colors[location] || `rgba(128, 128, 128, ${alpha})`;
+
+      // Power BI Anchor Pattern: When segment slicer is active, dim non-selected regions
+      if (isForBackground && highlightedSegment && location !== highlightedSegment) {
+        // Reduce opacity for non-highlighted segments
+        return color.replace(/[\d.]+\)$/, '0.25)');
+      }
+      return color;
     }
 
     // For district level, color by region based on district number
@@ -219,9 +240,9 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
   const labels = data.map(getLabel);
   const counts = data.map(d => d.count || 0);
 
-  // Highlight based on cross-filter
+  // Highlight based on cross-filter (when user clicks a bar)
   const groupByField = showProjectsForDistrict ? 'project' : drillPath.location;
-  const highlightedIndex = crossFilter.source === 'location' && crossFilter.value
+  const crossFilterHighlightedIndex = crossFilter.source === 'location' && crossFilter.value
     ? data.findIndex(d => d[groupByField] === crossFilter.value)
     : -1;
 
@@ -233,17 +254,34 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
         data: counts,
         backgroundColor: data.map((d, i) => {
           const locationValue = showProjectsForDistrict ? d.project : d[drillPath.location];
-          const baseColor = getRegionColor(locationValue);
-          if (highlightedIndex === -1 || highlightedIndex === i) {
-            return baseColor;
+
+          // At region level with segment slicer: anchor pattern applies
+          // getRegionColor already handles the dimming of non-selected segments
+          const baseColor = getRegionColor(locationValue, 0.8, true);
+
+          // If there's also a cross-filter active (bar click), apply additional dimming
+          if (crossFilterHighlightedIndex !== -1 && crossFilterHighlightedIndex !== i) {
+            return baseColor.replace(/[\d.]+\)$/, '0.3)');
           }
-          return baseColor.replace(/[\d.]+\)$/, '0.3)');
+          return baseColor;
         }),
-        borderColor: data.map(d => {
+        borderColor: data.map((d, i) => {
           const locationValue = showProjectsForDistrict ? d.project : d[drillPath.location];
-          return getRegionColor(locationValue, 1);
+
+          // At region level: thicker border for highlighted segment
+          if (displayMode === 'region' && highlightedSegment === locationValue) {
+            return 'rgba(33, 52, 72, 1)';  // Dark navy border for highlighted
+          }
+          return getRegionColor(locationValue, 1, false);
         }),
-        borderWidth: 1,
+        borderWidth: data.map((d) => {
+          const locationValue = showProjectsForDistrict ? d.project : d[drillPath.location];
+          // Thicker border for highlighted segment in anchor mode
+          if (displayMode === 'region' && highlightedSegment === locationValue) {
+            return 3;
+          }
+          return 1;
+        }),
       },
     ],
   };
