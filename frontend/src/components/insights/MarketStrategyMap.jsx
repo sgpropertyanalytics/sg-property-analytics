@@ -29,8 +29,8 @@ const MAP_CONFIG = {
   maxZoom: 15,
 };
 
-// Light basemap
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+// Light basemap (no labels - cleaner with only our district markers)
+const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 
 // Theme colors (from design system)
 const COLORS = {
@@ -246,7 +246,7 @@ function HoverCard({ district, data }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.15 }}
-      className="absolute z-50 pointer-events-none top-[220px] left-4"
+      className="absolute z-50 pointer-events-none top-[280px] left-4"
     >
       <div className="bg-white rounded-lg shadow-xl border border-[#94B4C1]/50 p-3 w-[165px]">
         {/* Header */}
@@ -712,7 +712,7 @@ export default function MarketStrategyMap() {
             <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-2">
               Volume Activity
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {/* Gradient bar from red to yellow */}
               <div
                 className="w-16 h-3 rounded"
@@ -720,7 +720,6 @@ export default function MarketStrategyMap() {
                   background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15)'
                 }}
               />
-              <span className="text-[10px] text-[#213448]">Top 30%</span>
             </div>
             <div className="flex justify-between mt-1 px-0.5" style={{ width: '64px' }}>
               <span className="text-[8px] text-[#547792]">High</span>
