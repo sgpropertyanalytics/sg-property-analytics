@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getTransactionsList, getFilterOptions } from '../api/client';
 import { DISTRICT_NAMES, isDistrictInRegion } from '../constants';
-import { PriceDistributionHeroChart } from './PriceDistributionHeroChart';
 import DealCheckerContent from './powerbi/DealCheckerContent';
 import { HotProjectsTable } from './powerbi/HotProjectsTable';
 import { MobileTransactionCard } from './MobileTransactionCard';
@@ -65,19 +64,10 @@ export function ValueParityPanel() {
     order: 'desc',
   });
 
-  // Chart data state - holds all transactions for histogram
-  // We fetch up to 5000 transactions for the chart to ensure good distribution
-  const [chartTransactions, setChartTransactions] = useState([]);
-  const [chartLoading, setChartLoading] = useState(false);
-  const chartFetchAbortRef = useRef(null);
-
   // Refs for scrolling to sections
   const resultsRef = useRef(null);
   const newLaunchesRef = useRef(null);
   const resaleRef = useRef(null);
-
-  // Selected price range from histogram click (for filtering table)
-  const [selectedPriceRange, setSelectedPriceRange] = useState(null);
 
   // Hot projects count (for section header badge)
   const [hotProjectsCount, setHotProjectsCount] = useState(0);
@@ -87,17 +77,6 @@ export function ValueParityPanel() {
 
   // Count active filters for badge
   const activeFilterCount = [bedroom, region, district, tenure, saleType, leaseAge].filter(Boolean).length;
-
-  // Responsive chart height (220px mobile, 280px desktop)
-  const [chartHeight, setChartHeight] = useState(typeof window !== 'undefined' && window.innerWidth < 768 ? 220 : 280);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setChartHeight(window.innerWidth < 768 ? 220 : 280);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Load filter options on mount
   useEffect(() => {
@@ -177,89 +156,16 @@ export function ValueParityPanel() {
     }
   }, [budget, bedroom, region, district, tenure, saleType, leaseAge, pagination.limit, sortConfig]);
 
-  // Fetch all transactions for chart histogram (separate from paginated table)
-  // This fetches up to 5000 transactions to ensure a representative distribution
-  const fetchChartData = useCallback(async () => {
-    // Cancel any pending chart fetch
-    if (chartFetchAbortRef.current) {
-      chartFetchAbortRef.current.abort();
-    }
-    chartFetchAbortRef.current = new AbortController();
-
-    setChartLoading(true);
-
-    try {
-      const params = {
-        page: 1,
-        limit: 5000, // Fetch up to 5000 transactions for histogram
-        sort_by: 'price',
-        sort_order: 'asc',
-      };
-
-      // Apply budget filter for chart data (budget ± $100K)
-      if (budget) {
-        params.price_min = budget - 100000;
-        params.price_max = budget + 100000;
-      }
-
-      // Add optional filters (same as table)
-      if (bedroom) params.bedroom = bedroom;
-      if (region) params.segment = region;
-      if (district) params.district = district;
-      if (tenure) params.tenure = tenure;
-      if (saleType) params.sale_type = saleType;
-      if (leaseAge) params.lease_age = leaseAge;
-
-      const response = await getTransactionsList(params, {
-        signal: chartFetchAbortRef.current.signal
-      });
-      setChartTransactions(response.data.transactions || []);
-    } catch (err) {
-      // Ignore abort errors (axios uses CanceledError or AbortError)
-      if (err.name !== 'AbortError' && err.name !== 'CanceledError' && !axios.isCancel(err)) {
-        console.error('Error fetching chart data:', err);
-      }
-    } finally {
-      setChartLoading(false);
-    }
-  }, [budget, bedroom, region, district, tenure, saleType, leaseAge]);
-
   // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
     setPagination(prev => ({ ...prev, page: 1 }));
-    setSelectedPriceRange(null); // Reset any histogram filter
     fetchTransactions(1, null);
-    fetchChartData(); // Also fetch data for the histogram chart
 
     // Scroll to results after a brief delay to allow DOM to update
     setTimeout(() => {
       newLaunchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
-  };
-
-  // Handle histogram bin click - filter table to show transactions in that price range
-  const handleBinClick = (priceRange) => {
-    if (selectedPriceRange &&
-        selectedPriceRange.start === priceRange.start &&
-        selectedPriceRange.end === priceRange.end) {
-      // Clicking same bin again clears the filter
-      setSelectedPriceRange(null);
-      setPagination(prev => ({ ...prev, page: 1 }));
-      fetchTransactions(1, null);
-    } else {
-      // Apply new price range filter
-      setSelectedPriceRange(priceRange);
-      setPagination(prev => ({ ...prev, page: 1 }));
-      fetchTransactions(1, priceRange);
-    }
-  };
-
-  // Clear histogram filter
-  const clearPriceRangeFilter = () => {
-    setSelectedPriceRange(null);
-    setPagination(prev => ({ ...prev, page: 1 }));
-    fetchTransactions(1, null);
   };
 
   // Handle sort
@@ -631,10 +537,11 @@ export function ValueParityPanel() {
                       className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
                     >
                       <option value="">All</option>
-                      <option value="1">1B</option>
-                      <option value="2">2B</option>
-                      <option value="3">3B</option>
-                      <option value="4">4B+</option>
+                      <option value="1">1BR</option>
+                      <option value="2">2BR</option>
+                      <option value="3">3BR</option>
+                      <option value="4">4BR</option>
+                      <option value="5">5BR+</option>
                     </select>
                   </div>
 
@@ -771,27 +678,6 @@ export function ValueParityPanel() {
       )}
 
       {/* ===== RESALE SECTION ===== */}
-      {/* Price Distribution Hero Chart - shows where buyer's price falls in the distribution */}
-      {hasSearched && (
-        <div ref={resaleRef}>
-        <PriceDistributionHeroChart
-          buyerPrice={budget}
-          transactions={chartTransactions}
-          loading={chartLoading}
-          height={chartHeight}
-          activeFilters={{
-            bedroom,
-            region,
-            district,
-            tenure,
-            saleType,
-            leaseAge
-          }}
-          onBinClick={handleBinClick}
-          selectedPriceRange={selectedPriceRange}
-        />
-        </div>
-      )}
 
       {/* Results Table */}
       {hasSearched && (

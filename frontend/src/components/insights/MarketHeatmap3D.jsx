@@ -145,7 +145,8 @@ const BEDROOM_OPTIONS = [
   { value: '1', label: '1BR', fullLabel: '1-Bedroom' },
   { value: '2', label: '2BR', fullLabel: '2-Bedroom' },
   { value: '3', label: '3BR', fullLabel: '3-Bedroom' },
-  { value: '4+', label: '4BR+', fullLabel: '4+ Bedroom' },
+  { value: '4', label: '4BR', fullLabel: '4-Bedroom' },
+  { value: '5', label: '5BR+', fullLabel: '5-Bedroom+' },
 ];
 
 // Period filter options

@@ -272,7 +272,7 @@ function ProjectDetailPanelInner({
 
   // Chart data for bedroom breakdown
   const bedroomChartData = {
-    labels: priceData.map(d => `${d.bedroom}-BR`),
+    labels: priceData.map(d => d.bedroom >= 5 ? '5BR+' : `${d.bedroom}BR`),
     datasets: [
       {
         label: 'Median PSF',
@@ -582,7 +582,7 @@ function ProjectDetailPanelInner({
                         <tbody>
                           {priceData.map((d) => (
                             <tr key={d.bedroom} className="border-b border-[#94B4C1]/20 hover:bg-[#EAE0CF]/20">
-                              <td className="py-1.5 pr-2 font-medium text-[#213448]">{d.bedroom}-BR</td>
+                              <td className="py-1.5 pr-2 font-medium text-[#213448]">{d.bedroom >= 5 ? '5BR+' : `${d.bedroom}BR`}</td>
                               <td className="py-1.5 px-1 text-right text-[#547792]">{d.count?.toLocaleString()}</td>
                               <td className="py-1.5 px-1 text-right text-[#547792]">
                                 {d.price_25th ? `$${(d.price_25th / 1000000).toFixed(2)}M` : '-'}

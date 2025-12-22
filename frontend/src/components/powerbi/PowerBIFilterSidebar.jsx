@@ -181,13 +181,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           activeCount={filters.bedroomTypes.length > 0 ? 1 : 0}
         >
           {/* Bedroom Type Buttons - centered with consistent width */}
-          <div className="grid grid-cols-4 gap-2">
-            {[1, 2, 3, 4].map(br => (
+          <div className="grid grid-cols-5 gap-1.5">
+            {[1, 2, 3, 4, 5].map(br => (
               <button
                 type="button"
                 key={br}
                 onClick={(e) => { e.preventDefault(); toggleBedroomType(br); }}
-                className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
+                className={`min-h-[44px] py-2.5 text-xs rounded-md border transition-colors ${
                   filters.bedroomTypes.includes(br)
                     ? 'bg-[#547792] text-white border-[#547792]'
                     : filters.bedroomTypes.length === 0
@@ -195,7 +195,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
                       : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
                 }`}
               >
-                {br === 4 ? '4B+' : `${br}B`}
+                {br === 5 ? '5BR+' : `${br}BR`}
               </button>
             ))}
           </div>
@@ -207,34 +207,38 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
             <table className="w-full text-[10px] border-collapse border border-dotted border-slate-400">
               <thead>
                 <tr className="text-slate-600 bg-slate-50/50">
-                  <th className="text-left font-medium p-1.5 border border-dotted border-slate-400">Type</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">1B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">2B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">3B</th>
-                  <th className="text-center font-medium p-1.5 border border-dotted border-slate-400">4B+</th>
+                  <th className="text-left font-medium p-1 border border-dotted border-slate-400">Type</th>
+                  <th className="text-center font-medium p-1 border border-dotted border-slate-400">1BR</th>
+                  <th className="text-center font-medium p-1 border border-dotted border-slate-400">2BR</th>
+                  <th className="text-center font-medium p-1 border border-dotted border-slate-400">3BR</th>
+                  <th className="text-center font-medium p-1 border border-dotted border-slate-400">4BR</th>
+                  <th className="text-center font-medium p-1 border border-dotted border-slate-400">5BR+</th>
                 </tr>
               </thead>
               <tbody className="text-slate-500">
                 <tr title="Post-harmonization: AC ledge rules changed">
-                  <td className="text-left p-1.5 border border-dotted border-slate-400">New ≥Jun'23</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;580</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;780</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;1150</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">≥1150</td>
+                  <td className="text-left p-1 border border-dotted border-slate-400">New ≥Jun'23</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;580</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;780</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1150</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1450</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">≥1450</td>
                 </tr>
                 <tr title="Pre-harmonization: Before AC ledge rule changes">
-                  <td className="text-left p-1.5 border border-dotted border-slate-400">New &lt;Jun'23</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;600</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;850</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;1200</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">≥1200</td>
+                  <td className="text-left p-1 border border-dotted border-slate-400">New &lt;Jun'23</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;600</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;850</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1200</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1500</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">≥1500</td>
                 </tr>
                 <tr title="Resale units: Legacy larger sizes">
-                  <td className="text-left p-1.5 border border-dotted border-slate-400">Resale</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;600</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;950</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">&lt;1350</td>
-                  <td className="text-center p-1.5 border border-dotted border-slate-400">≥1350</td>
+                  <td className="text-left p-1 border border-dotted border-slate-400">Resale</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;600</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;950</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1350</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1650</td>
+                  <td className="text-center p-1 border border-dotted border-slate-400">≥1650</td>
                 </tr>
               </tbody>
             </table>

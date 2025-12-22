@@ -300,11 +300,11 @@ export default function DealCheckerContent() {
                 className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-[#547792]"
               >
                 <option value="">Select...</option>
-                <option value="1">1 BR</option>
-                <option value="2">2 BR</option>
-                <option value="3">3 BR</option>
-                <option value="4">4 BR</option>
-                <option value="5">5+ BR</option>
+                <option value="1">1BR</option>
+                <option value="2">2BR</option>
+                <option value="3">3BR</option>
+                <option value="4">4BR</option>
+                <option value="5">5BR+</option>
               </select>
             </div>
 

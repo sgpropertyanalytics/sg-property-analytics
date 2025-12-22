@@ -61,7 +61,8 @@ const BEDROOM_OPTIONS = [
   { value: '1', label: '1BR' },
   { value: '2', label: '2BR' },
   { value: '3', label: '3BR' },
-  { value: '4+', label: '4BR+' },
+  { value: '4', label: '4BR' },
+  { value: '5', label: '5BR+' },
 ];
 
 // Period filter options

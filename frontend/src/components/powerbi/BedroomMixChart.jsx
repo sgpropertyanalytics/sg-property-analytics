@@ -114,11 +114,11 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
   }
 
   const bedroomLabels = {
-    1: '1 BR',
-    2: '2 BR',
-    3: '3 BR',
-    4: '4 BR',
-    5: '5+ BR',
+    1: '1BR',
+    2: '2BR',
+    3: '3BR',
+    4: '4BR',
+    5: '5BR+',
   };
 
   const bedroomColors = {
