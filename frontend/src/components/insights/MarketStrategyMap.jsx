@@ -252,25 +252,71 @@ const PERIOD_OPTIONS = [
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 // =============================================================================
-// SMART MARKER COMPONENT
+// LEVITATING FLAG MARKER COMPONENT
 // =============================================================================
 
-function DataFlag({ district, data, viewMode, zoom }) {
+/**
+ * LevitatingFlag - Creative "Stem + Flag" Marker Design
+ *
+ * Structure (Flex Column):
+ * - Top: The "Flag" (Price/Volume pill)
+ * - Middle: Vertical "Stem" (height correlates to price)
+ * - Bottom: "Base" anchor (pulses for hot areas)
+ *
+ * Dynamic Height Logic:
+ * - Price < $1,400: Short stem (8px)
+ * - Price $1,400-$2,500: Medium stem (16px)
+ * - Price > $2,500: Tall stem (24px) - expensive districts "stand taller"
+ */
+function LevitatingFlag({ district, data, viewMode, zoom, isTopExpensive, isHotVolume }) {
   const [isHovered, setIsHovered] = useState(false);
   const yoy = data?.yoy_pct !== null ? formatYoY(data.yoy_pct) : null;
   const hasData = data?.has_data;
+  const psf = data?.median_psf || 0;
+  const txCount = data?.tx_count || 0;
 
-  const isHotspot = viewMode === 'PRICE'
-    ? hasData && data?.median_psf >= 2500
-    : hasData && data?.tx_count >= 500;
+  // Determine stem height based on price (histogram effect)
+  const getStemHeight = () => {
+    if (viewMode === 'VOLUME') {
+      // For volume mode, use transaction count
+      if (txCount < 200) return 'h-2';   // 8px
+      if (txCount < 500) return 'h-4';   // 16px
+      return 'h-6';                       // 24px
+    }
+    // For price mode
+    if (psf < 1400) return 'h-2';        // 8px - OCR
+    if (psf < 2500) return 'h-4';        // 16px - RCR
+    return 'h-6';                         // 24px - CCR Premium
+  };
 
-  const isCompactMode = zoom < 12;
-
+  // Display value based on mode and zoom
+  const isCompactMode = zoom < 11.5;
   const displayValue = isCompactMode
     ? district.district.replace('D0', '').replace('D', '')
     : viewMode === 'PRICE'
-      ? formatPsf(data?.median_psf)
-      : `${formatVolume(data?.tx_count)}`;
+      ? formatPsf(psf)
+      : txCount.toLocaleString();
+
+  // Flag styling
+  const getFlagStyle = () => {
+    if (!hasData) {
+      return 'bg-slate-700/80 text-slate-400 border-slate-600';
+    }
+    if (isTopExpensive && viewMode === 'PRICE') {
+      // Gold premium styling for top 3 most expensive
+      return 'bg-[#213448] text-amber-400 border-amber-400/60 shadow-amber-500/30';
+    }
+    if (isHotVolume && viewMode === 'VOLUME') {
+      // Fire styling for hot volume areas
+      return 'bg-[#B91C1C] text-white border-orange-400/60 shadow-red-500/30';
+    }
+    if (psf >= 2200 && viewMode === 'PRICE') {
+      // Navy for CCR
+      return 'bg-[#213448] text-white border-[#94B4C1]/50 shadow-[#213448]/40';
+    }
+    // Default white
+    return 'bg-white text-slate-900 border-slate-200 shadow-black/20';
+  };
 
   return (
     <div
@@ -278,34 +324,62 @@ function DataFlag({ district, data, viewMode, zoom }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <motion.div
-        animate={{
-          scale: isHovered ? 1.15 : 1,
-          y: isHovered ? -3 : 0,
-        }}
-        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-        className={`
-          ${isCompactMode
-            ? 'w-5 h-5 text-[8px] flex items-center justify-center'
-            : 'px-2 py-0.5 text-[10px]'
-          }
-          rounded-full font-bold shadow-lg border-2
-          transition-all duration-200 whitespace-nowrap
-          ${hasData
-            ? isHotspot
-              ? viewMode === 'PRICE'
-                ? 'bg-[#213448] text-white border-[#94B4C1]/60 shadow-[#213448]/50'
-                : 'bg-[#B91C1C] text-white border-red-300/60 shadow-red-900/50'
-              : 'bg-white/95 text-slate-900 border-white/80 shadow-black/30'
-            : 'bg-slate-700/90 text-slate-400 border-slate-500/50 shadow-black/20'
-          }
-          ${isHovered ? 'shadow-xl ring-2 ring-white/30' : ''}
-        `}
-        style={{ backdropFilter: 'blur(4px)' }}
-      >
-        {hasData ? displayValue : '-'}
-      </motion.div>
+      {/* Vertical Stack: Flag + Stem + Base */}
+      <div className="flex flex-col items-center">
+        {/* THE FLAG (Top) */}
+        <motion.div
+          animate={{
+            y: isHovered ? -4 : 0,
+            scale: isHovered ? 1.08 : 1,
+          }}
+          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+          className={`
+            ${isCompactMode ? 'px-1.5 py-0.5 text-[8px]' : 'px-2 py-1 text-[10px]'}
+            rounded-md font-bold shadow-xl border-2
+            transition-all duration-200 whitespace-nowrap
+            hover:-translate-y-1
+            ${getFlagStyle()}
+            ${isHovered ? 'shadow-2xl ring-2 ring-white/40' : ''}
+            ${isTopExpensive && viewMode === 'PRICE' ? 'ring-1 ring-amber-400/30' : ''}
+          `}
+          style={{ backdropFilter: 'blur(4px)' }}
+        >
+          {hasData ? displayValue : '-'}
+        </motion.div>
 
+        {/* THE STEM (Middle) */}
+        <motion.div
+          animate={{ scaleY: isHovered ? 1.2 : 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          className={`
+            w-[1.5px] ${getStemHeight()}
+            ${hasData
+              ? isTopExpensive && viewMode === 'PRICE'
+                ? 'bg-gradient-to-b from-amber-400/80 to-amber-400/20'
+                : 'bg-gradient-to-b from-white/60 to-white/20'
+              : 'bg-slate-600/40'
+            }
+            origin-top
+          `}
+        />
+
+        {/* THE BASE (Bottom) - Anchor Point */}
+        <div
+          className={`
+            w-2 h-2 rounded-full
+            ${hasData
+              ? isHotVolume
+                ? 'bg-orange-400 animate-pulse shadow-lg shadow-orange-500/50'
+                : isTopExpensive && viewMode === 'PRICE'
+                ? 'bg-amber-400 shadow-lg shadow-amber-500/50'
+                : 'bg-white/80 shadow-sm'
+              : 'bg-slate-600/50'
+            }
+          `}
+        />
+      </div>
+
+      {/* Hover Tooltip */}
       <AnimatePresence>
         {isHovered && hasData && (
           <motion.div
@@ -314,6 +388,7 @@ function DataFlag({ district, data, viewMode, zoom }) {
             exit={{ opacity: 0, y: 8, scale: 0.92 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
             className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50"
+            style={{ marginBottom: '40px' }} // Extra margin to clear the flag
           >
             <div className="bg-white rounded-xl p-3 min-w-[180px] border border-slate-200 shadow-2xl">
               <div className="flex items-center justify-between mb-1.5">
@@ -338,6 +413,14 @@ function DataFlag({ district, data, viewMode, zoom }) {
               <p className="text-[11px] text-slate-500 mb-2 leading-tight">
                 {district.name}
               </p>
+
+              {isTopExpensive && viewMode === 'PRICE' && (
+                <div className="mb-2 px-2 py-1 bg-amber-50 border border-amber-200 rounded-md">
+                  <p className="text-[10px] text-amber-700 font-semibold text-center">
+                    ⭐ Top 3 Most Expensive
+                  </p>
+                </div>
+              )}
 
               <div className="h-px bg-slate-100 mb-2" />
 
@@ -462,16 +545,17 @@ export default function MarketStrategyMap() {
     [districtData, viewMode, maxVolume]
   );
 
-  // "White Grout" boundary lines - MUST render AFTER fill layer
+  // "Cookie Cutter" border layer - HIGH CONTRAST to prevent visual merging
+  // Thick white lines create a "Demilitarized Zone" between same-colored districts
   const lineLayer = useMemo(
     () => ({
-      id: 'district-line',
+      id: 'district-borders',
       type: 'line',
       paint: {
-        'line-color': '#FFFFFF',
-        'line-width': 1.5,
-        'line-opacity': 0.6,      // Visible but not harsh
-        'line-dasharray': [2, 2], // Crisp, technical dots
+        'line-color': '#FFFFFF',   // Pure White (Max Contrast)
+        'line-width': 2,           // Thick enough to break color bleed
+        'line-opacity': 0.8,       // High opacity for visibility
+        'line-blur': 0,            // Sharp, crisp lines
       },
       layout: {
         'line-cap': 'round',
@@ -502,6 +586,25 @@ export default function MarketStrategyMap() {
       max: Math.max(...validVolumes),
       total: validVolumes.reduce((a, b) => a + b, 0),
     };
+  }, [districtData]);
+
+  // Top 3 most expensive districts - these get gold "premium" styling
+  const topExpensiveDistricts = useMemo(() => {
+    return districtData
+      .filter((d) => d.has_data && d.median_psf)
+      .sort((a, b) => b.median_psf - a.median_psf)
+      .slice(0, 3)
+      .map((d) => d.district_id);
+  }, [districtData]);
+
+  // "Hot" volume districts - top 20% by transaction count get pulsing base
+  const hotVolumeDistricts = useMemo(() => {
+    const districtsWithVolume = districtData.filter((d) => d.has_data && d.tx_count);
+    if (districtsWithVolume.length === 0) return [];
+
+    const sorted = [...districtsWithVolume].sort((a, b) => b.tx_count - a.tx_count);
+    const top20Percent = Math.max(1, Math.ceil(sorted.length * 0.2));
+    return sorted.slice(0, top20Percent).map((d) => d.district_id);
   }, [districtData]);
 
   return (
@@ -599,20 +702,26 @@ export default function MarketStrategyMap() {
             <Layer {...lineLayer} />
           </Source>
 
+          {/* Levitating Data Flags - stems grow taller with price */}
           {!loading && districtCentroids.map((district) => {
             const data = districtMap[district.district];
+            const isTopExpensive = topExpensiveDistricts.includes(district.district);
+            const isHotVolume = hotVolumeDistricts.includes(district.district);
+
             return (
               <Marker
                 key={district.district}
                 longitude={district.centroid.lng}
                 latitude={district.centroid.lat}
-                anchor="center"
+                anchor="bottom" // Anchor at base of the "stem"
               >
-                <DataFlag
+                <LevitatingFlag
                   district={district}
                   data={data}
                   viewMode={viewMode}
                   zoom={viewState.zoom}
+                  isTopExpensive={isTopExpensive}
+                  isHotVolume={isHotVolume}
                 />
               </Marker>
             );
