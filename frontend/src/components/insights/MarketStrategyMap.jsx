@@ -47,6 +47,13 @@ const REGION_FILLS = {
   OCR: 'rgba(148, 180, 193, 0.25)', // Sky Blue - Suburban
 };
 
+// Volume glow colors (warm palette - only top 30% get glow)
+const VOLUME_GLOW = {
+  hot: 'drop-shadow(0 0 12px rgba(239, 68, 68, 0.75))',    // Red - Top 10%
+  warm: 'drop-shadow(0 0 10px rgba(249, 115, 22, 0.65))',  // Orange - 10-20%
+  mild: 'drop-shadow(0 0 8px rgba(250, 204, 21, 0.55))',   // Yellow - 20-30%
+};
+
 // Filter options
 const BEDROOM_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -114,15 +121,45 @@ function getRegionForDistrict(districtId) {
   return 'OCR';
 }
 
+// Calculate volume percentile thresholds from current data (for top 30%)
+function calculateVolumeThresholds(districtData) {
+  const volumes = districtData
+    .filter(d => d.has_data && d.tx_count > 0)
+    .map(d => d.tx_count)
+    .sort((a, b) => a - b);
+
+  if (volumes.length === 0) {
+    return { p70: 0, p80: 0, p90: 0 };
+  }
+
+  const getPercentile = (arr, p) => {
+    const index = Math.ceil((p / 100) * arr.length) - 1;
+    return arr[Math.max(0, index)];
+  };
+
+  return {
+    p70: getPercentile(volumes, 70),  // Bottom 70% cutoff
+    p80: getPercentile(volumes, 80),  // Top 20% cutoff
+    p90: getPercentile(volumes, 90),  // Top 10% cutoff
+  };
+}
+
+// Get volume tier for a district (only top 30% get glow)
+function getVolumeTier(txCount, thresholds) {
+  if (!txCount || txCount < thresholds.p70) return null;  // Bottom 70% = no glow
+  if (txCount >= thresholds.p90) return 'hot';            // Top 10%
+  if (txCount >= thresholds.p80) return 'warm';           // 10-20%
+  return 'mild';                                          // 20-30%
+}
+
 // =============================================================================
 // DISTRICT LABEL COMPONENT
 // =============================================================================
 
-function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered }) {
+function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered, volumeTier }) {
   const hasData = data?.has_data;
   const psf = data?.median_psf || 0;
   const isCompact = zoom < 11.2;
-  const showDetails = zoom >= 12;
 
   // Color based on PSF tier
   const getPriceStyle = () => {
@@ -140,6 +177,9 @@ function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered }) {
     const first = parts[0].trim();
     return first.length > 12 ? first.substring(0, 11) + '…' : first;
   };
+
+  // Get volume glow style (only top 30% districts get glow)
+  const glowStyle = volumeTier ? VOLUME_GLOW[volumeTier] : 'none';
 
   return (
     <motion.div
@@ -163,6 +203,7 @@ function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered }) {
       </div>
 
       {/* District info label - shows district number and area name */}
+      {/* Volume glow applied here for top 30% districts */}
       <div
         className={`
           mt-0.5 px-1.5 py-0.5 rounded bg-white/90 backdrop-blur-sm
@@ -170,6 +211,7 @@ function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered }) {
           transition-all duration-200
           ${isHovered ? 'bg-white shadow-md' : ''}
         `}
+        style={{ filter: glowStyle }}
       >
         <div className="flex flex-col items-center">
           {/* District number */}
@@ -413,6 +455,11 @@ export default function MarketStrategyMap() {
     return map;
   }, [districtData]);
 
+  // Calculate volume thresholds for glow effect (recalculates when data/period changes)
+  const volumeThresholds = useMemo(() => {
+    return calculateVolumeThresholds(districtData);
+  }, [districtData]);
+
   // Calculate district centroids
   const districtCentroids = useMemo(() => {
     return singaporeDistrictsGeoJSON.features.map(feature => {
@@ -584,6 +631,7 @@ export default function MarketStrategyMap() {
           {!loading && districtCentroids.map(district => {
             const data = districtMap[district.district];
             const isHovered = hoveredDistrict?.district?.district === district.district;
+            const volumeTier = getVolumeTier(data?.tx_count, volumeThresholds);
 
             return (
               <Marker
@@ -597,6 +645,7 @@ export default function MarketStrategyMap() {
                   data={data}
                   zoom={viewState.zoom}
                   isHovered={isHovered}
+                  volumeTier={volumeTier}
                   onHover={(d, data) => {
                     setHoveredDistrict({ district: d, data });
                   }}
@@ -656,6 +705,26 @@ export default function MarketStrategyMap() {
                 <div className="w-4 h-3 rounded bg-white border border-[#94B4C1]" />
                 <span className="text-[10px] text-[#213448]">&lt;$1,400 psf</span>
               </div>
+            </div>
+
+            <div className="h-px bg-[#94B4C1]/30 my-2" />
+
+            <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-2">
+              Volume Activity
+            </p>
+            <div className="flex items-center gap-2">
+              {/* Gradient bar from red to yellow */}
+              <div
+                className="w-16 h-3 rounded"
+                style={{
+                  background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15)'
+                }}
+              />
+              <span className="text-[10px] text-[#213448]">Top 30%</span>
+            </div>
+            <div className="flex justify-between mt-1 px-0.5" style={{ width: '64px' }}>
+              <span className="text-[8px] text-[#547792]">High</span>
+              <span className="text-[8px] text-[#547792]">Low</span>
             </div>
           </div>
         </div>
