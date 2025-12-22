@@ -102,8 +102,8 @@ export function HotProjectsTable({ height = 400 }) {
   // - total_units: from project_inventory (URA API or manual entry)
   // - Only shows projects with ZERO resale transactions (true new launches)
   const columns = [
-    { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-48' },
-    { key: 'district', label: 'Region / District', sortable: true, width: 'w-28' },
+    { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-56' },
+    { key: 'district', label: 'Location', sortable: true, width: 'w-36' },
     { key: 'units_sold', label: 'Units Sold', sortable: true, width: 'w-24', align: 'right' },
     { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-24', align: 'right' },
     { key: 'percent_sold', label: '% Sold', sortable: true, width: 'w-20', align: 'right' },
@@ -187,25 +187,33 @@ export function HotProjectsTable({ height = 400 }) {
                   >
                     {/* Project Name with School Tag (inline) */}
                     <td className="px-3 py-2 border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-slate-800 truncate max-w-[160px]" title={project.project_name}>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium text-slate-800 truncate max-w-[200px]">
                           {project.project_name || '-'}
                         </span>
                         {project.has_popular_school && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full whitespace-nowrap flex-shrink-0" title="Popular primary school within 1km">
-                            <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
-                            </svg>
-                            <span>School</span>
-                          </span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded whitespace-nowrap w-fit">
+                              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                              </svg>
+                              <span>Popular School within 1km</span>
+                            </span>
+                            {project.nearby_schools && project.nearby_schools.length > 0 && (
+                              <span className="text-[10px] text-emerald-600 pl-1 truncate max-w-[200px]">
+                                {project.nearby_schools.slice(0, 2).join(', ')}
+                                {project.nearby_schools.length > 2 && ` +${project.nearby_schools.length - 2} more`}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
                     </td>
 
-                    {/* Region / District - stacked */}
+                    {/* Region / District - stacked with full name */}
                     <td className="px-3 py-2 border-b border-slate-100">
                       <div className="flex flex-col">
-                        <span className="font-medium text-slate-700">{project.region || '-'}</span>
+                        <span className="font-medium text-slate-700">{project.district_name || project.region || '-'}</span>
                         <span className="text-xs text-slate-500">{project.district || '-'}</span>
                       </div>
                     </td>
@@ -230,9 +238,7 @@ export function HotProjectsTable({ height = 400 }) {
                             {project.percent_sold.toFixed(1)}%
                           </span>
                           {project.data_discrepancy && (
-                            <span className="text-amber-500 cursor-help" title="Data discrepancy: URA transaction count exceeds official unit count. Mixed-use developments may include commercial units, serviced apartments, or sub-sales.">
-                              ⚠
-                            </span>
+                            <span className="text-amber-500 text-xs">*</span>
                           )}
                         </span>
                       ) : (
@@ -246,9 +252,7 @@ export function HotProjectsTable({ height = 400 }) {
                         <span className="inline-flex items-center gap-1 justify-end">
                           <span>{project.unsold_inventory.toLocaleString()}</span>
                           {project.data_discrepancy && (
-                            <span className="text-amber-500 cursor-help" title="Data discrepancy: actual unsold may differ. Mixed-use developments may include commercial units or serviced apartments in transaction count.">
-                              ⚠
-                            </span>
+                            <span className="text-amber-500 text-xs">*</span>
                           )}
                         </span>
                       ) : (
@@ -263,34 +267,27 @@ export function HotProjectsTable({ height = 400 }) {
         )}
       </div>
 
-      {/* Footer with legend */}
-      <div className="px-4 py-2 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-[#547792]">
-          <div className="flex items-center flex-wrap gap-3">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-red-400 rounded-full"></span>
-              <span>80%+ Sold</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-              <span>50-79%</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-              <span>&lt;50%</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px]">🎓</span>
-              <span>Popular School nearby</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="text-amber-500">⚠</span>
-              <span>Data discrepancy</span>
-            </span>
-          </div>
-          <span className="text-[#547792]/70 text-[10px]">
-            Only projects with 0 resales shown • ⚠ = Mixed-use development (includes commercial/serviced units)
+      {/* Footer with legend and footnotes */}
+      <div className="px-4 py-3 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30">
+        {/* Legend row */}
+        <div className="flex items-center flex-wrap gap-3 text-xs text-[#547792] mb-2">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+            <span>80%+ Sold</span>
           </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
+            <span>50-79%</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+            <span>&lt;50%</span>
+          </span>
+        </div>
+        {/* Footnotes */}
+        <div className="text-[10px] text-[#547792]/80 space-y-0.5">
+          <p>Only projects with 0 resales shown (true new launches still in developer sales phase).</p>
+          <p><span className="text-amber-500 font-medium">*</span> Data discrepancy: URA transaction count exceeds official unit count. Mixed-use developments may include commercial units, serviced apartments, or sub-sales.</p>
         </div>
       </div>
     </div>

@@ -14,6 +14,8 @@ from models.project_location import ProjectLocation
 from models.popular_school import PopularSchool
 from models.database import db
 from sqlalchemy import or_
+from constants import DISTRICT_NAMES
+from services.school_distance import get_schools_within_distance
 
 projects_bp = Blueprint('projects', __name__)
 
@@ -422,12 +424,28 @@ def get_hot_projects():
                 ps.avg_psf,
                 ps.last_new_sale,
                 pl.has_popular_school_1km,
-                pl.market_segment
+                pl.market_segment,
+                pl.latitude,
+                pl.longitude
             FROM project_stats ps
             LEFT JOIN project_locations pl ON LOWER(TRIM(ps.project_name)) = LOWER(TRIM(pl.project_name))
             ORDER BY ps.units_sold DESC
             LIMIT :limit
         """)
+
+        # Pre-load all school data for nearby school lookup
+        schools = db.session.query(
+            PopularSchool.school_name,
+            PopularSchool.latitude,
+            PopularSchool.longitude
+        ).filter(
+            PopularSchool.latitude.isnot(None),
+            PopularSchool.longitude.isnot(None)
+        ).all()
+        school_data = [
+            (s.school_name, float(s.latitude), float(s.longitude))
+            for s in schools
+        ]
 
         results = db.session.execute(sql, {"limit": limit}).fetchall()
 
@@ -460,10 +478,26 @@ def get_hot_projects():
                 percent_sold = None
                 unsold_inventory = None
 
+            # Get nearby schools if project has coordinates and school flag
+            nearby_schools = []
+            if row.has_popular_school_1km and row.latitude and row.longitude:
+                try:
+                    nearby_schools = get_schools_within_distance(
+                        float(row.latitude),
+                        float(row.longitude),
+                        school_data
+                    )
+                except (ValueError, TypeError):
+                    nearby_schools = []
+
+            # Get district name from constants
+            district_name = DISTRICT_NAMES.get(district, '')
+
             projects.append({
                 "project_name": row.project_name,
                 "region": DISTRICT_TO_REGION.get(district, None),
                 "district": district,
+                "district_name": district_name,
                 "market_segment": market_seg,
                 "total_units": total_units if total_units > 0 else None,
                 "units_sold": units_sold,
@@ -473,6 +507,7 @@ def get_hot_projects():
                 "total_value": float(row.total_value) if row.total_value else 0,
                 "avg_psf": round(float(row.avg_psf), 2) if row.avg_psf else 0,
                 "has_popular_school": row.has_popular_school_1km or False,
+                "nearby_schools": nearby_schools,  # List of school names within 1km
                 "last_new_sale": row.last_new_sale.isoformat() if row.last_new_sale else None,
             })
 

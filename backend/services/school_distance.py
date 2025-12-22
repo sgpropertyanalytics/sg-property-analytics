@@ -104,6 +104,39 @@ def get_nearest_school_distance(
     return None
 
 
+def get_schools_within_distance(
+    project_lat: float,
+    project_lng: float,
+    school_data: List[Tuple[str, float, float]],
+    distance_threshold: float = SCHOOL_DISTANCE_THRESHOLD_METERS
+) -> List[str]:
+    """
+    Get all schools within the specified distance of a project.
+
+    Args:
+        project_lat: Project latitude
+        project_lng: Project longitude
+        school_data: List of (school_name, latitude, longitude) tuples
+        distance_threshold: Maximum distance in meters (default 1000m = 1km)
+
+    Returns:
+        List of school names within the threshold distance, sorted by distance
+    """
+    if not project_lat or not project_lng:
+        return []
+
+    schools_with_distance = []
+    for school_name, school_lat, school_lng in school_data:
+        if school_lat and school_lng:
+            distance = haversine(project_lat, project_lng, school_lat, school_lng)
+            if distance <= distance_threshold:
+                schools_with_distance.append((school_name, distance))
+
+    # Sort by distance and return just the names
+    schools_with_distance.sort(key=lambda x: x[1])
+    return [name for name, _ in schools_with_distance]
+
+
 def compute_school_flags_batch(app):
     """
     Compute has_popular_school_1km flag for all projects with coordinates.
