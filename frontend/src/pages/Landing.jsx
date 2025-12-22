@@ -525,18 +525,18 @@ function DataValidationCard() {
         </div>
       </div>
 
-      <div className="absolute bottom-6 md:bottom-8 left-6 md:left-8 right-6 md:right-8 flex gap-4 md:gap-8">
-        <div>
+      <div className="absolute bottom-6 md:bottom-8 left-6 md:left-8 right-6 md:right-8 flex flex-wrap gap-4 md:gap-8">
+        <div className="min-w-0">
           <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">Records Processed</div>
-          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono">103,379</div>
+          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono tabular-nums">103,379</div>
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">Outliers Removed</div>
-          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono">789</div>
+          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono tabular-nums">789</div>
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">Accuracy</div>
-          <div className="text-lg md:text-2xl font-bold text-[#547792] font-mono">99.2%</div>
+          <div className="text-lg md:text-2xl font-bold text-[#547792] font-mono tabular-nums">99.2%</div>
         </div>
       </div>
     </motion.div>
