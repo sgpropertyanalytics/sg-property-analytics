@@ -1378,6 +1378,26 @@ def main():
                 except Exception as e:
                     logger.log(f"Project location update failed (non-critical): {e}")
 
+                # STAGE 9: Cleanup new launch units CSV
+                # Remove projects that now have resale transactions
+                try:
+                    from services.new_launch_units import cleanup_resale_projects
+                    logger.stage("CLEANUP NEW LAUNCH UNITS")
+                    cleanup_result = cleanup_resale_projects()
+                    if cleanup_result.get('removed'):
+                        logger.log(f"Removed {len(cleanup_result['removed'])} projects from new_launch_units.csv")
+                        for project in cleanup_result['removed'][:5]:
+                            logger.log(f"  - {project}")
+                        if len(cleanup_result['removed']) > 5:
+                            logger.log(f"  ... and {len(cleanup_result['removed']) - 5} more")
+                    else:
+                        logger.log("No projects to remove from new_launch_units.csv")
+                    logger.log(f"Remaining new launch projects: {cleanup_result.get('remaining', 0)}")
+                except ImportError:
+                    logger.log("New launch cleanup skipped (module not found)")
+                except Exception as e:
+                    logger.log(f"New launch cleanup failed (non-critical): {e}")
+
             # Print summary
             summary = logger.summary()
             print(f"\n{'='*60}")
