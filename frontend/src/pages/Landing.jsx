@@ -11,34 +11,43 @@ import {
 } from 'lucide-react';
 
 /**
- * Landing Page - "Warm Precision" Design System with Midday Hero
+ * Landing Page - "Warm Precision" Design System with Unified Texture
  *
- * Structure:
- * - Hero Section: Isometric tilted dashboard showcase
- * - Trust Bar: Data source logos
- * - Bento Grid: Feature cards
- * - CTA Section: Final call to action
- * - Footer
+ * Design Fixes Applied:
+ * - Global noise texture with position: fixed for consistent paper grain
+ * - Removed section backgrounds to inherit global texture
+ * - Added secondary ambient glow at bottom for visual balance
  */
 const LandingPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen min-h-[100dvh] font-sans selection:bg-[#94B4C1]/30 text-[#213448] bg-[#FDFBF7] overflow-x-hidden">
+    // Master canvas with global background color
+    <div className="relative min-h-screen font-sans selection:bg-[#94B4C1]/30 text-[#213448] bg-[#FDFBF7] overflow-x-hidden">
+
+      {/* Global Noise Texture (Fixed Position)
+          Ensures the 'paper feel' persists down the entire page */}
+      <div
+        className="fixed inset-0 pointer-events-none opacity-[0.08] z-0 mix-blend-multiply"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+      />
+
+      {/* Global Ambient Orbs
+          Top orb for hero, bottom orb for visual balance */}
+      <div className="fixed top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#94B4C1]/20 rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[800px] h-[600px] bg-[#EAE0CF]/40 rounded-full blur-[100px] pointer-events-none z-0" />
+
       {/* === NAV === */}
-      <nav className="fixed w-full z-50 px-4 md:px-6 py-3 md:py-4 backdrop-blur-md border-b border-[#94B4C1]/20 bg-[#FDFBF7]/80">
+      <nav className="fixed w-full z-50 px-4 md:px-6 py-3 md:py-4 backdrop-blur-md border-b border-[#94B4C1]/10 bg-[#FDFBF7]/80">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#213448] rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-[#213448] rounded-lg flex items-center justify-center shadow-lg shadow-[#213448]/20">
               <LineChart className="w-5 h-5 text-[#EAE0CF]" />
             </div>
             <span className="font-bold tracking-tighter text-lg md:text-xl text-[#213448]">
               PropAnalytics.sg
             </span>
           </div>
-
-          {/* Nav Actions */}
           <div className="flex gap-2 md:gap-4">
             <button
               onClick={() => navigate('/login')}
@@ -50,125 +59,98 @@ const LandingPage = () => {
         </div>
       </nav>
 
-      {/* === HERO SECTION - Isometric Tilted Dashboard === */}
-      <HeroSection navigate={navigate} />
+      {/* Content Layer - sits above background elements */}
+      <div className="relative z-10">
+        <HeroSection navigate={navigate} />
 
-      {/* === TRUST BAR === */}
-      <section className="py-8 md:py-12 border-y border-[#94B4C1]/20">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 text-center">
-          <p className="text-[#547792] text-xs md:text-sm font-medium mb-4 md:mb-6 uppercase tracking-wider">
-            Powered by official data sources
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12 opacity-60 hover:opacity-80 transition-opacity">
-            {['URA', 'REALIS', 'HDB', 'SLA'].map((source) => (
-              <div
-                key={source}
-                className="text-xl md:text-2xl font-bold text-[#213448] tracking-tighter"
-              >
-                {source}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* === BENTO GRID FEATURE SECTION === */}
-      <section className="py-16 md:py-24 px-4 md:px-6 bg-white">
-        <div className="max-w-7xl mx-auto">
-          {/* Section Header */}
-          <div className="mb-10 md:mb-16 text-center">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-3 md:mb-4 tracking-tight">
-              Everything you need to
-              <br className="hidden sm:block" /> underwrite a deal.
-            </h2>
-            <p className="text-[#547792] text-base md:text-lg max-w-xl mx-auto">
-              Move beyond simple PSF trends. Layer multiple datasets to find
-              hidden value.
-            </p>
-          </div>
-
-          {/* Bento Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 auto-rows-[280px] md:auto-rows-[320px]">
-            <HeatmapCard />
-            <SupplyCliffCard />
-            <UnitMixCard />
-            <DataValidationCard />
-          </div>
-        </div>
-      </section>
-
-      {/* === CTA SECTION === */}
-      <section className="py-16 md:py-24 px-4 md:px-6 bg-[#FDFBF7]">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-4 tracking-tight">
-            Ready to get started?
-          </h2>
-          <p className="text-[#547792] text-base md:text-lg mb-8 max-w-xl mx-auto">
-            Join investors who use institutional-grade analytics to make
-            data-driven property decisions.
-          </p>
-          <button
-            onClick={() => navigate('/market-pulse')}
-            className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#547792] hover:shadow-2xl active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center gap-2 mx-auto min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
-          >
-            Access the Dashboard
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-      </section>
-
-      {/* === FOOTER === */}
-      <footer className="py-8 md:py-12 border-t border-[#94B4C1]/20 bg-[#FDFBF7]">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#213448] rounded-md flex items-center justify-center">
-              <LineChart className="w-4 h-4 text-[#EAE0CF]" />
+        {/* Bento Grid - Increased top padding to compensate for removed Trust Bar */}
+        <section className="pt-24 md:pt-32 pb-16 md:pb-24 px-4 md:px-6 relative z-10">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-10 md:mb-16 text-center">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-3 md:mb-4 tracking-tight">
+                Everything you need to
+                <br className="hidden sm:block" /> underwrite a deal.
+              </h2>
+              <p className="text-[#547792] text-base md:text-lg max-w-xl mx-auto">
+                Move beyond simple PSF trends. Layer multiple datasets to find
+                hidden value.
+              </p>
             </div>
-            <p className="text-[#547792] text-sm">
-              &copy; 2025 PropAnalytics.sg
-            </p>
-          </div>
 
-          <div className="flex gap-6 md:gap-8">
-            {['Methodology', 'Pricing', 'Contact'].map((link) => (
-              <a
-                key={link}
-                href="#"
-                className="text-[#547792] hover:text-[#213448] active:text-[#213448] text-sm font-medium transition-colors min-h-[44px] flex items-center touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:rounded focus:outline-none"
-              >
-                {link}
-              </a>
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 auto-rows-[280px] md:auto-rows-[320px]">
+              <HeatmapCard />
+              <SupplyCliffCard />
+              <UnitMixCard />
+              <DataValidationCard />
+            </div>
           </div>
-        </div>
-      </footer>
+        </section>
+
+        {/* CTA Section - Removed bg color, glass card design */}
+        <section className="py-16 md:py-24 px-4 md:px-6 relative z-10">
+          <div className="max-w-4xl mx-auto text-center p-8 md:p-12 rounded-3xl bg-white/50 border border-white/50 backdrop-blur-sm shadow-xl shadow-[#94B4C1]/10">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-4 tracking-tight">
+              Ready to get started?
+            </h2>
+            <p className="text-[#547792] text-base md:text-lg mb-8 max-w-xl mx-auto">
+              Join investors who use institutional-grade analytics to make
+              data-driven property decisions.
+            </p>
+            <button
+              onClick={() => navigate('/market-pulse')}
+              className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#547792] hover:shadow-2xl active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center gap-2 mx-auto min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+            >
+              Access the Dashboard
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </section>
+
+        {/* Footer - Transparent with subtle backdrop */}
+        <footer className="py-8 md:py-12 border-t border-[#94B4C1]/20 bg-white/40 backdrop-blur-md relative z-10">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-[#213448] rounded-md flex items-center justify-center">
+                <LineChart className="w-4 h-4 text-[#EAE0CF]" />
+              </div>
+              <p className="text-[#547792] text-sm">
+                &copy; 2025 PropAnalytics.sg
+              </p>
+            </div>
+
+            <div className="flex gap-6 md:gap-8">
+              {['Methodology', 'Pricing', 'Contact'].map((link) => (
+                <a
+                  key={link}
+                  href="#"
+                  className="text-[#547792] hover:text-[#213448] active:text-[#213448] text-sm font-medium transition-colors min-h-[44px] flex items-center touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:rounded focus:outline-none"
+                >
+                  {link}
+                </a>
+              ))}
+            </div>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 };
 
 /**
- * Hero Section - "Aligned Glass Slab" Layout
- * Grid-aligned dashboard with metrics as pillars - no collision, perfect structure
+ * Hero Section - Transparent, inherits global texture and glow
+ * Removed duplicate background elements
  */
 function HeroSection({ navigate }) {
-  // Parallax for floating card
   const { scrollY } = useScroll();
   const floatingCardY = useTransform(scrollY, [0, 500], [0, -60]);
+  const opacity = useTransform(scrollY, [0, 300], [1, 0]);
 
   return (
-    <section className="relative bg-[#FDFBF7] pt-28 sm:pt-32 overflow-hidden min-h-screen flex flex-col items-center border-b border-[#94B4C1]/20">
+    // Removed bg-[#FDFBF7] and duplicate noise/glow - inherits from parent
+    <section className="relative pt-28 sm:pt-32 overflow-hidden min-h-screen flex flex-col items-center">
 
-      {/* Background Noise Texture */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.12] z-0"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-      />
-
-      {/* Background Glow */}
-      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#94B4C1]/20 rounded-full blur-[120px] pointer-events-none z-0" />
-
-      {/* --- TEXT CONTENT (Centered) --- */}
-      <div className="relative z-20 text-center max-w-4xl px-6 flex flex-col items-center mb-16">
+      {/* Text Content with fade on scroll */}
+      <motion.div style={{ opacity }} className="relative z-20 text-center max-w-4xl px-6 flex flex-col items-center mb-16">
 
         {/* Trust Badge */}
         <motion.div
@@ -204,7 +186,7 @@ function HeroSection({ navigate }) {
           Visualized for the modern investor.
         </motion.p>
 
-        {/* Buttons - Platform agnostic with touch targets */}
+        {/* Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -220,42 +202,35 @@ function HeroSection({ navigate }) {
           </button>
           <button
             onClick={() => navigate('/analytics-view')}
-            className="px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-white/80 border border-[#EAE0CF] text-[#547792] font-medium hover:bg-white active:scale-[0.98] active:bg-[#EAE0CF]/30 transition-all flex items-center justify-center gap-2 backdrop-blur-sm shadow-sm min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+            className="px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-white/60 border border-[#EAE0CF] text-[#547792] font-medium hover:bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2 backdrop-blur-sm shadow-sm min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
           >
             View Analytics Demo
           </button>
         </motion.div>
-      </div>
+      </motion.div>
 
-
-      {/* --- ALIGNED CONTAINER (max-w-7xl matches Navbar) --- */}
+      {/* Aligned Container (max-w-7xl matches Navbar) */}
       <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10" style={{ perspective: '2000px' }}>
 
-        {/* METRICS ROW - Pillars framing the dashboard */}
+        {/* Metrics Row */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
           className="flex justify-between items-end mb-6 sm:mb-8 px-2 sm:px-4"
         >
-           {/* Left Metric */}
            <div className="text-left">
               <div className="text-3xl sm:text-4xl font-bold text-[#213448] font-mono tabular-nums tracking-tight">$2.8B+</div>
               <div className="text-[10px] sm:text-[11px] text-[#94B4C1] uppercase tracking-wider mt-1 font-bold">Value Analyzed</div>
            </div>
-
-           {/* Center Connector Line */}
            <div className="hidden md:block h-px flex-1 bg-gradient-to-r from-transparent via-[#94B4C1]/40 to-transparent mx-8 sm:mx-12 mb-4" />
-
-           {/* Right Metric */}
            <div className="text-right">
               <div className="text-3xl sm:text-4xl font-bold text-[#213448] font-mono tabular-nums tracking-tight">103k</div>
               <div className="text-[10px] sm:text-[11px] text-[#94B4C1] uppercase tracking-wider mt-1 font-bold">Records</div>
            </div>
         </motion.div>
 
-
-        {/* --- THE DASHBOARD SLAB --- */}
+        {/* Dashboard Slab */}
         <motion.div
           initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 1, y: 0 }}
@@ -267,28 +242,18 @@ function HeroSection({ navigate }) {
              transformOrigin: 'top center'
           }}
         >
-           {/* Glass Container */}
            <div className="relative rounded-t-2xl overflow-hidden shadow-[0_-20px_80px_-20px_rgba(33,52,72,0.15)] bg-white ring-1 ring-[#213448]/5 border border-white">
-
-             {/* Header Shine Line */}
              <div className="absolute top-0 inset-x-0 h-px bg-white/80 z-20" />
-
-             {/* Dashboard Image */}
              <img
                src="/dashboard-screenshot.png"
                alt="PropAnalytics Dashboard"
                className="w-full h-auto object-cover"
              />
-
-             {/* Inner Shadow (Vignette) */}
              <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(33,52,72,0.05)] pointer-events-none rounded-t-2xl" />
-
-             {/* Reflection Overlay */}
              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/30 pointer-events-none mix-blend-overlay" />
            </div>
 
-
-           {/* --- FLOATING NOTIFICATION CARD (Parallax) --- */}
+           {/* Floating Notification Card (Parallax) */}
            <motion.div
              style={{ y: floatingCardY }}
              className="absolute -top-10 sm:-top-12 right-[5%] sm:right-[10%] bg-[#213448] text-[#EAE0CF] p-3 sm:p-4 rounded-xl shadow-2xl border border-[#547792]/30 z-30 flex items-center gap-3 sm:gap-4 max-w-[200px] sm:max-w-xs"
@@ -304,8 +269,8 @@ function HeroSection({ navigate }) {
 
         </motion.div>
 
-        {/* Bottom Fade Mask */}
-        <div className="absolute -bottom-20 left-0 right-0 h-48 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7] to-transparent z-20 pointer-events-none" />
+        {/* Bottom Fade Mask - uses transparent gradient */}
+        <div className="absolute -bottom-20 left-0 right-0 h-48 bg-gradient-to-t from-[#FDFBF7] to-transparent z-20 pointer-events-none" />
 
       </div>
 
@@ -314,7 +279,7 @@ function HeroSection({ navigate }) {
 }
 
 /**
- * District Heatmaps Card - GitHub-style contribution grid
+ * District Heatmaps Card - White background to pop against global texture
  */
 function HeatmapCard() {
   const generateHeatmapData = () => {
@@ -333,9 +298,9 @@ function HeatmapCard() {
   return (
     <motion.div
       whileHover={{ y: -5, boxShadow: '0 25px 50px -12px rgba(148, 180, 193, 0.25)' }}
-      className="col-span-1 md:col-span-2 rounded-2xl md:rounded-3xl border border-[#94B4C1]/30 bg-[#FDFBF7] p-6 md:p-8 relative overflow-hidden transition-all duration-300 group"
+      className="col-span-1 md:col-span-2 rounded-2xl md:rounded-3xl border border-[#94B4C1]/30 bg-white p-6 md:p-8 relative overflow-hidden transition-all duration-300 group"
     >
-      <div className="absolute top-6 md:top-8 right-6 md:right-8 p-2 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-[#EAE0CF] z-10">
+      <div className="absolute top-6 md:top-8 right-6 md:right-8 p-2 md:p-3 bg-[#FDFBF7] rounded-xl md:rounded-2xl shadow-sm border border-[#EAE0CF] z-10">
         <Map className="w-5 h-5 md:w-6 md:h-6 text-[#547792]" />
       </div>
 
@@ -346,7 +311,7 @@ function HeatmapCard() {
         Visualize rental yield and price compression across CCR, RCR, and OCR instantly.
       </p>
 
-      <div className="absolute bottom-4 md:bottom-6 right-4 md:right-6 bg-white rounded-xl md:rounded-2xl border border-[#94B4C1]/30 shadow-lg p-3 md:p-4 group-hover:scale-105 transition-transform duration-500">
+      <div className="absolute bottom-4 md:bottom-6 right-4 md:right-6 bg-[#FDFBF7] rounded-xl md:rounded-2xl border border-[#94B4C1]/30 shadow-lg p-3 md:p-4 group-hover:scale-105 transition-transform duration-500">
         <div className="flex gap-0.5 md:gap-1">
           {heatmapData[0].map((_, colIndex) => (
             <div key={colIndex} className="flex flex-col gap-0.5 md:gap-1">
@@ -500,7 +465,7 @@ function UnitMixCard() {
 }
 
 /**
- * Cleaned & Validated Data Card - Matrix terminal effect
+ * Cleaned & Validated Data Card - White background for consistency
  */
 function DataValidationCard() {
   const logEntries = [
@@ -522,9 +487,9 @@ function DataValidationCard() {
   return (
     <motion.div
       whileHover={{ y: -5, boxShadow: '0 25px 50px -12px rgba(148, 180, 193, 0.25)' }}
-      className="col-span-1 md:col-span-2 rounded-2xl md:rounded-3xl border border-[#94B4C1]/30 bg-[#FDFBF7] p-6 md:p-8 relative overflow-hidden transition-all duration-300 group"
+      className="col-span-1 md:col-span-2 rounded-2xl md:rounded-3xl border border-[#94B4C1]/30 bg-white p-6 md:p-8 relative overflow-hidden transition-all duration-300 group"
     >
-      <div className="absolute top-6 md:top-8 right-6 md:right-8 p-2 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-[#EAE0CF] z-10">
+      <div className="absolute top-6 md:top-8 right-6 md:right-8 p-2 md:p-3 bg-[#FDFBF7] rounded-xl md:rounded-2xl shadow-sm border border-[#EAE0CF] z-10">
         <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-[#547792]" />
       </div>
 
@@ -560,18 +525,18 @@ function DataValidationCard() {
         </div>
       </div>
 
-      <div className="absolute bottom-6 md:bottom-8 left-6 md:left-8 right-6 md:right-8 flex gap-4 md:gap-8">
-        <div>
+      <div className="absolute bottom-6 md:bottom-8 left-6 md:left-8 right-6 md:right-8 flex flex-wrap gap-4 md:gap-8">
+        <div className="min-w-0">
           <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">Records Processed</div>
-          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono">103,379</div>
+          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono tabular-nums">103,379</div>
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">Outliers Removed</div>
-          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono">789</div>
+          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono tabular-nums">789</div>
         </div>
-        <div>
+        <div className="min-w-0">
           <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">Accuracy</div>
-          <div className="text-lg md:text-2xl font-bold text-[#547792] font-mono">99.2%</div>
+          <div className="text-lg md:text-2xl font-bold text-[#547792] font-mono tabular-nums">99.2%</div>
         </div>
       </div>
     </motion.div>
