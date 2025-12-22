@@ -230,7 +230,7 @@ export function HotProjectsTable({ height = 400 }) {
                             {project.percent_sold.toFixed(1)}%
                           </span>
                           {project.data_discrepancy && (
-                            <span className="text-amber-500 cursor-help" title="Data discrepancy: URA transaction count exceeds official unit count. May include sub-sales or serviced apartments.">
+                            <span className="text-amber-500 cursor-help" title="Data discrepancy: URA transaction count exceeds official unit count. Mixed-use developments may include commercial units, serviced apartments, or sub-sales.">
                               ⚠
                             </span>
                           )}
@@ -246,7 +246,7 @@ export function HotProjectsTable({ height = 400 }) {
                         <span className="inline-flex items-center gap-1 justify-end">
                           <span>{project.unsold_inventory.toLocaleString()}</span>
                           {project.data_discrepancy && (
-                            <span className="text-amber-500 cursor-help" title="Data discrepancy: actual unsold may differ">
+                            <span className="text-amber-500 cursor-help" title="Data discrepancy: actual unsold may differ. Mixed-use developments may include commercial units or serviced apartments in transaction count.">
                               ⚠
                             </span>
                           )}
@@ -289,7 +289,7 @@ export function HotProjectsTable({ height = 400 }) {
             </span>
           </div>
           <span className="text-[#547792]/70 text-[10px]">
-            Only projects with 0 resales shown • ⚠ = URA txn count exceeds official units
+            Only projects with 0 resales shown • ⚠ = Mixed-use development (includes commercial/serviced units)
           </span>
         </div>
       </div>
