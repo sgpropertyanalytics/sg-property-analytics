@@ -66,9 +66,9 @@ const BEDROOM_OPTIONS = [
 
 const AGE_OPTIONS = [
   { value: 'all', label: 'All' },
-  { value: 'new', label: 'New/TOP' },      // 0-5 years
-  { value: 'young', label: 'Young' },      // 5-10 years
-  { value: 'resale', label: 'Resale' },    // >10 years
+  { value: 'new', label: 'New/TOP (0-5 yrs)' },
+  { value: 'young', label: 'Young Resale (5-10 yrs)' },
+  { value: 'resale', label: 'Resale (>10 yrs)' },
 ];
 
 const PERIOD_OPTIONS = [
