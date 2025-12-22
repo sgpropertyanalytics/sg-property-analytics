@@ -681,32 +681,22 @@ export function ValueParityPanel() {
 
       {/* Results Table */}
       {hasSearched && (
-        <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden animate-fade-in">
-          {/* Header */}
+        <div ref={resaleRef} className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden animate-fade-in">
+          {/* Section Header: Resale */}
           <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-[#213448]">
-                {selectedPriceRange
-                  ? `Transactions in ${formatBudgetDisplay(selectedPriceRange.start)} - ${formatBudgetDisplay(selectedPriceRange.end)} range`
-                  : 'All comparable transactions'
-                }
-              </h3>
-              <p className="text-xs text-[#547792]">
-                {loading ? 'Loading...' : (
-                  <>
-                    <span className="font-semibold text-[#213448]">{pagination.totalRecords.toLocaleString()}</span>
-                    {' '}transactions
-                    {selectedPriceRange && (
-                      <button
-                        onClick={clearPriceRangeFilter}
-                        className="ml-2 text-[#547792] hover:text-[#213448] underline"
-                      >
-                        Clear filter
-                      </button>
-                    )}
-                  </>
-                )}
-              </p>
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🏠</span>
+              <div>
+                <h3 className="font-semibold text-[#213448]">Young Resale (4-9 Years)</h3>
+                <p className="text-xs text-[#547792]">
+                  {loading ? 'Loading...' : (
+                    <>
+                      <span className="font-semibold text-[#213448]">{pagination.totalRecords.toLocaleString()}</span>
+                      {' '}transactions within your budget
+                    </>
+                  )}
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <select
@@ -714,7 +704,7 @@ export function ValueParityPanel() {
                 onChange={(e) => {
                   setPagination(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }));
                   if (hasSearched) {
-                    setTimeout(() => fetchTransactions(1, selectedPriceRange), 0);
+                    setTimeout(() => fetchTransactions(1, null), 0);
                   }
                 }}
                 className="text-xs border border-[#94B4C1] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
