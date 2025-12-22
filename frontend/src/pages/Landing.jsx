@@ -1,4 +1,5 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -7,7 +8,8 @@ import {
   Map,
   ShieldCheck,
   LineChart,
-  TrendingUp
+  TrendingUp,
+  ChevronDown
 } from 'lucide-react';
 
 /**
@@ -137,6 +139,141 @@ const LandingPage = () => {
 };
 
 /**
+ * Interactive "Mad Libs" Style Intent Capture
+ * Matches the "Warm Precision" aesthetic - Platform compliant
+ */
+function MarketIntentWidget({ navigate }) {
+  const [activeField, setActiveField] = useState(null);
+  const [selections, setSelections] = useState({
+    persona: 'Investor',
+    goal: 'Undervalued Gems',
+    region: 'District 15',
+  });
+
+  const options = {
+    persona: ['Investor', 'Homebuyer', 'Agent'],
+    goal: ['Undervalued Gems', 'Rental Yield', 'Supply Cliffs'],
+    region: ['District 15', 'CCR', 'RCR', 'OCR'],
+  };
+
+  const handleSelect = (key, value) => {
+    setSelections((prev) => ({ ...prev, [key]: value }));
+    setActiveField(null);
+  };
+
+  // Close dropdown when clicking outside
+  const handleBackdropClick = () => {
+    setActiveField(null);
+  };
+
+  return (
+    <div className="w-full max-w-2xl mx-auto mt-2 mb-8 relative z-30">
+      {/* Backdrop to close dropdowns */}
+      {activeField && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={handleBackdropClick}
+        />
+      )}
+
+      {/* Container */}
+      <div className="bg-white/40 backdrop-blur-md border border-white/60 shadow-lg shadow-[#94B4C1]/10 rounded-2xl p-5 md:p-8 text-center relative z-50">
+
+        <h3 className="text-[#547792] text-[10px] md:text-xs font-bold tracking-widest uppercase mb-3 md:mb-4">
+          Customize your view
+        </h3>
+
+        <div className="text-lg md:text-2xl leading-relaxed font-medium text-[#213448]">
+          <span>I am an </span>
+          <IntentDropdown
+            label={selections.persona}
+            isOpen={activeField === 'persona'}
+            onClick={() => setActiveField(activeField === 'persona' ? null : 'persona')}
+            options={options.persona}
+            onSelect={(val) => handleSelect('persona', val)}
+          />
+          <span> looking to spot </span>
+          <br className="hidden md:block" />
+          <IntentDropdown
+            label={selections.goal}
+            isOpen={activeField === 'goal'}
+            onClick={() => setActiveField(activeField === 'goal' ? null : 'goal')}
+            options={options.goal}
+            onSelect={(val) => handleSelect('goal', val)}
+          />
+          <span> in </span>
+          <IntentDropdown
+            label={selections.region}
+            isOpen={activeField === 'region'}
+            onClick={() => setActiveField(activeField === 'region' ? null : 'region')}
+            options={options.region}
+            onSelect={(val) => handleSelect('region', val)}
+          />
+          <span>.</span>
+        </div>
+
+        {/* Dynamic CTA */}
+        <motion.button
+          key={selections.goal}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => navigate('/market-pulse')}
+          className="mt-6 md:mt-8 group bg-[#213448] hover:bg-[#324b66] active:scale-[0.98] text-[#EAE0CF] px-5 md:px-6 py-3 rounded-xl font-medium text-sm transition-all flex items-center gap-2 mx-auto shadow-xl shadow-[#213448]/10 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+        >
+          <span className="truncate">Find {selections.goal} in {selections.region}</span>
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+        </motion.button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Dropdown trigger for the intent widget - Touch-friendly
+ */
+function IntentDropdown({ label, isOpen, onClick, options, onSelect }) {
+  return (
+    <span className="relative inline-block mx-0.5 md:mx-1">
+      <button
+        onClick={onClick}
+        className={`
+          inline-flex items-center gap-0.5 md:gap-1 border-b-2 transition-colors pb-0.5
+          min-h-[44px] px-1 touch-action-manipulation
+          focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:rounded focus:outline-none
+          active:opacity-70
+          ${isOpen ? 'border-[#547792] text-[#547792]' : 'border-[#213448]/20 hover:border-[#213448]'}
+        `}
+      >
+        <span className="whitespace-nowrap">{label}</span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-white rounded-xl shadow-xl border border-[#94B4C1]/20 overflow-hidden z-50"
+          >
+            {options.map((option) => (
+              <button
+                key={option}
+                onClick={() => onSelect(option)}
+                className="w-full text-left px-4 py-3 text-sm hover:bg-[#FDFBF7] active:bg-[#EAE0CF]/50 text-[#213448] hover:text-[#547792] transition-colors min-h-[44px] touch-action-manipulation focus-visible:bg-[#FDFBF7] focus:outline-none"
+              >
+                {option}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </span>
+  );
+}
+
+/**
  * Hero Section - Transparent, inherits global texture and glow
  * Removed duplicate background elements
  */
@@ -180,32 +317,20 @@ function HeroSection({ navigate }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-base sm:text-lg md:text-xl text-[#547792] mb-10 max-w-2xl mx-auto leading-relaxed"
+          className="text-base sm:text-lg md:text-xl text-[#547792] mb-6 max-w-2xl mx-auto leading-relaxed"
         >
           Institutional-grade transaction records, supply cliffs, and rental yields.
           Visualized for the modern investor.
         </motion.p>
 
-        {/* Buttons */}
+        {/* Market Intent Widget - Interactive "Mad Libs" */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center"
+          className="w-full"
         >
-          <button
-            onClick={() => navigate('/market-pulse')}
-            className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#324b66] active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center justify-center gap-2 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
-          >
-            Explore Dashboard
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform opacity-80" />
-          </button>
-          <button
-            onClick={() => navigate('/analytics-view')}
-            className="px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-white/60 border border-[#EAE0CF] text-[#547792] font-medium hover:bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2 backdrop-blur-sm shadow-sm min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
-          >
-            View Analytics Demo
-          </button>
+          <MarketIntentWidget navigate={navigate} />
         </motion.div>
       </motion.div>
 
