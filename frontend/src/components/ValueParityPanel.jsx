@@ -1,9 +1,12 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { getTransactionsList, getFilterOptions } from '../api/client';
 import { DISTRICT_NAMES, isDistrictInRegion } from '../constants';
 import { PriceDistributionHeroChart } from './PriceDistributionHeroChart';
 import DealCheckerContent from './powerbi/DealCheckerContent';
 import { HotProjectsTable } from './powerbi/HotProjectsTable';
+import { MobileTransactionCard } from './MobileTransactionCard';
+import { ResultsSummaryBar } from './ResultsSummaryBar';
 
 /**
  * ValueParityPanel - Budget-based property search tool with Deal Checker
@@ -68,11 +71,33 @@ export function ValueParityPanel() {
   const [chartLoading, setChartLoading] = useState(false);
   const chartFetchAbortRef = useRef(null);
 
+  // Refs for scrolling to sections
+  const resultsRef = useRef(null);
+  const newLaunchesRef = useRef(null);
+  const resaleRef = useRef(null);
+
   // Selected price range from histogram click (for filtering table)
   const [selectedPriceRange, setSelectedPriceRange] = useState(null);
 
   // Hot projects count (for section header badge)
   const [hotProjectsCount, setHotProjectsCount] = useState(0);
+
+  // Mobile filter panel toggle
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // Count active filters for badge
+  const activeFilterCount = [bedroom, region, district, tenure, saleType, leaseAge].filter(Boolean).length;
+
+  // Responsive chart height (220px mobile, 280px desktop)
+  const [chartHeight, setChartHeight] = useState(typeof window !== 'undefined' && window.innerWidth < 768 ? 220 : 280);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setChartHeight(window.innerWidth < 768 ? 220 : 280);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Load filter options on mount
   useEffect(() => {
@@ -105,10 +130,15 @@ export function ValueParityPanel() {
         sort_order: sortConfig.order,
       };
 
-      // Apply price range filter if a histogram bin is selected
+      // Apply price range filter:
+      // - If histogram bin is selected, use that range
+      // - Otherwise, use budget ± $100K as the default filter
       if (priceRange) {
         params.price_min = priceRange.start;
         params.price_max = priceRange.end;
+      } else if (budget) {
+        params.price_min = budget - 100000;
+        params.price_max = budget + 100000;
       }
 
       // Add optional filters
@@ -145,7 +175,7 @@ export function ValueParityPanel() {
     } finally {
       setLoading(false);
     }
-  }, [bedroom, region, district, tenure, saleType, leaseAge, pagination.limit, sortConfig]);
+  }, [budget, bedroom, region, district, tenure, saleType, leaseAge, pagination.limit, sortConfig]);
 
   // Fetch all transactions for chart histogram (separate from paginated table)
   // This fetches up to 5000 transactions to ensure a representative distribution
@@ -166,6 +196,12 @@ export function ValueParityPanel() {
         sort_order: 'asc',
       };
 
+      // Apply budget filter for chart data (budget ± $100K)
+      if (budget) {
+        params.price_min = budget - 100000;
+        params.price_max = budget + 100000;
+      }
+
       // Add optional filters (same as table)
       if (bedroom) params.bedroom = bedroom;
       if (region) params.segment = region;
@@ -174,17 +210,19 @@ export function ValueParityPanel() {
       if (saleType) params.sale_type = saleType;
       if (leaseAge) params.lease_age = leaseAge;
 
-      const response = await getTransactionsList(params);
+      const response = await getTransactionsList(params, {
+        signal: chartFetchAbortRef.current.signal
+      });
       setChartTransactions(response.data.transactions || []);
     } catch (err) {
-      // Ignore abort errors
-      if (err.name !== 'AbortError') {
+      // Ignore abort errors (axios uses CanceledError or AbortError)
+      if (err.name !== 'AbortError' && err.name !== 'CanceledError' && !axios.isCancel(err)) {
         console.error('Error fetching chart data:', err);
       }
     } finally {
       setChartLoading(false);
     }
-  }, [bedroom, region, district, tenure, saleType, leaseAge]);
+  }, [budget, bedroom, region, district, tenure, saleType, leaseAge]);
 
   // Handle search
   const handleSearch = (e) => {
@@ -193,6 +231,11 @@ export function ValueParityPanel() {
     setSelectedPriceRange(null); // Reset any histogram filter
     fetchTransactions(1, null);
     fetchChartData(); // Also fetch data for the histogram chart
+
+    // Scroll to results after a brief delay to allow DOM to update
+    setTimeout(() => {
+      newLaunchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   // Handle histogram bin click - filter table to show transactions in that price range
@@ -232,6 +275,9 @@ export function ValueParityPanel() {
     if (hasSearched) {
       fetchTransactions(1, selectedPriceRange);
     }
+    // Note: We intentionally only trigger on sortConfig changes, not on
+    // fetchTransactions/selectedPriceRange changes (which would cause loops)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortConfig]);
 
   // Handle page change
@@ -492,10 +538,40 @@ export function ValueParityPanel() {
               </button>
             </div>
 
-            {/* RIGHT: Optional Filters - grey zone extends to card edges */}
-            <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03] flex items-center">
-              <div className="px-4 md:px-5 py-4 md:py-5 w-full">
-                <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
+            {/* RIGHT: Optional Filters - collapsible on mobile */}
+            <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03]">
+              {/* Mobile: Collapsible toggle button */}
+              <button
+                type="button"
+                onClick={() => setFiltersExpanded(!filtersExpanded)}
+                className="lg:hidden w-full flex items-center justify-between min-h-[48px] px-4 py-3 active:bg-[#EAE0CF]/50"
+              >
+                <span className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  <span className="text-sm font-medium text-[#213448]">Filters</span>
+                </span>
+                <div className="flex items-center gap-2">
+                  {activeFilterCount > 0 && (
+                    <span className="px-2 py-0.5 bg-[#547792]/20 text-[#213448] text-xs rounded-full">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                  <svg
+                    className={`w-4 h-4 text-[#547792] transition-transform duration-200 ${filtersExpanded ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </button>
+
+              {/* Desktop: Always visible / Mobile: Collapsible */}
+              <div className={`${filtersExpanded ? 'block' : 'hidden'} lg:block px-4 md:px-5 py-4 md:py-5 w-full`}>
+                <p className="hidden lg:block text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {/* Bedroom */}
                   <div>
@@ -598,9 +674,19 @@ export function ValueParityPanel() {
         </form>
       </div>
 
+      {/* Results Summary Bar - Sticky navigation */}
+      {hasSearched && (
+        <ResultsSummaryBar
+          hotProjectsCount={hotProjectsCount}
+          totalTransactions={pagination.totalRecords}
+          onJumpToNewLaunches={() => newLaunchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          onJumpToResale={() => resaleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        />
+      )}
+
       {/* ===== NEW LAUNCHES SECTION ===== */}
       {hasSearched && (
-        <div className="space-y-4">
+        <div ref={newLaunchesRef} className="space-y-4">
           {/* Section Header: New Launches */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -632,43 +718,18 @@ export function ValueParityPanel() {
             />
           </div>
 
-          {/* Visual Transition to Resale Market */}
-          <div className="flex justify-center py-2">
-            <div className="flex items-center gap-2 px-4 py-2 bg-[#EAE0CF]/50 rounded-full border border-[#94B4C1]/30">
-              <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              <span className="text-sm text-[#547792]">Or explore the Resale Market</span>
-              <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Section Header: Resale Transactions */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">🏠</span>
-              <div>
-                <h3 className="text-base font-semibold text-[#213448]">Resale Transactions</h3>
-                <p className="text-xs text-[#547792]">Recent sales within your budget range</p>
-              </div>
-            </div>
-            <span className="px-2.5 py-1 bg-[#213448]/10 text-[#213448] text-xs font-medium rounded-full">
-              {pagination.totalRecords.toLocaleString()} {pagination.totalRecords === 1 ? 'transaction' : 'transactions'}
-            </span>
-          </div>
         </div>
       )}
 
       {/* ===== RESALE SECTION ===== */}
       {/* Price Distribution Hero Chart - shows where buyer's price falls in the distribution */}
       {hasSearched && (
+        <div ref={resaleRef}>
         <PriceDistributionHeroChart
           buyerPrice={budget}
           transactions={chartTransactions}
           loading={chartLoading}
-          height={280}
+          height={chartHeight}
           activeFilters={{
             bedroom,
             region,
@@ -680,6 +741,7 @@ export function ValueParityPanel() {
           onBinClick={handleBinClick}
           selectedPriceRange={selectedPriceRange}
         />
+        </div>
       )}
 
       {/* Results Table */}
@@ -730,8 +792,37 @@ export function ValueParityPanel() {
             </div>
           </div>
 
-          {/* Table Container */}
-          <div className="overflow-auto" style={{ maxHeight: 500 }}>
+          {/* Mobile Card View (visible on small screens) */}
+          <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: 400 }}>
+            {error ? (
+              <div className="flex items-center justify-center h-40 text-red-500">
+                Error: {error}
+              </div>
+            ) : loading ? (
+              [...Array(5)].map((_, i) => (
+                <div key={i} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 animate-pulse">
+                  <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                </div>
+              ))
+            ) : data.length === 0 ? (
+              <div className="text-center py-8 text-[#547792] text-sm">
+                No transactions found. Try adjusting your filters.
+              </div>
+            ) : (
+              data.map((txn, idx) => (
+                <MobileTransactionCard
+                  key={txn.id || idx}
+                  transaction={txn}
+                  formatCurrency={formatCurrency}
+                  formatDate={formatDate}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table View (hidden on small screens) */}
+          <div className="hidden md:block overflow-auto" style={{ maxHeight: 500 }}>
             {error ? (
               <div className="flex items-center justify-center h-40 text-red-500">
                 Error: {error}

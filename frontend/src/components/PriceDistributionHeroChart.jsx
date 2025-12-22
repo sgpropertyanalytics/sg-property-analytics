@@ -594,52 +594,46 @@ export function PriceDistributionHeroChart({
         />
       </div>
 
-      {/* Annotation Footer */}
-      <div className="px-4 py-3 bg-gradient-to-r from-[#EAE0CF]/40 to-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
-        <div className="flex items-center justify-between">
-          {/* Percentile annotation - the key insight */}
-          <div className="flex items-center gap-3">
-            {/* Visual indicator */}
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
+      {/* Compact Annotation Footer */}
+      <div className="px-4 py-2 bg-gradient-to-r from-[#EAE0CF]/40 to-transparent border-t border-[#94B4C1]/30">
+        <div className="flex items-center justify-between gap-3">
+          {/* Percentile annotation - compact version */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {/* Compact visual indicator */}
+            <div className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full ${
               isGoodDeal
                 ? 'bg-emerald-100 text-emerald-600'
                 : 'bg-amber-100 text-amber-600'
             }`}>
               {isGoodDeal ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               )}
             </div>
 
-            {/* Text annotation */}
-            <div>
-              <p className={`font-semibold ${
-                isGoodDeal ? 'text-emerald-700' : 'text-amber-700'
-              }`}>
-                {getAnnotationMessage()}
-              </p>
-              <p className="text-xs text-[#547792] mt-0.5">
-                Your target: {formatPriceShort(buyerPrice)}
-                {stats.isOutsideRange && (
-                  <span className="ml-1 text-amber-600">(outside typical range)</span>
-                )}
-              </p>
-            </div>
+            {/* Inline text annotation */}
+            <p className={`text-sm font-medium truncate ${
+              isGoodDeal ? 'text-emerald-700' : 'text-amber-700'
+            }`}>
+              {getAnnotationMessage()}
+              {stats.isOutsideRange && (
+                <span className="ml-1 text-amber-600 text-xs">(outside range)</span>
+              )}
+            </p>
           </div>
 
-          {/* Percentile badge */}
-          <div className="text-right">
-            <div className={`text-2xl font-bold ${
+          {/* Compact percentile badge */}
+          <div className="flex-shrink-0 text-right">
+            <span className={`text-xl font-bold ${
               isGoodDeal ? 'text-emerald-600' : 'text-amber-600'
             }`}>
               {stats.percentile}%
-            </div>
-            <div className="text-xs text-[#547792]">percentile rank</div>
+            </span>
           </div>
         </div>
       </div>

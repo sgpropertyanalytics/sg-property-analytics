@@ -311,8 +311,8 @@ export const getAggregate = (params = {}, options = {}) => {
  * @param {string} params.sort_by - Column to sort (default transaction_date)
  * @param {string} params.sort_order - asc or desc (default desc)
  */
-export const getTransactionsList = (params = {}) =>
-  apiClient.get(`/transactions/list?${buildQueryString(params)}`);
+export const getTransactionsList = (params = {}, options = {}) =>
+  apiClient.get(`/transactions/list?${buildQueryString(params)}`, options);
 
 /**
  * Get available filter options based on current data
