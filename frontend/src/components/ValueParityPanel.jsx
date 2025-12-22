@@ -644,17 +644,19 @@ export function ValueParityPanel() {
       {hasSearched && (
         <div ref={newLaunchesRef} className="space-y-4">
           {/* Flow Arrow: Budget → New Launches */}
-          <div className="flex items-center justify-center py-2">
-            <div className="flex items-center gap-2 text-[#94B4C1]">
-              <div className="h-px w-12 bg-gradient-to-r from-transparent to-[#94B4C1]" />
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              <span className="text-xs font-medium">What upcoming new launches can I buy?</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              <div className="h-px w-12 bg-gradient-to-l from-transparent to-[#94B4C1]" />
+          <div className="flex items-center justify-center py-3">
+            <div className="flex items-center gap-3 text-[#547792]">
+              <div className="h-0.5 w-16 bg-gradient-to-r from-transparent via-[#547792]/50 to-[#547792]" />
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-[#213448]/10 rounded-full">
+                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+                <span className="text-sm font-semibold text-[#213448]">Upcoming New Launches</span>
+                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              <div className="h-0.5 w-16 bg-gradient-to-l from-transparent via-[#547792]/50 to-[#547792]" />
             </div>
           </div>
 
@@ -695,17 +697,19 @@ export function ValueParityPanel() {
       {hasSearched && (
         <>
           {/* Flow Arrow: New Launches → Young Resale */}
-          <div className="flex items-center justify-center py-2">
-            <div className="flex items-center gap-2 text-[#94B4C1]">
-              <div className="h-px w-12 bg-gradient-to-r from-transparent to-[#94B4C1]" />
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              <span className="text-xs font-medium">What young resale properties are available?</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              <div className="h-px w-12 bg-gradient-to-l from-transparent to-[#94B4C1]" />
+          <div className="flex items-center justify-center py-3">
+            <div className="flex items-center gap-3 text-[#547792]">
+              <div className="h-0.5 w-16 bg-gradient-to-r from-transparent via-[#547792]/50 to-[#547792]" />
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-[#213448]/10 rounded-full">
+                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+                <span className="text-sm font-semibold text-[#213448]">Recently TOP Units / Young Resale</span>
+                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              <div className="h-0.5 w-16 bg-gradient-to-l from-transparent via-[#547792]/50 to-[#547792]" />
             </div>
           </div>
 
@@ -933,23 +937,25 @@ export function ValueParityPanel() {
 
           {/* ===== STEP 4: RESALE MARKET ===== */}
           {/* Flow Arrow: Young Resale → Resale Market */}
-          <div className="flex items-center justify-center py-2">
-            <div className="flex items-center gap-2 text-[#94B4C1]">
-              <div className="h-px w-12 bg-gradient-to-r from-transparent to-[#94B4C1]" />
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              <span className="text-xs font-medium">Or explore the full resale market</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              <div className="h-px w-12 bg-gradient-to-l from-transparent to-[#94B4C1]" />
+          <div className="flex items-center justify-center py-3">
+            <div className="flex items-center gap-3 text-[#547792]">
+              <div className="h-0.5 w-16 bg-gradient-to-r from-transparent via-[#547792]/50 to-[#547792]" />
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-[#213448]/10 rounded-full">
+                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+                <span className="text-sm font-semibold text-[#213448]">Resale Market</span>
+                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              <div className="h-0.5 w-16 bg-gradient-to-l from-transparent via-[#547792]/50 to-[#547792]" />
             </div>
           </div>
 
           {/* Resale Market Section */}
           <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-            <div className="px-4 py-4 flex items-center justify-between">
+            <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-xl">🏘️</span>
                 <div>
@@ -957,15 +963,15 @@ export function ValueParityPanel() {
                   <p className="text-xs text-[#547792]">All resale transactions within your budget</p>
                 </div>
               </div>
-              <a
-                href="/macro-overview"
-                className="px-4 py-2 bg-[#213448] text-white text-sm font-medium rounded-lg hover:bg-[#547792] transition-colors flex items-center gap-2"
-              >
-                <span>Explore Full Market</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </div>
+            <div className="p-6 text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#EAE0CF]/50 rounded-lg">
+                <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-              </a>
+                <span className="text-sm text-[#547792]">Coming Soon</span>
+              </div>
+              <p className="mt-2 text-xs text-[#94B4C1]">Full resale market transactions will be displayed here</p>
             </div>
           </div>
         </>
