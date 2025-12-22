@@ -5,16 +5,15 @@
  * Core UX: Fixed-context dashboard that allows exploration but prevents getting lost
  *
  * Key Design Decisions:
- * - HARD-CODED center (shifted north to 1.3650) - pushes island UP to clear bottom UI
- * - HARD-CODED zoom (10.6) - "Goldilocks zone" for full visibility on all screens
- * - NO fitBounds - auto-calculation is unreliable across screen aspect ratios
- * - Layer order: Fill FIRST, Line SECOND (line renders on top)
+ * - RIGHT-HAND CONTROL STACK - All controls consolidated top-right, bottom is 100% map
+ * - HARD-CODED center (1.3521) - true center now that bottom UI is cleared
+ * - Layer order: Fill FIRST, Line SECOND (line renders on top with "white grout" effect)
  *
  * Features:
  * - Bounded exploration ("Playpen") - drag enabled with elastic maxBounds
  * - Price/Volume view mode toggle for different insights
  * - Zoom-responsive markers (dots at overview, pills when zoomed)
- * - High-contrast "Blueprint" style white boundaries
+ * - High-contrast "White Grout" style boundaries (0.6 opacity)
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -22,32 +21,31 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
-import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
+import { singaporeDistrictsGeoJSON } from '../../data/singaporeDistrictsGeoJSON';
 
 // =============================================================================
-// MAP CONFIGURATION - "Hard-Coded" Foolproof Setup
+// MAP CONFIGURATION - Optimized for Right-Hand Control Stack Layout
 // =============================================================================
 
 const MAP_CONFIG = {
-  // "Hard-Coded" Default View - No fitBounds auto-calculation
-  // Center is shifted NORTH (~0.013 deg) to push island UP and clear bottom UI
-  adjustedCenter: {
+  // True center of Singapore - bottom UI is gone, no need to shift north
+  center: {
     longitude: 103.8198,
-    latitude: 1.3650,  // Shifted north from 1.3521 to clear filter bar
+    latitude: 1.3521,
   },
 
-  // Goldilocks zoom - 10.6 guarantees full visibility on standard screens
+  // Goldilocks zoom - 10.6 guarantees full visibility
   defaultZoom: 10.6,
 
   // "Playpen" - elastic walls that prevent users from getting lost
   maxBounds: [
-    [103.55, 1.15],  // Southwest (allows slight pan toward Batam)
-    [104.15, 1.50],  // Northeast (allows slight pan toward Johor)
+    [103.55, 1.15],  // Southwest
+    [104.15, 1.50],  // Northeast
   ],
 
   // Zoom constraints
-  minZoom: 10,     // Prevents zooming out to world view
-  maxZoom: 16,     // Allows street-level inspection
+  minZoom: 10,
+  maxZoom: 16,
 };
 
 // Theme colors (Warm Precision palette)
@@ -56,14 +54,14 @@ const COLORS = {
   oceanBlue: '#547792',
   skyBlue: '#94B4C1',
   sand: '#EAE0CF',
-  void: '#0f172a',  // Deep dark background
+  void: '#0f172a',
 };
 
 // Volume "Hot" gradient colors
 const VOLUME_COLORS = {
-  low: '#FDE68A',      // Pale Yellow
-  medium: '#F59E0B',   // Orange
-  high: '#B91C1C',     // Red
+  low: '#FDE68A',
+  medium: '#F59E0B',
+  high: '#B91C1C',
 };
 
 // Manual marker offsets for crowded central districts
@@ -79,9 +77,6 @@ const MARKER_OFFSETS = {
 // UTILITY FUNCTIONS
 // =============================================================================
 
-/**
- * Polylabel Algorithm - Find visual center of polygon
- */
 function polylabel(polygon) {
   const ring = polygon[0];
   if (!ring || ring.length < 4) return null;
@@ -183,15 +178,13 @@ function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
   return Math.sqrt((px - nearX) ** 2 + (py - nearY) ** 2);
 }
 
-// Color functions for Price mode
 function getPsfColor(psf, hasData) {
   if (!hasData || !psf) return '#3a3a4a';
-  if (psf < 1400) return COLORS.skyBlue;    // OCR
-  if (psf < 2200) return COLORS.oceanBlue;  // RCR
-  return COLORS.deepNavy;                    // CCR
+  if (psf < 1400) return COLORS.skyBlue;
+  if (psf < 2200) return COLORS.oceanBlue;
+  return COLORS.deepNavy;
 }
 
-// Color functions for Volume mode
 function getVolumeColor(txCount, hasData, maxVolume) {
   if (!hasData || !txCount) return '#3a3a4a';
   const ratio = txCount / maxVolume;
@@ -200,7 +193,6 @@ function getVolumeColor(txCount, hasData, maxVolume) {
   return VOLUME_COLORS.high;
 }
 
-// Build MapLibre color expression for Price mode
 function getPriceColorExpression(districtData) {
   const colorStops = ['case'];
   districtData.forEach((d) => {
@@ -211,7 +203,6 @@ function getPriceColorExpression(districtData) {
   return colorStops;
 }
 
-// Build MapLibre color expression for Volume mode
 function getVolumeColorExpression(districtData, maxVolume) {
   const colorStops = ['case'];
   districtData.forEach((d) => {
@@ -244,11 +235,11 @@ function formatYoY(value) {
 // =============================================================================
 
 const BEDROOM_OPTIONS = [
-  { value: 'all', label: 'All', fullLabel: 'All Types' },
-  { value: '1', label: '1BR', fullLabel: '1-Bedroom' },
-  { value: '2', label: '2BR', fullLabel: '2-Bedroom' },
-  { value: '3', label: '3BR', fullLabel: '3-Bedroom' },
-  { value: '4+', label: '4BR+', fullLabel: '4+ Bedroom' },
+  { value: 'all', label: 'All' },
+  { value: '1', label: '1BR' },
+  { value: '2', label: '2BR' },
+  { value: '3', label: '3BR' },
+  { value: '4+', label: '4+' },
 ];
 
 const PERIOD_OPTIONS = [
@@ -258,34 +249,25 @@ const PERIOD_OPTIONS = [
   { value: 'all', label: 'All' },
 ];
 
-// CARTO Dark Matter - deep dark base map
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 // =============================================================================
-// SMART MARKER COMPONENT - Zoom-Responsive
+// SMART MARKER COMPONENT
 // =============================================================================
 
-/**
- * DataFlag - Zoom-Responsive Marker Component
- * - Zoom < 12: Simple dot with district ID (e.g., "10")
- * - Zoom >= 12: Full "Data Pill" with price/volume
- */
-function DataFlag({ district, data, currentFilter, viewMode, zoom }) {
+function DataFlag({ district, data, viewMode, zoom }) {
   const [isHovered, setIsHovered] = useState(false);
   const yoy = data?.yoy_pct !== null ? formatYoY(data.yoy_pct) : null;
   const hasData = data?.has_data;
 
-  // Determine if this is a "hotspot" for special styling
   const isHotspot = viewMode === 'PRICE'
     ? hasData && data?.median_psf >= 2500
     : hasData && data?.tx_count >= 500;
 
-  // Zoom-based display mode
   const isCompactMode = zoom < 12;
 
-  // Display value based on mode and zoom level
   const displayValue = isCompactMode
-    ? district.district.replace('D0', '').replace('D', '') // "09" → "9", "19" → "19"
+    ? district.district.replace('D0', '').replace('D', '')
     : viewMode === 'PRICE'
       ? formatPsf(data?.median_psf)
       : `${formatVolume(data?.tx_count)}`;
@@ -296,7 +278,6 @@ function DataFlag({ district, data, currentFilter, viewMode, zoom }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Main Pill - Size adapts to zoom level */}
       <motion.div
         animate={{
           scale: isHovered ? 1.15 : 1,
@@ -320,14 +301,11 @@ function DataFlag({ district, data, currentFilter, viewMode, zoom }) {
           }
           ${isHovered ? 'shadow-xl ring-2 ring-white/30' : ''}
         `}
-        style={{
-          backdropFilter: 'blur(4px)',
-        }}
+        style={{ backdropFilter: 'blur(4px)' }}
       >
         {hasData ? displayValue : '-'}
       </motion.div>
 
-      {/* Hover Tooltip */}
       <AnimatePresence>
         {isHovered && hasData && (
           <motion.div
@@ -338,7 +316,6 @@ function DataFlag({ district, data, currentFilter, viewMode, zoom }) {
             className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-50"
           >
             <div className="bg-white rounded-xl p-3 min-w-[180px] border border-slate-200 shadow-2xl">
-              {/* Header */}
               <div className="flex items-center justify-between mb-1.5">
                 <span className="font-bold text-slate-900 text-sm">
                   {district.district}
@@ -364,7 +341,6 @@ function DataFlag({ district, data, currentFilter, viewMode, zoom }) {
 
               <div className="h-px bg-slate-100 mb-2" />
 
-              {/* Stats */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
                   <span className="text-[11px] text-slate-500">Median PSF</span>
@@ -388,12 +364,6 @@ function DataFlag({ district, data, currentFilter, viewMode, zoom }) {
                 )}
               </div>
 
-              <div className="mt-2 pt-1.5 border-t border-slate-100">
-                <p className="text-[9px] text-slate-400 uppercase tracking-wider text-center">
-                  {currentFilter}
-                </p>
-              </div>
-
               <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-slate-200 rotate-45" />
             </div>
           </motion.div>
@@ -413,19 +383,17 @@ export default function MarketStrategyMap() {
   const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('12m');
-  const [viewMode, setViewMode] = useState('PRICE'); // 'PRICE' or 'VOLUME'
+  const [viewMode, setViewMode] = useState('PRICE');
   const mapRef = useRef(null);
 
-  // Hard-coded initial view - shifted north to clear bottom UI
   const [viewState, setViewState] = useState({
-    longitude: MAP_CONFIG.adjustedCenter.longitude,
-    latitude: MAP_CONFIG.adjustedCenter.latitude,
+    longitude: MAP_CONFIG.center.longitude,
+    latitude: MAP_CONFIG.center.latitude,
     zoom: MAP_CONFIG.defaultZoom,
     pitch: 0,
     bearing: 0,
   });
 
-  // Fetch district PSF data
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -449,7 +417,6 @@ export default function MarketStrategyMap() {
     fetchData();
   }, [fetchData]);
 
-  // Create district lookup map
   const districtMap = useMemo(() => {
     const map = {};
     districtData.forEach((d) => {
@@ -458,13 +425,11 @@ export default function MarketStrategyMap() {
     return map;
   }, [districtData]);
 
-  // Calculate max volume for color scaling
   const maxVolume = useMemo(() => {
     const volumes = districtData.filter((d) => d.tx_count).map((d) => d.tx_count);
     return volumes.length > 0 ? Math.max(...volumes) : 1;
   }, [districtData]);
 
-  // Calculate visual centroids with manual offsets for crowded areas
   const districtCentroids = useMemo(() => {
     return singaporeDistrictsGeoJSON.features.map((feature) => {
       const centroid = polylabel(feature.geometry.coordinates);
@@ -483,7 +448,6 @@ export default function MarketStrategyMap() {
     }).filter((d) => d.centroid !== null);
   }, []);
 
-  // Fill layer - flat 2D, color-coded by active metric
   const fillLayer = useMemo(
     () => ({
       id: 'district-fill',
@@ -498,17 +462,16 @@ export default function MarketStrategyMap() {
     [districtData, viewMode, maxVolume]
   );
 
-  // "Blueprint" boundary lines - MUST render AFTER fill layer for visibility
-  // Using pure white with explicit opacity for maximum contrast
+  // "White Grout" boundary lines - MUST render AFTER fill layer
   const lineLayer = useMemo(
     () => ({
       id: 'district-line',
       type: 'line',
       paint: {
-        'line-color': '#FFFFFF',      // Pure White
-        'line-width': 1.5,            // Thick enough to see
-        'line-opacity': 0.5,          // Semi-transparent
-        'line-dasharray': [2, 1],     // Tight Blueprint Dash
+        'line-color': '#FFFFFF',
+        'line-width': 1.5,
+        'line-opacity': 0.6,      // Visible but not harsh
+        'line-dasharray': [2, 2], // Crisp, technical dots
       },
       layout: {
         'line-cap': 'round',
@@ -518,13 +481,6 @@ export default function MarketStrategyMap() {
     []
   );
 
-  // Handle map load - no fitBounds needed, using hard-coded center
-  const handleMapLoad = useCallback(() => {
-    // Map is already positioned correctly via initialViewState
-    // No fitBounds auto-calculation needed - it's unreliable across screen sizes
-  }, []);
-
-  // Calculate stats ranges
   const psfRange = useMemo(() => {
     const validPsfs = districtData
       .filter((d) => d.median_psf)
@@ -548,9 +504,6 @@ export default function MarketStrategyMap() {
     };
   }, [districtData]);
 
-  const currentBedroomLabel =
-    BEDROOM_OPTIONS.find((o) => o.value === selectedBed)?.fullLabel || 'All Types';
-
   return (
     <div className="bg-slate-900 rounded-xl border border-slate-700 shadow-xl overflow-hidden">
       {/* Header */}
@@ -567,58 +520,28 @@ export default function MarketStrategyMap() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* View Mode Toggle */}
-            <div className="flex items-center gap-1 p-1 bg-slate-700 rounded-lg">
+          {/* Period Filter - stays in header on desktop */}
+          <div className="flex items-center gap-1">
+            {PERIOD_OPTIONS.map((option) => (
               <button
-                onClick={() => setViewMode('PRICE')}
+                key={option.value}
+                onClick={() => setSelectedPeriod(option.value)}
                 className={`
-                  px-2.5 py-1 text-xs font-semibold rounded-md transition-all
-                  ${viewMode === 'PRICE'
-                    ? 'bg-[#547792] text-white shadow'
-                    : 'text-slate-300 hover:text-white'
+                  px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all
+                  ${selectedPeriod === option.value
+                    ? 'bg-[#547792] text-white shadow-lg'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                   }
                 `}
               >
-                💲 Price
+                {option.label}
               </button>
-              <button
-                onClick={() => setViewMode('VOLUME')}
-                className={`
-                  px-2.5 py-1 text-xs font-semibold rounded-md transition-all
-                  ${viewMode === 'VOLUME'
-                    ? 'bg-orange-500 text-white shadow'
-                    : 'text-slate-300 hover:text-white'
-                  }
-                `}
-              >
-                🔥 Volume
-              </button>
-            </div>
-
-            {/* Period Filter */}
-            <div className="flex items-center gap-1">
-              {PERIOD_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setSelectedPeriod(option.value)}
-                  className={`
-                    px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all
-                    ${selectedPeriod === option.value
-                      ? 'bg-[#547792] text-white shadow-lg'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    }
-                  `}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Map Container */}
+      {/* Map Container - Bottom is now 100% clear */}
       <div className="relative" style={{ height: '520px' }}>
         {/* Loading Overlay */}
         <AnimatePresence>
@@ -652,12 +575,11 @@ export default function MarketStrategyMap() {
           </div>
         )}
 
-        {/* MapLibre GL Map - Bounded Exploration "Playpen" */}
+        {/* MapLibre GL Map */}
         <Map
           ref={mapRef}
           {...viewState}
           onMove={(evt) => setViewState(evt.viewState)}
-          onLoad={handleMapLoad}
           mapStyle={MAP_STYLE}
           style={{ width: '100%', height: '100%' }}
           dragPan={true}
@@ -671,14 +593,12 @@ export default function MarketStrategyMap() {
           maxZoom={MAP_CONFIG.maxZoom}
           maxPitch={0}
         >
-          {/* District polygons - fill first, then line on top */}
           <Source id="districts" type="geojson" data={singaporeDistrictsGeoJSON}>
-            {/* CRITICAL: Layer order matters! Fill first (bottom), Line second (top) */}
+            {/* CRITICAL: Fill first (bottom), Line second (top) = "White Grout" visible */}
             <Layer {...fillLayer} />
             <Layer {...lineLayer} />
           </Source>
 
-          {/* Smart Markers - zoom-responsive */}
           {!loading && districtCentroids.map((district) => {
             const data = districtMap[district.district];
             return (
@@ -691,7 +611,6 @@ export default function MarketStrategyMap() {
                 <DataFlag
                   district={district}
                   data={data}
-                  currentFilter={currentBedroomLabel}
                   viewMode={viewMode}
                   zoom={viewState.zoom}
                 />
@@ -700,80 +619,113 @@ export default function MarketStrategyMap() {
           })}
         </Map>
 
-        {/* Living Filter Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20"
-        >
-          <div className="flex items-center gap-1 p-1 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-2xl">
-            {BEDROOM_OPTIONS.map((option) => (
-              <motion.button
-                key={option.value}
-                onClick={() => setSelectedBed(option.value)}
-                whileTap={{ scale: 0.95 }}
-                className={`
-                  px-3 py-1.5 text-xs font-semibold rounded-lg transition-all
-                  ${selectedBed === option.value
-                    ? 'bg-[#547792] text-white shadow-lg'
-                    : 'bg-transparent text-slate-300 hover:bg-slate-700'
-                  }
-                `}
-              >
-                {option.label}
-              </motion.button>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Legend - CCR/RCR/OCR Tiers */}
+        {/* ============================================================= */}
+        {/* RIGHT-HAND CONTROL STACK - All controls consolidated here */}
+        {/* ============================================================= */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-          className="absolute top-4 right-4 z-20"
+          transition={{ delay: 0.3 }}
+          className="absolute top-4 right-4 z-20 flex flex-col gap-3 w-[180px]"
         >
-          <div className="p-3 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
-            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2.5">
+          {/* Row 1: View Mode Toggle */}
+          <div className="p-2 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
+            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
+              View Mode
+            </p>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setViewMode('PRICE')}
+                className={`
+                  flex-1 px-2 py-1.5 text-[10px] font-semibold rounded-lg transition-all
+                  ${viewMode === 'PRICE'
+                    ? 'bg-[#547792] text-white shadow'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }
+                `}
+              >
+                💲 Price
+              </button>
+              <button
+                onClick={() => setViewMode('VOLUME')}
+                className={`
+                  flex-1 px-2 py-1.5 text-[10px] font-semibold rounded-lg transition-all
+                  ${viewMode === 'VOLUME'
+                    ? 'bg-orange-500 text-white shadow'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }
+                `}
+              >
+                🔥 Volume
+              </button>
+            </div>
+          </div>
+
+          {/* Row 2: Unit Type Filter */}
+          <div className="p-2 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
+            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
+              Unit Type
+            </p>
+            <div className="grid grid-cols-5 gap-1">
+              {BEDROOM_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setSelectedBed(option.value)}
+                  className={`
+                    px-1 py-1.5 text-[9px] font-semibold rounded-md transition-all
+                    ${selectedBed === option.value
+                      ? 'bg-[#547792] text-white shadow'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }
+                  `}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Row 3: Legend */}
+          <div className="p-2.5 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
+            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
               {viewMode === 'PRICE' ? 'Market Segments' : 'Activity Level'}
             </p>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {viewMode === 'PRICE' ? (
                 <>
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.deepNavy }} />
                     <div className="flex flex-col">
                       <span className="text-[10px] text-white font-semibold">CCR</span>
-                      <span className="text-[9px] text-slate-400">&gt; $2,200 psf</span>
+                      <span className="text-[8px] text-slate-400">&gt; $2,200 psf</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.oceanBlue }} />
                     <div className="flex flex-col">
                       <span className="text-[10px] text-white font-semibold">RCR</span>
-                      <span className="text-[9px] text-slate-400">$1,400 - $2,199</span>
+                      <span className="text-[8px] text-slate-400">$1,400 - $2,199</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.skyBlue }} />
                     <div className="flex flex-col">
                       <span className="text-[10px] text-white font-semibold">OCR</span>
-                      <span className="text-[9px] text-slate-400">&lt; $1,400 psf</span>
+                      <span className="text-[8px] text-slate-400">&lt; $1,400 psf</span>
                     </div>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.high }} />
                     <span className="text-[10px] text-white">High activity</span>
                   </div>
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.medium }} />
                     <span className="text-[10px] text-white">Medium</span>
                   </div>
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.low }} />
                     <span className="text-[10px] text-white">Low activity</span>
                   </div>
@@ -783,7 +735,7 @@ export default function MarketStrategyMap() {
           </div>
         </motion.div>
 
-        {/* Instructions */}
+        {/* Instructions - top left */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -792,7 +744,7 @@ export default function MarketStrategyMap() {
         >
           <div className="px-2.5 py-1.5 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-lg shadow-xl">
             <p className="text-[9px] text-slate-400 uppercase tracking-wider font-medium">
-              Drag to explore &bull; Scroll to zoom &bull; Hover for details
+              Drag &bull; Scroll &bull; Hover
             </p>
           </div>
         </motion.div>
@@ -861,12 +813,10 @@ export default function MarketStrategyMap() {
         </div>
       )}
 
-      {/* Global Styles */}
       <style>{`
         .maplibregl-ctrl-attrib {
           display: none !important;
         }
-        /* Deep void background - Singapore "pops" like a stage spotlight */
         .maplibregl-map {
           background-color: ${COLORS.void} !important;
         }
