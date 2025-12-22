@@ -532,7 +532,13 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
         where_parts.append("LOWER(sale_type) = LOWER(:sale_type)")
         params['sale_type'] = filters['sale_type']
 
-    if filters.get('project'):
+    # Project filter - supports both partial match (search) and exact match (drill-through)
+    if filters.get('project_exact'):
+        # EXACT match - for ProjectDetailPanel drill-through
+        where_parts.append("project_name = :project_exact")
+        params['project_exact'] = filters['project_exact']
+    elif filters.get('project'):
+        # Case-insensitive match - for search functionality
         where_parts.append("LOWER(project_name) = LOWER(:project)")
         params['project'] = filters['project']
 
