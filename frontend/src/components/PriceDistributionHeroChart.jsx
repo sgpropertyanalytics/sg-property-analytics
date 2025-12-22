@@ -88,9 +88,9 @@ const MIN_COMPARABLE_TRANSACTIONS = 30;
 
 /**
  * Number of bins for the histogram.
- * Kept stable to prevent visual changes on small data updates.
+ * Higher count provides more granular view of price distribution.
  */
-const HISTOGRAM_BINS = 15;
+const HISTOGRAM_BINS = 25;
 
 /**
  * Computes the percentile rank of a buyer's price relative to comparable transactions.
@@ -265,13 +265,17 @@ function formatPriceShort(value) {
  * @param {number} [props.height=280] - Chart height in pixels
  * @param {boolean} [props.loading=false] - Loading state
  * @param {Object} [props.activeFilters={}] - Currently active filters for subtitle context
+ * @param {Function} [props.onBinClick] - Callback when a histogram bin is clicked
+ * @param {Object} [props.selectedPriceRange] - Currently selected price range filter
  */
 export function PriceDistributionHeroChart({
   buyerPrice,
   transactions = [],
   height = 280,
   loading = false,
-  activeFilters = {}
+  activeFilters = {},
+  onBinClick,
+  selectedPriceRange
 }) {
   const chartRef = useRef(null);
 
@@ -293,6 +297,29 @@ export function PriceDistributionHeroChart({
     return bins.findIndex(bin => buyerPrice >= bin.start && buyerPrice < bin.end);
   }, [bins, buyerPrice]);
 
+  // Find which bin is currently selected (filtered)
+  const selectedBinIndex = useMemo(() => {
+    if (!selectedPriceRange || bins.length === 0) return -1;
+    return bins.findIndex(bin =>
+      bin.start === selectedPriceRange.start && bin.end === selectedPriceRange.end
+    );
+  }, [bins, selectedPriceRange]);
+
+  // Handle chart click - triggers bin filter
+  const handleChartClick = (event) => {
+    const chart = chartRef.current;
+    if (!chart || !onBinClick) return;
+
+    const elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
+    if (elements.length > 0) {
+      const index = elements[0].index;
+      const clickedBin = bins[index];
+      if (clickedBin) {
+        onBinClick({ start: clickedBin.start, end: clickedBin.end });
+      }
+    }
+  };
+
   // Generate chart data with color intensity based on count
   const chartData = useMemo(() => {
     if (bins.length === 0) return null;
@@ -302,9 +329,15 @@ export function PriceDistributionHeroChart({
     const counts = bins.map(b => b.count);
 
     // Color gradient: higher bars get darker color
+    // Selected bin gets accent color, buyer bin gets dark navy
     const backgroundColors = bins.map((bin, idx) => {
       const intensity = 0.3 + (bin.count / maxCount) * 0.5;
-      // Highlight the bin containing buyer's price
+
+      // Selected bin (filtered) - highlight with accent color
+      if (idx === selectedBinIndex) {
+        return 'rgba(16, 185, 129, 0.8)'; // Emerald green for selected
+      }
+      // Buyer's price bin - dark navy
       if (idx === buyerBinIndex) {
         return `rgba(33, 52, 72, ${intensity + 0.2})`; // #213448 with extra opacity
       }
@@ -312,6 +345,9 @@ export function PriceDistributionHeroChart({
     });
 
     const borderColors = bins.map((bin, idx) => {
+      if (idx === selectedBinIndex) {
+        return 'rgba(16, 185, 129, 1)'; // Emerald border
+      }
       if (idx === buyerBinIndex) {
         return 'rgba(33, 52, 72, 0.9)';
       }
@@ -325,19 +361,26 @@ export function PriceDistributionHeroChart({
         data: counts,
         backgroundColor: backgroundColors,
         borderColor: borderColors,
-        borderWidth: 1,
+        borderWidth: selectedBinIndex >= 0 ? bins.map((_, idx) => idx === selectedBinIndex ? 2 : 1) : 1,
         barPercentage: 0.9,
         categoryPercentage: 0.95,
       }]
     };
-  }, [bins, buyerBinIndex]);
+  }, [bins, buyerBinIndex, selectedBinIndex]);
 
-  // Chart.js options with custom tooltip
+  // Chart.js options with custom tooltip and click handling
   const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     animation: {
       duration: 300
+    },
+    onClick: onBinClick ? handleChartClick : undefined,
+    onHover: (event, elements) => {
+      // Change cursor to pointer when hovering over bars (if click is enabled)
+      if (onBinClick) {
+        event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+      }
     },
     plugins: {
       legend: {
@@ -355,10 +398,14 @@ export function PriceDistributionHeroChart({
             const pct = stats.totalCount > 0
               ? ((count / stats.totalCount) * 100).toFixed(1)
               : 0;
-            return [
+            const lines = [
               `Transactions: ${count.toLocaleString()}`,
               `Share: ${pct}%`
             ];
+            if (onBinClick) {
+              lines.push('Click to filter table');
+            }
+            return lines;
           },
         },
         backgroundColor: 'rgba(33, 52, 72, 0.95)',
@@ -415,7 +462,7 @@ export function PriceDistributionHeroChart({
         }
       },
     },
-  }), [bins, stats.totalCount, buyerPrice]);
+  }), [bins, stats.totalCount, buyerPrice, onBinClick]);
 
   // Loading state
   if (loading) {
@@ -512,6 +559,9 @@ export function PriceDistributionHeroChart({
             </p>
             <p className="text-xs text-[#547792]/70 mt-0.5">
               Filters: {getFilterDescription()}
+              {onBinClick && (
+                <span className="ml-2 text-[#547792]">• Click bars to filter table</span>
+              )}
             </p>
           </div>
 
