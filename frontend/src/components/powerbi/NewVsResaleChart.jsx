@@ -29,11 +29,15 @@ ChartJS.register(
 );
 
 /**
- * New Sale vs Resale (≤10 yrs lease age) Comparison Chart
+ * New Sale vs Recent TOP/Young Resale (4-9 years age) Comparison Chart
  *
  * Dual-line time series showing:
  * - Line A (solid, blue): New Sale median total quantum (price)
- * - Line B (dashed, green): Resale (Lease age ≤10 years) median total quantum (price)
+ * - Line B (dashed, green): Young Resale (4-9 years old) median total quantum (price)
+ *
+ * Young Resale definition:
+ * - Property age (transaction year - lease start year) between 4 and 9 years
+ * - Project must have at least one resale transaction (excludes delayed construction)
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
  * Only the drill level (year/quarter/month) is visual-local.
@@ -185,7 +189,7 @@ export function NewVsResaleChart({ height = 350 }) {
         spanGaps: true, // Connect line through null/missing data points
       },
       {
-        label: 'Resale (≤10 yrs lease age)',
+        label: 'Young Resale (4-9 yrs)',
         data: resalePrice,
         borderColor: '#10B981',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -253,7 +257,7 @@ export function NewVsResaleChart({ height = 350 }) {
                 lines.push('(No new sale data)');
               }
               if (dataPoint.resalePrice === null) {
-                lines.push('(No resale ≤10yr data)');
+                lines.push('(No young resale 4-9yr data)');
               }
 
               return lines;
@@ -333,7 +337,7 @@ export function NewVsResaleChart({ height = 350 }) {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-                New Sale vs Resale (≤10 yrs lease age)
+                New Sale vs Young Resale (4-9 yrs)
               </h3>
               {updating && (
                 <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin flex-shrink-0" />
@@ -402,7 +406,7 @@ export function NewVsResaleChart({ height = 350 }) {
       {/* Info tooltip */}
       <div className="px-3 py-2 md:px-4 md:py-2 border-t border-[#94B4C1]/30 bg-gray-50">
         <p className="text-[10px] md:text-xs text-[#547792]">
-          Compares median total quantum of new sales with resale units (≤10 years lease age). Respects sidebar filters. Drill buttons change time granularity locally.
+          Compares median total quantum of new sales with young resale units (4-9 years old). Excludes projects without resale transactions. Respects sidebar filters.
         </p>
       </div>
     </div>

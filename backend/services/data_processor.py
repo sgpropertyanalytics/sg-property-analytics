@@ -1618,10 +1618,11 @@ def get_new_vs_resale_comparison(
     time_grain: str = "quarter"
 ) -> Dict[str, Any]:
     """
-    Get New Launch vs Resale (lease age ≤10 years) comparison data.
+    Get New Sale vs Recent TOP/Young Resale (4-9 years age) comparison data.
 
-    Compares median total quantum (price) of new launches against resale units under 10 years old.
-    This controls for age by comparing new launches with near-new resale units.
+    Compares median total quantum (price) of new sales against resale units aged 4-9 years.
+    This controls for age by comparing new sales with young resale units that are past initial
+    depreciation but still relatively new.
 
     RESPECTS GLOBAL FILTERS from sidebar. Only time_grain is visual-local.
 
@@ -1703,30 +1704,44 @@ def get_new_vs_resale_comparison(
 
     # Raw SQL query using PostgreSQL's DATE_TRUNC for time granularity
     # Using avg as approximation for true median (memory-efficient)
-    # Note: NULL lease_start_year = "unknown age", include them (production-safe fix)
     # Returns median PRICE (total quantum) instead of PSF
+    #
+    # Young Resale definition (4-9 years age):
+    # - Property age = YEAR(transaction_date) - lease_start_year
+    # - Must be between 4 and 9 years old
+    # - Project must have at least one Resale transaction (excludes delayed construction projects)
+    # - Excludes NULL lease_start_year (require known age for precise filtering)
     sql = text(f"""
-        WITH new_launches AS (
+        WITH projects_with_resale AS (
+            -- Projects that have at least one Resale transaction
+            -- This excludes delayed construction projects still selling as "New Sale"
+            SELECT DISTINCT project_name
+            FROM transactions
+            WHERE sale_type = 'Resale'
+              AND is_outlier = false
+        ),
+        new_sales AS (
             SELECT
                 DATE_TRUNC('{date_trunc_grain}', transaction_date) AS period,
                 AVG(price) AS median_price,
                 COUNT(*) AS transaction_count
             FROM transactions
             WHERE sale_type = 'New Sale'
+              AND is_outlier = false
               AND {where_clause}
             GROUP BY DATE_TRUNC('{date_trunc_grain}', transaction_date)
         ),
-        resale_under_10y AS (
+        young_resale AS (
             SELECT
                 DATE_TRUNC('{date_trunc_grain}', transaction_date) AS period,
                 AVG(price) AS median_price,
                 COUNT(*) AS transaction_count
-            FROM transactions
+            FROM transactions t
             WHERE sale_type = 'Resale'
-              AND (
-                lease_start_year IS NULL
-                OR (EXTRACT(YEAR FROM transaction_date) - lease_start_year) <= 10
-              )
+              AND is_outlier = false
+              AND lease_start_year IS NOT NULL
+              AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) BETWEEN 4 AND 9
+              AND project_name IN (SELECT project_name FROM projects_with_resale)
               AND {where_clause}
             GROUP BY DATE_TRUNC('{date_trunc_grain}', transaction_date)
         )
@@ -1736,8 +1751,8 @@ def get_new_vs_resale_comparison(
             n.transaction_count AS new_launch_count,
             r.median_price AS resale_price,
             r.transaction_count AS resale_count
-        FROM new_launches n
-        FULL OUTER JOIN resale_under_10y r ON n.period = r.period
+        FROM new_sales n
+        FULL OUTER JOIN young_resale r ON n.period = r.period
         ORDER BY period
     """)
 

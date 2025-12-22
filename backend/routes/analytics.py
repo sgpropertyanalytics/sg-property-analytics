@@ -1877,7 +1877,11 @@ def psf_trends_by_region():
 @analytics_bp.route("/new-vs-resale", methods=["GET"])
 def new_vs_resale():
     """
-    New Launch vs Resale (Lease age < 10 years) comparison.
+    New Sale vs Young Resale (4-9 years age) comparison.
+
+    Young Resale definition:
+    - Property age (transaction year - lease start year) between 4 and 9 years
+    - Project must have at least one resale transaction (excludes delayed construction)
 
     RESPECTS GLOBAL FILTERS from sidebar (district, bedroom, segment, date range).
     Only the drill level (timeGrain) is visual-local.
