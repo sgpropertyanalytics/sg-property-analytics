@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getTransactionsList, getFilterOptions } from '../api/client';
 import { DISTRICT_NAMES, isDistrictInRegion } from '../constants';
+import { PriceDistributionHeroChart } from './PriceDistributionHeroChart';
 
 /**
  * ValueParityPanel - Budget-based property search tool
@@ -51,6 +52,12 @@ export function ValueParityPanel() {
     column: 'price',
     order: 'desc',
   });
+
+  // Chart data state - holds all transactions for histogram
+  // We fetch up to 2000 transactions for the chart to ensure good distribution
+  const [chartTransactions, setChartTransactions] = useState([]);
+  const [chartLoading, setChartLoading] = useState(false);
+  const chartFetchAbortRef = useRef(null);
 
   // Load filter options on mount
   useEffect(() => {
@@ -128,11 +135,56 @@ export function ValueParityPanel() {
     }
   }, [budget, bedroom, region, district, tenure, saleType, leaseAge, pagination.limit, sortConfig]);
 
+  // Fetch all transactions for chart histogram (separate from paginated table)
+  // This fetches up to 2000 transactions to ensure a representative distribution
+  const fetchChartData = useCallback(async () => {
+    if (!budget || budget <= 0) return;
+
+    // Cancel any pending chart fetch
+    if (chartFetchAbortRef.current) {
+      chartFetchAbortRef.current.abort();
+    }
+    chartFetchAbortRef.current = new AbortController();
+
+    setChartLoading(true);
+
+    try {
+      const priceRangeBuffer = 100000;
+      const params = {
+        page: 1,
+        limit: 2000, // Fetch up to 2000 transactions for histogram
+        sort_by: 'price',
+        sort_order: 'asc',
+        price_min: Math.max(0, budget - priceRangeBuffer),
+        price_max: budget + priceRangeBuffer,
+      };
+
+      // Add optional filters (same as table)
+      if (bedroom) params.bedroom = bedroom;
+      if (region) params.segment = region;
+      if (district) params.district = district;
+      if (tenure) params.tenure = tenure;
+      if (saleType) params.sale_type = saleType;
+      if (leaseAge) params.lease_age = leaseAge;
+
+      const response = await getTransactionsList(params);
+      setChartTransactions(response.data.transactions || []);
+    } catch (err) {
+      // Ignore abort errors
+      if (err.name !== 'AbortError') {
+        console.error('Error fetching chart data:', err);
+      }
+    } finally {
+      setChartLoading(false);
+    }
+  }, [budget, bedroom, region, district, tenure, saleType, leaseAge]);
+
   // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
     setPagination(prev => ({ ...prev, page: 1 }));
     fetchTransactions(1);
+    fetchChartData(); // Also fetch data for the histogram chart
   };
 
   // Handle sort
@@ -647,6 +699,16 @@ export function ValueParityPanel() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Price Distribution Hero Chart - shows where buyer's price falls in the distribution */}
+      {hasSearched && (
+        <PriceDistributionHeroChart
+          buyerPrice={budget}
+          transactions={chartTransactions}
+          loading={chartLoading}
+          height={280}
+        />
       )}
 
       {/* Initial state - before search */}
