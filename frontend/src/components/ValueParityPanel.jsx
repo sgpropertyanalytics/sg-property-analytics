@@ -68,9 +68,20 @@ export function ValueParityPanel() {
   const resultsRef = useRef(null);
   const newLaunchesRef = useRef(null);
   const resaleRef = useRef(null);
+  const resaleMarketRef = useRef(null);
 
   // Hot projects count (for section header badge)
   const [hotProjectsCount, setHotProjectsCount] = useState(0);
+
+  // Step 4: Resale Market state (all resale transactions)
+  const [resaleMarketData, setResaleMarketData] = useState([]);
+  const [resaleMarketLoading, setResaleMarketLoading] = useState(false);
+  const [resaleMarketPagination, setResaleMarketPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalRecords: 0,
+    totalPages: 0,
+  });
 
   // Mobile filter panel toggle
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -156,16 +167,66 @@ export function ValueParityPanel() {
     }
   }, [budget, bedroom, region, district, tenure, saleType, leaseAge, pagination.limit, sortConfig]);
 
+  // Fetch resale market transactions (Step 4 - all resale, no age filter)
+  const fetchResaleMarket = useCallback(async (page = 1) => {
+    setResaleMarketLoading(true);
+
+    try {
+      const params = {
+        page,
+        limit: resaleMarketPagination.limit,
+        sort_by: 'transaction_date',
+        sort_order: 'desc',
+        sale_type: 'Resale', // Only resale transactions
+      };
+
+      // Apply budget filter
+      if (budget) {
+        params.price_min = budget - 100000;
+        params.price_max = budget + 100000;
+      }
+
+      // Add optional filters (same as main search, but NO lease_age filter)
+      if (bedroom) params.bedroom = bedroom;
+      if (region) params.segment = region;
+      if (district) params.district = district;
+      if (tenure) params.tenure = tenure;
+      // Note: No leaseAge filter for resale market - shows ALL ages
+
+      const response = await getTransactionsList(params);
+      setResaleMarketData(response.data.transactions || []);
+      setResaleMarketPagination(prev => ({
+        ...prev,
+        page,
+        totalRecords: response.data.pagination?.total_records || 0,
+        totalPages: response.data.pagination?.total_pages || 0,
+      }));
+    } catch (err) {
+      console.error('Error fetching resale market:', err);
+    } finally {
+      setResaleMarketLoading(false);
+    }
+  }, [budget, bedroom, region, district, tenure, resaleMarketPagination.limit]);
+
   // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
     setPagination(prev => ({ ...prev, page: 1 }));
+    setResaleMarketPagination(prev => ({ ...prev, page: 1 }));
     fetchTransactions(1, null);
+    fetchResaleMarket(1); // Also fetch resale market data
 
     // Scroll to results after a brief delay to allow DOM to update
     setTimeout(() => {
       newLaunchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
+  };
+
+  // Handle resale market page change
+  const handleResaleMarketPageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= resaleMarketPagination.totalPages) {
+      fetchResaleMarket(newPage);
+    }
   };
 
   // Handle sort
@@ -954,25 +1015,154 @@ export function ValueParityPanel() {
           </div>
 
           {/* Resale Market Section */}
-          <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+          <div ref={resaleMarketRef} className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
             <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-xl">🏘️</span>
                 <div>
                   <h3 className="font-semibold text-[#213448]">Resale Market</h3>
-                  <p className="text-xs text-[#547792]">All resale transactions within your budget</p>
+                  <p className="text-xs text-[#547792]">
+                    {resaleMarketLoading ? 'Loading...' : (
+                      <>
+                        <span className="font-semibold text-[#213448]">{resaleMarketPagination.totalRecords.toLocaleString()}</span>
+                        {' '}resale transactions (all ages)
+                      </>
+                    )}
+                  </p>
                 </div>
               </div>
+              <select
+                value={resaleMarketPagination.limit}
+                onChange={(e) => {
+                  setResaleMarketPagination(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }));
+                  if (hasSearched) {
+                    setTimeout(() => fetchResaleMarket(1), 0);
+                  }
+                }}
+                className="text-xs border border-[#94B4C1] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
+              >
+                <option value={10}>10 rows</option>
+                <option value={25}>25 rows</option>
+                <option value={50}>50 rows</option>
+              </select>
             </div>
-            <div className="p-6 text-center">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#EAE0CF]/50 rounded-lg">
-                <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-sm text-[#547792]">Coming Soon</span>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: 350 }}>
+              {resaleMarketLoading ? (
+                [...Array(3)].map((_, i) => (
+                  <div key={i} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 animate-pulse">
+                    <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                  </div>
+                ))
+              ) : resaleMarketData.length === 0 ? (
+                <div className="text-center py-6 text-[#547792] text-sm">
+                  No resale transactions found.
+                </div>
+              ) : (
+                resaleMarketData.map((txn, idx) => (
+                  <MobileTransactionCard
+                    key={txn.id || idx}
+                    transaction={txn}
+                    formatCurrency={formatCurrency}
+                    formatDate={formatDate}
+                  />
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-auto" style={{ maxHeight: 350 }}>
+              {resaleMarketLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="flex items-center gap-2 text-[#547792]">
+                    <div className="w-4 h-4 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
+                    <span>Loading...</span>
+                  </div>
+                </div>
+              ) : resaleMarketData.length === 0 ? (
+                <div className="text-center py-8 text-[#547792] text-sm">
+                  No resale transactions found within your budget.
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 sticky top-0">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b">Date</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b">Project</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b">District</th>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 border-b">BR</th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b">Sqft</th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b">Price</th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b">PSF</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b">Tenure</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resaleMarketData.map((txn, idx) => (
+                      <tr key={txn.id || idx} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
+                          {formatDate(txn.transaction_date)}
+                        </td>
+                        <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[180px]" title={txn.project_name}>
+                          {txn.project_name || '-'}
+                        </td>
+                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
+                          {txn.district || '-'}
+                        </td>
+                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-center">
+                          {txn.bedroom_count || '-'}
+                        </td>
+                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
+                          {txn.area_sqft?.toLocaleString() || '-'}
+                        </td>
+                        <td className="px-3 py-2 border-b border-slate-100 text-slate-800 font-medium text-right">
+                          {formatCurrency(txn.price)}
+                        </td>
+                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
+                          {formatCurrency(txn.psf)}
+                        </td>
+                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
+                          {txn.tenure || '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Pagination Footer */}
+            {resaleMarketData.length > 0 && (
+              <div className="px-4 py-2 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30 flex items-center justify-between">
+                <div className="text-xs text-[#547792]">
+                  Page {resaleMarketPagination.page} of {resaleMarketPagination.totalPages || 1}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); handleResaleMarketPageChange(resaleMarketPagination.page - 1); }}
+                    disabled={resaleMarketPagination.page === 1 || resaleMarketLoading}
+                    className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); handleResaleMarketPageChange(resaleMarketPagination.page + 1); }}
+                    disabled={resaleMarketPagination.page >= resaleMarketPagination.totalPages || resaleMarketLoading}
+                    className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <p className="mt-2 text-xs text-[#94B4C1]">Full resale market transactions will be displayed here</p>
-            </div>
+            )}
           </div>
         </>
       )}
