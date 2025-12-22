@@ -4,8 +4,8 @@
  * A strategy board showing district PSF values at a glance.
  * Features:
  * - Draggable map with bounds constrained to Singapore only
+ * - Price/Volume view mode toggle for different insights
  * - Real interlocking polygons (jigsaw-style, no overlap)
- * - Solid fills (100% opacity) with clean 1px borders
  * - High-contrast "Data Flag" markers as the hero element
  * - Polylabel algorithm ensures markers stay inside polygons
  */
@@ -25,30 +25,43 @@ const COLORS = {
   sand: '#EAE0CF',
 };
 
+// Volume "Hot" gradient colors
+const VOLUME_COLORS = {
+  low: '#FDE68A',      // Pale Yellow
+  medium: '#F59E0B',   // Orange
+  high: '#B91C1C',     // Red
+};
+
 // Singapore bounds - tight constraint to prevent showing Malaysia
 const SINGAPORE_BOUNDS = [
   [103.59, 1.17],  // Southwest
   [104.05, 1.48],  // Northeast
 ];
 
-// Padding for fitBounds - pushes map UP above filter bar
+// Padding for fitBounds - heavy bottom to clear UI "chin"
 const MAP_PADDING = {
   top: 60,
-  bottom: 130,  // Extra space for filter bar
+  bottom: 200,  // Generous space for filter bar
   left: 60,
   right: 60,
 };
 
+// Manual marker offsets for crowded central districts (D09, D10, D11)
+const MARKER_OFFSETS = {
+  'D09': { lng: -0.008, lat: 0.006 },
+  'D10': { lng: 0.008, lat: 0.003 },
+  'D11': { lng: 0.005, lat: -0.006 },
+  'D01': { lng: -0.003, lat: 0.004 },
+  'D02': { lng: 0.004, lat: -0.003 },
+};
+
 /**
  * Polylabel Algorithm - Find visual center of polygon
- * Finds the point inside a polygon that is farthest from any edge.
- * This ensures markers don't float in the ocean for U-shaped districts.
  */
-function polylabel(polygon, precision = 0.001) {
+function polylabel(polygon) {
   const ring = polygon[0];
   if (!ring || ring.length < 4) return null;
 
-  // Calculate bounding box
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const [x, y] of ring) {
     minX = Math.min(minX, x);
@@ -65,11 +78,9 @@ function polylabel(polygon, precision = 0.001) {
     return { lng: minX, lat: minY };
   }
 
-  // Use centroid as initial best guess
   let bestX = 0, bestY = 0, bestDist = -Infinity;
   let sumX = 0, sumY = 0, sumArea = 0;
 
-  // Calculate centroid
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
     const [x1, y1] = ring[i];
     const [x2, y2] = ring[j];
@@ -88,12 +99,10 @@ function polylabel(polygon, precision = 0.001) {
     bestY = (minY + maxY) / 2;
   }
 
-  // Check if centroid is inside polygon
   if (pointInPolygon([bestX, bestY], ring)) {
     return { lng: bestX, lat: bestY };
   }
 
-  // Grid search for better point
   const step = cellSize / 10;
   for (let x = minX; x <= maxX; x += step) {
     for (let y = minY; y <= maxY; y += step) {
@@ -111,7 +120,6 @@ function polylabel(polygon, precision = 0.001) {
   return { lng: bestX, lat: bestY };
 }
 
-// Ray casting algorithm to check if point is inside polygon
 function pointInPolygon(point, ring) {
   const [x, y] = point;
   let inside = false;
@@ -125,7 +133,6 @@ function pointInPolygon(point, ring) {
   return inside;
 }
 
-// Calculate minimum distance from point to polygon edges
 function distanceToEdge(point, ring) {
   const [px, py] = point;
   let minDist = Infinity;
@@ -138,7 +145,6 @@ function distanceToEdge(point, ring) {
   return minDist;
 }
 
-// Distance from point to line segment
 function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -157,34 +163,55 @@ function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
   return Math.sqrt((px - nearX) ** 2 + (py - nearY) ** 2);
 }
 
-// Get solid fill color based on PSF value (100% opacity)
+// Get fill color based on PSF value (Price Mode)
 function getPsfColor(psf, hasData) {
-  if (!hasData || !psf) return '#3a3a4a'; // Ghost - dark gray
+  if (!hasData || !psf) return '#3a3a4a';
   if (psf < 1400) return COLORS.skyBlue;
   if (psf < 2200) return COLORS.oceanBlue;
   return COLORS.deepNavy;
 }
 
-// Build color expression for solid fills
-function getColorExpression(districtData) {
-  const colorStops = ['case'];
+// Get fill color based on transaction volume (Volume Mode)
+function getVolumeColor(txCount, hasData, maxVolume) {
+  if (!hasData || !txCount) return '#3a3a4a';
+  const ratio = txCount / maxVolume;
+  if (ratio < 0.33) return VOLUME_COLORS.low;
+  if (ratio < 0.66) return VOLUME_COLORS.medium;
+  return VOLUME_COLORS.high;
+}
 
+// Build color expression for Price mode
+function getPriceColorExpression(districtData) {
+  const colorStops = ['case'];
   districtData.forEach((d) => {
     colorStops.push(['==', ['get', 'district'], d.district_id]);
     colorStops.push(getPsfColor(d.median_psf, d.has_data));
   });
-
-  colorStops.push('#3a3a4a'); // Default ghost color
+  colorStops.push('#3a3a4a');
   return colorStops;
 }
 
-// Format currency
+// Build color expression for Volume mode
+function getVolumeColorExpression(districtData, maxVolume) {
+  const colorStops = ['case'];
+  districtData.forEach((d) => {
+    colorStops.push(['==', ['get', 'district'], d.district_id]);
+    colorStops.push(getVolumeColor(d.tx_count, d.has_data, maxVolume));
+  });
+  colorStops.push('#3a3a4a');
+  return colorStops;
+}
+
 function formatPsf(value) {
   if (!value) return '-';
   return `$${Math.round(value).toLocaleString()}`;
 }
 
-// Format percentage with arrow
+function formatVolume(value) {
+  if (!value) return '-';
+  return `${value.toLocaleString()}`;
+}
+
 function formatYoY(value) {
   if (value === null || value === undefined) return null;
   const arrow = value >= 0 ? '↑' : '↓';
@@ -192,7 +219,6 @@ function formatYoY(value) {
   return { text: `${arrow}${Math.abs(value).toFixed(1)}%`, colorClass };
 }
 
-// Bedroom filter options
 const BEDROOM_OPTIONS = [
   { value: 'all', label: 'All', fullLabel: 'All Types' },
   { value: '1', label: '1BR', fullLabel: '1-Bedroom' },
@@ -201,7 +227,6 @@ const BEDROOM_OPTIONS = [
   { value: '4+', label: '4BR+', fullLabel: '4+ Bedroom' },
 ];
 
-// Period filter options
 const PERIOD_OPTIONS = [
   { value: '3m', label: '3M' },
   { value: '6m', label: '6M' },
@@ -209,20 +234,26 @@ const PERIOD_OPTIONS = [
   { value: 'all', label: 'All' },
 ];
 
-// Dark Matter map style
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 /**
- * DataFlag - High-Contrast Marker Component
- * The "hero" element showing PSF values at a glance
+ * DataFlag - Compact Marker Component
+ * Shows PSF or Volume based on view mode
  */
-function DataFlag({ district, data, currentFilter }) {
+function DataFlag({ district, data, currentFilter, viewMode }) {
   const [isHovered, setIsHovered] = useState(false);
   const yoy = data?.yoy_pct !== null ? formatYoY(data.yoy_pct) : null;
-
-  // High contrast styling: white bg default, navy for hotspots (>$2.5k)
-  const isHotspot = data?.has_data && data?.median_psf >= 2500;
   const hasData = data?.has_data;
+
+  // Determine styling based on view mode
+  const isHotspot = viewMode === 'PRICE'
+    ? hasData && data?.median_psf >= 2500
+    : hasData && data?.tx_count >= 500;
+
+  // Display value based on mode
+  const displayValue = viewMode === 'PRICE'
+    ? formatPsf(data?.median_psf)
+    : `${formatVolume(data?.tx_count)} tx`;
 
   return (
     <div
@@ -230,7 +261,7 @@ function DataFlag({ district, data, currentFilter }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Main Pill/Flag - Compact for collision safety */}
+      {/* Main Pill - Compact size to reduce collision */}
       <motion.div
         animate={{
           scale: isHovered ? 1.1 : 1,
@@ -238,22 +269,23 @@ function DataFlag({ district, data, currentFilter }) {
         }}
         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         className={`
-          px-2 py-0.5 rounded-full
-          font-bold text-[11px]
-          shadow-md
-          border
+          px-1.5 py-0.5 rounded-full
+          font-bold text-[10px]
+          shadow-md border
           transition-shadow duration-200
           whitespace-nowrap
           ${hasData
             ? isHotspot
-              ? 'bg-[#213448] text-white border-[#94B4C1]/50 shadow-[#213448]/40'
+              ? viewMode === 'PRICE'
+                ? 'bg-[#213448] text-white border-[#94B4C1]/50 shadow-[#213448]/40'
+                : 'bg-[#B91C1C] text-white border-red-300/50 shadow-red-900/40'
               : 'bg-white text-slate-900 border-slate-200 shadow-black/20'
             : 'bg-slate-700/80 text-slate-400 border-slate-600/50 shadow-black/10'
           }
           ${isHovered ? 'shadow-lg' : ''}
         `}
       >
-        {hasData ? formatPsf(data.median_psf) : '-'}
+        {hasData ? displayValue : '-'}
       </motion.div>
 
       {/* Hover Tooltip */}
@@ -266,21 +298,20 @@ function DataFlag({ district, data, currentFilter }) {
             transition={{ duration: 0.15, ease: 'easeOut' }}
             className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 z-50"
           >
-            <div className="bg-white rounded-xl p-3.5 min-w-[190px] border border-slate-200 shadow-2xl">
+            <div className="bg-white rounded-xl p-3 min-w-[175px] border border-slate-200 shadow-2xl">
               {/* Header */}
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-1.5">
                 <span className="font-bold text-slate-900 text-sm">
                   {district.district}
                 </span>
                 <span
                   className={`
-                    text-[10px] px-2 py-0.5 rounded-full font-semibold
-                    ${
-                      district.region === 'CCR'
-                        ? 'bg-[#213448] text-white'
-                        : district.region === 'RCR'
-                        ? 'bg-[#547792] text-white'
-                        : 'bg-[#94B4C1] text-[#213448]'
+                    text-[9px] px-1.5 py-0.5 rounded-full font-semibold
+                    ${district.region === 'CCR'
+                      ? 'bg-[#213448] text-white'
+                      : district.region === 'RCR'
+                      ? 'bg-[#547792] text-white'
+                      : 'bg-[#94B4C1] text-[#213448]'
                     }
                   `}
                 >
@@ -288,46 +319,42 @@ function DataFlag({ district, data, currentFilter }) {
                 </span>
               </div>
 
-              {/* District Name */}
-              <p className="text-xs text-slate-500 mb-2.5 leading-tight">
+              <p className="text-[11px] text-slate-500 mb-2 leading-tight">
                 {district.name}
               </p>
 
-              {/* Divider */}
-              <div className="h-px bg-slate-100 mb-2.5" />
+              <div className="h-px bg-slate-100 mb-2" />
 
               {/* Stats */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-500">Median PSF</span>
-                  <span className="font-bold text-slate-900 text-sm">
+                  <span className="text-[11px] text-slate-500">Median PSF</span>
+                  <span className="font-bold text-slate-900 text-xs">
                     {formatPsf(data.median_psf)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-500">Transactions</span>
-                  <span className="font-semibold text-slate-700 text-sm">
-                    {data.tx_count?.toLocaleString() || 0} sold
+                  <span className="text-[11px] text-slate-500">Transactions</span>
+                  <span className="font-semibold text-slate-700 text-xs">
+                    {data.tx_count?.toLocaleString() || 0}
                   </span>
                 </div>
                 {yoy && (
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-slate-500">YoY Change</span>
-                    <span className={`font-bold text-sm ${yoy.colorClass}`}>
+                    <span className="text-[11px] text-slate-500">YoY</span>
+                    <span className={`font-bold text-xs ${yoy.colorClass}`}>
                       {yoy.text}
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Filter Label */}
-              <div className="mt-2.5 pt-2 border-t border-slate-100">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider text-center">
+              <div className="mt-2 pt-1.5 border-t border-slate-100">
+                <p className="text-[9px] text-slate-400 uppercase tracking-wider text-center">
                   {currentFilter}
                 </p>
               </div>
 
-              {/* Tooltip Arrow */}
               <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-slate-200 rotate-45" />
             </div>
           </motion.div>
@@ -343,18 +370,17 @@ export default function MarketStrategyMap() {
   const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('12m');
+  const [viewMode, setViewMode] = useState('PRICE'); // 'PRICE' or 'VOLUME'
   const mapRef = useRef(null);
 
-  // Initial view state - centered on Singapore
   const [viewState, setViewState] = useState({
     longitude: SINGAPORE_CENTER.lng,
     latitude: SINGAPORE_CENTER.lat,
     zoom: 10.5,
-    pitch: 0, // Flat 2D view
+    pitch: 0,
     bearing: 0,
   });
 
-  // Fetch district PSF data
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -378,7 +404,6 @@ export default function MarketStrategyMap() {
     fetchData();
   }, [fetchData]);
 
-  // Create district lookup map
   const districtMap = useMemo(() => {
     const map = {};
     districtData.forEach((d) => {
@@ -387,41 +412,55 @@ export default function MarketStrategyMap() {
     return map;
   }, [districtData]);
 
-  // Calculate visual centroids using polylabel algorithm
+  // Calculate max volume for color scaling
+  const maxVolume = useMemo(() => {
+    const volumes = districtData.filter((d) => d.tx_count).map((d) => d.tx_count);
+    return volumes.length > 0 ? Math.max(...volumes) : 1;
+  }, [districtData]);
+
+  // Calculate visual centroids with manual offsets for crowded areas
   const districtCentroids = useMemo(() => {
     return singaporeDistrictsGeoJSON.features.map((feature) => {
       const centroid = polylabel(feature.geometry.coordinates);
+      const districtId = feature.properties.district;
+      const offset = MARKER_OFFSETS[districtId] || { lng: 0, lat: 0 };
+
       return {
-        district: feature.properties.district,
+        district: districtId,
         name: feature.properties.name,
         region: feature.properties.region,
-        centroid,
+        centroid: centroid ? {
+          lng: centroid.lng + offset.lng,
+          lat: centroid.lat + offset.lat,
+        } : null,
       };
     }).filter((d) => d.centroid !== null);
   }, []);
 
-  // Solid fill layer (100% opacity)
+  // Fill layer - switches between Price and Volume gradients
   const fillLayer = useMemo(
     () => ({
       id: 'district-fill',
       type: 'fill',
       paint: {
-        'fill-color': getColorExpression(districtData),
-        'fill-opacity': 1, // Solid fill - no transparency
+        'fill-color': viewMode === 'PRICE'
+          ? getPriceColorExpression(districtData)
+          : getVolumeColorExpression(districtData, maxVolume),
+        'fill-opacity': 1,
       },
     }),
-    [districtData]
+    [districtData, viewMode, maxVolume]
   );
 
-  // Dashed border line layer - "Blueprint" style
+  // Crisp white boundary lines - "Technical Grid" style
   const lineLayer = useMemo(
     () => ({
       id: 'district-line',
       type: 'line',
       paint: {
-        'line-color': 'rgba(255, 255, 255, 0.35)',
-        'line-width': 1.5,
-        'line-dasharray': [2, 4], // Short dash, long gap
+        'line-color': 'rgba(255, 255, 255, 0.5)',
+        'line-width': 2,
+        'line-dasharray': [2, 3], // Tight, technical dotted line
       },
       layout: {
         'line-cap': 'round',
@@ -431,18 +470,16 @@ export default function MarketStrategyMap() {
     []
   );
 
-  // Handle map load - fit to Singapore bounds with padding
   const handleMapLoad = useCallback(() => {
     const map = mapRef.current?.getMap();
     if (map) {
       map.fitBounds(SINGAPORE_BOUNDS, {
         padding: MAP_PADDING,
-        duration: 0, // Instant on load
+        duration: 0,
       });
     }
   }, []);
 
-  // Calculate PSF range for stats
   const psfRange = useMemo(() => {
     const validPsfs = districtData
       .filter((d) => d.median_psf)
@@ -454,7 +491,18 @@ export default function MarketStrategyMap() {
     };
   }, [districtData]);
 
-  // Get current bedroom label
+  const volumeRange = useMemo(() => {
+    const validVolumes = districtData
+      .filter((d) => d.tx_count)
+      .map((d) => d.tx_count);
+    if (validVolumes.length === 0) return { min: 0, max: 0, total: 0 };
+    return {
+      min: Math.min(...validVolumes),
+      max: Math.max(...validVolumes),
+      total: validVolumes.reduce((a, b) => a + b, 0),
+    };
+  }, [districtData]);
+
   const currentBedroomLabel =
     BEDROOM_OPTIONS.find((o) => o.value === selectedBed)?.fullLabel || 'All Types';
 
@@ -465,32 +513,62 @@ export default function MarketStrategyMap() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
             <h2 className="text-lg md:text-xl font-bold text-white">
-              District PSF Overview
+              District {viewMode === 'PRICE' ? 'PSF' : 'Activity'} Overview
             </h2>
             <p className="text-xs md:text-sm text-slate-400 mt-0.5">
-              Median price per sqft by postal district
+              {viewMode === 'PRICE'
+                ? 'Median price per sqft by postal district'
+                : 'Transaction volume hotspots by district'}
             </p>
           </div>
 
-          {/* Period Filter */}
-          <div className="flex items-center gap-1.5">
-            {PERIOD_OPTIONS.map((option) => (
+          <div className="flex items-center gap-3">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-1 p-1 bg-slate-700 rounded-lg">
               <button
-                key={option.value}
-                onClick={() => setSelectedPeriod(option.value)}
+                onClick={() => setViewMode('PRICE')}
                 className={`
-                  px-3 py-1.5 text-xs font-semibold rounded-lg
-                  transition-all duration-150
-                  ${
-                    selectedPeriod === option.value
-                      ? 'bg-[#547792] text-white shadow-lg'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  px-2.5 py-1 text-xs font-semibold rounded-md transition-all
+                  ${viewMode === 'PRICE'
+                    ? 'bg-[#547792] text-white shadow'
+                    : 'text-slate-300 hover:text-white'
                   }
                 `}
               >
-                {option.label}
+                $ Price
               </button>
-            ))}
+              <button
+                onClick={() => setViewMode('VOLUME')}
+                className={`
+                  px-2.5 py-1 text-xs font-semibold rounded-md transition-all
+                  ${viewMode === 'VOLUME'
+                    ? 'bg-orange-500 text-white shadow'
+                    : 'text-slate-300 hover:text-white'
+                  }
+                `}
+              >
+                🔥 Volume
+              </button>
+            </div>
+
+            {/* Period Filter */}
+            <div className="flex items-center gap-1">
+              {PERIOD_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setSelectedPeriod(option.value)}
+                  className={`
+                    px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all
+                    ${selectedPeriod === option.value
+                      ? 'bg-[#547792] text-white shadow-lg'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }
+                  `}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -529,7 +607,7 @@ export default function MarketStrategyMap() {
           </div>
         )}
 
-        {/* MapLibre GL Map - Fixed Viewport */}
+        {/* MapLibre GL Map */}
         <Map
           ref={mapRef}
           {...viewState}
@@ -548,13 +626,13 @@ export default function MarketStrategyMap() {
           maxZoom={13}
           maxPitch={0}
         >
-          {/* District polygons - solid 2D fill */}
+          {/* District polygons */}
           <Source id="districts" type="geojson" data={singaporeDistrictsGeoJSON}>
             <Layer {...fillLayer} />
             <Layer {...lineLayer} />
           </Source>
 
-          {/* Data Flag Markers at visual centroids */}
+          {/* Data Flag Markers */}
           {!loading && districtCentroids.map((district) => {
             const data = districtMap[district.district];
             return (
@@ -568,37 +646,31 @@ export default function MarketStrategyMap() {
                   district={district}
                   data={data}
                   currentFilter={currentBedroomLabel}
+                  viewMode={viewMode}
                 />
               </Marker>
             );
           })}
         </Map>
 
-        {/* Glass-morphic Filter Bar */}
+        {/* Slim Filter Bar - No label */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20"
         >
-          <div className="flex items-center gap-1.5 p-1.5 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-2xl">
-            <span className="text-xs text-slate-400 px-2 hidden sm:inline font-medium">
-              Unit Type:
-            </span>
+          <div className="flex items-center gap-1 p-1 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-2xl">
             {BEDROOM_OPTIONS.map((option) => (
               <motion.button
                 key={option.value}
                 onClick={() => setSelectedBed(option.value)}
                 whileTap={{ scale: 0.95 }}
                 className={`
-                  min-h-[38px] px-3.5 py-2
-                  text-xs font-semibold
-                  rounded-lg
-                  transition-all duration-200
-                  ${
-                    selectedBed === option.value
-                      ? 'bg-[#547792] text-white shadow-lg'
-                      : 'bg-transparent text-slate-300 hover:bg-slate-700'
+                  px-3 py-1.5 text-xs font-semibold rounded-lg transition-all
+                  ${selectedBed === option.value
+                    ? 'bg-[#547792] text-white shadow-lg'
+                    : 'bg-transparent text-slate-300 hover:bg-slate-700'
                   }
                 `}
               >
@@ -608,39 +680,49 @@ export default function MarketStrategyMap() {
           </div>
         </motion.div>
 
-        {/* Legend - Market Segments */}
+        {/* Legend - Dynamic based on view mode */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
           className="absolute top-4 right-4 z-20"
         >
-          <div className="p-3 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-2.5">
-              Market Segments
+          <div className="p-2.5 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
+            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
+              {viewMode === 'PRICE' ? 'Price Tier' : 'Activity Level'}
             </p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2.5">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.deepNavy }} />
-                <div className="flex flex-col">
-                  <span className="text-[11px] text-white font-medium">CCR</span>
-                  <span className="text-[9px] text-slate-400">Core Central</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.oceanBlue }} />
-                <div className="flex flex-col">
-                  <span className="text-[11px] text-white font-medium">RCR</span>
-                  <span className="text-[9px] text-slate-400">Rest of Central</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.skyBlue }} />
-                <div className="flex flex-col">
-                  <span className="text-[11px] text-white font-medium">OCR</span>
-                  <span className="text-[9px] text-slate-400">Outside Central</span>
-                </div>
-              </div>
+            <div className="space-y-1.5">
+              {viewMode === 'PRICE' ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.deepNavy }} />
+                    <span className="text-[10px] text-white">$2,200+ psf</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.oceanBlue }} />
+                    <span className="text-[10px] text-white">$1,400-2,199</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS.skyBlue }} />
+                    <span className="text-[10px] text-white">&lt; $1,400</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: VOLUME_COLORS.high }} />
+                    <span className="text-[10px] text-white">High activity</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: VOLUME_COLORS.medium }} />
+                    <span className="text-[10px] text-white">Medium</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: VOLUME_COLORS.low }} />
+                    <span className="text-[10px] text-white">Low activity</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </motion.div>
@@ -652,47 +734,77 @@ export default function MarketStrategyMap() {
           transition={{ delay: 0.5 }}
           className="absolute top-4 left-4 z-20"
         >
-          <div className="px-3 py-2 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">
-              Drag to pan &bull; Scroll to zoom &bull; Hover for details
+          <div className="px-2.5 py-1.5 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-lg shadow-xl">
+            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-medium">
+              Drag &bull; Scroll &bull; Hover
             </p>
           </div>
         </motion.div>
       </div>
 
-      {/* Stats Summary */}
+      {/* Stats Summary - Dynamic based on view mode */}
       {!loading && !error && districtData.length > 0 && (
-        <div className="px-4 py-4 md:px-6 bg-slate-800 border-t border-slate-700">
+        <div className="px-4 py-3 md:px-6 bg-slate-800 border-t border-slate-700">
           <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-                Lowest PSF
-              </p>
-              <p className="text-base md:text-lg font-bold text-white mt-0.5">
-                {formatPsf(psfRange.min)}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-                Districts
-              </p>
-              <p className="text-base md:text-lg font-bold text-white mt-0.5">
-                {districtData.filter((d) => d.has_data).length} / 28
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-                Highest PSF
-              </p>
-              <p className="text-base md:text-lg font-bold text-white mt-0.5">
-                {formatPsf(psfRange.max)}
-              </p>
-            </div>
+            {viewMode === 'PRICE' ? (
+              <>
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
+                    Lowest PSF
+                  </p>
+                  <p className="text-sm md:text-base font-bold text-white">
+                    {formatPsf(psfRange.min)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
+                    Districts
+                  </p>
+                  <p className="text-sm md:text-base font-bold text-white">
+                    {districtData.filter((d) => d.has_data).length} / 28
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
+                    Highest PSF
+                  </p>
+                  <p className="text-sm md:text-base font-bold text-white">
+                    {formatPsf(psfRange.max)}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
+                    Total Tx
+                  </p>
+                  <p className="text-sm md:text-base font-bold text-white">
+                    {volumeRange.total.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
+                    Busiest
+                  </p>
+                  <p className="text-sm md:text-base font-bold text-orange-400">
+                    {volumeRange.max.toLocaleString()} tx
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
+                    Quietest
+                  </p>
+                  <p className="text-sm md:text-base font-bold text-white">
+                    {volumeRange.min.toLocaleString()} tx
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* Hide MapLibre attribution */}
       <style>{`
         .maplibregl-ctrl-attrib {
           display: none !important;
