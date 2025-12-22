@@ -185,6 +185,13 @@ export function ValueParityPanel() {
     return `$${value.toLocaleString()}`;
   };
 
+  // Format remaining lease
+  const formatRemainingLease = (years) => {
+    if (years === null || years === undefined) return '-';
+    if (years >= 999) return 'Freehold';
+    return `${years} yrs`;
+  };
+
   // Sort indicator
   const SortIcon = ({ column }) => {
     if (sortConfig.column !== column) {
@@ -215,6 +222,7 @@ export function ValueParityPanel() {
     { key: 'price', label: 'Price', sortable: true, width: 'w-28', align: 'right' },
     { key: 'psf', label: 'PSF', sortable: true, width: 'w-20', align: 'right' },
     { key: 'sale_type', label: 'Type', sortable: true, width: 'w-20' },
+    { key: 'remaining_lease', label: 'Lease', sortable: true, width: 'w-20' },
   ];
 
   // Filter districts by selected region - use centralized constants (SINGLE SOURCE OF TRUTH)
@@ -561,6 +569,9 @@ export function ValueParityPanel() {
                           }`}>
                             {txn.sale_type === 'New Sale' ? 'New' : 'Resale'}
                           </span>
+                        </td>
+                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
+                          {formatRemainingLease(txn.remaining_lease)}
                         </td>
                       </tr>
                     ))
