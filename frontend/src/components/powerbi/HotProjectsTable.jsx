@@ -76,6 +76,31 @@ export function HotProjectsTable({ height = 400 }) {
     return 'bg-green-100 text-green-700';                      // Available
   };
 
+  // Calculate min/max for color scaling
+  const priceRange = React.useMemo(() => {
+    const prices = data.filter(p => p.median_price).map(p => p.median_price);
+    const psfs = data.filter(p => p.median_psf).map(p => p.median_psf);
+    return {
+      minPrice: Math.min(...prices) || 0,
+      maxPrice: Math.max(...prices) || 1,
+      minPsf: Math.min(...psfs) || 0,
+      maxPsf: Math.max(...psfs) || 1,
+    };
+  }, [data]);
+
+  // Color scale using theme colors: highest = #213448, lowest = #EAE0CF
+  const getValueColor = (value, min, max) => {
+    if (value === null || value === undefined) return { bg: '#f1f5f9', text: '#64748b' };
+    const ratio = (value - min) / (max - min || 1);
+    // Interpolate between colors based on ratio
+    // Low (0): #EAE0CF (cream) -> High (1): #213448 (deep navy)
+    if (ratio >= 0.8) return { bg: 'rgba(33, 52, 72, 0.15)', text: '#213448' };      // Deep Navy
+    if (ratio >= 0.6) return { bg: 'rgba(84, 119, 146, 0.15)', text: '#3d5a73' };    // Ocean Blue
+    if (ratio >= 0.4) return { bg: 'rgba(148, 180, 193, 0.2)', text: '#547792' };    // Sky Blue
+    if (ratio >= 0.2) return { bg: 'rgba(234, 224, 207, 0.5)', text: '#6b7c6b' };    // Light
+    return { bg: 'rgba(234, 224, 207, 0.3)', text: '#8b9a8b' };                       // Cream (lowest)
+  };
+
   // Sort indicator
   const SortIcon = ({ column }) => {
     if (sortConfig.column !== column) {
@@ -295,22 +320,36 @@ export function HotProjectsTable({ height = 400 }) {
                       )}
                     </td>
 
-                    {/* Median Price */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right">
-                      {project.median_price ? (
-                        <span className="font-medium">
-                          ${(project.median_price / 1000000).toFixed(2)}M
-                        </span>
-                      ) : (
+                    {/* Median Price with color scale */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-right">
+                      {project.median_price ? (() => {
+                        const colors = getValueColor(project.median_price, priceRange.minPrice, priceRange.maxPrice);
+                        return (
+                          <span
+                            className="inline-block px-2 py-0.5 rounded font-medium text-xs"
+                            style={{ backgroundColor: colors.bg, color: colors.text }}
+                          >
+                            ${(project.median_price / 1000000).toFixed(2)}M
+                          </span>
+                        );
+                      })() : (
                         <span className="text-slate-400 text-xs italic">N/A</span>
                       )}
                     </td>
 
-                    {/* Median PSF */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right">
-                      {project.median_psf ? (
-                        <span>${project.median_psf.toLocaleString()}</span>
-                      ) : (
+                    {/* Median PSF with color scale */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-right">
+                      {project.median_psf ? (() => {
+                        const colors = getValueColor(project.median_psf, priceRange.minPsf, priceRange.maxPsf);
+                        return (
+                          <span
+                            className="inline-block px-2 py-0.5 rounded font-medium text-xs"
+                            style={{ backgroundColor: colors.bg, color: colors.text }}
+                          >
+                            ${project.median_psf.toLocaleString()}
+                          </span>
+                        );
+                      })() : (
                         <span className="text-slate-400 text-xs italic">N/A</span>
                       )}
                     </td>

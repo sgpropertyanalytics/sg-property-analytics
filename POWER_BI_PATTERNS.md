@@ -6,6 +6,10 @@
 
 1. [Core Concepts](#1-core-concepts)
 2. [Golden Rules](#2-golden-rules)
+   - [The Non-Negotiable Principle](#the-non-negotiable-principle)
+   - [Rule 0: Same Dimension = No Interaction](#rule-0-same-dimension--no-interaction)
+   - [Anchor Charts](#anchor-charts-reference-visuals)
+   - [Anti-Patterns](#anti-patterns-what-not-to-do)
 3. [Filter Types & Hierarchy](#3-filter-types--hierarchy)
 4. [Component Behavior Matrix](#4-component-behavior-matrix)
 5. [Implementation Patterns](#5-implementation-patterns)
@@ -51,6 +55,46 @@
 ---
 
 # 2. Golden Rules
+
+## The Non-Negotiable Principle
+
+> **A filter must NEVER erase the distribution it comes from.**
+
+If a slicer and a chart visualize the **same dimension**, the chart **must not be filtered by that slicer**. Otherwise, users lose context and cannot understand what was excluded.
+
+```
+Design Philosophy:  Overview → Focus → Detail
+Never:              Focus → Erase → Guess
+```
+
+---
+
+## Rule 0: Same Dimension = No Interaction
+
+> **If slicer dimension === chart dimension, the chart stays unfiltered.**
+
+| Scenario | Slicer | Chart | Correct Behavior |
+|----------|--------|-------|------------------|
+| Same dimension | Market Segment | Bar by Segment | Chart shows ALL segments (CCR, RCR, OCR) |
+| Different dimension | Market Segment | Price Distribution | Chart filters to selected segment |
+
+**Why?** The chart showing the same dimension as the slicer is an **anchor chart** - it provides reference context. Filtering it would hide what was excluded.
+
+```jsx
+// Example: Market Segment slicer + Segment Distribution chart
+// Slicer: User selects "CCR"
+
+// ❌ WRONG: Chart collapses to single bar
+<SegmentChart data={filteredData} />  // Only shows CCR
+
+// ✅ CORRECT: Chart shows all, highlights selection
+<SegmentChart
+  data={allData}           // Shows CCR, RCR, OCR
+  highlighted="CCR"        // Visual emphasis on CCR
+/>
+```
+
+---
 
 ## Rule 1: The Data Model Rule
 
@@ -109,6 +153,78 @@ If X-axis = CATEGORY (district/bedroom/price):
 
 ---
 
+## Anchor Charts (Reference Visuals)
+
+Some visuals act as **context anchors**, not analytical outputs. They provide market baseline context and answer: "What does the full market look like?"
+
+### Characteristics of Anchor Charts
+
+| Property | Anchor Chart | Analytical Chart |
+|----------|--------------|------------------|
+| Filtered by own dimension? | **No** | Yes |
+| Purpose | Reference distribution | Filtered analysis |
+| Shows | Full market context | Filtered subset |
+
+### Typical Anchor Charts
+
+- Market segment distribution (CCR/RCR/OCR)
+- Price distribution histogram
+- Volume distribution by region
+- Bedroom type breakdown
+
+### Best-in-Class UX Pattern
+
+Instead of filtering anchor charts, use visual emphasis:
+
+```jsx
+// Show full distribution, highlight selection
+<BarChart data={allSegments}>
+  {segments.map(seg => (
+    <Bar
+      key={seg.name}
+      fill={selectedSegment === seg.name ? '#213448' : '#94B4C1'}
+      opacity={selectedSegment === seg.name ? 1 : 0.4}
+    />
+  ))}
+</BarChart>
+```
+
+This preserves context while confirming selection.
+
+---
+
+## Anti-Patterns (What NOT to Do)
+
+| Anti-Pattern | Problem |
+|--------------|---------|
+| ❌ Let a slicer collapse its own chart | Destroys distribution context |
+| ❌ Show single-bar charts after selection | User can't see what was excluded |
+| ❌ Hide excluded values | Forces users to remember/guess |
+| ❌ Filter without visual confirmation | User unsure what's active |
+
+### Mental Checklist Before Shipping
+
+For every slicer, ask:
+
+1. "Does this slicer remove the distribution it represents?"
+2. "Can the user still see what they excluded?"
+3. "Is this chart a reference or an analysis?"
+
+**If unsure → Default to keeping the distribution visible.**
+
+---
+
+## Recommended Interaction Pattern
+
+| Component | Behavior |
+|-----------|----------|
+| Global slicers | Filter most visuals |
+| Same-dimension charts | **NOT filtered** (anchor) |
+| Different-dimension analytics | Fully filtered |
+| Drill-through pages | Filtered intentionally |
+
+---
+
 # 3. Filter Types & Hierarchy
 
 ## Filter Hierarchy
@@ -159,16 +275,23 @@ buildApiParams(additionalParams, options)
 
 # 4. Component Behavior Matrix
 
-| Component | Type | Responds to Highlight? | Cross-Filters? | Notes |
-|-----------|------|------------------------|----------------|-------|
-| PowerBIFilterSidebar | Slicer | N/A | Yes (global) | Source of global filters |
-| TimeTrendChart | Dimension | No (`excludeHighlight`) | Yes | Source of time highlights |
-| VolumeByLocationChart | Dimension | Yes | Yes | Region/district cross-filter |
-| PriceDistributionChart | Dimension | Yes | Fact-only | Sets factFilter.priceRange |
-| BedroomMixChart | Dimension | Yes | Yes | Bedroom cross-filter |
-| NewVsResaleChart | Dimension | Yes | Yes | Sale type comparison |
-| TransactionDataTable | **Fact** | Yes | **Never** | Pure data sink |
-| ProjectDetailPanel | Drill-through | Independent | No | Own API queries |
+| Component | Type | Anchor? | Responds to Own Slicer? | Cross-Filters? | Notes |
+|-----------|------|---------|-------------------------|----------------|-------|
+| PowerBIFilterSidebar | Slicer | - | - | Yes (global) | Source of global filters |
+| TimeTrendChart | Dimension | **Yes** | No (`excludeHighlight`) | Yes | Shows full timeline |
+| VolumeByLocationChart | Dimension | **Yes** | Highlight only | Yes | Region/district anchor |
+| PriceDistributionChart | Dimension | **Yes** | Highlight only | Fact-only | Price range anchor |
+| BedroomMixChart | Dimension | **Yes** | Highlight only | Yes | Bedroom type anchor |
+| NewVsResaleChart | Dimension | No | Yes | Yes | Analytical chart |
+| TransactionDataTable | **Fact** | No | Yes | **Never** | Pure data sink |
+| ProjectDetailPanel | Drill-through | No | Independent | No | Own API queries |
+
+### Anchor Chart Behavior
+
+When a slicer matches an anchor chart's dimension:
+- Chart shows **full distribution** (not filtered)
+- Selected value is **visually highlighted** (color, opacity, border)
+- User can see both selected and excluded values
 
 ## User Action → System Response
 
@@ -715,9 +838,43 @@ If X-axis = CATEGORY (district/bedroom/price):
   → Chart filters to highlighted period
 ```
 
+## Card 5: Same Dimension Rule (Anchor Charts)
+
+```
+If slicer dimension === chart dimension:
+  → Chart is an ANCHOR (reference visual)
+  → DO NOT filter the chart
+  → Show full distribution
+  → Highlight selected value visually
+
+Examples:
+  Segment slicer + Segment bar chart → Anchor (no filter)
+  Segment slicer + Price histogram   → Normal (filter applies)
+  Time slicer + Time trend chart     → Anchor (excludeHighlight)
+```
+
+## Card 6: Design Philosophy
+
+```
+CORRECT:  Overview → Focus → Detail
+WRONG:    Focus → Erase → Guess
+
+Always ask:
+  "Can the user see what they excluded?"
+  "Is this chart a reference or analysis?"
+
+If unsure → Keep the distribution visible
+```
+
 ---
 
 # See Also
 
 - [CLAUDE.md](./CLAUDE.md) - Project overview and implementation guides
 - [TECHNICAL_ARCHITECTURE.md](./TECHNICAL_ARCHITECTURE.md) - System design and data flows
+  - Cross-Filter Flow (Mermaid diagram)
+  - Fact Filter Flow (Mermaid diagram)
+  - Time Highlight Flow (Mermaid diagram)
+  - Full Request Lifecycle (sequence diagram)
+- [.claude/skills/dashboard-guardrails](/.claude/skills/dashboard-guardrails/SKILL.md) - Platform verification checklists
+- [.claude/skills/dashboard-design](/.claude/skills/dashboard-design/SKILL.md) - Full component styling guide

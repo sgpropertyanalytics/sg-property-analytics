@@ -5,6 +5,8 @@ description: Platform-agnostic design system for data-heavy analytics dashboards
 
 # Dashboard Design System
 
+> **Filter UX patterns reference**: See [POWER_BI_PATTERNS.md](../../../POWER_BI_PATTERNS.md#6-filter-ux-patterns) for complete filter design patterns.
+
 ## Philosophy
 
 ### Design Principles
