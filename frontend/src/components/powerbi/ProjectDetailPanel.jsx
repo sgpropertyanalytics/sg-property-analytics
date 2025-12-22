@@ -124,7 +124,7 @@ function ProjectDetailPanelInner({
         const priceParams = {
           ...baseParams,
           group_by: 'bedroom',
-          metrics: 'count,median_psf,avg_psf,min_psf,max_psf,median_price',
+          metrics: 'count,median_psf,avg_psf,min_psf,max_psf,median_price,price_25th,price_75th',
         };
 
         // Build histogram params for project-specific price distribution
@@ -293,11 +293,13 @@ function ProjectDetailPanelInner({
         callbacks: {
           label: (context) => {
             const item = priceData[context.dataIndex];
-            const medianPrice = item.median_price ? `$${(item.median_price / 1000000).toFixed(2)}M` : 'N/A';
+            const formatPrice = (val) => val ? `$${(val / 1000000).toFixed(2)}M` : 'N/A';
             return [
               `Median PSF: $${item.median_psf?.toLocaleString() || 0}`,
-              `Median Price: ${medianPrice}`,
-              `Transactions: ${item.count?.toLocaleString() || 0}`,
+              `25th %: ${formatPrice(item.price_25th)}`,
+              `Median: ${formatPrice(item.median_price)}`,
+              `75th %: ${formatPrice(item.price_75th)}`,
+              `Units Sold: ${item.count?.toLocaleString() || 0}`,
             ];
           },
         },
@@ -562,19 +564,39 @@ function ProjectDetailPanelInner({
                     </div>
                   )}
                 </div>
-                {/* Median Price Table by Bedroom */}
+                {/* Price Stats Table by Bedroom */}
                 {priceData.length > 0 && (
                   <div className="mt-4 border-t border-[#94B4C1]/30 pt-3">
-                    <h4 className="text-xs font-medium text-[#547792] mb-2">Median Quantum by Bedroom</h4>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      {priceData.map((d) => (
-                        <div key={d.bedroom} className="flex justify-between bg-[#EAE0CF]/20 rounded px-2 py-1">
-                          <span className="text-[#547792]">{d.bedroom}-BR</span>
-                          <span className="font-medium text-[#213448]">
-                            {d.median_price ? `$${(d.median_price / 1000000).toFixed(2)}M` : 'N/A'}
-                          </span>
-                        </div>
-                      ))}
+                    <h4 className="text-xs font-medium text-[#547792] mb-2">Price Statistics by Bedroom</h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="text-[#547792] border-b border-[#94B4C1]/30">
+                            <th className="text-left py-1 pr-2">Type</th>
+                            <th className="text-right py-1 px-1">Units</th>
+                            <th className="text-right py-1 px-1">25th %</th>
+                            <th className="text-right py-1 px-1">Median</th>
+                            <th className="text-right py-1 pl-1">75th %</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {priceData.map((d) => (
+                            <tr key={d.bedroom} className="border-b border-[#94B4C1]/20 hover:bg-[#EAE0CF]/20">
+                              <td className="py-1.5 pr-2 font-medium text-[#213448]">{d.bedroom}-BR</td>
+                              <td className="py-1.5 px-1 text-right text-[#547792]">{d.count?.toLocaleString()}</td>
+                              <td className="py-1.5 px-1 text-right text-[#547792]">
+                                {d.price_25th ? `$${(d.price_25th / 1000000).toFixed(2)}M` : '-'}
+                              </td>
+                              <td className="py-1.5 px-1 text-right font-medium text-[#213448]">
+                                {d.median_price ? `$${(d.median_price / 1000000).toFixed(2)}M` : '-'}
+                              </td>
+                              <td className="py-1.5 pl-1 text-right text-[#547792]">
+                                {d.price_75th ? `$${(d.price_75th / 1000000).toFixed(2)}M` : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 )}

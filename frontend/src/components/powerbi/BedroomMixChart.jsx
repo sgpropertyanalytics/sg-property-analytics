@@ -28,7 +28,7 @@ ChartJS.register(
  * - Cross-filtering: clicking a segment filters all other charts
  */
 export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 }) {
-  const { buildApiParams, crossFilter, applyCrossFilter, highlight } = usePowerBIFilters();
+  const { buildApiParams, crossFilter, applyCrossFilter, highlight, filters } = usePowerBIFilters();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -46,13 +46,13 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
       }
       setError(null);
       try {
-        // Override bedroom filter to get all bedroom types for the donut
+        // ANCHOR CHART: Exclude bedroom filter to show all bedroom types
+        // Power BI Best Practice: Same dimension = no interaction
+        // Shows all bedroom types with visual highlight on selected
         const params = buildApiParams({
           group_by: 'bedroom',
           metrics: 'count,median_psf,total_value'
-        });
-        // Remove bedroom filter to see all types
-        delete params.bedroom;
+        }, { excludeOwnDimension: 'bedroom' });
 
         const response = await getAggregate(params);
         const sortedData = (response.data.data || [])
@@ -69,7 +69,7 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
       }
     };
     fetchData();
-  }, [buildApiParams, highlight]);
+  }, [buildApiParams, highlight, filters.bedroomTypes]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;
@@ -133,8 +133,11 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
   const counts = data.map(d => d.count || 0);
   const totalCount = counts.reduce((sum, c) => sum + c, 0);
 
-  // Highlight based on cross-filter
-  const highlightedIndex = crossFilter.source === 'bedroom' && crossFilter.value
+  // Highlighted bedroom types from sidebar slicer (anchor pattern)
+  const highlightedBedroomTypes = filters.bedroomTypes || [];
+
+  // Highlight based on cross-filter (chart click)
+  const crossFilterHighlightedIndex = crossFilter.source === 'bedroom' && crossFilter.value
     ? data.findIndex(d => d.bedroom.toString() === crossFilter.value)
     : -1;
 
@@ -145,13 +148,32 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
         data: counts,
         backgroundColor: data.map((d, i) => {
           const color = bedroomColors[d.bedroom] || 'rgba(128, 128, 128, 0.9)';
-          if (highlightedIndex === -1 || highlightedIndex === i) {
-            return color;
+
+          // Power BI Anchor Pattern: When bedroom slicer has selection, dim non-selected
+          if (highlightedBedroomTypes.length > 0 && !highlightedBedroomTypes.includes(d.bedroom)) {
+            return color.replace(/[\d.]+\)$/, '0.25)');
           }
-          return color.replace(/[\d.]+\)$/, '0.3)');
+
+          // Also apply cross-filter dimming if active
+          if (crossFilterHighlightedIndex !== -1 && crossFilterHighlightedIndex !== i) {
+            return color.replace(/[\d.]+\)$/, '0.3)');
+          }
+          return color;
         }),
-        borderColor: data.map(d => bedroomColors[d.bedroom]?.replace(/[\d.]+\)$/, '1)') || 'rgba(128, 128, 128, 1)'),
-        borderWidth: 2,
+        borderColor: data.map(d => {
+          // Thicker/darker border for highlighted bedroom types
+          if (highlightedBedroomTypes.length > 0 && highlightedBedroomTypes.includes(d.bedroom)) {
+            return 'rgba(33, 52, 72, 1)';  // Dark navy border
+          }
+          return bedroomColors[d.bedroom]?.replace(/[\d.]+\)$/, '1)') || 'rgba(128, 128, 128, 1)';
+        }),
+        borderWidth: data.map(d => {
+          // Thicker border for highlighted bedroom types
+          if (highlightedBedroomTypes.length > 0 && highlightedBedroomTypes.includes(d.bedroom)) {
+            return 4;
+          }
+          return 2;
+        }),
         hoverOffset: 8,
       },
     ],
@@ -232,6 +254,11 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
       </div>
       <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 text-xs text-slate-600 text-center">
         Total: {totalCount.toLocaleString()} transactions
+        {highlightedBedroomTypes.length > 0 && (
+          <span className="ml-1">
+            • {highlightedBedroomTypes.map(b => bedroomLabels[b] || `${b} BR`).join(', ')} highlighted
+          </span>
+        )}
       </div>
     </div>
   );

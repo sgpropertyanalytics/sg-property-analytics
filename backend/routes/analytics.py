@@ -1216,7 +1216,7 @@ def aggregate():
 
     Query params:
       - group_by: comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region)
-      - metrics: comma-separated metrics (count, median_psf, avg_psf, total_value, median_price, avg_price, min_psf, max_psf)
+      - metrics: comma-separated metrics (count, median_psf, avg_psf, total_value, median_price, avg_price, min_psf, max_psf, price_25th, price_75th)
       - district: comma-separated districts (D01,D02,...)
       - bedroom: comma-separated bedroom counts (2,3,4)
       - segment: CCR, RCR, OCR
@@ -1482,6 +1482,10 @@ def aggregate():
         select_columns.append(func.avg(Transaction.area_sqft).label("avg_size"))
     if "total_sqft" in metrics:
         select_columns.append(func.sum(Transaction.area_sqft).label("total_sqft"))
+    if "price_25th" in metrics:
+        select_columns.append(func.percentile_cont(0.25).within_group(Transaction.price).label("price_25th"))
+    if "price_75th" in metrics:
+        select_columns.append(func.percentile_cont(0.75).within_group(Transaction.price).label("price_75th"))
 
     # Build the query
     if select_columns:

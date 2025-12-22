@@ -57,6 +57,13 @@ const COLORS = {
   void: '#0f172a',
 };
 
+// Region colors for boundaries
+const REGION_BOUNDARY_COLORS = {
+  CCR: '#FFD700',  // Gold for Core Central
+  RCR: '#00CED1',  // Cyan for Rest of Central
+  OCR: '#98FB98',  // Pale green for Outside Central
+};
+
 // Volume "Hot" gradient colors
 const VOLUME_COLORS = {
   low: '#FDE68A',
@@ -560,6 +567,27 @@ export default function MarketStrategyMap() {
     }).filter((d) => d.centroid !== null);
   }, []);
 
+  // Create region boundary layer expression (thicker lines for region boundaries)
+  const regionBorderExpression = useMemo(() => {
+    // Districts on region boundaries get highlighted
+    const regionGroups = {
+      CCR: ['D01', 'D02', 'D06', 'D07', 'D09', 'D10', 'D11'],
+      RCR: ['D03', 'D04', 'D05', 'D08', 'D12', 'D13', 'D14', 'D15', 'D20'],
+      OCR: ['D16', 'D17', 'D18', 'D19', 'D22', 'D23', 'D24', 'D25', 'D26', 'D27', 'D28'],
+    };
+
+    const colorExpr = ['case'];
+    Object.entries(regionGroups).forEach(([region, districts]) => {
+      districts.forEach((d) => {
+        colorExpr.push(['==', ['get', 'district'], d]);
+        colorExpr.push(REGION_BOUNDARY_COLORS[region]);
+      });
+    });
+    colorExpr.push('#FFFFFF');
+
+    return colorExpr;
+  }, []);
+
   const fillLayer = useMemo(
     () => ({
       id: 'district-fill',
@@ -582,8 +610,8 @@ export default function MarketStrategyMap() {
       type: 'line',
       paint: {
         'line-color': '#FFFFFF',   // Pure White (Max Contrast)
-        'line-width': 2,           // Thick enough to break color bleed
-        'line-opacity': 0.8,       // High opacity for visibility
+        'line-width': 1.5,         // Slightly thinner for district borders
+        'line-opacity': 0.6,       // Subtle for district borders
         'line-blur': 0,            // Sharp, crisp lines
       },
       layout: {
@@ -594,26 +622,55 @@ export default function MarketStrategyMap() {
     []
   );
 
+  // Region boundary layer - colored outlines showing CCR/RCR/OCR regions
+  const regionLineLayer = useMemo(
+    () => ({
+      id: 'region-borders',
+      type: 'line',
+      paint: {
+        'line-color': regionBorderExpression,
+        'line-width': 3,           // Thicker for region boundaries
+        'line-opacity': 0.7,
+        'line-blur': 0,
+      },
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round',
+      },
+    }),
+    [regionBorderExpression]
+  );
+
   const psfRange = useMemo(() => {
-    const validPsfs = districtData
-      .filter((d) => d.median_psf)
-      .map((d) => d.median_psf);
-    if (validPsfs.length === 0) return { min: 0, max: 0 };
+    const validDistricts = districtData.filter((d) => d.median_psf);
+    if (validDistricts.length === 0) return { min: 0, max: 0, minDistrict: null, maxDistrict: null };
+
+    const sorted = [...validDistricts].sort((a, b) => a.median_psf - b.median_psf);
+    const minD = sorted[0];
+    const maxD = sorted[sorted.length - 1];
+
     return {
-      min: Math.min(...validPsfs),
-      max: Math.max(...validPsfs),
+      min: minD.median_psf,
+      max: maxD.median_psf,
+      minDistrict: minD.district_id,
+      maxDistrict: maxD.district_id,
     };
   }, [districtData]);
 
   const volumeRange = useMemo(() => {
-    const validVolumes = districtData
-      .filter((d) => d.tx_count)
-      .map((d) => d.tx_count);
-    if (validVolumes.length === 0) return { min: 0, max: 0, total: 0 };
+    const validDistricts = districtData.filter((d) => d.tx_count);
+    if (validDistricts.length === 0) return { min: 0, max: 0, total: 0, minDistrict: null, maxDistrict: null };
+
+    const sorted = [...validDistricts].sort((a, b) => a.tx_count - b.tx_count);
+    const minD = sorted[0];
+    const maxD = sorted[sorted.length - 1];
+
     return {
-      min: Math.min(...validVolumes),
-      max: Math.max(...validVolumes),
-      total: validVolumes.reduce((a, b) => a + b, 0),
+      min: minD.tx_count,
+      max: maxD.tx_count,
+      total: validDistricts.reduce((a, b) => a + b.tx_count, 0),
+      minDistrict: minD.district_id,
+      maxDistrict: maxD.district_id,
     };
   }, [districtData]);
 
@@ -726,8 +783,9 @@ export default function MarketStrategyMap() {
           maxPitch={0}
         >
           <Source id="districts" type="geojson" data={singaporeDistrictsGeoJSON}>
-            {/* CRITICAL: Fill first (bottom), Line second (top) = "White Grout" visible */}
+            {/* Layer order: Fill (bottom) → Region borders → District borders (top) */}
             <Layer {...fillLayer} />
+            <Layer {...regionLineLayer} />
             <Layer {...lineLayer} />
           </Source>
 
@@ -852,6 +910,10 @@ export default function MarketStrategyMap() {
                       <span className="text-[8px] text-slate-400">&lt; $1,400 psf</span>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-600/50 mt-1">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3a3a4a' }} />
+                    <span className="text-[10px] text-slate-400">No data</span>
+                  </div>
                 </>
               ) : (
                 <>
@@ -867,8 +929,29 @@ export default function MarketStrategyMap() {
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: VOLUME_COLORS.low }} />
                     <span className="text-[10px] text-white">Low activity</span>
                   </div>
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-600/50 mt-1">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3a3a4a' }} />
+                    <span className="text-[10px] text-slate-400">No data</span>
+                  </div>
                 </>
               )}
+            </div>
+          </div>
+
+          {/* Row 4: YoY Legend */}
+          <div className="p-2.5 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-xl shadow-xl">
+            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold mb-2">
+              YoY Change
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              <div className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded bg-emerald-500" />
+                <span className="text-[9px] text-slate-300">Up</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded bg-rose-500" />
+                <span className="text-[9px] text-slate-300">Down</span>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -901,6 +984,9 @@ export default function MarketStrategyMap() {
                   <p className="text-sm md:text-base font-bold text-white">
                     {formatPsf(psfRange.min)}
                   </p>
+                  {psfRange.minDistrict && (
+                    <p className="text-[10px] text-slate-400">{psfRange.minDistrict}</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
@@ -909,14 +995,18 @@ export default function MarketStrategyMap() {
                   <p className="text-sm md:text-base font-bold text-white">
                     {districtData.filter((d) => d.has_data).length} / 28
                   </p>
+                  <p className="text-[10px] text-slate-400">with data</p>
                 </div>
                 <div>
                   <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
                     Highest PSF
                   </p>
-                  <p className="text-sm md:text-base font-bold text-white">
+                  <p className="text-sm md:text-base font-bold text-amber-400">
                     {formatPsf(psfRange.max)}
                   </p>
+                  {psfRange.maxDistrict && (
+                    <p className="text-[10px] text-slate-400">{psfRange.maxDistrict}</p>
+                  )}
                 </div>
               </>
             ) : (
@@ -928,6 +1018,7 @@ export default function MarketStrategyMap() {
                   <p className="text-sm md:text-base font-bold text-white">
                     {volumeRange.total.toLocaleString()}
                   </p>
+                  <p className="text-[10px] text-slate-400">transactions</p>
                 </div>
                 <div>
                   <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
@@ -936,6 +1027,9 @@ export default function MarketStrategyMap() {
                   <p className="text-sm md:text-base font-bold text-orange-400">
                     {volumeRange.max.toLocaleString()} tx
                   </p>
+                  {volumeRange.maxDistrict && (
+                    <p className="text-[10px] text-slate-400">{volumeRange.maxDistrict}</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
@@ -944,6 +1038,9 @@ export default function MarketStrategyMap() {
                   <p className="text-sm md:text-base font-bold text-white">
                     {volumeRange.min.toLocaleString()} tx
                   </p>
+                  {volumeRange.minDistrict && (
+                    <p className="text-[10px] text-slate-400">{volumeRange.minDistrict}</p>
+                  )}
                 </div>
               </>
             )}
