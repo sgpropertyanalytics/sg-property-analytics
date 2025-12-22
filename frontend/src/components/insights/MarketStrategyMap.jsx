@@ -1,13 +1,13 @@
 /**
  * MarketStrategyMap - "Command Center" View for Singapore Property Market
  *
- * A strategy board showing district PSF values at a glance.
+ * A "Set and Forget" dashboard view - perfectly framed, no dragging needed.
  * Features:
- * - Draggable map with bounds constrained to Singapore only
+ * - Static viewport with heavy asymmetric padding (clears header/footer UI)
  * - Price/Volume view mode toggle for different insights
  * - Real interlocking polygons (jigsaw-style, no overlap)
- * - High-contrast "Data Flag" markers as the hero element
- * - Polylabel algorithm ensures markers stay inside polygons
+ * - Zoom-responsive markers (compact at overview, detailed when zoomed)
+ * - High-contrast "Blueprint" style inner boundaries
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -32,18 +32,19 @@ const VOLUME_COLORS = {
   high: '#B91C1C',     // Red
 };
 
-// Singapore bounds - tight constraint to prevent showing Malaysia
+// Singapore bounding box - expanded slightly to ensure full island visibility
 const SINGAPORE_BOUNDS = [
-  [103.59, 1.17],  // Southwest
-  [104.05, 1.48],  // Northeast
+  [103.60, 1.13],  // Southwest (expanded south for Sentosa)
+  [104.08, 1.47],  // Northeast (expanded for Changi/Punggol)
 ];
 
-// Padding for fitBounds - heavy bottom to clear UI "chin"
+// Heavy asymmetric padding - clears header UI (top) and filter bar (bottom)
+// This forces the map to shrink until Singapore fits in the "safe zone"
 const MAP_PADDING = {
-  top: 60,
-  bottom: 200,  // Generous space for filter bar
-  left: 60,
-  right: 60,
+  top: 120,      // Clear the "District PSF Overview" header
+  bottom: 250,   // CRITICAL: Clear the filter bar + legend at bottom
+  left: 50,
+  right: 50,
 };
 
 // Manual marker offsets for crowded central districts (D09, D10, D11)
@@ -237,10 +238,12 @@ const PERIOD_OPTIONS = [
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 /**
- * DataFlag - Compact Marker Component
+ * DataFlag - Zoom-Responsive Marker Component
  * Shows PSF or Volume based on view mode
+ * At low zoom: compact district ID only
+ * At high zoom: full price/volume pill
  */
-function DataFlag({ district, data, currentFilter, viewMode }) {
+function DataFlag({ district, data, currentFilter, viewMode, zoom }) {
   const [isHovered, setIsHovered] = useState(false);
   const yoy = data?.yoy_pct !== null ? formatYoY(data.yoy_pct) : null;
   const hasData = data?.has_data;
@@ -250,10 +253,13 @@ function DataFlag({ district, data, currentFilter, viewMode }) {
     ? hasData && data?.median_psf >= 2500
     : hasData && data?.tx_count >= 500;
 
-  // Display value based on mode
-  const displayValue = viewMode === 'PRICE'
-    ? formatPsf(data?.median_psf)
-    : `${formatVolume(data?.tx_count)} tx`;
+  // Display value based on mode and zoom level
+  const isCompactMode = zoom < 10.8;
+  const displayValue = isCompactMode
+    ? district.district.replace('D', '') // Just show "09" instead of "D09"
+    : viewMode === 'PRICE'
+      ? formatPsf(data?.median_psf)
+      : `${formatVolume(data?.tx_count)} tx`;
 
   return (
     <div
@@ -261,7 +267,7 @@ function DataFlag({ district, data, currentFilter, viewMode }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Main Pill - Compact size to reduce collision */}
+      {/* Main Pill - Size adapts to zoom level */}
       <motion.div
         animate={{
           scale: isHovered ? 1.1 : 1,
@@ -269,11 +275,9 @@ function DataFlag({ district, data, currentFilter, viewMode }) {
         }}
         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         className={`
-          px-1.5 py-0.5 rounded-full
-          font-bold text-[10px]
-          shadow-md border
-          transition-shadow duration-200
-          whitespace-nowrap
+          ${isCompactMode ? 'px-1 py-0.5 text-[9px]' : 'px-1.5 py-0.5 text-[10px]'}
+          rounded-full font-bold shadow-md border
+          transition-shadow duration-200 whitespace-nowrap
           ${hasData
             ? isHotspot
               ? viewMode === 'PRICE'
@@ -452,14 +456,14 @@ export default function MarketStrategyMap() {
     [districtData, viewMode, maxVolume]
   );
 
-  // Crisp white boundary lines - "Technical Grid" style
+  // High-contrast "Blueprint" boundary lines - renders ABOVE fill layer
   const lineLayer = useMemo(
     () => ({
       id: 'district-line',
       type: 'line',
       paint: {
-        'line-color': 'rgba(255, 255, 255, 0.5)',
-        'line-width': 2,
+        'line-color': 'rgba(255, 255, 255, 0.4)',
+        'line-width': 1.5,
         'line-dasharray': [2, 3], // Tight, technical dotted line
       },
       layout: {
@@ -607,7 +611,7 @@ export default function MarketStrategyMap() {
           </div>
         )}
 
-        {/* MapLibre GL Map */}
+        {/* MapLibre GL Map - Static "Set and Forget" Dashboard View */}
         <Map
           ref={mapRef}
           {...viewState}
@@ -615,24 +619,23 @@ export default function MarketStrategyMap() {
           onLoad={handleMapLoad}
           mapStyle={MAP_STYLE}
           style={{ width: '100%', height: '100%' }}
-          dragPan={true}
+          dragPan={false}
           dragRotate={false}
-          touchZoomRotate={true}
+          touchZoomRotate={false}
           scrollZoom={true}
           doubleClickZoom={true}
           keyboard={false}
-          maxBounds={SINGAPORE_BOUNDS}
           minZoom={9.5}
           maxZoom={13}
           maxPitch={0}
         >
-          {/* District polygons */}
+          {/* District polygons - fill first, then line on top */}
           <Source id="districts" type="geojson" data={singaporeDistrictsGeoJSON}>
             <Layer {...fillLayer} />
             <Layer {...lineLayer} />
           </Source>
 
-          {/* Data Flag Markers */}
+          {/* Data Flag Markers - zoom-responsive */}
           {!loading && districtCentroids.map((district) => {
             const data = districtMap[district.district];
             return (
@@ -647,6 +650,7 @@ export default function MarketStrategyMap() {
                   data={data}
                   currentFilter={currentBedroomLabel}
                   viewMode={viewMode}
+                  zoom={viewState.zoom}
                 />
               </Marker>
             );
@@ -736,7 +740,7 @@ export default function MarketStrategyMap() {
         >
           <div className="px-2.5 py-1.5 bg-slate-800/90 backdrop-blur-md border border-slate-600 rounded-lg shadow-xl">
             <p className="text-[9px] text-slate-400 uppercase tracking-wider font-medium">
-              Drag &bull; Scroll &bull; Hover
+              Scroll to zoom &bull; Hover for details
             </p>
           </div>
         </motion.div>
@@ -808,6 +812,10 @@ export default function MarketStrategyMap() {
       <style>{`
         .maplibregl-ctrl-attrib {
           display: none !important;
+        }
+        /* Spotlight effect: darken the water/background so Singapore "pops" */
+        .maplibregl-map {
+          background-color: #0B1121 !important;
         }
       `}</style>
     </div>
