@@ -205,7 +205,7 @@ export const getComparableValueAnalysis = (params = {}) =>
  *
  * @param {Object} params - Filter and option parameters
  * @param {string} params.district - Comma-separated districts (D01,D02,...)
- * @param {string} params.bedroom - Comma-separated bedroom counts (2,3,4)
+ * @param {string} params.bedroom - Comma-separated bedroom counts (1,2,3,4,5)
  * @param {string} params.segment - CCR, RCR, OCR
  * @param {string} params.sale_type - New Sale, Resale
  * @param {string} params.date_from - YYYY-MM-DD
@@ -280,7 +280,7 @@ export const clearDashboardCache = () => apiClient.delete('/dashboard/cache');
  * @param {string} params.group_by - Comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region)
  * @param {string} params.metrics - Comma-separated metrics (count, median_psf, avg_psf, total_value, median_price)
  * @param {string} params.district - Comma-separated districts (D01,D02,...)
- * @param {string} params.bedroom - Comma-separated bedroom counts (2,3,4)
+ * @param {string} params.bedroom - Comma-separated bedroom counts (1,2,3,4,5)
  * @param {string} params.segment - CCR, RCR, OCR
  * @param {string} params.sale_type - New Sale, Resale
  * @param {string} params.date_from - YYYY-MM-DD
