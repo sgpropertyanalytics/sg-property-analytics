@@ -275,21 +275,28 @@ function HeroSection({ navigate }) {
 
             {/* INNER RIG: Handles rotation only */}
             <div
-              className="w-full rounded-xl"
+              className="w-full rounded-2xl"
               style={{
                 transform: 'rotateY(-12deg) rotateX(10deg) rotateZ(4deg)',
                 transformStyle: 'preserve-3d'
               }}
             >
-              <div className="relative rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/20 bg-white border border-[#94B4C1]/20">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-[#213448]/20 bg-transparent border-0">
                 <img
                   src="/dashboard-screenshot.png"
                   alt="Dashboard Preview"
-                  className="w-full h-auto object-cover"
+                  className="w-full h-auto object-cover scale-[1.08] origin-center"
                 />
 
-                {/* Gloss Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/40 pointer-events-none mix-blend-overlay" />
+                {/* Edge fade masks - blend into hero background */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute inset-0 ring-1 ring-[#94B4C1]/15 rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#FDFBF7]/70 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#FDFBF7]/70 via-transparent to-transparent" />
+                </div>
+
+                {/* Subtle gloss overlay */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20 pointer-events-none mix-blend-overlay" />
               </div>
             </div>
           </motion.div>
