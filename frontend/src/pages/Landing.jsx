@@ -147,23 +147,23 @@ const LandingPage = () => {
 
 /**
  * Hero Section - "Horizon Plane" Layout
- * Centered text with dashboard rising from bottom - eliminates left/right collision issues
+ * Dashboard raised to eliminate dead zone - "Raise the Titanic" pattern
  */
 function HeroSection({ navigate }) {
   return (
-    <section className="relative bg-[#FDFBF7] pt-28 sm:pt-32 overflow-hidden min-h-[100vh] flex flex-col items-center">
+    <section className="relative bg-[#FDFBF7] pt-28 sm:pt-32 overflow-hidden min-h-screen flex flex-col items-center">
 
-      {/* Background Glow - Centered */}
-      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#94B4C1]/20 rounded-full blur-[120px] pointer-events-none" />
+      {/* Background Glow - Positioned higher to backlight the text */}
+      <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[1200px] h-[800px] bg-[#94B4C1]/15 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* --- TEXT CONTENT (Centered & Symmetrical) --- */}
-      <div className="relative z-20 text-center max-w-4xl px-6 mb-12 sm:mb-16">
+      {/* --- TEXT CONTENT (z-30 ensures text stays on top if dashboard overlaps) --- */}
+      <div className="relative z-30 text-center max-w-4xl px-6 flex flex-col items-center">
 
         {/* Trust Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 sm:mb-8 rounded-full border border-[#94B4C1]/40 bg-white/60 backdrop-blur-md shadow-sm"
+          className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-[#94B4C1]/40 bg-white/60 backdrop-blur-md shadow-sm"
         >
           <span className="w-2 h-2 rounded-full bg-[#547792] animate-pulse" />
           <span className="text-xs font-bold text-[#213448] tracking-wide uppercase">
@@ -187,10 +187,9 @@ function HeroSection({ navigate }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-base sm:text-lg md:text-xl text-[#547792] mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed"
+          className="text-base sm:text-lg text-[#547792] mb-10 max-w-2xl mx-auto leading-relaxed"
         >
           Institutional-grade transaction records, supply cliffs, and rental yields.
-          <br className="hidden md:block" />
           Visualized for the modern investor.
         </motion.p>
 
@@ -199,7 +198,7 @@ function HeroSection({ navigate }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center"
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12"
         >
           <button
             onClick={() => navigate('/market-pulse')}
@@ -216,12 +215,12 @@ function HeroSection({ navigate }) {
           </button>
         </motion.div>
 
-        {/* Metrics - Centered */}
+        {/* Metrics - Tight to buttons */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="flex gap-8 sm:gap-16 justify-center mt-10 sm:mt-12 pt-8 border-t border-[#213448]/10"
+          className="flex gap-12 sm:gap-16 border-t border-[#213448]/10 pt-8"
         >
           <div className="text-center">
             <div className="text-2xl sm:text-3xl font-bold text-[#213448] font-mono tabular-nums tracking-tight">$2.8B+</div>
@@ -235,38 +234,26 @@ function HeroSection({ navigate }) {
       </div>
 
 
-      {/* --- THE HORIZON PLANE (Dashboard rising from bottom) --- */}
-      <div className="relative w-full flex-1 flex items-end justify-center">
+      {/* --- THE HORIZON DASHBOARD --- */}
+      {/* -mt-20 pulls dashboard UP into the dead zone, z-10 keeps it behind text */}
+      <div className="relative w-full flex-1 flex items-start justify-center -mt-16 sm:-mt-20 z-10"
+           style={{ perspective: '2500px' }}>
 
         <motion.div
           initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: "easeOut", delay: 0.4 }}
-          className="relative w-[95%] sm:w-[90%] max-w-[1400px]"
+          transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+          className="relative w-[95%] max-w-[1600px]"
           style={{
-             perspective: '2000px',
-             transformStyle: 'preserve-3d'
+             transform: 'rotateX(25deg)',
+             transformOrigin: 'top center',
           }}
         >
-           {/* THE DASHBOARD CONTAINER */}
-           <div
-             className="relative rounded-t-2xl overflow-hidden shadow-[0_-20px_60px_-10px_rgba(33,52,72,0.15)] border-t border-x border-[#94B4C1]/30 bg-white"
-             style={{
-               transform: 'rotateX(18deg) scale(0.95)',
-               transformOrigin: 'bottom center',
-             }}
-           >
-             {/* Browser Chrome */}
-             <div className="h-8 sm:h-10 bg-[#FDFBF7] border-b border-[#EAE0CF] flex items-center justify-center relative">
-                <div className="absolute left-3 sm:left-4 flex gap-1.5">
-                  <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
-                  <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
-                  <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#EAE0CF] border border-[#d6cbb6]"></div>
-                </div>
-                <div className="px-3 sm:px-4 py-1 rounded bg-white border border-[#EAE0CF] text-[9px] sm:text-[10px] text-[#94B4C1] font-medium">
-                   propanalytics.sg/market-view
-                </div>
-             </div>
+           {/* DASHBOARD SLAB */}
+           <div className="relative rounded-t-xl overflow-hidden shadow-[0_-50px_100px_-20px_rgba(33,52,72,0.25)] border-t border-x border-white/50 bg-white ring-1 ring-[#94B4C1]/20">
+
+             {/* Glass Header - cleaner than browser chrome */}
+             <div className="h-3 sm:h-4 bg-gradient-to-b from-[#FDFBF7] to-white border-b border-[#EAE0CF]/50 w-full" />
 
              {/* Dashboard Image */}
              <img
@@ -275,12 +262,12 @@ function HeroSection({ navigate }) {
                className="w-full h-auto"
              />
 
-             {/* Top Gloss Reflection */}
-             <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-transparent pointer-events-none" />
+             {/* Gloss Overlay */}
+             <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-transparent pointer-events-none mix-blend-overlay" />
            </div>
 
-           {/* Bottom Fade - blends into next section */}
-           <div className="absolute -bottom-10 left-0 right-0 h-40 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7] to-transparent z-30 pointer-events-none" />
+           {/* Bottom Fade - deeper fade to blend into page */}
+           <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7] to-transparent pointer-events-none" />
 
         </motion.div>
       </div>
