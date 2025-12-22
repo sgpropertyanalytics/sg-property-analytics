@@ -95,9 +95,42 @@ export const DISTRICT_NAMES = {
 
 // Bedroom labels for display
 export const BEDROOM_LABELS = {
+  '1b': '1-Bedroom',
   '2b': '2-Bedroom',
   '3b': '3-Bedroom',
   '4b': '4-Bedroom',
+  '5b': '5-Bedroom+',
+};
+
+// Short bedroom labels (for compact UI like filters)
+export const BEDROOM_LABELS_SHORT = {
+  1: '1BR',
+  2: '2BR',
+  3: '3BR',
+  4: '4BR',
+  5: '5BR+',
+};
+
+/**
+ * Get short bedroom label for display (e.g., "2BR", "5BR+")
+ * @param {number|string} bedroom - Bedroom count (1-5)
+ * @returns {string} Short label like "2BR"
+ */
+export const getBedroomLabelShort = (bedroom) => {
+  const num = parseInt(bedroom, 10);
+  if (num >= 5) return '5BR+';
+  return BEDROOM_LABELS_SHORT[num] || `${num}BR`;
+};
+
+/**
+ * Get full bedroom label for display (e.g., "2-Bedroom", "5-Bedroom+")
+ * @param {number|string} bedroom - Bedroom count (1-5)
+ * @returns {string} Full label like "2-Bedroom"
+ */
+export const getBedroomLabelFull = (bedroom) => {
+  const num = parseInt(bedroom, 10);
+  if (num >= 5) return '5-Bedroom+';
+  return BEDROOM_LABELS[`${num}b`] || `${num}-Bedroom`;
 };
 
 /**

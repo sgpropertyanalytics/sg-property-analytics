@@ -391,29 +391,104 @@ export function ValueParityPanel() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Tab Navigation - Card Style */}
-      <div className="flex gap-2 p-1.5 bg-[#EAE0CF]/40 rounded-xl">
+      {/* Tab Navigation - Creative Cards */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Affordability Tab */}
         <button
           onClick={() => setActiveTab('budget')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-all duration-200 ${
+          className={`group relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-300 ${
             activeTab === 'budget'
-              ? 'bg-white shadow-md text-[#213448] font-semibold'
-              : 'text-[#547792] hover:bg-[#EAE0CF]/60'
+              ? 'bg-gradient-to-br from-[#213448] to-[#547792] shadow-xl scale-[1.02]'
+              : 'bg-white border-2 border-[#94B4C1]/40 hover:border-[#547792] hover:shadow-lg'
           }`}
         >
-          <span className={`text-xl ${activeTab === 'budget' ? '' : 'opacity-60'}`}>💰</span>
-          <span className="text-sm">Affordability</span>
+          {/* Decorative circles for active state */}
+          {activeTab === 'budget' && (
+            <>
+              <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
+              <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-white/5 rounded-full" />
+            </>
+          )}
+          <div className="relative flex items-start gap-4">
+            {/* Icon with background */}
+            <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all ${
+              activeTab === 'budget'
+                ? 'bg-white/20'
+                : 'bg-[#EAE0CF]/50 group-hover:bg-[#EAE0CF]'
+            }`}>
+              💰
+            </div>
+            {/* Text content */}
+            <div className="flex-1 min-w-0">
+              <div className={`text-lg font-bold transition-colors ${
+                activeTab === 'budget' ? 'text-white' : 'text-[#213448]'
+              }`}>
+                Affordability
+              </div>
+              <div className={`text-sm mt-1 transition-colors ${
+                activeTab === 'budget' ? 'text-white/80' : 'text-[#547792]'
+              }`}>
+                What can I buy with my budget?
+              </div>
+            </div>
+            {/* Active indicator */}
+            {activeTab === 'budget' && (
+              <div className="absolute top-0 right-0 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            )}
+          </div>
         </button>
+
+        {/* Valuation Tab */}
         <button
           onClick={() => setActiveTab('deal-checker')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-all duration-200 ${
+          className={`group relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-300 ${
             activeTab === 'deal-checker'
-              ? 'bg-white shadow-md text-[#213448] font-semibold'
-              : 'text-[#547792] hover:bg-[#EAE0CF]/60'
+              ? 'bg-gradient-to-br from-[#213448] to-[#547792] shadow-xl scale-[1.02]'
+              : 'bg-white border-2 border-[#94B4C1]/40 hover:border-[#547792] hover:shadow-lg'
           }`}
         >
-          <span className={`text-xl ${activeTab === 'deal-checker' ? '' : 'opacity-60'}`}>⚖️</span>
-          <span className="text-sm">Valuation</span>
+          {/* Decorative circles for active state */}
+          {activeTab === 'deal-checker' && (
+            <>
+              <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
+              <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-white/5 rounded-full" />
+            </>
+          )}
+          <div className="relative flex items-start gap-4">
+            {/* Icon with background */}
+            <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all ${
+              activeTab === 'deal-checker'
+                ? 'bg-white/20'
+                : 'bg-[#EAE0CF]/50 group-hover:bg-[#EAE0CF]'
+            }`}>
+              ⚖️
+            </div>
+            {/* Text content */}
+            <div className="flex-1 min-w-0">
+              <div className={`text-lg font-bold transition-colors ${
+                activeTab === 'deal-checker' ? 'text-white' : 'text-[#213448]'
+              }`}>
+                Valuation
+              </div>
+              <div className={`text-sm mt-1 transition-colors ${
+                activeTab === 'deal-checker' ? 'text-white/80' : 'text-[#547792]'
+              }`}>
+                Am I paying a fair price?
+              </div>
+            </div>
+            {/* Active indicator */}
+            {activeTab === 'deal-checker' && (
+              <div className="absolute top-0 right-0 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            )}
+          </div>
         </button>
       </div>
 

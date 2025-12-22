@@ -32,7 +32,8 @@ TIER1_THRESHOLDS = {
     1: 580,   # 1-Bedroom: < 580 sqft
     2: 780,   # 2-Bedroom: 580 - 780 sqft
     3: 1150,  # 3-Bedroom: 780 - 1150 sqft
-    4: float('inf')  # 4-Bedroom+: >= 1150 sqft
+    4: 1450,  # 4-Bedroom: 1150 - 1450 sqft (compact post-harmonisation)
+    5: float('inf')  # 5-Bedroom+: >= 1450 sqft
 }
 
 TIER2_THRESHOLDS = {
@@ -41,7 +42,8 @@ TIER2_THRESHOLDS = {
     1: 600,   # 1-Bedroom: < 600 sqft
     2: 850,   # 2-Bedroom: 600 - 850 sqft
     3: 1200,  # 3-Bedroom: 850 - 1200 sqft
-    4: float('inf')  # 4-Bedroom+: >= 1200 sqft
+    4: 1500,  # 4-Bedroom: 1200 - 1500 sqft
+    5: float('inf')  # 5-Bedroom+: >= 1500 sqft
 }
 
 TIER3_THRESHOLDS = {
@@ -50,15 +52,17 @@ TIER3_THRESHOLDS = {
     1: 600,   # 1-Bedroom: < 600 sqft
     2: 950,   # 2-Bedroom: 600 - 950 sqft
     3: 1350,  # 3-Bedroom: 950 - 1350 sqft
-    4: float('inf')  # 4-Bedroom+: >= 1350 sqft
+    4: 1650,  # 4-Bedroom: 1350 - 1650 sqft
+    5: float('inf')  # 5-Bedroom+: >= 1650 sqft
 }
 
 # Simple fallback thresholds (used when sale_type/date unavailable)
 SIMPLE_THRESHOLDS = {
     1: 580,   # 1-Bedroom: < 580 sqft
     2: 800,   # 2-Bedroom: 580 - 800 sqft
-    3: 1150,  # 3-Bedroom: 800 - 1150 sqft
-    4: float('inf')  # 4-Bedroom+: >= 1150 sqft
+    3: 1200,  # 3-Bedroom: 800 - 1200 sqft
+    4: 1500,  # 4-Bedroom: 1200 - 1500 sqft
+    5: float('inf')  # 5-Bedroom+: >= 1500 sqft
 }
 
 
@@ -71,7 +75,7 @@ def _classify_with_thresholds(area_sqft: float, thresholds: dict) -> int:
         thresholds: Dict mapping bedroom_count -> max_sqft
 
     Returns:
-        Bedroom count (1-4)
+        Bedroom count (1-5)
     """
     if area_sqft < thresholds[1]:
         return 1
@@ -79,8 +83,10 @@ def _classify_with_thresholds(area_sqft: float, thresholds: dict) -> int:
         return 2
     elif area_sqft < thresholds[3]:
         return 3
-    else:
+    elif area_sqft < thresholds[4]:
         return 4
+    else:
+        return 5
 
 
 def classify_bedroom(area_sqft: float) -> int:
@@ -94,7 +100,7 @@ def classify_bedroom(area_sqft: float) -> int:
         area_sqft: Unit area in square feet
 
     Returns:
-        Estimated bedroom count (1-4)
+        Estimated bedroom count (1-5)
     """
     return _classify_with_thresholds(area_sqft, SIMPLE_THRESHOLDS)
 
@@ -118,7 +124,7 @@ def classify_bedroom_three_tier(
         transaction_date: Transaction date (pd.Timestamp, date, or string)
 
     Returns:
-        Estimated bedroom count (1-4)
+        Estimated bedroom count (1-5)
     """
     # Normalize sale_type
     sale_type_str = str(sale_type).strip() if sale_type else 'Resale'
@@ -156,7 +162,7 @@ def get_bedroom_label(bedroom_count: int) -> str:
     Return human-readable bedroom label.
 
     Args:
-        bedroom_count: Integer bedroom count (1-4+)
+        bedroom_count: Integer bedroom count (1-5)
 
     Returns:
         Label string like "2-Bedroom" or "5-Bedroom+"
@@ -169,8 +175,10 @@ def get_bedroom_label(bedroom_count: int) -> str:
         return "3-Bedroom"
     elif bedroom_count == 4:
         return "4-Bedroom"
-    else:
+    elif bedroom_count == 5:
         return "5-Bedroom+"
+    else:
+        return f"{bedroom_count}-Bedroom+"
 
 
 def get_tier_name(sale_type: Optional[str], transaction_date: Optional[pd.Timestamp]) -> str:

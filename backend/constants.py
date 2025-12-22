@@ -115,7 +115,10 @@ DISTRICT_NAMES = {
 
 def classify_bedroom(area_sqft: float) -> int:
     """
-    Classify bedroom count based on unit size.
+    Simple bedroom classification based on unit size.
+
+    NOTE: For accurate classification that accounts for sale type and date,
+    use services.classifier.classify_bedroom_three_tier() instead.
 
     Args:
         area_sqft: Unit area in square feet
@@ -123,13 +126,13 @@ def classify_bedroom(area_sqft: float) -> int:
     Returns:
         Bedroom count (1-5)
     """
-    if area_sqft < 600:
+    if area_sqft < 580:
         return 1
-    elif area_sqft < 900:
+    elif area_sqft < 800:
         return 2
     elif area_sqft < 1200:
         return 3
-    elif area_sqft < 1600:
+    elif area_sqft < 1500:
         return 4
     else:
         return 5
