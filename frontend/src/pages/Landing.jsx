@@ -63,27 +63,8 @@ const LandingPage = () => {
       <div className="relative z-10">
         <HeroSection navigate={navigate} />
 
-        {/* Trust Bar - Transparent with subtle backdrop */}
-        <section className="py-8 md:py-12 border-y border-[#94B4C1]/10 bg-white/30 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 md:px-6 text-center">
-            <p className="text-[#547792] text-xs md:text-sm font-medium mb-4 md:mb-6 uppercase tracking-wider">
-              Powered by official data sources
-            </p>
-            <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12 opacity-60 hover:opacity-80 transition-opacity">
-              {['URA', 'REALIS', 'HDB', 'SLA'].map((source) => (
-                <div
-                  key={source}
-                  className="text-xl md:text-2xl font-bold text-[#213448] tracking-tighter"
-                >
-                  {source}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Bento Grid - Removed bg-white, inherits global texture */}
-        <section className="py-16 md:py-24 px-4 md:px-6 relative z-10">
+        {/* Bento Grid - Increased top padding to compensate for removed Trust Bar */}
+        <section className="pt-24 md:pt-32 pb-16 md:pb-24 px-4 md:px-6 relative z-10">
           <div className="max-w-7xl mx-auto">
             <div className="mb-10 md:mb-16 text-center">
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-3 md:mb-4 tracking-tight">
