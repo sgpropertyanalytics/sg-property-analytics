@@ -3,12 +3,12 @@
  *
  * MapLibre GL-based 3D visualization showing Median PSF across 28 districts.
  * Features:
- * - 3D extruded polygons where height = Median PSF
+ * - "Floating Plateau" style - subtle raised tiles with clear separation
+ * - Grout lines between districts for visual definition
+ * - Hover lift effect (+20% height) with brightness increase
  * - Dark "Dark Matter" base map style
  * - "Living Filters" bedroom toggle with glass-morphic styling
- * - Smooth height transitions on filter change
- * - "Ghost Mode" (opacity 0.1) for districts with no data
- * - Hover tooltips with district details
+ * - Strict Singapore bounds and pitch limits
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -26,62 +26,102 @@ const COLORS = {
   sand: '#EAE0CF',
 };
 
-// Height multiplier for 3D extrusion (PSF * multiplier = meters)
-const HEIGHT_MULTIPLIER = 3;
-const BASE_HEIGHT = 100;
+// Height settings for "Floating Plateau" effect
+// Subtle heights so districts don't obscure each other
+const HEIGHT_MULTIPLIER = 0.15; // Drastically reduced from 3
+const BASE_HEIGHT = 50;
+const MIN_HEIGHT = 20; // Ghost districts
+const HOVER_LIFT_FACTOR = 1.2; // 20% lift on hover
+
+// Singapore bounds - strict constraint
+const SINGAPORE_BOUNDS = [
+  [103.6, 1.15], // Southwest
+  [104.1, 1.47], // Northeast
+];
 
 // Get color based on PSF value using the specified thresholds
 function getPsfColor(psf) {
-  if (!psf) return 'rgba(150, 150, 150, 0.1)'; // Ghost mode
-  if (psf < 1400) return COLORS.skyBlue;       // < $1,400 = Sky Blue
-  if (psf < 2200) return COLORS.oceanBlue;     // $1,400-$2,200 = Ocean Blue
-  return COLORS.deepNavy;                       // > $2,200 = Deep Navy
+  if (!psf) return 'rgba(100, 100, 120, 0.25)'; // Ghost mode - slightly visible
+  if (psf < 1400) return COLORS.skyBlue;
+  if (psf < 2200) return COLORS.oceanBlue;
+  return COLORS.deepNavy;
 }
 
-// Interpolate colors for MapLibre expression
+// Get brightened color for hover state
+function getPsfColorBright(psf) {
+  if (!psf) return 'rgba(120, 120, 140, 0.35)';
+  if (psf < 1400) return '#a8c4cf'; // Lighter Sky Blue
+  if (psf < 2200) return '#6a8da8'; // Lighter Ocean Blue
+  return '#2d4a60'; // Lighter Deep Navy
+}
+
+// Build color expression with hover state support
 function getColorExpression(districtData) {
   const colorStops = ['case'];
 
+  // For each district, check hover state first
   districtData.forEach((d) => {
-    if (d.has_data && d.median_psf) {
-      colorStops.push(['==', ['get', 'district'], d.district_id]);
-      colorStops.push(getPsfColor(d.median_psf));
-    }
+    const normalColor = getPsfColor(d.has_data ? d.median_psf : null);
+    const hoverColor = getPsfColorBright(d.has_data ? d.median_psf : null);
+
+    // If this district AND hovered
+    colorStops.push(
+      ['all',
+        ['==', ['get', 'district'], d.district_id],
+        ['boolean', ['feature-state', 'hover'], false]
+      ]
+    );
+    colorStops.push(hoverColor);
+
+    // If this district (not hovered)
+    colorStops.push(['==', ['get', 'district'], d.district_id]);
+    colorStops.push(normalColor);
   });
 
-  // Default ghost color for districts without data
-  colorStops.push('rgba(150, 150, 150, 0.15)');
-
+  // Default ghost color
+  colorStops.push('rgba(100, 100, 120, 0.25)');
   return colorStops;
 }
 
-// Get height expression for MapLibre
+// Build height expression with hover lift
 function getHeightExpression(districtData) {
   const heightStops = ['case'];
 
   districtData.forEach((d) => {
-    if (d.has_data && d.median_psf) {
-      heightStops.push(['==', ['get', 'district'], d.district_id]);
-      heightStops.push(BASE_HEIGHT + d.median_psf * HEIGHT_MULTIPLIER);
-    }
+    const baseH = d.has_data && d.median_psf
+      ? BASE_HEIGHT + d.median_psf * HEIGHT_MULTIPLIER
+      : MIN_HEIGHT;
+    const hoverH = baseH * HOVER_LIFT_FACTOR;
+
+    // Hovered state - lifted
+    heightStops.push(
+      ['all',
+        ['==', ['get', 'district'], d.district_id],
+        ['boolean', ['feature-state', 'hover'], false]
+      ]
+    );
+    heightStops.push(hoverH);
+
+    // Normal state
+    heightStops.push(['==', ['get', 'district'], d.district_id]);
+    heightStops.push(baseH);
   });
 
-  // Default minimal height for districts without data
-  heightStops.push(50);
-
+  // Default minimal height
+  heightStops.push(MIN_HEIGHT);
   return heightStops;
 }
 
-// Get opacity expression for MapLibre
+// Get opacity expression
 function getOpacityExpression(districtData) {
   const opacityStops = ['case'];
 
   districtData.forEach((d) => {
     opacityStops.push(['==', ['get', 'district'], d.district_id]);
-    opacityStops.push(d.has_data ? 0.85 : 0.1); // Ghost mode for no data
+    opacityStops.push(d.has_data ? 0.9 : 0.15); // Ghost mode for no data
   });
 
-  opacityStops.push(0.1);
+  opacityStops.push(0.15);
   return opacityStops;
 }
 
@@ -119,22 +159,30 @@ const PERIOD_OPTIONS = [
 // Dark Matter map style (CARTO Dark Matter - free, no API key)
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
+// District ID to numeric ID mapping for feature state
+const DISTRICT_ID_MAP = {};
+for (let i = 1; i <= 28; i++) {
+  const key = i < 10 ? `D0${i}` : `D${i}`;
+  DISTRICT_ID_MAP[key] = i;
+}
+
 export default function MarketHeatmap3D() {
   const [districtData, setDistrictData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('12m');
-  const [hoveredDistrict, setHoveredDistrict] = useState(null);
+  const [hoveredDistrictId, setHoveredDistrictId] = useState(null);
   const [popupInfo, setPopupInfo] = useState(null);
   const mapRef = useRef(null);
+  const hoveredStateRef = useRef(null);
 
   // Initial view state
   const [viewState, setViewState] = useState({
     longitude: SINGAPORE_CENTER.lng,
     latitude: SINGAPORE_CENTER.lat,
     zoom: SINGAPORE_CENTER.zoom,
-    pitch: 45,
+    pitch: 40,
     bearing: -15,
   });
 
@@ -171,16 +219,18 @@ export default function MarketHeatmap3D() {
     return map;
   }, [districtData]);
 
-  // Merge GeoJSON with live data
+  // Merge GeoJSON with live data and add numeric IDs for feature state
   const enrichedGeoJSON = useMemo(() => {
-    if (!districtData.length) return singaporeDistrictsGeoJSON;
-
     return {
       ...singaporeDistrictsGeoJSON,
       features: singaporeDistrictsGeoJSON.features.map((feature) => {
-        const data = districtMap[feature.properties.district];
+        const districtKey = feature.properties.district;
+        const data = districtMap[districtKey];
+        const numericId = DISTRICT_ID_MAP[districtKey] || 0;
+
         return {
           ...feature,
+          id: numericId, // Required for setFeatureState
           properties: {
             ...feature.properties,
             median_psf: data?.median_psf || 0,
@@ -193,7 +243,7 @@ export default function MarketHeatmap3D() {
     };
   }, [districtData, districtMap]);
 
-  // 3D extrusion layer style
+  // 3D extrusion layer - "Floating Plateau" style
   const extrusionLayer = useMemo(
     () => ({
       id: 'district-extrusion',
@@ -202,53 +252,88 @@ export default function MarketHeatmap3D() {
         'fill-extrusion-color': getColorExpression(districtData),
         'fill-extrusion-height': getHeightExpression(districtData),
         'fill-extrusion-base': 0,
-        'fill-extrusion-opacity': 0.85,
-        'fill-extrusion-opacity-transition': { duration: 500 },
-        'fill-extrusion-height-transition': { duration: 500 },
+        'fill-extrusion-opacity': getOpacityExpression(districtData),
+        'fill-extrusion-vertical-gradient': true,
+        // Smooth transitions for hover lift
+        'fill-extrusion-height-transition': { duration: 200, delay: 0 },
+        'fill-extrusion-color-transition': { duration: 200, delay: 0 },
       },
     }),
     [districtData]
   );
 
-  // Outline layer for district borders
-  const outlineLayer = useMemo(
+  // "Grout" line layer - renders on top for clear visual separation
+  const groutLayer = useMemo(
     () => ({
-      id: 'district-outline',
+      id: 'district-grout',
       type: 'line',
       paint: {
-        'line-color': '#ffffff',
+        'line-color': COLORS.skyBlue,
         'line-width': [
           'case',
-          ['==', ['get', 'district'], hoveredDistrict || ''],
-          3,
-          1,
+          ['boolean', ['feature-state', 'hover'], false],
+          2.5, // Thicker on hover
+          1.5, // Normal width
         ],
-        'line-opacity': 0.6,
+        'line-opacity': [
+          'case',
+          ['boolean', ['feature-state', 'hover'], false],
+          0.8, // Brighter on hover
+          0.5, // Normal opacity
+        ],
+        'line-translate': [0, 0],
+      },
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round',
       },
     }),
-    [hoveredDistrict]
+    []
   );
 
-  // Handle map click/hover
+  // Handle hover with setFeatureState for performance
   const handleMapHover = useCallback(
     (event) => {
+      const map = mapRef.current?.getMap();
+      if (!map) return;
+
+      // Clear previous hover state
+      if (hoveredStateRef.current !== null) {
+        map.setFeatureState(
+          { source: 'districts', id: hoveredStateRef.current },
+          { hover: false }
+        );
+      }
+
       const features = event.features;
       if (features && features.length > 0) {
         const feature = features[0];
-        const districtId = feature.properties.district;
-        setHoveredDistrict(districtId);
+        const districtKey = feature.properties.district;
+        const numericId = DISTRICT_ID_MAP[districtKey];
 
-        const data = districtMap[districtId];
-        if (data) {
-          setPopupInfo({
-            longitude: event.lngLat.lng,
-            latitude: event.lngLat.lat,
-            district: data,
-            feature: feature.properties,
-          });
+        if (numericId) {
+          // Set new hover state
+          map.setFeatureState(
+            { source: 'districts', id: numericId },
+            { hover: true }
+          );
+          hoveredStateRef.current = numericId;
+          setHoveredDistrictId(districtKey);
+
+          // Update popup
+          const data = districtMap[districtKey];
+          if (data) {
+            setPopupInfo({
+              longitude: event.lngLat.lng,
+              latitude: event.lngLat.lat,
+              district: data,
+              feature: feature.properties,
+            });
+          }
         }
       } else {
-        setHoveredDistrict(null);
+        hoveredStateRef.current = null;
+        setHoveredDistrictId(null);
         setPopupInfo(null);
       }
     },
@@ -256,7 +341,15 @@ export default function MarketHeatmap3D() {
   );
 
   const handleMapLeave = useCallback(() => {
-    setHoveredDistrict(null);
+    const map = mapRef.current?.getMap();
+    if (map && hoveredStateRef.current !== null) {
+      map.setFeatureState(
+        { source: 'districts', id: hoveredStateRef.current },
+        { hover: false }
+      );
+    }
+    hoveredStateRef.current = null;
+    setHoveredDistrictId(null);
     setPopupInfo(null);
   }, []);
 
@@ -357,12 +450,18 @@ export default function MarketHeatmap3D() {
           interactiveLayerIds={['district-extrusion']}
           onMouseMove={handleMapHover}
           onMouseLeave={handleMapLeave}
-          cursor={hoveredDistrict ? 'pointer' : 'grab'}
+          cursor={hoveredDistrictId ? 'pointer' : 'grab'}
+          maxPitch={45}
+          minZoom={10}
+          maxZoom={14}
+          maxBounds={SINGAPORE_BOUNDS}
         >
           {/* District polygons source and layers */}
           <Source id="districts" type="geojson" data={enrichedGeoJSON}>
+            {/* 3D Extrusion layer (base) */}
             <Layer {...extrusionLayer} />
-            <Layer {...outlineLayer} />
+            {/* Grout line layer (on top) */}
+            <Layer {...groutLayer} />
           </Source>
 
           {/* Popup/Tooltip */}
