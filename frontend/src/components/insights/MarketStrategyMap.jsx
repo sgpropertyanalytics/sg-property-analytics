@@ -64,6 +64,13 @@ const BEDROOM_OPTIONS = [
   { value: '5', label: '5BR+' },
 ];
 
+const AGE_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'new', label: 'New/TOP' },      // 0-5 years
+  { value: 'young', label: 'Young' },      // 5-10 years
+  { value: 'resale', label: 'Resale' },    // >10 years
+];
+
 const PERIOD_OPTIONS = [
   { value: '3m', label: '3M' },
   { value: '6m', label: '6M' },
@@ -415,6 +422,7 @@ export default function MarketStrategyMap() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
+  const [selectedAge, setSelectedAge] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('12m');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
@@ -432,7 +440,7 @@ export default function MarketStrategyMap() {
     setError(null);
     try {
       const response = await apiClient.get('/insights/district-psf', {
-        params: { period: selectedPeriod, bed: selectedBed },
+        params: { period: selectedPeriod, bed: selectedBed, age: selectedAge },
       });
       setDistrictData(response.data.districts || []);
     } catch (err) {
@@ -441,7 +449,7 @@ export default function MarketStrategyMap() {
     } finally {
       setLoading(false);
     }
-  }, [selectedBed, selectedPeriod]);
+  }, [selectedBed, selectedAge, selectedPeriod]);
 
   useEffect(() => {
     fetchData();
@@ -521,6 +529,25 @@ export default function MarketStrategyMap() {
                   className={`
                     px-2 py-1 text-xs font-medium rounded-md transition-all
                     ${selectedBed === option.value
+                      ? 'bg-white text-[#213448] shadow-sm'
+                      : 'text-[#547792] hover:text-[#213448]'
+                    }
+                  `}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Property age filter */}
+            <div className="flex items-center gap-1 bg-[#EAE0CF]/50 rounded-lg p-1">
+              {AGE_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => setSelectedAge(option.value)}
+                  className={`
+                    px-2 py-1 text-xs font-medium rounded-md transition-all
+                    ${selectedAge === option.value
                       ? 'bg-white text-[#213448] shadow-sm'
                       : 'text-[#547792] hover:text-[#213448]'
                     }

@@ -13,6 +13,49 @@ from models.database import db
 from sqlalchemy import func, and_, or_, extract, case, literal
 from constants import CCR_DISTRICTS, RCR_DISTRICTS, DISTRICT_NAMES
 
+
+def build_property_age_filter(age_filter):
+    """
+    Build SQLAlchemy filter condition for property age.
+
+    Property age = transaction_year - lease_start_year
+
+    Age categories:
+    - new: 0-5 years (New Sale / Recently TOP)
+    - young: 5-10 years (Young Resale)
+    - resale: >10 years (Mature Resale)
+
+    Returns filter condition or None if 'all'
+    """
+    if age_filter == "all" or not age_filter:
+        return None
+
+    # Property age = transaction year - lease start year
+    property_age = extract('year', Transaction.transaction_date) - Transaction.lease_start_year
+
+    if age_filter == "new":
+        # 0-5 years: New Sale / Recently TOP
+        return and_(
+            Transaction.lease_start_year.isnot(None),
+            property_age >= 0,
+            property_age <= 5
+        )
+    elif age_filter == "young":
+        # 5-10 years: Young Resale
+        return and_(
+            Transaction.lease_start_year.isnot(None),
+            property_age > 5,
+            property_age <= 10
+        )
+    elif age_filter == "resale":
+        # >10 years: Mature Resale
+        return and_(
+            Transaction.lease_start_year.isnot(None),
+            property_age > 10
+        )
+
+    return None
+
 insights_bp = Blueprint('insights', __name__)
 
 
@@ -45,12 +88,17 @@ def district_psf():
     """
     Get median PSF by district for the Visual Analytics Map.
 
-    Designed for the choropleth map visualization with bedroom filter.
+    Designed for the choropleth map visualization with bedroom and property age filters.
     Returns per-district: median_psf, tx_count, yoy_pct
 
     Query params:
       - period: Time period filter - 3m, 6m, 12m, all (default: 12m)
-      - bed: Bedroom filter - all, 1, 2, 3, 4+ (default: all)
+      - bed: Bedroom filter - all, 1, 2, 3, 4+, 5 (default: all)
+      - age: Property age filter (default: all)
+          - all: All properties
+          - new: 0-5 years (New Sale / Recently TOP)
+          - young: 5-10 years (Young Resale)
+          - resale: >10 years (Mature Resale)
 
     Returns:
       {
@@ -81,6 +129,7 @@ def district_psf():
     # Parse query params
     period = request.args.get("period", "12m")
     bed_filter = request.args.get("bed", "all")
+    age_filter = request.args.get("age", "all")
 
     # Calculate date range based on period
     today = datetime.now().date()
@@ -111,8 +160,13 @@ def district_psf():
             filter_conditions.append(Transaction.bedroom_count == 2)
         elif bed_filter == "3":
             filter_conditions.append(Transaction.bedroom_count == 3)
-        elif bed_filter in ["4", "4+"]:
+        elif bed_filter in ["4", "4+", "5"]:
             filter_conditions.append(Transaction.bedroom_count >= 4)
+
+    # Apply property age filter
+    age_condition = build_property_age_filter(age_filter)
+    if age_condition is not None:
+        filter_conditions.append(age_condition)
 
     try:
         # Query current period data - grouped by district
@@ -146,8 +200,12 @@ def district_psf():
                     yoy_conditions.append(Transaction.bedroom_count == 2)
                 elif bed_filter == "3":
                     yoy_conditions.append(Transaction.bedroom_count == 3)
-                elif bed_filter in ["4", "4+"]:
+                elif bed_filter in ["4", "4+", "5"]:
                     yoy_conditions.append(Transaction.bedroom_count >= 4)
+
+            # Apply same property age filter for YoY
+            if age_condition is not None:
+                yoy_conditions.append(age_condition)
 
             yoy_query = db.session.query(
                 Transaction.district,
@@ -222,6 +280,7 @@ def district_psf():
             "meta": {
                 "period": period,
                 "bed_filter": bedroom_filter_label,
+                "age_filter": age_filter,
                 "date_range": {
                     "from": date_from.isoformat() if date_from else None,
                     "to": today.isoformat()
