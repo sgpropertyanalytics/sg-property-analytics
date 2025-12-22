@@ -222,6 +222,7 @@ export function ValueParityPanel() {
     { key: 'price', label: 'Price', sortable: true, width: 'w-28', align: 'right' },
     { key: 'psf', label: 'PSF', sortable: true, width: 'w-20', align: 'right' },
     { key: 'sale_type', label: 'Type', sortable: true, width: 'w-20' },
+    { key: 'tenure', label: 'Tenure', sortable: true, width: 'w-24' },
     { key: 'remaining_lease', label: 'Lease', sortable: true, width: 'w-20' },
   ];
 
@@ -569,6 +570,9 @@ export function ValueParityPanel() {
                           }`}>
                             {txn.sale_type === 'New Sale' ? 'New' : 'Resale'}
                           </span>
+                        </td>
+                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
+                          {txn.tenure || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                           {formatRemainingLease(txn.remaining_lease)}
