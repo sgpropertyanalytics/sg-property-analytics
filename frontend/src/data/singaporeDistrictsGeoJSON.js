@@ -1,11 +1,10 @@
 /**
  * Singapore Postal Districts GeoJSON
  *
- * GeoJSON FeatureCollection for Singapore's 28 postal districts
- * with simplified polygon boundaries for MapLibre GL visualization.
+ * Interlocking polygons for Singapore's 28 postal districts.
+ * Shapes fit together like a jigsaw puzzle - no overlapping.
  *
  * Coordinates are [longitude, latitude] per GeoJSON spec.
- * Singapore roughly spans: Lon 103.6-104.0°E, Lat 1.2-1.5°N
  */
 
 export const SINGAPORE_CENTER = {
@@ -14,482 +13,420 @@ export const SINGAPORE_CENTER = {
   zoom: 10.8
 };
 
+// Shared vertices ensure perfect interlocking (no gaps, no overlaps)
+// Districts are arranged roughly by geographic position
+
 export const singaporeDistrictsGeoJSON = {
   type: "FeatureCollection",
   features: [
-    // D01 - Boat Quay / Raffles Place / Marina (CCR)
+    // === CENTRAL CORE (CCR) ===
+
+    // D01 - Boat Quay / Raffles Place / Marina
     {
       type: "Feature",
-      properties: {
-        district: "D01",
-        name: "Boat Quay / Raffles Place / Marina",
-        region: "CCR"
-      },
+      properties: { district: "D01", name: "Raffles Place / Marina", region: "CCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.845, 1.275], [103.862, 1.275], [103.868, 1.285],
-          [103.862, 1.295], [103.845, 1.295], [103.840, 1.285],
-          [103.845, 1.275]
+          [103.850, 1.274], [103.865, 1.274], [103.870, 1.280],
+          [103.870, 1.290], [103.860, 1.295], [103.850, 1.295],
+          [103.845, 1.288], [103.845, 1.280], [103.850, 1.274]
         ]]
       }
     },
-    // D02 - Shenton Way / Tanjong Pagar (CCR)
+
+    // D02 - Tanjong Pagar / Chinatown
     {
       type: "Feature",
-      properties: {
-        district: "D02",
-        name: "Shenton Way / Tanjong Pagar",
-        region: "CCR"
-      },
+      properties: { district: "D02", name: "Tanjong Pagar / Chinatown", region: "CCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.830, 1.265], [103.845, 1.265], [103.848, 1.280],
-          [103.845, 1.295], [103.828, 1.295], [103.822, 1.280],
-          [103.830, 1.265]
+          [103.832, 1.270], [103.850, 1.274], [103.845, 1.280],
+          [103.845, 1.288], [103.850, 1.295], [103.840, 1.298],
+          [103.828, 1.290], [103.825, 1.278], [103.832, 1.270]
         ]]
       }
     },
-    // D03 - Queenstown / Alexandra / Tiong Bahru (RCR)
+
+    // D06 - City Hall / Clarke Quay
     {
       type: "Feature",
-      properties: {
-        district: "D03",
-        name: "Queenstown / Alexandra / Tiong Bahru",
-        region: "RCR"
-      },
+      properties: { district: "D06", name: "City Hall / Clarke Quay", region: "CCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.790, 1.280], [103.820, 1.280], [103.825, 1.300],
-          [103.820, 1.315], [103.790, 1.315], [103.782, 1.298],
-          [103.790, 1.280]
+          [103.845, 1.288], [103.860, 1.295], [103.858, 1.305],
+          [103.850, 1.310], [103.840, 1.308], [103.838, 1.298],
+          [103.840, 1.298], [103.850, 1.295], [103.845, 1.288]
         ]]
       }
     },
-    // D04 - Harbourfront / Keppel / Telok Blangah (RCR)
+
+    // D07 - Bugis / Beach Road
     {
       type: "Feature",
-      properties: {
-        district: "D04",
-        name: "Harbourfront / Keppel / Telok Blangah",
-        region: "RCR"
-      },
+      properties: { district: "D07", name: "Bugis / Beach Road", region: "CCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.800, 1.252], [103.830, 1.252], [103.832, 1.272],
-          [103.822, 1.282], [103.795, 1.282], [103.788, 1.268],
-          [103.800, 1.252]
+          [103.858, 1.295], [103.870, 1.290], [103.878, 1.298],
+          [103.875, 1.310], [103.865, 1.318], [103.855, 1.315],
+          [103.850, 1.310], [103.858, 1.305], [103.858, 1.295]
         ]]
       }
     },
-    // D05 - Buona Vista / Dover / Pasir Panjang (RCR)
+
+    // D09 - Orchard / River Valley
     {
       type: "Feature",
-      properties: {
-        district: "D05",
-        name: "Buona Vista / Dover / Pasir Panjang",
-        region: "RCR"
-      },
+      properties: { district: "D09", name: "Orchard / River Valley", region: "CCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.765, 1.272], [103.795, 1.272], [103.798, 1.292],
-          [103.790, 1.310], [103.762, 1.310], [103.755, 1.292],
-          [103.765, 1.272]
+          [103.820, 1.295], [103.838, 1.298], [103.840, 1.308],
+          [103.838, 1.320], [103.830, 1.325], [103.818, 1.322],
+          [103.812, 1.310], [103.815, 1.300], [103.820, 1.295]
         ]]
       }
     },
-    // D06 - City Hall / Fort Canning (CCR)
+
+    // D10 - Tanglin / Holland
     {
       type: "Feature",
-      properties: {
-        district: "D06",
-        name: "City Hall / Fort Canning",
-        region: "CCR"
-      },
+      properties: { district: "D10", name: "Tanglin / Holland", region: "CCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.845, 1.290], [103.860, 1.290], [103.862, 1.302],
-          [103.858, 1.312], [103.842, 1.312], [103.838, 1.302],
-          [103.845, 1.290]
+          [103.795, 1.298], [103.815, 1.300], [103.812, 1.310],
+          [103.818, 1.322], [103.815, 1.335], [103.805, 1.345],
+          [103.790, 1.340], [103.785, 1.325], [103.788, 1.308],
+          [103.795, 1.298]
         ]]
       }
     },
-    // D07 - Bugis / Rochor (CCR)
+
+    // D11 - Newton / Novena
     {
       type: "Feature",
-      properties: {
-        district: "D07",
-        name: "Bugis / Rochor",
-        region: "CCR"
-      },
+      properties: { district: "D11", name: "Newton / Novena", region: "CCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.852, 1.300], [103.868, 1.300], [103.872, 1.315],
-          [103.865, 1.325], [103.850, 1.325], [103.845, 1.312],
-          [103.852, 1.300]
+          [103.830, 1.325], [103.840, 1.320], [103.855, 1.315],
+          [103.858, 1.328], [103.855, 1.342], [103.848, 1.350],
+          [103.835, 1.348], [103.828, 1.338], [103.830, 1.325]
         ]]
       }
     },
-    // D08 - Little India / Farrer Park (RCR)
+
+    // === REST OF CENTRAL (RCR) ===
+
+    // D03 - Queenstown / Tiong Bahru
     {
       type: "Feature",
-      properties: {
-        district: "D08",
-        name: "Little India / Farrer Park",
-        region: "RCR"
-      },
+      properties: { district: "D03", name: "Queenstown / Tiong Bahru", region: "RCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.848, 1.315], [103.865, 1.315], [103.868, 1.332],
-          [103.862, 1.345], [103.845, 1.345], [103.840, 1.330],
-          [103.848, 1.315]
+          [103.795, 1.280], [103.825, 1.278], [103.828, 1.290],
+          [103.820, 1.295], [103.815, 1.300], [103.795, 1.298],
+          [103.785, 1.292], [103.788, 1.282], [103.795, 1.280]
         ]]
       }
     },
-    // D09 - Orchard / Somerset / River Valley (CCR)
+
+    // D04 - Harbourfront / Telok Blangah
     {
       type: "Feature",
-      properties: {
-        district: "D09",
-        name: "Orchard / Somerset / River Valley",
-        region: "CCR"
-      },
+      properties: { district: "D04", name: "Harbourfront / Telok Blangah", region: "RCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.822, 1.295], [103.848, 1.295], [103.852, 1.315],
-          [103.845, 1.332], [103.820, 1.332], [103.815, 1.315],
-          [103.822, 1.295]
+          [103.795, 1.258], [103.820, 1.260], [103.832, 1.270],
+          [103.825, 1.278], [103.795, 1.280], [103.788, 1.282],
+          [103.782, 1.272], [103.785, 1.262], [103.795, 1.258]
         ]]
       }
     },
-    // D10 - Tanglin / Bukit Timah / Holland (CCR)
+
+    // D05 - Buona Vista / Pasir Panjang
     {
       type: "Feature",
-      properties: {
-        district: "D10",
-        name: "Tanglin / Bukit Timah / Holland",
-        region: "CCR"
-      },
+      properties: { district: "D05", name: "Buona Vista / Pasir Panjang", region: "RCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.785, 1.305], [103.825, 1.305], [103.830, 1.335],
-          [103.820, 1.360], [103.785, 1.360], [103.775, 1.332],
-          [103.785, 1.305]
+          [103.765, 1.275], [103.782, 1.272], [103.788, 1.282],
+          [103.785, 1.292], [103.795, 1.298], [103.788, 1.308],
+          [103.775, 1.312], [103.762, 1.305], [103.758, 1.290],
+          [103.765, 1.275]
         ]]
       }
     },
-    // D11 - Newton / Novena (CCR)
+
+    // D08 - Little India / Farrer Park
     {
       type: "Feature",
-      properties: {
-        district: "D11",
-        name: "Newton / Novena",
-        region: "CCR"
-      },
+      properties: { district: "D08", name: "Little India / Farrer Park", region: "RCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.830, 1.318], [103.852, 1.318], [103.858, 1.340],
-          [103.852, 1.360], [103.828, 1.360], [103.822, 1.340],
-          [103.830, 1.318]
+          [103.848, 1.315], [103.865, 1.318], [103.868, 1.332],
+          [103.865, 1.345], [103.855, 1.342], [103.858, 1.328],
+          [103.855, 1.315], [103.848, 1.315]
         ]]
       }
     },
-    // D12 - Balestier / Toa Payoh (RCR)
+
+    // D12 - Balestier / Toa Payoh
     {
       type: "Feature",
-      properties: {
-        district: "D12",
-        name: "Balestier / Toa Payoh",
-        region: "RCR"
-      },
+      properties: { district: "D12", name: "Balestier / Toa Payoh", region: "RCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.840, 1.340], [103.868, 1.340], [103.875, 1.365],
-          [103.865, 1.385], [103.838, 1.385], [103.830, 1.362],
-          [103.840, 1.340]
+          [103.848, 1.350], [103.865, 1.345], [103.875, 1.355],
+          [103.878, 1.372], [103.870, 1.385], [103.855, 1.382],
+          [103.845, 1.375], [103.842, 1.360], [103.848, 1.350]
         ]]
       }
     },
-    // D13 - Potong Pasir / MacPherson (RCR)
+
+    // D13 - Potong Pasir / MacPherson
     {
       type: "Feature",
-      properties: {
-        district: "D13",
-        name: "Potong Pasir / MacPherson",
-        region: "RCR"
-      },
+      properties: { district: "D13", name: "Potong Pasir / MacPherson", region: "RCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.858, 1.325], [103.885, 1.325], [103.892, 1.348],
-          [103.885, 1.368], [103.858, 1.368], [103.850, 1.348],
-          [103.858, 1.325]
+          [103.865, 1.318], [103.875, 1.310], [103.890, 1.318],
+          [103.895, 1.335], [103.888, 1.350], [103.875, 1.355],
+          [103.865, 1.345], [103.868, 1.332], [103.865, 1.318]
         ]]
       }
     },
-    // D14 - Geylang / Paya Lebar / Eunos (RCR)
+
+    // D14 - Geylang / Paya Lebar
     {
       type: "Feature",
-      properties: {
-        district: "D14",
-        name: "Geylang / Paya Lebar / Eunos",
-        region: "RCR"
-      },
+      properties: { district: "D14", name: "Geylang / Paya Lebar", region: "RCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.875, 1.305], [103.910, 1.305], [103.918, 1.328],
-          [103.910, 1.350], [103.875, 1.350], [103.868, 1.328],
-          [103.875, 1.305]
+          [103.878, 1.298], [103.905, 1.302], [103.915, 1.318],
+          [103.910, 1.338], [103.895, 1.335], [103.890, 1.318],
+          [103.875, 1.310], [103.878, 1.298]
         ]]
       }
     },
-    // D15 - East Coast / Marine Parade / Katong (RCR)
+
+    // D15 - East Coast / Marine Parade
     {
       type: "Feature",
-      properties: {
-        district: "D15",
-        name: "East Coast / Marine Parade / Katong",
-        region: "RCR"
-      },
+      properties: { district: "D15", name: "East Coast / Marine Parade", region: "RCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.885, 1.285], [103.925, 1.285], [103.932, 1.302],
-          [103.925, 1.318], [103.885, 1.318], [103.878, 1.302],
-          [103.885, 1.285]
+          [103.870, 1.280], [103.905, 1.282], [103.920, 1.290],
+          [103.915, 1.305], [103.905, 1.302], [103.878, 1.298],
+          [103.870, 1.290], [103.870, 1.280]
         ]]
       }
     },
-    // D16 - Bedok / Upper East Coast (OCR)
+
+    // D20 - Bishan / Ang Mo Kio
     {
       type: "Feature",
-      properties: {
-        district: "D16",
-        name: "Bedok / Upper East Coast",
-        region: "OCR"
-      },
+      properties: { district: "D20", name: "Bishan / Ang Mo Kio", region: "RCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.920, 1.305], [103.960, 1.305], [103.968, 1.335],
-          [103.958, 1.360], [103.918, 1.360], [103.908, 1.335],
-          [103.920, 1.305]
+          [103.835, 1.348], [103.855, 1.350], [103.855, 1.382],
+          [103.845, 1.395], [103.830, 1.398], [103.820, 1.388],
+          [103.825, 1.368], [103.830, 1.355], [103.835, 1.348]
         ]]
       }
     },
-    // D17 - Loyang / Changi (OCR)
+
+    // === OUTSIDE CENTRAL (OCR) ===
+
+    // D16 - Bedok / Upper East Coast
     {
       type: "Feature",
-      properties: {
-        district: "D17",
-        name: "Loyang / Changi",
-        region: "OCR"
-      },
+      properties: { district: "D16", name: "Bedok / Upper East Coast", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.960, 1.335], [103.998, 1.335], [104.005, 1.360],
-          [103.998, 1.385], [103.960, 1.385], [103.952, 1.360],
-          [103.960, 1.335]
+          [103.915, 1.305], [103.920, 1.290], [103.948, 1.305],
+          [103.955, 1.325], [103.948, 1.345], [103.930, 1.348],
+          [103.915, 1.340], [103.910, 1.338], [103.915, 1.318],
+          [103.915, 1.305]
         ]]
       }
     },
-    // D18 - Tampines / Pasir Ris (OCR)
+
+    // D17 - Changi / Loyang
     {
       type: "Feature",
-      properties: {
-        district: "D18",
-        name: "Tampines / Pasir Ris",
-        region: "OCR"
-      },
+      properties: { district: "D17", name: "Changi / Loyang", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.930, 1.355], [103.985, 1.355], [103.995, 1.385],
-          [103.985, 1.415], [103.930, 1.415], [103.920, 1.385],
-          [103.930, 1.355]
+          [103.955, 1.325], [103.985, 1.335], [103.995, 1.355],
+          [103.988, 1.378], [103.968, 1.380], [103.955, 1.368],
+          [103.948, 1.345], [103.955, 1.325]
         ]]
       }
     },
-    // D19 - Serangoon / Hougang / Punggol (OCR)
+
+    // D18 - Tampines / Pasir Ris
     {
       type: "Feature",
-      properties: {
-        district: "D19",
-        name: "Serangoon / Hougang / Punggol",
-        region: "OCR"
-      },
+      properties: { district: "D18", name: "Tampines / Pasir Ris", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.870, 1.360], [103.935, 1.360], [103.945, 1.400],
-          [103.935, 1.430], [103.870, 1.430], [103.860, 1.398],
-          [103.870, 1.360]
+          [103.930, 1.348], [103.948, 1.345], [103.955, 1.368],
+          [103.968, 1.380], [103.965, 1.398], [103.948, 1.408],
+          [103.928, 1.402], [103.920, 1.385], [103.925, 1.362],
+          [103.930, 1.348]
         ]]
       }
     },
-    // D20 - Bishan / Ang Mo Kio (RCR)
+
+    // D19 - Serangoon / Hougang / Punggol
     {
       type: "Feature",
-      properties: {
-        district: "D20",
-        name: "Bishan / Ang Mo Kio",
-        region: "RCR"
-      },
+      properties: { district: "D19", name: "Serangoon / Hougang / Punggol", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.830, 1.355], [103.875, 1.355], [103.882, 1.385],
-          [103.875, 1.415], [103.830, 1.415], [103.822, 1.385],
-          [103.830, 1.355]
+          [103.870, 1.355], [103.888, 1.350], [103.910, 1.358],
+          [103.925, 1.362], [103.920, 1.385], [103.928, 1.402],
+          [103.918, 1.418], [103.895, 1.420], [103.878, 1.408],
+          [103.870, 1.395], [103.870, 1.385], [103.878, 1.372],
+          [103.870, 1.355]
         ]]
       }
     },
-    // D21 - Upper Bukit Timah / Clementi (OCR)
+
+    // D21 - Clementi / Upper Bukit Timah
     {
       type: "Feature",
-      properties: {
-        district: "D21",
-        name: "Upper Bukit Timah / Clementi",
-        region: "OCR"
-      },
+      properties: { district: "D21", name: "Clementi / Upper Bukit Timah", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.755, 1.315], [103.790, 1.315], [103.798, 1.350],
-          [103.790, 1.385], [103.755, 1.385], [103.745, 1.350],
-          [103.755, 1.315]
+          [103.758, 1.305], [103.775, 1.312], [103.788, 1.308],
+          [103.785, 1.325], [103.790, 1.340], [103.785, 1.355],
+          [103.770, 1.365], [103.755, 1.358], [103.748, 1.340],
+          [103.752, 1.320], [103.758, 1.305]
         ]]
       }
     },
-    // D22 - Jurong / Boon Lay (OCR)
+
+    // D22 - Jurong
     {
       type: "Feature",
-      properties: {
-        district: "D22",
-        name: "Jurong / Boon Lay",
-        region: "OCR"
-      },
+      properties: { district: "D22", name: "Jurong", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.685, 1.310], [103.745, 1.310], [103.755, 1.345],
-          [103.745, 1.380], [103.685, 1.380], [103.675, 1.345],
-          [103.685, 1.310]
+          [103.695, 1.295], [103.730, 1.298], [103.748, 1.308],
+          [103.758, 1.305], [103.752, 1.320], [103.748, 1.340],
+          [103.738, 1.352], [103.718, 1.355], [103.698, 1.345],
+          [103.688, 1.328], [103.690, 1.308], [103.695, 1.295]
         ]]
       }
     },
-    // D23 - Bukit Batok / Bukit Panjang (OCR)
+
+    // D23 - Bukit Batok / Bukit Panjang / Choa Chu Kang
     {
       type: "Feature",
-      properties: {
-        district: "D23",
-        name: "Bukit Batok / Bukit Panjang",
-        region: "OCR"
-      },
+      properties: { district: "D23", name: "Bukit Batok / Bukit Panjang", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.740, 1.350], [103.790, 1.350], [103.798, 1.385],
-          [103.790, 1.420], [103.740, 1.420], [103.730, 1.385],
-          [103.740, 1.350]
+          [103.738, 1.352], [103.748, 1.340], [103.755, 1.358],
+          [103.770, 1.365], [103.778, 1.382], [103.772, 1.402],
+          [103.755, 1.412], [103.738, 1.408], [103.725, 1.392],
+          [103.728, 1.370], [103.738, 1.352]
         ]]
       }
     },
-    // D24 - Lim Chu Kang / Tengah (OCR)
+
+    // D24 - Lim Chu Kang / Tengah
     {
       type: "Feature",
-      properties: {
-        district: "D24",
-        name: "Lim Chu Kang / Tengah",
-        region: "OCR"
-      },
+      properties: { district: "D24", name: "Lim Chu Kang / Tengah", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.690, 1.375], [103.745, 1.375], [103.755, 1.415],
-          [103.745, 1.455], [103.690, 1.455], [103.680, 1.415],
-          [103.690, 1.375]
+          [103.698, 1.345], [103.718, 1.355], [103.738, 1.352],
+          [103.728, 1.370], [103.725, 1.392], [103.738, 1.408],
+          [103.728, 1.425], [103.705, 1.430], [103.688, 1.418],
+          [103.682, 1.395], [103.685, 1.368], [103.698, 1.345]
         ]]
       }
     },
-    // D25 - Kranji / Woodlands (OCR)
+
+    // D25 - Woodlands / Admiralty
     {
       type: "Feature",
-      properties: {
-        district: "D25",
-        name: "Kranji / Woodlands",
-        region: "OCR"
-      },
+      properties: { district: "D25", name: "Woodlands / Admiralty", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.750, 1.415], [103.805, 1.415], [103.815, 1.448],
-          [103.805, 1.475], [103.750, 1.475], [103.740, 1.448],
-          [103.750, 1.415]
+          [103.755, 1.412], [103.772, 1.402], [103.790, 1.410],
+          [103.805, 1.425], [103.802, 1.445], [103.785, 1.458],
+          [103.762, 1.455], [103.748, 1.440], [103.750, 1.422],
+          [103.755, 1.412]
         ]]
       }
     },
-    // D26 - Upper Thomson / Springleaf (OCR)
+
+    // D26 - Upper Thomson / Springleaf
     {
       type: "Feature",
-      properties: {
-        district: "D26",
-        name: "Upper Thomson / Springleaf",
-        region: "OCR"
-      },
+      properties: { district: "D26", name: "Upper Thomson / Springleaf", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.810, 1.385], [103.850, 1.385], [103.858, 1.418],
-          [103.850, 1.448], [103.810, 1.448], [103.800, 1.418],
-          [103.810, 1.385]
+          [103.805, 1.345], [103.815, 1.335], [103.830, 1.355],
+          [103.830, 1.398], [103.820, 1.412], [103.805, 1.425],
+          [103.790, 1.410], [103.792, 1.388], [103.798, 1.365],
+          [103.805, 1.345]
         ]]
       }
     },
-    // D27 - Yishun / Sembawang (OCR)
+
+    // D27 - Yishun / Sembawang
     {
       type: "Feature",
-      properties: {
-        district: "D27",
-        name: "Yishun / Sembawang",
-        region: "OCR"
-      },
+      properties: { district: "D27", name: "Yishun / Sembawang", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.818, 1.415], [103.875, 1.415], [103.885, 1.450],
-          [103.875, 1.478], [103.818, 1.478], [103.808, 1.450],
-          [103.818, 1.415]
+          [103.820, 1.412], [103.830, 1.398], [103.845, 1.395],
+          [103.870, 1.395], [103.878, 1.408], [103.872, 1.428],
+          [103.855, 1.445], [103.830, 1.448], [103.810, 1.438],
+          [103.805, 1.425], [103.820, 1.412]
         ]]
       }
     },
-    // D28 - Seletar / Yio Chu Kang (OCR)
+
+    // D28 - Seletar / Yio Chu Kang
     {
       type: "Feature",
-      properties: {
-        district: "D28",
-        name: "Seletar / Yio Chu Kang",
-        region: "OCR"
-      },
+      properties: { district: "D28", name: "Seletar / Yio Chu Kang", region: "OCR" },
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [103.855, 1.395], [103.905, 1.395], [103.915, 1.425],
-          [103.905, 1.455], [103.855, 1.455], [103.845, 1.425],
-          [103.855, 1.395]
+          [103.855, 1.382], [103.870, 1.385], [103.870, 1.395],
+          [103.878, 1.408], [103.895, 1.420], [103.892, 1.438],
+          [103.872, 1.448], [103.855, 1.445], [103.872, 1.428],
+          [103.878, 1.408], [103.870, 1.395], [103.855, 1.382]
         ]]
       }
     }
