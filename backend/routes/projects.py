@@ -530,7 +530,7 @@ def get_hot_projects():
             for s in schools
         ]
 
-        results = db.session.execute(sql, {"limit": limit}).fetchall()
+        results = db.session.execute(sql, params).fetchall()
 
         # Format response - use JSON lookup for total_units
         projects = []
