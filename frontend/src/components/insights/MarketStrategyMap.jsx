@@ -189,10 +189,10 @@ function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered }) {
 }
 
 // =============================================================================
-// HOVER CARD COMPONENT
+// HOVER CARD COMPONENT - Fixed position above legend
 // =============================================================================
 
-function HoverCard({ district, data, position }) {
+function HoverCard({ district, data }) {
   if (!district || !data) return null;
 
   const yoyValue = data.yoy_pct;
@@ -200,16 +200,11 @@ function HoverCard({ district, data, position }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -10 }}
       transition={{ duration: 0.15 }}
-      className="absolute z-50 pointer-events-none"
-      style={{
-        left: position.x,
-        top: position.y - 120,
-        transform: 'translateX(-50%)',
-      }}
+      className="absolute z-50 pointer-events-none bottom-4 left-[180px] md:left-[200px]"
     >
       <div className="bg-white rounded-lg shadow-xl border border-[#94B4C1]/50 p-3 min-w-[180px]">
         {/* Header */}
@@ -268,9 +263,6 @@ function HoverCard({ district, data, position }) {
             </div>
           )}
         </div>
-
-        {/* Arrow */}
-        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-[#94B4C1]/50 rotate-45" />
       </div>
     </motion.div>
   );
@@ -382,8 +374,6 @@ export default function MarketStrategyMap() {
   const [selectedBed, setSelectedBed] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('12m');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
-  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
-  const mapContainerRef = useRef(null);
 
   const [viewState, setViewState] = useState({
     longitude: MAP_CONFIG.center.longitude,
@@ -454,15 +444,6 @@ export default function MarketStrategyMap() {
   }, []);
 
   // Handle hover
-  const handleHover = useCallback((district, data, event) => {
-    if (!mapContainerRef.current) return;
-    const rect = mapContainerRef.current.getBoundingClientRect();
-    const x = (event?.clientX || 0) - rect.left;
-    const y = (event?.clientY || 0) - rect.top;
-    setHoverPosition({ x, y });
-    setHoveredDistrict({ district, data });
-  }, []);
-
   const handleLeave = useCallback(() => {
     setHoveredDistrict(null);
   }, []);
@@ -524,8 +505,8 @@ export default function MarketStrategyMap() {
         </div>
       </div>
 
-      {/* Map container */}
-      <div ref={mapContainerRef} className="relative" style={{ height: '480px' }}>
+      {/* Map container - responsive height based on viewport */}
+      <div className="relative h-[50vh] min-h-[400px] md:h-[60vh] md:min-h-[500px] lg:h-[65vh] lg:min-h-[550px]">
         {/* Loading overlay */}
         <AnimatePresence>
           {loading && (
@@ -626,13 +607,12 @@ export default function MarketStrategyMap() {
           })}
         </Map>
 
-        {/* Hover card */}
+        {/* Hover card - fixed position next to legend */}
         <AnimatePresence>
           {hoveredDistrict && (
             <HoverCard
               district={hoveredDistrict.district}
               data={hoveredDistrict.data}
-              position={hoverPosition}
             />
           )}
         </AnimatePresence>
