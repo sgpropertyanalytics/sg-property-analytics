@@ -23,7 +23,7 @@ export function PowerBIFilterProvider({ children }) {
     dateRange: { start: null, end: null },  // null = all
     districts: [],                           // empty = all
     bedroomTypes: [],                        // empty = all (will default to 2,3,4)
-    segment: null,                           // null = all, 'CCR' | 'RCR' | 'OCR'
+    segments: [],                            // empty = all, can contain 'CCR', 'RCR', 'OCR'
     saleType: null,                          // null = all, 'New Sale' | 'Resale'
     psfRange: { min: null, max: null },      // null = no restriction
     sizeRange: { min: null, max: null },     // null = no restriction
@@ -178,8 +178,24 @@ export function PowerBIFilterProvider({ children }) {
     });
   }, []);
 
-  const setSegment = useCallback((segment) => {
-    setFilters(prev => ({ ...prev, segment }));
+  const setSegments = useCallback((segments) => {
+    setFilters(prev => ({
+      ...prev,
+      segments: Array.isArray(segments) ? segments : [segments]
+    }));
+  }, []);
+
+  const toggleSegment = useCallback((segment) => {
+    setFilters(prev => {
+      const segments = [...prev.segments];
+      const index = segments.indexOf(segment);
+      if (index > -1) {
+        segments.splice(index, 1);
+      } else {
+        segments.push(segment);
+      }
+      return { ...prev, segments };
+    });
   }, []);
 
   const setSaleType = useCallback((saleType) => {
@@ -220,7 +236,7 @@ export function PowerBIFilterProvider({ children }) {
       dateRange: { start: null, end: null },
       districts: [],
       bedroomTypes: [],
-      segment: null,
+      segments: [],
       saleType: null,
       psfRange: { min: null, max: null },
       sizeRange: { min: null, max: null },
@@ -449,9 +465,9 @@ export function PowerBIFilterProvider({ children }) {
           }
           break;
         case 'region':
-          // Only apply if no segment selected in sidebar
-          if (!filters.segment) {
-            combined.segment = crossFilter.value;
+          // Only apply if no segments selected in sidebar
+          if (filters.segments.length === 0) {
+            combined.segments = [crossFilter.value];
           }
           break;
         // NOTE: 'project' case removed - project is drill-through only (opens ProjectDetailPanel)
@@ -546,7 +562,7 @@ export function PowerBIFilterProvider({ children }) {
         // At district level - filter by the region (segment) we drilled into
         const regionBreadcrumb = breadcrumbs.location[0];
         if (regionBreadcrumb?.value) {
-          combined.segment = String(regionBreadcrumb.value);
+          combined.segments = [String(regionBreadcrumb.value)];
         }
       }
       // At 'region' level - no location filters from breadcrumbs (showing all regions)
@@ -613,11 +629,11 @@ export function PowerBIFilterProvider({ children }) {
     if (excludeOwnDimension !== 'segment') {
       if (excludeLocationDrill) {
         // Only apply sidebar segment filter, ignore location drill breadcrumbs
-        if (filters.segment) {
-          params.segment = filters.segment;
+        if (filters.segments.length > 0) {
+          params.segment = filters.segments.join(',');
         }
-      } else if (activeFilters.segment) {
-        params.segment = activeFilters.segment;
+      } else if (activeFilters.segments.length > 0) {
+        params.segment = activeFilters.segments.join(',');
       }
     }
     // Skip if this is an anchor chart for sale_type dimension
@@ -668,7 +684,7 @@ export function PowerBIFilterProvider({ children }) {
     if (filters.dateRange.start || filters.dateRange.end) count++;
     if (filters.districts.length > 0) count++;
     if (filters.bedroomTypes.length > 0) count++;
-    if (filters.segment) count++;
+    if (filters.segments.length > 0) count++;
     if (filters.saleType) count++;
     if (filters.psfRange.min !== null || filters.psfRange.max !== null) count++;
     if (filters.sizeRange.min !== null || filters.sizeRange.max !== null) count++;
@@ -699,7 +715,8 @@ export function PowerBIFilterProvider({ children }) {
     toggleDistrict,
     setBedroomTypes,
     toggleBedroomType,
-    setSegment,
+    setSegments,
+    toggleSegment,
     setSaleType,
     setPsfRange,
     setSizeRange,

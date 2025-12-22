@@ -105,9 +105,10 @@ def dashboard():
                 bedrooms = [int(b.strip()) for b in request.args.get('bedroom').split(',') if b.strip()]
                 filters['bedrooms'] = bedrooms
 
-            # Segment filter
+            # Segment filter - supports comma-separated values (e.g., "CCR,RCR")
             if request.args.get('segment'):
-                filters['segment'] = request.args.get('segment').strip().upper()
+                segments = [s.strip().upper() for s in request.args.get('segment').split(',') if s.strip()]
+                filters['segments'] = segments
 
             # Sale type filter
             if request.args.get('sale_type'):
@@ -574,16 +575,17 @@ def transactions():
         end_dt = datetime(year, month, last_day)
         query = query.filter(Transaction.transaction_date <= end_dt)
     
-    # Segment filter (requires market segment calculation)
+    # Segment filter (supports comma-separated values e.g., "CCR,RCR")
     if segment:
         from services.data_processor import _get_market_segment
+        segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
         all_districts = db.session.query(Transaction.district).distinct().all()
         segment_districts = [
-            d[0] for d in all_districts 
-            if _get_market_segment(d[0]) == segment.strip().upper()
+            d[0] for d in all_districts
+            if _get_market_segment(d[0]) in segments
         ]
         query = query.filter(Transaction.district.in_(segment_districts))
-    
+
     transactions = query.limit(limit).all()
     result = [t.to_dict() for t in transactions]
     
@@ -1300,16 +1302,17 @@ def aggregate():
         filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
         filters_applied["bedroom"] = bedrooms
 
-    # Segment filter (market segment based on district)
+    # Segment filter (supports comma-separated values e.g., "CCR,RCR")
     segment = request.args.get("segment")
     if segment:
+        segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
         all_districts = db.session.query(Transaction.district).distinct().all()
         segment_districts = [
             d[0] for d in all_districts
-            if _get_market_segment(d[0]) == segment.strip().upper()
+            if _get_market_segment(d[0]) in segments
         ]
         filter_conditions.append(Transaction.district.in_(segment_districts))
-        filters_applied["segment"] = segment.upper()
+        filters_applied["segment"] = segments
 
     # Sale type filter (case-insensitive to handle data variations)
     sale_type = request.args.get("sale_type")
@@ -1632,14 +1635,15 @@ def transactions_list():
         bedrooms = [int(b.strip()) for b in bedroom_param.split(",") if b.strip()]
         query = query.filter(Transaction.bedroom_count.in_(bedrooms))
 
-    # Segment filter
+    # Segment filter (supports comma-separated values e.g., "CCR,RCR")
     segment = request.args.get("segment")
     if segment:
         from services.data_processor import _get_market_segment
+        segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
         all_districts = db.session.query(Transaction.district).distinct().all()
         segment_districts = [
             d[0] for d in all_districts
-            if _get_market_segment(d[0]) == segment.strip().upper()
+            if _get_market_segment(d[0]) in segments
         ]
         query = query.filter(Transaction.district.in_(segment_districts))
 

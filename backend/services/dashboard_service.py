@@ -306,12 +306,22 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
         normalized = [normalize_district(d) for d in districts]
         conditions.append(Transaction.district.in_(normalized))
 
-    # Segment (market region) - convert to districts
-    segment = filters.get('segment')
-    if segment and not districts:  # Only apply if no explicit districts
-        segment_districts = get_districts_for_segment(segment)
-        if segment_districts:
-            conditions.append(Transaction.district.in_(segment_districts))
+    # Segment (market region) - convert to districts, supports multiple segments
+    segments = filters.get('segments', [])
+    if not segments:
+        # Backwards compatibility: check for single 'segment' key
+        single_segment = filters.get('segment')
+        if single_segment:
+            segments = [single_segment]
+
+    if segments and not districts:  # Only apply if no explicit districts
+        all_segment_districts = []
+        for seg in segments:
+            seg_districts = get_districts_for_segment(seg)
+            if seg_districts:
+                all_segment_districts.extend(seg_districts)
+        if all_segment_districts:
+            conditions.append(Transaction.district.in_(all_segment_districts))
 
     # Bedrooms
     bedrooms = filters.get('bedrooms', [])
@@ -511,13 +521,26 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
         where_parts.append(f"district IN ({placeholders})")
         for i, d in enumerate(normalized):
             params[f'district_{i}'] = d
-    elif filters.get('segment'):
-        segment_districts = get_districts_for_segment(filters['segment'])
-        if segment_districts:
-            placeholders = ','.join([f":seg_district_{i}" for i in range(len(segment_districts))])
-            where_parts.append(f"district IN ({placeholders})")
-            for i, d in enumerate(segment_districts):
-                params[f'seg_district_{i}'] = d
+    else:
+        # Handle segments (supports multiple segments)
+        segments = filters.get('segments', [])
+        if not segments:
+            # Backwards compatibility: check for single 'segment' key
+            single_segment = filters.get('segment')
+            if single_segment:
+                segments = [single_segment]
+
+        if segments:
+            all_segment_districts = []
+            for seg in segments:
+                seg_districts = get_districts_for_segment(seg)
+                if seg_districts:
+                    all_segment_districts.extend(seg_districts)
+            if all_segment_districts:
+                placeholders = ','.join([f":seg_district_{i}" for i in range(len(all_segment_districts))])
+                where_parts.append(f"district IN ({placeholders})")
+                for i, d in enumerate(all_segment_districts):
+                    params[f'seg_district_{i}'] = d
 
     bedrooms = filters.get('bedrooms', [])
     if bedrooms:

@@ -19,7 +19,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     toggleDistrict,
     setBedroomTypes,
     toggleBedroomType,
-    setSegment,
+    toggleSegment,
     setSaleType,
     setTenure,
     setPropertyAge,
@@ -120,22 +120,24 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           expanded={expandedSections.location}
           onToggle={() => toggleSection('location')}
           activeCount={
-            (filters.segment ? 1 : 0) +
+            (filters.segments.length > 0 ? 1 : 0) +
             (filters.districts.length > 0 ? 1 : 0)
           }
         >
-          {/* Market Segment Buttons */}
+          {/* Market Segment Buttons - multi-select like bedroom types */}
           <FilterGroup label="Market Segment">
             <div className="grid grid-cols-3 gap-2">
               {['CCR', 'RCR', 'OCR'].map(seg => (
                 <button
                   type="button"
                   key={seg}
-                  onClick={(e) => { e.preventDefault(); setSegment(filters.segment === seg ? null : seg); }}
+                  onClick={(e) => { e.preventDefault(); toggleSegment(seg); }}
                   className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
-                    filters.segment === seg
+                    filters.segments.includes(seg)
                       ? 'bg-[#547792] text-white border-[#547792]'
-                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+                      : filters.segments.length === 0
+                        ? 'bg-white text-[#213448] border-[#94B4C1]'
+                        : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
                   }`}
                 >
                   {seg}
