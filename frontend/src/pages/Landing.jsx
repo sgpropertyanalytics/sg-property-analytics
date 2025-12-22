@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -7,7 +8,8 @@ import {
   Map,
   ShieldCheck,
   LineChart,
-  TrendingUp
+  TrendingUp,
+  GripVertical
 } from 'lucide-react';
 
 /**
@@ -63,8 +65,11 @@ const LandingPage = () => {
       <div className="relative z-10">
         <HeroSection navigate={navigate} />
 
-        {/* Bento Grid - Increased top padding to compensate for removed Trust Bar */}
-        <section className="pt-24 md:pt-32 pb-16 md:pb-24 px-4 md:px-6 relative z-10">
+        {/* Clarity Slider - Before/After comparison */}
+        <ClaritySlider />
+
+        {/* Bento Grid */}
+        <section className="pt-16 md:pt-24 pb-16 md:pb-24 px-4 md:px-6 relative z-10">
           <div className="max-w-7xl mx-auto">
             <div className="mb-10 md:mb-16 text-center">
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-3 md:mb-4 tracking-tight">
@@ -135,6 +140,152 @@ const LandingPage = () => {
     </div>
   );
 };
+
+/**
+ * Clarity Slider - Before/After comparison
+ * Shows raw data vs. PropAnalytics visualization - Touch & mouse friendly
+ */
+function ClaritySlider() {
+  const [sliderPosition, setSliderPosition] = useState(50);
+  const containerRef = useRef(null);
+  const isDragging = useRef(false);
+
+  const updateSliderPosition = (clientX) => {
+    if (!containerRef.current) return;
+    const { left, width } = containerRef.current.getBoundingClientRect();
+    const x = clientX - left;
+    const percentage = Math.max(0, Math.min(100, (x / width) * 100));
+    setSliderPosition(percentage);
+  };
+
+  const handleMouseDown = (e) => {
+    isDragging.current = true;
+    updateSliderPosition(e.clientX);
+  };
+
+  const handleTouchStart = (e) => {
+    isDragging.current = true;
+    updateSliderPosition(e.touches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    if (isDragging.current) {
+      updateSliderPosition(e.touches[0].clientX);
+    }
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (isDragging.current) updateSliderPosition(e.clientX);
+    };
+    const handleMouseUp = () => {
+      isDragging.current = false;
+    };
+    const handleTouchEnd = () => {
+      isDragging.current = false;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
+
+  return (
+    <section className="py-12 md:py-20 relative z-20">
+      <div className="max-w-5xl mx-auto px-4 md:px-6">
+
+        <div className="text-center mb-8 md:mb-10">
+          <h2 className="text-xl md:text-2xl font-bold text-[#213448] mb-2 tracking-tight">
+            Turn noise into signal.
+          </h2>
+          <p className="text-[#547792] text-sm md:text-base">
+            Drag to see how we process raw URA data into actionable insights.
+          </p>
+        </div>
+
+        {/* Slider Container */}
+        <div
+          ref={containerRef}
+          className="relative w-full h-[300px] md:h-[400px] rounded-2xl md:rounded-3xl overflow-hidden border border-[#94B4C1]/30 shadow-2xl cursor-col-resize select-none touch-none"
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+        >
+
+          {/* LAYER 1: The "Before" (Raw Data) */}
+          <div className="absolute inset-0 bg-[#EAE0CF]/20 flex flex-col p-4 md:p-8 select-none">
+            <div className="font-mono text-[8px] md:text-[10px] text-[#213448]/40 space-y-1 md:space-y-2 opacity-50 overflow-hidden">
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div key={i} className="flex justify-between gap-2 md:gap-4 whitespace-nowrap">
+                  <span>2024-01-{String(i + 10).padStart(2, '0')}</span>
+                  <span className="hidden sm:inline">CONDO</span>
+                  <span>D{(i % 15) + 1}</span>
+                  <span className="hidden md:inline">RESALE</span>
+                  <span>${(1.2 + i * 0.1).toFixed(2)}M</span>
+                  <span className="hidden sm:inline">{1200 + i * 15} sqft</span>
+                  <span>${1800 + i * 10} psf</span>
+                </div>
+              ))}
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="bg-[#213448]/10 backdrop-blur-sm px-3 md:px-4 py-2 rounded-lg text-[#213448] font-bold text-xs md:text-sm tracking-widest border border-[#213448]/10">
+                RAW TRANSACTION DATA
+              </span>
+            </div>
+          </div>
+
+          {/* LAYER 2: The "After" (PropAnalytics View) */}
+          <div
+            className="absolute inset-0 bg-[#FDFBF7]"
+            style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
+          >
+            <div className="h-full w-full p-4 md:p-8 flex flex-col relative">
+              <div className="absolute top-4 md:top-8 right-4 md:right-8 flex gap-2">
+                <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#213448]" />
+                <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#547792]" />
+              </div>
+
+              {/* Chart Bars */}
+              <div className="flex-1 flex items-end gap-1.5 md:gap-2 px-2 md:px-4 pb-6 md:pb-8">
+                {[40, 65, 45, 80, 55, 90, 70, 85].map((h, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${h}%` }}
+                    transition={{ duration: 0.5, delay: i * 0.05 }}
+                    className="flex-1 bg-[#213448] rounded-t-md opacity-90"
+                  />
+                ))}
+              </div>
+
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="bg-white/80 backdrop-blur-md px-3 md:px-4 py-2 rounded-lg text-[#547792] font-bold text-xs md:text-sm tracking-widest shadow-lg border border-[#94B4C1]/20">
+                  MARKET CLARIFIED
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Drag Handle */}
+          <div
+            className="absolute top-0 bottom-0 w-1 bg-[#213448] z-30 flex items-center justify-center shadow-[0_0_20px_rgba(33,52,72,0.3)]"
+            style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+          >
+            <div className="w-10 h-10 md:w-8 md:h-8 bg-[#213448] rounded-full flex items-center justify-center shadow-xl border-2 border-[#FDFBF7] cursor-grab active:cursor-grabbing active:scale-110 transition-transform touch-action-manipulation">
+              <GripVertical className="w-4 h-4 md:w-4 md:h-4 text-[#FDFBF7]" />
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  );
+}
 
 /**
  * Hero Section - Transparent, inherits global texture and glow
