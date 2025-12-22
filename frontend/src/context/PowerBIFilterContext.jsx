@@ -22,7 +22,7 @@ export function PowerBIFilterProvider({ children }) {
   const [filters, setFilters] = useState({
     dateRange: { start: null, end: null },  // null = all
     districts: [],                           // empty = all
-    bedroomTypes: [],                        // empty = all (will default to 2,3,4)
+    bedroomTypes: [],                        // empty = all (supports 1,2,3,4,5)
     segments: [],                            // empty = all, can contain 'CCR', 'RCR', 'OCR'
     saleType: null,                          // null = all, 'New Sale' | 'Resale'
     psfRange: { min: null, max: null },      // null = no restriction

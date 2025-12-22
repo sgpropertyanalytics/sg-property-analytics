@@ -418,7 +418,7 @@ def get_hot_projects():
         params = {"limit": limit}
 
         # Bedroom filter - filter transactions by bedroom type
-        # Note: Frontend "4B+" sends "4" meaning "4 or more bedrooms"
+        # Note: Frontend sends "4" for 4BR, "5" for 5BR+ meaning "this many or more"
         if bedroom:
             try:
                 bedroom_val = int(bedroom)

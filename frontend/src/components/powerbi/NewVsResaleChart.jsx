@@ -129,7 +129,7 @@ export function NewVsResaleChart({ height = 350 }) {
     if (safeFilters.segment) {
       parts.push(safeFilters.segment);
     }
-    if (safeFilters.bedroomTypes.length > 0 && safeFilters.bedroomTypes.length < 4) {
+    if (safeFilters.bedroomTypes.length > 0 && safeFilters.bedroomTypes.length < 5) {
       parts.push(`${safeFilters.bedroomTypes.join(',')}BR`);
     }
     return parts.length > 0 ? parts.join(' · ') : 'All data';
