@@ -40,11 +40,11 @@ const COLORS = {
   sand: '#EAE0CF',
 };
 
-// Region fill colors (distinct shading for clear market segment separation)
+// Region fill colors (strong shading for clear market segment separation)
 const REGION_FILLS = {
-  CCR: 'rgba(33, 52, 72, 0.25)',   // Deep Navy - Premium/Core Central
-  RCR: 'rgba(84, 119, 146, 0.20)', // Ocean Blue - City Fringe
-  OCR: 'rgba(148, 180, 193, 0.15)', // Sky Blue - Suburban
+  CCR: 'rgba(33, 52, 72, 0.40)',   // Deep Navy - Premium/Core Central
+  RCR: 'rgba(84, 119, 146, 0.32)', // Ocean Blue - City Fringe
+  OCR: 'rgba(148, 180, 193, 0.25)', // Sky Blue - Suburban
 };
 
 // Filter options
@@ -189,7 +189,7 @@ function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered }) {
 }
 
 // =============================================================================
-// HOVER CARD COMPONENT - Fixed position above legend
+// HOVER CARD COMPONENT - Fixed position below legend (top-left)
 // =============================================================================
 
 function HoverCard({ district, data }) {
@@ -200,13 +200,13 @@ function HoverCard({ district, data }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -10 }}
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.15 }}
-      className="absolute z-50 pointer-events-none bottom-4 left-[180px] md:left-[200px]"
+      className="absolute z-50 pointer-events-none top-[220px] left-4"
     >
-      <div className="bg-white rounded-lg shadow-xl border border-[#94B4C1]/50 p-3 min-w-[180px]">
+      <div className="bg-white rounded-lg shadow-xl border border-[#94B4C1]/50 p-3 w-[165px]">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <span className="font-bold text-[#213448] text-sm">
@@ -617,23 +617,23 @@ export default function MarketStrategyMap() {
           )}
         </AnimatePresence>
 
-        {/* Legend - Market Segments */}
-        <div className="absolute bottom-4 left-4 z-20">
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-[#94B4C1]/50 shadow-md p-2.5">
+        {/* Legend - Market Segments (top-left) */}
+        <div className="absolute top-4 left-4 z-20">
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-[#94B4C1]/50 shadow-md p-2.5 w-[165px]">
             <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-2">
               Market Segments
             </p>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(33, 52, 72, 0.35)' }} />
+                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(33, 52, 72, 0.50)' }} />
                 <span className="text-[10px] text-[#213448]">CCR - Core Central</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(84, 119, 146, 0.30)' }} />
+                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(84, 119, 146, 0.42)' }} />
                 <span className="text-[10px] text-[#213448]">RCR - City Fringe</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(148, 180, 193, 0.25)' }} />
+                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(148, 180, 193, 0.35)' }} />
                 <span className="text-[10px] text-[#213448]">OCR - Suburban</span>
               </div>
             </div>
