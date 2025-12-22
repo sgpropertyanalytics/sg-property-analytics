@@ -1,13 +1,14 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getTransactionsList, getFilterOptions } from '../api/client';
 import { DISTRICT_NAMES, isDistrictInRegion } from '../constants';
+import { PriceDistributionHeroChart } from './PriceDistributionHeroChart';
 
 /**
  * ValueParityPanel - Budget-based property search tool
  *
  * Features:
  * - Budget slider (required)
- * - Optional filters: Bedroom, Region, District, Tenure, Sale Type, Lease Age
+ * - Optional filters: Bedroom, Region, District, Tenure, Sale Type, Property Age
  * - Shows transactions where price <= budget
  * - Reuses same table structure as TransactionDataTable
  */
@@ -52,6 +53,15 @@ export function ValueParityPanel() {
     order: 'desc',
   });
 
+  // Chart data state - holds all transactions for histogram
+  // We fetch up to 5000 transactions for the chart to ensure good distribution
+  const [chartTransactions, setChartTransactions] = useState([]);
+  const [chartLoading, setChartLoading] = useState(false);
+  const chartFetchAbortRef = useRef(null);
+
+  // Selected price range from histogram click (for filtering table)
+  const [selectedPriceRange, setSelectedPriceRange] = useState(null);
+
   // Load filter options on mount
   useEffect(() => {
     const loadFilterOptions = async () => {
@@ -70,27 +80,24 @@ export function ValueParityPanel() {
   }, []);
 
   // Fetch transactions based on budget and filters
-  const fetchTransactions = useCallback(async (page = 1) => {
-    if (!budget || budget <= 0) {
-      setError('Please select a valid budget');
-      return;
-    }
-
+  const fetchTransactions = useCallback(async (page = 1, priceRange = null) => {
     setLoading(true);
     setError(null);
     setHasSearched(true);
 
     try {
-      // +/- $100k range around the target budget
-      const priceRangeBuffer = 100000;
       const params = {
         page,
         limit: pagination.limit,
         sort_by: sortConfig.column,
         sort_order: sortConfig.order,
-        price_min: Math.max(0, budget - priceRangeBuffer),
-        price_max: budget + priceRangeBuffer,
       };
+
+      // Apply price range filter if a histogram bin is selected
+      if (priceRange) {
+        params.price_min = priceRange.start;
+        params.price_max = priceRange.end;
+      }
 
       // Add optional filters
       if (bedroom) {
@@ -126,13 +133,78 @@ export function ValueParityPanel() {
     } finally {
       setLoading(false);
     }
-  }, [budget, bedroom, region, district, tenure, saleType, leaseAge, pagination.limit, sortConfig]);
+  }, [bedroom, region, district, tenure, saleType, leaseAge, pagination.limit, sortConfig]);
+
+  // Fetch all transactions for chart histogram (separate from paginated table)
+  // This fetches up to 5000 transactions to ensure a representative distribution
+  const fetchChartData = useCallback(async () => {
+    // Cancel any pending chart fetch
+    if (chartFetchAbortRef.current) {
+      chartFetchAbortRef.current.abort();
+    }
+    chartFetchAbortRef.current = new AbortController();
+
+    setChartLoading(true);
+
+    try {
+      const params = {
+        page: 1,
+        limit: 5000, // Fetch up to 5000 transactions for histogram
+        sort_by: 'price',
+        sort_order: 'asc',
+      };
+
+      // Add optional filters (same as table)
+      if (bedroom) params.bedroom = bedroom;
+      if (region) params.segment = region;
+      if (district) params.district = district;
+      if (tenure) params.tenure = tenure;
+      if (saleType) params.sale_type = saleType;
+      if (leaseAge) params.lease_age = leaseAge;
+
+      const response = await getTransactionsList(params);
+      setChartTransactions(response.data.transactions || []);
+    } catch (err) {
+      // Ignore abort errors
+      if (err.name !== 'AbortError') {
+        console.error('Error fetching chart data:', err);
+      }
+    } finally {
+      setChartLoading(false);
+    }
+  }, [bedroom, region, district, tenure, saleType, leaseAge]);
 
   // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
     setPagination(prev => ({ ...prev, page: 1 }));
-    fetchTransactions(1);
+    setSelectedPriceRange(null); // Reset any histogram filter
+    fetchTransactions(1, null);
+    fetchChartData(); // Also fetch data for the histogram chart
+  };
+
+  // Handle histogram bin click - filter table to show transactions in that price range
+  const handleBinClick = (priceRange) => {
+    if (selectedPriceRange &&
+        selectedPriceRange.start === priceRange.start &&
+        selectedPriceRange.end === priceRange.end) {
+      // Clicking same bin again clears the filter
+      setSelectedPriceRange(null);
+      setPagination(prev => ({ ...prev, page: 1 }));
+      fetchTransactions(1, null);
+    } else {
+      // Apply new price range filter
+      setSelectedPriceRange(priceRange);
+      setPagination(prev => ({ ...prev, page: 1 }));
+      fetchTransactions(1, priceRange);
+    }
+  };
+
+  // Clear histogram filter
+  const clearPriceRangeFilter = () => {
+    setSelectedPriceRange(null);
+    setPagination(prev => ({ ...prev, page: 1 }));
+    fetchTransactions(1, null);
   };
 
   // Handle sort
@@ -145,15 +217,15 @@ export function ValueParityPanel() {
 
   // Re-fetch when sort changes (if we have searched)
   useEffect(() => {
-    if (hasSearched && budget) {
-      fetchTransactions(1);
+    if (hasSearched) {
+      fetchTransactions(1, selectedPriceRange);
     }
   }, [sortConfig]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
-      fetchTransactions(newPage);
+      fetchTransactions(newPage, selectedPriceRange);
     }
   };
 
@@ -435,19 +507,19 @@ export function ValueParityPanel() {
                     </select>
                   </div>
 
-                  {/* Lease Age */}
+                  {/* Property Age */}
                   <div>
-                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Lease Age</label>
+                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Property Age</label>
                     <select
                       value={leaseAge}
                       onChange={(e) => setLeaseAge(e.target.value)}
                       className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
                     >
                       <option value="">All</option>
-                      <option value="0-5">0-5 years</option>
-                      <option value="5-10">5-10 years</option>
-                      <option value="10-20">10-20 years</option>
-                      <option value="20+">20+ years</option>
+                      <option value="0-5">New / Recently TOP (≤5 yrs)</option>
+                      <option value="5-10">Young Resale (6-10 yrs)</option>
+                      <option value="10-20">Mature (11-20 yrs)</option>
+                      <option value="20+">Old (&gt;20 yrs)</option>
                     </select>
                   </div>
                 </div>
@@ -457,18 +529,51 @@ export function ValueParityPanel() {
         </form>
       </div>
 
+      {/* Price Distribution Hero Chart - shows where buyer's price falls in the distribution */}
+      {hasSearched && (
+        <PriceDistributionHeroChart
+          buyerPrice={budget}
+          transactions={chartTransactions}
+          loading={chartLoading}
+          height={280}
+          activeFilters={{
+            bedroom,
+            region,
+            district,
+            tenure,
+            saleType,
+            leaseAge
+          }}
+          onBinClick={handleBinClick}
+          selectedPriceRange={selectedPriceRange}
+        />
+      )}
+
       {/* Results Table */}
       {hasSearched && (
         <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden animate-fade-in">
           {/* Header */}
           <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-[#213448]">Benchmark realized transaction prices across your target budget</h3>
+              <h3 className="font-semibold text-[#213448]">
+                {selectedPriceRange
+                  ? `Transactions in ${formatBudgetDisplay(selectedPriceRange.start)} - ${formatBudgetDisplay(selectedPriceRange.end)} range`
+                  : 'All comparable transactions'
+                }
+              </h3>
               <p className="text-xs text-[#547792]">
                 {loading ? 'Loading...' : (
                   <>
                     <span className="font-semibold text-[#213448]">{pagination.totalRecords.toLocaleString()}</span>
-                    {' '}transactions within +/- $100K of {formatBudgetDisplay(budget)}
+                    {' '}transactions
+                    {selectedPriceRange && (
+                      <button
+                        onClick={clearPriceRangeFilter}
+                        className="ml-2 text-[#547792] hover:text-[#213448] underline"
+                      >
+                        Clear filter
+                      </button>
+                    )}
                   </>
                 )}
               </p>
@@ -479,7 +584,7 @@ export function ValueParityPanel() {
                 onChange={(e) => {
                   setPagination(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }));
                   if (hasSearched) {
-                    setTimeout(() => fetchTransactions(1), 0);
+                    setTimeout(() => fetchTransactions(1, selectedPriceRange), 0);
                   }
                 }}
                 className="text-xs border border-[#94B4C1] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
