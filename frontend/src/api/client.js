@@ -167,12 +167,14 @@ export const getPsfTrendsByRegion = (params = {}) =>
   apiClient.get(`/psf_trends_by_region?${buildQueryString(params)}`);
 
 /**
- * Get New Launch vs Resale (Lease age < 10 years) comparison
- * Visual-level endpoint - filters are LOCAL to this chart only
+ * Get New Sale vs Young Resale (4-9 years age) comparison
+ * RESPECTS GLOBAL FILTERS from sidebar (district, bedroom, segment, date range).
+ * Only drill level (timeGrain) is visual-local.
  * @param {Object} params - Query parameters
- * @param {string} params.region - ALL, CCR, RCR, OCR (default: ALL)
- * @param {string} params.bedroom - ALL, 1BR, 2BR, 3BR, 4BR+ (default: ALL)
- * @param {string} params.timeRange - 2Y, 3Y, 5Y, ALL (default: 3Y)
+ * @param {string} params.district - comma-separated districts from sidebar
+ * @param {string} params.bedroom - comma-separated bedroom counts from sidebar
+ * @param {string} params.segment - CCR, RCR, OCR from sidebar
+ * @param {string} params.timeGrain - year, quarter, month (visual-local drill)
  * @returns {Promise<{chartData: Array, summary: Object, appliedFilters: Object}>}
  */
 export const getNewVsResale = (params = {}) =>
@@ -499,6 +501,32 @@ export const getProjectNames = () =>
  */
 export const getDealCheckerNearbyTransactions = (params = {}) =>
   apiClient.get(`/deal-checker/nearby-transactions?${buildQueryString(params)}`);
+
+/**
+ * Get multi-scope comparison for deal checker
+ * Returns data for three scopes: same project, 1km radius, 2km radius
+ * @param {Object} params - Query parameters
+ * @param {string} params.project_name - Selected project name (required)
+ * @param {number} params.bedroom - Bedroom count 1-5 (required)
+ * @param {number} params.price - Buyer's price paid (required)
+ * @param {number} params.sqft - Unit size in sqft (optional)
+ * @returns {Promise<{
+ *   project: {name, district, market_segment, latitude, longitude},
+ *   filters: {bedroom, buyer_price, buyer_sqft},
+ *   scopes: {
+ *     same_project: {histogram, percentile, median_psf, transaction_count},
+ *     radius_1km: {histogram, percentile, median_psf, transaction_count},
+ *     radius_2km: {histogram, percentile, median_psf, transaction_count}
+ *   },
+ *   map_data: {
+ *     center: {lat, lng},
+ *     projects_1km: Array,
+ *     projects_2km: Array
+ *   }
+ * }>}
+ */
+export const getDealCheckerMultiScope = (params = {}) =>
+  apiClient.get(`/deal-checker/multi-scope?${buildQueryString(params)}`);
 
 // ===== Auth API Functions =====
 

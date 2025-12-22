@@ -3,6 +3,7 @@ Deal Checker API Routes
 
 Provides endpoints for the Deal Checker feature:
 - /api/deal-checker/nearby-transactions - Find transactions within radius, compute histogram
+- /api/deal-checker/multi-scope - Enhanced endpoint with same-project, 1km, and 2km scopes
 - /api/projects/names - Get project names for dropdown
 
 CRITICAL: All queries MUST include is_outlier = false filter
@@ -14,6 +15,7 @@ from models.database import db
 from services.school_distance import haversine
 from sqlalchemy import func, and_, or_
 import time
+import statistics
 
 deal_checker_bp = Blueprint('deal_checker', __name__)
 
@@ -292,6 +294,188 @@ def get_nearby_transactions():
         "meta": {
             "elapsed_ms": elapsed_ms,
             "projects_in_radius": len(nearby_projects)
+        }
+    })
+
+
+def compute_scope_stats(project_names, bedroom, buyer_price):
+    """
+    Compute histogram and percentile for a set of projects.
+
+    Args:
+        project_names: List of project names to include
+        bedroom: Bedroom count filter
+        buyer_price: Buyer's price for percentile calculation
+
+    Returns:
+        Dict with histogram, percentile, median_psf, transaction_count
+    """
+    if not project_names:
+        return {
+            "histogram": {"bins": [], "total_count": 0},
+            "percentile": compute_percentile(buyer_price, []),
+            "median_psf": None,
+            "median_price": None,
+            "transaction_count": 0
+        }
+
+    # Query transactions for these projects
+    transactions = db.session.query(
+        Transaction.price,
+        Transaction.psf
+    ).filter(
+        or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
+        Transaction.project_name.in_(project_names),
+        Transaction.bedroom_count == bedroom
+    ).all()
+
+    prices = [t.price for t in transactions if t.price]
+    psfs = [t.psf for t in transactions if t.psf]
+
+    return {
+        "histogram": {
+            "bins": compute_histogram_bins(prices, num_bins=20),
+            "total_count": len(prices)
+        },
+        "percentile": compute_percentile(buyer_price, prices),
+        "median_psf": round(statistics.median(psfs)) if psfs else None,
+        "median_price": round(statistics.median(prices)) if prices else None,
+        "transaction_count": len(prices)
+    }
+
+
+@deal_checker_bp.route("/deal-checker/multi-scope", methods=["GET"])
+def get_multi_scope_comparison():
+    """
+    Enhanced endpoint with multi-scope comparison.
+
+    Returns data for three comparison scopes:
+    - same_project: Transactions in the exact same project
+    - radius_1km: Transactions within 1km radius (includes same project)
+    - radius_2km: Transactions within 2km radius (includes 1km)
+
+    Query params:
+        project_name (required): Name of the project
+        bedroom (required): Bedroom count (1-5)
+        price (required): Buyer's price paid
+        sqft (optional): Unit size in sqft
+
+    Returns:
+        JSON with scopes data, map_data, and project info
+    """
+    start_time = time.time()
+
+    # Get and validate parameters
+    project_name = request.args.get('project_name')
+    bedroom = request.args.get('bedroom')
+    buyer_price = request.args.get('price')
+    sqft = request.args.get('sqft')
+
+    if not all([project_name, bedroom, buyer_price]):
+        return jsonify({
+            "error": "Missing required parameters: project_name, bedroom, price"
+        }), 400
+
+    try:
+        bedroom = int(bedroom)
+        buyer_price = float(buyer_price)
+        sqft = float(sqft) if sqft else None
+    except ValueError:
+        return jsonify({"error": "Invalid parameter format"}), 400
+
+    # Get project coordinates
+    project = ProjectLocation.query.filter_by(
+        project_name=project_name,
+        geocode_status='success'
+    ).first()
+
+    if not project or not project.latitude or not project.longitude:
+        return jsonify({
+            "error": f"Project '{project_name}' not found or not geocoded"
+        }), 404
+
+    center_lat = float(project.latitude)
+    center_lng = float(project.longitude)
+
+    # Find all projects within 2km (max radius) - single query
+    all_nearby = find_projects_within_radius(center_lat, center_lng, 2.0)
+
+    # Categorize projects by distance
+    projects_same = [project_name]  # Same project only
+    projects_1km = [p['project_name'] for p in all_nearby if p['distance_km'] <= 1.0]
+    projects_2km = [p['project_name'] for p in all_nearby]  # All within 2km
+
+    # Ensure the selected project is included
+    if project_name not in projects_1km:
+        projects_1km.insert(0, project_name)
+    if project_name not in projects_2km:
+        projects_2km.insert(0, project_name)
+
+    # Compute stats for each scope
+    scope_same = compute_scope_stats(projects_same, bedroom, buyer_price)
+    scope_1km = compute_scope_stats(projects_1km, bedroom, buyer_price)
+    scope_2km = compute_scope_stats(projects_2km, bedroom, buyer_price)
+
+    # Get transaction counts per project for map display
+    tx_counts = db.session.query(
+        Transaction.project_name,
+        func.count(Transaction.id).label('count')
+    ).filter(
+        or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
+        Transaction.project_name.in_(projects_2km),
+        Transaction.bedroom_count == bedroom
+    ).group_by(Transaction.project_name).all()
+
+    tx_count_map = {t.project_name: t.count for t in tx_counts}
+
+    # Categorize nearby projects for map with transaction counts
+    projects_in_1km = []
+    projects_in_2km_only = []  # Projects between 1-2km
+
+    for p in all_nearby:
+        p_data = {
+            'project_name': p['project_name'],
+            'latitude': p['latitude'],
+            'longitude': p['longitude'],
+            'district': p['district'],
+            'distance_km': p['distance_km'],
+            'transaction_count': tx_count_map.get(p['project_name'], 0)
+        }
+
+        if p['distance_km'] <= 1.0:
+            projects_in_1km.append(p_data)
+        else:
+            projects_in_2km_only.append(p_data)
+
+    elapsed_ms = int((time.time() - start_time) * 1000)
+
+    return jsonify({
+        "project": {
+            "name": project_name,
+            "district": project.district,
+            "market_segment": project.market_segment,
+            "latitude": center_lat,
+            "longitude": center_lng
+        },
+        "filters": {
+            "bedroom": bedroom,
+            "buyer_price": buyer_price,
+            "buyer_sqft": sqft
+        },
+        "scopes": {
+            "same_project": scope_same,
+            "radius_1km": scope_1km,
+            "radius_2km": scope_2km
+        },
+        "map_data": {
+            "center": {"lat": center_lat, "lng": center_lng},
+            "projects_1km": projects_in_1km,
+            "projects_2km": projects_in_2km_only
+        },
+        "meta": {
+            "elapsed_ms": elapsed_ms,
+            "projects_in_1km": len(projects_in_1km),
+            "projects_in_2km": len(projects_in_1km) + len(projects_in_2km_only)
         }
     })
 

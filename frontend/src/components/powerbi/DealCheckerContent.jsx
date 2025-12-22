@@ -2,16 +2,17 @@
  * DealCheckerContent - Check if a buyer got a good deal
  *
  * Allows users to:
- * 1. Select their project (dropdown)
+ * 1. Select their project (searchable dropdown)
  * 2. Enter bedroom type, sqft, and price paid
- * 3. See price distribution histogram of nearby transactions (1km radius)
- * 4. See map with 1km radius and surrounding projects
+ * 3. Compare across three scopes: Same Project, 1km radius, 2km radius
+ * 4. See map with both radius circles
  * 5. Get percentile rank showing how their deal compares
  */
-import React, { useState, useEffect } from 'react';
-import { getProjectNames, getDealCheckerNearbyTransactions } from '../../api/client';
+import React, { useState, useEffect, useRef } from 'react';
+import { getProjectNames, getDealCheckerMultiScope } from '../../api/client';
 import { PriceDistributionHeroChart } from '../PriceDistributionHeroChart';
 import DealCheckerMap from './DealCheckerMap';
+import ScopeSummaryCards from './ScopeSummaryCards';
 
 // Format price for display
 const formatPrice = (value) => {
@@ -35,6 +36,13 @@ const parseFormattedNumber = (str) => {
   return str.replace(/[^0-9]/g, '');
 };
 
+// Scope labels for display
+const SCOPE_LABELS = {
+  same_project: 'Same Project',
+  radius_1km: 'Within 1km',
+  radius_2km: 'Within 2km'
+};
+
 export default function DealCheckerContent() {
   // Form state
   const [projectName, setProjectName] = useState('');
@@ -42,8 +50,10 @@ export default function DealCheckerContent() {
   const [sqft, setSqft] = useState('');
   const [price, setPrice] = useState('');
 
-  // Project search filter
+  // Project dropdown state
   const [projectSearch, setProjectSearch] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   // Data state
   const [projectOptions, setProjectOptions] = useState([]);
@@ -51,6 +61,9 @@ export default function DealCheckerContent() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Scope selection state
+  const [activeScope, setActiveScope] = useState('radius_1km');
 
   // Load project names for dropdown
   useEffect(() => {
@@ -67,11 +80,30 @@ export default function DealCheckerContent() {
     loadProjects();
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Filter projects by search term
   const filteredProjects = projectOptions.filter(p =>
     p.name.toLowerCase().includes(projectSearch.toLowerCase()) ||
     p.district?.toLowerCase().includes(projectSearch.toLowerCase())
   );
+
+  // Handle project selection
+  const handleProjectSelect = (project) => {
+    setProjectName(project.name);
+    setProjectSearch('');
+    setIsDropdownOpen(false);
+  };
 
   // Handle form submission
   const handleCheck = async (e) => {
@@ -95,8 +127,7 @@ export default function DealCheckerContent() {
       const params = {
         project_name: projectName,
         bedroom: bedroom,
-        price: priceNum,
-        radius_km: 1.0
+        price: priceNum
       };
 
       const sqftNum = parseFloat(parseFormattedNumber(sqft));
@@ -104,8 +135,14 @@ export default function DealCheckerContent() {
         params.sqft = sqftNum;
       }
 
-      const response = await getDealCheckerNearbyTransactions(params);
+      const response = await getDealCheckerMultiScope(params);
       setResult(response.data);
+      // Default to 1km scope, or same_project if it has more data
+      if (response.data.scopes?.same_project?.transaction_count > 10) {
+        setActiveScope('same_project');
+      } else {
+        setActiveScope('radius_1km');
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to check deal');
       setResult(null);
@@ -140,29 +177,26 @@ export default function DealCheckerContent() {
     }
   };
 
-  // Convert histogram bins to transactions format for PriceDistributionHeroChart
-  // Each bin becomes multiple pseudo-transactions at the bin midpoint
-  const histogramTransactions = result?.histogram?.bins
-    ? result.histogram.bins.flatMap(bin =>
-        Array(bin.count).fill({ price: (bin.start + bin.end) / 2 })
-      )
-    : [];
+  // Get histogram transactions for the active scope
+  const getHistogramTransactions = () => {
+    const scope = result?.scopes?.[activeScope];
+    if (!scope?.histogram?.bins) return [];
 
-  // Get interpretation label and color
-  const getInterpretation = () => {
-    if (!result?.percentile) return null;
-    const { rank, interpretation } = result.percentile;
-
-    const configs = {
-      excellent_deal: { label: 'Excellent Deal!', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: '🎉' },
-      good_deal: { label: 'Good Deal', color: 'text-green-600', bg: 'bg-green-50', icon: '👍' },
-      fair_deal: { label: 'Fair Deal', color: 'text-amber-600', bg: 'bg-amber-50', icon: '👌' },
-      above_average: { label: 'Above Average', color: 'text-orange-600', bg: 'bg-orange-50', icon: '📊' },
-      no_data: { label: 'Insufficient Data', color: 'text-slate-600', bg: 'bg-slate-50', icon: '❓' }
-    };
-
-    return configs[interpretation] || configs.no_data;
+    return scope.histogram.bins.flatMap(bin =>
+      Array(bin.count).fill({ price: (bin.start + bin.end) / 2 })
+    );
   };
+
+  // Get all nearby projects for the table (combine 1km and 2km)
+  const getAllNearbyProjects = () => {
+    if (!result?.map_data) return [];
+    const projects_1km = result.map_data.projects_1km || [];
+    const projects_2km = result.map_data.projects_2km || [];
+    return [...projects_1km, ...projects_2km];
+  };
+
+  // Get selected project info for display
+  const selectedProjectInfo = projectOptions.find(p => p.name === projectName);
 
   return (
     <div className="space-y-6">
@@ -171,44 +205,81 @@ export default function DealCheckerContent() {
         <div className="px-4 py-3 border-b border-[#94B4C1]/30">
           <h3 className="font-semibold text-[#213448]">Check Your Deal</h3>
           <p className="text-xs text-[#547792] mt-0.5">
-            See how your purchase compares to nearby {bedroom ? `${bedroom}-bedroom` : ''} transactions within 1km
+            Compare your purchase to {bedroom ? `${bedroom}-bedroom` : ''} transactions in the same project and nearby area
           </p>
         </div>
 
         <form onSubmit={handleCheck} className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Project Name - with search */}
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Project Name - Searchable Dropdown */}
+            <div className="lg:col-span-2" ref={dropdownRef}>
               <label className="block text-sm font-medium text-[#213448] mb-1">
                 Project Name <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search projects..."
-                  value={projectSearch}
-                  onChange={(e) => setProjectSearch(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-[#547792] mb-1"
-                />
-                <select
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-[#547792]"
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={projectOptionsLoading}
-                  size={1}
+                  className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded-md text-sm text-left bg-white focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-[#547792] flex items-center justify-between"
                 >
-                  <option value="">Select project...</option>
-                  {filteredProjects.slice(0, 100).map(p => (
-                    <option key={p.name} value={p.name}>
-                      {p.name} ({p.district})
-                    </option>
-                  ))}
-                  {filteredProjects.length > 100 && (
-                    <option disabled>...{filteredProjects.length - 100} more (refine search)</option>
-                  )}
-                </select>
+                  <span className={projectName ? 'text-[#213448]' : 'text-[#94B4C1]'}>
+                    {projectName
+                      ? `${projectName}${selectedProjectInfo?.district ? ` (${selectedProjectInfo.district})` : ''}`
+                      : 'Select project...'}
+                  </span>
+                  <svg className={`w-4 h-4 text-[#547792] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Panel */}
+                {isDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-[#94B4C1]/50 rounded-md shadow-lg max-h-80 overflow-hidden">
+                    {/* Search Input */}
+                    <div className="p-2 border-b border-[#94B4C1]/30">
+                      <input
+                        type="text"
+                        placeholder="Search projects..."
+                        value={projectSearch}
+                        onChange={(e) => setProjectSearch(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#547792]"
+                        autoFocus
+                      />
+                    </div>
+
+                    {/* Options List */}
+                    <div className="max-h-60 overflow-y-auto">
+                      {filteredProjects.length === 0 ? (
+                        <div className="px-3 py-4 text-sm text-[#94B4C1] text-center">
+                          No projects found
+                        </div>
+                      ) : (
+                        filteredProjects.slice(0, 100).map(p => (
+                          <button
+                            key={p.name}
+                            type="button"
+                            onClick={() => handleProjectSelect(p)}
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-[#EAE0CF]/50 flex justify-between items-center ${
+                              projectName === p.name ? 'bg-[#EAE0CF]/30 text-[#213448] font-medium' : 'text-[#547792]'
+                            }`}
+                          >
+                            <span className="truncate">{p.name}</span>
+                            <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
+                          </button>
+                        ))
+                      )}
+                      {filteredProjects.length > 100 && (
+                        <div className="px-3 py-2 text-xs text-[#94B4C1] text-center border-t border-[#94B4C1]/30">
+                          +{filteredProjects.length - 100} more (refine search)
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {projectOptionsLoading && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
                     <svg className="w-4 h-4 animate-spin text-[#547792]" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -221,7 +292,7 @@ export default function DealCheckerContent() {
             {/* Bedroom */}
             <div>
               <label className="block text-sm font-medium text-[#213448] mb-1">
-                Bedroom Type <span className="text-red-500">*</span>
+                Bedroom <span className="text-red-500">*</span>
               </label>
               <select
                 value={bedroom}
@@ -229,26 +300,12 @@ export default function DealCheckerContent() {
                 className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-[#547792]"
               >
                 <option value="">Select...</option>
-                <option value="1">1 Bedroom</option>
-                <option value="2">2 Bedroom</option>
-                <option value="3">3 Bedroom</option>
-                <option value="4">4 Bedroom</option>
-                <option value="5">5+ Bedroom</option>
+                <option value="1">1 BR</option>
+                <option value="2">2 BR</option>
+                <option value="3">3 BR</option>
+                <option value="4">4 BR</option>
+                <option value="5">5+ BR</option>
               </select>
-            </div>
-
-            {/* Square Footage */}
-            <div>
-              <label className="block text-sm font-medium text-[#213448] mb-1">
-                Size (sqft)
-              </label>
-              <input
-                type="text"
-                value={sqft}
-                onChange={handleSqftChange}
-                placeholder="e.g., 1,200"
-                className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-[#547792]"
-              />
             </div>
 
             {/* Price Paid */}
@@ -296,111 +353,132 @@ export default function DealCheckerContent() {
       {/* Results */}
       {result && (
         <>
-          {/* Percentile Summary */}
-          {result.percentile && result.percentile.rank !== null && (
-            <div className={`p-4 rounded-lg border ${getInterpretation()?.bg} border-[#94B4C1]/30`}>
-              <div className="flex items-center gap-4">
-                <span className="text-3xl">{getInterpretation()?.icon}</span>
-                <div>
-                  <h4 className={`text-lg font-semibold ${getInterpretation()?.color}`}>
-                    {getInterpretation()?.label}
-                  </h4>
-                  <p className="text-sm text-[#547792]">
-                    <span className="font-medium text-[#213448]">{result.percentile.rank}%</span> of comparable {bedroom}-bedroom transactions in the area were priced higher than yours.
-                    {result.percentile.total > 0 && (
-                      <span className="ml-1">
-                        ({result.percentile.transactions_above} of {result.percentile.total} transactions)
-                      </span>
-                    )}
-                  </p>
-                </div>
+          {/* Scope Summary Cards */}
+          <ScopeSummaryCards
+            scopes={result.scopes}
+            activeScope={activeScope}
+            onScopeClick={setActiveScope}
+            bedroom={bedroom}
+          />
+
+          {/* Histogram with Scope Toggle */}
+          <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
+                <p className="text-xs text-[#547792]">
+                  {SCOPE_LABELS[activeScope]} - {result.scopes?.[activeScope]?.transaction_count || 0} transactions
+                </p>
+              </div>
+              {/* Scope Toggle Buttons */}
+              <div className="flex gap-1">
+                {['same_project', 'radius_1km', 'radius_2km'].map(scope => (
+                  <button
+                    key={scope}
+                    onClick={() => setActiveScope(scope)}
+                    className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                      activeScope === scope
+                        ? 'bg-[#213448] text-white'
+                        : 'bg-[#EAE0CF]/50 text-[#547792] hover:bg-[#EAE0CF]'
+                    }`}
+                  >
+                    {scope === 'same_project' ? 'Same' : scope === 'radius_1km' ? '1km' : '2km'}
+                  </button>
+                ))}
               </div>
             </div>
-          )}
-
-          {/* Histogram and Map Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: Histogram */}
-            <div>
+            <div className="p-4">
               <PriceDistributionHeroChart
                 buyerPrice={result.filters.buyer_price}
-                transactions={histogramTransactions}
+                transactions={getHistogramTransactions()}
                 loading={false}
-                height={320}
+                height={280}
                 activeFilters={{
                   bedroom: `${bedroom}BR`,
-                  district: result.project.district,
+                  scope: SCOPE_LABELS[activeScope],
                 }}
               />
-              {result.histogram.total_count < 30 && (
-                <p className="text-xs text-amber-600 mt-2 px-2">
-                  Note: Only {result.histogram.total_count} comparable transactions found. Results may be less reliable with limited data.
+              {result.scopes?.[activeScope]?.transaction_count < 30 && (
+                <p className="text-xs text-amber-600 mt-2">
+                  Note: Only {result.scopes?.[activeScope]?.transaction_count || 0} comparable transactions found. Results may be less reliable with limited data.
                 </p>
               )}
             </div>
+          </div>
 
-            {/* Right: Map */}
+          {/* Map and Nearby Projects Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Map */}
             <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
               <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-                <h3 className="font-semibold text-[#213448]">
-                  Nearby Projects (within 1km)
-                </h3>
+                <h3 className="font-semibold text-[#213448]">Nearby Projects</h3>
                 <p className="text-xs text-[#547792]">
-                  {result.nearby_projects.length} projects with {bedroom}-bedroom transactions
+                  {result.meta?.projects_in_1km || 0} within 1km, {(result.meta?.projects_in_2km || 0) - (result.meta?.projects_in_1km || 0)} in 1-2km ring
                 </p>
               </div>
-              <div style={{ height: 320 }}>
+              <div style={{ height: 350 }}>
                 <DealCheckerMap
                   centerProject={result.project}
-                  nearbyProjects={result.nearby_projects}
-                  radiusKm={result.filters.radius_km}
+                  projects1km={result.map_data?.projects_1km || []}
+                  projects2km={result.map_data?.projects_2km || []}
                 />
               </div>
             </div>
-          </div>
 
-          {/* Nearby Projects Table */}
-          {result.nearby_projects.length > 0 && (
+            {/* Nearby Projects Table */}
             <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
               <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-                <h3 className="font-semibold text-[#213448]">Projects Within 1km</h3>
+                <h3 className="font-semibold text-[#213448]">Projects Within 2km</h3>
                 <p className="text-xs text-[#547792]">
                   Sorted by distance from {result.project.name}
                 </p>
               </div>
-              <div className="overflow-x-auto" style={{ maxHeight: 300 }}>
+              <div className="overflow-x-auto" style={{ maxHeight: 350 }}>
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 sticky top-0">
                     <tr>
                       <th className="px-3 py-2 text-left font-medium text-slate-600 border-b">Project</th>
-                      <th className="px-3 py-2 text-left font-medium text-slate-600 border-b">District</th>
                       <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Distance</th>
-                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">{bedroom}BR Txns</th>
+                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">{bedroom}BR</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {result.nearby_projects.map((p, idx) => (
-                      <tr key={p.project_name} className={idx === 0 ? 'bg-[#213448]/5' : 'hover:bg-slate-50'}>
-                        <td className="px-3 py-2 border-b border-slate-100 font-medium text-[#213448]">
-                          {p.project_name}
-                          {p.project_name === result.project.name && (
-                            <span className="ml-2 text-xs text-[#547792]">(your project)</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600">{p.district}</td>
-                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                          {p.distance_km === 0 ? '-' : `${(p.distance_km * 1000).toFixed(0)}m`}
-                        </td>
-                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                          {p.transaction_count}
+                    {getAllNearbyProjects().map((p, idx) => {
+                      const isUserProject = p.project_name === result.project.name;
+                      const isWithin1km = p.distance_km <= 1.0;
+                      return (
+                        <tr
+                          key={p.project_name}
+                          className={`${isUserProject ? 'bg-[#213448]/5' : 'hover:bg-slate-50'} ${!isWithin1km ? 'opacity-70' : ''}`}
+                        >
+                          <td className="px-3 py-2 border-b border-slate-100">
+                            <span className="font-medium text-[#213448]">{p.project_name}</span>
+                            {isUserProject && (
+                              <span className="ml-2 text-xs text-[#547792]">(yours)</span>
+                            )}
+                            <div className="text-xs text-[#94B4C1]">{p.district}</div>
+                          </td>
+                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600">
+                            {p.distance_km === 0 ? '-' : `${(p.distance_km * 1000).toFixed(0)}m`}
+                          </td>
+                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600">
+                            {p.transaction_count || 0}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {getAllNearbyProjects().length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="px-3 py-6 text-center text-slate-500">
+                          No nearby projects found
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
-          )}
+          </div>
         </>
       )}
 
@@ -413,8 +491,8 @@ export default function DealCheckerContent() {
             </svg>
             <h3 className="text-lg font-semibold text-[#213448] mb-2">Check Your Property Deal</h3>
             <p className="text-sm text-[#547792]">
-              Enter your project name, bedroom type, and price paid to see how your purchase compares
-              to similar transactions within 1km of your project.
+              Select your project, bedroom type, and price paid to see how your purchase compares
+              to similar transactions in the same project and within 1-2km radius.
             </p>
           </div>
         </div>
