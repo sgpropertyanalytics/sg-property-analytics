@@ -13,7 +13,7 @@ import {
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
-import { getAggregate, getProjectInventory } from '../../api/client';
+import { getAggregate, getProjectInventory, getDashboard } from '../../api/client';
 import { DISTRICT_NAMES } from '../../constants';
 
 ChartJS.register(
@@ -86,6 +86,8 @@ function ProjectDetailPanelInner({
   const [salesByType, setSalesByType] = useState({ newSale: 0, resale: 0 });
   // State for inventory data (total units, unsold estimation)
   const [inventoryData, setInventoryData] = useState(null);
+  // State for price histogram data
+  const [histogramData, setHistogramData] = useState([]);
 
   // Fetch project-specific data
   useEffect(() => {
@@ -123,11 +125,26 @@ function ProjectDetailPanelInner({
           metrics: 'count,median_psf,avg_psf,min_psf,max_psf',
         };
 
-        // Fetch all data in parallel, including inventory
-        const [trendResponse, priceResponse, inventoryResponse] = await Promise.all([
+        // Build histogram params for project-specific price distribution
+        const histogramParams = {
+          project: selectedProject.name,
+          panels: 'price_histogram',
+          histogram_bins: 20,
+        };
+        // Apply date filters to histogram as well
+        if (filters.dateRange.start) histogramParams.date_from = filters.dateRange.start;
+        if (filters.dateRange.end) histogramParams.date_to = filters.dateRange.end;
+        if (filters.bedroomTypes.length > 0) {
+          histogramParams.bedroom = filters.bedroomTypes.join(',');
+        }
+        if (filters.saleType) histogramParams.sale_type = filters.saleType;
+
+        // Fetch all data in parallel, including inventory and histogram
+        const [trendResponse, priceResponse, inventoryResponse, histogramResponse] = await Promise.all([
           getAggregate(trendParams),
           getAggregate(priceParams),
           getProjectInventory(selectedProject.name),
+          getDashboard(histogramParams),
         ]);
 
         // Sort trend data by month
@@ -147,6 +164,10 @@ function ProjectDetailPanelInner({
           resale: inventory.cumulative_resales || 0
         });
         setInventoryData(inventory);
+
+        // Extract histogram data
+        const histData = histogramResponse.data?.data?.price_histogram || [];
+        setHistogramData(histData);
 
         setTrendData(sortedTrend);
         setPriceData(sortedPrice);
@@ -296,6 +317,88 @@ function ProjectDetailPanelInner({
   const overallMedianPsf = priceData.length > 0
     ? Math.round(priceData.reduce((sum, d) => sum + (d.median_psf || 0) * (d.count || 0), 0) / totalTransactions)
     : 0;
+
+  // Helper to format price labels (e.g., $1.2M, $800K)
+  const formatPriceLabel = (value) => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    }
+    return `$${(value / 1000).toFixed(0)}K`;
+  };
+
+  // Process histogram data for chart
+  const histogramBuckets = histogramData.map(h => ({
+    start: h.bin_start,
+    end: h.bin_end,
+    label: `${formatPriceLabel(h.bin_start)}-${formatPriceLabel(h.bin_end)}`,
+    count: h.count
+  }));
+
+  const histogramCounts = histogramBuckets.map(b => b.count);
+  const histogramTotal = histogramCounts.reduce((sum, c) => sum + c, 0);
+  const histogramMaxCount = Math.max(...histogramCounts, 1);
+  const histogramModeIndex = histogramCounts.length > 0 ? histogramCounts.indexOf(histogramMaxCount) : -1;
+  const histogramModeBucket = histogramModeIndex >= 0 ? histogramBuckets[histogramModeIndex] : null;
+  const histogramMinPrice = histogramBuckets.length > 0 ? histogramBuckets[0].start : 0;
+  const histogramMaxPrice = histogramBuckets.length > 0 ? histogramBuckets[histogramBuckets.length - 1].end : 0;
+  const histogramBucketSize = histogramBuckets.length > 0 ? (histogramBuckets[0].end - histogramBuckets[0].start) : 0;
+
+  // Color gradient for histogram bars
+  const getHistogramBarColor = (count, alpha = 0.8) => {
+    const intensity = 0.3 + (count / histogramMaxCount) * 0.7;
+    return `rgba(84, 119, 146, ${alpha * intensity})`;  // #547792
+  };
+
+  const histogramChartData = {
+    labels: histogramBuckets.map(b => b.label),
+    datasets: [
+      {
+        label: 'Transaction Count',
+        data: histogramCounts,
+        backgroundColor: histogramCounts.map(c => getHistogramBarColor(c)),
+        borderColor: histogramCounts.map(c => getHistogramBarColor(c, 1)),
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const histogramChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: (items) => {
+            const bucket = histogramBuckets[items[0].dataIndex];
+            return `Price: ${formatPriceLabel(bucket.start)} - ${formatPriceLabel(bucket.end)}`;
+          },
+          label: (context) => {
+            const count = context.parsed.y;
+            const pct = histogramTotal > 0 ? ((count / histogramTotal) * 100).toFixed(1) : 0;
+            return [`Transactions: ${count.toLocaleString()}`, `Share: ${pct}%`];
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          maxRotation: 45,
+          minRotation: 45,
+          font: { size: 9 },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        title: { display: true, text: 'Transaction Count' },
+        ticks: {
+          callback: (value) => value.toLocaleString(),
+        },
+      },
+    },
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
@@ -454,6 +557,35 @@ function ProjectDetailPanelInner({
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Price Distribution Histogram */}
+              <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
+                  {histogramModeBucket && (
+                    <span className="text-xs text-[#213448]">Mode: {histogramModeBucket.label}</span>
+                  )}
+                </div>
+                {histogramBuckets.length > 0 && (
+                  <p className="text-xs text-[#547792] mb-3">
+                    {formatPriceLabel(histogramMinPrice)} - {formatPriceLabel(histogramMaxPrice)} ({histogramBuckets.length} bins @ {formatPriceLabel(histogramBucketSize)})
+                  </p>
+                )}
+                <div style={{ height: 200 }}>
+                  {histogramBuckets.length > 0 ? (
+                    <Bar data={histogramChartData} options={histogramChartOptions} />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-[#547792]">
+                      No price distribution data available
+                    </div>
+                  )}
+                </div>
+                {histogramTotal > 0 && (
+                  <p className="text-xs text-[#547792] mt-2 text-center">
+                    Total: {histogramTotal.toLocaleString()} transactions
+                  </p>
+                )}
               </div>
 
               {/* Info Note */}
