@@ -225,8 +225,15 @@ export function HotProjectsTable({ height = 400 }) {
                     {/* % Sold with color coding */}
                     <td className="px-3 py-2 border-b border-slate-100 text-right">
                       {project.percent_sold !== null && project.percent_sold !== undefined ? (
-                        <span className={`inline-block px-1.5 py-0.5 text-xs font-semibold rounded ${getPercentClass(project.percent_sold)}`}>
-                          {project.percent_sold.toFixed(1)}%
+                        <span className="inline-flex items-center gap-1">
+                          <span className={`inline-block px-1.5 py-0.5 text-xs font-semibold rounded ${getPercentClass(project.percent_sold)}`}>
+                            {project.percent_sold.toFixed(1)}%
+                          </span>
+                          {project.data_discrepancy && (
+                            <span className="text-amber-500 cursor-help" title="Data discrepancy: URA transaction count exceeds official unit count. May include sub-sales or serviced apartments.">
+                              ⚠
+                            </span>
+                          )}
                         </span>
                       ) : (
                         <span className="text-slate-400 text-xs italic">N/A</span>
@@ -236,7 +243,14 @@ export function HotProjectsTable({ height = 400 }) {
                     {/* Unsold Inventory */}
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
                       {project.unsold_inventory !== null && project.unsold_inventory !== undefined ? (
-                        project.unsold_inventory.toLocaleString()
+                        <span className="inline-flex items-center gap-1 justify-end">
+                          <span>{project.unsold_inventory.toLocaleString()}</span>
+                          {project.data_discrepancy && (
+                            <span className="text-amber-500 cursor-help" title="Data discrepancy: actual unsold may differ">
+                              ⚠
+                            </span>
+                          )}
+                        </span>
                       ) : (
                         <span className="text-slate-400 text-xs italic">N/A</span>
                       )}
@@ -269,9 +283,13 @@ export function HotProjectsTable({ height = 400 }) {
               <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px]">🎓</span>
               <span>Popular School nearby</span>
             </span>
+            <span className="flex items-center gap-1">
+              <span className="text-amber-500">⚠</span>
+              <span>Data discrepancy</span>
+            </span>
           </div>
           <span className="text-[#547792]/70 text-[10px]">
-            Only projects with 0 resales shown • N/A = data unavailable
+            Only projects with 0 resales shown • ⚠ = URA txn count exceeds official units
           </span>
         </div>
       </div>

@@ -443,11 +443,18 @@ def get_hot_projects():
             total_units = lookup.get("total_units") or 0
 
             # Calculate percent_sold and unsold if total_units available
+            # Flag data discrepancy when units_sold > total_units (indicates URA data issues)
+            data_discrepancy = False
             if total_units > 0:
-                percent_sold = round((units_sold * 100.0 / total_units), 1)
-                # Cap percent_sold at 100% (in case more units sold than total due to data issues)
-                percent_sold = min(percent_sold, 100.0)
-                unsold_inventory = max(0, total_units - units_sold)
+                if units_sold > total_units:
+                    # Data discrepancy: more transactions than official units
+                    # This could be due to sub-sales, serviced apartments, or URA data issues
+                    data_discrepancy = True
+                    percent_sold = 100.0  # Cap at 100%
+                    unsold_inventory = 0  # No unsold units known
+                else:
+                    percent_sold = round((units_sold * 100.0 / total_units), 1)
+                    unsold_inventory = total_units - units_sold
             else:
                 # No total_units data - can't calculate percent
                 percent_sold = None
@@ -462,6 +469,7 @@ def get_hot_projects():
                 "units_sold": units_sold,
                 "percent_sold": percent_sold,
                 "unsold_inventory": unsold_inventory,
+                "data_discrepancy": data_discrepancy,  # True if units_sold > total_units
                 "total_value": float(row.total_value) if row.total_value else 0,
                 "avg_psf": round(float(row.avg_psf), 2) if row.avg_psf else 0,
                 "has_popular_school": row.has_popular_school_1km or False,
