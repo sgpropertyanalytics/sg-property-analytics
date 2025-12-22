@@ -144,12 +144,10 @@ export function ValueParityPanel() {
       if (tenure) {
         params.tenure = tenure;
       }
-      if (saleType) {
-        params.sale_type = saleType;
-      }
-      if (leaseAge) {
-        params.lease_age = leaseAge;
-      }
+      // Step 3: Young Resale section always shows 4-9 years resale properties
+      // Hardcode sale_type and lease_age regardless of user selection
+      params.sale_type = 'Resale';
+      params.lease_age = '4-9';
 
       const response = await getTransactionsList(params);
       setData(response.data.transactions || []);
@@ -165,7 +163,7 @@ export function ValueParityPanel() {
     } finally {
       setLoading(false);
     }
-  }, [budget, bedroom, region, district, tenure, saleType, leaseAge, pagination.limit, sortConfig]);
+  }, [budget, bedroom, region, district, tenure, pagination.limit, sortConfig]);
 
   // Fetch resale market transactions (Step 4 - all resale, no age filter)
   const fetchResaleMarket = useCallback(async (page = 1) => {

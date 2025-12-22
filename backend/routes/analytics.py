@@ -1603,7 +1603,7 @@ def transactions_list():
     from datetime import datetime
     from models.transaction import Transaction
     from models.database import db
-    from sqlalchemy import desc, asc
+    from sqlalchemy import desc, asc, func
 
     start = time.time()
 
@@ -1700,6 +1700,10 @@ def transactions_list():
         if lease_age == "0-5":
             # Lease started within last 5 years
             query = query.filter(Transaction.lease_start_year >= current_year - 5)
+        elif lease_age == "4-9":
+            # Young Resale: 4-9 years old
+            query = query.filter(Transaction.lease_start_year >= current_year - 9)
+            query = query.filter(Transaction.lease_start_year <= current_year - 4)
         elif lease_age == "5-10":
             query = query.filter(Transaction.lease_start_year >= current_year - 10)
             query = query.filter(Transaction.lease_start_year < current_year - 5)
