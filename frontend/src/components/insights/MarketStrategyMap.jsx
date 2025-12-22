@@ -545,16 +545,17 @@ export default function MarketStrategyMap() {
     [districtData, viewMode, maxVolume]
   );
 
-  // "White Grout" boundary lines - MUST render AFTER fill layer
+  // "Cookie Cutter" border layer - HIGH CONTRAST to prevent visual merging
+  // Thick white lines create a "Demilitarized Zone" between same-colored districts
   const lineLayer = useMemo(
     () => ({
-      id: 'district-line',
+      id: 'district-borders',
       type: 'line',
       paint: {
-        'line-color': '#FFFFFF',
-        'line-width': 1.5,
-        'line-opacity': 0.6,      // Visible but not harsh
-        'line-dasharray': [2, 2], // Crisp, technical dots
+        'line-color': '#FFFFFF',   // Pure White (Max Contrast)
+        'line-width': 2,           // Thick enough to break color bleed
+        'line-opacity': 0.8,       // High opacity for visibility
+        'line-blur': 0,            // Sharp, crisp lines
       },
       layout: {
         'line-cap': 'round',
