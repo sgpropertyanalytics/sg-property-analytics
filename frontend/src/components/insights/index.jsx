@@ -17,52 +17,44 @@ const MarketHeatmap3DLazy = lazy(() => import('./MarketHeatmap3D'));
 // Strategy Map with Data Flags (lazy loaded for performance)
 const MarketStrategyMapLazy = lazy(() => import('./MarketStrategyMap'));
 
-// Loading fallback component for 3D map
+// Loading fallback component for 3D map (light theme to match actual component)
 function MapLoadingFallback() {
   return (
-    <div className="bg-[#1a1a2e] rounded-xl border border-[#94B4C1]/20 shadow-lg overflow-hidden">
-      <div className="px-4 py-3 md:px-6 md:py-4 border-b border-[#94B4C1]/20 bg-[#16162a]">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <h2 className="text-lg md:text-xl font-semibold text-white">
-              District PSF Heatmap
-            </h2>
-            <p className="text-xs md:text-sm text-[#94B4C1] mt-0.5">
-              3D visualization of median price per sqft across Singapore
-            </p>
-          </div>
-        </div>
+    <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
+        <h2 className="text-lg font-bold text-[#213448]">
+          District PSF Heatmap
+        </h2>
+        <p className="text-xs text-[#547792]">
+          3D visualization of median price per sqft across Singapore
+        </p>
       </div>
-      <div className="flex items-center justify-center" style={{ height: '450px' }}>
+      <div className="flex items-center justify-center bg-[#EAE0CF]/20" style={{ height: '450px' }}>
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-[#94B4C1]">Loading 3D map...</span>
+          <div className="w-8 h-8 border-3 border-[#547792] border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-[#547792]">Loading 3D map...</span>
         </div>
       </div>
     </div>
   );
 }
 
-// Loading fallback component for strategy map
+// Loading fallback component for strategy map (light theme to match actual component)
 function StrategyMapLoadingFallback() {
   return (
-    <div className="bg-[#1a1a2e] rounded-xl border border-[#94B4C1]/20 shadow-lg overflow-hidden">
-      <div className="px-4 py-3 md:px-6 md:py-4 border-b border-[#94B4C1]/20 bg-[#16162a]">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <h2 className="text-lg md:text-xl font-semibold text-white">
-              District PSF Overview
-            </h2>
-            <p className="text-xs md:text-sm text-[#94B4C1] mt-0.5">
-              Median price per sqft by postal district
-            </p>
-          </div>
-        </div>
+    <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
+        <h2 className="text-lg font-bold text-[#213448]">
+          District Price Overview
+        </h2>
+        <p className="text-xs text-[#547792]">
+          Median PSF by postal district
+        </p>
       </div>
-      <div className="flex items-center justify-center" style={{ height: '500px' }}>
+      <div className="flex items-center justify-center bg-[#EAE0CF]/20" style={{ height: '500px' }}>
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-[#94B4C1]">Loading map...</span>
+          <div className="w-8 h-8 border-3 border-[#547792] border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-[#547792]">Loading map...</span>
         </div>
       </div>
     </div>
