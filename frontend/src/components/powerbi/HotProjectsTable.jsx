@@ -242,7 +242,7 @@ export function HotProjectsTable({ height = 400 }) {
 
                     {/* Developer */}
                     <td className="px-3 py-2 border-b border-slate-100">
-                      <span className="text-slate-600 text-xs truncate max-w-[150px] block">
+                      <span className="text-slate-600 truncate max-w-[150px] block">
                         {project.developer || <span className="text-slate-400 italic">-</span>}
                       </span>
                     </td>

@@ -1,29 +1,29 @@
 project_name,total_units,developer,tenure,top,district,source
 1953,58,Oxley Amethyst,Freehold,,D08,EdgeProp
-35 GILSTEAD,70,,Freehold,,D11,EdgeProp
+35 GILSTEAD,70,TEE Land & TG Development,Freehold,,D11,EdgeProp
 8@BT,158,Bukit Sembawang Estates,99 yrs lease commencing from 2023,2028,D21,EdgeProp
-AMBER HOUSE,105,,Freehold,2029,D15,EdgeProp
+AMBER HOUSE,105,Far East Organization,Freehold,2029,D15,EdgeProp
 AMO RESIDENCE,372,UOL Group & SingLand,99 yrs lease commencing from 2021,2025,D20,EdgeProp
-ARDOR RESIDENCE,35,,Freehold,,D15,EdgeProp
+ARDOR RESIDENCE,35,Nanshan Group,Freehold,,D15,EdgeProp
 ARINA EAST RESIDENCES,107,ZACD Group,Freehold,,D15,EdgeProp
-ARTISAN 8,34,,Freehold,,D20,EdgeProp
+ARTISAN 8,34,Apex Asia,Freehold,,D20,EdgeProp
 ATLASSIA,31,K16 Development,Freehold,,D15,EdgeProp
 AUREA,188,Far East Organization & Perennial Holdings,99 yrs lease commencing from 2024,2029,D07,EdgeProp
 BAGNALL HAUS,113,Roxy-Pacific Holdings,Freehold,,D16,EdgeProp
 BARTLEY VUE,115,Wee Hur Holdings,99 yrs lease commencing from 2020,2024,D19,EdgeProp
-BAYWIND RESIDENCES,24,,Freehold,,D15,EdgeProp
+BAYWIND RESIDENCES,24,ABR Holdings & LWH Holdings,Freehold,,D15,EdgeProp
 BLOOMSBURY RESIDENCES,358,Qingjian Realty & Forsea Holdings,99 yrs lease commencing from 2024,2028,D05,EdgeProp
 BLOSSOMS BY THE PARK,275,EL Development,99 yrs lease commencing from 2022,2027,D05,EdgeProp
 CAIRNHILL 16,39,Tiong Seng Holdings & Ocean Sky,Freehold,,D09,EdgeProp
 CANBERRA CRESCENT RESIDENCES,376,Kheng Leong & Low Keng Huat,99 yrs lease commencing from 2024,,D27,EdgeProp
 CANNINGHILL PIERS,696,CDL & CapitaLand Development,99 yrs lease commencing from 2021,2026,D06,EdgeProp
 CHUAN PARK,916,Kingsford Development,99 yrs lease commencing from 2024,2028,D19,EdgeProp
-CLAYDENCE,28,,Freehold,,D15,EdgeProp
-DAIRY FARM RESIDENCES,460,,99 yrs lease commencing from 2018,,D23,EdgeProp
-DALVEY HAUS,17,,Freehold,,D10,EdgeProp
+CLAYDENCE,28,Hong How & Marrion Capital,Freehold,,D15,EdgeProp
+DAIRY FARM RESIDENCES,460,United Engineers,99 yrs lease commencing from 2018,,D23,EdgeProp
+DALVEY HAUS,17,KOP Properties & Low Keng Huat,Freehold,,D10,EdgeProp
 ELTA,501,MCL Land & CSC Land Group,99 yrs lease commencing from 2024,2028,D05,EdgeProp
 EMERALD OF KATONG,846,Sim Lian Group,99 yrs lease commencing from 2023,2028,D15,EdgeProp
-ENCHANTÉ,25,,Freehold,,D11,EdgeProp
+ENCHANTÉ,25,Victory Land Group,Freehold,,D11,EdgeProp
 FABER RESIDENCE,399,GuocoLand & Hong Leong & TID,99 yrs lease commencing from 2025,,D05,EdgeProp
 GRAND DUNMAN,1008,SingHaiyi Group & CSC Land,99 yrs lease commencing from 2022,2028,D15,EdgeProp
 GRANGE 1866,60,Grange 1866 Pte Ltd,Freehold,,D10,EdgeProp
@@ -36,15 +36,15 @@ INFINI AT EAST COAST,36,Global Dragon/GDL Land,Freehold,2022,D15,EdgeProp
 J@63,14,Distinct Homes Development,Freehold,2023,D15,EdgeProp
 JANSEN HOUSE,22,Mequity GS Pte Ltd,999 yrs lease commencing from 1876,2026,D19,EdgeProp
 J'DEN,368,CapitaLand Development,99 yrs lease commencing from 2023,2028,D22,EdgeProp
-JERVOIS MANSION,130,,Freehold,,D10,EdgeProp
+JERVOIS MANSION,130,Kimen Realty & Roxy-Pacific,Freehold,,D10,EdgeProp
 KASSIA,276,Hong Leong Holdings & CDL & TID,Freehold,,D17,EdgeProp
-KI RESIDENCES AT BROOKVALE,660,,999 yrs lease commencing from 1885,,D21,EdgeProp
+KI RESIDENCES AT BROOKVALE,660,Hoi Hup Realty & Sunway Developments,999 yrs lease commencing from 1885,,D21,EdgeProp
 KLIMT CAIRNHILL,138,Low Keng Huat,Freehold,2027,D09,EdgeProp
 KOON SENG HOUSE,17,Macly Group,Freehold,,D15,EdgeProp
-KOVAN JEWEL,34,,Freehold,,D19,EdgeProp
-K SUITES,19,,Freehold,,D15,EdgeProp
+KOVAN JEWEL,34,Soon Lian Realty,Freehold,,D19,EdgeProp
+K SUITES,19,EG Properties,Freehold,,D15,EdgeProp
 LAVENDER RESIDENCE,17,FLJ Property,Freehold,2024,D12,EdgeProp
-LEEDON GREEN,638,,Freehold,2023,D10,EdgeProp
+LEEDON GREEN,638,MCL Land & Yanlord Land,Freehold,2023,D10,EdgeProp
 LENTOR CENTRAL RESIDENCES,477,Hong Leong Holdings & GuocoLand & TID,99 yrs lease commencing from 2023,2028,D26,EdgeProp
 LENTOR HILLS RESIDENCES,598,Hong Leong Holdings & GuocoLand,99 yrs lease commencing from 2022,2027,D26,EdgeProp
 LENTORIA,267,TID (Hong Leong Holdings & Mitsui Fudosan),99 yrs lease commencing from 2022,2028,D26,EdgeProp
@@ -54,30 +54,30 @@ LIV @ MB,298,Bukit Sembawang Estates,99 yrs lease commencing from 2021,2026,D15,
 LYNDENWOODS,343,CapitaLand Development,99 yrs lease commencing from 2025,,D05,EdgeProp
 MEYER BLUE,226,UOL Group & Singapore Land,Freehold,2027,D15,EdgeProp
 MEYER MANSION,200,GuocoLand,Freehold,,D15,EdgeProp
-MIDTOWN BAY,219,,99 yrs lease commencing from 2018,,D07,EdgeProp
-MIDTOWN MODERN,558,,99 yrs lease commencing from 2019,2024,D07,EdgeProp
+MIDTOWN BAY,219,GuocoLand,99 yrs lease commencing from 2018,,D07,EdgeProp
+MIDTOWN MODERN,558,GuocoLand & Hong Leong Holdings,99 yrs lease commencing from 2019,2024,D07,EdgeProp
 MOOI RESIDENCES,24,Wenul HL,Freehold,,D10,EdgeProp
-MORI,137,,Freehold,,D14,EdgeProp
+MORI,137,Roxy-Pacific Holdings,Freehold,,D14,EdgeProp
 M SUITES,16,FG Resource Pte Ltd,Freehold,2024,D14,EdgeProp
 NAVA GROVE,552,MCL Land & Sinarmas Land,99 yrs lease commencing from 2024,2028,D21,EdgeProp
-NEU AT NOVENA,87,,Freehold,,D11,EdgeProp
+NEU AT NOVENA,87,Roxy-Pacific & Macly Group & LWH,Freehold,,D11,EdgeProp
 NORMANTON PARK,1862,Kingsford Development,99 yrs lease commencing from 2019,2023,D05,EdgeProp
 NORWOOD GRAND,348,CDL,99 yrs lease commencing from 2023,,D25,EdgeProp
 ONE BERNAM,351,MCC Land & HY Realty,99 yrs lease commencing from 2019,,D02,EdgeProp
 ONE MARINA GARDENS,937,Kingsford & MCC Singapore,99 yrs lease commencing from 2023,2028,D01,EdgeProp
 ONE PEARL BANK,774,CapitaLand,99 yrs lease commencing from 2019,2024,D03,EdgeProp
 ORCHARD SOPHIA,78,DB2Land,Freehold,2027,D09,EdgeProp
-PARK NOVA,54,,Freehold,,D10,EdgeProp
+PARK NOVA,54,Shun Tak Holdings,Freehold,,D10,EdgeProp
 PARKTOWN RESIDENCE,1193,UOL Group & CapitaLand & Singapore Land,99 yrs lease commencing from 2023,2028,D18,EdgeProp
-PARKWOOD RESIDENCES,18,,99 yrs lease commencing from 2018,,D19,EdgeProp
+PARKWOOD RESIDENCES,18,Oxley Holdings,99 yrs lease commencing from 2018,,D19,EdgeProp
 PARQ BELLA,20,Kims Land,Freehold,,D15,EdgeProp
-PASIR RIS 8,487,,99 yrs lease commencing from 2021,2024,D18,EdgeProp
+PASIR RIS 8,487,Allgreen Properties & Kerry Properties,99 yrs lease commencing from 2021,2024,D18,EdgeProp
 PEAK RESIDENCE,90,Tuan Sing Holdings,Freehold,,D11,EdgeProp
 PENRITH,462,Allgreen Properties,99 yrs lease commencing from 2024,,D03,EdgeProp
-PENROSE,566,,99 yrs lease commencing from 2019,,D14,EdgeProp
+PENROSE,566,CDL & Hong Leong Holdings,99 yrs lease commencing from 2019,,D14,EdgeProp
 PERFECT TEN,230,CK Asset Holdings,Freehold,,D10,EdgeProp
-PHOENIX RESIDENCES,74,,99 yrs lease commencing from 2019,,D23,EdgeProp
-PICCADILLY GRAND,407,,99 yrs lease commencing from 2021,2026,D08,EdgeProp
+PHOENIX RESIDENCES,74,OKP Holdings,99 yrs lease commencing from 2019,,D23,EdgeProp
+PICCADILLY GRAND,407,CDL & MCL Land,99 yrs lease commencing from 2021,2026,D08,EdgeProp
 PINETREE HILL,520,UOL Group & SingLand,99 yrs lease commencing from 2022,2027,D21,EdgeProp
 PROMENADE PEAK,596,Allgreen Properties,99 yrs lease commencing from 2024,,D03,EdgeProp
 PULLMAN RESIDENCES NEWTON,340,EL Development,Freehold,,D11,EdgeProp
@@ -93,34 +93,34 @@ SPRINGLEAF RESIDENCE,941,GuocoLand & Hong Leong Holdings,99 yrs lease commencing
 STRAITS AT JOO CHIAT,16,Roxy-Pacific Holdings,Freehold,,D15,EdgeProp
 TEMBUSU GRAND,638,CDL & MCL Land,99 yrs lease commencing from 2022,2027,D15,EdgeProp
 TERRA HILL,270,Hoi Hup Realty & Sunway Developments,Freehold,2028,D05,EdgeProp
-THE ARCADY AT BOON KENG,172,,Freehold,2027,D12,EdgeProp
+THE ARCADY AT BOON KENG,172,KSH Holdings & SLB & Ho Lee Group,Freehold,2027,D12,EdgeProp
 THE ARDEN,105,CNQC Realty,99 yrs lease commencing from 2023,2025,D23,EdgeProp
 THE ATELIER,120,Bukit Sembawang,Freehold,,D09,EdgeProp
-THE AVENIR,376,,Freehold,,D09,EdgeProp
+THE AVENIR,376,GuocoLand & Hong Leong Holdings,Freehold,,D09,EdgeProp
 THE BOTANY AT DAIRY FARM,386,Sim Lian Development,99 yrs lease commencing from 2022,2028,D23,EdgeProp
-THE COLLECTIVE AT ONE SOPHIA,367,,99 yrs lease commencing from 2023,,D09,EdgeProp
+THE COLLECTIVE AT ONE SOPHIA,367,SingHaiyi & Chip Eng Seng,99 yrs lease commencing from 2023,,D09,EdgeProp
 THE COMMODORE,219,JBE Holdings,99 yrs lease commencing from 2020,2025,D27,EdgeProp
 THE CONTINUUM,816,Hoi Hup Realty & Sunway Developments,Freehold,2027,D15,EdgeProp
-THE HILL @ONE-NORTH,142,,99 years lease commencing from 2022,,D05,EdgeProp
-THE HILLSHORE,59,,Freehold,,D05,EdgeProp
+THE HILL @ONE-NORTH,142,Kingsford Development,99 years lease commencing from 2022,,D05,EdgeProp
+THE HILLSHORE,59,FRX Capital & Tong Eng Group,Freehold,,D05,EdgeProp
 THE LAKEGARDEN RESIDENCES,306,Wing Tai Holdings,99 yrs lease commencing from 2023,2027,D22,EdgeProp
 THE LANDMARK,396,ZACD Group & SSLE & MCC Singapore,99 yrs lease commencing from 2020,2025,D03,EdgeProp
 THE LILIUM,80,SingHaiyi Group,Freehold,,D19,EdgeProp
 THE LINQ @ BEAUTY WORLD,120,BBR Holdings,Freehold,2025,D21,EdgeProp
 THE MYST,408,CDL,99 yrs lease commencing from 2023,2027,D23,EdgeProp
 THE ORIE,777,CDL & Frasers Property & Sekisui House,99 yrs lease commencing from 2024,2028,D12,EdgeProp
-THE REEF AT KING'S DOCK,429,,99 yrs lease commencing from 2021,2025,D04,EdgeProp
+THE REEF AT KING'S DOCK,429,Mapletree & Keppel Land,99 yrs lease commencing from 2021,2025,D04,EdgeProp
 THE RESERVE RESIDENCES,732,Far East Organization & Sino Group,99 yrs lease commencing from 2021,2028,D21,EdgeProp
 THE ROBERTSON OPUS,348,Frasers Property & Sekisui House,999 yrs lease commencing from 1841,2028,D09,EdgeProp
-THE SEN,347,,99 years leasehold,,D21,EdgeProp
+THE SEN,347,Sustained Land,99 years leasehold,,D21,EdgeProp
 THE SHOREFRONT,23,165@Loyang Pte Ltd,999 yrs lease commencing from 1937,2026,D17,EdgeProp
-THE WATERGARDENS AT CANBERRA,448,,99 yrs lease commencing from 2020,2024,D27,EdgeProp
-THE WOODLEIGH RESIDENCES,667,,99 yrs lease commencing from 2017,2023,D13,EdgeProp
+THE WATERGARDENS AT CANBERRA,448,UOL Group & Singapore Land & Kheng Leong,99 yrs lease commencing from 2020,2024,D27,EdgeProp
+THE WOODLEIGH RESIDENCES,667,Kajima Development & SPH,99 yrs lease commencing from 2017,2023,D13,EdgeProp
 TMW MAXWELL,324,Chip Eng Seng,99 yrs lease commencing from 2023,2027,D02,EdgeProp
 UNION SQUARE RESIDENCES,366,CDL,99 yrs lease commencing from 2024,2028,D01,EdgeProp
-UPPERHOUSE AT ORCHARD BOULEVARD,301,,99 yrs lease commencing from 2024,,D10,EdgeProp
-VAN HOLLAND,69,,Freehold,,D10,EdgeProp
-VIEW AT KISMIS,186,,99 yrs lease commencing from 2019,2024,D21,EdgeProp
+UPPERHOUSE AT ORCHARD BOULEVARD,301,UOL Group & Singapore Land,99 yrs lease commencing from 2024,,D10,EdgeProp
+VAN HOLLAND,69,Koh Brothers Development,Freehold,,D10,EdgeProp
+VIEW AT KISMIS,186,Roxy-Pacific & Tong Eng Group,99 yrs lease commencing from 2019,2024,D21,EdgeProp
 WATTEN HOUSE,180,UOL Group & SingLand,Freehold,2027,D11,EdgeProp
 WILSHIRE RESIDENCES,85,Tong Eng Group & Roxy-Pacific & Kim Seng,Freehold,,D10,EdgeProp
 W RESIDENCES MARINA VIEW - SINGAPORE,683,IOI Properties,99 yrs lease commencing from 2021,,D01,EdgeProp
