@@ -525,6 +525,10 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
         where_parts.append("LOWER(sale_type) = LOWER(:sale_type)")
         params['sale_type'] = filters['sale_type']
 
+    if filters.get('project'):
+        where_parts.append("LOWER(project_name) = LOWER(:project)")
+        params['project'] = filters['project']
+
     if filters.get('psf_min') is not None:
         where_parts.append("psf >= :psf_min")
         params['psf_min'] = float(filters['psf_min'])
