@@ -59,10 +59,12 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         const params = buildApiParams({
           panels: 'price_histogram',
           histogram_bins: numBins,
-          show_full_range: showFullRange
+          // Only send show_full_range when true (backend defaults to false)
+          ...(showFullRange && { show_full_range: 'true' })
         }, { excludeLocationDrill: true });
 
-        const response = await getDashboard(params);
+        // Skip cache when toggling to ensure fresh data
+        const response = await getDashboard(params, { skipCache: showFullRange });
         const responseData = response.data || {};
         const data = responseData.data || {};
 

@@ -8,7 +8,7 @@
  * 4. See map with both radius circles
  * 5. Get percentile rank showing how their deal compares
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getProjectNames, getDealCheckerMultiScope } from '../../api/client';
 import { PriceDistributionHeroChart } from '../PriceDistributionHeroChart';
 import DealCheckerMap from './DealCheckerMap';
@@ -42,6 +42,46 @@ const SCOPE_LABELS = {
   radius_1km: 'Within 1km Radius',
   radius_2km: 'Within 2km Radius'
 };
+
+// Volume gradient colors (matching Insights Map - red/hot to yellow/mild)
+const VOLUME_COLORS = {
+  hot: 'rgba(239, 68, 68, 0.15)',    // Red - Top tier (>90th percentile)
+  warm: 'rgba(249, 115, 22, 0.12)',   // Orange - High tier (70-90th percentile)
+  mild: 'rgba(250, 204, 21, 0.10)',   // Yellow - Medium tier (40-70th percentile)
+  cool: 'rgba(148, 180, 193, 0.08)', // Sky blue - Low tier (<40th percentile)
+};
+
+// Calculate volume percentile thresholds from project data
+function calculateVolumeThresholds(projects) {
+  const volumes = projects
+    .filter(p => p.transaction_count > 0)
+    .map(p => p.transaction_count)
+    .sort((a, b) => a - b);
+
+  if (volumes.length === 0) {
+    return { p40: 0, p70: 0, p90: 0 };
+  }
+
+  const getPercentile = (arr, p) => {
+    const index = Math.ceil((p / 100) * arr.length) - 1;
+    return arr[Math.max(0, index)];
+  };
+
+  return {
+    p40: getPercentile(volumes, 40),
+    p70: getPercentile(volumes, 70),
+    p90: getPercentile(volumes, 90),
+  };
+}
+
+// Get volume tier color for a project
+function getVolumeColor(txCount, thresholds) {
+  if (!txCount || txCount === 0) return 'transparent';
+  if (txCount >= thresholds.p90) return VOLUME_COLORS.hot;
+  if (txCount >= thresholds.p70) return VOLUME_COLORS.warm;
+  if (txCount >= thresholds.p40) return VOLUME_COLORS.mild;
+  return VOLUME_COLORS.cool;
+}
 
 export default function DealCheckerContent() {
   // Form state
