@@ -150,6 +150,8 @@ def dashboard():
                 options['location_grain'] = request.args.get('location_grain')
             if request.args.get('histogram_bins'):
                 options['histogram_bins'] = int(request.args.get('histogram_bins'))
+            if request.args.get('show_full_range'):
+                options['show_full_range'] = request.args.get('show_full_range', '').lower() == 'true'
 
             skip_cache = request.args.get('skip_cache', '').lower() == 'true'
 

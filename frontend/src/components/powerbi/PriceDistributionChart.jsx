@@ -65,7 +65,26 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         const response = await getDashboard(params);
         const responseData = response.data || {};
         const data = responseData.data || {};
-        const priceHistogram = data.price_histogram || { bins: [], stats: {}, tail: {} };
+
+        // Handle both old format (array) and new format (object with bins/stats/tail)
+        const rawHistogram = data.price_histogram;
+        let priceHistogram;
+
+        if (Array.isArray(rawHistogram)) {
+          // Old format: price_histogram is array of bins directly
+          priceHistogram = { bins: rawHistogram, stats: {}, tail: {} };
+        } else if (rawHistogram && typeof rawHistogram === 'object') {
+          // New format: price_histogram has bins, stats, tail
+          priceHistogram = {
+            bins: rawHistogram.bins || [],
+            stats: rawHistogram.stats || {},
+            tail: rawHistogram.tail || {}
+          };
+        } else {
+          priceHistogram = { bins: [], stats: {}, tail: {} };
+        }
+
+        console.log('PriceDistribution response:', { rawHistogram, priceHistogram });
 
         setHistogramData(priceHistogram);
         isInitialLoad.current = false;
