@@ -409,25 +409,27 @@ def get_hot_projects():
         price_max = request.args.get("price_max")
 
         # Build dynamic WHERE clauses
-        where_clauses = ["t.is_outlier = false"]
-        having_clauses = [
-            "COUNT(CASE WHEN t.sale_type = 'New Sale' THEN 1 END) > 0",
-            "COUNT(CASE WHEN t.sale_type = 'Resale' THEN 1 END) = 0"
-        ]
+        # IMPORTANT: units_sold is a HARD FACT - total confirmed New Sale transactions
+        # It should NOT be affected by bedroom/district/segment filters
+        # Filters only affect: which projects are shown, and median_price/psf calculations
+
+        # Base clause for all queries (outlier exclusion is always applied)
+        base_where = "t.is_outlier = false"
+
+        # Filter clauses - affect project visibility and median calculations, NOT units_sold
+        filter_clauses = []
         outer_where_clauses = []
         params = {"limit": limit}
 
-        # Bedroom filter - filter transactions by bedroom type
-        # Note: Frontend sends "4" for 4BR, "5" for 5BR+ meaning "this many or more"
+        # Bedroom filter - affects which projects are shown (must have sales in this bedroom type)
+        # but does NOT affect the units_sold count
         if bedroom:
             try:
                 bedroom_val = int(bedroom)
                 if bedroom_val >= 4:
-                    # 4B+ and 5B+ mean "this many or more"
-                    where_clauses.append(f"t.bedroom_count >= {bedroom_val}")
+                    filter_clauses.append(f"t.bedroom_count >= {bedroom_val}")
                 else:
-                    # 1B, 2B, 3B are exact matches
-                    where_clauses.append("t.bedroom_count = :bedroom")
+                    filter_clauses.append("t.bedroom_count = :bedroom")
                     params["bedroom"] = bedroom_val
             except ValueError:
                 pass
@@ -442,7 +444,7 @@ def get_hot_projects():
                 normalized.append(d)
             if normalized:
                 placeholders = ", ".join([f":district_{i}" for i in range(len(normalized))])
-                where_clauses.append(f"t.district IN ({placeholders})")
+                filter_clauses.append(f"t.district IN ({placeholders})")
                 for i, d in enumerate(normalized):
                     params[f"district_{i}"] = d
 
@@ -451,68 +453,86 @@ def get_hot_projects():
             segment_districts = get_districts_for_region(market_segment.upper())
             if segment_districts:
                 placeholders = ", ".join([f":seg_district_{i}" for i in range(len(segment_districts))])
-                where_clauses.append(f"t.district IN ({placeholders})")
+                filter_clauses.append(f"t.district IN ({placeholders})")
                 for i, d in enumerate(segment_districts):
                     params[f"seg_district_{i}"] = d
 
         # Price filters - applied in outer query on median_price
         if price_min:
             try:
-                outer_where_clauses.append("ps.median_price >= :price_min")
+                outer_where_clauses.append("fs.median_price >= :price_min")
                 params["price_min"] = float(price_min)
             except ValueError:
                 pass
 
         if price_max:
             try:
-                outer_where_clauses.append("ps.median_price <= :price_max")
+                outer_where_clauses.append("fs.median_price <= :price_max")
                 params["price_max"] = float(price_max)
             except ValueError:
                 pass
 
-        # Build the SQL query with dynamic filters
-        where_sql = " AND ".join(where_clauses)
-        having_sql = " AND ".join(having_clauses)
+        # Build SQL components
+        filter_where_sql = " AND ".join([base_where] + filter_clauses) if filter_clauses else base_where
         outer_where_sql = " AND ".join(outer_where_clauses) if outer_where_clauses else "1=1"
 
-        # Query: Get projects with New Sale transactions but NO resales
-        # This ensures we only show true "new launches" - projects still in developer sales phase
+        # Query with TWO CTEs:
+        # 1. total_project_sales: UNFILTERED units_sold (HARD FACT - confirmed transactions)
+        # 2. filtered_stats: Filtered median_price/psf for relevance + determines which projects to show
         sql = text(f"""
-            WITH project_stats AS (
+            WITH total_project_sales AS (
+                -- HARD FACT: Total confirmed New Sale transactions per project
+                -- This count is NEVER affected by bedroom/district/segment filters
                 SELECT
                     t.project_name,
                     t.district,
-                    COUNT(CASE WHEN t.sale_type = 'New Sale' THEN 1 END) as units_sold,
+                    COUNT(*) as units_sold,
+                    SUM(t.price) as total_value,
+                    MIN(t.transaction_date) as first_new_sale,
+                    MAX(t.transaction_date) as last_new_sale
+                FROM transactions t
+                WHERE t.is_outlier = false
+                  AND t.sale_type = 'New Sale'
+                GROUP BY t.project_name, t.district
+            ),
+            filtered_stats AS (
+                -- Filtered stats: median_price/psf based on user filters
+                -- Also determines which projects to show (must have matching transactions)
+                SELECT
+                    t.project_name,
+                    t.district,
+                    COUNT(CASE WHEN t.sale_type = 'New Sale' THEN 1 END) as filtered_count,
                     COUNT(CASE WHEN t.sale_type = 'Resale' THEN 1 END) as resale_count,
-                    SUM(CASE WHEN t.sale_type = 'New Sale' THEN t.price ELSE 0 END) as total_value,
                     AVG(CASE WHEN t.sale_type = 'New Sale' THEN t.psf END) as avg_psf,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = 'New Sale' THEN t.price END) as median_price,
-                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = 'New Sale' THEN t.psf END) as median_psf,
-                    MIN(CASE WHEN t.sale_type = 'New Sale' THEN t.transaction_date END) as first_new_sale,
-                    MAX(CASE WHEN t.sale_type = 'New Sale' THEN t.transaction_date END) as last_new_sale
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = 'New Sale' THEN t.psf END) as median_psf
                 FROM transactions t
-                WHERE {where_sql}
+                WHERE {filter_where_sql}
                 GROUP BY t.project_name, t.district
-                HAVING {having_sql}
+                HAVING COUNT(CASE WHEN t.sale_type = 'New Sale' THEN 1 END) > 0
+                   AND COUNT(CASE WHEN t.sale_type = 'Resale' THEN 1 END) = 0
             )
             SELECT
-                ps.project_name,
-                ps.district,
-                ps.units_sold,
-                ps.total_value,
-                ps.avg_psf,
-                ps.median_price,
-                ps.median_psf,
-                ps.first_new_sale,
-                ps.last_new_sale,
+                tps.project_name,
+                tps.district,
+                tps.units_sold,
+                tps.total_value,
+                fs.avg_psf,
+                fs.median_price,
+                fs.median_psf,
+                tps.first_new_sale,
+                tps.last_new_sale,
                 pl.has_popular_school_1km,
                 pl.market_segment,
                 pl.latitude,
                 pl.longitude
-            FROM project_stats ps
-            LEFT JOIN project_locations pl ON LOWER(TRIM(ps.project_name)) = LOWER(TRIM(pl.project_name))
+            FROM total_project_sales tps
+            INNER JOIN filtered_stats fs
+                ON tps.project_name = fs.project_name AND tps.district = fs.district
+            LEFT JOIN project_locations pl
+                ON LOWER(TRIM(tps.project_name)) = LOWER(TRIM(pl.project_name))
             WHERE {outer_where_sql}
-            ORDER BY ps.units_sold DESC
+            ORDER BY tps.units_sold DESC
             LIMIT :limit
         """)
 
