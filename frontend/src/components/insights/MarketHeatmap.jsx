@@ -370,7 +370,7 @@ export default function MarketHeatmap() {
                         )}
                       </div>
                     ) : (
-                      <p className="text-xs text-[#94B4C1] italic">
+                      <p className="text-xs text-[#547792] italic">
                         No transactions in selected period
                       </p>
                     )}
@@ -396,7 +396,7 @@ export default function MarketHeatmap() {
           ))}
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-gray-200 opacity-50" />
-            <span className="text-[10px] md:text-xs text-[#94B4C1]">
+            <span className="text-[10px] md:text-xs text-[#547792]">
               No data
             </span>
           </div>

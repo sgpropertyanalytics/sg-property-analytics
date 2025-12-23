@@ -379,7 +379,7 @@ export default function MarketHeatmap3D() {
             <h2 className="text-lg md:text-xl font-semibold text-white">
               District PSF Heatmap
             </h2>
-            <p className="text-xs md:text-sm text-[#94B4C1] mt-0.5">
+            <p className="text-xs md:text-sm text-[#547792] mt-0.5">
               3D visualization of median price per sqft across Singapore
             </p>
           </div>
@@ -420,7 +420,7 @@ export default function MarketHeatmap3D() {
             >
               <div className="flex flex-col items-center gap-3">
                 <div className="w-10 h-10 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-[#94B4C1]">Loading map data...</span>
+                <span className="text-sm text-[#547792]">Loading map data...</span>
               </div>
             </motion.div>
           )}
@@ -430,7 +430,7 @@ export default function MarketHeatmap3D() {
         {error && !loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#1a1a2e] z-20">
             <div className="text-center">
-              <p className="text-[#94B4C1]">{error}</p>
+              <p className="text-[#547792]">{error}</p>
               <button
                 onClick={fetchData}
                 className="mt-2 text-sm text-[#547792] hover:underline"
@@ -499,7 +499,7 @@ export default function MarketHeatmap3D() {
                 </div>
 
                 {/* District Name */}
-                <p className="text-xs text-[#94B4C1] mb-2 line-clamp-2">
+                <p className="text-xs text-[#547792] mb-2 line-clamp-2">
                   {popupInfo.feature.name}
                 </p>
 
@@ -512,20 +512,20 @@ export default function MarketHeatmap3D() {
                 {popupInfo.district.has_data ? (
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#94B4C1]">Median PSF</span>
+                      <span className="text-[#547792]">Median PSF</span>
                       <span className="font-semibold text-white font-mono">
                         {formatPsf(popupInfo.district.median_psf)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#94B4C1]">Transactions</span>
+                      <span className="text-[#547792]">Transactions</span>
                       <span className="font-medium text-white font-mono">
                         {popupInfo.district.tx_count?.toLocaleString() || 0}
                       </span>
                     </div>
                     {popupInfo.district.yoy_pct !== null && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-[#94B4C1]">YoY Change</span>
+                        <span className="text-[#547792]">YoY Change</span>
                         <span
                           className={`font-medium font-mono ${
                             formatYoY(popupInfo.district.yoy_pct)?.colorClass
@@ -602,7 +602,7 @@ export default function MarketHeatmap3D() {
             rounded-lg shadow-xl
           "
           >
-            <p className="text-[10px] text-[#94B4C1] uppercase tracking-wider mb-2">
+            <p className="text-[10px] text-[#547792] uppercase tracking-wider mb-2">
               PSF Legend
             </p>
             <div className="space-y-1.5">
@@ -649,7 +649,7 @@ export default function MarketHeatmap3D() {
             rounded-lg shadow-xl
           "
           >
-            <p className="text-[10px] text-[#94B4C1] uppercase tracking-wider">
+            <p className="text-[10px] text-[#547792] uppercase tracking-wider">
               Height = PSF Value
             </p>
           </div>
@@ -661,7 +661,7 @@ export default function MarketHeatmap3D() {
         <div className="px-4 py-3 md:px-6 md:py-4 bg-[#16162a] border-t border-[#94B4C1]/20">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-[10px] text-[#94B4C1] uppercase tracking-wider">
+              <p className="text-[10px] text-[#547792] uppercase tracking-wider">
                 Lowest PSF
               </p>
               <p className="text-sm md:text-base font-semibold text-white font-mono">
@@ -669,7 +669,7 @@ export default function MarketHeatmap3D() {
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-[#94B4C1] uppercase tracking-wider">
+              <p className="text-[10px] text-[#547792] uppercase tracking-wider">
                 Districts
               </p>
               <p className="text-sm md:text-base font-semibold text-white font-mono">
@@ -677,7 +677,7 @@ export default function MarketHeatmap3D() {
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-[#94B4C1] uppercase tracking-wider">
+              <p className="text-[10px] text-[#547792] uppercase tracking-wider">
                 Highest PSF
               </p>
               <p className="text-sm md:text-base font-semibold text-white font-mono">

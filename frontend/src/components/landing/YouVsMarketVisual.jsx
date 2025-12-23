@@ -41,7 +41,7 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs text-[#94B4C1] uppercase tracking-wider font-semibold">
+                <span className="text-xs text-[#547792] uppercase tracking-wider font-semibold">
                   Price Analysis
                 </span>
                 {/* Liquidity Badge */}
@@ -59,7 +59,7 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
               </div>
             </div>
             <div className="text-right flex-shrink-0">
-              <div className="text-[10px] sm:text-xs text-[#94B4C1] uppercase tracking-wider font-semibold mb-1">
+              <div className="text-[10px] sm:text-xs text-[#547792] uppercase tracking-wider font-semibold mb-1">
                 Unit Type
               </div>
               <div className="text-xs sm:text-sm font-medium text-[#547792]">
@@ -114,7 +114,7 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
           </div>
 
           {/* X-axis labels - show only key values */}
-          <div className="flex justify-between mb-4 text-[10px] text-[#94B4C1]">
+          <div className="flex justify-between mb-4 text-[10px] text-[#547792]">
             <span>$1,650</span>
             <span className="text-[#547792] font-medium">$1,800 (median)</span>
             <span className="text-[#213448] font-bold">$1,950 (you)</span>
@@ -125,7 +125,7 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
           <div className="flex flex-wrap items-center gap-4 mb-4 text-xs">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm bg-[#94B4C1]/70" />
-              <span className="text-[#94B4C1]">Other buyers</span>
+              <span className="text-[#547792]">Other buyers</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm bg-[#547792]" />
@@ -163,7 +163,7 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
 
         {/* Footer */}
         <div className="px-4 sm:px-6 py-2 sm:py-3 bg-[#FDFBF7] border-t border-[#94B4C1]/20">
-          <div className="flex items-center justify-between text-[10px] sm:text-xs text-[#94B4C1]">
+          <div className="flex items-center justify-between text-[10px] sm:text-xs text-[#547792]">
             <span>Based on {transactionCount} transactions (last 12 months)</span>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />

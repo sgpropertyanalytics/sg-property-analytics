@@ -218,10 +218,10 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
             </p>
             {/* Z-score explanation */}
             <div className="mt-1 flex items-center gap-1.5 group relative">
-              <svg className="w-3.5 h-3.5 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-xs text-[#94B4C1] cursor-help">What is Z-score?</span>
+              <span className="text-xs text-[#547792] cursor-help">What is Z-score?</span>
               {/* Tooltip */}
               <div className="absolute left-0 top-full mt-1 w-72 p-3 bg-[#213448] text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                 <p className="font-medium mb-2">Z-score measures relative liquidity within each project:</p>
@@ -230,7 +230,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                   <div className="flex justify-between"><span className="text-gray-300">0.0</span><span>Average speed for this project</span></div>
                   <div className="flex justify-between"><span className="text-blue-100">-1.0 or lower</span><span>Sells much slower than avg</span></div>
                 </div>
-                <p className="mt-2 text-[10px] text-[#94B4C1]">Normalizes across projects of different sizes for fair comparison.</p>
+                <p className="mt-2 text-[10px] text-[#547792]">Normalizes across projects of different sizes for fair comparison.</p>
               </div>
             </div>
           </div>
@@ -245,7 +245,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
               >
                 Expand All
               </button>
-              <span className="text-[#94B4C1]">|</span>
+              <span className="text-[#547792]">|</span>
               <button
                 onClick={collapseAll}
                 className="px-2 py-1 text-xs text-[#547792] hover:bg-[#EAE0CF]/50 rounded transition-colors"
@@ -257,7 +257,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
 
             {/* Window Toggle */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#94B4C1] font-medium">Window:</span>
+              <span className="text-xs text-[#547792] font-medium">Window:</span>
               {[6, 12, 24].map((months) => (
                 <button
                   key={months}
@@ -279,7 +279,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
       {/* Legend */}
       <div className="px-6 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20">
         <div className="flex flex-wrap items-center gap-4 text-xs">
-          <span className="text-[#94B4C1] font-medium">Liquidity:</span>
+          <span className="text-[#547792] font-medium">Liquidity:</span>
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_COLORS.very_liquid }} />
             <span className="text-[#213448]">Very Liquid</span>
@@ -298,11 +298,11 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_COLORS.very_illiquid }} />
-            <span className="text-[#94B4C1]">Very Illiquid</span>
+            <span className="text-[#547792]">Very Illiquid</span>
           </div>
           <div className="flex items-center gap-1.5 ml-4 border-l border-[#94B4C1]/30 pl-4">
             <div className="w-4 h-3 rounded border border-dashed border-[#94B4C1]" style={{ backgroundColor: LIQUIDITY_COLORS.insufficient }} />
-            <span className="text-[#94B4C1]">n&lt;5</span>
+            <span className="text-[#547792]">n&lt;5</span>
           </div>
         </div>
       </div>

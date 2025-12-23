@@ -239,7 +239,7 @@ export default function DealCheckerContent() {
                     </div>
                     <div className="max-h-60 overflow-y-auto">
                       {filteredProjects.length === 0 ? (
-                        <div className="px-3 py-4 text-sm text-[#94B4C1] text-center">No projects found</div>
+                        <div className="px-3 py-4 text-sm text-[#547792] text-center">No projects found</div>
                       ) : (
                         filteredProjects.slice(0, 100).map(p => (
                           <button
@@ -251,7 +251,7 @@ export default function DealCheckerContent() {
                             }`}
                           >
                             <span className="truncate">{p.name}</span>
-                            <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
+                            <span className="text-xs text-[#547792] ml-2 flex-shrink-0">{p.district}</span>
                           </button>
                         ))
                       )}

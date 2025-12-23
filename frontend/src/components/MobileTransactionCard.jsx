@@ -23,7 +23,7 @@ export function MobileTransactionCard({ transaction, formatCurrency, formatDate 
           <div className="text-xs text-[#547792] mt-0.5">
             {txn.district || '-'} &bull; {txn.bedroom_count || '-'}BR &bull; {formatDate(txn.transaction_date)}
           </div>
-          <div className="text-xs text-[#94B4C1] mt-0.5">
+          <div className="text-xs text-[#547792] mt-0.5">
             {txn.area_sqft?.toLocaleString() || '-'} sqft &bull; {txn.tenure || '-'}
           </div>
         </div>

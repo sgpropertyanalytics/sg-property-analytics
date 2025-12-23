@@ -320,7 +320,7 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
       {/* Footer Insights */}
       <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
         <div className="flex flex-wrap items-center gap-4 text-xs">
-          <span className="text-[#94B4C1] font-medium">Peak Premium:</span>
+          <span className="text-[#547792] font-medium">Peak Premium:</span>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: REGION_CONFIG.CCR.color }} />
             <span className="text-[#213448]">CCR {formatPremium(ccrMax)}</span>
@@ -331,7 +331,7 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: REGION_CONFIG.OCR.color }} />
-            <span className={ocrMax.count < 20 ? "text-[#94B4C1]" : "text-[#213448]"}>OCR {formatPremium(ocrMax)}</span>
+            <span className={ocrMax.count < 20 ? "text-[#547792]" : "text-[#213448]"}>OCR {formatPremium(ocrMax)}</span>
           </div>
         </div>
       </div>

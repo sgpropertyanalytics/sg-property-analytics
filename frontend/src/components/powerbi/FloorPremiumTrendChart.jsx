@@ -331,7 +331,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
       {/* Footer Insights */}
       <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
         <div className="flex flex-wrap items-center gap-4 text-xs">
-          <span className="text-[#94B4C1] font-medium">Recent Trend:</span>
+          <span className="text-[#547792] font-medium">Recent Trend:</span>
           {upperTrend !== null && (
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FLOOR_TIERS.Upper.color }} />
@@ -348,7 +348,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
               </span>
             </div>
           )}
-          <span className="text-[#94B4C1] ml-auto">vs Lower floor baseline</span>
+          <span className="text-[#547792] ml-auto">vs Lower floor baseline</span>
         </div>
       </div>
     </div>
