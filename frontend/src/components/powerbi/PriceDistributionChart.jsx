@@ -12,6 +12,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
+import { KeyInsightBox } from '../ui';
 
 ChartJS.register(
   CategoryScale,
@@ -381,6 +382,13 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
           )}
         </div>
       </div>
+
+      {/* Key Insight */}
+      <KeyInsightBox title="Key Takeaway" variant="info">
+        The <span className="font-semibold text-[#213448]">median price</span> shows where half of transactions fall below.
+        A <span className="font-semibold text-[#213448]">narrow IQR</span> means prices are tightly clustered,
+        while a wide spread suggests diverse unit types or market uncertainty.
+      </KeyInsightBox>
 
       {/* Chart */}
       <div className="p-4" style={{ height }}>
