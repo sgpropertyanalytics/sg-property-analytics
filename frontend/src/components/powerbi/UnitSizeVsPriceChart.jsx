@@ -219,14 +219,17 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     },
   }), []);
 
+  // Wrapper style with min-height for the chart area
+  const containerStyle = { minHeight: height + 80 };
+
   // Loading state
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50" style={{ height: height + 80 }}>
-        <div className="p-4 border-b border-[#94B4C1]/30">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={containerStyle}>
+        <div className="p-4 border-b border-[#94B4C1]/30 shrink-0">
           <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
         </div>
-        <div className="flex items-center justify-center h-full">
+        <div className="flex-1 flex items-center justify-center">
           <div className="text-[#547792]">Loading...</div>
         </div>
       </div>
@@ -236,11 +239,11 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   // Error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50" style={{ height: height + 80 }}>
-        <div className="p-4 border-b border-[#94B4C1]/30">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={containerStyle}>
+        <div className="p-4 border-b border-[#94B4C1]/30 shrink-0">
           <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
         </div>
-        <div className="flex items-center justify-center h-full">
+        <div className="flex-1 flex items-center justify-center">
           <div className="text-red-500">Error: {error}</div>
         </div>
       </div>
@@ -248,9 +251,9 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   }
 
   return (
-    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden ${updating ? 'opacity-70' : ''}`}>
-      {/* Header */}
-      <div className="p-4 border-b border-[#94B4C1]/30">
+    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col ${updating ? 'opacity-70' : ''}`} style={containerStyle}>
+      {/* Header - fixed height, won't grow */}
+      <div className="p-4 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
@@ -264,13 +267,13 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="p-4" style={{ height }}>
+      {/* Chart - fills remaining space */}
+      <div className="flex-1 p-4 min-h-0">
         <Scatter ref={chartRef} data={chartData} options={options} />
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
+      {/* Footer - fixed height, won't grow */}
+      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] shrink-0">
         <span>Hover for details | Colors show bedroom types | Sampled for performance</span>
       </div>
     </div>

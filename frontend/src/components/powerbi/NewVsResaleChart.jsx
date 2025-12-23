@@ -177,11 +177,11 @@ export function NewVsResaleChart({ height = 350 }) {
       {
         label: 'New Sale',
         data: newLaunchPrice,
-        borderColor: '#3B82F6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderColor: '#213448',  // Deep Navy - primary palette color
+        backgroundColor: 'rgba(33, 52, 72, 0.1)',
         borderWidth: 2,
         pointRadius: 4,
-        pointBackgroundColor: '#3B82F6',
+        pointBackgroundColor: '#213448',
         pointBorderColor: '#fff',
         pointBorderWidth: 1,
         tension: 0.3,
@@ -191,12 +191,12 @@ export function NewVsResaleChart({ height = 350 }) {
       {
         label: 'Young Resale (4-9 yrs)',
         data: resalePrice,
-        borderColor: '#10B981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        borderColor: '#547792',  // Ocean Blue - secondary palette color
+        backgroundColor: 'rgba(84, 119, 146, 0.1)',
         borderWidth: 2,
         borderDash: [5, 5],
         pointRadius: 4,
-        pointBackgroundColor: '#10B981',
+        pointBackgroundColor: '#547792',
         pointBorderColor: '#fff',
         pointBorderWidth: 1,
         tension: 0.3,
@@ -310,18 +310,18 @@ export function NewVsResaleChart({ height = 350 }) {
     },
   };
 
-  // Trend indicator icon
+  // Trend indicator icon - using palette colors
   const getTrendIcon = (trend) => {
     if (trend === 'widening') {
       return (
-        <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
         </svg>
       );
     }
     if (trend === 'narrowing') {
       return (
-        <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
         </svg>
       );
@@ -365,21 +365,21 @@ export function NewVsResaleChart({ height = 350 }) {
         {/* Premium KPIs */}
         <div className="flex flex-wrap gap-2 mt-3">
           {summary.currentPremium !== null && summary.currentPremium !== undefined && (
-            <span className="px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs md:text-sm font-medium inline-flex items-center gap-1">
+            <span className="px-3 py-1.5 rounded-full bg-[#213448]/10 text-[#213448] text-xs md:text-sm font-medium inline-flex items-center gap-1">
               Current: {summary.currentPremium > 0 ? '+' : ''}{summary.currentPremium}%
               {getTrendIcon(summary.premiumTrend)}
             </span>
           )}
           {summary.avgPremium10Y !== null && summary.avgPremium10Y !== undefined && (
-            <span className="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 text-xs md:text-sm">
+            <span className="px-3 py-1.5 rounded-full bg-[#EAE0CF]/50 text-[#547792] text-xs md:text-sm">
               Period Avg: {summary.avgPremium10Y > 0 ? '+' : ''}{summary.avgPremium10Y}%
             </span>
           )}
           {summary.premiumTrend && summary.premiumTrend !== 'stable' && (
             <span className={`px-3 py-1.5 rounded-full text-xs md:text-sm ${
               summary.premiumTrend === 'widening'
-                ? 'bg-red-50 text-red-700'
-                : 'bg-green-50 text-green-700'
+                ? 'bg-[#213448]/10 text-[#213448]'
+                : 'bg-[#94B4C1]/30 text-[#547792]'
             }`}>
               {summary.premiumTrend === 'widening' ? 'Gap widening' : 'Gap narrowing'}
             </span>
