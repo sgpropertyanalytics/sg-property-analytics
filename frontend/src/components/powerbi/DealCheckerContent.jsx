@@ -44,11 +44,12 @@ const SCOPE_LABELS = {
 };
 
 // Volume gradient colors (matching Insights Map - red/hot to yellow/mild)
+// Using higher opacity for better visibility
 const VOLUME_COLORS = {
-  hot: 'rgba(239, 68, 68, 0.15)',    // Red - Top tier (>90th percentile)
-  warm: 'rgba(249, 115, 22, 0.12)',   // Orange - High tier (70-90th percentile)
-  mild: 'rgba(250, 204, 21, 0.10)',   // Yellow - Medium tier (40-70th percentile)
-  cool: 'rgba(148, 180, 193, 0.08)', // Sky blue - Low tier (<40th percentile)
+  hot: 'rgba(239, 68, 68, 0.25)',    // Red - Top tier (>90th percentile)
+  warm: 'rgba(249, 115, 22, 0.20)',   // Orange - High tier (70-90th percentile)
+  mild: 'rgba(250, 204, 21, 0.18)',   // Yellow - Medium tier (40-70th percentile)
+  cool: 'rgba(148, 180, 193, 0.12)', // Sky blue - Low tier (<40th percentile)
 };
 
 // Calculate volume percentile thresholds from project data
