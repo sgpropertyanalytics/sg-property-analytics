@@ -337,7 +337,7 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
   };
 
   const locationLabels = {
-    region: 'Region',
+    region: 'Segment',
     district: 'District',
     project: 'Project'
   };

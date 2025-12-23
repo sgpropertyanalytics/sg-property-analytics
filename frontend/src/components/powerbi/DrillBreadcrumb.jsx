@@ -32,7 +32,7 @@ export function DrillBreadcrumb() {
   };
 
   const locationLevelLabels = {
-    region: 'Region',
+    region: 'Segment',
     district: 'District',
     project: 'Project',
   };

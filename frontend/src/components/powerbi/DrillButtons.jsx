@@ -88,7 +88,7 @@ export function DrillButtons({
         levels,
         canDrillUp: currentIndex > 0,
         canDrillDown: currentIndex < levels.length - 1,
-        levelLabels: { region: 'Region', district: 'District' }
+        levelLabels: { region: 'Segment', district: 'District' }
       };
     } else if (hierarchyType === 'price') {
       // Price distribution doesn't have drill hierarchy

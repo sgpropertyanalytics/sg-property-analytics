@@ -605,9 +605,9 @@ export function ValueParityPanel() {
                     </select>
                   </div>
 
-                  {/* Region */}
+                  {/* Market Segment */}
                   <div>
-                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Region</label>
+                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Segment</label>
                     <select
                       value={region}
                       onChange={(e) => {

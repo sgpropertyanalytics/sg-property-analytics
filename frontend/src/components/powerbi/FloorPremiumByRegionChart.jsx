@@ -306,9 +306,9 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
     <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-        <h3 className="font-semibold text-[#213448]">Floor Premium by Region</h3>
+        <h3 className="font-semibold text-[#213448]">Floor Premium by Market Segment</h3>
         <p className="text-xs text-[#547792] mt-0.5">
-          Compare how floor premiums vary across CCR, RCR, and OCR
+          Compare how floor premiums vary across market segments
         </p>
       </div>
 
