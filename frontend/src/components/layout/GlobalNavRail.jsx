@@ -14,7 +14,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
  * Pages:
  * 1. Market Pulse - Current MacroOverview analytics content
  * 2. Value Parity - Budget search tool (includes New Launches + Resale)
- * 3. Analytics View - Power BI style deep-dive
+ * 3. Floor Dispersion - Floor level analysis
  * 4. Insights - Placeholder
  */
 
@@ -40,12 +40,12 @@ export const NAV_ITEMS = [
     ),
   },
   {
-    id: 'analytics-view',
-    path: '/analytics-view',
-    label: 'Analytics View',
+    id: 'floor-dispersion',
+    path: '/floor-dispersion',
+    label: 'Floor Dispersion',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
       </svg>
     ),
   },

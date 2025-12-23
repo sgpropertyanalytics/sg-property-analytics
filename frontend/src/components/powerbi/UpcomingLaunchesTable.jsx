@@ -35,7 +35,7 @@ export function UpcomingLaunchesTable({ height = 400 }) {
     try {
       const params = {
         limit: 100,
-        launch_year: 2026,
+        // No launch_year filter - show all upcoming launches
         sort: sortConfig.column,
         order: sortConfig.order,
       };

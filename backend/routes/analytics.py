@@ -1217,8 +1217,8 @@ def aggregate():
     Now includes server-side caching for faster repeated queries.
 
     Query params:
-      - group_by: comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region)
-      - metrics: comma-separated metrics (count, median_psf, avg_psf, total_value, median_price, avg_price, min_psf, max_psf, price_25th, price_75th)
+      - group_by: comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region, floor_level)
+      - metrics: comma-separated metrics (count, median_psf, avg_psf, total_value, median_price, avg_price, min_psf, max_psf, price_25th, price_75th, psf_25th, psf_75th, median_psf_actual)
       - district: comma-separated districts (D01,D02,...)
       - bedroom: comma-separated bedroom counts (2,3,4)
       - segment: CCR, RCR, OCR
@@ -1463,6 +1463,10 @@ def aggregate():
             )
             group_columns.append(region_case)
             select_columns.append(region_case.label("region"))
+        elif g == "floor_level":
+            # Group by floor level classification
+            group_columns.append(Transaction.floor_level)
+            select_columns.append(Transaction.floor_level.label("floor_level"))
 
     # Add metric columns
     if "count" in metrics:
@@ -1489,6 +1493,13 @@ def aggregate():
         select_columns.append(func.percentile_cont(0.25).within_group(Transaction.price).label("price_25th"))
     if "price_75th" in metrics:
         select_columns.append(func.percentile_cont(0.75).within_group(Transaction.price).label("price_75th"))
+    if "psf_25th" in metrics:
+        select_columns.append(func.percentile_cont(0.25).within_group(Transaction.psf).label("psf_25th"))
+    if "psf_75th" in metrics:
+        select_columns.append(func.percentile_cont(0.75).within_group(Transaction.psf).label("psf_75th"))
+    if "median_psf_actual" in metrics:
+        # True median PSF using percentile_cont(0.5)
+        select_columns.append(func.percentile_cont(0.5).within_group(Transaction.psf).label("median_psf_actual"))
 
     # Build the query
     if select_columns:

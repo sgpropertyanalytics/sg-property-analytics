@@ -5,7 +5,7 @@ import LandingPage from './pages/Landing';
 import Login from './pages/Login';
 import { DashboardLayout } from './components/layout';
 import { MacroOverviewContent } from './pages/MacroOverview';
-import { AnalyticsViewContent } from './pages/AnalyticsView';
+import { FloorDispersionContent } from './pages/FloorDispersion';
 import { InsightsContent } from './pages/Insights';
 import { ValueParityPanel } from './components/ValueParityPanel';
 
@@ -24,7 +24,7 @@ import { ValueParityPanel } from './components/ValueParityPanel';
  * - /login: User authentication
  * - /market-pulse: Market analytics dashboard (premium)
  * - /value-parity: Budget search tool (premium) - includes New Launches + Resale
- * - /analytics-view: Power BI-style analytics (premium)
+ * - /floor-dispersion: Floor level analysis (premium)
  * - /insights: AI-powered market insights (premium)
  */
 function App() {
@@ -83,15 +83,18 @@ function App() {
             }
           />
 
-          {/* Analytics View - Pinned filter sidebar */}
+          {/* Floor Dispersion - Floor level analysis */}
           <Route
-            path="/analytics-view"
+            path="/floor-dispersion"
             element={
-              <DashboardLayout activePage="analytics-view">
-                <AnalyticsViewContent />
+              <DashboardLayout activePage="floor-dispersion">
+                <FloorDispersionContent />
               </DashboardLayout>
             }
           />
+
+          {/* Legacy route redirect */}
+          <Route path="/analytics-view" element={<Navigate to="/floor-dispersion" replace />} />
 
           {/* Insights - Placeholder */}
           <Route

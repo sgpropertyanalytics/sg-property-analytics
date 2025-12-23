@@ -8,7 +8,7 @@ SEMANTIC CLARIFICATION:
 - For ACTIVE sales data (already launched), use /api/projects/hot instead
 
 Provides endpoints for:
-- 2026+ new private condo launches (pre-launch)
+- Future new private condo launches (pre-launch, any year)
 - Cross-validated data from EdgeProp, PropNex, ERA
 - Links to GLS tender data for land bid prices
 
@@ -32,7 +32,7 @@ def get_all():
     Query params:
         - market_segment: CCR, RCR, or OCR (optional)
         - district: Filter by district, e.g. D09 (optional)
-        - launch_year: Filter by launch year (default: 2026)
+        - launch_year: Filter by launch year (optional, shows all if not specified)
         - needs_review: If 'true', only show items needing review
         - limit: Max results (default 100)
         - sort: Field to sort by (default: project_name)
