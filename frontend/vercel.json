@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://sgpropertytrend.onrender.com/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://sg-property-analyzer.onrender.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
