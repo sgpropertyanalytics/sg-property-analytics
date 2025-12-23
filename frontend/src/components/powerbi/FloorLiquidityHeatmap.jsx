@@ -43,7 +43,6 @@ export function FloorLiquidityHeatmap({ height = 500, bedroom, segment }) {
       try {
         const params = buildApiParams({
           window_months: windowMonths,
-          limit: 30,
           min_transactions: 10
         });
         if (bedroom) params.bedroom = bedroom;

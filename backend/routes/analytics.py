@@ -2043,7 +2043,7 @@ def floor_liquidity_heatmap():
         window_months = 12
 
     min_transactions = int(request.args.get('min_transactions', 10))
-    limit = min(int(request.args.get('limit', 30)), 50)
+    limit = int(request.args.get('limit', 0))  # 0 = no limit (show all projects)
     skip_cache = request.args.get('skip_cache', '').lower() == 'true'
 
     # Build cache key
@@ -2168,10 +2168,11 @@ def floor_liquidity_heatmap():
                     else:
                         zone['liquidity_label'] = 'Very Illiquid'
 
-        # Sort alphabetically by project name and limit
+        # Sort alphabetically by project name and optionally limit
         projects.sort(key=lambda x: x['project_name'])
         total_projects = len(projects)
-        projects = projects[:limit]
+        if limit > 0:
+            projects = projects[:limit]
 
         # Build response
         result = {
