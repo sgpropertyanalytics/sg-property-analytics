@@ -14,7 +14,6 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { KeyInsightBox } from '../ui/KeyInsightBox';
 
 ChartJS.register(
   CategoryScale,
@@ -320,62 +319,37 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <h3 className="font-semibold text-[#213448]">Floor Premium Trend</h3>
         <p className="text-xs text-[#547792] mt-0.5">
-          How floor premiums have changed over the years
+          How floor premiums have evolved over time
         </p>
       </div>
-
-      {/* Dynamic Key Insight */}
-      <KeyInsightBox
-        title="Key Takeaway"
-        variant={upperTrend !== null && upperTrend > 2 ? 'positive' : upperTrend !== null && upperTrend < -2 ? 'warning' : 'info'}
-      >
-        {upperTrend !== null && upperTrend > 2 ? (
-          <>
-            <span className="font-semibold text-[#213448]">Floor premiums are increasing</span> -
-            high-floor units are becoming relatively more expensive compared to lower floors.
-          </>
-        ) : upperTrend !== null && upperTrend < -2 ? (
-          <>
-            <span className="font-semibold text-[#213448]">Floor premiums are compressing</span> -
-            the price gap between high and low floors is shrinking.
-          </>
-        ) : (
-          <>
-            <span className="font-semibold text-[#213448]">Floor premiums are stable</span> -
-            the relative value of high floors vs low floors has remained consistent.
-          </>
-        )}
-      </KeyInsightBox>
 
       {/* Chart */}
       <div className="p-4" style={{ height: height - 100 }}>
         <Chart ref={chartRef} type="line" data={chartData} options={options} />
       </div>
 
-      {/* Footer - Recent changes */}
-      <div className="px-4 py-3 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
-        <div className="flex flex-wrap items-center gap-3 text-xs mb-2">
-          <span className="text-[#94B4C1] font-medium">Recent Change (last 3 years):</span>
+      {/* Footer Insights */}
+      <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
+        <div className="flex flex-wrap items-center gap-4 text-xs">
+          <span className="text-[#547792] font-medium">Recent Trend:</span>
           {upperTrend !== null && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-white border border-[#94B4C1]/30">
+            <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FLOOR_TIERS.Upper.color }} />
-              <span className="text-[#213448] font-medium">
-                Upper floors: {upperTrend >= 0 ? 'Up' : 'Down'} {Math.abs(upperTrend).toFixed(1)} points
+              <span className="text-[#213448]">
+                Upper {upperTrend >= 0 ? '↑' : '↓'} {Math.abs(upperTrend).toFixed(1)}pp
               </span>
             </div>
           )}
           {midTrend !== null && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-white border border-[#94B4C1]/30">
+            <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FLOOR_TIERS.Mid.color }} />
-              <span className="text-[#213448] font-medium">
-                Mid floors: {midTrend >= 0 ? 'Up' : 'Down'} {Math.abs(midTrend).toFixed(1)} points
+              <span className="text-[#213448]">
+                Mid {midTrend >= 0 ? '↑' : '↓'} {Math.abs(midTrend).toFixed(1)}pp
               </span>
             </div>
           )}
+          <span className="text-[#547792] ml-auto">vs Lower floor baseline</span>
         </div>
-        <p className="text-[10px] text-[#94B4C1]">
-          * Points = percentage point change in premium (e.g., +5 points means premium grew from 10% to 15%)
-        </p>
       </div>
     </div>
   );

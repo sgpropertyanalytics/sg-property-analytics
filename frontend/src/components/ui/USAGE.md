@@ -36,6 +36,85 @@ import { KPICard, KPICardGroup } from '../components/ui';
 </KPICardGroup>
 ```
 
+## PageSummaryBox
+
+"What This Page Shows" explanatory box for page headers. Helps users understand
+what the page is about and what insights they can gain.
+
+```tsx
+import { PageSummaryBox } from '../components/ui';
+
+// Basic usage
+<PageSummaryBox>
+  Analyze how <span className="font-semibold text-[#213448]">floor level affects price</span> in
+  Singapore condos. Higher floors typically command a premium due to views and prestige.
+</PageSummaryBox>
+
+// Custom title
+<PageSummaryBox title="About This Analysis">
+  This dashboard shows market trends across all districts...
+</PageSummaryBox>
+```
+
+## KeyInsightBox
+
+Plain English insight summaries for individual charts. Use inside chart cards
+to explain what the data means in simple terms.
+
+```tsx
+import { KeyInsightBox } from '../components/ui';
+
+// Basic usage (inside a chart component)
+<KeyInsightBox title="Key Takeaway">
+  Higher floors typically cost{' '}
+  <span className="font-bold text-[#213448]">~2.5% more</span>{' '}
+  per level. The <span className="font-bold text-[#213448]">Mid</span> floor
+  range has the most sales, making prices there most reliable.
+</KeyInsightBox>
+
+// Variants: 'default' | 'positive' | 'warning' | 'info'
+<KeyInsightBox title="Trend Alert" variant="positive">
+  Floor premiums are increasing - high-floor units are becoming more valuable.
+</KeyInsightBox>
+
+<KeyInsightBox title="Caution" variant="warning">
+  Limited data available. Results may be less reliable.
+</KeyInsightBox>
+```
+
+## SectionHeader
+
+Visual section dividers with accent bars. Use to create hierarchy between
+chart sections on a page.
+
+```tsx
+import { SectionHeader } from '../components/ui';
+
+// Colors: 'navy' | 'blue' | 'light'
+<SectionHeader color="navy">Primary Analysis</SectionHeader>
+<HeroChart />
+
+<SectionHeader color="blue">Detailed Breakdowns</SectionHeader>
+<SecondaryCharts />
+
+<SectionHeader color="light">Project-Level Detail</SectionHeader>
+<DetailTable />
+```
+
+## SampleSizeWarning
+
+Warning banner for low sample sizes. Automatically hides when sample is sufficient.
+
+```tsx
+import { SampleSizeWarning } from '../components/ui';
+
+// Shows warning if count < threshold (default 50)
+<SampleSizeWarning count={totalTransactions} threshold={100} />
+
+// Compact inline mode
+<SampleSizeWarning count={15} compact />
+```
+
 ## Other Patterns
 
 For charts, tables, and layout patterns, use Tailwind CSS classes directly.

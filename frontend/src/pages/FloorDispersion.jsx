@@ -39,29 +39,12 @@ export function FloorDispersionContent() {
     <div className="h-full overflow-auto">
       <div className="p-3 md:p-4 lg:p-6">
         {/* Header */}
-        <div className="mb-4">
+        <div className="mb-6">
           <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
             Floor Dispersion
           </h1>
           <p className="text-[#547792] text-sm mt-1">
-            How floor level affects condo prices in Singapore
-          </p>
-        </div>
-
-        {/* Page Summary */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-[#213448]/5 via-white to-[#547792]/5 rounded-xl border border-[#94B4C1]/30">
-          <h2 className="text-sm font-bold text-[#213448] mb-2 flex items-center gap-2">
-            <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            What This Page Shows
-          </h2>
-          <p className="text-sm text-[#547792] leading-relaxed">
-            Analyze how <span className="font-semibold text-[#213448]">floor level affects price</span> in
-            Singapore condos. Higher floors typically command a premium due to views and prestige, but the size of
-            this premium <span className="font-semibold text-[#213448]">varies by market segment</span> (CCR/RCR/OCR)
-            and <span className="font-semibold text-[#213448]">changes over time</span>.
-            Use the filters to focus on specific bedroom types or market segments.
+            Institutional-grade floor level analysis — where price meets liquidity
           </p>
         </div>
 
@@ -121,14 +104,8 @@ export function FloorDispersionContent() {
           )}
         </div>
 
-        {/* Section: Primary Analysis */}
+        {/* Floor Liquidity Chart - Hero Visualization */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1 h-5 bg-[#213448] rounded"></div>
-            <span className="text-sm font-semibold text-[#213448] uppercase tracking-wide">
-              Primary Analysis
-            </span>
-          </div>
           <FloorLiquidityChart
             height={420}
             bedroom={bedroom || undefined}
@@ -136,13 +113,7 @@ export function FloorDispersionContent() {
           />
         </div>
 
-        {/* Section: Detailed Breakdowns */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1 h-5 bg-[#547792] rounded"></div>
-          <span className="text-sm font-semibold text-[#547792] uppercase tracking-wide">
-            Detailed Breakdowns
-          </span>
-        </div>
+        {/* Secondary Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Floor Premium by Region - Comparison Chart */}
           <FloorPremiumByRegionChart
@@ -158,14 +129,8 @@ export function FloorDispersionContent() {
           />
         </div>
 
-        {/* Section: Project-Level Detail */}
+        {/* Liquidity Heatmap - Full tower view */}
         <div className="mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1 h-5 bg-[#94B4C1] rounded"></div>
-            <span className="text-sm font-semibold text-[#94B4C1] uppercase tracking-wide">
-              Project-Level Detail
-            </span>
-          </div>
           <FloorLiquidityHeatmap
             bedroom={bedroom || undefined}
             segment={segment || undefined}
