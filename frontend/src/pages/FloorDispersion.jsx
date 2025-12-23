@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import FloorLiquidityChart from '../components/powerbi/FloorLiquidityChart';
 import FloorPremiumByRegionChart from '../components/powerbi/FloorPremiumByRegionChart';
+import FloorPremiumTrendChart from '../components/powerbi/FloorPremiumTrendChart';
 
 /**
  * Floor Dispersion Page - Floor Level Analysis
@@ -119,23 +120,12 @@ export function FloorDispersionContent() {
             bedroom={bedroom || undefined}
           />
 
-          {/* Floor Premium Trend - Coming Soon */}
-          <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-[#547792]/10 flex items-center justify-center">
-                <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-[#213448]">Floor Premium Trend</h3>
-                <p className="text-xs text-[#547792]">Coming soon</p>
-              </div>
-            </div>
-            <div className="h-48 flex items-center justify-center bg-[#EAE0CF]/20 rounded-lg">
-              <span className="text-[#94B4C1] text-sm">Historical premium evolution</span>
-            </div>
-          </div>
+          {/* Floor Premium Trend Chart */}
+          <FloorPremiumTrendChart
+            height={320}
+            bedroom={bedroom || undefined}
+            segment={segment || undefined}
+          />
         </div>
       </div>
     </div>

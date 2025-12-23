@@ -116,12 +116,12 @@ export function UpcomingLaunchesTable({ height = 400 }) {
 
   // Column definitions
   const columns = [
-    { key: 'expected_launch_date', label: 'Launch Date', sortable: true, width: 'w-24' },
-    { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-44' },
-    { key: 'district', label: 'District', sortable: true, width: 'w-16' },
-    { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-16' },
-    { key: 'total_units', label: 'Units', sortable: true, width: 'w-16', align: 'right' },
-    { key: 'indicative_psf', label: 'Est. PSF', sortable: false, width: 'w-32', align: 'right' },
+    { key: 'expected_launch_date', label: 'Launch', sortable: true, width: 'w-20' },
+    { key: 'project_name', label: 'Project', sortable: true, width: 'w-40' },
+    { key: 'developer', label: 'Developer', sortable: true, width: 'w-36' },
+    { key: 'market_segment', label: 'Seg', sortable: true, width: 'w-12' },
+    { key: 'total_units', label: 'Units', sortable: true, width: 'w-14', align: 'right' },
+    { key: 'indicative_psf', label: 'Est. PSF', sortable: false, width: 'w-28', align: 'right' },
   ];
 
   // Count by segment
@@ -237,11 +237,15 @@ export function UpcomingLaunchesTable({ height = 400 }) {
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-xs">
                       {formatDate(project.expected_launch_date, project.launch_year)}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[200px]" title={project.project_name}>
+                    <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[180px]" title={project.project_name}>
                       {project.project_name || '-'}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-xs">
-                      {project.district || '-'}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-xs truncate max-w-[160px]" title={project.developer}>
+                      {project.developer === 'TBD' ? (
+                        <span className="text-slate-400 italic">TBD</span>
+                      ) : (
+                        project.developer || <span className="text-slate-400 italic">TBD</span>
+                      )}
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100">
                       {project.market_segment ? (
@@ -258,10 +262,10 @@ export function UpcomingLaunchesTable({ height = 400 }) {
                         <span className="text-slate-400">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right">
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right text-xs">
                       {project.total_units ? project.total_units.toLocaleString() : '-'}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right">
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right text-xs">
                       {project.indicative_psf_low || project.indicative_psf_high ? (
                         <span title="Indicative pricing from cross-validated sources">
                           {formatPSFRange(project.indicative_psf_low, project.indicative_psf_high)}
