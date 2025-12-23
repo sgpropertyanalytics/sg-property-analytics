@@ -223,21 +223,21 @@ function HeroSection({ navigate }) {
       </motion.div>
 
       {/* Combined Visual: Dashboard + YouVsMarket Card */}
-      <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10 mt-8 sm:mt-12">
+      <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10 mt-8 sm:mt-12 mb-8">
 
-        {/* Desktop: Side by side layout - equal heights */}
-        <div className="hidden lg:grid lg:grid-cols-5 gap-6 items-stretch">
+        {/* Desktop: Side by side layout */}
+        <div className="hidden lg:grid lg:grid-cols-5 gap-6">
 
           {/* Dashboard Screenshot - 3D perspective (3 cols) */}
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="col-span-3 relative flex flex-col"
+            className="col-span-3"
             style={{ perspective: '2000px' }}
           >
             <div
-              className="relative rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/15 bg-white ring-1 ring-[#213448]/5 flex-1 flex flex-col"
+              className="relative rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/15 bg-white ring-1 ring-[#213448]/5"
               style={{
                 transformStyle: 'preserve-3d',
                 transform: 'rotateY(3deg) rotateX(1deg)',
@@ -247,17 +247,9 @@ function HeroSection({ navigate }) {
               <img
                 src="/dashboard-screenshot.png"
                 alt="PropAnalytics Dashboard"
-                className="w-full h-full object-cover object-top"
+                className="w-full h-auto"
               />
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20 pointer-events-none" />
-            </div>
-
-            {/* "Full Dashboard" label */}
-            <div className="mt-4 text-center">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#213448] text-[#EAE0CF] text-xs font-medium rounded-full shadow-lg">
-                <span>Full Analytics Dashboard</span>
-                <span className="text-[#94B4C1]">→</span>
-              </span>
             </div>
           </motion.div>
 
@@ -266,18 +258,9 @@ function HeroSection({ navigate }) {
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="col-span-2 flex flex-col"
+            className="col-span-2"
           >
-            <div className="flex-1 flex flex-col">
-              <YouVsMarketVisual compact />
-            </div>
-
-            {/* "Example Analysis" label */}
-            <div className="mt-4 text-center">
-              <span className="text-xs text-[#94B4C1]">
-                ↑ Example: What you'll see for any unit
-              </span>
-            </div>
+            <YouVsMarketVisual compact />
           </motion.div>
         </div>
 
@@ -303,12 +286,6 @@ function HeroSection({ navigate }) {
           {/* YouVsMarket Card - foreground */}
           <div className="relative pt-8">
             <YouVsMarketVisual />
-
-            {/* Context text */}
-            <div className="mt-4 text-center text-sm text-[#547792]">
-              <span className="text-[#213448] font-medium">This is just one analysis.</span>
-              {' '}Access the full dashboard for any project.
-            </div>
           </div>
         </div>
       </div>
