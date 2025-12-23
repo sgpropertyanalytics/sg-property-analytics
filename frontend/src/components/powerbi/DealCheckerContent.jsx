@@ -439,7 +439,7 @@ export default function DealCheckerContent() {
                     <tr>
                       <th className="px-3 py-2 text-left font-medium text-slate-600 border-b">Project</th>
                       <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Dist</th>
-                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Txns</th>
+                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Transactions</th>
                       <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Median Price</th>
                       <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Sqft</th>
                     </tr>

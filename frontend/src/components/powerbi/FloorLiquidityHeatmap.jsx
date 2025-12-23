@@ -203,7 +203,7 @@ export function FloorLiquidityHeatmap({ height = 500, bedroom, segment }) {
                   <div className="max-w-[200px] truncate" title={project.project_name}>
                     {project.project_name}
                   </div>
-                  <div className="text-xs text-[#94B4C1]">{project.district} • {project.total_transactions} txns</div>
+                  <div className="text-xs text-[#94B4C1]">{project.district} • {project.total_transactions} transactions</div>
                 </td>
 
                 {/* Floor Zone Cells */}

@@ -240,10 +240,10 @@ export function NewVsResaleChart({ height = 350 }) {
 
               // Show transaction counts for transparency
               if (dataPoint.newLaunchCount > 0) {
-                lines.push(`New Sale: ${dataPoint.newLaunchCount} txns`);
+                lines.push(`New Sale: ${dataPoint.newLaunchCount} transactions`);
               }
               if (dataPoint.resaleCount > 0) {
-                lines.push(`Resale: ${dataPoint.resaleCount} txns`);
+                lines.push(`Resale: ${dataPoint.resaleCount} transactions`);
               }
 
               // Show premium if both values exist
