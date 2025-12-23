@@ -253,7 +253,13 @@ export function TransactionDataTable({ height = 400 }) {
       </div>
 
       {/* Pagination Footer */}
-      <div className="px-4 py-3 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30 flex items-center justify-between">
+      <div className="px-4 py-3 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30">
+        {/* Glossary */}
+        <div className="flex items-center gap-4 text-[10px] text-[#547792] mb-2">
+          <span><strong>PSF</strong> = Price per Square Foot</span>
+          <span><strong>BR</strong> = Bedroom</span>
+        </div>
+        <div className="flex items-center justify-between">
         <div className="text-xs text-[#547792]">
           {!loading && data.length > 0 && (
             <>
@@ -309,6 +315,7 @@ export function TransactionDataTable({ height = 400 }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
             </svg>
           </button>
+        </div>
         </div>
       </div>
     </div>

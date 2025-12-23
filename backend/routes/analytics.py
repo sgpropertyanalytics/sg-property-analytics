@@ -2178,7 +2178,7 @@ def floor_liquidity_heatmap():
         }
 
         # Cache the result
-        _dashboard_cache.set(cache_key, result, expire=300)  # 5 minutes
+        _dashboard_cache[cache_key] = result  # Uses global TTL from cache config
 
         elapsed = time.time() - start
         result['meta']['elapsed_ms'] = int(elapsed * 1000)

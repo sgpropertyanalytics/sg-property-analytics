@@ -92,12 +92,13 @@ export function HotProjectsTable({
     return sortConfig.order === 'desc' ? bVal - aVal : aVal - bVal;
   });
 
-  // Color coding for % sold
+  // Color coding for % sold (BUYER-CENTRIC: indicates inventory availability)
+  // Green = high availability (good for buyers), Red = low availability (act fast)
   const getPercentClass = (percent) => {
     if (percent === null || percent === undefined) return 'bg-slate-100 text-slate-500';
-    if (percent >= 80) return 'bg-red-100 text-red-700';      // Almost sold out
-    if (percent >= 50) return 'bg-amber-100 text-amber-700';  // Selling well
-    return 'bg-green-100 text-green-700';                      // Available
+    if (percent >= 80) return 'bg-red-100 text-red-700';      // Low inventory - act fast
+    if (percent >= 50) return 'bg-amber-100 text-amber-700';  // Moderate inventory
+    return 'bg-green-100 text-green-700';                      // High inventory available
   };
 
   // Calculate min/max for color scaling
@@ -354,20 +355,20 @@ export function HotProjectsTable({
 
       {/* Footer with legend and footnotes */}
       <div className="px-4 py-3 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30">
-        {/* Legend row */}
+        {/* Legend row - BUYER-CENTRIC: colors indicate inventory availability */}
         <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-[#547792] mb-2">
-          {/* % Sold legend */}
+          {/* % Sold legend - from buyer perspective (availability) */}
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-red-400 rounded-full"></span>
-            <span>80%+ Sold</span>
+            <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+            <span>&lt;50% Sold (High Availability)</span>
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-            <span>50-79%</span>
+            <span>50-79% (Moderate)</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-            <span>&lt;50%</span>
+            <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+            <span>80%+ (Low Inventory)</span>
           </span>
           <span className="border-l border-[#94B4C1]/50 pl-3 flex items-center gap-1">
             <span className="px-1 py-0.5 bg-[#213448] text-white text-[9px] rounded">CCR</span>
@@ -381,6 +382,11 @@ export function HotProjectsTable({
             <span className="px-1 py-0.5 bg-[#94B4C1] text-[#213448] text-[9px] rounded">OCR</span>
             <span>Outside Central</span>
           </span>
+        </div>
+        {/* Glossary */}
+        <div className="flex items-center gap-4 text-[10px] text-[#547792] mb-2 border-t border-[#94B4C1]/30 pt-2 mt-2">
+          <span><strong>PSF</strong> = Price per Square Foot</span>
+          <span><strong>Med.</strong> = Median</span>
         </div>
         {/* Footnotes */}
         <div className="text-[10px] text-[#547792]/80 space-y-0.5">

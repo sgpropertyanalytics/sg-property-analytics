@@ -266,7 +266,7 @@ export function UpcomingLaunchesTable({ height = 400 }) {
 
       {/* Footer with legend - using theme colors to match HotProjectsTable */}
       <div className="px-4 py-2 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30">
-        <div className="flex items-center justify-between text-xs text-[#547792]">
+        <div className="flex items-center justify-between text-xs text-[#547792] mb-2">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <span className="px-1 py-0.5 bg-[#213448] text-white text-[9px] rounded">CCR</span>
@@ -284,6 +284,11 @@ export function UpcomingLaunchesTable({ height = 400 }) {
           <span className="text-[#547792]/70">
             Sources: ERA, EdgeProp, PropertyReview
           </span>
+        </div>
+        {/* Glossary */}
+        <div className="flex items-center gap-4 text-[10px] text-[#547792] border-t border-[#94B4C1]/30 pt-2">
+          <span><strong>PSF</strong> = Price per Square Foot</span>
+          <span><strong>Est.</strong> = Estimated</span>
         </div>
       </div>
     </div>
