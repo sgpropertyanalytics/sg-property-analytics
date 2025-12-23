@@ -38,9 +38,12 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
   const [hoveredCell, setHoveredCell] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
-  // Group projects by district
+  // Group projects by district and calculate district-level aggregations
   const projectsByDistrict = useMemo(() => {
     const grouped = {};
+    const districtAggregates = {};
+
+    // Group projects
     for (const project of data.projects) {
       const district = project.district || 'Unknown';
       if (!grouped[district]) {
@@ -48,14 +51,58 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
       }
       grouped[district].push(project);
     }
+
+    // Calculate district-level aggregates
+    for (const [district, projects] of Object.entries(grouped)) {
+      // Sum counts per floor zone across all projects
+      const zoneTotals = {};
+      for (const project of projects) {
+        for (const [zone, zoneData] of Object.entries(project.floor_zones || {})) {
+          if (!zoneTotals[zone]) {
+            zoneTotals[zone] = { count: 0 };
+          }
+          zoneTotals[zone].count += zoneData.count || 0;
+        }
+      }
+
+      // Calculate velocities and Z-scores for district
+      const velocities = [];
+      for (const [zone, totals] of Object.entries(zoneTotals)) {
+        totals.velocity = totals.count / windowMonths;
+        velocities.push(totals.velocity);
+      }
+
+      // Calculate Z-scores if we have multiple zones
+      if (velocities.length >= 2) {
+        const mean = velocities.reduce((a, b) => a + b, 0) / velocities.length;
+        const variance = velocities.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / velocities.length;
+        const std = Math.sqrt(variance);
+
+        for (const [zone, totals] of Object.entries(zoneTotals)) {
+          if (std > 0) {
+            totals.z_score = (totals.velocity - mean) / std;
+          } else {
+            totals.z_score = 0;
+          }
+        }
+      } else {
+        for (const totals of Object.values(zoneTotals)) {
+          totals.z_score = 0;
+        }
+      }
+
+      districtAggregates[district] = zoneTotals;
+    }
+
     // Sort districts (D01, D02, etc.)
     const sortedDistricts = Object.keys(grouped).sort((a, b) => {
       const numA = parseInt(a.replace('D', ''), 10) || 99;
       const numB = parseInt(b.replace('D', ''), 10) || 99;
       return numA - numB;
     });
-    return { grouped, sortedDistricts };
-  }, [data.projects]);
+
+    return { grouped, sortedDistricts, districtAggregates };
+  }, [data.projects, windowMonths]);
 
   // Toggle district expansion
   const toggleDistrict = (district) => {
@@ -298,9 +345,32 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                         <span className="text-[#94B4C1] font-normal">({projects.length} projects)</span>
                       </div>
                     </td>
-                    {floorZones.map((zone) => (
-                      <td key={zone} className="bg-[#547792]/10 px-1 py-1.5" />
-                    ))}
+                    {floorZones.map((zone) => {
+                      const districtZone = projectsByDistrict.districtAggregates[district]?.[zone];
+                      const hasData = districtZone && districtZone.count > 0;
+                      const bgColor = hasData
+                        ? getLiquidityColor(districtZone.z_score, districtZone.count)
+                        : LIQUIDITY_COLORS.insufficient;
+                      const textColor = hasData && districtZone.z_score >= 0.25
+                        ? 'text-white'
+                        : 'text-gray-700';
+
+                      return (
+                        <td
+                          key={zone}
+                          className="text-center px-1 py-1.5 font-semibold"
+                          style={{ backgroundColor: bgColor }}
+                        >
+                          {hasData ? (
+                            <span className={`text-xs font-mono ${textColor}`}>
+                              {districtZone.z_score > 0 ? '+' : ''}{districtZone.z_score.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
 
                   {/* Project Rows - Show when expanded */}
