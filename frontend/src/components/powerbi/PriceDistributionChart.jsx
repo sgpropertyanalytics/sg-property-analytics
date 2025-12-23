@@ -134,8 +134,8 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height: height + 80 }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-[#547792]">Loading...</div>
         </div>
       </div>
@@ -144,8 +144,8 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height: height + 80 }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-red-500">Error: {error}</div>
         </div>
       </div>
@@ -154,8 +154,8 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
 
   if (bucketedData.buckets.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height: height + 80 }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-[#547792]">No data available</div>
         </div>
       </div>

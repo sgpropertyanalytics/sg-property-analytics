@@ -202,8 +202,8 @@ export function PriceCompressionChart({ height = 380 }) {
   // Loading state
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ minHeight: height + 120 }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-4">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
             <span className="text-sm text-[#547792]">Loading compression data...</span>
@@ -216,8 +216,8 @@ export function PriceCompressionChart({ height = 380 }) {
   // Error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ minHeight: height + 120 }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-red-500">Error: {error}</div>
         </div>
       </div>

@@ -390,7 +390,7 @@ export function NewVsResaleChart({ height = 350 }) {
 
       {/* How to Interpret */}
       <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-        Tracks the price gap between new launches and recently TOP/young resale units to highlight pricing discrepancies and relative value.
+        Tracks the price gap between new launches and recently TOP / young resale units (&lt; 10 years in age) to highlight pricing discrepancies and relative value.
       </KeyInsightBox>
 
       {/* Chart Container - follows chart-container-contract skill */}
@@ -407,13 +407,6 @@ export function NewVsResaleChart({ height = 350 }) {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Info tooltip */}
-      <div className="px-3 py-2 md:px-4 md:py-2 border-t border-[#94B4C1]/30 bg-gray-50">
-        <p className="text-[10px] md:text-xs text-[#547792]">
-          Compares median total price of new sales with young resale units (4-9 years old). Excludes projects without resale transactions. Respects sidebar filters.
-        </p>
       </div>
     </div>
   );

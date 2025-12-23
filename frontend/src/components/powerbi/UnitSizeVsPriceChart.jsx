@@ -219,13 +219,10 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     },
   }), []);
 
-  // Wrapper style with min-height for the chart area
-  const containerStyle = { minHeight: height + 80 };
-
   // Loading state
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={containerStyle}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
         <div className="p-4 border-b border-[#94B4C1]/30 shrink-0">
           <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
         </div>
@@ -239,7 +236,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   // Error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={containerStyle}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
         <div className="p-4 border-b border-[#94B4C1]/30 shrink-0">
           <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
         </div>
@@ -251,7 +248,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   }
 
   return (
-    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col ${updating ? 'opacity-70' : ''}`} style={containerStyle}>
+    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col ${updating ? 'opacity-70' : ''}`} style={{ minHeight: height }}>
       {/* Header - fixed height, won't grow */}
       <div className="p-4 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center justify-between">

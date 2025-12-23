@@ -164,8 +164,8 @@ export function MedianPsfTrendChart({ height = 300 }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height: height + 80 }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-[#547792]">Loading...</div>
         </div>
       </div>
@@ -174,8 +174,8 @@ export function MedianPsfTrendChart({ height = 300 }) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height: height + 80 }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-red-500">Error: {error}</div>
         </div>
       </div>
