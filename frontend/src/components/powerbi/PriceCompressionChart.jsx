@@ -187,6 +187,7 @@ export function PriceCompressionChart({ height = 380 }) {
   const compressionScore = useMemo(() => calculateCompressionScore(data), [data]);
   const marketSignals = useMemo(() => detectMarketSignals(data), [data]);
   const inversionZones = useMemo(() => detectInversionZones(data), [data]);
+  const averageSpreads = useMemo(() => calculateAverageSpreads(data), [data]);
   const latestData = data[data.length - 1] || {};
   const sparklineData = data.map(d => d.combinedSpread).filter(v => v != null);
 
@@ -450,11 +451,13 @@ export function PriceCompressionChart({ height = 380 }) {
             <MarketSignalCard
               type="ccr-rcr"
               spread={latestData.ccrRcrSpread}
+              avgSpread={averageSpreads.ccrRcr}
               isInverted={marketSignals.ccrDiscount}
             />
             <MarketSignalCard
               type="rcr-ocr"
               spread={latestData.rcrOcrSpread}
+              avgSpread={averageSpreads.rcrOcr}
               isInverted={marketSignals.ocrOverheated}
             />
           </div>
@@ -528,6 +531,26 @@ function calculateCompressionScore(data) {
   else if (clampedScore <= 30) label = 'wide';
 
   return { score: clampedScore, label };
+}
+
+/**
+ * Calculate average spreads from the filtered data
+ */
+function calculateAverageSpreads(data) {
+  if (data.length === 0) return { ccrRcr: null, rcrOcr: null };
+
+  const ccrRcrSpreads = data.map(d => d.ccrRcrSpread).filter(v => v != null);
+  const rcrOcrSpreads = data.map(d => d.rcrOcrSpread).filter(v => v != null);
+
+  const avgCcrRcr = ccrRcrSpreads.length > 0
+    ? Math.round(ccrRcrSpreads.reduce((a, b) => a + b, 0) / ccrRcrSpreads.length)
+    : null;
+
+  const avgRcrOcr = rcrOcrSpreads.length > 0
+    ? Math.round(rcrOcrSpreads.reduce((a, b) => a + b, 0) / rcrOcrSpreads.length)
+    : null;
+
+  return { ccrRcr: avgCcrRcr, rcrOcr: avgRcrOcr };
 }
 
 /**
@@ -674,71 +697,79 @@ function Sparkline({ data, width = 70, height = 16 }) {
 
 /**
  * Smart Market Signal Card
- * Shows "scream" state when market hierarchy is inverted
+ * Consistent height with compression score card
+ * Shows + sign, value, and % vs average
  */
-function MarketSignalCard({ type, spread, isInverted }) {
+function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
   if (spread == null) return null;
 
-  // CCR-RCR: Core vs Fringe
-  if (type === 'ccr-rcr') {
-    if (isInverted) {
-      // SCREAMING STATE: CCR is cheaper than RCR (opportunity)
+  // Calculate % difference from average
+  const pctVsAvg = avgSpread && avgSpread !== 0
+    ? Math.round(((spread - avgSpread) / Math.abs(avgSpread)) * 100)
+    : null;
+
+  const labels = {
+    'ccr-rcr': 'Prime Premium (CCR vs RCR)',
+    'rcr-ocr': 'Fringe Premium (RCR vs OCR)',
+  };
+
+  // Inverted states (anomalies)
+  if (isInverted) {
+    if (type === 'ccr-rcr') {
+      // CCR < RCR: Prime Discount (opportunity)
       return (
-        <div className="flex items-center px-3 py-2 bg-amber-100 border-2 border-amber-400 rounded-lg shadow-sm">
-          <div className="mr-2 p-1.5 bg-amber-500 rounded-full text-white flex-shrink-0">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-              <circle cx="7" cy="7" r="1" fill="currentColor" />
-            </svg>
+        <div className="bg-amber-100 border-2 border-amber-400 rounded-lg px-3 py-2 text-center min-w-[140px]">
+          <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
+            Market Anomaly
           </div>
-          <div className="min-w-0">
-            <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Market Anomaly</div>
-            <div className="text-sm font-extrabold text-amber-900 truncate">
-              Prime Discount <span className="text-amber-700 font-semibold">(${Math.abs(spread)} cheaper)</span>
-            </div>
+          <div className="text-lg md:text-xl font-bold text-amber-900">
+            −${Math.abs(spread).toLocaleString()} psf
+          </div>
+          <div className="text-[10px] text-amber-700 font-semibold">
+            Prime Discount
           </div>
         </div>
       );
     }
-    // Normal state
-    return (
-      <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Prime Premium (CCR vs RCR)</div>
-        <div className="text-sm font-semibold text-[#213448]">${spread.toLocaleString()} psf</div>
-      </div>
-    );
-  }
-
-  // RCR-OCR: Fringe vs Suburbs
-  if (type === 'rcr-ocr') {
-    if (isInverted) {
-      // SCREAMING STATE: OCR is more expensive than RCR (risk)
+    if (type === 'rcr-ocr') {
+      // OCR > RCR: Risk Alert
       return (
-        <div className="flex items-center px-3 py-2 bg-red-50 border-2 border-red-500 rounded-lg shadow-sm">
-          <div className="mr-2 p-1.5 bg-red-600 rounded-full text-white flex-shrink-0 animate-pulse">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-            </svg>
+        <div className="bg-red-50 border-2 border-red-500 rounded-lg px-3 py-2 text-center min-w-[140px]">
+          <div className="text-[10px] font-bold text-red-800 uppercase tracking-wider">
+            Risk Alert
           </div>
-          <div className="min-w-0">
-            <div className="text-[10px] font-bold text-red-800 uppercase tracking-wider">Risk Alert</div>
-            <div className="text-sm font-extrabold text-red-900 truncate">
-              OCR Overheated <span className="text-red-700 font-semibold">(+${Math.abs(spread)} over RCR)</span>
-            </div>
+          <div className="text-lg md:text-xl font-bold text-red-900">
+            −${Math.abs(spread).toLocaleString()} psf
+          </div>
+          <div className="text-[10px] text-red-700 font-semibold">
+            OCR Overheated
           </div>
         </div>
       );
     }
-    // Normal state
-    return (
-      <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Fringe Premium (RCR vs OCR)</div>
-        <div className="text-sm font-semibold text-[#547792]">${spread.toLocaleString()} psf</div>
-      </div>
-    );
   }
 
-  return null;
+  // Normal state - consistent card design
+  const isAboveAvg = pctVsAvg !== null && pctVsAvg > 0;
+  const isBelowAvg = pctVsAvg !== null && pctVsAvg < 0;
+
+  return (
+    <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center min-w-[140px]">
+      <div className="text-[10px] text-[#547792] uppercase tracking-wide">
+        {labels[type]}
+      </div>
+      <div className="text-lg md:text-xl font-bold text-[#213448]">
+        +${spread.toLocaleString()} psf
+      </div>
+      {pctVsAvg !== null && (
+        <div className={`text-[10px] font-medium ${
+          isBelowAvg ? 'text-emerald-600' : isAboveAvg ? 'text-red-600' : 'text-[#547792]'
+        }`}>
+          {isBelowAvg ? `${pctVsAvg}% below avg` : isAboveAvg ? `+${pctVsAvg}% above avg` : 'At average'}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default PriceCompressionChart;
