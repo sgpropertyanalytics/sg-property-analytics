@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import FloorLiquidityChart from '../components/powerbi/FloorLiquidityChart';
+import FloorPremiumByRegionChart from '../components/powerbi/FloorPremiumByRegionChart';
 
 /**
  * Floor Dispersion Page - Floor Level Analysis
@@ -110,25 +111,15 @@ export function FloorDispersionContent() {
           />
         </div>
 
-        {/* Future Charts Placeholder */}
+        {/* Secondary Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-[#547792]/10 flex items-center justify-center">
-                <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-[#213448]">Floor Premium by Region</h3>
-                <p className="text-xs text-[#547792]">Coming soon</p>
-              </div>
-            </div>
-            <div className="h-48 flex items-center justify-center bg-[#EAE0CF]/20 rounded-lg">
-              <span className="text-[#94B4C1] text-sm">CCR vs RCR vs OCR comparison</span>
-            </div>
-          </div>
+          {/* Floor Premium by Region - Comparison Chart */}
+          <FloorPremiumByRegionChart
+            height={320}
+            bedroom={bedroom || undefined}
+          />
 
+          {/* Floor Premium Trend - Coming Soon */}
           <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-lg bg-[#547792]/10 flex items-center justify-center">
