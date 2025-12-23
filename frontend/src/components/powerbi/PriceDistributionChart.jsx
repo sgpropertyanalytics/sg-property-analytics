@@ -132,64 +132,6 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
 
   const { stats, tail } = histogramData;
 
-  // Dynamic spread label based on IQR ratio (computed from server-side stats)
-  const getSpreadLabel = (iqr, median) => {
-    if (!iqr || !median || median === 0) return null;
-    const ratio = iqr / median;
-    if (ratio < 0.2) return 'tight';
-    if (ratio < 0.4) return 'moderate';
-    return 'wide';
-  };
-
-  // Generate dynamic insight text from server-computed stats
-  const generateInsightText = () => {
-    if (!stats?.median || !stats?.p25 || !stats?.p75 || !stats?.total_count) {
-      return null;
-    }
-
-    const n = stats.total_count;
-    const spreadLabel = getSpreadLabel(stats.iqr, stats.median);
-
-    // Build the insight parts
-    const parts = [];
-
-    // Base insight
-    parts.push(
-      <>
-        Based on <span className="font-semibold text-[#213448]">{n.toLocaleString()}</span> transactions,
-        half of all sales fall between <span className="font-semibold text-[#213448]">{formatPrice(stats.p25)}–{formatPrice(stats.p75)}</span> (IQR {formatPrice(stats.iqr)}),
-        with a typical deal at <span className="font-semibold text-[#213448]">{formatPrice(stats.median)}</span>.
-      </>
-    );
-
-    // Spread interpretation
-    if (spreadLabel) {
-      parts.push(
-        <>
-          {' '}The <span className="font-semibold text-[#213448]">{spreadLabel}</span> spread suggests
-          {spreadLabel === 'tight'
-            ? ' a homogeneous market with similar unit types.'
-            : spreadLabel === 'moderate'
-              ? ' moderate variation — comps should be filtered by unit attributes.'
-              : ' prices vary meaningfully by unit type and attributes.'}
-        </>
-      );
-    }
-
-    // Hidden tail info
-    if (!showFullRange && tail?.count > 0 && tail?.pct > 0) {
-      parts.push(
-        <>
-          {' '}<span className="text-amber-600">Top {tail.pct}% ({tail.count.toLocaleString()}) above {formatPrice(tail.threshold)} hidden.</span>
-        </>
-      );
-    }
-
-    return parts;
-  };
-
-  const insightContent = generateInsightText();
-
   if (loading) {
     return (
       <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height: height + 80 }}>
@@ -441,12 +383,15 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         </div>
       </div>
 
-      {/* Key Insight - Dynamic from server-computed stats */}
-      {insightContent && (
-        <KeyInsightBox title="Key Takeaway" variant="info">
-          {insightContent.map((part, i) => <React.Fragment key={i}>{part}</React.Fragment>)}
-        </KeyInsightBox>
-      )}
+      {/* How to Interpret - Static explanations for each stat */}
+      <KeyInsightBox title="How to Interpret this Chart" variant="info">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          <div><span className="font-semibold text-[#213448]">Median</span> — The typical transaction price.</div>
+          <div><span className="font-semibold text-[#213448]">Q1–Q3</span> — Where the middle 50% of homes sell.</div>
+          <div><span className="font-semibold text-[#213448]">IQR</span> — How wide prices vary within the market.</div>
+          <div><span className="font-semibold text-[#213448]">Mode</span> — The most common price range.</div>
+        </div>
+      </KeyInsightBox>
 
       {/* Chart */}
       <div className="p-4" style={{ height }}>
