@@ -34,7 +34,16 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
       className={`${compact ? "w-full" : "w-full max-w-2xl mx-auto"} ${fillHeight ? "h-full flex flex-col" : ""}`}
     >
       {/* Card container */}
-      <div className={`relative bg-white rounded-2xl shadow-2xl shadow-[#213448]/20 border border-[#94B4C1]/30 overflow-hidden ${fillHeight ? "flex-1 flex flex-col" : ""}`}>
+      <div className={`relative bg-white rounded-2xl shadow-2xl shadow-[#213448]/20 border border-[#94B4C1]/30 overflow-visible ${fillHeight ? "flex-1 flex flex-col" : ""}`}>
+
+        {/* Floating Insight Annotation - desktop only */}
+        <div className="absolute -right-12 top-10 bg-white/90 backdrop-blur shadow-xl border border-blue-100 p-3 rounded-lg max-w-[180px] z-20 hidden md:block">
+          <div className="text-xs font-bold text-[#213448] mb-1">⚠️ The "Overpaying" Gap</div>
+          <p className="text-[10px] text-slate-500 leading-tight">
+            Is your unit priced above the district median? Check the gap here.
+          </p>
+          <div className="absolute top-4 -left-2 w-4 h-4 bg-white rotate-45 border-l border-b border-blue-100"></div>
+        </div>
 
         {/* Header with Liquidity Badge */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#94B4C1]/20 bg-[#FDFBF7]">

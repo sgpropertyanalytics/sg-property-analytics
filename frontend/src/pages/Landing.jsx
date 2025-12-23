@@ -164,7 +164,7 @@ function HeroSection({ navigate }) {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             <span className="text-xs font-semibold tracking-wide uppercase text-[#213448]">
-              Live Market Sync: Singapore
+              Official URA Data Source
             </span>
           </div>
         </motion.div>
