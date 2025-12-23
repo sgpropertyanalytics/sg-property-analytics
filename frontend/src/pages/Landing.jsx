@@ -189,7 +189,7 @@ function HeroSection({ navigate }) {
           transition={{ delay: 0.15 }}
           className="text-center max-w-2xl mx-auto mb-10 text-lg md:text-xl text-[#547792] leading-relaxed"
         >
-          Data-driven price benchmarking across projects, locations, and market segments.
+          Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private condo transactions.
         </motion.p>
 
         {/* CTA Buttons - Split by intent: Buyer vs Seller */}
