@@ -355,6 +355,20 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                         </span>
                       </div>
                     </td>
+                    {/* Volume Bar - Now second column */}
+                    <td className="px-2 py-1.5 border-r border-[#94B4C1]/30 bg-[#547792]/10">
+                      <div className="flex items-center gap-1">
+                        <div className="flex-1 h-3 bg-gray-100 rounded overflow-hidden">
+                          <div
+                            className="h-full bg-[#547792] rounded"
+                            style={{ width: `${(projectsByDistrict.districtAggregates[district]?.totalTxns || 0) / projectsByDistrict.maxVolume * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-[#547792] font-mono w-8 text-right">
+                          {projectsByDistrict.districtAggregates[district]?.totalTxns || 0}
+                        </span>
+                      </div>
+                    </td>
                     {floorZones.map((zone) => {
                       const districtZone = projectsByDistrict.districtAggregates[district]?.zones?.[zone];
                       const districtTotal = projectsByDistrict.districtAggregates[district]?.totalTxns || 1;
@@ -388,20 +402,6 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                         </td>
                       );
                     })}
-                    {/* Volume Bar */}
-                    <td className="px-2 py-1.5 border-l border-[#94B4C1]/30">
-                      <div className="flex items-center gap-1">
-                        <div className="flex-1 h-3 bg-gray-100 rounded overflow-hidden">
-                          <div
-                            className="h-full bg-[#547792] rounded"
-                            style={{ width: `${(projectsByDistrict.districtAggregates[district]?.totalTxns || 0) / projectsByDistrict.maxVolume * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] text-[#547792] font-mono w-8 text-right">
-                          {projectsByDistrict.districtAggregates[district]?.totalTxns || 0}
-                        </span>
-                      </div>
-                    </td>
                   </tr>
 
                   {/* Project Rows - Show when expanded */}
@@ -410,6 +410,12 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                       {/* Project Name (sticky) - Indented */}
                       <td className={`sticky left-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} pl-8 pr-3 py-1 text-xs font-medium text-[#213448] border-r border-[#94B4C1]/30`}>
                         <span className="truncate" title={project.project_name}>{project.project_name}</span>
+                      </td>
+                      {/* Project Volume - Now second column */}
+                      <td className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-2 py-1 border-r border-[#94B4C1]/30 text-center`}>
+                        <span className="text-[10px] text-[#547792] font-mono">
+                          {project.total_transactions}
+                        </span>
                       </td>
 
                       {/* Floor Zone Cells - Compact */}
@@ -450,12 +456,6 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                           </td>
                         );
                       })}
-                      {/* Project Volume */}
-                      <td className="px-2 py-1 border-l border-[#94B4C1]/30 text-center">
-                        <span className="text-[10px] text-[#94B4C1] font-mono">
-                          {project.total_transactions}
-                        </span>
-                      </td>
                     </tr>
                   ))}
                 </React.Fragment>
