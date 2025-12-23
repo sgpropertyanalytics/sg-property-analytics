@@ -314,6 +314,9 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
               <th className="sticky left-0 bg-[#EAE0CF]/50 text-left px-3 py-1 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[180px]">
                 Project
               </th>
+              <th className="bg-[#EAE0CF]/50 text-center px-2 py-1 font-medium text-[#547792] border-b border-r border-[#94B4C1]/30 min-w-[80px]">
+                Volume
+              </th>
               {floorZones.map((zone) => (
                 <th
                   key={zone}
@@ -322,9 +325,6 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                   {zone}
                 </th>
               ))}
-              <th className="bg-[#EAE0CF]/50 text-center px-2 py-1 font-medium text-[#547792] border-b border-l border-[#94B4C1]/30 min-w-[80px]">
-                Volume
-              </th>
             </tr>
           </thead>
           <tbody>
@@ -350,7 +350,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                         <span>{district}</span>
-                        <span className="text-[#94B4C1] font-normal">
+                        <span className="text-[#213448] font-normal">
                           ({projects.length} projects • {projectsByDistrict.districtAggregates[district]?.totalTxns || 0} txns)
                         </span>
                       </div>

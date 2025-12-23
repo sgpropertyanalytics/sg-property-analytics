@@ -225,19 +225,19 @@ function HeroSection({ navigate }) {
       {/* Combined Visual: Dashboard + YouVsMarket Card */}
       <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10 mt-8 sm:mt-12 mb-8">
 
-        {/* Desktop: Side by side layout */}
-        <div className="hidden lg:grid lg:grid-cols-5 gap-6">
+        {/* Desktop: Side by side layout - aligned heights */}
+        <div className="hidden lg:grid lg:grid-cols-5 gap-6 items-stretch">
 
           {/* Dashboard Screenshot - 3D perspective (3 cols) */}
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="col-span-3"
+            className="col-span-3 flex"
             style={{ perspective: '2000px' }}
           >
             <div
-              className="relative rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/15 bg-white ring-1 ring-[#213448]/5"
+              className="relative rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/15 bg-white ring-1 ring-[#213448]/5 w-full"
               style={{
                 transformStyle: 'preserve-3d',
                 transform: 'rotateY(3deg) rotateX(1deg)',
@@ -247,20 +247,20 @@ function HeroSection({ navigate }) {
               <img
                 src="/dashboard-screenshot.png"
                 alt="PropAnalytics Dashboard"
-                className="w-full h-auto"
+                className="w-full h-full object-cover object-top"
               />
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20 pointer-events-none" />
             </div>
           </motion.div>
 
-          {/* YouVsMarket Card (2 cols) */}
+          {/* YouVsMarket Card (2 cols) - stretches to match */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="col-span-2"
+            className="col-span-2 flex"
           >
-            <YouVsMarketVisual compact />
+            <YouVsMarketVisual compact fillHeight />
           </motion.div>
         </div>
 

@@ -6,7 +6,7 @@ import { AlertTriangle, Activity } from 'lucide-react';
  * Shows a price distribution with user position marker
  * Demonstrates the core value prop: "Are you overpaying?"
  */
-export default function YouVsMarketVisual({ compact = false }) {
+export default function YouVsMarketVisual({ compact = false, fillHeight = false }) {
   // Simulated price distribution data (PSF values)
   const distribution = [
     { psf: 1650, count: 2, label: '$1,650' },
@@ -31,10 +31,10 @@ export default function YouVsMarketVisual({ compact = false }) {
       initial={{ opacity: 0, y: 20, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.6, delay: 0.4 }}
-      className={compact ? "w-full" : "w-full max-w-2xl mx-auto"}
+      className={`${compact ? "w-full" : "w-full max-w-2xl mx-auto"} ${fillHeight ? "h-full flex flex-col" : ""}`}
     >
       {/* Card container */}
-      <div className="relative bg-white rounded-2xl shadow-2xl shadow-[#213448]/20 border border-[#94B4C1]/30 overflow-hidden">
+      <div className={`relative bg-white rounded-2xl shadow-2xl shadow-[#213448]/20 border border-[#94B4C1]/30 overflow-hidden ${fillHeight ? "flex-1 flex flex-col" : ""}`}>
 
         {/* Header with Liquidity Badge */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#94B4C1]/20 bg-[#FDFBF7]">
@@ -70,7 +70,7 @@ export default function YouVsMarketVisual({ compact = false }) {
         </div>
 
         {/* Chart area */}
-        <div className="px-4 sm:px-6 py-4 sm:py-6">
+        <div className={`px-4 sm:px-6 py-4 sm:py-6 ${fillHeight ? "flex-1 flex flex-col justify-center" : ""}`}>
           {/* Distribution bars */}
           <div className="flex items-end gap-2 h-36 mb-4">
             {distribution.map((bar, index) => {
