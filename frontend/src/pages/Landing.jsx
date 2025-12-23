@@ -169,7 +169,7 @@ function HeroSection({ navigate }) {
           </div>
         </motion.div>
 
-        {/* Headline - Outcome-driven, addresses buyer fear */}
+        {/* Headline - Professional, data-focused */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -177,21 +177,19 @@ function HeroSection({ navigate }) {
           className="text-center max-w-4xl mx-auto mb-4"
         >
           <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#213448] tracking-tight leading-[1.1]">
-            Know If You're{' '}
-            <span className="text-[#547792]">Overpaying.</span>
+            Property Pricing{' '}
+            <span className="text-[#547792]">Intelligence</span>
           </span>
         </motion.h1>
 
-        {/* Trust anchor - prominent, differentiating */}
+        {/* Subtitle - describes the value prop */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
           className="text-center max-w-2xl mx-auto mb-10 text-lg md:text-xl text-[#547792] leading-relaxed"
         >
-          Based on{' '}
-          <span className="text-[#213448] font-bold">100,000+ real transactions</span>
-          {' '}— not agent listings, not asking prices.
+          Data-driven price benchmarking across projects, locations, and market segments.
         </motion.p>
 
         {/* CTA Buttons - Split by intent: Buyer vs Seller */}
