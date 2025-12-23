@@ -106,9 +106,10 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
         )}
 
         {/* ===== FILTER SIDEBAR (Secondary Sidebar - Market Pulse Only) ===== */}
-        {/* Desktop: Visible with header toggle | Mobile: Drawer */}
+        {/* Desktop: Visible with collapse handle | Mobile: Drawer */}
         {showFilterSidebar && (
-          <div className="hidden lg:block flex-shrink-0">
+          <div className="hidden lg:flex flex-shrink-0 relative">
+            {/* Filter Sidebar */}
             <div
               className={`
                 transition-all duration-200 ease-out
@@ -120,6 +121,22 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
                 onToggle={() => setFilterSidebarCollapsed(!filterSidebarCollapsed)}
               />
             </div>
+
+            {/* Collapse Handle - Chevron at border (Sand/Cream styling) */}
+            <button
+              onClick={() => setFilterSidebarCollapsed(!filterSidebarCollapsed)}
+              className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-[#EAE0CF] border border-[#94B4C1]/30 rounded-r-lg shadow-sm flex items-center justify-center hover:bg-[#94B4C1]/30 transition-colors"
+              aria-label={filterSidebarCollapsed ? 'Expand filters' : 'Collapse filters'}
+            >
+              <svg
+                className={`w-4 h-4 text-[#547792] transition-transform duration-200 ${filterSidebarCollapsed ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
           </div>
         )}
 
