@@ -3,8 +3,6 @@ import FloorLiquidityChart from '../components/powerbi/FloorLiquidityChart';
 import FloorPremiumByRegionChart from '../components/powerbi/FloorPremiumByRegionChart';
 import FloorPremiumTrendChart from '../components/powerbi/FloorPremiumTrendChart';
 import FloorLiquidityHeatmap from '../components/powerbi/FloorLiquidityHeatmap';
-// Desktop-first chart height with mobile guardrail
-import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
 /**
  * Floor Dispersion Page - Floor Level Analysis
@@ -36,10 +34,6 @@ const SEGMENT_OPTIONS = [
 export function FloorDispersionContent() {
   const [bedroom, setBedroom] = useState('');
   const [segment, setSegment] = useState('');
-
-  // Desktop-first chart heights with mobile guardrails
-  const heroChartHeight = useChartHeight(420, MOBILE_CAPS.tall);      // 420px desktop, max 320px mobile
-  const secondaryChartHeight = useChartHeight(320, MOBILE_CAPS.standard); // 320px desktop, max 300px mobile
 
   return (
     <div className="h-full overflow-auto">
@@ -113,7 +107,7 @@ export function FloorDispersionContent() {
         {/* Floor Liquidity Chart - Hero Visualization */}
         <div className="mb-6">
           <FloorLiquidityChart
-            height={heroChartHeight}
+            height={420}
             bedroom={bedroom || undefined}
             segment={segment || undefined}
           />
@@ -123,13 +117,13 @@ export function FloorDispersionContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Floor Premium by Region - Comparison Chart */}
           <FloorPremiumByRegionChart
-            height={secondaryChartHeight}
+            height={320}
             bedroom={bedroom || undefined}
           />
 
           {/* Floor Premium Trend Chart */}
           <FloorPremiumTrendChart
-            height={secondaryChartHeight}
+            height={320}
             bedroom={bedroom || undefined}
             segment={segment || undefined}
           />
