@@ -551,12 +551,12 @@ export function PriceDistributionHeroChart({
       return 'Your price is above all comparable transactions';
     }
 
+    // Message format: "X% of buyers paid MORE/LESS than you"
     if (stats.percentile >= 50) {
-      return `You paid less than ${stats.percentile}% of comparable buyers`;
+      return `${stats.percentile}% of comparable buyers paid MORE than you`;
     } else {
-      // When percentile is low, flip the message
-      const paidMoreThan = 100 - stats.percentile;
-      return `You paid more than ${paidMoreThan}% of comparable buyers`;
+      const paidLessThan = 100 - stats.percentile;
+      return `${paidLessThan}% of comparable buyers paid LESS than you`;
     }
   };
 
@@ -671,45 +671,33 @@ export function PriceDistributionHeroChart({
 
       {/* Compact Annotation Footer */}
       <div className="px-4 py-2 bg-gradient-to-r from-[#EAE0CF]/40 to-transparent border-t border-[#94B4C1]/30">
-        <div className="flex items-center justify-between gap-3">
-          {/* Percentile annotation - compact version */}
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            {/* Compact visual indicator */}
-            <div className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full ${
-              isGoodDeal
-                ? 'bg-emerald-100 text-emerald-600'
-                : 'bg-amber-100 text-amber-600'
-            }`}>
-              {isGoodDeal ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              )}
-            </div>
-
-            {/* Inline text annotation */}
-            <p className={`text-sm font-medium truncate ${
-              isGoodDeal ? 'text-emerald-700' : 'text-amber-700'
-            }`}>
-              {getAnnotationMessage()}
-              {stats.isOutsideRange && (
-                <span className="ml-1 text-amber-600 text-xs">(outside range)</span>
-              )}
-            </p>
+        <div className="flex items-center gap-2">
+          {/* Compact visual indicator */}
+          <div className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full ${
+            isGoodDeal
+              ? 'bg-emerald-100 text-emerald-600'
+              : 'bg-amber-100 text-amber-600'
+          }`}>
+            {isGoodDeal ? (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            )}
           </div>
 
-          {/* Compact percentile badge */}
-          <div className="flex-shrink-0 text-right">
-            <span className={`text-xl font-bold ${
-              isGoodDeal ? 'text-emerald-600' : 'text-amber-600'
-            }`}>
-              {stats.percentile}%
-            </span>
-          </div>
+          {/* Inline text annotation */}
+          <p className={`text-sm font-medium ${
+            isGoodDeal ? 'text-emerald-700' : 'text-amber-700'
+          }`}>
+            {getAnnotationMessage()}
+            {stats.isOutsideRange && (
+              <span className="ml-1 text-amber-600 text-xs">(outside range)</span>
+            )}
+          </p>
         </div>
       </div>
     </div>

@@ -224,12 +224,17 @@ export default function DealCheckerContent() {
   };
 
   // Get all nearby projects for the table (combine 1km and 2km)
-  const getAllNearbyProjects = () => {
+  const nearbyProjects = useMemo(() => {
     if (!result?.map_data) return [];
     const projects_1km = result.map_data.projects_1km || [];
     const projects_2km = result.map_data.projects_2km || [];
     return [...projects_1km, ...projects_2km];
-  };
+  }, [result?.map_data]);
+
+  // Calculate volume thresholds for gradient coloring
+  const volumeThresholds = useMemo(() => {
+    return calculateVolumeThresholds(nearbyProjects);
+  }, [nearbyProjects]);
 
   // Get selected project info for display
   const selectedProjectInfo = projectOptions.find(p => p.name === projectName);
@@ -457,10 +462,28 @@ export default function DealCheckerContent() {
             {/* Nearby Projects Table */}
             <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
               <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-                <h3 className="font-semibold text-[#213448]">Projects Within 2km</h3>
-                <p className="text-xs text-[#547792]">
-                  Sorted by distance from {result.project.name} • {bedroom}BR median values
-                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-[#213448]">Projects Within 2km</h3>
+                    <p className="text-xs text-[#547792]">
+                      Sorted by distance from {result.project.name} • {bedroom}BR median values
+                    </p>
+                  </div>
+                  {/* Volume gradient legend */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-[#547792] uppercase tracking-wide">Volume</span>
+                    <div
+                      className="h-2 w-16 rounded-sm"
+                      style={{
+                        background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15, #94B4C1)',
+                      }}
+                    />
+                    <div className="flex gap-2 text-[8px] text-[#547792]">
+                      <span>High</span>
+                      <span>Low</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="overflow-x-auto" style={{ maxHeight: 350 }}>
                 <table className="w-full text-sm">
@@ -474,13 +497,17 @@ export default function DealCheckerContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {getAllNearbyProjects().map((p, idx) => {
+                    {nearbyProjects.map((p, idx) => {
                       const isUserProject = p.project_name === result.project.name;
                       const isWithin1km = p.distance_km <= 1.0;
+                      const volumeColor = getVolumeColor(p.transaction_count, volumeThresholds);
                       return (
                         <tr
                           key={p.project_name}
-                          className={`${isUserProject ? 'bg-[#213448]/5' : 'hover:bg-slate-50'} ${!isWithin1km ? 'opacity-70' : ''}`}
+                          style={{
+                            backgroundColor: isUserProject ? 'rgba(33, 52, 72, 0.05)' : volumeColor,
+                          }}
+                          className={`${!isUserProject ? 'hover:brightness-95' : ''} ${!isWithin1km ? 'opacity-70' : ''} transition-all`}
                         >
                           <td className="px-3 py-2 border-b border-slate-100">
                             <span className="font-medium text-[#213448]">{p.project_name}</span>
@@ -492,7 +519,7 @@ export default function DealCheckerContent() {
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
                             {p.distance_km === 0 ? '-' : `${(p.distance_km * 1000).toFixed(0)}m`}
                           </td>
-                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600">
+                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 font-medium">
                             {p.transaction_count || 0}
                           </td>
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
@@ -504,7 +531,7 @@ export default function DealCheckerContent() {
                         </tr>
                       );
                     })}
-                    {getAllNearbyProjects().length === 0 && (
+                    {nearbyProjects.length === 0 && (
                       <tr>
                         <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
                           No nearby projects found
