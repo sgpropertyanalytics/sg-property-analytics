@@ -77,7 +77,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         const baseParams = buildApiParams({});
 
         // Call the scatter-sample endpoint
-        const response = await apiClient.get('/api/scatter-sample', {
+        const response = await apiClient.get('/scatter-sample', {
           params: {
             ...baseParams,
             sample_size: 2000,
