@@ -320,6 +320,34 @@ export const getTransactionsList = (params = {}, options = {}) =>
 export const getFilterOptions = () =>
   apiClient.get('/filter-options');
 
+/**
+ * Floor liquidity heatmap - shows which floor zones resell faster by project
+ * Uses Z-score normalization within each project for fair comparison
+ * @param {Object} params - Query parameters
+ * @param {number} params.window_months - 6, 12, or 24 (default: 12)
+ * @param {string} params.segment - CCR, RCR, or OCR
+ * @param {string} params.district - Comma-separated districts
+ * @param {string} params.bedroom - Comma-separated bedroom counts
+ * @param {number} params.min_transactions - Minimum per project (default: 10)
+ * @param {number} params.limit - Max projects (default: 30, max: 50)
+ * @returns {Promise<{
+ *   data: {
+ *     projects: Array<{project_name, district, total_transactions, floor_zones}>,
+ *     floor_zone_order: string[]
+ *   },
+ *   meta: {window_months, filters_applied, total_projects, projects_returned}
+ * }>}
+ */
+export const getFloorLiquidityHeatmap = (params = {}, options = {}) => {
+  const queryString = buildQueryString(params);
+  const cacheKey = `floor_liquidity_heatmap:${queryString}`;
+  return cachedFetch(
+    cacheKey,
+    () => apiClient.get(`/floor-liquidity-heatmap?${queryString}`),
+    { forceRefresh: options.skipCache }
+  );
+};
+
 // ===== GLS (Government Land Sales) API Functions =====
 
 /**

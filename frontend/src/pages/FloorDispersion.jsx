@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import FloorLiquidityChart from '../components/powerbi/FloorLiquidityChart';
 import FloorPremiumByRegionChart from '../components/powerbi/FloorPremiumByRegionChart';
 import FloorPremiumTrendChart from '../components/powerbi/FloorPremiumTrendChart';
+import FloorLiquidityHeatmap from '../components/powerbi/FloorLiquidityHeatmap';
 
 /**
  * Floor Dispersion Page - Floor Level Analysis
@@ -123,6 +124,15 @@ export function FloorDispersionContent() {
           {/* Floor Premium Trend Chart */}
           <FloorPremiumTrendChart
             height={320}
+            bedroom={bedroom || undefined}
+            segment={segment || undefined}
+          />
+        </div>
+
+        {/* Liquidity Heatmap */}
+        <div className="mt-6">
+          <FloorLiquidityHeatmap
+            height={450}
             bedroom={bedroom || undefined}
             segment={segment || undefined}
           />

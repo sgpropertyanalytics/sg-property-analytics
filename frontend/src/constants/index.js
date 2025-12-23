@@ -342,3 +342,49 @@ export const getTenureLabel = (tenure, short = false) => {
 export const isValidTenure = (tenure) => {
   return TENURE_TYPES.includes(tenure);
 };
+
+// =============================================================================
+// LIQUIDITY HEATMAP COLORS
+// =============================================================================
+
+/**
+ * Liquidity color scale for floor liquidity heatmap
+ * Uses blue gradient: darker = more liquid (buyer-intuitive)
+ */
+export const LIQUIDITY_COLORS = {
+  very_liquid: '#1e40af',    // Dark Blue (Z >= +0.75)
+  liquid: '#3b82f6',         // Blue (+0.25 to +0.75)
+  neutral: '#94a3b8',        // Gray (-0.25 to +0.25)
+  illiquid: '#bfdbfe',       // Light Blue (-0.75 to -0.25)
+  very_illiquid: '#dbeafe',  // Lightest Blue (Z <= -0.75)
+  insufficient: '#f3f4f6',   // Gray (< 5 transactions)
+};
+
+/**
+ * Get liquidity color based on Z-score and sample size
+ * @param {number} zScore - Z-score of velocity within project
+ * @param {number} count - Transaction count for this zone
+ * @param {number} minCount - Minimum count for valid data (default: 5)
+ * @returns {string} Hex color code
+ */
+export const getLiquidityColor = (zScore, count, minCount = 5) => {
+  if (count < minCount) return LIQUIDITY_COLORS.insufficient;
+  if (zScore >= 0.75) return LIQUIDITY_COLORS.very_liquid;
+  if (zScore >= 0.25) return LIQUIDITY_COLORS.liquid;
+  if (zScore >= -0.25) return LIQUIDITY_COLORS.neutral;
+  if (zScore >= -0.75) return LIQUIDITY_COLORS.illiquid;
+  return LIQUIDITY_COLORS.very_illiquid;
+};
+
+/**
+ * Get liquidity label from Z-score
+ * @param {number} zScore - Z-score of velocity within project
+ * @returns {string} Label text
+ */
+export const getLiquidityLabel = (zScore) => {
+  if (zScore >= 0.75) return 'Very Liquid';
+  if (zScore >= 0.25) return 'Liquid';
+  if (zScore >= -0.25) return 'Neutral';
+  if (zScore >= -0.75) return 'Illiquid';
+  return 'Very Illiquid';
+};

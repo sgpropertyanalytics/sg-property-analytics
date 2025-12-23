@@ -245,7 +245,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
       },
       {
         type: 'line',
-        label: 'Total Quantum Value',
+        label: 'Total Transaction Value',
         data: totalValues,
         borderColor: '#8B7355',  // Dark tan/brown for better visibility
         backgroundColor: 'rgba(139, 115, 85, 0.1)',
@@ -285,7 +285,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
           label: (context) => {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-            if (label === 'Total Quantum Value') {
+            if (label === 'Total Transaction Value') {
               // Format in millions or billions
               if (value >= 1000000000) {
                 return `${label}: $${(value / 1000000000).toFixed(2)}B`;
@@ -341,7 +341,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         min: 0, // Grounded at $0M
         title: {
           display: true,
-          text: 'Total Quantum ($)',
+          text: 'Total Transaction Value ($)',
         },
         grid: {
           drawOnChartArea: false,

@@ -1977,6 +1977,224 @@ def new_vs_resale():
 
 
 # ============================================================================
+# FLOOR LIQUIDITY HEATMAP ENDPOINT
+# ============================================================================
+
+@analytics_bp.route("/floor-liquidity-heatmap", methods=["GET"])
+def floor_liquidity_heatmap():
+    """
+    Floor liquidity heatmap data - shows which floor zones resell faster by project.
+
+    Uses Z-score normalization within each project for fair comparison.
+
+    Query params:
+      - window_months: 6 | 12 | 24 (default: 12) - Rolling window for velocity
+      - segment: CCR | RCR | OCR (optional)
+      - district: comma-separated districts
+      - bedroom: comma-separated bedroom counts
+      - min_transactions: minimum per project (default: 10)
+      - limit: max projects to return (default: 30, max: 50)
+      - skip_cache: if 'true', bypass cache
+
+    Returns:
+      {
+        "data": {
+          "projects": [
+            {
+              "project_name": "...",
+              "district": "D01",
+              "total_transactions": 156,
+              "floor_zones": {
+                "Low": { "count": 23, "velocity": 0.32, "z_score": -0.42, "liquidity_label": "Neutral" }
+              }
+            }
+          ],
+          "floor_zone_order": ["Low", "Mid-Low", "Mid", "Mid-High", "High", "Luxury"]
+        },
+        "meta": {...}
+      }
+    """
+    import time
+    import statistics
+    from datetime import datetime, timedelta
+    from models.transaction import Transaction
+    from models.database import db
+    from sqlalchemy import func, and_
+    from services.data_processor import _get_market_segment
+    from services.dashboard_service import _dashboard_cache
+
+    start = time.time()
+
+    # Parse parameters
+    window_months = int(request.args.get('window_months', 12))
+    if window_months not in [6, 12, 24]:
+        window_months = 12
+
+    min_transactions = int(request.args.get('min_transactions', 10))
+    limit = min(int(request.args.get('limit', 30)), 50)
+    skip_cache = request.args.get('skip_cache', '').lower() == 'true'
+
+    # Build cache key
+    cache_key = f"floor_liquidity_heatmap:{request.query_string.decode('utf-8')}"
+
+    if not skip_cache:
+        cached = _dashboard_cache.get(cache_key)
+        if cached is not None:
+            elapsed = time.time() - start
+            cached['meta']['cache_hit'] = True
+            cached['meta']['elapsed_ms'] = int(elapsed * 1000)
+            return jsonify(cached)
+
+    # Build filter conditions
+    filter_conditions = [
+        Transaction.is_outlier == False,
+        func.lower(Transaction.sale_type) == 'resale',
+        Transaction.floor_level.isnot(None),
+        Transaction.floor_level != 'Unknown'
+    ]
+    filters_applied = {'sale_type': 'Resale', 'window_months': window_months}
+
+    # Date filter based on window
+    cutoff_date = datetime.now().date() - timedelta(days=window_months * 30)
+    filter_conditions.append(Transaction.transaction_date >= cutoff_date)
+    filters_applied['date_from'] = cutoff_date.isoformat()
+
+    # Segment filter
+    segment = request.args.get('segment')
+    if segment:
+        segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
+        all_districts = db.session.query(Transaction.district).distinct().all()
+        segment_districts = [d[0] for d in all_districts if _get_market_segment(d[0]) in segments]
+        filter_conditions.append(Transaction.district.in_(segment_districts))
+        filters_applied['segment'] = segments
+
+    # District filter
+    districts_param = request.args.get('district')
+    if districts_param:
+        districts = [d.strip().upper() for d in districts_param.split(',') if d.strip()]
+        normalized = [f"D{d.zfill(2)}" if not d.startswith('D') else d for d in districts]
+        filter_conditions.append(Transaction.district.in_(normalized))
+        filters_applied['district'] = normalized
+
+    # Bedroom filter
+    bedroom_param = request.args.get('bedroom')
+    if bedroom_param:
+        bedrooms = [int(b.strip()) for b in bedroom_param.split(',') if b.strip()]
+        filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
+        filters_applied['bedroom'] = bedrooms
+
+    try:
+        # Query: Group by project and floor_level
+        raw_data = db.session.query(
+            Transaction.project_name,
+            Transaction.district,
+            Transaction.floor_level,
+            func.count(Transaction.id).label('count')
+        ).filter(
+            and_(*filter_conditions)
+        ).group_by(
+            Transaction.project_name,
+            Transaction.district,
+            Transaction.floor_level
+        ).all()
+
+        # Organize by project
+        projects_dict = {}
+        for row in raw_data:
+            proj = row.project_name
+            if proj not in projects_dict:
+                projects_dict[proj] = {
+                    'project_name': proj,
+                    'district': row.district,
+                    'floor_zones': {},
+                    'total_transactions': 0
+                }
+
+            velocity = row.count / window_months
+            projects_dict[proj]['floor_zones'][row.floor_level] = {
+                'count': row.count,
+                'velocity': round(velocity, 3)
+            }
+            projects_dict[proj]['total_transactions'] += row.count
+
+        # Filter by minimum transactions
+        projects = [p for p in projects_dict.values() if p['total_transactions'] >= min_transactions]
+
+        # Calculate Z-scores within each project
+        for project in projects:
+            zones = project['floor_zones']
+            velocities = [z['velocity'] for z in zones.values()]
+
+            if len(velocities) < 2:
+                # Cannot compute Z-score with fewer than 2 zones
+                for zone in zones.values():
+                    zone['z_score'] = 0.0
+                    zone['liquidity_label'] = 'Neutral'
+            else:
+                mean_vel = statistics.mean(velocities)
+                try:
+                    std_vel = statistics.stdev(velocities)
+                except:
+                    std_vel = 0
+
+                for zone in zones.values():
+                    if std_vel > 0:
+                        z = (zone['velocity'] - mean_vel) / std_vel
+                    else:
+                        z = 0.0
+                    zone['z_score'] = round(z, 2)
+
+                    # Label based on Z-score
+                    if z >= 0.75:
+                        zone['liquidity_label'] = 'Very Liquid'
+                    elif z >= 0.25:
+                        zone['liquidity_label'] = 'Liquid'
+                    elif z >= -0.25:
+                        zone['liquidity_label'] = 'Neutral'
+                    elif z >= -0.75:
+                        zone['liquidity_label'] = 'Illiquid'
+                    else:
+                        zone['liquidity_label'] = 'Very Illiquid'
+
+        # Sort alphabetically by project name and limit
+        projects.sort(key=lambda x: x['project_name'])
+        total_projects = len(projects)
+        projects = projects[:limit]
+
+        # Build response
+        result = {
+            'data': {
+                'projects': projects,
+                'floor_zone_order': ['Low', 'Mid-Low', 'Mid', 'Mid-High', 'High', 'Luxury']
+            },
+            'meta': {
+                'window_months': window_months,
+                'filters_applied': filters_applied,
+                'total_projects': total_projects,
+                'projects_returned': len(projects),
+                'cache_hit': False,
+                'elapsed_ms': 0
+            }
+        }
+
+        # Cache the result
+        _dashboard_cache.set(cache_key, result, expire=300)  # 5 minutes
+
+        elapsed = time.time() - start
+        result['meta']['elapsed_ms'] = int(elapsed * 1000)
+        print(f"GET /api/floor-liquidity-heatmap took: {elapsed:.4f}s ({len(projects)} projects)")
+
+        return jsonify(result)
+
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/floor-liquidity-heatmap ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
 # PROJECT INVENTORY ENDPOINTS
 # ============================================================================
 

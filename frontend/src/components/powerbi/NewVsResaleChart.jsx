@@ -32,8 +32,8 @@ ChartJS.register(
  * New Sale vs Recent TOP/Young Resale (4-9 years age) Comparison Chart
  *
  * Dual-line time series showing:
- * - Line A (solid, blue): New Sale median total quantum (price)
- * - Line B (dashed, green): Young Resale (4-9 years old) median total quantum (price)
+ * - Line A (solid, blue): New Sale median total price
+ * - Line B (dashed, green): Young Resale (4-9 years old) median total price
  *
  * Young Resale definition:
  * - Property age (transaction year - lease start year) between 4 and 9 years
@@ -406,7 +406,7 @@ export function NewVsResaleChart({ height = 350 }) {
       {/* Info tooltip */}
       <div className="px-3 py-2 md:px-4 md:py-2 border-t border-[#94B4C1]/30 bg-gray-50">
         <p className="text-[10px] md:text-xs text-[#547792]">
-          Compares median total quantum of new sales with young resale units (4-9 years old). Excludes projects without resale transactions. Respects sidebar filters.
+          Compares median total price of new sales with young resale units (4-9 years old). Excludes projects without resale transactions. Respects sidebar filters.
         </p>
       </div>
     </div>

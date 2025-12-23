@@ -95,9 +95,9 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-4" style={{ height }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
         <div className="flex items-center justify-center h-full">
-          <div className="text-slate-500">Loading...</div>
+          <div className="text-[#547792]">Loading...</div>
         </div>
       </div>
     );
@@ -105,7 +105,7 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-4" style={{ height }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
         <div className="flex items-center justify-center h-full">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -234,25 +234,25 @@ export function BedroomMixChart({ onCrossFilter, onDrillThrough, height = 280 })
   };
 
   return (
-    <div className={`bg-white rounded-lg border border-slate-200 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
-      <div className="px-4 py-3 border-b border-slate-200">
+    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-slate-800">Bedroom Mix</h3>
+            <h3 className="font-semibold text-[#213448]">Bedroom Mix</h3>
             {updating && (
-              <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
             )}
           </div>
           <DrillButtons hierarchyType="bedroom" />
         </div>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-[#547792] mt-1">
           Transaction distribution by bedroom type
         </p>
       </div>
       <div className="p-4" style={{ height }}>
         <Doughnut ref={chartRef} data={chartData} options={options} />
       </div>
-      <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 text-xs text-slate-600 text-center">
+      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] text-center">
         Total: {totalCount.toLocaleString()} transactions
         {highlightedBedroomTypes.length > 0 && (
           <span className="ml-1">
