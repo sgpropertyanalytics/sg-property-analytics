@@ -185,8 +185,6 @@ export function PriceCompressionChart({ height = 380 }) {
 
   // Computed values
   const compressionScore = useMemo(() => calculateCompressionScore(data), [data]);
-  const spreadState = useMemo(() => getSpreadState(data), [data]);
-  const annotations = useMemo(() => detectAnnotations(data), [data]);
   const marketSignals = useMemo(() => detectMarketSignals(data), [data]);
   const inversionZones = useMemo(() => detectInversionZones(data), [data]);
   const latestData = data[data.length - 1] || {};
@@ -335,10 +333,7 @@ export function PriceCompressionChart({ height = 380 }) {
         },
       },
       annotation: {
-        annotations: {
-          ...buildAnnotations(annotations, data),
-          ...buildInversionZones(inversionZones, data),
-        },
+        annotations: buildInversionZones(inversionZones, data),
       },
     },
     scales: {
@@ -462,7 +457,6 @@ export function PriceCompressionChart({ height = 380 }) {
               spread={latestData.rcrOcrSpread}
               isInverted={marketSignals.ocrOverheated}
             />
-            <StateChip state={spreadState} />
           </div>
         </div>
       </div>
@@ -534,122 +528,6 @@ function calculateCompressionScore(data) {
   else if (clampedScore <= 30) label = 'wide';
 
   return { score: clampedScore, label };
-}
-
-/**
- * Detect spread state: Widening, Compressing, or Stable
- */
-function getSpreadState(data) {
-  if (data.length < 2) return { state: 'Stable', color: 'gray' };
-
-  const current = data[data.length - 1];
-  const previous = data[data.length - 2];
-
-  if (!current?.combinedSpread || !previous?.combinedSpread) {
-    return { state: 'Stable', color: 'gray' };
-  }
-
-  const change = current.combinedSpread - previous.combinedSpread;
-  const pctChange = (change / previous.combinedSpread) * 100;
-
-  if (pctChange > 3) return { state: 'Widening', color: 'amber' };
-  if (pctChange < -3) return { state: 'Compressing', color: 'green' };
-  return { state: 'Stable', color: 'gray' };
-}
-
-/**
- * Detect auto-annotations: Breakout and Reversion
- */
-function detectAnnotations(data) {
-  const annotations = [];
-  if (data.length < 6) return annotations;
-
-  const spreads = data.map(d => d.combinedSpread).filter(v => v != null);
-  if (spreads.length < 6) return annotations;
-
-  // Breakout: spread widened > 10% from 6-period baseline
-  const last6 = data.slice(-6);
-  const baseline = last6.slice(0, 3)
-    .filter(d => d.combinedSpread != null)
-    .reduce((sum, d) => sum + d.combinedSpread, 0) / 3;
-
-  const current = data[data.length - 1];
-  if (baseline > 0 && current?.combinedSpread) {
-    const pctChange = ((current.combinedSpread - baseline) / baseline) * 100;
-    if (pctChange > 10) {
-      annotations.push({
-        type: 'breakout',
-        periodIndex: data.length - 1,
-        period: current.period,
-        pct: pctChange,
-      });
-    }
-  }
-
-  // Reversion: spread within 5% of historical median
-  const sortedSpreads = [...spreads].sort((a, b) => a - b);
-  const median = sortedSpreads[Math.floor(sortedSpreads.length / 2)];
-  if (median > 0 && current?.combinedSpread) {
-    const deviation = Math.abs((current.combinedSpread - median) / median) * 100;
-    if (deviation < 5 && !annotations.some(a => a.type === 'breakout')) {
-      annotations.push({
-        type: 'reversion',
-        periodIndex: data.length - 1,
-        period: current.period,
-      });
-    }
-  }
-
-  return annotations;
-}
-
-/**
- * Build Chart.js annotation objects
- */
-function buildAnnotations(annotations, data) {
-  const result = {};
-
-  annotations.forEach((ann, idx) => {
-    if (ann.type === 'breakout') {
-      result[`breakout_${idx}`] = {
-        type: 'line',
-        xMin: ann.periodIndex,
-        xMax: ann.periodIndex,
-        borderColor: 'rgba(245, 158, 11, 0.8)',
-        borderWidth: 2,
-        borderDash: [4, 4],
-        label: {
-          content: `Breakout: +${ann.pct.toFixed(0)}%`,
-          display: true,
-          position: 'start',
-          backgroundColor: 'rgba(245, 158, 11, 0.9)',
-          color: '#fff',
-          font: { size: 10 },
-          padding: 4,
-        },
-      };
-    } else if (ann.type === 'reversion') {
-      result[`reversion_${idx}`] = {
-        type: 'line',
-        xMin: ann.periodIndex,
-        xMax: ann.periodIndex,
-        borderColor: 'rgba(16, 185, 129, 0.8)',
-        borderWidth: 2,
-        borderDash: [4, 4],
-        label: {
-          content: 'At median',
-          display: true,
-          position: 'start',
-          backgroundColor: 'rgba(16, 185, 129, 0.9)',
-          color: '#fff',
-          font: { size: 10 },
-          padding: 4,
-        },
-      };
-    }
-  });
-
-  return result;
 }
 
 /**
@@ -791,47 +669,6 @@ function Sparkline({ data, width = 70, height = 16 }) {
         strokeLinejoin="round"
       />
     </svg>
-  );
-}
-
-/**
- * Spread value chip with change indicator
- */
-function SpreadChip({ label, value, change, color }) {
-  if (value == null) return null;
-
-  const changeColor = change > 0 ? 'text-amber-600' : change < 0 ? 'text-green-600' : 'text-gray-400';
-  const changePrefix = change > 0 ? '+' : '';
-
-  return (
-    <span
-      className="px-2 py-1 rounded text-xs font-medium"
-      style={{ backgroundColor: `${color}10`, color }}
-    >
-      {label}: ${value.toLocaleString()}
-      {change !== 0 && (
-        <span className={`ml-1 ${changeColor}`}>
-          ({changePrefix}${change.toLocaleString()})
-        </span>
-      )}
-    </span>
-  );
-}
-
-/**
- * State indicator chip (Widening/Compressing/Stable)
- */
-function StateChip({ state }) {
-  const colorMap = {
-    amber: 'bg-amber-100 text-amber-700',
-    green: 'bg-green-100 text-green-700',
-    gray: 'bg-gray-100 text-gray-600',
-  };
-
-  return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${colorMap[state.color]}`}>
-      {state.state}
-    </span>
   );
 }
 

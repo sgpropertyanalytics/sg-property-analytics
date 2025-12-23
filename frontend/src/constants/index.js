@@ -251,3 +251,94 @@ export const getFloorLevelIndex = (floorLevel) => {
   const index = FLOOR_LEVELS.indexOf(floorLevel);
   return index >= 0 ? index : 6; // Unknown goes last
 };
+
+// =============================================================================
+// SALE TYPE CLASSIFICATION - SINGLE SOURCE OF TRUTH
+// =============================================================================
+
+/**
+ * Valid sale types from URA transaction data
+ * - New Sale: Initial sale from developer
+ * - Resale: Secondary market sale
+ * - Sub Sale: Subsale (before TOP)
+ */
+export const SALE_TYPES = ['New Sale', 'Resale', 'Sub Sale'];
+
+/**
+ * Sale type display labels
+ */
+export const SALE_TYPE_LABELS = {
+  'New Sale': 'New Sale',
+  'Resale': 'Resale',
+  'Sub Sale': 'Sub Sale',
+};
+
+/**
+ * Get sale type label for display
+ * @param {string} saleType - Sale type value
+ * @returns {string} Display label
+ */
+export const getSaleTypeLabel = (saleType) => {
+  return SALE_TYPE_LABELS[saleType] || saleType || 'Unknown';
+};
+
+/**
+ * Check if a sale type value is valid
+ * @param {string} saleType - Sale type to validate
+ * @returns {boolean}
+ */
+export const isValidSaleType = (saleType) => {
+  return SALE_TYPES.includes(saleType);
+};
+
+// =============================================================================
+// TENURE CLASSIFICATION - SINGLE SOURCE OF TRUTH
+// =============================================================================
+
+/**
+ * Valid tenure types
+ * - Freehold: No lease expiration
+ * - 99-year: 99-year leasehold
+ * - 999-year: 999-year leasehold (effectively freehold)
+ */
+export const TENURE_TYPES = ['Freehold', '99-year', '999-year'];
+
+/**
+ * Tenure type display labels (full)
+ */
+export const TENURE_TYPE_LABELS = {
+  'Freehold': 'Freehold',
+  '99-year': '99-year Leasehold',
+  '999-year': '999-year Leasehold',
+};
+
+/**
+ * Tenure type short labels (for compact UI like filter buttons)
+ */
+export const TENURE_TYPE_LABELS_SHORT = {
+  'Freehold': 'FH',
+  '99-year': '99yr',
+  '999-year': '999yr',
+};
+
+/**
+ * Get tenure label for display
+ * @param {string} tenure - Tenure type value
+ * @param {boolean} short - Use short label
+ * @returns {string} Display label
+ */
+export const getTenureLabel = (tenure, short = false) => {
+  if (!tenure) return 'Unknown';
+  return short
+    ? (TENURE_TYPE_LABELS_SHORT[tenure] || tenure)
+    : (TENURE_TYPE_LABELS[tenure] || tenure);
+};
+
+/**
+ * Check if a tenure value is valid
+ * @param {string} tenure - Tenure to validate
+ * @returns {boolean}
+ */
+export const isValidTenure = (tenure) => {
+  return TENURE_TYPES.includes(tenure);
+};

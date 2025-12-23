@@ -145,3 +145,73 @@ BEDROOM_LABELS = {
     4: '4-Bedroom',
     5: '5+ Bedroom / Penthouse',
 }
+
+
+# =============================================================================
+# SALE TYPE CLASSIFICATION - SINGLE SOURCE OF TRUTH
+# =============================================================================
+
+# Valid sale types from URA transaction data
+SALE_TYPES = ['New Sale', 'Resale', 'Sub Sale']
+
+SALE_TYPE_LABELS = {
+    'New Sale': 'New Sale',      # Initial sale from developer
+    'Resale': 'Resale',          # Secondary market sale
+    'Sub Sale': 'Sub Sale',      # Subsale (before TOP)
+}
+
+
+def is_valid_sale_type(sale_type: str) -> bool:
+    """Check if a sale type value is valid."""
+    return sale_type in SALE_TYPES
+
+
+# =============================================================================
+# TENURE CLASSIFICATION - SINGLE SOURCE OF TRUTH
+# =============================================================================
+
+# Valid tenure types
+TENURE_TYPES = ['Freehold', '99-year', '999-year']
+
+TENURE_TYPE_LABELS = {
+    'Freehold': 'Freehold',
+    '99-year': '99-year Leasehold',
+    '999-year': '999-year Leasehold',
+}
+
+# Short labels for compact UI
+TENURE_TYPE_LABELS_SHORT = {
+    'Freehold': 'FH',
+    '99-year': '99yr',
+    '999-year': '999yr',
+}
+
+
+def normalize_tenure(tenure_str: str) -> str:
+    """
+    Normalize tenure string to standard format.
+
+    Args:
+        tenure_str: Raw tenure string from data source
+
+    Returns:
+        Normalized tenure: 'Freehold', '99-year', '999-year', or 'Unknown'
+    """
+    if not tenure_str:
+        return 'Unknown'
+
+    t = tenure_str.lower().strip()
+
+    if 'freehold' in t:
+        return 'Freehold'
+    elif '999' in t:
+        return '999-year'
+    elif '99' in t:
+        return '99-year'
+    else:
+        return 'Unknown'
+
+
+def is_valid_tenure(tenure: str) -> bool:
+    """Check if a tenure value is valid."""
+    return tenure in TENURE_TYPES
