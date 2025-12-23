@@ -124,6 +124,23 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
             <p className="text-sm text-[#547792] mt-0.5">
               Z-score normalized resale velocity by project ({data.projects.length} projects)
             </p>
+            {/* Z-score explanation */}
+            <div className="mt-1 flex items-center gap-1.5 group relative">
+              <svg className="w-3.5 h-3.5 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-xs text-[#94B4C1] cursor-help">What is Z-score?</span>
+              {/* Tooltip */}
+              <div className="absolute left-0 top-full mt-1 w-72 p-3 bg-[#213448] text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <p className="font-medium mb-2">Z-score measures relative liquidity within each project:</p>
+                <div className="space-y-1 text-[11px]">
+                  <div className="flex justify-between"><span className="text-blue-300">+1.0 or higher</span><span>Sells much faster than avg</span></div>
+                  <div className="flex justify-between"><span className="text-gray-300">0.0</span><span>Average speed for this project</span></div>
+                  <div className="flex justify-between"><span className="text-blue-100">-1.0 or lower</span><span>Sells much slower than avg</span></div>
+                </div>
+                <p className="mt-2 text-[10px] text-[#94B4C1]">Normalizes across projects of different sizes for fair comparison.</p>
+              </div>
+            </div>
           </div>
 
           {/* Window Toggle */}
