@@ -34,7 +34,7 @@ export function MobileTransactionCard({ transaction, formatCurrency, formatDate 
             {formatCurrency(txn.price)}
           </div>
           <div className="text-xs text-[#547792]">
-            ${txn.psf?.toLocaleString() || '-'}/psf
+            ${txn.psf?.toLocaleString() || '-'} PSF
           </div>
           <span className={`inline-block mt-1 px-1.5 py-0.5 text-xs rounded ${
             txn.sale_type === 'New Sale'

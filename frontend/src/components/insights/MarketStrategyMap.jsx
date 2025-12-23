@@ -703,15 +703,15 @@ export default function MarketStrategyMap() {
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(33, 52, 72, 0.50)' }} />
-                <span className="text-[10px] text-[#213448]">CCR - Core Central</span>
+                <span className="text-[10px] text-[#213448]">CCR (Core Central)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(84, 119, 146, 0.42)' }} />
-                <span className="text-[10px] text-[#213448]">RCR - City Fringe</span>
+                <span className="text-[10px] text-[#213448]">RCR (Rest of Central)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(148, 180, 193, 0.35)' }} />
-                <span className="text-[10px] text-[#213448]">OCR - Suburban</span>
+                <span className="text-[10px] text-[#213448]">OCR (Outside Central)</span>
               </div>
             </div>
 
@@ -723,7 +723,7 @@ export default function MarketStrategyMap() {
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded bg-[#213448]" />
-                <span className="text-[10px] text-[#213448]">&gt;$2,200 psf</span>
+                <span className="text-[10px] text-[#213448]">&gt;$2,200 PSF</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded bg-[#547792]" />
@@ -731,7 +731,7 @@ export default function MarketStrategyMap() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded bg-white border border-[#94B4C1]" />
-                <span className="text-[10px] text-[#213448]">&lt;$1,400 psf</span>
+                <span className="text-[10px] text-[#213448]">&lt;$1,400 PSF</span>
               </div>
             </div>
 

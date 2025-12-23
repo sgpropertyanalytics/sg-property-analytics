@@ -30,7 +30,7 @@ ChartJS.register(
  * Median PSF Trend Chart - Line Chart by Market Segment
  *
  * X-axis: Time (drillable: year -> quarter -> month)
- * Y-axis: Median PSF ($/psf)
+ * Y-axis: Median PSF ($/PSF)
  * Lines: CCR, RCR, OCR (3 separate trend lines)
  *
  * Shows price trends by market segment to help buyers understand
@@ -302,7 +302,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
             else if (label.includes('RCR')) count = data.rcrCount?.[index] || 0;
             else if (label.includes('OCR')) count = data.ocrCount?.[index] || 0;
 
-            return `${label}: $${value.toLocaleString()} psf (${count.toLocaleString()} transactions)`;
+            return `${label}: $${value.toLocaleString()} PSF (${count.toLocaleString()} transactions)`;
           },
         },
       },
@@ -325,7 +325,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
         max: Math.ceil((maxPsf + padding) / 100) * 100,
         title: {
           display: true,
-          text: 'Median PSF ($/sqft)',
+          text: 'Median PSF ($/PSF)',
         },
         ticks: {
           callback: (value) => `$${value.toLocaleString()}`,

@@ -315,18 +315,18 @@ export function PriceCompressionChart({ height = 380 }) {
             const d = data[idx];
             if (!d) return '';
             if (context.datasetIndex === 0) {
-              return `CCR-RCR: $${d.ccrRcrSpread?.toLocaleString() || '-'} psf`;
+              return `CCR-RCR: $${d.ccrRcrSpread?.toLocaleString() || '-'} PSF`;
             }
-            return `RCR-OCR: $${d.rcrOcrSpread?.toLocaleString() || '-'} psf`;
+            return `RCR-OCR: $${d.rcrOcrSpread?.toLocaleString() || '-'} PSF`;
           },
           afterBody: (items) => {
             const idx = items[0]?.dataIndex;
             if (idx !== undefined && data[idx]) {
               const d = data[idx];
               const lines = [];
-              if (d.ccr) lines.push(`CCR: $${Math.round(d.ccr).toLocaleString()} psf (${d.counts?.CCR || 0} transactions)`);
-              if (d.rcr) lines.push(`RCR: $${Math.round(d.rcr).toLocaleString()} psf (${d.counts?.RCR || 0} transactions)`);
-              if (d.ocr) lines.push(`OCR: $${Math.round(d.ocr).toLocaleString()} psf (${d.counts?.OCR || 0} transactions)`);
+              if (d.ccr) lines.push(`CCR: $${Math.round(d.ccr).toLocaleString()} PSF (${d.counts?.CCR || 0} transactions)`);
+              if (d.rcr) lines.push(`RCR: $${Math.round(d.rcr).toLocaleString()} PSF (${d.counts?.RCR || 0} transactions)`);
+              if (d.ocr) lines.push(`OCR: $${Math.round(d.ocr).toLocaleString()} PSF (${d.counts?.OCR || 0} transactions)`);
               return lines;
             }
             return [];
@@ -347,7 +347,7 @@ export function PriceCompressionChart({ height = 380 }) {
         },
       },
       y: {
-        title: { display: true, text: 'Spread ($/psf)', font: { size: 11 } },
+        title: { display: true, text: 'Spread ($/PSF)', font: { size: 11 } },
         ticks: {
           callback: (v) => `$${v.toLocaleString()}`,
           font: { size: 10 },
@@ -362,7 +362,7 @@ export function PriceCompressionChart({ height = 380 }) {
     labels: data.map(d => d.period),
     datasets: [
       {
-        label: 'CCR',
+        label: 'CCR (Core Central)',
         data: data.map(d => d.ccr),
         borderColor: '#213448',
         borderWidth: 1.5,
@@ -371,7 +371,7 @@ export function PriceCompressionChart({ height = 380 }) {
         spanGaps: true,
       },
       {
-        label: 'RCR',
+        label: 'RCR (Rest of Central)',
         data: data.map(d => d.rcr),
         borderColor: '#547792',
         borderWidth: 1.5,
@@ -380,7 +380,7 @@ export function PriceCompressionChart({ height = 380 }) {
         spanGaps: true,
       },
       {
-        label: 'OCR',
+        label: 'OCR (Outside Central)',
         data: data.map(d => d.ocr),
         borderColor: '#94B4C1',
         borderWidth: 1.5,
@@ -723,7 +723,7 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
             Market Anomaly
           </div>
           <div className="text-lg md:text-xl font-bold text-amber-900">
-            −${Math.abs(spread).toLocaleString()} psf
+            −${Math.abs(spread).toLocaleString()} PSF
           </div>
           <div className="text-[10px] text-amber-700 font-semibold">
             Prime Discount
@@ -739,7 +739,7 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
             Risk Alert
           </div>
           <div className="text-lg md:text-xl font-bold text-red-900">
-            −${Math.abs(spread).toLocaleString()} psf
+            −${Math.abs(spread).toLocaleString()} PSF
           </div>
           <div className="text-[10px] text-red-700 font-semibold">
             OCR Overheated
@@ -759,7 +759,7 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
         {labels[type]}
       </div>
       <div className="text-lg md:text-xl font-bold text-[#213448]">
-        +${spread.toLocaleString()} psf
+        +${spread.toLocaleString()} PSF
       </div>
       {pctVsAvg !== null && (
         <div className={`text-[10px] font-medium ${

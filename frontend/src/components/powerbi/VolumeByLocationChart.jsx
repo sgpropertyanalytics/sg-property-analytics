@@ -431,15 +431,15 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
             <div className="flex items-center gap-3 text-xs">
               <div className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-sm bg-[#213448]"></span>
-                <span className="text-[#547792]">CCR</span>
+                <span className="text-[#547792]">CCR (Core Central)</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-sm bg-[#547792]"></span>
-                <span className="text-[#547792]">RCR</span>
+                <span className="text-[#547792]">RCR (Rest of Central)</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-sm bg-[#94B4C1]"></span>
-                <span className="text-[#547792]">OCR</span>
+                <span className="text-[#547792]">OCR (Outside Central)</span>
               </div>
             </div>
           )}
