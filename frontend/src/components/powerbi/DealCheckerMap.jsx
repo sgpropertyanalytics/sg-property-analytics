@@ -15,6 +15,45 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 // CartoDB Positron - clean, light basemap
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 
+// Volume glow colors (matching Insights Map - red/hot to yellow/mild)
+const VOLUME_GLOW = {
+  hot: 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.8))',    // Red glow - Top tier
+  warm: 'drop-shadow(0 0 6px rgba(249, 115, 22, 0.7))',   // Orange glow - High tier
+  mild: 'drop-shadow(0 0 5px rgba(250, 204, 21, 0.6))',   // Yellow glow - Medium tier
+};
+
+// Calculate volume percentile thresholds from project data
+function calculateVolumeThresholds(projects) {
+  const volumes = projects
+    .filter(p => p.transaction_count > 0)
+    .map(p => p.transaction_count)
+    .sort((a, b) => a - b);
+
+  if (volumes.length === 0) {
+    return { p50: 0, p75: 0, p90: 0 };
+  }
+
+  const getPercentile = (arr, p) => {
+    const index = Math.ceil((p / 100) * arr.length) - 1;
+    return arr[Math.max(0, index)];
+  };
+
+  return {
+    p50: getPercentile(volumes, 50),
+    p75: getPercentile(volumes, 75),
+    p90: getPercentile(volumes, 90),
+  };
+}
+
+// Get volume tier glow for a project
+function getVolumeGlow(txCount, thresholds) {
+  if (!txCount || txCount === 0) return 'none';
+  if (txCount >= thresholds.p90) return VOLUME_GLOW.hot;
+  if (txCount >= thresholds.p75) return VOLUME_GLOW.warm;
+  if (txCount >= thresholds.p50) return VOLUME_GLOW.mild;
+  return 'none';
+}
+
 /**
  * Creates a GeoJSON circle polygon around a point.
  * Used to visualize the search radius.
@@ -55,6 +94,12 @@ export default function DealCheckerMap({
   projects2km = []
 }) {
   const [popupInfo, setPopupInfo] = useState(null);
+
+  // Calculate volume thresholds from all nearby projects
+  const volumeThresholds = useMemo(() => {
+    const allProjects = [...projects1km, ...projects2km];
+    return calculateVolumeThresholds(allProjects);
+  }, [projects1km, projects2km]);
 
   // Create circle GeoJSON for 1km radius
   const circle1km = useMemo(() => {
@@ -158,43 +203,51 @@ export default function DealCheckerMap({
         </Source>
       )}
 
-      {/* 2km ring project markers (lighter, smaller) */}
-      {projects2km.map((project) => (
-        <Marker
-          key={`2km-${project.project_name}`}
-          latitude={project.latitude}
-          longitude={project.longitude}
-          anchor="center"
-          onClick={(e) => {
-            e.originalEvent.stopPropagation();
-            setPopupInfo({ ...project, tier: '2km' });
-          }}
-        >
-          <div
-            className="w-2.5 h-2.5 bg-[#94B4C1] rounded-full border border-white shadow cursor-pointer hover:bg-[#547792] transition-colors"
-            title={`${project.project_name} (${(project.distance_km * 1000).toFixed(0)}m)`}
-          />
-        </Marker>
-      ))}
+      {/* 2km ring project markers (lighter, smaller) - with volume glow */}
+      {projects2km.map((project) => {
+        const volumeGlow = getVolumeGlow(project.transaction_count, volumeThresholds);
+        return (
+          <Marker
+            key={`2km-${project.project_name}`}
+            latitude={project.latitude}
+            longitude={project.longitude}
+            anchor="center"
+            onClick={(e) => {
+              e.originalEvent.stopPropagation();
+              setPopupInfo({ ...project, tier: '2km' });
+            }}
+          >
+            <div
+              className="w-2.5 h-2.5 bg-[#94B4C1] rounded-full border border-white shadow cursor-pointer hover:bg-[#547792] transition-colors"
+              style={{ filter: volumeGlow }}
+              title={`${project.project_name} (${(project.distance_km * 1000).toFixed(0)}m) - ${project.transaction_count || 0} transactions`}
+            />
+          </Marker>
+        );
+      })}
 
-      {/* 1km project markers (medium blue dots) */}
-      {otherProjects1km.map((project) => (
-        <Marker
-          key={`1km-${project.project_name}`}
-          latitude={project.latitude}
-          longitude={project.longitude}
-          anchor="center"
-          onClick={(e) => {
-            e.originalEvent.stopPropagation();
-            setPopupInfo({ ...project, tier: '1km' });
-          }}
-        >
-          <div
-            className="w-3 h-3 bg-[#547792] rounded-full border-2 border-white shadow-md cursor-pointer hover:bg-[#213448] transition-colors"
-            title={`${project.project_name} (${(project.distance_km * 1000).toFixed(0)}m)`}
-          />
-        </Marker>
-      ))}
+      {/* 1km project markers (medium blue dots) - with volume glow */}
+      {otherProjects1km.map((project) => {
+        const volumeGlow = getVolumeGlow(project.transaction_count, volumeThresholds);
+        return (
+          <Marker
+            key={`1km-${project.project_name}`}
+            latitude={project.latitude}
+            longitude={project.longitude}
+            anchor="center"
+            onClick={(e) => {
+              e.originalEvent.stopPropagation();
+              setPopupInfo({ ...project, tier: '1km' });
+            }}
+          >
+            <div
+              className="w-3 h-3 bg-[#547792] rounded-full border-2 border-white shadow-md cursor-pointer hover:bg-[#213448] transition-colors"
+              style={{ filter: volumeGlow }}
+              title={`${project.project_name} (${(project.distance_km * 1000).toFixed(0)}m) - ${project.transaction_count || 0} transactions`}
+            />
+          </Marker>
+        );
+      })}
 
       {/* Center project marker (prominent) */}
       <Marker
@@ -262,9 +315,23 @@ export default function DealCheckerMap({
           <div className="w-2.5 h-2.5 bg-[#547792] rounded-full border border-white"></div>
           <span className="text-[#547792]">Within 1km</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-2">
           <div className="w-2 h-2 bg-[#94B4C1] rounded-full border border-white"></div>
           <span className="text-[#94B4C1]">1-2km</span>
+        </div>
+        {/* Volume activity legend */}
+        <div className="border-t border-[#94B4C1]/30 pt-1.5 mt-1">
+          <div className="text-[9px] text-[#547792] uppercase tracking-wide mb-1">Volume</div>
+          <div
+            className="h-1.5 w-full rounded-sm"
+            style={{
+              background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15, #94B4C1)',
+            }}
+          />
+          <div className="flex justify-between mt-0.5">
+            <span className="text-[8px] text-[#547792]">High</span>
+            <span className="text-[8px] text-[#547792]">Low</span>
+          </div>
         </div>
       </div>
     </Map>
