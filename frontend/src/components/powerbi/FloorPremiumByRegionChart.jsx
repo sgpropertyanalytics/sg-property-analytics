@@ -18,6 +18,7 @@ import {
   FLOOR_LEVEL_LABELS_SHORT,
   getFloorLevelIndex,
 } from '../../constants';
+import { KeyInsightBox } from '../ui/KeyInsightBox';
 
 ChartJS.register(
   CategoryScale,
@@ -36,16 +37,19 @@ const REGION_CONFIG = {
     label: 'CCR (Core Central)',
     color: 'rgba(33, 52, 72, 1)',        // Deep Navy
     bgColor: 'rgba(33, 52, 72, 0.1)',
+    borderDash: [],
   },
   RCR: {
     label: 'RCR (Rest of Central)',
     color: 'rgba(84, 119, 146, 1)',      // Ocean Blue
     bgColor: 'rgba(84, 119, 146, 0.1)',
+    borderDash: [],
   },
   OCR: {
     label: 'OCR (Outside Central)',
-    color: 'rgba(148, 180, 193, 1)',     // Sky Blue
-    bgColor: 'rgba(148, 180, 193, 0.1)',
+    color: 'rgba(90, 130, 150, 1)',      // Darker Sky Blue for visibility
+    bgColor: 'rgba(90, 130, 150, 0.15)',
+    borderDash: [5, 3],                   // Dashed pattern for distinction
   },
 };
 
@@ -198,6 +202,7 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
       borderColor: config.color,
       backgroundColor: config.bgColor,
       borderWidth: 3,
+      borderDash: config.borderDash || [],
       pointRadius: pointRadii,
       pointBackgroundColor: config.color,
       pointBorderColor: '#fff',
@@ -308,31 +313,62 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <h3 className="font-semibold text-[#213448]">Floor Premium by Market Segment</h3>
         <p className="text-xs text-[#547792] mt-0.5">
-          Compare how floor premiums vary across market segments
+          How floor premiums vary across CCR, RCR, and OCR
         </p>
       </div>
+
+      {/* Key Insight */}
+      <KeyInsightBox title="Key Takeaway" variant="info">
+        <span className="font-semibold text-[#213448]">CCR properties</span> typically have the{' '}
+        <span className="font-semibold text-[#213448]">steepest floor premiums</span> -
+        higher floors command significantly more in premium areas.{' '}
+        <span className="font-semibold text-[#213448]">OCR</span> (suburban) shows the flattest curve.
+      </KeyInsightBox>
 
       {/* Chart */}
       <div className="p-4" style={{ height: height - 100 }}>
         <Chart ref={chartRef} type="line" data={chartData} options={options} />
       </div>
 
-      {/* Footer Insights */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
-        <div className="flex flex-wrap items-center gap-4 text-xs">
-          <span className="text-[#547792] font-medium">Peak Premium:</span>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: REGION_CONFIG.CCR.color }} />
-            <span className="text-[#213448]">CCR {formatPremium(ccrMax)}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: REGION_CONFIG.RCR.color }} />
-            <span className="text-[#213448]">RCR {formatPremium(rcrMax)}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: REGION_CONFIG.OCR.color }} />
-            <span className={ocrMax.count < 20 ? "text-[#547792]" : "text-[#213448]"}>OCR {formatPremium(ocrMax)}</span>
-          </div>
+      {/* Footer - Mini cards */}
+      <div className="px-4 py-3 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
+        <span className="text-xs text-[#94B4C1] block mb-2">Peak Premium by Segment</span>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { region: 'CCR', max: ccrMax },
+            { region: 'RCR', max: rcrMax },
+            { region: 'OCR', max: ocrMax },
+          ].map(({ region, max }) => {
+            const isLowSample = max.count < 20;
+            return (
+              <div
+                key={region}
+                className={`px-2 py-1.5 rounded border ${
+                  isLowSample ? 'bg-gray-50 border-gray-200' : 'bg-white border-[#94B4C1]/30'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: REGION_CONFIG[region].color }}
+                  />
+                  <span className="text-xs font-semibold text-[#213448]">{region}</span>
+                </div>
+                <div className="text-sm font-bold text-[#213448]">
+                  {max.tier}{' '}
+                  <span className="text-green-600">+{max.value.toFixed(0)}%</span>
+                </div>
+                {isLowSample && (
+                  <div className="text-[10px] text-amber-600 flex items-center gap-1 mt-0.5">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Only {max.count} sales
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

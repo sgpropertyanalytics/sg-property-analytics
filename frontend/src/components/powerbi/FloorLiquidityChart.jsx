@@ -20,6 +20,8 @@ import {
   FLOOR_LEVEL_LABELS,
   getFloorLevelIndex,
 } from '../../constants';
+import { KeyInsightBox } from '../ui/KeyInsightBox';
+import { SampleSizeWarning } from '../ui/SampleSizeWarning';
 
 ChartJS.register(
   CategoryScale,
@@ -342,17 +344,32 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h3 className="font-bold text-lg text-[#213448]">Floor Liquidity-Adjusted Price Curve</h3>
+              <h3 className="font-bold text-lg text-[#213448]">Floor Price Analysis</h3>
               {updating && (
                 <div className="w-4 h-4 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
               )}
             </div>
             <p className="text-sm text-[#547792] mt-0.5">
-              Where price is real, not imagined
+              How floor level affects price per square foot
             </p>
           </div>
         </div>
       </div>
+
+      {/* Key Insight Summary */}
+      <KeyInsightBox title="Key Takeaway">
+        Higher floors typically cost{' '}
+        <span className="font-bold text-[#213448]">
+          ~{Math.abs(avgPremiumPerTier).toFixed(1)}% {avgPremiumPerTier >= 0 ? 'more' : 'less'}
+        </span>{' '}
+        per level. The{' '}
+        <span className="font-bold text-[#213448]">{mostLiquidTier}</span>{' '}
+        floor range has the most sales ({Math.max(...counts).toLocaleString()} transactions),
+        making prices there most reliable.
+      </KeyInsightBox>
+
+      {/* Sample Size Warning */}
+      <SampleSizeWarning count={totalTransactions} threshold={100} className="mx-6 mt-3" />
 
       {/* Simple Legend */}
       <div className="px-6 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20">
@@ -372,24 +389,41 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         </div>
       </div>
 
-      {/* Premium Pills Row */}
-      <div className="px-6 py-2 border-b border-[#94B4C1]/20 bg-[#213448]/5">
-        <div className="flex items-center gap-2 overflow-x-auto">
-          <span className="text-xs font-semibold text-[#547792] uppercase tracking-wide shrink-0">Premium vs Low:</span>
+      {/* Premium Ladder - Visual bar representation */}
+      <div className="px-6 py-3 border-b border-[#94B4C1]/20 bg-white">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-semibold text-[#213448]">Floor Premium Ladder</span>
+          <span className="text-xs text-[#94B4C1]">% price increase vs Low floor</span>
+        </div>
+        <div className="flex items-end justify-between gap-2">
           {data.map((d, i) => {
             const premium = premiums[i];
-            const bgColor = premium > 0
-              ? 'bg-green-50 text-green-700 border-green-200'
-              : 'bg-gray-50 text-gray-600 border-gray-200';
+            const maxPremium = Math.max(...premiums.filter(p => p > 0), 1);
+            const barHeight = premium > 0 ? Math.max(8, (premium / maxPremium) * 48) : 4;
+            const isBaseline = d.floor_level === 'Low';
 
             return (
-              <div
-                key={d.floor_level}
-                className={`px-2 py-1 rounded border text-xs font-mono shrink-0 ${bgColor}`}
-              >
-                <span className="font-semibold">{d.floor_level}</span>
-                <span className="ml-1">
-                  {premium >= 0 ? '+' : ''}{premium.toFixed(1)}%
+              <div key={d.floor_level} className="flex-1 flex flex-col items-center min-w-0">
+                {/* Premium value */}
+                <span className={`text-xs font-bold mb-1 ${
+                  isBaseline ? 'text-gray-400' :
+                  premium > 10 ? 'text-green-600' :
+                  premium > 0 ? 'text-green-500' : 'text-gray-500'
+                }`}>
+                  {isBaseline ? 'Base' : `+${premium.toFixed(0)}%`}
+                </span>
+                {/* Visual bar */}
+                <div
+                  className={`w-full max-w-[40px] rounded-t transition-all ${
+                    isBaseline ? 'bg-gray-300' :
+                    premium > 10 ? 'bg-green-500' :
+                    premium > 0 ? 'bg-green-400' : 'bg-gray-300'
+                  }`}
+                  style={{ height: barHeight }}
+                />
+                {/* Floor label */}
+                <span className="text-[10px] text-[#547792] mt-1.5 font-medium truncate w-full text-center">
+                  {d.floor_level}
                 </span>
               </div>
             );
@@ -403,27 +437,26 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         <Chart ref={chartRef} type="bar" data={chartData} options={options} />
       </div>
 
-      {/* Footer Stats */}
+      {/* Footer Stats - Simplified grid */}
       <div className="px-6 py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30">
-        <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[#94B4C1]">Total Transactions:</span>
-              <span className="text-[#213448] font-bold">{totalTransactions.toLocaleString()}</span>
-            </div>
-            <div className="flex items-center gap-1.5 border-l border-[#94B4C1]/30 pl-4">
-              <span className="text-[#94B4C1]">Premium Gradient:</span>
-              <span className={`font-bold ${avgPremiumPerTier >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {avgPremiumPerTier >= 0 ? '+' : ''}{avgPremiumPerTier.toFixed(1)}%/tier
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[#94B4C1]">Most Active:</span>
-              <span className="text-[#213448] font-bold">{mostLiquidTier}</span>
-            </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div>
+            <span className="text-[#94B4C1] block text-xs">Total Sales</span>
+            <span className="text-[#213448] font-bold">{totalTransactions.toLocaleString()}</span>
           </div>
-          <div className="flex items-center gap-2 text-[#94B4C1]">
-            <span>Hover for details</span>
+          <div>
+            <span className="text-[#94B4C1] block text-xs">Price Increase per Level</span>
+            <span className={`font-bold ${avgPremiumPerTier >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              ~{Math.abs(avgPremiumPerTier).toFixed(1)}% {avgPremiumPerTier >= 0 ? 'more' : 'less'}
+            </span>
+          </div>
+          <div>
+            <span className="text-[#94B4C1] block text-xs">Most Active Floor Range</span>
+            <span className="text-[#213448] font-bold">{mostLiquidTier}</span>
+          </div>
+          <div>
+            <span className="text-[#94B4C1] block text-xs">Highest Premium</span>
+            <span className="text-[#213448] font-bold">{highestPremiumTier}</span>
           </div>
         </div>
       </div>
