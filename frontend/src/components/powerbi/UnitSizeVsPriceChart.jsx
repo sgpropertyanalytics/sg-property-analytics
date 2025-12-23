@@ -262,7 +262,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
             </p>
           </div>
           <div className="text-xs text-[#94B4C1]">
-            {meta.sample_size.toLocaleString()} of {meta.total_count.toLocaleString()} transactions
+            {meta.sample_size.toLocaleString()} sampled of {meta.total_count.toLocaleString()} transactions
           </div>
         </div>
       </div>
