@@ -324,7 +324,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                   className="bg-[#EAE0CF]/50 text-center px-2 py-1 font-medium border-b border-[#94B4C1]/30 min-w-[70px]"
                 >
                   <div className="text-[#547792]">{zone}</div>
-                  <div className="text-[10px] text-[#94B4C1] font-normal">({FLOOR_RANGE_LABELS[zone] || '?'})</div>
+                  <div className="text-[10px] text-[#547792] font-normal">({FLOOR_RANGE_LABELS[zone] || '?'})</div>
                 </th>
               ))}
             </tr>
