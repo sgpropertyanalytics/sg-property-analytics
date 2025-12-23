@@ -195,6 +195,20 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
   const q1BinIndex = findBinIndex(stats?.p25);
   const q3BinIndex = findBinIndex(stats?.p75);
 
+  // Debug logging for annotations
+  console.log('Price Distribution Annotations Debug:', {
+    stats,
+    median: stats?.median,
+    p25: stats?.p25,
+    p75: stats?.p75,
+    medianBinIndex,
+    q1BinIndex,
+    q3BinIndex,
+    bucketsLength: buckets.length,
+    firstBucket: buckets[0],
+    lastBucket: buckets[buckets.length - 1]
+  });
+
   // Determine color gradient based on count using theme colors
   const maxValue = Math.max(...counts, 1);
   const getBarColor = (count, alpha = 0.8) => {
@@ -259,6 +273,8 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
       },
     };
   }
+
+  console.log('Final annotations object:', annotations);
 
   const options = {
     responsive: true,
