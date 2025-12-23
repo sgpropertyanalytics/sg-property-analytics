@@ -37,13 +37,33 @@ ChartJS.register(
  * whether prices are rising or falling in different regions.
  */
 export function MedianPsfTrendChart({ height = 300 }) {
-  const { buildApiParams, drillPath, highlight, applyHighlight } = usePowerBIFilters();
+  const { buildApiParams, highlight, applyHighlight } = usePowerBIFilters();
   const [data, setData] = useState({ labels: [], ccr: [], rcr: [], ocr: [] });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
+
+  // LOCAL drill state - each chart controls its own time granularity
+  // This follows Power BI principle: Drill = Visual-local (only this chart changes)
+  const [localDrillLevel, setLocalDrillLevel] = useState('year');
+  const LOCAL_TIME_LEVELS = ['year', 'quarter', 'month'];
+  const LOCAL_TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
+
+  const handleLocalDrillUp = () => {
+    const currentIndex = LOCAL_TIME_LEVELS.indexOf(localDrillLevel);
+    if (currentIndex > 0) {
+      setLocalDrillLevel(LOCAL_TIME_LEVELS[currentIndex - 1]);
+    }
+  };
+
+  const handleLocalDrillDown = () => {
+    const currentIndex = LOCAL_TIME_LEVELS.indexOf(localDrillLevel);
+    if (currentIndex < LOCAL_TIME_LEVELS.length - 1) {
+      setLocalDrillLevel(LOCAL_TIME_LEVELS[currentIndex + 1]);
+    }
+  };
 
   // Fetch data when filters change
   useEffect(() => {
@@ -57,8 +77,9 @@ export function MedianPsfTrendChart({ height = 300 }) {
       try {
         // Use excludeHighlight: true so chart shows ALL periods
         // Group by time AND region for segment breakdown
+        // Uses LOCAL drill level (not global drillPath.time) for visual-local drill behavior
         const params = buildApiParams({
-          group_by: `${drillPath.time},region`,
+          group_by: `${localDrillLevel},region`,
           metrics: 'median_psf,count'
         }, { excludeHighlight: true });
 
@@ -68,7 +89,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
         // Transform data: group by time period with CCR/RCR/OCR breakdown
         const groupedByTime = {};
         rawData.forEach(row => {
-          const period = row[drillPath.time];
+          const period = row[localDrillLevel];
           if (!groupedByTime[period]) {
             groupedByTime[period] = {
               period,
@@ -124,7 +145,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
       }
     };
     fetchData();
-  }, [buildApiParams, drillPath.time]);
+  }, [buildApiParams, localDrillLevel]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;
@@ -136,7 +157,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
       const timeValue = data.labels[index];
       if (timeValue) {
         // Apply highlight - triggers cross-filter for OTHER charts
-        applyHighlight('time', drillPath.time, timeValue);
+        applyHighlight('time', localDrillLevel, timeValue);
       }
     }
   };
@@ -313,12 +334,6 @@ export function MedianPsfTrendChart({ height = 300 }) {
     },
   };
 
-  const timeLabels = {
-    year: 'Year',
-    quarter: 'Quarter',
-    month: 'Month'
-  };
-
   // Calculate latest values for summary
   const latestCcr = data.ccr.filter(v => v != null).slice(-1)[0];
   const latestRcr = data.rcr.filter(v => v != null).slice(-1)[0];
@@ -334,11 +349,17 @@ export function MedianPsfTrendChart({ height = 300 }) {
               <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
             )}
           </div>
-          <DrillButtons hierarchyType="time" />
+          <DrillButtons
+            localLevel={localDrillLevel}
+            localLevels={LOCAL_TIME_LEVELS}
+            localLevelLabels={LOCAL_TIME_LABELS}
+            onLocalDrillUp={handleLocalDrillUp}
+            onLocalDrillDown={handleLocalDrillDown}
+          />
         </div>
         <div className="flex items-center justify-between mt-1">
           <p className="text-xs text-[#547792]">
-            Price per sqft by market segment ({timeLabels[drillPath.time]})
+            Price per sqft by market segment ({LOCAL_TIME_LABELS[localDrillLevel]})
           </p>
           <div className="text-xs text-[#547792] flex gap-3">
             {latestCcr && <span>CCR: ${latestCcr.toLocaleString()}</span>}

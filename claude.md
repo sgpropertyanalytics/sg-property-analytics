@@ -83,6 +83,27 @@ Location click → Cross-filter (updates all)
 Drill up/down → Local only (one chart)
 ```
 
+### Card 3.1: Drill Implementation Rule (MANDATORY)
+
+```
+EACH CHART MUST HAVE ITS OWN LOCAL DRILL STATE
+
+❌ WRONG - Global drill (charts share state):
+  <DrillButtons hierarchyType="time" />
+  → Multiple charts change together when drilling
+
+✅ CORRECT - Local drill (each chart independent):
+  const [localDrillLevel, setLocalDrillLevel] = useState('year');
+  <DrillButtons
+    localLevel={localDrillLevel}
+    localLevels={LOCAL_TIME_LEVELS}
+    localLevelLabels={LOCAL_TIME_LABELS}
+    onLocalDrillUp={handleLocalDrillUp}
+    onLocalDrillDown={handleLocalDrillDown}
+  />
+  → Only this chart changes when drilling
+```
+
 ### Card 4: Time-Series Chart Rule
 
 ```
@@ -153,8 +174,9 @@ When diagnosing or fixing any issue, Claude MUST follow these rules:
 1. **Data Model Rule**: Slicers belong to dimensions. Facts should almost never be slicers.
 2. **Interaction Rule**: "What happened when/where" → Cross-filter. "What portion" → Highlight.
 3. **Drill Rule**: Drill ≠ Filter. Drill is visual-local by default.
-4. **Global Filter Rule**: All sidebar slicers MUST apply to every visual. No exceptions.
-5. **Time-Series Rule**: Time-axis charts use `excludeHighlight: true` to show full timeline.
+4. **Drill Locality Rule**: Each chart MUST have its own local drill state. NEVER use `hierarchyType` prop for DrillButtons - always use local mode with `localLevel`, `onLocalDrillUp`, `onLocalDrillDown`.
+5. **Global Filter Rule**: All sidebar slicers MUST apply to every visual. No exceptions.
+6. **Time-Series Rule**: Time-axis charts use `excludeHighlight: true` to show full timeline.
 
 ```jsx
 // ✅ CORRECT - Always use buildApiParams
@@ -464,23 +486,50 @@ export const fetchMyEndpoint = async (params) => {
 
 ## Guide: Drill Button Implementation
 
-### Using Standard DrillButtons Component
+### Using Standard DrillButtons Component (LOCAL MODE REQUIRED)
+
+> **MANDATORY**: Always use LOCAL MODE for drill buttons. Each chart must manage its own drill state independently. Global mode (`hierarchyType` prop) causes multiple charts to drill together, violating the Power BI principle that "Drill = Visual-local".
 
 ```jsx
 import { DrillButtons } from './DrillButtons';
 
-// GLOBAL MODE (affects breadcrumbs, other charts may respond)
-<DrillButtons hierarchyType="time" />
-<DrillButtons hierarchyType="location" />
+// ✅ CORRECT - LOCAL MODE (each chart has independent drill state)
+// Step 1: Add local state to your chart component
+const [localDrillLevel, setLocalDrillLevel] = useState('year');
+const LOCAL_TIME_LEVELS = ['year', 'quarter', 'month'];
+const LOCAL_TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
-// LOCAL MODE (visual-local only, no global effect)
+const handleLocalDrillUp = () => {
+  const currentIndex = LOCAL_TIME_LEVELS.indexOf(localDrillLevel);
+  if (currentIndex > 0) {
+    setLocalDrillLevel(LOCAL_TIME_LEVELS[currentIndex - 1]);
+  }
+};
+
+const handleLocalDrillDown = () => {
+  const currentIndex = LOCAL_TIME_LEVELS.indexOf(localDrillLevel);
+  if (currentIndex < LOCAL_TIME_LEVELS.length - 1) {
+    setLocalDrillLevel(LOCAL_TIME_LEVELS[currentIndex + 1]);
+  }
+};
+
+// Step 2: Use local mode props
 <DrillButtons
-  localLevel={drillLevel}
-  localLevels={['year', 'quarter', 'month']}
-  localLevelLabels={{ year: 'Year', quarter: 'Quarter', month: 'Month' }}
-  onLocalDrillUp={() => setDrillLevel(prev => prevLevel(prev))}
-  onLocalDrillDown={() => setDrillLevel(prev => nextLevel(prev))}
+  localLevel={localDrillLevel}
+  localLevels={LOCAL_TIME_LEVELS}
+  localLevelLabels={LOCAL_TIME_LABELS}
+  onLocalDrillUp={handleLocalDrillUp}
+  onLocalDrillDown={handleLocalDrillDown}
 />
+
+// Step 3: Use localDrillLevel in your API call (not drillPath.time)
+const params = buildApiParams({
+  group_by: `${localDrillLevel},sale_type`,
+  metrics: 'count,median_psf'
+}, { excludeHighlight: true });
+
+// ❌ WRONG - NEVER use global mode (causes multiple charts to drill together)
+<DrillButtons hierarchyType="time" />  // DON'T DO THIS
 ```
 
 ### Button State at Boundaries

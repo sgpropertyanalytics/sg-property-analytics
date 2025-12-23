@@ -123,6 +123,41 @@ Never:              Focus → Erase → Guess
 | Drill up/down | Single visual | Changes granularity inside one chart |
 | Cross-filter | Cross-visual | Changes data scope across all visuals |
 
+## Rule 3.1: The Drill Locality Rule (MANDATORY)
+
+> **Each chart MUST have its own local drill state. NEVER share drill state between charts.**
+
+This rule exists because:
+1. Power BI's drill behavior is visual-local by design
+2. Users expect drilling on one chart to NOT affect other charts
+3. Sharing drill state violates user expectations and creates confusing behavior
+
+| Implementation | Behavior | Correct? |
+|----------------|----------|----------|
+| `<DrillButtons hierarchyType="time" />` | Multiple charts drill together | ❌ WRONG |
+| `<DrillButtons localLevel={...} onLocalDrillUp={...} />` | Only this chart drills | ✅ CORRECT |
+
+**Implementation Pattern:**
+```jsx
+// Each chart component must have its own drill state
+const [localDrillLevel, setLocalDrillLevel] = useState('year');
+const LOCAL_TIME_LEVELS = ['year', 'quarter', 'month'];
+
+// Use LOCAL mode props - NEVER use hierarchyType
+<DrillButtons
+  localLevel={localDrillLevel}
+  localLevels={LOCAL_TIME_LEVELS}
+  localLevelLabels={{ year: 'Year', quarter: 'Quarter', month: 'Month' }}
+  onLocalDrillUp={handleLocalDrillUp}
+  onLocalDrillDown={handleLocalDrillDown}
+/>
+
+// Use localDrillLevel in API calls (not drillPath.time from context)
+const params = buildApiParams({
+  group_by: `${localDrillLevel},sale_type`
+}, { excludeHighlight: true });
+```
+
 ## Rule 4: The Global Filter Rule
 
 > **All sidebar slicers MUST apply to every visual. No exceptions.**
@@ -432,23 +467,50 @@ def aggregate():
 />
 ```
 
-## Drill Button Implementation
+## Drill Button Implementation (LOCAL MODE REQUIRED)
+
+> **MANDATORY**: Always use LOCAL MODE. Each chart must manage its own drill state independently. See Rule 3.1 above.
 
 ```jsx
 import { DrillButtons } from './DrillButtons';
 
-// GLOBAL MODE (affects breadcrumbs, other charts may respond)
-<DrillButtons hierarchyType="time" />
-<DrillButtons hierarchyType="location" />
+// ✅ CORRECT - LOCAL MODE (each chart has independent drill state)
+// Step 1: Add local state to your chart component
+const [localDrillLevel, setLocalDrillLevel] = useState('year');
+const LOCAL_TIME_LEVELS = ['year', 'quarter', 'month'];
+const LOCAL_TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
-// LOCAL MODE (visual-local only, no global effect)
+const handleLocalDrillUp = () => {
+  const currentIndex = LOCAL_TIME_LEVELS.indexOf(localDrillLevel);
+  if (currentIndex > 0) {
+    setLocalDrillLevel(LOCAL_TIME_LEVELS[currentIndex - 1]);
+  }
+};
+
+const handleLocalDrillDown = () => {
+  const currentIndex = LOCAL_TIME_LEVELS.indexOf(localDrillLevel);
+  if (currentIndex < LOCAL_TIME_LEVELS.length - 1) {
+    setLocalDrillLevel(LOCAL_TIME_LEVELS[currentIndex + 1]);
+  }
+};
+
+// Step 2: Use local mode props
 <DrillButtons
-  localLevel={drillLevel}
-  localLevels={['year', 'quarter', 'month']}
-  localLevelLabels={{ year: 'Year', quarter: 'Quarter', month: 'Month' }}
-  onLocalDrillUp={() => setDrillLevel(prev => prevLevel(prev))}
-  onLocalDrillDown={() => setDrillLevel(prev => nextLevel(prev))}
+  localLevel={localDrillLevel}
+  localLevels={LOCAL_TIME_LEVELS}
+  localLevelLabels={LOCAL_TIME_LABELS}
+  onLocalDrillUp={handleLocalDrillUp}
+  onLocalDrillDown={handleLocalDrillDown}
 />
+
+// Step 3: Use localDrillLevel in your API call (not drillPath.time)
+const params = buildApiParams({
+  group_by: `${localDrillLevel},sale_type`,
+  metrics: 'count,median_psf'
+}, { excludeHighlight: true });
+
+// ❌ WRONG - NEVER use global mode (causes multiple charts to drill together)
+<DrillButtons hierarchyType="time" />  // DON'T DO THIS
 ```
 
 ### Button State at Boundaries
@@ -824,6 +886,26 @@ CROSS-FILTER = Dashboard-wide (all charts update)
 Time click    → Cross-filter (updates all)
 Location click → Cross-filter (updates all)
 Drill up/down → Local only (one chart)
+```
+
+## Card 3.1: Drill Locality (MANDATORY)
+
+```
+EACH CHART MUST HAVE ITS OWN LOCAL DRILL STATE
+
+❌ WRONG - Global drill (charts share state):
+  <DrillButtons hierarchyType="time" />
+  → Multiple charts drill together = BUG
+
+✅ CORRECT - Local drill (independent state):
+  const [localDrillLevel, setLocalDrillLevel] = useState('year');
+  <DrillButtons
+    localLevel={localDrillLevel}
+    onLocalDrillUp={handleLocalDrillUp}
+    onLocalDrillDown={handleLocalDrillDown}
+    ...
+  />
+  → Only this chart drills
 ```
 
 ## Card 4: Time-Series Chart Rule
