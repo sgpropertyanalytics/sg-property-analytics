@@ -196,38 +196,45 @@ export default function DealCheckerContent() {
 
   return (
     <div className="space-y-6">
-      {/* Input Form Card - Prominent Design */}
+      {/* Input Form Card - Consistent with Affordability tab */}
       {/* IMPORTANT: Do NOT add overflow-hidden here - it clips the project dropdown */}
-      <div className="bg-gradient-to-r from-[#213448] to-[#547792] rounded-xl shadow-lg">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50">
+        <div className="px-4 py-3 border-b border-[#94B4C1]/30">
+          <h3 className="font-semibold text-[#213448]">Check Your Deal</h3>
+          <p className="text-xs text-[#547792] mt-0.5">
+            Enter your property details to see how your price compares
+          </p>
+        </div>
+
         <form onSubmit={handleCheck} className="p-4 md:p-5">
-          {/* All inputs in a single responsive row */}
-          <div className="flex flex-col lg:flex-row gap-3 items-end">
+          {/* All inputs in a responsive grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {/* Project Selector - Takes more space */}
-            <div className="flex-[2] min-w-0" ref={dropdownRef}>
-              <label className="block text-xs font-medium text-white/80 mb-1.5">
-                Select your Project <span className="text-red-300">*</span>
+            <div className="col-span-2" ref={dropdownRef}>
+              <label className="block text-[10px] font-medium text-[#547792] mb-0.5">
+                Select your Project <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={projectOptionsLoading}
-                  className="w-full px-4 py-3 border-2 border-white/20 rounded-lg text-sm text-left bg-white/10 backdrop-blur-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 flex items-center justify-between hover:bg-white/15 transition-colors"
+                  className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded text-left bg-white focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent flex items-center justify-between"
                 >
-                  <span className={projectName ? 'text-white font-medium' : 'text-white/50'}>
+                  <span className={projectName ? 'text-[#213448] truncate' : 'text-[#94B4C1]'}>
                     {projectName
                       ? `${projectName}${selectedProjectInfo?.district ? ` (${selectedProjectInfo.district})` : ''}`
                       : 'Search projects...'}
                   </span>
-                  <svg className={`w-4 h-4 text-white/70 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className={`w-3 h-3 text-[#547792] transition-transform flex-shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
                 {/* Dropdown Panel */}
                 {isDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-[#94B4C1]/50 rounded-lg shadow-xl max-h-80 overflow-hidden">
-                    <div className="p-2 border-b border-[#94B4C1]/30 bg-slate-50">
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-[#94B4C1]/50 rounded-lg shadow-lg max-h-80 overflow-hidden">
+                    <div className="p-2 border-b border-[#94B4C1]/30">
                       <input
                         type="text"
                         placeholder="Type to search..."
@@ -239,7 +246,7 @@ export default function DealCheckerContent() {
                     </div>
                     <div className="max-h-60 overflow-y-auto">
                       {filteredProjects.length === 0 ? (
-                        <div className="px-3 py-4 text-sm text-[#547792] text-center">No projects found</div>
+                        <div className="px-3 py-4 text-sm text-[#94B4C1] text-center">No projects found</div>
                       ) : (
                         filteredProjects.slice(0, 100).map(p => (
                           <button
@@ -251,7 +258,7 @@ export default function DealCheckerContent() {
                             }`}
                           >
                             <span className="truncate">{p.name}</span>
-                            <span className="text-xs text-[#547792] ml-2 flex-shrink-0">{p.district}</span>
+                            <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
                           </button>
                         ))
                       )}
@@ -265,8 +272,8 @@ export default function DealCheckerContent() {
                 )}
 
                 {projectOptionsLoading && (
-                  <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
-                    <svg className="w-4 h-4 animate-spin text-white/70" fill="none" viewBox="0 0 24 24">
+                  <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
+                    <svg className="w-3 h-3 animate-spin text-[#547792]" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
@@ -276,28 +283,27 @@ export default function DealCheckerContent() {
             </div>
 
             {/* Bedroom */}
-            <div className="flex-1 min-w-[100px]">
-              <label className="block text-xs font-medium text-white/80 mb-1.5">
-                Beds <span className="text-red-300">*</span>
+            <div>
+              <label className="block text-[10px] font-medium text-[#547792] mb-0.5">
+                Bedroom <span className="text-red-500">*</span>
               </label>
               <select
                 value={bedroom}
                 onChange={(e) => setBedroom(e.target.value)}
-                className="w-full px-3 py-3 border-2 border-white/20 rounded-lg text-sm bg-white/10 backdrop-blur-sm text-white focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 appearance-none cursor-pointer"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25rem' }}
+                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
               >
-                <option value="" className="text-[#213448]">-</option>
-                <option value="1" className="text-[#213448]">1 BR</option>
-                <option value="2" className="text-[#213448]">2 BR</option>
-                <option value="3" className="text-[#213448]">3 BR</option>
-                <option value="4" className="text-[#213448]">4 BR</option>
-                <option value="5" className="text-[#213448]">5+</option>
+                <option value="">All</option>
+                <option value="1">1 BR</option>
+                <option value="2">2 BR</option>
+                <option value="3">3 BR</option>
+                <option value="4">4 BR</option>
+                <option value="5">5+ BR</option>
               </select>
             </div>
 
             {/* Unit Size */}
-            <div className="flex-1 min-w-[110px]">
-              <label className="block text-xs font-medium text-white/80 mb-1.5">
+            <div>
+              <label className="block text-[10px] font-medium text-[#547792] mb-0.5">
                 Size (sqft)
               </label>
               <input
@@ -305,48 +311,50 @@ export default function DealCheckerContent() {
                 value={sqft}
                 onChange={handleSqftChange}
                 placeholder="1,200"
-                className="w-full px-3 py-3 border-2 border-white/20 rounded-lg text-sm bg-white/10 backdrop-blur-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40"
+                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white placeholder-[#94B4C1]"
               />
             </div>
 
             {/* Price */}
-            <div className="flex-1 min-w-[130px]">
-              <label className="block text-xs font-medium text-white/80 mb-1.5">
-                Price ($) <span className="text-red-300">*</span>
+            <div>
+              <label className="block text-[10px] font-medium text-[#547792] mb-0.5">
+                Price ($) <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={price}
                 onChange={handlePriceChange}
                 placeholder="2,500,000"
-                className="w-full px-3 py-3 border-2 border-white/20 rounded-lg text-sm bg-white/10 backdrop-blur-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40"
+                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white placeholder-[#94B4C1]"
               />
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex-shrink-0">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full lg:w-auto px-6 py-3 bg-white text-[#213448] rounded-lg hover:bg-[#EAE0CF] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-semibold shadow-md"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Checking...
-                  </span>
-                ) : (
-                  'Check Deal'
-                )}
-              </button>
             </div>
           </div>
 
+          {/* Submit Button - Full width below inputs */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-4 px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Checking...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                Check Deal
+              </span>
+            )}
+          </button>
+
           {error && (
-            <p className="mt-3 text-sm text-red-200 bg-red-900/30 px-3 py-2 rounded">{error}</p>
+            <p className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>
           )}
         </form>
       </div>
