@@ -657,20 +657,17 @@ export function ValueParityPanel() {
       {/* ===== STEP 2A: UPCOMING NEW LAUNCHES (Not Yet Launched) ===== */}
       {hasSearched && (
         <div ref={newLaunchesRef} className="space-y-4">
-          {/* Flow Arrow: Budget → Upcoming New Launches */}
+          {/* Section Divider: Upcoming New Launches */}
           <div className="flex items-center justify-center py-3">
-            <div className="flex items-center gap-3 text-[#547792]">
-              <div className="h-0.5 w-16 bg-gradient-to-r from-transparent via-[#547792]/50 to-[#547792]" />
-              <div className="flex items-center gap-2 px-4 py-1.5 bg-[#213448]/10 rounded-full">
-                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                </svg>
-                <span className="text-sm font-semibold text-[#213448]">Upcoming New Launches</span>
-                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            <div className="flex items-center gap-3">
+              <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#94B4C1]/50" />
+              <div className="flex items-center gap-2 px-5 py-2 bg-[#EAE0CF]/40 border border-[#94B4C1]/30 rounded-full">
+                <span className="text-sm font-semibold text-[#213448] tracking-wide">Upcoming New Launches</span>
+                <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
-              <div className="h-0.5 w-16 bg-gradient-to-l from-transparent via-[#547792]/50 to-[#547792]" />
+              <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#94B4C1]/50" />
             </div>
           </div>
 
@@ -693,20 +690,17 @@ export function ValueParityPanel() {
       {/* ===== STEP 2B: REMAINING NEW LAUNCHES (Already Launched, Unsold Inventory) ===== */}
       {hasSearched && (
         <div className="space-y-4">
-          {/* Flow Arrow: Upcoming → Remaining New Launches */}
+          {/* Section Divider: Remaining New Launches */}
           <div className="flex items-center justify-center py-3">
-            <div className="flex items-center gap-3 text-[#547792]">
-              <div className="h-0.5 w-16 bg-gradient-to-r from-transparent via-[#547792]/50 to-[#547792]" />
-              <div className="flex items-center gap-2 px-4 py-1.5 bg-[#213448]/10 rounded-full">
-                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                </svg>
-                <span className="text-sm font-semibold text-[#213448]">Remaining New Launches</span>
-                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            <div className="flex items-center gap-3">
+              <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#94B4C1]/50" />
+              <div className="flex items-center gap-2 px-5 py-2 bg-[#EAE0CF]/40 border border-[#94B4C1]/30 rounded-full">
+                <span className="text-sm font-semibold text-[#213448] tracking-wide">Remaining New Launches</span>
+                <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
-              <div className="h-0.5 w-16 bg-gradient-to-l from-transparent via-[#547792]/50 to-[#547792]" />
+              <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#94B4C1]/50" />
             </div>
           </div>
 
@@ -748,18 +742,15 @@ export function ValueParityPanel() {
         <>
           {/* Flow Arrow: New Launches → Young Resale */}
           <div className="flex items-center justify-center py-3">
-            <div className="flex items-center gap-3 text-[#547792]">
-              <div className="h-0.5 w-16 bg-gradient-to-r from-transparent via-[#547792]/50 to-[#547792]" />
-              <div className="flex items-center gap-2 px-4 py-1.5 bg-[#213448]/10 rounded-full">
-                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                </svg>
-                <span className="text-sm font-semibold text-[#213448]">Recently TOP Units / Young Resale</span>
-                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            <div className="flex items-center gap-3">
+              <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#94B4C1]/50" />
+              <div className="flex items-center gap-2 px-5 py-2 bg-[#EAE0CF]/40 border border-[#94B4C1]/30 rounded-full">
+                <span className="text-sm font-semibold text-[#213448] tracking-wide">Recently TOP Units / Young Resale</span>
+                <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
-              <div className="h-0.5 w-16 bg-gradient-to-l from-transparent via-[#547792]/50 to-[#547792]" />
+              <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#94B4C1]/50" />
             </div>
           </div>
 
@@ -988,18 +979,15 @@ export function ValueParityPanel() {
           {/* ===== STEP 4: RESALE MARKET ===== */}
           {/* Flow Arrow: Young Resale → Resale Market */}
           <div className="flex items-center justify-center py-3">
-            <div className="flex items-center gap-3 text-[#547792]">
-              <div className="h-0.5 w-16 bg-gradient-to-r from-transparent via-[#547792]/50 to-[#547792]" />
-              <div className="flex items-center gap-2 px-4 py-1.5 bg-[#213448]/10 rounded-full">
-                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                </svg>
-                <span className="text-sm font-semibold text-[#213448]">Resale Market</span>
-                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            <div className="flex items-center gap-3">
+              <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#94B4C1]/50" />
+              <div className="flex items-center gap-2 px-5 py-2 bg-[#EAE0CF]/40 border border-[#94B4C1]/30 rounded-full">
+                <span className="text-sm font-semibold text-[#213448] tracking-wide">Resale Market</span>
+                <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
-              <div className="h-0.5 w-16 bg-gradient-to-l from-transparent via-[#547792]/50 to-[#547792]" />
+              <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#94B4C1]/50" />
             </div>
           </div>
 
