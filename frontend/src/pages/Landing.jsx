@@ -177,7 +177,7 @@ function HeroSection({ navigate }) {
           className="text-center max-w-4xl mx-auto mb-4"
         >
           <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#213448] tracking-tight leading-[1.1]">
-            Singapore Private{' '}
+            Singapore Condo{' '}
             <span className="text-[#547792] whitespace-nowrap">Market Intelligence</span>
           </span>
         </motion.h1>
