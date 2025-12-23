@@ -265,23 +265,17 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
           </button>
         </div>
 
-        {/* Stats row - Median + IQR */}
+        {/* Stats row - Key price metrics */}
         <div className="flex flex-wrap items-center gap-3 mt-2">
           {stats?.median && (
             <div className="bg-[#213448]/5 rounded px-2.5 py-1">
-              <span className="text-[10px] text-[#547792] uppercase tracking-wide">Median</span>
+              <span className="text-[10px] text-[#547792] uppercase tracking-wide">Median Price</span>
               <div className="text-sm font-semibold text-[#213448]">{formatPrice(stats.median)}</div>
-            </div>
-          )}
-          {stats?.iqr && (
-            <div className="bg-[#213448]/5 rounded px-2.5 py-1">
-              <span className="text-[10px] text-[#547792] uppercase tracking-wide">IQR</span>
-              <div className="text-sm font-semibold text-[#213448]">{formatPrice(stats.iqr)}</div>
             </div>
           )}
           {stats?.p25 && stats?.p75 && (
             <div className="bg-[#213448]/5 rounded px-2.5 py-1">
-              <span className="text-[10px] text-[#547792] uppercase tracking-wide">Q1–Q3</span>
+              <span className="text-[10px] text-[#547792] uppercase tracking-wide">Middle 50%</span>
               <div className="text-sm font-semibold text-[#213448]">
                 {formatPrice(stats.p25)} – {formatPrice(stats.p75)}
               </div>
@@ -289,7 +283,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
           )}
           {modeBucket && (
             <div className="bg-[#213448]/5 rounded px-2.5 py-1">
-              <span className="text-[10px] text-[#547792] uppercase tracking-wide">Mode</span>
+              <span className="text-[10px] text-[#547792] uppercase tracking-wide">Most Common</span>
               <div className="text-sm font-semibold text-[#213448]">{modeBucket.label}</div>
             </div>
           )}
