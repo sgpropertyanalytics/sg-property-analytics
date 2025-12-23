@@ -8,6 +8,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
@@ -18,7 +19,8 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  annotationPlugin
 );
 
 /**
@@ -173,6 +175,26 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
   const minPrice = buckets.length > 0 ? buckets[0].start : 0;
   const maxPrice = buckets.length > 0 ? buckets[buckets.length - 1].end : 0;
 
+  // Helper to find which bin index a price value falls into
+  const findBinIndex = (price) => {
+    if (!price || buckets.length === 0) return -1;
+    for (let i = 0; i < buckets.length; i++) {
+      if (price >= buckets[i].start && price <= buckets[i].end) {
+        return i;
+      }
+    }
+    // If price is beyond the last bin, return the last index
+    if (price > buckets[buckets.length - 1].end) {
+      return buckets.length - 1;
+    }
+    return 0;
+  };
+
+  // Calculate bin indices for median, Q1, Q3
+  const medianBinIndex = findBinIndex(stats?.median);
+  const q1BinIndex = findBinIndex(stats?.p25);
+  const q3BinIndex = findBinIndex(stats?.p75);
+
   // Determine color gradient based on count using theme colors
   const maxValue = Math.max(...counts, 1);
   const getBarColor = (count, alpha = 0.8) => {
@@ -192,6 +214,51 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
       },
     ],
   };
+
+  // Build annotations for median line and IQR band
+  const annotations = {};
+
+  // IQR band (Q1-Q3) - shaded background
+  if (q1BinIndex >= 0 && q3BinIndex >= 0) {
+    annotations.iqrBand = {
+      type: 'box',
+      xMin: q1BinIndex - 0.5,
+      xMax: q3BinIndex + 0.5,
+      backgroundColor: 'rgba(33, 52, 72, 0.08)',  // Light navy background
+      borderColor: 'rgba(33, 52, 72, 0.2)',
+      borderWidth: 1,
+      borderDash: [4, 4],
+      label: {
+        display: true,
+        content: 'IQR',
+        position: 'start',
+        color: 'rgba(33, 52, 72, 0.5)',
+        font: { size: 9, weight: 'normal' },
+      },
+    };
+  }
+
+  // Median line - solid vertical line
+  if (medianBinIndex >= 0) {
+    annotations.medianLine = {
+      type: 'line',
+      xMin: medianBinIndex,
+      xMax: medianBinIndex,
+      borderColor: 'rgba(33, 52, 72, 0.8)',  // Dark navy
+      borderWidth: 2,
+      borderDash: [],  // Solid line
+      label: {
+        display: true,
+        content: `Median: ${formatPrice(stats?.median)}`,
+        position: 'start',
+        backgroundColor: 'rgba(33, 52, 72, 0.9)',
+        color: '#fff',
+        font: { size: 10, weight: 'bold' },
+        padding: { x: 6, y: 3 },
+        borderRadius: 3,
+      },
+    };
+  }
 
   const options = {
     responsive: true,
@@ -213,6 +280,9 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
             return [`Transactions: ${count.toLocaleString()}`, `Share: ${pct}%`];
           },
         },
+      },
+      annotation: {
+        annotations,
       },
     },
     scales: {
