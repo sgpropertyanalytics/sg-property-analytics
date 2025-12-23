@@ -4,6 +4,7 @@ import { getTransactionsList, getFilterOptions } from '../api/client';
 import { DISTRICT_NAMES, isDistrictInRegion } from '../constants';
 import DealCheckerContent from './powerbi/DealCheckerContent';
 import { HotProjectsTable } from './powerbi/HotProjectsTable';
+import { UpcomingLaunchesTable } from './powerbi/UpcomingLaunchesTable';
 import { MobileTransactionCard } from './MobileTransactionCard';
 import { ResultsSummaryBar } from './ResultsSummaryBar';
 
@@ -699,10 +700,10 @@ export function ValueParityPanel() {
         />
       )}
 
-      {/* ===== STEP 2: UPCOMING NEW LAUNCHES ===== */}
+      {/* ===== STEP 2A: UPCOMING NEW LAUNCHES (Not Yet Launched) ===== */}
       {hasSearched && (
         <div ref={newLaunchesRef} className="space-y-4">
-          {/* Flow Arrow: Budget → New Launches */}
+          {/* Flow Arrow: Budget → Upcoming New Launches */}
           <div className="flex items-center justify-center py-3">
             <div className="flex items-center gap-3 text-[#547792]">
               <div className="h-0.5 w-16 bg-gradient-to-r from-transparent via-[#547792]/50 to-[#547792]" />
@@ -725,7 +726,43 @@ export function ValueParityPanel() {
               <span className="text-xl">🏗️</span>
               <div>
                 <h3 className="text-base font-semibold text-[#213448]">Upcoming New Launches</h3>
-                <p className="text-xs text-[#547792]">Available units from developers within your budget</p>
+                <p className="text-xs text-[#547792]">Projects expected to launch soon - not yet available for sale</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Upcoming Launches Table */}
+          <UpcomingLaunchesTable height={300} />
+        </div>
+      )}
+
+      {/* ===== STEP 2B: REMAINING NEW LAUNCHES (Already Launched, Unsold Inventory) ===== */}
+      {hasSearched && (
+        <div className="space-y-4">
+          {/* Flow Arrow: Upcoming → Remaining New Launches */}
+          <div className="flex items-center justify-center py-3">
+            <div className="flex items-center gap-3 text-[#547792]">
+              <div className="h-0.5 w-16 bg-gradient-to-r from-transparent via-[#547792]/50 to-[#547792]" />
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-[#213448]/10 rounded-full">
+                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+                <span className="text-sm font-semibold text-[#213448]">Remaining New Launches</span>
+                <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              <div className="h-0.5 w-16 bg-gradient-to-l from-transparent via-[#547792]/50 to-[#547792]" />
+            </div>
+          </div>
+
+          {/* Section Header: Remaining New Launches */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🏢</span>
+              <div>
+                <h3 className="text-base font-semibold text-[#213448]">Remaining New Launches</h3>
+                <p className="text-xs text-[#547792]">Already launched projects with unsold units within your budget</p>
               </div>
             </div>
             <span className="px-2.5 py-1 bg-[#213448]/10 text-[#213448] text-xs font-medium rounded-full">
