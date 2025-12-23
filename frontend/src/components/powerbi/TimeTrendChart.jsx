@@ -376,20 +376,18 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
             onLocalDrillDown={handleLocalDrillDown}
           />
         </div>
-        <div className="flex items-center justify-between mt-1">
-          <p className="text-xs text-[#547792]">
-            Volume and price by {LOCAL_TIME_LABELS[localDrillLevel]}
-            {localDrillLevel !== 'month' && (
-              <span className="text-[#547792] font-medium ml-1">(double-click to drill down)</span>
-            )}
-          </p>
-          <div className="text-xs text-[#547792]">
-            {data.length} periods | {data.reduce((sum, d) => sum + d.newSaleCount, 0).toLocaleString()} new + {data.reduce((sum, d) => sum + d.resaleCount, 0).toLocaleString()} resale
-          </div>
+        <p className="text-xs text-[#547792] mt-1">
+          Volume and price by {LOCAL_TIME_LABELS[localDrillLevel]}
+          {localDrillLevel !== 'month' && (
+            <span className="text-[#547792] font-medium ml-1">(double-click to drill down)</span>
+          )}
+        </p>
+        <div className="text-xs text-[#547792] text-center mt-1">
+          {data.length} periods | {data.reduce((sum, d) => sum + d.newSaleCount, 0).toLocaleString()} new + {data.reduce((sum, d) => sum + d.resaleCount, 0).toLocaleString()} resale
         </div>
       </div>
       <div className="p-4" style={{ height }}>
-        <Chart ref={chartRef} type="bar" data={chartData} options={options} />
+        <Chart key={localDrillLevel} ref={chartRef} type="bar" data={chartData} options={options} />
       </div>
     </div>
   );

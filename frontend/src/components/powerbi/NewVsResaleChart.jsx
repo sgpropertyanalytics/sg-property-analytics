@@ -390,7 +390,7 @@ export function NewVsResaleChart({ height = 350 }) {
       {/* Chart Container - follows chart-container-contract skill */}
       <div className="p-2 md:p-3 lg:p-4" style={{ height }}>
         {chartData.length > 0 ? (
-          <Line ref={chartRef} data={chartConfig} options={options} />
+          <Line key={localDrillLevel} ref={chartRef} data={chartConfig} options={options} />
         ) : (
           <div className="flex items-center justify-center h-full text-[#547792]">
             <div className="text-center">

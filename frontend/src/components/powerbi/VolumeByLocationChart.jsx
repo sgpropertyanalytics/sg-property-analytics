@@ -446,7 +446,7 @@ export function VolumeByLocationChart({ onCrossFilter, onDrillThrough, height = 
         </div>
       </div>
       <div className="p-4" style={{ height }}>
-        <Bar ref={chartRef} data={chartData} options={options} />
+        <Bar key={displayMode} ref={chartRef} data={chartData} options={options} />
       </div>
       <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
         {getContextMessage()}

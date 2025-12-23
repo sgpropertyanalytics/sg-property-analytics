@@ -357,19 +357,17 @@ export function MedianPsfTrendChart({ height = 300 }) {
             onLocalDrillDown={handleLocalDrillDown}
           />
         </div>
-        <div className="flex items-center justify-between mt-1">
-          <p className="text-xs text-[#547792]">
-            Price per sqft by market segment ({LOCAL_TIME_LABELS[localDrillLevel]})
-          </p>
-          <div className="text-xs text-[#547792] flex gap-3">
-            {latestCcr && <span>CCR: ${latestCcr.toLocaleString()}</span>}
-            {latestRcr && <span>RCR: ${latestRcr.toLocaleString()}</span>}
-            {latestOcr && <span>OCR: ${latestOcr.toLocaleString()}</span>}
-          </div>
+        <p className="text-xs text-[#547792] mt-1">
+          Price per sqft by market segment ({LOCAL_TIME_LABELS[localDrillLevel]})
+        </p>
+        <div className="text-xs text-[#547792] flex justify-center gap-3 mt-1">
+          {latestCcr && <span>CCR: ${latestCcr.toLocaleString()}</span>}
+          {latestRcr && <span>RCR: ${latestRcr.toLocaleString()}</span>}
+          {latestOcr && <span>OCR: ${latestOcr.toLocaleString()}</span>}
         </div>
       </div>
       <div className="p-4" style={{ height }}>
-        <Line ref={chartRef} data={chartData} options={options} />
+        <Line key={localDrillLevel} ref={chartRef} data={chartData} options={options} />
       </div>
       <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
         <span>{data.labels.length} periods | Click to highlight time period</span>

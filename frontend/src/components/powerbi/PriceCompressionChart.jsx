@@ -467,7 +467,7 @@ export function PriceCompressionChart({ height = 380 }) {
       {/* Main Spread Chart */}
       <div className="p-2 md:p-3 lg:p-4" style={{ height: showContext ? height * 0.65 : height }}>
         {data.length > 0 ? (
-          <Line ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
+          <Line key={localDrillLevel} ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
         ) : (
           <div className="flex items-center justify-center h-full text-[#547792]">
             <div className="text-center">
