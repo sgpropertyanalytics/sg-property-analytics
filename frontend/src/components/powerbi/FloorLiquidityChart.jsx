@@ -18,7 +18,7 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import {
   FLOOR_LEVELS,
-  FLOOR_LEVEL_LABELS_SHORT,
+  FLOOR_LEVEL_LABELS,
   getFloorLevelIndex,
   getFloorLevelColor,
 } from '../../constants';
@@ -54,7 +54,7 @@ ChartJS.register(
  * 2. "My floor is special" → Thin volume = weak market validation
  * 3. "That price is market price" → Only liquid prices are real prices
  */
-export function FloorLiquidityChart({ height = 400 }) {
+export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   const { buildApiParams, filters } = usePowerBIFilters();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +83,14 @@ export function FloorLiquidityChart({ height = 400 }) {
           metrics: 'count,median_psf_actual,psf_25th,psf_75th,avg_psf'
         });
 
+        // Apply local filters (these override global filters if provided)
+        if (bedroom) {
+          params.bedroom = bedroom;
+        }
+        if (segment) {
+          params.segment = segment;
+        }
+
         const response = await getAggregate(params);
         const rawData = response.data.data || [];
 
@@ -103,7 +111,7 @@ export function FloorLiquidityChart({ height = 400 }) {
     };
 
     fetchData();
-  }, [buildApiParams, filters]);
+  }, [buildApiParams, filters, bedroom, segment]);
 
   // Calculate baseline (Low floor) for premium calculation
   const baselinePSF = useMemo(() => {
@@ -160,8 +168,8 @@ export function FloorLiquidityChart({ height = 400 }) {
     );
   }
 
-  // Prepare chart data
-  const labels = data.map(d => FLOOR_LEVEL_LABELS_SHORT[d.floor_level] || d.floor_level);
+  // Prepare chart data - use full labels with floor ranges
+  const labels = data.map(d => FLOOR_LEVEL_LABELS[d.floor_level] || d.floor_level);
   const counts = data.map(d => d.count || 0);
   const medianPSFs = data.map(d => d.median_psf_actual || d.avg_psf || null);
   const psf25ths = data.map(d => d.psf_25th || null);

@@ -167,7 +167,8 @@ export const formatPSF = (value) => {
 export const FLOOR_LEVELS = ['Low', 'Mid-Low', 'Mid', 'Mid-High', 'High', 'Luxury'];
 
 /**
- * Floor level display labels with floor ranges
+ * Floor level display labels with floor ranges (for chart x-axis)
+ * Format: "Classification (Floor Range)"
  */
 export const FLOOR_LEVEL_LABELS = {
   'Low': 'Low (01-05)',
@@ -180,9 +181,22 @@ export const FLOOR_LEVEL_LABELS = {
 };
 
 /**
- * Floor level short labels for compact UI
+ * Floor level short labels for compact UI (just the classification)
  */
 export const FLOOR_LEVEL_LABELS_SHORT = {
+  'Low': 'Low',
+  'Mid-Low': 'Mid-Low',
+  'Mid': 'Mid',
+  'Mid-High': 'Mid-High',
+  'High': 'High',
+  'Luxury': 'Luxury',
+  'Unknown': 'Unknown',
+};
+
+/**
+ * Floor range only labels (for very compact displays)
+ */
+export const FLOOR_RANGE_LABELS = {
   'Low': '01-05',
   'Mid-Low': '06-10',
   'Mid': '11-20',

@@ -1,0 +1,28 @@
+project_name,developer,district,market_segment,total_units,psf_min,psf_max,tenure,launch_date,launch_year,top_date,address,planning_area,land_bid_psf,source,confidence,last_updated,notes
+Coastal Cabana,CNQC & Forsea & ZACD,D18,OCR,748,1700,2100,99-year,2026-01-17,2026,,Jalan Loyang Besar,Pasir Ris,,PropertyReviewSG,high,2024-12-23,EC project - previewing Dec 2025
+Newport Residences,CDL,D02,CCR,276,2500,3000,Freehold,2026-01-31,2026,,Anson Road,Downtown Core,,PropertyReviewSG,high,2024-12-23,Freehold in CBD
+Narra Residences,SNC2 & Apex Asia & Soon Li Heng & Kay Lim,D23,OCR,530,1700,2100,99-year,2026-01-31,2026,,Dairy Farm Walk,Bukit Panjang,,PropertyReviewSG,high,2024-12-23,Preview 17 Jan 2026
+River Modern,GuocoLand,D09,CCR,575,2500,3000,99-year,2026-02-20,2026,,River Valley Green,River Valley,,PropertyReviewSG,high,2024-12-23,Parcel B of River Valley Green
+Pinery Residences,Hoi Hup & Sunway,D18,OCR,585,1700,2100,99-year,2026-03-01,2026,,Tampines Street 94,Tampines,,PropertyReviewSG,medium,2024-12-23,Estimated March 2026
+Rivelle Tampines,Sim Lian,D18,OCR,572,1700,2100,99-year,2026-04-01,2026,,Tampines Street 95,Tampines,,PropertyReviewSG,medium,2024-12-23,EC project - Est Mar/Apr 2026
+Chuan Grove,TBD,D19,OCR,550,1700,2100,99-year,2026-07-01,2026,,Chuan Grove,Serangoon,,ERA,medium,2024-12-23,1055 units total across 2 parcels
+Chuan Grove Plot 2,TBD,D19,OCR,505,1700,2100,99-year,2026-07-01,2026,,Chuan Grove,Serangoon,,PropertyReviewSG,medium,2024-12-23,Second parcel
+Tengah Garden Avenue,Hong Leong & GuocoLand & CSC,D24,OCR,860,1700,2100,99-year,2026-07-01,2026,,Tengah Garden Avenue,Tengah,,PropertyReviewSG,medium,2024-12-23,First condo in Tengah new town
+Thomson View,UOL & CapitaLand,D20,RCR,1240,2200,2600,99-year,2026-06-01,2026,,Bright Hill Drive,Ang Mo Kio,,PropertyReviewSG,medium,2024-12-23,Former Thomson View enbloc
+Vila Natura,TBD,D26,OCR,500,1800,2200,Freehold,2026-06-01,2026,,Lentor,Yio Chu Kang,,ERA,medium,2024-12-23,Lentor area freehold
+Sophia Meadows,TBD,D09,CCR,400,2800,3200,99-year,2026-06-01,2026,,Dhoby Ghaut,Museum,,ERA,medium,2024-12-23,102-year leasehold from state
+Lentor Gardens GLS,TBD,D26,OCR,480,1800,2200,99-year,2026-09-01,2026,,Lentor Gardens,Yio Chu Kang,,ERA,low,2024-12-23,GLS site near Lentor MRT
+Holland Link GLS,TBD,D10,CCR,300,2800,3200,99-year,2026-09-01,2026,,Holland Road,Bukit Timah,,ERA,low,2024-12-23,GLS Holland area
+Dunearn Road GLS,TBD,D21,RCR,400,2400,2800,99-year,2026-09-01,2026,,Dunearn Road,Bukit Timah,,ERA,low,2024-12-23,Near Turf City
+Dorset Road GLS,TBD,D08,RCR,350,2200,2600,99-year,2026-09-01,2026,,Dorset Road,Farrer Park,,ERA,low,2024-12-23,Farrer Park area
+Keppel Bay Plot 6,TBD,D04,RCR,400,2400,2800,99-year,2026-09-01,2026,,Keppel Bay,Harbourfront,,ERA,low,2024-12-23,Southern waterfront
+Bayshore Road GLS,TBD,D15,RCR,450,2200,2600,99-year,2026-09-01,2026,,Bayshore Road,East Coast,,ERA,low,2024-12-23,First private launch since 1997
+Woodlands Drive 17 EC,TBD,D25,OCR,600,1400,1700,99-year,2026-09-01,2026,,Woodlands Drive 17,Woodlands,,ERA,low,2024-12-23,EC - first in Woodlands since 2016
+Senja Close EC,TBD,D23,OCR,550,1500,1800,99-year,2026-09-01,2026,,Senja Close,Bukit Panjang,,ERA,low,2024-12-23,EC - first in Bukit Panjang in 15 years
+Media Circle GLS,TBD,D05,RCR,500,2200,2600,99-year,2026-09-01,2026,,Media Circle,one-north,,ERA,low,2024-12-23,Mixed-use near one-north
+Lakeside Drive GLS,TBD,D22,OCR,575,1700,2100,99-year,2026-09-01,2026,,Jurong Lakeside Drive,Jurong East,,ERA,low,2024-12-23,Near Jurong Lake District
+Chencharu Close GLS,TBD,D27,OCR,500,1600,1900,99-year,2026-09-01,2026,,Chencharu Close,Yishun,,ERA,low,2024-12-23,Mixed-use development
+Sembawang Road EC,TBD,D27,OCR,550,1400,1700,99-year,2026-09-01,2026,,Sembawang Road,Sembawang,,ERA,low,2024-12-23,EC project
+Upper Thomson Road GLS,TBD,D26,OCR,450,1800,2200,99-year,2026-09-01,2026,,Upper Thomson Road,Springleaf,,ERA,low,2024-12-23,Near Springleaf MRT
+Duet @ Emily,TBD,D09,CCR,200,2800,3200,Freehold,2026-03-01,2026,,Emily Hill,Dhoby Ghaut,,PropertyReview,medium,2024-12-23,Freehold boutique project
+Former Pastoral View,TBD,D11,CCR,250,2800,3200,Freehold,2026-06-01,2026,,Novena,Novena,,ERA,low,2024-12-23,Enbloc redevelopment
