@@ -302,7 +302,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
             else if (label.includes('RCR')) count = data.rcrCount?.[index] || 0;
             else if (label.includes('OCR')) count = data.ocrCount?.[index] || 0;
 
-            return `${label}: $${value.toLocaleString()} psf (${count.toLocaleString()} txns)`;
+            return `${label}: $${value.toLocaleString()} psf (${count.toLocaleString()} transactions)`;
           },
         },
       },

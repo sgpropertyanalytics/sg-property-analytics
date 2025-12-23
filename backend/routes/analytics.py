@@ -497,7 +497,7 @@ def resale_stats():
     Get resale statistics for 2, 3, 4-Bedroom condos.
     
     Query params:
-      - districts: comma-separated districts to filter (optional)
+      - district: comma-separated districts to filter (optional)
       - segment: Market segment filter ("CCR", "RCR", or "OCR") (optional)
     
     Note: Currently returns pre-computed stats. Filtering by districts/segment
@@ -506,9 +506,11 @@ def resale_stats():
     """
     start = time.time()
     
-    districts_param = request.args.get("districts")
+    # API Parameter Convention: Always use singular form (district, bedroom, segment)
+    # Values can be comma-separated for multiple selections
+    districts_param = request.args.get("district")
     segment = request.args.get("segment")
-    
+
     # Note: reader.get_resale_stats() accepts these params but pre-computed stats
     # may not have filtered variants. For now, return what's available.
     # TODO: Consider switching to live computation for full filtering support
@@ -534,7 +536,7 @@ def transactions():
     
     start_date = request.args.get("start_date")
     end_date = request.args.get("end_date")
-    districts_param = request.args.get("districts")
+    districts_param = request.args.get("district")  # Singular form, comma-separated
     bedroom_param = request.args.get("bedroom", "2,3,4")
     limit_param = request.args.get("limit", "200000")
     segment = request.args.get("segment")
@@ -839,7 +841,7 @@ def comparable_value_analysis():
       - target_price: center of price band
       - band: +/- band around target (default 100000)
       - bedroom: comma-separated bedroom counts (default 2,3,4)
-      - districts: optional comma-separated list of districts
+      - district: optional comma-separated list of districts
     """
     from models.transaction import Transaction
     from models.database import db
@@ -860,7 +862,7 @@ def comparable_value_analysis():
     except ValueError:
         return jsonify({"error": "Invalid bedroom parameter"}), 400
     
-    districts_param = request.args.get("districts", "").strip()
+    districts_param = request.args.get("district", "").strip()  # Singular form, comma-separated
     districts = None
     if districts_param:
         districts = [d.strip() for d in districts_param.split(",") if d.strip()]
@@ -871,7 +873,7 @@ def comparable_value_analysis():
                 d = f"D{d.zfill(2)}"
             normalized.append(d)
         districts = normalized
-    
+
     min_lease_param = request.args.get("min_lease")
     min_lease = None
     if min_lease_param:
@@ -1005,7 +1007,7 @@ def market_stats_by_district():
     
     Query params:
       - bedroom: comma-separated bedroom counts, e.g. 2,3,4 (default: 2,3,4)
-      - districts: comma-separated districts to filter (optional)
+      - district: comma-separated districts to filter (optional)
       - segment: Market segment filter ("CCR", "RCR", or "OCR") (optional)
       - short_months: Short-term period in months (default: 3)
       - long_months: Long-term period in months (default: 15)
@@ -1019,8 +1021,8 @@ def market_stats_by_district():
     except ValueError:
         return jsonify({"error": "Invalid bedroom parameter"}), 400
     
-    # Parse districts parameter (optional)
-    districts_param = request.args.get("districts")
+    # Parse district parameter (singular form, comma-separated for multiple)
+    districts_param = request.args.get("district")
     districts = None
     if districts_param:
         districts = [d.strip() for d in districts_param.split(",") if d.strip()]
@@ -1032,10 +1034,10 @@ def market_stats_by_district():
                 d = f"D{d.zfill(2)}"
             normalized.append(d)
         districts = normalized
-    
+
     # Parse segment parameter (optional)
     segment = request.args.get("segment")
-    
+
     # Parse month parameters
     short_months_param = request.args.get("short_months", "3")
     long_months_param = request.args.get("long_months", "15")
@@ -1074,13 +1076,13 @@ def sale_type_trends():
     Get transaction counts by sale type (New Sale vs Resale) over time by quarter.
     
     Query params:
-      - districts: comma-separated districts to filter (optional)
+      - district: comma-separated districts to filter (optional)
       - segment: Market segment filter ("CCR", "RCR", or "OCR") (optional)
     """
     start = time.time()
-    
-    # Parse districts parameter (optional)
-    districts_param = request.args.get("districts")
+
+    # Parse district parameter (singular form, comma-separated for multiple)
+    districts_param = request.args.get("district")
     districts = None
     if districts_param:
         districts = [d.strip() for d in districts_param.split(",") if d.strip()]
@@ -1092,10 +1094,10 @@ def sale_type_trends():
                 d = f"D{d.zfill(2)}"
             normalized.append(d)
         districts = normalized
-    
+
     # Parse segment parameter (optional)
     segment = request.args.get("segment")
-    
+
     try:
         # Use data_processor function which supports filtering
         from services.data_processor import get_sale_type_trends
@@ -1120,7 +1122,7 @@ def price_trends_by_sale_type():
     
     Query params:
       - bedroom: comma-separated bedroom counts, e.g. 2,3,4 (default: 2,3,4)
-      - districts: comma-separated districts to filter (optional)
+      - district: comma-separated districts to filter (optional)
       - segment: Market segment filter ("CCR", "RCR", or "OCR") (optional)
     """
     start = time.time()
@@ -1132,8 +1134,8 @@ def price_trends_by_sale_type():
     except ValueError:
         return jsonify({"error": "Invalid bedroom parameter"}), 400
     
-    # Parse districts parameter (optional)
-    districts_param = request.args.get("districts")
+    # Parse district parameter (singular form, comma-separated for multiple)
+    districts_param = request.args.get("district")
     districts = None
     if districts_param:
         districts = [d.strip() for d in districts_param.split(",") if d.strip()]
@@ -1145,10 +1147,10 @@ def price_trends_by_sale_type():
                 d = f"D{d.zfill(2)}"
             normalized.append(d)
         districts = normalized
-    
+
     # Parse segment parameter (optional)
     segment = request.args.get("segment")
-    
+
     try:
         # Use data_processor function which supports filtering
         from services.data_processor import get_price_trends_by_sale_type
@@ -1177,7 +1179,7 @@ def price_trends_by_region():
     
     Query params:
       - bedroom: comma-separated bedroom counts, e.g. 2,3,4 (default: 2,3,4)
-      - districts: comma-separated districts to filter (optional, but ignored for region analysis)
+      - district: comma-separated districts to filter (optional, but ignored for region analysis)
     """
     start = time.time()
     
@@ -1216,12 +1218,16 @@ def aggregate():
 
     Now includes server-side caching for faster repeated queries.
 
+    API Parameter Convention:
+      All filter parameters use SINGULAR form with comma-separated values for multiple selections.
+      Example: ?district=D01,D02&bedroom=2,3 (NOT ?districts=...)
+
     Query params:
       - group_by: comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region, floor_level)
       - metrics: comma-separated metrics (count, median_psf, avg_psf, total_value, median_price, avg_price, min_psf, max_psf, price_25th, price_75th, psf_25th, psf_75th, median_psf_actual)
       - district: comma-separated districts (D01,D02,...)
       - bedroom: comma-separated bedroom counts (2,3,4)
-      - segment: CCR, RCR, OCR
+      - segment: CCR, RCR, OCR (filters by market segment)
       - sale_type: New Sale, Resale
       - date_from: YYYY-MM-DD
       - date_to: YYYY-MM-DD
@@ -1232,6 +1238,12 @@ def aggregate():
       - tenure: Freehold, 99-year, 999-year
       - project: project name filter (partial match)
       - skip_cache: if 'true', bypass cache
+
+    IMPORTANT - Segment vs Region:
+      - Input param: "segment" (CCR, RCR, OCR) - filters transactions by market segment
+      - When group_by includes "region", output field is labeled "region" (not "segment")
+      - Both refer to the same concept: URA market segments (CCR/RCR/OCR)
+      - This naming reflects: segment=filter param, region=grouping dimension
 
     Returns:
       {
@@ -1858,7 +1870,7 @@ def psf_trends_by_region():
 
     Query params:
       - bedroom: comma-separated bedroom counts, e.g. 2,3,4 (default: 2,3,4)
-      - districts: comma-separated districts to filter (optional, but ignored for region analysis)
+      - district: comma-separated districts to filter (optional, but ignored for region analysis)
     """
     start = time.time()
 
@@ -2178,7 +2190,7 @@ def floor_liquidity_heatmap():
         }
 
         # Cache the result
-        _dashboard_cache[cache_key] = result  # Uses global TTL from cache config
+        _dashboard_cache.set(cache_key, result)
 
         elapsed = time.time() - start
         result['meta']['elapsed_ms'] = int(elapsed * 1000)

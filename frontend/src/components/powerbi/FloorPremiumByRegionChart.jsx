@@ -251,7 +251,7 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
               `${context.dataset.label}`,
               `  Premium: ${premium >= 0 ? '+' : ''}${premium.toFixed(1)}%`,
               `  PSF: $${Math.round(psf).toLocaleString()}`,
-              `  Txns: ${count}`,
+              `  Transactions: ${count}`,
             ];
           },
         },

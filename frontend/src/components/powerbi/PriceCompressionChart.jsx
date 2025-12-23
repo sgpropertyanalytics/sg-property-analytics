@@ -324,9 +324,9 @@ export function PriceCompressionChart({ height = 380 }) {
             if (idx !== undefined && data[idx]) {
               const d = data[idx];
               const lines = [];
-              if (d.ccr) lines.push(`CCR: $${Math.round(d.ccr).toLocaleString()} psf (${d.counts?.CCR || 0} txns)`);
-              if (d.rcr) lines.push(`RCR: $${Math.round(d.rcr).toLocaleString()} psf (${d.counts?.RCR || 0} txns)`);
-              if (d.ocr) lines.push(`OCR: $${Math.round(d.ocr).toLocaleString()} psf (${d.counts?.OCR || 0} txns)`);
+              if (d.ccr) lines.push(`CCR: $${Math.round(d.ccr).toLocaleString()} psf (${d.counts?.CCR || 0} transactions)`);
+              if (d.rcr) lines.push(`RCR: $${Math.round(d.rcr).toLocaleString()} psf (${d.counts?.RCR || 0} transactions)`);
+              if (d.ocr) lines.push(`OCR: $${Math.round(d.ocr).toLocaleString()} psf (${d.counts?.OCR || 0} transactions)`);
               return lines;
             }
             return [];
