@@ -187,6 +187,8 @@ export function PriceCompressionChart({ height = 380 }) {
   const compressionScore = useMemo(() => calculateCompressionScore(data), [data]);
   const spreadState = useMemo(() => getSpreadState(data), [data]);
   const annotations = useMemo(() => detectAnnotations(data), [data]);
+  const marketSignals = useMemo(() => detectMarketSignals(data), [data]);
+  const inversionZones = useMemo(() => detectInversionZones(data), [data]);
   const latestData = data[data.length - 1] || {};
   const sparklineData = data.map(d => d.combinedSpread).filter(v => v != null);
 
@@ -333,7 +335,10 @@ export function PriceCompressionChart({ height = 380 }) {
         },
       },
       annotation: {
-        annotations: buildAnnotations(annotations, data),
+        annotations: {
+          ...buildAnnotations(annotations, data),
+          ...buildInversionZones(inversionZones, data),
+        },
       },
     },
     scales: {
@@ -436,7 +441,7 @@ export function PriceCompressionChart({ height = 380 }) {
           />
         </div>
 
-        {/* KPI Row: Compression Score + Spread Chips */}
+        {/* KPI Row: Compression Score + Market Signals */}
         <div className="flex flex-wrap items-center gap-3 mt-3">
           {/* Compression Score Box */}
           <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center min-w-[90px]">
@@ -445,19 +450,17 @@ export function PriceCompressionChart({ height = 380 }) {
             <Sparkline data={sparklineData} width={70} height={16} />
           </div>
 
-          {/* Spread Chips */}
+          {/* Smart Market Signal Cards */}
           <div className="flex flex-wrap gap-2">
-            <SpreadChip
-              label="CCR-RCR"
-              value={latestData.ccrRcrSpread}
-              change={latestData.ccrRcrChange}
-              color="#213448"
+            <MarketSignalCard
+              type="ccr-rcr"
+              spread={latestData.ccrRcrSpread}
+              isInverted={marketSignals.ccrDiscount}
             />
-            <SpreadChip
-              label="RCR-OCR"
-              value={latestData.rcrOcrSpread}
-              change={latestData.rcrOcrChange}
-              color="#547792"
+            <MarketSignalCard
+              type="rcr-ocr"
+              spread={latestData.rcrOcrSpread}
+              isInverted={marketSignals.ocrOverheated}
             />
             <StateChip state={spreadState} />
           </div>
@@ -649,6 +652,114 @@ function buildAnnotations(annotations, data) {
   return result;
 }
 
+/**
+ * Detect market signal anomalies (inversions)
+ * - CCR Discount: When CCR < RCR (negative spread) - opportunity signal
+ * - OCR Overheated: When OCR > RCR (negative spread) - risk signal
+ */
+function detectMarketSignals(data) {
+  if (data.length === 0) return { ccrDiscount: false, ocrOverheated: false };
+
+  const latest = data[data.length - 1];
+  return {
+    ccrDiscount: latest.ccrRcrSpread !== null && latest.ccrRcrSpread < 0,
+    ocrOverheated: latest.rcrOcrSpread !== null && latest.rcrOcrSpread < 0,
+  };
+}
+
+/**
+ * Detect historical inversion zones for chart background
+ * Returns arrays of period ranges where inversions occurred
+ */
+function detectInversionZones(data) {
+  const ccrDiscountZones = [];
+  const ocrOverheatedZones = [];
+
+  let ccrStart = null;
+  let ocrStart = null;
+
+  data.forEach((d, idx) => {
+    // CCR < RCR detection
+    if (d.ccrRcrSpread !== null && d.ccrRcrSpread < 0) {
+      if (ccrStart === null) ccrStart = idx;
+    } else {
+      if (ccrStart !== null) {
+        ccrDiscountZones.push({ start: ccrStart, end: idx - 1 });
+        ccrStart = null;
+      }
+    }
+
+    // OCR > RCR detection
+    if (d.rcrOcrSpread !== null && d.rcrOcrSpread < 0) {
+      if (ocrStart === null) ocrStart = idx;
+    } else {
+      if (ocrStart !== null) {
+        ocrOverheatedZones.push({ start: ocrStart, end: idx - 1 });
+        ocrStart = null;
+      }
+    }
+  });
+
+  // Close any open zones at the end
+  if (ccrStart !== null) {
+    ccrDiscountZones.push({ start: ccrStart, end: data.length - 1 });
+  }
+  if (ocrStart !== null) {
+    ocrOverheatedZones.push({ start: ocrStart, end: data.length - 1 });
+  }
+
+  return { ccrDiscountZones, ocrOverheatedZones };
+}
+
+/**
+ * Build Chart.js annotation boxes for inversion zones
+ */
+function buildInversionZones(zones, data) {
+  const result = {};
+
+  // CCR Discount zones (green/amber background)
+  zones.ccrDiscountZones?.forEach((zone, idx) => {
+    result[`ccr_discount_${idx}`] = {
+      type: 'box',
+      xMin: zone.start - 0.5,
+      xMax: zone.end + 0.5,
+      backgroundColor: 'rgba(251, 191, 36, 0.15)', // amber-400 with low opacity
+      borderColor: 'rgba(251, 191, 36, 0.4)',
+      borderWidth: 1,
+      borderDash: [4, 4],
+      label: {
+        content: 'Prime Discount',
+        display: zone.end - zone.start >= 1, // Only show label if zone spans 2+ periods
+        position: 'start',
+        color: 'rgba(180, 83, 9, 0.8)',
+        font: { size: 9, weight: 'bold' },
+      },
+    };
+  });
+
+  // OCR Overheated zones (red background)
+  zones.ocrOverheatedZones?.forEach((zone, idx) => {
+    result[`ocr_overheated_${idx}`] = {
+      type: 'box',
+      xMin: zone.start - 0.5,
+      xMax: zone.end + 0.5,
+      backgroundColor: 'rgba(239, 68, 68, 0.12)', // red-500 with low opacity
+      borderColor: 'rgba(239, 68, 68, 0.3)',
+      borderWidth: 1,
+      borderDash: [4, 4],
+      label: {
+        content: 'OCR Overheated',
+        display: zone.end - zone.start >= 1,
+        position: 'start',
+        color: 'rgba(185, 28, 28, 0.8)',
+        font: { size: 9, weight: 'bold' },
+      },
+    };
+  });
+
+  return result;
+}
+
 // ============================================
 // SUB-COMPONENTS
 // ============================================
@@ -722,6 +833,75 @@ function StateChip({ state }) {
       {state.state}
     </span>
   );
+}
+
+/**
+ * Smart Market Signal Card
+ * Shows "scream" state when market hierarchy is inverted
+ */
+function MarketSignalCard({ type, spread, isInverted }) {
+  if (spread == null) return null;
+
+  // CCR-RCR: Core vs Fringe
+  if (type === 'ccr-rcr') {
+    if (isInverted) {
+      // SCREAMING STATE: CCR is cheaper than RCR (opportunity)
+      return (
+        <div className="flex items-center px-3 py-2 bg-amber-100 border-2 border-amber-400 rounded-lg shadow-sm">
+          <div className="mr-2 p-1.5 bg-amber-500 rounded-full text-white flex-shrink-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+              <circle cx="7" cy="7" r="1" fill="currentColor" />
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Market Anomaly</div>
+            <div className="text-sm font-extrabold text-amber-900 truncate">
+              Prime Discount <span className="text-amber-700 font-semibold">(${Math.abs(spread)} cheaper)</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    // Normal state
+    return (
+      <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Prime Premium (CCR vs RCR)</div>
+        <div className="text-sm font-semibold text-[#213448]">${spread.toLocaleString()} psf</div>
+      </div>
+    );
+  }
+
+  // RCR-OCR: Fringe vs Suburbs
+  if (type === 'rcr-ocr') {
+    if (isInverted) {
+      // SCREAMING STATE: OCR is more expensive than RCR (risk)
+      return (
+        <div className="flex items-center px-3 py-2 bg-red-50 border-2 border-red-500 rounded-lg shadow-sm">
+          <div className="mr-2 p-1.5 bg-red-600 rounded-full text-white flex-shrink-0 animate-pulse">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <div className="text-[10px] font-bold text-red-800 uppercase tracking-wider">Risk Alert</div>
+            <div className="text-sm font-extrabold text-red-900 truncate">
+              OCR Overheated <span className="text-red-700 font-semibold">(+${Math.abs(spread)} over RCR)</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    // Normal state
+    return (
+      <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="text-[10px] text-gray-500 uppercase tracking-wide">Fringe Premium (RCR vs OCR)</div>
+        <div className="text-sm font-semibold text-[#547792]">${spread.toLocaleString()} psf</div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export default PriceCompressionChart;
