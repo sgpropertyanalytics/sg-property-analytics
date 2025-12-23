@@ -56,6 +56,7 @@ export function NewVsResaleChart({ height = 350 }) {
     districts: filters?.districts || [],
     bedroomTypes: filters?.bedroomTypes || [],
     segment: filters?.segment || null,
+    dateRange: filters?.dateRange || { start: null, end: null },
   };
 
   const [data, setData] = useState(null);
@@ -104,6 +105,12 @@ export function NewVsResaleChart({ height = 350 }) {
   // Build filter summary for display
   const getFilterSummary = () => {
     const parts = [];
+    // Show date range if a sidebar date filter is applied
+    if (safeFilters.dateRange.start || safeFilters.dateRange.end) {
+      const start = safeFilters.dateRange.start ? safeFilters.dateRange.start.slice(0, 7) : '...';
+      const end = safeFilters.dateRange.end ? safeFilters.dateRange.end.slice(0, 7) : '...';
+      parts.push(`${start} to ${end}`);
+    }
     if (safeFilters.districts.length > 0) {
       parts.push(safeFilters.districts.length === 1 ? safeFilters.districts[0] : `${safeFilters.districts.length} districts`);
     }
