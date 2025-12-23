@@ -384,8 +384,8 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
       </div>
 
       {/* How to Interpret - Static explanations for each stat */}
-      <KeyInsightBox title="How to Interpret this Chart" variant="info">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+      <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
           <div><span className="font-semibold text-[#213448]">Median</span> — The typical transaction price.</div>
           <div><span className="font-semibold text-[#213448]">Q1–Q3</span> — Where the middle 50% of homes sell.</div>
           <div><span className="font-semibold text-[#213448]">IQR</span> — How wide prices vary within the market.</div>

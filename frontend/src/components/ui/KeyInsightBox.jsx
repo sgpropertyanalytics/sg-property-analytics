@@ -5,12 +5,15 @@ import React from 'react';
  *
  * Used to display key takeaways in a prominent, scannable format
  * that helps users understand what the data means.
+ *
+ * @param {boolean} compact - Use smaller text/padding for chart explanations
  */
 export function KeyInsightBox({
   icon = null,
   title = 'Key Takeaway',
   children,
   variant = 'default',
+  compact = false,
   className = ''
 }) {
   const variants = {
@@ -53,17 +56,30 @@ export function KeyInsightBox({
 
   const displayIcon = icon || defaultIcons[variant];
 
+  // Compact mode uses smaller sizes for chart explanations
+  const padding = compact ? 'px-3 py-2' : 'px-4 py-3';
+  const iconSize = compact ? 'w-6 h-6' : 'w-8 h-8';
+  const iconSvgSize = compact ? 'w-3.5 h-3.5' : 'w-5 h-5';
+  const titleSize = compact ? 'text-xs' : 'text-sm';
+  const contentSize = compact ? 'text-[11px]' : 'text-sm';
+  const gap = compact ? 'gap-2' : 'gap-3';
+
+  // Clone icon with correct size if it's a default icon
+  const sizedIcon = displayIcon && React.cloneElement(displayIcon, {
+    className: iconSvgSize
+  });
+
   return (
-    <div className={`px-4 py-3 ${variants[variant]} border-b border-[#94B4C1]/30 ${className}`}>
-      <div className="flex items-start gap-3">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${iconColors[variant]}`}>
-          {displayIcon}
+    <div className={`${padding} ${variants[variant]} border-b border-[#94B4C1]/30 ${className}`}>
+      <div className={`flex items-start ${gap}`}>
+        <div className={`${iconSize} rounded-full flex items-center justify-center flex-shrink-0 ${iconColors[variant]}`}>
+          {sizedIcon}
         </div>
         <div className="flex-1 min-w-0">
           {title && (
-            <h4 className="font-semibold text-[#213448] text-sm mb-0.5">{title}</h4>
+            <h4 className={`font-semibold text-[#213448] ${titleSize} mb-0.5`}>{title}</h4>
           )}
-          <div className="text-sm text-[#547792] leading-relaxed">{children}</div>
+          <div className={`${contentSize} text-[#547792] leading-relaxed`}>{children}</div>
         </div>
       </div>
     </div>

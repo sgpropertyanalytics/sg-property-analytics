@@ -72,6 +72,14 @@ import { KeyInsightBox } from '../components/ui';
   range has the most sales, making prices there most reliable.
 </KeyInsightBox>
 
+// Compact mode - smaller text for chart explanations (chart is main visual)
+<KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
+  <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+    <div><span className="font-semibold text-[#213448]">Median</span> — The typical price.</div>
+    <div><span className="font-semibold text-[#213448]">IQR</span> — Price spread in the market.</div>
+  </div>
+</KeyInsightBox>
+
 // Variants: 'default' | 'positive' | 'warning' | 'info'
 <KeyInsightBox title="Trend Alert" variant="positive">
   Floor premiums are increasing - high-floor units are becoming more valuable.
