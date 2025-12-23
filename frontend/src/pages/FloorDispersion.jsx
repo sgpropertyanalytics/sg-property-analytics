@@ -129,10 +129,9 @@ export function FloorDispersionContent() {
           />
         </div>
 
-        {/* Liquidity Heatmap */}
+        {/* Liquidity Heatmap - Full tower view */}
         <div className="mt-6">
           <FloorLiquidityHeatmap
-            height={450}
             bedroom={bedroom || undefined}
             segment={segment || undefined}
           />

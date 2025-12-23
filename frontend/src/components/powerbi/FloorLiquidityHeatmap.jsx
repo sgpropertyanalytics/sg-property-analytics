@@ -19,7 +19,7 @@ import {
  * Y-axis: Project Names (alphabetical)
  * Cell color: Liquidity Score (Z-score of velocity within project)
  */
-export function FloorLiquidityHeatmap({ height = 500, bedroom, segment }) {
+export function FloorLiquidityHeatmap({ bedroom, segment }) {
   const { buildApiParams, filters } = usePowerBIFilters();
 
   // Local state for window toggle
@@ -83,7 +83,7 @@ export function FloorLiquidityHeatmap({ height = 500, bedroom, segment }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: height }}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: 200 }}>
         <div className="flex items-center justify-center h-full">
           <div className="flex items-center gap-3">
             <div className="w-5 h-5 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
@@ -96,7 +96,7 @@ export function FloorLiquidityHeatmap({ height = 500, bedroom, segment }) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: height }}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: 200 }}>
         <div className="flex items-center justify-center h-full">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -106,7 +106,7 @@ export function FloorLiquidityHeatmap({ height = 500, bedroom, segment }) {
 
   if (data.projects.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: height }}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: 200 }}>
         <div className="flex items-center justify-center h-full">
           <div className="text-[#547792]">No resale data available for current filters</div>
         </div>
@@ -177,8 +177,8 @@ export function FloorLiquidityHeatmap({ height = 500, bedroom, segment }) {
         </div>
       </div>
 
-      {/* Table Container */}
-      <div className="overflow-x-auto" style={{ maxHeight: height - 180 }}>
+      {/* Table Container - Dynamic height based on project count */}
+      <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead className="sticky top-0 bg-white z-10">
             <tr>
