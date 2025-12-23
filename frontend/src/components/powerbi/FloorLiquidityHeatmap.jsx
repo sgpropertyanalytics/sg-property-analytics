@@ -91,14 +91,16 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
         }
       }
 
-      districtAggregates[district] = zoneTotals;
+      // Calculate total transactions for the district
+      const totalTxns = Object.values(zoneTotals).reduce((sum, z) => sum + z.count, 0);
+      districtAggregates[district] = { zones: zoneTotals, totalTxns };
     }
 
-    // Sort districts (D01, D02, etc.)
+    // Sort districts by total transactions (highest first)
     const sortedDistricts = Object.keys(grouped).sort((a, b) => {
-      const numA = parseInt(a.replace('D', ''), 10) || 99;
-      const numB = parseInt(b.replace('D', ''), 10) || 99;
-      return numA - numB;
+      const txnsA = districtAggregates[a]?.totalTxns || 0;
+      const txnsB = districtAggregates[b]?.totalTxns || 0;
+      return txnsB - txnsA; // Descending order
     });
 
     return { grouped, sortedDistricts, districtAggregates };
@@ -342,11 +344,13 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                         <span>{district}</span>
-                        <span className="text-[#94B4C1] font-normal">({projects.length} projects)</span>
+                        <span className="text-[#94B4C1] font-normal">
+                          ({projects.length} projects • {projectsByDistrict.districtAggregates[district]?.totalTxns || 0} txns)
+                        </span>
                       </div>
                     </td>
                     {floorZones.map((zone) => {
-                      const districtZone = projectsByDistrict.districtAggregates[district]?.[zone];
+                      const districtZone = projectsByDistrict.districtAggregates[district]?.zones?.[zone];
                       const hasData = districtZone && districtZone.count > 0;
                       const bgColor = hasData
                         ? getLiquidityColor(districtZone.z_score, districtZone.count)
