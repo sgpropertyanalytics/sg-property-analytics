@@ -143,9 +143,9 @@ export function MedianPsfTrendChart({ height = 300 }) {
 
   if (loading) {
     return (
-      <div className="bg-[#FDFBF7] rounded-lg border border-[#94B4C1]/30 p-4" style={{ height: height + 80 }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height: height + 80 }}>
         <div className="flex items-center justify-center h-full">
-          <div className="text-[#94B4C1]">Loading...</div>
+          <div className="text-[#547792]">Loading...</div>
         </div>
       </div>
     );
@@ -153,7 +153,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
 
   if (error) {
     return (
-      <div className="bg-[#FDFBF7] rounded-lg border border-[#94B4C1]/30 p-4" style={{ height: height + 80 }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height: height + 80 }}>
         <div className="flex items-center justify-center h-full">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -172,68 +172,77 @@ export function MedianPsfTrendChart({ height = 300 }) {
   const maxPsf = Math.max(...allValues);
   const padding = (maxPsf - minPsf) * 0.1;
 
-  // Region colors with visual weight hierarchy
-  const regionConfig = {
+  // Region colors from palette
+  const regionColors = {
     CCR: {
-      color: '#213448',      // Deep Navy - Heavyweight (most expensive)
-      weight: 3,
+      line: 'rgba(33, 52, 72, 1)',      // Deep Navy #213448
+      point: 'rgba(33, 52, 72, 0.9)',
+      pointBorder: 'rgba(33, 52, 72, 1)',
     },
     RCR: {
-      color: '#547792',      // Steel Blue - Medium weight
-      weight: 2,
+      line: 'rgba(84, 119, 146, 1)',    // Ocean Blue #547792
+      point: 'rgba(84, 119, 146, 0.9)',
+      pointBorder: 'rgba(84, 119, 146, 1)',
     },
     OCR: {
-      color: '#94B4C1',      // Muted Blue/Grey - Light weight
-      weight: 1.5,
+      line: 'rgba(148, 180, 193, 1)',   // Sky Blue #94B4C1
+      point: 'rgba(148, 180, 193, 0.9)',
+      pointBorder: 'rgba(148, 180, 193, 1)',
     },
   };
-
-  // Only show dot on last data point
-  const lastIndex = data.labels.length - 1;
 
   const chartData = {
     labels: data.labels,
     datasets: [
       {
-        label: 'CCR',
+        label: 'CCR (Core Central)',
         data: data.ccr,
-        borderColor: regionConfig.CCR.color,
-        backgroundColor: regionConfig.CCR.color,
-        borderWidth: regionConfig.CCR.weight,
-        pointRadius: data.ccr.map((_, i) => i === lastIndex ? 5 : 0),  // Only show last point
+        borderColor: regionColors.CCR.line,
+        backgroundColor: regionColors.CCR.point,
+        pointBackgroundColor: data.ccr.map((_, i) =>
+          highlightedIndex === -1 || highlightedIndex === i
+            ? regionColors.CCR.point
+            : 'rgba(33, 52, 72, 0.3)'
+        ),
+        pointBorderColor: regionColors.CCR.pointBorder,
+        borderWidth: 2.5,
+        pointRadius: 4,
         pointHoverRadius: 6,
-        pointBackgroundColor: regionConfig.CCR.color,
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        tension: 0.3,
+        tension: 0.1,
         spanGaps: true,
       },
       {
-        label: 'RCR',
+        label: 'RCR (Rest of Central)',
         data: data.rcr,
-        borderColor: regionConfig.RCR.color,
-        backgroundColor: regionConfig.RCR.color,
-        borderWidth: regionConfig.RCR.weight,
-        pointRadius: data.rcr.map((_, i) => i === lastIndex ? 4 : 0),
-        pointHoverRadius: 5,
-        pointBackgroundColor: regionConfig.RCR.color,
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        tension: 0.3,
+        borderColor: regionColors.RCR.line,
+        backgroundColor: regionColors.RCR.point,
+        pointBackgroundColor: data.rcr.map((_, i) =>
+          highlightedIndex === -1 || highlightedIndex === i
+            ? regionColors.RCR.point
+            : 'rgba(84, 119, 146, 0.3)'
+        ),
+        pointBorderColor: regionColors.RCR.pointBorder,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.1,
         spanGaps: true,
       },
       {
-        label: 'OCR',
+        label: 'OCR (Outside Central)',
         data: data.ocr,
-        borderColor: regionConfig.OCR.color,
-        backgroundColor: regionConfig.OCR.color,
-        borderWidth: regionConfig.OCR.weight,
-        pointRadius: data.ocr.map((_, i) => i === lastIndex ? 3 : 0),
-        pointHoverRadius: 4,
-        pointBackgroundColor: regionConfig.OCR.color,
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        tension: 0.3,
+        borderColor: regionColors.OCR.line,
+        backgroundColor: regionColors.OCR.point,
+        pointBackgroundColor: data.ocr.map((_, i) =>
+          highlightedIndex === -1 || highlightedIndex === i
+            ? regionColors.OCR.point
+            : 'rgba(148, 180, 193, 0.3)'
+        ),
+        pointBorderColor: regionColors.OCR.pointBorder,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.1,
         spanGaps: true,
       },
     ],
@@ -249,26 +258,28 @@ export function MedianPsfTrendChart({ height = 300 }) {
     onClick: handleClick,
     plugins: {
       legend: {
-        display: false,  // We'll use custom inline labels
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 15,
+          font: {
+            size: 11,
+          },
+        },
       },
       tooltip: {
-        backgroundColor: 'rgba(33, 52, 72, 0.95)',
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: 'rgba(197, 165, 114, 0.3)',
-        borderWidth: 1,
-        padding: 12,
         callbacks: {
           label: (context) => {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
             if (value == null) return `${label}: No data`;
 
+            // Get transaction count for this region
             const index = context.dataIndex;
             let count = 0;
-            if (label === 'CCR') count = data.ccrCount?.[index] || 0;
-            else if (label === 'RCR') count = data.rcrCount?.[index] || 0;
-            else if (label === 'OCR') count = data.ocrCount?.[index] || 0;
+            if (label.includes('CCR')) count = data.ccrCount?.[index] || 0;
+            else if (label.includes('RCR')) count = data.rcrCount?.[index] || 0;
+            else if (label.includes('OCR')) count = data.ocrCount?.[index] || 0;
 
             return `${label}: $${value.toLocaleString()} psf (${count.toLocaleString()} txns)`;
           },
@@ -283,8 +294,6 @@ export function MedianPsfTrendChart({ height = 300 }) {
         ticks: {
           maxRotation: 45,
           minRotation: 45,
-          font: { size: 10 },
-          color: '#94B4C1',
         },
       },
       y: {
@@ -293,13 +302,12 @@ export function MedianPsfTrendChart({ height = 300 }) {
         position: 'left',
         min: Math.floor((minPsf - padding) / 100) * 100,
         max: Math.ceil((maxPsf + padding) / 100) * 100,
-        grid: {
-          color: 'rgba(148, 180, 193, 0.15)',
+        title: {
+          display: true,
+          text: 'Median PSF ($/sqft)',
         },
         ticks: {
           callback: (value) => `$${value.toLocaleString()}`,
-          font: { size: 10 },
-          color: '#94B4C1',
         },
       },
     },
@@ -317,44 +325,33 @@ export function MedianPsfTrendChart({ height = 300 }) {
   const latestOcr = data.ocr.filter(v => v != null).slice(-1)[0];
 
   return (
-    <div className={`bg-[#FDFBF7] rounded-lg border border-[#94B4C1]/30 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
-      <div className="px-4 py-3 border-b border-[#94B4C1]/20">
+    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div>
-              <h3 className="font-semibold text-[#213448]">Price Action by Region</h3>
-              <p className="text-[10px] text-[#94B4C1] tracking-wide uppercase">PSF Trends · CCR vs RCR vs OCR</p>
-            </div>
+            <h3 className="font-semibold text-[#213448]">Median PSF Trend</h3>
             {updating && (
               <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
             )}
           </div>
           <DrillButtons hierarchyType="time" />
         </div>
-      </div>
-      <div className="bg-white m-2 rounded shadow-inner relative" style={{ height }}>
-        <div className="p-3 h-full">
-          <Line ref={chartRef} data={chartData} options={options} />
-        </div>
-        {/* Direct labels on right side */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1 text-[10px] font-medium">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-[3px] rounded-full" style={{ backgroundColor: '#213448' }} />
-            <span className="text-[#213448]">CCR ${latestCcr?.toLocaleString() || '—'}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-[2px] rounded-full" style={{ backgroundColor: '#547792' }} />
-            <span className="text-[#547792]">RCR ${latestRcr?.toLocaleString() || '—'}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-[1.5px] rounded-full" style={{ backgroundColor: '#94B4C1' }} />
-            <span className="text-[#94B4C1]">OCR ${latestOcr?.toLocaleString() || '—'}</span>
+        <div className="flex items-center justify-between mt-1">
+          <p className="text-xs text-[#547792]">
+            Price per sqft by market segment ({timeLabels[drillPath.time]})
+          </p>
+          <div className="text-xs text-[#547792] flex gap-3">
+            {latestCcr && <span>CCR: ${latestCcr.toLocaleString()}</span>}
+            {latestRcr && <span>RCR: ${latestRcr.toLocaleString()}</span>}
+            {latestOcr && <span>OCR: ${latestOcr.toLocaleString()}</span>}
           </div>
         </div>
       </div>
-      <div className="px-4 py-2 text-[10px] text-[#94B4C1] flex justify-between items-center">
-        <span>{data.labels.length} {timeLabels[drillPath.time].toLowerCase()}s</span>
-        <span>Click any point to cross-filter</span>
+      <div className="p-4" style={{ height }}>
+        <Line ref={chartRef} data={chartData} options={options} />
+      </div>
+      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
+        <span>{data.labels.length} periods | Click to highlight time period</span>
       </div>
     </div>
   );
