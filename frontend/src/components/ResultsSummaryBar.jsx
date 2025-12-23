@@ -1,19 +1,17 @@
 import React from 'react';
 
 /**
- * ResultsSummaryBar - Summary bar showing budget-based results
+ * ResultsSummaryBar - Compact summary bar showing budget-based results
  *
  * Used in ValueParityPanel to show:
- * - Budget-based message
+ * - Budget-based message with range
  * - New Launches count
  * - Resale Transactions count
- * - Quick navigation links to each section
  */
 export function ResultsSummaryBar({
   budget = 0,
   hotProjectsCount = 0,
   youngResaleCount = 0,
-  resaleMarketCount = 0,
   onJumpToNewLaunches,
   onJumpToResale,
 }) {
@@ -27,41 +25,34 @@ export function ResultsSummaryBar({
   };
 
   return (
-    <div className="bg-gradient-to-r from-[#213448] to-[#547792] rounded-lg p-4 text-white">
+    <div className="bg-gradient-to-r from-[#213448] to-[#547792] rounded-lg px-4 py-3 text-white">
       {/* Budget message */}
-      <p className="text-sm mb-3 text-white/90">
-        Based on your target price of <span className="font-semibold text-white">{formatBudget(budget)}</span>, here are the upcoming and existing properties you can buy:
+      <p className="text-sm mb-2 text-white/90">
+        Based on your target price of <span className="font-semibold text-white">{formatBudget(budget)}</span> <span className="text-white/70">(+/- $100K)</span>, here are the properties you can buy:
       </p>
 
-      {/* Stats row */}
-      <div className="flex items-center gap-6">
+      {/* Stats row - compact */}
+      <div className="flex items-center gap-4">
         {/* New Launches */}
         <button
           onClick={onJumpToNewLaunches}
-          className="flex items-center gap-2 hover:bg-white/10 rounded-lg px-3 py-2 -mx-3 transition-colors"
+          className="flex items-center gap-2 hover:bg-white/10 rounded px-2 py-1 -mx-2 transition-colors"
         >
-          <span className="text-2xl">🏗️</span>
-          <div className="text-left">
-            <div className="text-xs text-white/70">New Launches</div>
-            <div className="text-xl font-bold">{hotProjectsCount}</div>
-          </div>
+          <span className="text-lg">🏗️</span>
+          <span className="text-xs text-white/70">New Launches</span>
+          <span className="text-base font-bold">{hotProjectsCount}</span>
         </button>
 
-        <div className="border-l border-white/30 h-10" />
+        <div className="border-l border-white/30 h-5" />
 
         {/* Resale */}
         <button
           onClick={onJumpToResale}
-          className="flex items-center gap-2 hover:bg-white/10 rounded-lg px-3 py-2 -mx-3 transition-colors"
+          className="flex items-center gap-2 hover:bg-white/10 rounded px-2 py-1 -mx-2 transition-colors"
         >
-          <span className="text-2xl">🏠</span>
-          <div className="text-left">
-            <div className="text-xs text-white/70">Resale</div>
-            <div className="text-xl font-bold">{youngResaleCount.toLocaleString()}</div>
-            <div className="text-[10px] text-white/60">
-              and {resaleMarketCount.toLocaleString()} benchmarked transactions
-            </div>
-          </div>
+          <span className="text-lg">🏠</span>
+          <span className="text-xs text-white/70">Resale</span>
+          <span className="text-base font-bold">{youngResaleCount.toLocaleString()}</span>
         </button>
       </div>
     </div>
