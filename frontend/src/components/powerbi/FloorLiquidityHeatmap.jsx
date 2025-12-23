@@ -3,6 +3,7 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getFloorLiquidityHeatmap } from '../../api/client';
 import {
   FLOOR_LEVELS,
+  FLOOR_RANGE_LABELS,
   LIQUIDITY_COLORS,
   getLiquidityColor,
 } from '../../constants';
@@ -320,9 +321,10 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
               {floorZones.map((zone) => (
                 <th
                   key={zone}
-                  className="bg-[#EAE0CF]/50 text-center px-2 py-1 font-medium text-[#547792] border-b border-[#94B4C1]/30 min-w-[60px]"
+                  className="bg-[#EAE0CF]/50 text-center px-2 py-1 font-medium border-b border-[#94B4C1]/30 min-w-[70px]"
                 >
-                  {zone}
+                  <div className="text-[#547792]">{zone}</div>
+                  <div className="text-[10px] text-[#94B4C1] font-normal">({FLOOR_RANGE_LABELS[zone] || '?'})</div>
                 </th>
               ))}
             </tr>
