@@ -267,6 +267,7 @@ function formatPriceShort(value) {
  * @param {Object} [props.activeFilters={}] - Currently active filters for subtitle context
  * @param {Function} [props.onBinClick] - Callback when a histogram bin is clicked
  * @param {Object} [props.selectedPriceRange] - Currently selected price range filter
+ * @param {Object} [props.scopeToggle] - Optional scope toggle configuration for deal checker
  */
 export function PriceDistributionHeroChart({
   buyerPrice,
@@ -275,7 +276,8 @@ export function PriceDistributionHeroChart({
   loading = false,
   activeFilters = {},
   onBinClick,
-  selectedPriceRange
+  selectedPriceRange,
+  scopeToggle
 }) {
   const chartRef = useRef(null);
 
@@ -362,8 +364,8 @@ export function PriceDistributionHeroChart({
         backgroundColor: backgroundColors,
         borderColor: borderColors,
         borderWidth: selectedBinIndex >= 0 ? bins.map((_, idx) => idx === selectedBinIndex ? 2 : 1) : 1,
-        barPercentage: 0.9,
-        categoryPercentage: 0.95,
+        barPercentage: 1,
+        categoryPercentage: 1,
       }]
     };
   }, [bins, buyerBinIndex, selectedBinIndex]);
@@ -526,7 +528,12 @@ export function PriceDistributionHeroChart({
     const parts = [];
 
     if (activeFilters.bedroom) {
-      parts.push(`${activeFilters.bedroom}BR`);
+      // Handle both "3" and "3BR" formats - avoid double "BR"
+      const br = String(activeFilters.bedroom).replace(/BR$/i, '');
+      parts.push(`${br} BR`);
+    }
+    if (activeFilters.scope) {
+      parts.push(activeFilters.scope);
     }
     if (activeFilters.region) {
       parts.push(activeFilters.region);
@@ -558,29 +565,57 @@ export function PriceDistributionHeroChart({
     <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
             <p className="text-xs text-[#547792] mt-0.5">
-              How your target price compares to {stats.totalCount.toLocaleString()} comparable transactions
+              {scopeToggle
+                ? `${scopeToggle.transactionCount.toLocaleString()} comparable transactions`
+                : `How your target price compares to ${stats.totalCount.toLocaleString()} comparable transactions`
+              }
             </p>
             <p className="text-xs text-[#547792]/70 mt-0.5">
-              Filters: {getFilterDescription()}
+              {getFilterDescription()}
               {onBinClick && (
                 <span className="ml-2 text-[#547792]">• Click bars to filter table</span>
               )}
             </p>
           </div>
 
-          {/* Limited data warning badge */}
-          {stats.isLimitedData && (
-            <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <span>Limited comparable data</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Scope Toggle Buttons (for Deal Checker) */}
+            {scopeToggle && (
+              <div className="flex gap-1">
+                {[
+                  { key: 'same_project', label: 'Same Project' },
+                  { key: 'radius_1km', label: '1km' },
+                  { key: 'radius_2km', label: '2km' }
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => scopeToggle.onScopeChange(key)}
+                    className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                      scopeToggle.activeScope === key
+                        ? 'bg-[#213448] text-white'
+                        : 'bg-[#EAE0CF]/50 text-[#547792] hover:bg-[#EAE0CF]'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Limited data warning badge */}
+            {stats.isLimitedData && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Limited data</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

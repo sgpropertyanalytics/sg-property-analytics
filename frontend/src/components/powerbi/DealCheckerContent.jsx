@@ -38,9 +38,9 @@ const parseFormattedNumber = (str) => {
 
 // Scope labels for display
 const SCOPE_LABELS = {
-  same_project: 'Same Project',
-  radius_1km: 'Within 1km',
-  radius_2km: 'Within 2km'
+  same_project: 'Same Development',
+  radius_1km: 'Within 1km Radius',
+  radius_2km: 'Within 2km Radius'
 };
 
 export default function DealCheckerContent() {
@@ -210,107 +210,122 @@ export default function DealCheckerContent() {
         </div>
 
         <form onSubmit={handleCheck} className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Project Name - Searchable Dropdown */}
-            <div className="lg:col-span-2" ref={dropdownRef}>
-              <label className="block text-sm font-medium text-[#213448] mb-1">
-                Project Name <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  disabled={projectOptionsLoading}
-                  className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded-md text-sm text-left bg-white focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-[#547792] flex items-center justify-between"
-                >
-                  <span className={projectName ? 'text-[#213448]' : 'text-[#94B4C1]'}>
-                    {projectName
-                      ? `${projectName}${selectedProjectInfo?.district ? ` (${selectedProjectInfo.district})` : ''}`
-                      : 'Select project...'}
-                  </span>
-                  <svg className={`w-4 h-4 text-[#547792] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          {/* Row 1: Project Name (full width) */}
+          <div className="mb-4" ref={dropdownRef}>
+            <label className="block text-sm font-medium text-[#213448] mb-1">
+              Project Name <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                disabled={projectOptionsLoading}
+                className="w-full px-3 py-2.5 border border-[#94B4C1]/50 rounded-lg text-sm text-left bg-white focus:outline-none focus:ring-2 focus:ring-[#547792]/30 focus:border-[#547792] flex items-center justify-between"
+              >
+                <span className={projectName ? 'text-[#213448]' : 'text-[#94B4C1]'}>
+                  {projectName
+                    ? `${projectName}${selectedProjectInfo?.district ? ` (${selectedProjectInfo.district})` : ''}`
+                    : 'Search and select your project...'}
+                </span>
+                <svg className={`w-4 h-4 text-[#547792] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Dropdown Panel */}
+              {isDropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-[#94B4C1]/50 rounded-lg shadow-lg max-h-80 overflow-hidden">
+                  {/* Search Input */}
+                  <div className="p-2 border-b border-[#94B4C1]/30">
+                    <input
+                      type="text"
+                      placeholder="Type to search projects..."
+                      value={projectSearch}
+                      onChange={(e) => setProjectSearch(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#547792]"
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Options List */}
+                  <div className="max-h-60 overflow-y-auto">
+                    {filteredProjects.length === 0 ? (
+                      <div className="px-3 py-4 text-sm text-[#94B4C1] text-center">
+                        No projects found
+                      </div>
+                    ) : (
+                      filteredProjects.slice(0, 100).map(p => (
+                        <button
+                          key={p.name}
+                          type="button"
+                          onClick={() => handleProjectSelect(p)}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-[#EAE0CF]/50 flex justify-between items-center ${
+                            projectName === p.name ? 'bg-[#EAE0CF]/30 text-[#213448] font-medium' : 'text-[#547792]'
+                          }`}
+                        >
+                          <span className="truncate">{p.name}</span>
+                          <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
+                        </button>
+                      ))
+                    )}
+                    {filteredProjects.length > 100 && (
+                      <div className="px-3 py-2 text-xs text-[#94B4C1] text-center border-t border-[#94B4C1]/30">
+                        +{filteredProjects.length - 100} more (refine search)
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {projectOptionsLoading && (
+                <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
+                  <svg className="w-4 h-4 animate-spin text-[#547792]" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                </button>
-
-                {/* Dropdown Panel */}
-                {isDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-[#94B4C1]/50 rounded-md shadow-lg max-h-80 overflow-hidden">
-                    {/* Search Input */}
-                    <div className="p-2 border-b border-[#94B4C1]/30">
-                      <input
-                        type="text"
-                        placeholder="Search projects..."
-                        value={projectSearch}
-                        onChange={(e) => setProjectSearch(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#547792]"
-                        autoFocus
-                      />
-                    </div>
-
-                    {/* Options List */}
-                    <div className="max-h-60 overflow-y-auto">
-                      {filteredProjects.length === 0 ? (
-                        <div className="px-3 py-4 text-sm text-[#94B4C1] text-center">
-                          No projects found
-                        </div>
-                      ) : (
-                        filteredProjects.slice(0, 100).map(p => (
-                          <button
-                            key={p.name}
-                            type="button"
-                            onClick={() => handleProjectSelect(p)}
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-[#EAE0CF]/50 flex justify-between items-center ${
-                              projectName === p.name ? 'bg-[#EAE0CF]/30 text-[#213448] font-medium' : 'text-[#547792]'
-                            }`}
-                          >
-                            <span className="truncate">{p.name}</span>
-                            <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
-                          </button>
-                        ))
-                      )}
-                      {filteredProjects.length > 100 && (
-                        <div className="px-3 py-2 text-xs text-[#94B4C1] text-center border-t border-[#94B4C1]/30">
-                          +{filteredProjects.length - 100} more (refine search)
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {projectOptionsLoading && (
-                  <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
-                    <svg className="w-4 h-4 animate-spin text-[#547792]" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
+          </div>
 
+          {/* Row 2: Unit Details */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             {/* Bedroom */}
             <div>
-              <label className="block text-sm font-medium text-[#213448] mb-1">
-                Bedroom <span className="text-red-500">*</span>
+              <label className="block text-xs font-medium text-[#547792] mb-1">
+                Bedrooms <span className="text-red-500">*</span>
               </label>
               <select
                 value={bedroom}
                 onChange={(e) => setBedroom(e.target.value)}
-                className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-[#547792]"
+                className="w-full px-3 py-2.5 border border-[#94B4C1]/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#547792]/30 focus:border-[#547792] bg-white"
               >
-                <option value="">Select...</option>
-                <option value="1">1BR</option>
-                <option value="2">2BR</option>
-                <option value="3">3BR</option>
-                <option value="4">4BR</option>
-                <option value="5">5BR+</option>
+                <option value="">Select</option>
+                <option value="1">1 BR</option>
+                <option value="2">2 BR</option>
+                <option value="3">3 BR</option>
+                <option value="4">4 BR</option>
+                <option value="5">5+ BR</option>
               </select>
+            </div>
+
+            {/* Unit Size (sqft) */}
+            <div>
+              <label className="block text-xs font-medium text-[#547792] mb-1">
+                Unit Size (sqft)
+              </label>
+              <input
+                type="text"
+                value={sqft}
+                onChange={handleSqftChange}
+                placeholder="e.g., 1,200"
+                className="w-full px-3 py-2.5 border border-[#94B4C1]/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#547792]/30 focus:border-[#547792]"
+              />
             </div>
 
             {/* Price Paid */}
             <div>
-              <label className="block text-sm font-medium text-[#213448] mb-1">
+              <label className="block text-xs font-medium text-[#547792] mb-1">
                 Price Paid ($) <span className="text-red-500">*</span>
               </label>
               <input
@@ -318,7 +333,7 @@ export default function DealCheckerContent() {
                 value={price}
                 onChange={handlePriceChange}
                 placeholder="e.g., 2,500,000"
-                className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-[#547792]"
+                className="w-full px-3 py-2.5 border border-[#94B4C1]/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#547792]/30 focus:border-[#547792]"
               />
             </div>
 
@@ -327,7 +342,7 @@ export default function DealCheckerContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-6 py-2 bg-[#213448] text-white rounded-md hover:bg-[#547792] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                className="w-full px-4 py-2.5 bg-[#213448] text-white rounded-lg hover:bg-[#547792] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -343,6 +358,11 @@ export default function DealCheckerContent() {
               </button>
             </div>
           </div>
+
+          {/* Helper text */}
+          <p className="text-[10px] text-[#94B4C1]">
+            Unit size is optional but helps find more accurate comparisons for compact/deluxe variants
+          </p>
 
           {error && (
             <p className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>
@@ -362,49 +382,21 @@ export default function DealCheckerContent() {
           />
 
           {/* Histogram with Scope Toggle */}
-          <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
-                <p className="text-xs text-[#547792]">
-                  {SCOPE_LABELS[activeScope]} - {result.scopes?.[activeScope]?.transaction_count || 0} transactions
-                </p>
-              </div>
-              {/* Scope Toggle Buttons */}
-              <div className="flex gap-1">
-                {['same_project', 'radius_1km', 'radius_2km'].map(scope => (
-                  <button
-                    key={scope}
-                    onClick={() => setActiveScope(scope)}
-                    className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                      activeScope === scope
-                        ? 'bg-[#213448] text-white'
-                        : 'bg-[#EAE0CF]/50 text-[#547792] hover:bg-[#EAE0CF]'
-                    }`}
-                  >
-                    {scope === 'same_project' ? 'Same' : scope === 'radius_1km' ? '1km' : '2km'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="p-4">
-              <PriceDistributionHeroChart
-                buyerPrice={result.filters.buyer_price}
-                transactions={getHistogramTransactions()}
-                loading={false}
-                height={280}
-                activeFilters={{
-                  bedroom: `${bedroom}BR`,
-                  scope: SCOPE_LABELS[activeScope],
-                }}
-              />
-              {result.scopes?.[activeScope]?.transaction_count < 30 && (
-                <p className="text-xs text-amber-600 mt-2">
-                  Note: Only {result.scopes?.[activeScope]?.transaction_count || 0} comparable transactions found. Results may be less reliable with limited data.
-                </p>
-              )}
-            </div>
-          </div>
+          <PriceDistributionHeroChart
+            buyerPrice={result.filters.buyer_price}
+            transactions={getHistogramTransactions()}
+            loading={false}
+            height={280}
+            activeFilters={{
+              bedroom: bedroom,
+              scope: SCOPE_LABELS[activeScope],
+            }}
+            scopeToggle={{
+              activeScope,
+              onScopeChange: setActiveScope,
+              transactionCount: result.scopes?.[activeScope]?.transaction_count || 0,
+            }}
+          />
 
           {/* Map and Nearby Projects Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
