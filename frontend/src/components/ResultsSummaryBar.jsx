@@ -37,7 +37,7 @@ export function ResultsSummaryBar({
   );
 
   return (
-    <div className="bg-gradient-to-r from-[#213448] to-[#547792] rounded-lg px-4 py-3 text-white">
+    <div className="sticky top-0 z-30 bg-gradient-to-r from-[#213448] to-[#547792] rounded-lg px-4 py-3 text-white shadow-lg">
       {/* Budget message */}
       <p className="text-sm mb-2 text-white/90">
         Based on your target price of <span className="font-semibold text-white">{formatBudget(budget)}</span> <span className="text-white/70">(+/- $100K)</span>, here are the properties you can buy:
