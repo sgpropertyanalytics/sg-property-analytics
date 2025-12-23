@@ -192,30 +192,18 @@ function HeroSection({ navigate }) {
           Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
         </motion.p>
 
-        {/* CTA Buttons - Split by intent: Buyer vs Seller */}
+        {/* CTA Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center"
         >
-          {/* Buyer CTA - Primary */}
           <button
             onClick={() => navigate('/market-pulse')}
             className="group px-8 py-4 rounded-lg bg-[#213448] text-[#EAE0CF] font-semibold shadow-lg shadow-[#213448]/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
           >
-            <span className="text-lg">🔍</span>
-            <span>Check If I'm Overpaying</span>
+            <span>Access Pricing Intelligence</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
-
-          {/* Seller CTA - Secondary */}
-          <button
-            onClick={() => navigate('/value-parity')}
-            className="group px-8 py-4 rounded-lg bg-white border border-[#94B4C1] text-[#547792] font-semibold hover:bg-[#EAE0CF]/50 hover:border-[#547792] transition-all flex items-center justify-center gap-3 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
-          >
-            <span className="text-lg">📈</span>
-            <span>Find My Exit Price</span>
           </button>
         </motion.div>
       </motion.div>
