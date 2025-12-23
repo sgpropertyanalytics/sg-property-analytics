@@ -243,11 +243,6 @@ export function MacroOverviewContent() {
                   <MedianPsfTrendChart height={280} />
                 </div>
 
-                {/* Price Compression Analysis - Full width, shows spread between market segments */}
-                <div className="lg:col-span-2">
-                  <PriceCompressionChart height={380} />
-                </div>
-
                 {/* Volume by Location - Chart component unchanged */}
                 <VolumeByLocationChart
                   onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
@@ -264,6 +259,11 @@ export function MacroOverviewContent() {
                 {/* New Launch vs Resale Comparison - Full width */}
                 <div className="lg:col-span-2">
                   <NewVsResaleChart height={350} />
+                </div>
+
+                {/* Price Compression Analysis - Full width, shows spread between market segments */}
+                <div className="lg:col-span-2">
+                  <PriceCompressionChart height={380} />
                 </div>
               </div>
 

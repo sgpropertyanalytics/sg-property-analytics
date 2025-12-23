@@ -274,7 +274,38 @@ export function PriceCompressionChart({ height = 380 }) {
     interaction: { mode: 'index', intersect: false },
     onClick: handleChartClick,
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          padding: 15,
+          font: { size: 11 },
+          generateLabels: (chart) => {
+            return [
+              {
+                text: 'CCR ↔ RCR Spread (solid)',
+                fillStyle: '#213448',
+                strokeStyle: '#213448',
+                lineWidth: 2,
+                pointStyle: 'line',
+                hidden: false,
+                datasetIndex: 0,
+              },
+              {
+                text: 'RCR ↔ OCR Spread (dashed)',
+                fillStyle: '#547792',
+                strokeStyle: '#547792',
+                lineWidth: 2,
+                lineDash: [5, 5],
+                pointStyle: 'line',
+                hidden: false,
+                datasetIndex: 1,
+              },
+            ];
+          },
+        },
+      },
       tooltip: {
         callbacks: {
           title: (items) => `${items[0].label}`,

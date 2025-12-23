@@ -281,19 +281,26 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
     },
   };
 
-  // Calculate insights
+  // Calculate insights with transaction counts for transparency
   const getMaxPremium = (region) => {
     const data = premiumsByRegion[region];
-    if (!data?.premiums) return { tier: '-', value: 0 };
+    if (!data?.premiums) return { tier: '-', value: 0, count: 0 };
     const entries = Object.entries(data.premiums);
-    if (entries.length === 0) return { tier: '-', value: 0 };
+    if (entries.length === 0) return { tier: '-', value: 0, count: 0 };
     const max = entries.reduce((a, b) => (b[1] > a[1] ? b : a));
-    return { tier: max[0], value: max[1] };
+    const count = data.counts?.[max[0]] || 0;
+    return { tier: max[0], value: max[1], count };
   };
 
   const ccrMax = getMaxPremium('CCR');
   const rcrMax = getMaxPremium('RCR');
   const ocrMax = getMaxPremium('OCR');
+
+  // Helper to format premium with warning for low sample
+  const formatPremium = (max) => {
+    const isLowSample = max.count < 20;
+    return `${max.tier} +${max.value.toFixed(1)}%${isLowSample ? ` (n=${max.count})` : ''}`;
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
@@ -316,15 +323,15 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
           <span className="text-[#94B4C1] font-medium">Peak Premium:</span>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: REGION_CONFIG.CCR.color }} />
-            <span className="text-[#213448]">CCR {ccrMax.tier} +{ccrMax.value.toFixed(1)}%</span>
+            <span className="text-[#213448]">CCR {formatPremium(ccrMax)}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: REGION_CONFIG.RCR.color }} />
-            <span className="text-[#213448]">RCR {rcrMax.tier} +{rcrMax.value.toFixed(1)}%</span>
+            <span className="text-[#213448]">RCR {formatPremium(rcrMax)}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: REGION_CONFIG.OCR.color }} />
-            <span className="text-[#213448]">OCR {ocrMax.tier} +{ocrMax.value.toFixed(1)}%</span>
+            <span className={ocrMax.count < 20 ? "text-[#94B4C1]" : "text-[#213448]"}>OCR {formatPremium(ocrMax)}</span>
           </div>
         </div>
       </div>
