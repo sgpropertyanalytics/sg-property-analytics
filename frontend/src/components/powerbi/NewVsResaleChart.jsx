@@ -390,12 +390,7 @@ export function NewVsResaleChart({ height = 350 }) {
 
       {/* How to Interpret */}
       <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5">
-          <div><span className="font-semibold text-[#213448]">New Sale</span> — Median price of brand new units from developers.</div>
-          <div><span className="font-semibold text-[#213448]">Young Resale</span> — Median price of 4-9 year old resale units.</div>
-          <div><span className="font-semibold text-[#213448]">Premium %</span> — How much more new sales cost vs young resale.</div>
-          <div><span className="font-semibold text-[#213448]">Gap trend</span> — Whether the premium is growing or shrinking.</div>
-        </div>
+        Tracks the price gap between new launches and recently TOP/young resale units to highlight pricing discrepancies and relative value.
       </KeyInsightBox>
 
       {/* Chart Container - follows chart-container-contract skill */}
