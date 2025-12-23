@@ -269,6 +269,7 @@ function formatPriceShort(value) {
  * @param {Object} [props.selectedPriceRange] - Currently selected price range filter
  * @param {Object} [props.scopeToggle] - Optional scope toggle configuration for deal checker
  * @param {Array} [props.precomputedBins] - Pre-computed bins from backend (skips client-side binning)
+ * @param {Object} [props.precomputedPercentile] - Pre-computed percentile from backend (exact calculation)
  */
 export function PriceDistributionHeroChart({
   buyerPrice,
@@ -279,7 +280,8 @@ export function PriceDistributionHeroChart({
   onBinClick,
   selectedPriceRange,
   scopeToggle,
-  precomputedBins
+  precomputedBins,
+  precomputedPercentile
 }) {
   const chartRef = useRef(null);
 
@@ -304,9 +306,22 @@ export function PriceDistributionHeroChart({
   }, [precomputedBins, transactions]);
 
   // Compute percentile statistics
+  // Priority: 1) precomputedPercentile from backend (exact), 2) estimate from bins, 3) compute from transactions
   const stats = useMemo(() => {
+    // Use backend percentile if provided (exact calculation, matches scope cards)
+    if (precomputedPercentile && precomputedPercentile.rank !== null) {
+      return {
+        percentile: precomputedPercentile.rank,
+        higherCount: precomputedPercentile.transactions_above || 0,
+        totalCount: precomputedPercentile.total || 0,
+        isLimitedData: (precomputedPercentile.total || 0) < MIN_COMPARABLE_TRANSACTIONS,
+        isOutsideRange: false,
+        position: 'within'
+      };
+    }
+
+    // Fallback: estimate from bins (less accurate)
     if (precomputedBins && precomputedBins.length > 0) {
-      // Estimate percentile from bins for precomputed data
       let below = 0;
       let above = 0;
       for (const bin of precomputedBins) {
@@ -314,7 +329,6 @@ export function PriceDistributionHeroChart({
         if (binMid < buyerPrice) below += bin.count;
         else if (binMid > buyerPrice) above += bin.count;
         else {
-          // Price is in this bin - split count
           below += Math.floor(bin.count / 2);
           above += Math.ceil(bin.count / 2);
         }
@@ -330,8 +344,10 @@ export function PriceDistributionHeroChart({
         position: 'within'
       };
     }
+
+    // Final fallback: compute from raw transactions
     return computePricePercentile(buyerPrice, transactions);
-  }, [buyerPrice, transactions, precomputedBins]);
+  }, [buyerPrice, transactions, precomputedBins, precomputedPercentile]);
 
   // Find which bin the buyer price falls into (for highlighting)
   const buyerBinIndex = useMemo(() => {

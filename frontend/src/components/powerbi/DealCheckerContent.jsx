@@ -428,6 +428,7 @@ export default function DealCheckerContent() {
           <PriceDistributionHeroChart
             buyerPrice={result.filters.buyer_price}
             precomputedBins={getHistogramBins()}
+            precomputedPercentile={result.scopes?.[activeScope]?.percentile}
             loading={false}
             height={280}
             activeFilters={{
