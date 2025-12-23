@@ -222,9 +222,88 @@ function HeroSection({ navigate }) {
         </motion.div>
       </motion.div>
 
-      {/* "You vs Market" Visual - demonstrates core value prop */}
-      <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10">
-        <YouVsMarketVisual />
+      {/* Combined Visual: Dashboard + YouVsMarket Card */}
+      <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10 mt-8 sm:mt-12">
+
+        {/* Desktop: Side by side layout */}
+        <div className="hidden lg:flex gap-6 items-start">
+
+          {/* Dashboard Screenshot - 3D perspective */}
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="flex-1 relative"
+            style={{ perspective: '2000px' }}
+          >
+            <div
+              className="relative rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/15 bg-white ring-1 ring-[#213448]/5"
+              style={{
+                transformStyle: 'preserve-3d',
+                transform: 'rotateY(5deg) rotateX(2deg)',
+                transformOrigin: 'center center'
+              }}
+            >
+              <img
+                src="/dashboard-screenshot.png"
+                alt="PropAnalytics Dashboard"
+                className="w-full h-auto object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20 pointer-events-none" />
+            </div>
+
+            {/* "Full Dashboard" label */}
+            <div className="absolute -bottom-3 left-4 px-3 py-1 bg-[#213448] text-[#EAE0CF] text-xs font-medium rounded-full shadow-lg">
+              Full Analytics Dashboard
+            </div>
+          </motion.div>
+
+          {/* YouVsMarket Card - floating */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="w-[420px] flex-shrink-0"
+          >
+            <YouVsMarketVisual compact />
+
+            {/* "Example Analysis" label */}
+            <div className="mt-3 text-center text-xs text-[#94B4C1]">
+              ↑ Example: What you'll see for any unit
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Mobile/Tablet: Stacked layout with dashboard behind */}
+        <div className="lg:hidden relative">
+          {/* Dashboard Screenshot - background, partial view */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 0.4, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="absolute inset-x-0 top-0 -z-10"
+          >
+            <div className="rounded-xl overflow-hidden shadow-xl">
+              <img
+                src="/dashboard-screenshot.png"
+                alt="PropAnalytics Dashboard"
+                className="w-full h-auto object-cover opacity-60 blur-[1px]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#EAE0CF]/50 to-[#EAE0CF]" />
+            </div>
+          </motion.div>
+
+          {/* YouVsMarket Card - foreground */}
+          <div className="relative pt-8">
+            <YouVsMarketVisual />
+
+            {/* Context text */}
+            <div className="mt-4 text-center text-sm text-[#547792]">
+              <span className="text-[#213448] font-medium">This is just one analysis.</span>
+              {' '}Access the full dashboard for any project.
+            </div>
+          </div>
+        </div>
       </div>
 
     </section>

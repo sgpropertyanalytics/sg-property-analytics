@@ -162,9 +162,9 @@ export default function YouVsMarketVisual({ compact = false }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 bg-[#FDFBF7] border-t border-[#94B4C1]/20">
-          <div className="flex items-center justify-between text-xs text-[#94B4C1]">
-            <span>Based on 45 transactions (last 12 months)</span>
+        <div className="px-4 sm:px-6 py-2 sm:py-3 bg-[#FDFBF7] border-t border-[#94B4C1]/20">
+          <div className="flex items-center justify-between text-[10px] sm:text-xs text-[#94B4C1]">
+            <span>Based on {transactionCount} transactions (last 12 months)</span>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Live data
