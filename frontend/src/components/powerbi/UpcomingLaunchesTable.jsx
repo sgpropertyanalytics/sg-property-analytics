@@ -116,12 +116,12 @@ export function UpcomingLaunchesTable({ height = 400 }) {
 
   // Column definitions
   const columns = [
-    { key: 'expected_launch_date', label: 'Potential Launch Date', sortable: true, width: 'w-28' },
-    { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-48' },
+    { key: 'expected_launch_date', label: 'Launch Date', sortable: true, width: 'w-24' },
+    { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-44' },
+    { key: 'district', label: 'District', sortable: true, width: 'w-16' },
     { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-16' },
-    { key: 'developer', label: 'Developer', sortable: true, width: 'w-44' },
-    { key: 'land_bid_psf', label: 'PSF (PPR)', sortable: true, width: 'w-24', align: 'right' },
-    { key: 'indicative_psf', label: 'Implied Launch PSF', sortable: false, width: 'w-36', align: 'right' },
+    { key: 'total_units', label: 'Units', sortable: true, width: 'w-16', align: 'right' },
+    { key: 'indicative_psf', label: 'Est. PSF', sortable: false, width: 'w-32', align: 'right' },
   ];
 
   // Count by segment
@@ -234,11 +234,14 @@ export function UpcomingLaunchesTable({ height = 400 }) {
                     key={project.id || idx}
                     className="hover:bg-slate-50 transition-colors"
                   >
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-xs">
                       {formatDate(project.expected_launch_date, project.launch_year)}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[250px]" title={project.project_name}>
+                    <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[200px]" title={project.project_name}>
                       {project.project_name || '-'}
+                    </td>
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-xs">
+                      {project.district || '-'}
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100">
                       {project.market_segment ? (
@@ -255,11 +258,8 @@ export function UpcomingLaunchesTable({ height = 400 }) {
                         <span className="text-slate-400">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 truncate max-w-[220px]" title={project.developer}>
-                      {project.developer || <span className="text-slate-400 italic">TBD</span>}
-                    </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-800 font-medium text-right">
-                      {project.land_bid_psf ? formatCurrency(project.land_bid_psf) : <span className="text-slate-400">-</span>}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right">
+                      {project.total_units ? project.total_units.toLocaleString() : '-'}
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right">
                       {project.indicative_psf_low || project.indicative_psf_high ? (
@@ -284,30 +284,21 @@ export function UpcomingLaunchesTable({ height = 400 }) {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-              <span>CCR = Core Central</span>
+              <span>CCR</span>
             </span>
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-              <span>RCR = Rest of Central</span>
+              <span>RCR</span>
             </span>
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-teal-400 rounded-full"></span>
-              <span>OCR = Outside Central</span>
+              <span>OCR</span>
             </span>
           </div>
           <span className="text-[#547792]/70">
-            PSF (PPR) = Land cost per sqft of GFA
+            Sources: ERA, EdgeProp, PropertyReview
           </span>
         </div>
-      </div>
-
-      {/* Methodology footnote */}
-      <div className="px-4 py-3 border-t border-[#94B4C1]/20 bg-slate-50/50">
-        <p className="text-[10px] text-slate-500 leading-relaxed">
-          <span className="font-medium text-slate-600">Data sources:</span>{' '}
-          Cross-validated from EdgeProp, PropNex, and ERA. Discrepancies flagged for review.
-          PSF (PPR) linked from awarded GLS tender data where available.
-        </p>
       </div>
     </div>
   );

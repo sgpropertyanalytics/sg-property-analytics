@@ -348,15 +348,21 @@ def _create_from_csv(row: Dict[str, Any], default_year: int = None):
 
     # Determine launch_year from row data or default
     launch_year = None
-    if row.get('launch_year'):
-        launch_year = int(row['launch_year'])
-    elif row.get('launch_date'):
-        # Extract year from launch_date (expects YYYY-MM-DD or similar)
+    expected_launch_date = None
+
+    if row.get('launch_date'):
+        # Parse launch_date (expects YYYY-MM-DD format)
         try:
             date_str = str(row['launch_date']).strip()
-            launch_year = int(date_str[:4])
+            from datetime import datetime
+            expected_launch_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            launch_year = expected_launch_date.year
         except (ValueError, IndexError):
             pass
+
+    if row.get('launch_year') and not launch_year:
+        launch_year = int(row['launch_year'])
+
     if not launch_year:
         launch_year = default_year
 
@@ -372,6 +378,7 @@ def _create_from_csv(row: Dict[str, Any], default_year: int = None):
         indicative_psf_high=float(row.get('psf_max') or row.get('psf_min', 0)) or None,
         tenure=str(row.get('tenure', '')).strip() or None,
         launch_year=launch_year,
+        expected_launch_date=expected_launch_date,
         property_type='Condominium',
         land_bid_psf=float(row.get('land_bid_psf', 0)) or None if row.get('land_bid_psf') else None,
         data_source=str(row.get('source', '')).strip(),
