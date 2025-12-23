@@ -2,12 +2,12 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://sg-property-analyzer.onrender.com/api/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/"
+      "destination": "https://sgpropertytrend.onrender.com/api/:path*"
     }
+  ],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
 
