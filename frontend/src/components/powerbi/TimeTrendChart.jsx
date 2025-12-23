@@ -234,10 +234,12 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         borderColor: '#8B7355',  // Dark tan/brown for better visibility
         backgroundColor: 'rgba(139, 115, 85, 0.1)',
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: 2,
+        pointHoverRadius: 4,
         pointBackgroundColor: '#A89078',  // Medium tan fill
         pointBorderColor: '#8B7355',  // Dark tan border
         pointBorderWidth: 1,
+        tension: 0.4,  // Smooth curve
         fill: false,
         yAxisID: 'y1',
         order: 1,
