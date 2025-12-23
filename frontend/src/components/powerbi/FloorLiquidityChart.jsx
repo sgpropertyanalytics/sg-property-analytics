@@ -17,10 +17,8 @@ import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import {
-  FLOOR_LEVELS,
   FLOOR_LEVEL_LABELS,
   getFloorLevelIndex,
-  getFloorLevelColor,
 } from '../../constants';
 
 ChartJS.register(
@@ -57,9 +55,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
-  // Confidence thresholds
-  const MIN_CONFIDENT = 10;
-  const MIN_DISPLAY = 5;
+  // No longer using confidence thresholds for visual encoding
 
   // Fetch floor level data
   useEffect(() => {
@@ -116,23 +112,6 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
     });
   }, [data, baselinePSF]);
 
-  // Detect liquidity cliff (where volume drops >50% from previous)
-  const liquidityCliffIndex = useMemo(() => {
-    const counts = data.map(d => d.count || 0);
-    for (let i = 1; i < counts.length; i++) {
-      if (counts[i - 1] > 0 && counts[i] < counts[i - 1] * 0.5) {
-        return i;
-      }
-    }
-    return -1;
-  }, [data]);
-
-  // Get confidence level
-  const getConfidence = (count) => {
-    if (count >= MIN_CONFIDENT) return 'high';
-    if (count >= MIN_DISPLAY) return 'medium';
-    return 'low';
-  };
 
   if (loading) {
     return (
@@ -180,68 +159,9 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   const minPSF = Math.min(...psf25ths.filter(v => v !== null));
   const totalTransactions = counts.reduce((a, b) => a + b, 0);
 
-  // Volume bar colors - Gradient shading based on confidence + position
-  // Beyond cliff: subtle fade rather than alarm colors
-  const volumeBarColors = data.map((d, i) => {
-    const conf = getConfidence(d.count);
-    const isCliff = i >= liquidityCliffIndex && liquidityCliffIndex >= 0;
-
-    // Beyond cliff: use muted/faded tones
-    if (isCliff) {
-      if (conf === 'high') return 'rgba(148, 180, 193, 0.4)';   // Faded sky blue
-      if (conf === 'medium') return 'rgba(148, 180, 193, 0.25)';
-      return 'rgba(180, 180, 180, 0.15)';
-    }
-
-    // Normal: standard confidence coloring
-    if (conf === 'high') return 'rgba(84, 119, 146, 0.6)';
-    if (conf === 'medium') return 'rgba(84, 119, 146, 0.3)';
-    return 'rgba(180, 180, 180, 0.2)';
-  });
-
-  const volumeBarBorders = data.map((d, i) => {
-    const conf = getConfidence(d.count);
-    const isCliff = i >= liquidityCliffIndex && liquidityCliffIndex >= 0;
-
-    if (isCliff) {
-      if (conf === 'high') return 'rgba(148, 180, 193, 0.6)';
-      if (conf === 'medium') return 'rgba(148, 180, 193, 0.4)';
-      return 'rgba(180, 180, 180, 0.3)';
-    }
-
-    if (conf === 'high') return 'rgba(84, 119, 146, 0.9)';
-    if (conf === 'medium') return 'rgba(84, 119, 146, 0.5)';
-    return 'rgba(180, 180, 180, 0.4)';
-  });
-
-  // Point styling - EXPLICIT confidence encoding
-  const pointRadii = data.map(d => {
-    const conf = getConfidence(d.count);
-    if (conf === 'high') return 10;
-    if (conf === 'medium') return 7;
-    return 4;
-  });
-
-  const pointStyles = data.map(d => {
-    const conf = getConfidence(d.count);
-    if (conf === 'high') return 'circle';
-    if (conf === 'medium') return 'circle';
-    return 'crossRot';
-  });
-
-  const pointBgColors = data.map((d, i) => {
-    const conf = getConfidence(d.count);
-    if (conf === 'high') return getFloorLevelColor(d.floor_level);
-    if (conf === 'medium') return 'rgba(255, 255, 255, 0.8)';
-    return 'rgba(180, 180, 180, 0.5)';
-  });
-
-  const pointBorderWidths = data.map(d => {
-    const conf = getConfidence(d.count);
-    if (conf === 'high') return 3;
-    if (conf === 'medium') return 2;
-    return 1;
-  });
+  // Simple volume bar colors
+  const volumeBarColor = 'rgba(84, 119, 146, 0.5)';
+  const volumeBarBorder = 'rgba(84, 119, 146, 0.8)';
 
   // Chart data
   const chartData = {
@@ -252,86 +172,59 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         type: 'bar',
         label: 'Transaction Volume',
         data: counts,
-        backgroundColor: volumeBarColors,
-        borderColor: volumeBarBorders,
-        borderWidth: 2,
+        backgroundColor: volumeBarColor,
+        borderColor: volumeBarBorder,
+        borderWidth: 1,
         yAxisID: 'yVolume',
         order: 4,
-        barPercentage: 0.85,
-        categoryPercentage: 0.9,
+        barPercentage: 0.7,
+        categoryPercentage: 0.8,
       },
-      // P75 upper bound
+      // P75 upper bound (fills down to P25)
       {
         type: 'line',
-        label: 'P75 (Upper Bound)',
+        label: 'P75 (Upper)',
         data: psf75ths,
-        borderColor: 'rgba(33, 52, 72, 0.3)',
-        backgroundColor: 'rgba(148, 180, 193, 0.25)',
-        borderWidth: 2,
-        borderDash: [4, 4],
+        borderColor: 'rgba(84, 119, 146, 0.5)',
+        backgroundColor: 'rgba(84, 119, 146, 0.15)',
+        borderWidth: 1,
         pointRadius: 0,
         fill: '+1',
         yAxisID: 'yPSF',
         order: 3,
+        tension: 0.2,
       },
       // P25 lower bound
       {
         type: 'line',
-        label: 'P25 (Lower Bound)',
+        label: 'P25 (Lower)',
         data: psf25ths,
-        borderColor: 'rgba(33, 52, 72, 0.3)',
+        borderColor: 'rgba(84, 119, 146, 0.5)',
         backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderDash: [4, 4],
+        borderWidth: 1,
         pointRadius: 0,
         fill: false,
         yAxisID: 'yPSF',
         order: 3,
+        tension: 0.2,
       },
-      // Median PSF line
+      // Median PSF line - clean and simple
       {
         type: 'line',
         label: 'Median PSF',
         data: medianPSFs,
         borderColor: '#213448',
         backgroundColor: 'transparent',
-        borderWidth: 4,
-        pointRadius: pointRadii,
-        pointStyle: pointStyles,
-        pointBackgroundColor: pointBgColors,
-        pointBorderColor: '#213448',
-        pointBorderWidth: pointBorderWidths,
-        pointHoverRadius: 12,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointBackgroundColor: '#213448',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointHoverRadius: 6,
         fill: false,
         yAxisID: 'yPSF',
         order: 1,
-        tension: 0.1,
-        segment: {
-          borderDash: ctx => {
-            const i = ctx.p0DataIndex;
-            const c1 = getConfidence(counts[i]);
-            const c2 = getConfidence(counts[i + 1]);
-            if (c1 === 'low' || c2 === 'low') return [2, 4];
-            if (c1 === 'medium' || c2 === 'medium') return [8, 4];
-            return undefined;
-          },
-          borderWidth: ctx => {
-            const i = ctx.p0DataIndex;
-            const c1 = getConfidence(counts[i]);
-            const c2 = getConfidence(counts[i + 1]);
-            if (c1 === 'low' || c2 === 'low') return 2;
-            if (c1 === 'medium' || c2 === 'medium') return 3;
-            return 4;
-          },
-          borderColor: ctx => {
-            const i = ctx.p0DataIndex;
-            const c1 = getConfidence(counts[i]);
-            const c2 = getConfidence(counts[i + 1]);
-            if (c1 === 'low' || c2 === 'low') return 'rgba(33, 52, 72, 0.3)';
-            if (c1 === 'medium' || c2 === 'medium') return 'rgba(33, 52, 72, 0.6)';
-            return '#213448';
-          },
-        },
+        tension: 0.2,
       },
     ],
   };
@@ -369,36 +262,19 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
             const d = data[i];
             const premium = premiums[i];
-            const conf = getConfidence(d.count);
             const bandWidth = (d.psf_75th || 0) - (d.psf_25th || 0);
-            const isCliff = i >= liquidityCliffIndex && liquidityCliffIndex >= 0;
 
-            const confEmoji = conf === 'high' ? '🟢' : conf === 'medium' ? '🟡' : '🔴';
-            const confText = conf === 'high' ? 'LIQUID' : conf === 'medium' ? 'THIN' : 'ILLIQUID';
-
-            const lines = [
+            return [
               '',
-              `💰 Median PSF: $${Math.round(d.median_psf_actual || d.avg_psf || 0).toLocaleString()}`,
-              `📊 Premium vs Low: ${premium >= 0 ? '+' : ''}${premium.toFixed(1)}%`,
+              `Median PSF: $${Math.round(d.median_psf_actual || d.avg_psf || 0).toLocaleString()}`,
+              `Premium vs Low: ${premium >= 0 ? '+' : ''}${premium.toFixed(1)}%`,
               '',
-              `📈 P25–P75 Range: $${Math.round(d.psf_25th || 0).toLocaleString()} – $${Math.round(d.psf_75th || 0).toLocaleString()}`,
-              `   Band Width: $${Math.round(bandWidth).toLocaleString()} ${bandWidth > 300 ? '(Wide = Risk)' : '(Tight = Consensus)'}`,
+              `P25: $${Math.round(d.psf_25th || 0).toLocaleString()}`,
+              `P75: $${Math.round(d.psf_75th || 0).toLocaleString()}`,
+              `Spread: $${Math.round(bandWidth).toLocaleString()}`,
               '',
-              `📦 Transactions: ${d.count.toLocaleString()}`,
-              `${confEmoji} Confidence: ${confText} (n=${d.count})`,
+              `Transactions: ${d.count.toLocaleString()}`,
             ];
-
-            if (isCliff) {
-              lines.push('');
-              lines.push('📉 Lower liquidity zone');
-            }
-
-            if (conf === 'low') {
-              lines.push('');
-              lines.push('○ Limited data');
-            }
-
-            return lines;
           },
         },
       },
@@ -415,12 +291,14 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
       yPSF: {
         type: 'linear',
         position: 'left',
-        min: minPSF ? Math.floor(minPSF * 0.85) : undefined,
-        max: maxPSF ? Math.ceil(maxPSF * 1.15) : undefined,
+        // Round to nice intervals (e.g., 500, 1000, 1500, 2000)
+        min: minPSF ? Math.floor(minPSF / 500) * 500 : undefined,
+        max: maxPSF ? Math.ceil(maxPSF / 500) * 500 : undefined,
         grid: { color: 'rgba(148, 180, 193, 0.15)' },
         ticks: {
           color: '#213448',
           font: { weight: 'bold' },
+          stepSize: 500,
           callback: (v) => `$${v.toLocaleString()}`,
         },
         title: {
@@ -456,8 +334,6 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
     : 0;
   const highestPremiumTier = data[premiums.indexOf(Math.max(...premiums))]?.floor_level;
   const mostLiquidTier = data[counts.indexOf(Math.max(...counts))]?.floor_level;
-  const liquidTiers = data.filter(d => getConfidence(d.count) === 'high').length;
-  const thinTiers = data.filter(d => getConfidence(d.count) === 'medium').length;
 
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
@@ -478,40 +354,21 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         </div>
       </div>
 
-      {/* Explicit Legend - IMPOSSIBLE TO MISS */}
-      <div className="px-6 py-3 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20">
+      {/* Simple Legend */}
+      <div className="px-6 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
-          {/* Confidence Legend */}
-          <div className="flex items-center gap-4">
-            <span className="font-semibold text-[#213448] uppercase tracking-wide">Confidence:</span>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-[#547792] border-2 border-[#213448]" />
-              <span className="text-[#213448] font-medium">Liquid (n≥10)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-white border-2 border-[#213448] border-dashed" />
-              <span className="text-[#547792]">Thin (5-9)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 text-[#999]">✕</div>
-              <span className="text-[#999]">Illiquid (&lt;5)</span>
-            </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-0.5 bg-[#213448]" />
+            <span className="text-[#213448] font-medium">Median PSF</span>
           </div>
-
-          {/* Band Legend */}
-          <div className="flex items-center gap-2 border-l border-[#94B4C1]/30 pl-6">
-            <div className="w-8 h-3 bg-[#94B4C1]/30 border border-[#213448]/20 border-dashed rounded" />
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-3 bg-[#547792]/15 border border-[#547792]/50 rounded" />
             <span className="text-[#547792]">P25–P75 Range</span>
-            <span className="text-[#94B4C1] ml-1">(Narrow = Consensus, Wide = Risk)</span>
           </div>
-
-          {/* Faded zone indicator */}
-          {liquidityCliffIndex >= 0 && (
-            <div className="flex items-center gap-2 border-l border-[#94B4C1]/30 pl-6">
-              <div className="w-4 h-3 bg-[#94B4C1]/20 border border-[#94B4C1]/30 rounded" />
-              <span className="text-[#94B4C1]">Lower volume zone</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-3 bg-[#547792]/50 border border-[#547792]/80 rounded" />
+            <span className="text-[#547792]">Volume</span>
+          </div>
         </div>
       </div>
 
@@ -521,12 +378,9 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
           <span className="text-xs font-semibold text-[#547792] uppercase tracking-wide shrink-0">Premium vs Low:</span>
           {data.map((d, i) => {
             const premium = premiums[i];
-            const conf = getConfidence(d.count);
-            const bgColor = conf === 'high'
-              ? (premium > 0 ? 'bg-green-100 text-green-700 border-green-300' : 'bg-gray-100 text-gray-600 border-gray-300')
-              : conf === 'medium'
-                ? 'bg-yellow-50 text-yellow-700 border-yellow-300 border-dashed'
-                : 'bg-gray-100 text-gray-400 border-gray-200';
+            const bgColor = premium > 0
+              ? 'bg-green-50 text-green-700 border-green-200'
+              : 'bg-gray-50 text-gray-600 border-gray-200';
 
             return (
               <div
@@ -554,16 +408,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <span className="text-[#94B4C1]">Total Txns:</span>
+              <span className="text-[#94B4C1]">Total Transactions:</span>
               <span className="text-[#213448] font-bold">{totalTransactions.toLocaleString()}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[#94B4C1]">Liquid Tiers:</span>
-              <span className="text-green-600 font-bold">{liquidTiers}/{data.length}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[#94B4C1]">Thin Tiers:</span>
-              <span className="text-yellow-600 font-bold">{thinTiers}/{data.length}</span>
             </div>
             <div className="flex items-center gap-1.5 border-l border-[#94B4C1]/30 pl-4">
               <span className="text-[#94B4C1]">Premium Gradient:</span>
@@ -572,20 +418,11 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[#94B4C1]">Most Liquid:</span>
+              <span className="text-[#94B4C1]">Most Active:</span>
               <span className="text-[#213448] font-bold">{mostLiquidTier}</span>
             </div>
-            {liquidityCliffIndex >= 0 && (
-              <div className="flex items-center gap-1.5 border-l border-[#94B4C1]/30 pl-4">
-                <span className="text-[#94B4C1]">Thins at:</span>
-                <span className="text-[#547792] font-medium">{data[liquidityCliffIndex]?.floor_level}</span>
-              </div>
-            )}
           </div>
           <div className="flex items-center gap-2 text-[#94B4C1]">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
             <span>Hover for details</span>
           </div>
         </div>

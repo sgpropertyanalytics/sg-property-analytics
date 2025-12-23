@@ -5,6 +5,7 @@ import { MedianPsfTrendChart } from '../components/powerbi/MedianPsfTrendChart';
 import { VolumeByLocationChart } from '../components/powerbi/VolumeByLocationChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
+import { PriceCompressionChart } from '../components/powerbi/PriceCompressionChart';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
@@ -240,6 +241,11 @@ export function MacroOverviewContent() {
                 {/* Median PSF Trend Chart - Full width, shows price trends by CCR/RCR/OCR */}
                 <div className="lg:col-span-2">
                   <MedianPsfTrendChart height={280} />
+                </div>
+
+                {/* Price Compression Analysis - Full width, shows spread between market segments */}
+                <div className="lg:col-span-2">
+                  <PriceCompressionChart height={380} />
                 </div>
 
                 {/* Volume by Location - Chart component unchanged */}

@@ -12,6 +12,7 @@
     "autoprefixer": "^10.4.23",
     "axios": "^1.6.2",
     "chart.js": "^4.4.0",
+    "chartjs-plugin-annotation": "^3.1.0",
     "clsx": "^2.1.1",
     "firebase": "^12.7.0",
     "framer-motion": "^12.23.26",
