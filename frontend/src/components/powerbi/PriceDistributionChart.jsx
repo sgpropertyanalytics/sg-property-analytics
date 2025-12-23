@@ -11,7 +11,6 @@ import {
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
-import { DrillButtons } from './DrillButtons';
 
 ChartJS.register(
   CategoryScale,
@@ -25,24 +24,26 @@ ChartJS.register(
 /**
  * Price Distribution Chart - Histogram of Transaction Prices
  *
- * X-axis: Total Price Bands ($1M-1.2M, $1.2M-1.4M, ...)
- * Y-axis: Transaction Count
+ * Best practices implemented:
+ * - Shows P5-P95 range by default (luxury tail doesn't flatten signal)
+ * - Toggle to show full range including luxury tail
+ * - Displays median + IQR statistics
+ * - NO cross-filter on click (histogram is contextual, not a filter tool)
+ * - Clear note about hidden data percentage
  *
- * Uses SERVER-SIDE histogram computation for optimal performance.
- * The /api/dashboard endpoint computes bins in SQL, returning only
- * aggregated bucket data instead of 100K+ individual transactions.
+ * This chart answers ONE question: "Where do most transactions happen?"
  */
-export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height = 300, numBins = 20 }) {
-  const { buildApiParams, crossFilter, applyCrossFilter, highlight } = usePowerBIFilters();
-  const [histogramData, setHistogramData] = useState([]);
-  const [totalCount, setTotalCount] = useState(0);
+export function PriceDistributionChart({ height = 300, numBins = 20 }) {
+  const { buildApiParams, highlight } = usePowerBIFilters();
+  const [histogramData, setHistogramData] = useState({ bins: [], stats: {}, tail: {} });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
+  const [showFullRange, setShowFullRange] = useState(false);
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
-  // Fetch server-side computed histogram (much faster than downloading all transactions)
+  // Fetch server-side computed histogram
   useEffect(() => {
     const fetchData = async () => {
       if (isInitialLoad.current) {
@@ -53,28 +54,20 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       setError(null);
       try {
         // Use dashboard endpoint with price_histogram panel
-        // Server computes bins in SQL - returns only ~20 data points instead of 100K rows
         // excludeLocationDrill: true - Price Distribution should NOT be affected by
         // location drill (Power BI best practice: Drill ≠ Filter, drill is visual-local)
         const params = buildApiParams({
-          panels: 'price_histogram,summary',
-          histogram_bins: numBins
+          panels: 'price_histogram',
+          histogram_bins: numBins,
+          show_full_range: showFullRange
         }, { excludeLocationDrill: true });
-        console.log('PriceDistribution API params:', params);
+
         const response = await getDashboard(params);
         const responseData = response.data || {};
         const data = responseData.data || {};
-        const histogram = data.price_histogram || [];
-        const summary = data.summary || {};
+        const priceHistogram = data.price_histogram || { bins: [], stats: {}, tail: {} };
 
-        console.log('PriceDistribution API response:', {
-          bins: histogram.length,
-          total_records: summary.total_count,
-          cache_hit: responseData.meta?.cache_hit
-        });
-
-        setHistogramData(histogram);
-        setTotalCount(summary.total_count || histogram.reduce((sum, b) => sum + b.count, 0));
+        setHistogramData(priceHistogram);
         isInitialLoad.current = false;
       } catch (err) {
         console.error('Error fetching price distribution data:', err);
@@ -85,10 +78,11 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
       }
     };
     fetchData();
-  }, [buildApiParams, numBins, highlight]);
+  }, [buildApiParams, numBins, highlight, showFullRange]);
 
   // Helper to format price labels (e.g., $1.2M, $800K)
-  const formatPriceLabel = (value) => {
+  const formatPrice = (value) => {
+    if (value == null) return '-';
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`;
     }
@@ -97,40 +91,26 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
 
   // Convert server histogram data to chart format
   const bucketedData = useMemo(() => {
-    if (!histogramData.length) return { buckets: [], bucketSize: 0 };
+    const bins = histogramData.bins || [];
+    if (!bins.length) return { buckets: [], bucketSize: 0 };
 
-    // Server returns: { bin, bin_start, bin_end, count }
-    const buckets = histogramData.map(h => ({
+    const buckets = bins.map(h => ({
       start: h.bin_start,
       end: h.bin_end,
-      label: `${formatPriceLabel(h.bin_start)}-${formatPriceLabel(h.bin_end)}`,
+      label: `${formatPrice(h.bin_start)}-${formatPrice(h.bin_end)}`,
       count: h.count
     }));
 
-    // Calculate bucket size from first bin
     const bucketSize = buckets.length > 0 ? (buckets[0].end - buckets[0].start) : 0;
 
     return { buckets, bucketSize };
-  }, [histogramData]);
+  }, [histogramData.bins]);
 
-  const handleClick = (event) => {
-    const chart = chartRef.current;
-    if (!chart) return;
-
-    const elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
-    if (elements.length > 0) {
-      const index = elements[0].index;
-      const clickedBucket = bucketedData.buckets[index];
-      if (clickedBucket) {
-        // Apply price range cross-filter directly via context
-        applyCrossFilter('price', 'price_range', `${clickedBucket.start}-${clickedBucket.end}`);
-      }
-    }
-  };
+  const { stats, tail } = histogramData;
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height: height + 80 }}>
         <div className="flex items-center justify-center h-full">
           <div className="text-[#547792]">Loading...</div>
         </div>
@@ -140,7 +120,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height: height + 80 }}>
         <div className="flex items-center justify-center h-full">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -150,7 +130,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
 
   if (bucketedData.buckets.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height: height + 80 }}>
         <div className="flex items-center justify-center h-full">
           <div className="text-[#547792]">No data available</div>
         </div>
@@ -162,7 +142,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
   const labels = buckets.map(b => b.label);
   const counts = buckets.map(b => b.count);
 
-  // Calculate statistics from server-computed histogram
+  // Calculate display statistics
   const displayCount = counts.reduce((sum, c) => sum + c, 0);
   const maxCount = Math.max(...counts, 0);
   const modeIndex = counts.length > 0 ? counts.indexOf(maxCount) : -1;
@@ -195,7 +175,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    onClick: handleClick,
+    // NO onClick - histogram is for context, not filtering
     plugins: {
       legend: {
         display: false,
@@ -204,7 +184,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
         callbacks: {
           title: (items) => {
             const bucket = buckets[items[0].dataIndex];
-            return `Price: ${formatPriceLabel(bucket.start)} - ${formatPriceLabel(bucket.end)}`;
+            return `Price: ${formatPrice(bucket.start)} - ${formatPrice(bucket.end)}`;
           },
           label: (context) => {
             const count = context.parsed.y;
@@ -242,6 +222,7 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
 
   return (
     <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
+      {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -250,25 +231,70 @@ export function PriceDistributionChart({ onCrossFilter, onDrillThrough, height =
               <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
             )}
           </div>
-          <DrillButtons hierarchyType="price" />
+          {/* Toggle for luxury tail */}
+          <button
+            onClick={() => setShowFullRange(!showFullRange)}
+            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              showFullRange
+                ? 'bg-[#213448] text-white border-[#213448]'
+                : 'bg-white text-[#547792] border-[#94B4C1] hover:bg-[#EAE0CF]/50'
+            }`}
+          >
+            {showFullRange ? 'Hide luxury tail' : 'Show luxury tail'}
+          </button>
         </div>
-        <div className="flex items-center justify-between mt-1">
-          <p className="text-xs text-[#547792]">
-            {formatPriceLabel(minPrice)} - {formatPriceLabel(maxPrice)} ({buckets.length} bins @ {formatPriceLabel(bucketSize)})
-          </p>
-          <div className="text-xs text-[#213448]">
-            Mode: {modeBucket?.label || 'N/A'}
-          </div>
+
+        {/* Stats row - Median + IQR */}
+        <div className="flex flex-wrap items-center gap-3 mt-2">
+          {stats?.median && (
+            <div className="bg-[#213448]/5 rounded px-2.5 py-1">
+              <span className="text-[10px] text-[#547792] uppercase tracking-wide">Median</span>
+              <div className="text-sm font-semibold text-[#213448]">{formatPrice(stats.median)}</div>
+            </div>
+          )}
+          {stats?.iqr && (
+            <div className="bg-[#213448]/5 rounded px-2.5 py-1">
+              <span className="text-[10px] text-[#547792] uppercase tracking-wide">IQR</span>
+              <div className="text-sm font-semibold text-[#213448]">{formatPrice(stats.iqr)}</div>
+            </div>
+          )}
+          {stats?.p25 && stats?.p75 && (
+            <div className="bg-[#213448]/5 rounded px-2.5 py-1">
+              <span className="text-[10px] text-[#547792] uppercase tracking-wide">Q1–Q3</span>
+              <div className="text-sm font-semibold text-[#213448]">
+                {formatPrice(stats.p25)} – {formatPrice(stats.p75)}
+              </div>
+            </div>
+          )}
+          {modeBucket && (
+            <div className="bg-[#213448]/5 rounded px-2.5 py-1">
+              <span className="text-[10px] text-[#547792] uppercase tracking-wide">Mode</span>
+              <div className="text-sm font-semibold text-[#213448]">{modeBucket.label}</div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Chart */}
       <div className="p-4" style={{ height }}>
-        <Bar ref={chartRef} data={chartData} options={options} />
+        <Bar key={showFullRange ? 'full' : 'capped'} ref={chartRef} data={chartData} options={options} />
       </div>
-      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] flex justify-between">
-        <span>
-          Total: {(totalCount || displayCount).toLocaleString()} transactions
-        </span>
-        <span>Click a bar to filter by price range</span>
+
+      {/* Footer with context info */}
+      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span>
+            {displayCount.toLocaleString()} transactions
+            {!showFullRange && tail?.pct > 0 && (
+              <span className="ml-1 text-amber-600">
+                • Top {tail.pct}% ({tail.count.toLocaleString()}) above {formatPrice(tail.threshold)} hidden
+              </span>
+            )}
+          </span>
+          <span className="text-[#94B4C1]">
+            {formatPrice(minPrice)} – {formatPrice(maxPrice)} ({buckets.length} bins)
+          </span>
+        </div>
       </div>
     </div>
   );

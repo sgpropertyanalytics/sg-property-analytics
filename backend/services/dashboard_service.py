@@ -491,15 +491,18 @@ def query_volume_by_location(filters: Dict[str, Any], options: Dict[str, Any]) -
 
 
 @log_timing("price_histogram_query")
-def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> List[Dict]:
+def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> Dict[str, Any]:
     """
     Query price distribution histogram with server-side binning.
 
-    Uses a single optimized SQL query with CTE for min/max calculation
-    and PostgreSQL's width_bucket() equivalent for efficient binning.
+    Returns histogram data capped at P95 by default for better visualization,
+    along with percentile statistics (P5, P25, P50/median, P75, P95).
+
+    Best practice: Shows P5-P95 range by default to prevent luxury tail from
+    flattening the core distribution signal. Tail data is still available.
     """
     num_bins = options.get('histogram_bins', DEFAULT_HISTOGRAM_BINS)
-    conditions = build_filter_conditions(filters)
+    show_full_range = options.get('show_full_range', False)
 
     # Build WHERE clause for raw SQL
     where_parts = []
@@ -584,10 +587,18 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
     # Base filter for outliers (always applied)
     outlier_filter = "(is_outlier = false OR is_outlier IS NULL)"
 
-    # OPTIMIZED: Two-step approach instead of window functions
-    # Step 1: Get min/max in a single fast query (uses indexes, no window functions)
-    bounds_sql = text(f"""
-        SELECT MIN(price) as min_price, MAX(price) as max_price
+    # Step 1: Get percentiles and count in a single query
+    # PostgreSQL PERCENTILE_CONT for accurate percentile calculation
+    percentile_sql = text(f"""
+        SELECT
+            COUNT(*) as total_count,
+            PERCENTILE_CONT(0.05) WITHIN GROUP (ORDER BY price) as p5,
+            PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) as p25,
+            PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY price) as median,
+            PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) as p75,
+            PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY price) as p95,
+            MIN(price) as min_price,
+            MAX(price) as max_price
         FROM transactions
         WHERE {where_clause}
           AND price IS NOT NULL
@@ -595,28 +606,70 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
           AND {outlier_filter}
     """)
 
-    bounds_result = db.session.execute(bounds_sql, params).fetchone()
+    stats_result = db.session.execute(percentile_sql, params).fetchone()
 
-    if not bounds_result or bounds_result.min_price is None:
+    if not stats_result or stats_result.total_count == 0:
         logger.warning(f"Histogram query returned no results. Filters: {filters}")
-        return []
+        return {
+            'bins': [],
+            'stats': {
+                'total_count': 0,
+                'p5': None, 'p25': None, 'median': None, 'p75': None, 'p95': None,
+                'min': None, 'max': None, 'iqr': None
+            },
+            'tail': {'count': 0, 'threshold': None, 'pct': 0}
+        }
 
-    min_price = float(bounds_result.min_price)
-    max_price = float(bounds_result.max_price)
+    total_count = stats_result.total_count
+    p5 = float(stats_result.p5)
+    p25 = float(stats_result.p25)
+    median = float(stats_result.median)
+    p75 = float(stats_result.p75)
+    p95 = float(stats_result.p95)
+    min_price = float(stats_result.min_price)
+    max_price = float(stats_result.max_price)
+    iqr = p75 - p25
+
+    # Build stats object
+    stats = {
+        'total_count': total_count,
+        'p5': round(p5, 0),
+        'p25': round(p25, 0),
+        'median': round(median, 0),
+        'p75': round(p75, 0),
+        'p95': round(p95, 0),
+        'min': round(min_price, 0),
+        'max': round(max_price, 0),
+        'iqr': round(iqr, 0)
+    }
+
+    # Determine histogram range based on show_full_range option
+    if show_full_range:
+        hist_min = min_price
+        hist_max = max_price
+    else:
+        # Default: Show P5-P95 range for clean visualization
+        hist_min = p5
+        hist_max = p95
 
     # Handle edge case: all prices are the same
-    if max_price == min_price:
-        return [{
-            'bin': 1,
-            'bin_start': round(min_price, 0),
-            'bin_end': round(max_price, 0),
-            'count': 1
-        }]
+    if hist_max == hist_min:
+        return {
+            'bins': [{
+                'bin': 1,
+                'bin_start': round(hist_min, 0),
+                'bin_end': round(hist_max, 0),
+                'count': total_count
+            }],
+            'stats': stats,
+            'tail': {'count': 0, 'threshold': round(p95, 0), 'pct': 0}
+        }
 
-    bin_width = (max_price - min_price) / num_bins
+    bin_width = (hist_max - hist_min) / num_bins
 
-    # Step 2: Compute histogram bins using pre-calculated bounds
-    params['min_price'] = min_price
+    # Step 2: Compute histogram bins within the chosen range
+    params['hist_min'] = hist_min
+    params['hist_max'] = hist_max
     params['bin_width'] = bin_width
     params['num_bins'] = num_bins
 
@@ -624,7 +677,7 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
         SELECT
             LEAST(
                 GREATEST(
-                    FLOOR((price - :min_price) / :bin_width) + 1,
+                    FLOOR((price - :hist_min) / :bin_width) + 1,
                     1
                 )::INTEGER,
                 :num_bins
@@ -634,6 +687,8 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
         WHERE {where_clause}
           AND price IS NOT NULL
           AND price > 0
+          AND price >= :hist_min
+          AND price <= :hist_max
           AND {outlier_filter}
         GROUP BY bin_num
         ORDER BY bin_num
@@ -641,23 +696,35 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> L
 
     results = db.session.execute(histogram_sql, params).fetchall()
 
-    if not results:
-        logger.warning(f"Histogram binning returned no results. Filters: {filters}")
-        return []
-
     histogram = []
+    visible_count = 0
     for r in results:
         bin_num = r.bin_num if r.bin_num else 1
-        bin_start = min_price + (bin_num - 1) * bin_width
-        bin_end = min_price + bin_num * bin_width
+        bin_start = hist_min + (bin_num - 1) * bin_width
+        bin_end = hist_min + bin_num * bin_width
         histogram.append({
             'bin': bin_num,
             'bin_start': round(bin_start, 0),
             'bin_end': round(bin_end, 0),
             'count': r.count
         })
+        visible_count += r.count
 
-    return histogram
+    # Calculate tail (transactions above P95, not shown by default)
+    tail_count = total_count - visible_count
+    tail_pct = round((tail_count / total_count) * 100, 1) if total_count > 0 else 0
+
+    tail = {
+        'count': tail_count,
+        'threshold': round(p95, 0),
+        'pct': tail_pct
+    }
+
+    return {
+        'bins': histogram,
+        'stats': stats,
+        'tail': tail
+    }
 
 
 @log_timing("bedroom_mix_query")
