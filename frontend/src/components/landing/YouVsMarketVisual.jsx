@@ -59,40 +59,40 @@ export default function YouVsMarketVisual() {
         {/* Chart area */}
         <div className="px-6 py-6">
           {/* Distribution bars */}
-          <div className="flex items-end gap-1.5 h-32 mb-4">
+          <div className="flex items-end gap-2 h-36 mb-4">
             {distribution.map((bar, index) => {
-              const height = (bar.count / maxCount) * 100;
+              const heightPx = (bar.count / maxCount) * 128; // 128px max height
               const isMedian = index === medianIndex;
               const isUser = index === userIndex;
 
               return (
-                <div key={bar.psf} className="flex-1 flex flex-col items-center">
+                <div key={bar.psf} className="flex-1 flex flex-col items-center justify-end h-full">
                   {/* User marker */}
                   {isUser && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 1, duration: 0.5 }}
-                      className="mb-2 flex flex-col items-center"
+                      className="mb-1 flex flex-col items-center"
                     >
-                      <div className="px-2 py-1 bg-[#213448] text-[#EAE0CF] text-[10px] font-bold rounded-md shadow-lg whitespace-nowrap">
+                      <div className="px-2 py-0.5 bg-[#213448] text-[#EAE0CF] text-[10px] font-bold rounded shadow-lg whitespace-nowrap">
                         YOU
                       </div>
-                      <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-[#213448]" />
+                      <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent border-t-[#213448]" />
                     </motion.div>
                   )}
 
-                  {/* Bar */}
+                  {/* Bar - use fixed pixel height for reliable animation */}
                   <motion.div
                     initial={{ height: 0 }}
-                    animate={{ height: `${height}%` }}
+                    animate={{ height: heightPx }}
                     transition={{ duration: 0.6, delay: 0.5 + index * 0.05 }}
-                    className={`w-full rounded-t-sm ${
+                    className={`w-full rounded-t ${
                       isUser
                         ? 'bg-gradient-to-t from-[#213448] to-[#547792]'
                         : isMedian
                           ? 'bg-[#547792]'
-                          : 'bg-[#94B4C1]/60'
+                          : 'bg-[#94B4C1]/70'
                     }`}
                   />
                 </div>
@@ -100,32 +100,27 @@ export default function YouVsMarketVisual() {
             })}
           </div>
 
-          {/* X-axis labels */}
-          <div className="flex gap-1.5 mb-6">
-            {distribution.map((bar, index) => (
-              <div key={bar.psf} className="flex-1 text-center">
-                <span className={`text-[9px] ${
-                  index === userIndex
-                    ? 'text-[#213448] font-bold'
-                    : index === medianIndex
-                      ? 'text-[#547792] font-medium'
-                      : 'text-[#94B4C1]'
-                }`}>
-                  {bar.label}
-                </span>
-              </div>
-            ))}
+          {/* X-axis labels - show only key values */}
+          <div className="flex justify-between mb-4 text-[10px] text-[#94B4C1]">
+            <span>$1,650</span>
+            <span className="text-[#547792] font-medium">$1,800 (median)</span>
+            <span className="text-[#213448] font-bold">$1,950 (you)</span>
+            <span>$2,000</span>
           </div>
 
-          {/* Median line label */}
-          <div className="flex items-center gap-2 mb-4">
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-4 mb-4 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-[#94B4C1]/70" />
+              <span className="text-[#94B4C1]">Other buyers</span>
+            </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm bg-[#547792]" />
-              <span className="text-xs text-[#547792]">Market Median: $1,800 PSF</span>
+              <span className="text-[#547792]">Market median</span>
             </div>
-            <div className="flex items-center gap-1.5 ml-4">
+            <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm bg-[#213448]" />
-              <span className="text-xs text-[#213448] font-medium">Your Unit: $1,950 PSF</span>
+              <span className="text-[#213448] font-medium">Your unit</span>
             </div>
           </div>
 
