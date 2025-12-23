@@ -177,8 +177,8 @@ function HeroSection({ navigate }) {
           className="text-center max-w-4xl mx-auto mb-4"
         >
           <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#213448] tracking-tight leading-[1.1]">
-            Property Pricing{' '}
-            <span className="text-[#547792]">Intelligence</span>
+            Singapore Private{' '}
+            <span className="text-[#547792]">Market Intelligence</span>
           </span>
         </motion.h1>
 
@@ -189,7 +189,7 @@ function HeroSection({ navigate }) {
           transition={{ delay: 0.15 }}
           className="text-center max-w-2xl mx-auto mb-10 text-lg md:text-xl text-[#547792] leading-relaxed"
         >
-          Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private condo transactions.
+          Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
         </motion.p>
 
         {/* CTA Buttons - Split by intent: Buyer vs Seller */}

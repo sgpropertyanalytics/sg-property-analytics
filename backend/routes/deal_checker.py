@@ -317,7 +317,7 @@ def get_nearby_transactions():
     })
 
 
-def compute_scope_stats(project_names, bedroom, buyer_price):
+def compute_scope_stats(project_names, bedroom, buyer_price, sqft=None):
     """
     Compute histogram and percentile for a set of projects.
 
@@ -325,6 +325,7 @@ def compute_scope_stats(project_names, bedroom, buyer_price):
         project_names: List of project names to include
         bedroom: Bedroom count filter
         buyer_price: Buyer's price for percentile calculation
+        sqft: Optional unit size for ±15% range filtering
 
     Returns:
         Dict with histogram, percentile, median_psf, transaction_count
@@ -340,14 +341,27 @@ def compute_scope_stats(project_names, bedroom, buyer_price):
 
     # Query transactions for these projects
     # Note: bedroom >= 5 handles "5+ BR" option from frontend
-    transactions = db.session.query(
+    query = db.session.query(
         Transaction.price,
-        Transaction.psf
+        Transaction.psf,
+        Transaction.area_sqft
     ).filter(
         or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
         Transaction.project_name.in_(project_names),
         get_bedroom_filter(bedroom)
-    ).all()
+    )
+
+    # If sqft provided, filter to ±15% range for better comparison
+    # This helps compare similar-sized units (compact vs deluxe variants)
+    if sqft:
+        sqft_min = sqft * 0.85
+        sqft_max = sqft * 1.15
+        query = query.filter(
+            Transaction.area_sqft >= sqft_min,
+            Transaction.area_sqft <= sqft_max
+        )
+
+    transactions = query.all()
 
     prices = [t.price for t in transactions if t.price]
     psfs = [t.psf for t in transactions if t.psf]
@@ -431,10 +445,10 @@ def get_multi_scope_comparison():
     if project_name not in projects_2km:
         projects_2km.insert(0, project_name)
 
-    # Compute stats for each scope
-    scope_same = compute_scope_stats(projects_same, bedroom, buyer_price)
-    scope_1km = compute_scope_stats(projects_1km, bedroom, buyer_price)
-    scope_2km = compute_scope_stats(projects_2km, bedroom, buyer_price)
+    # Compute stats for each scope (pass sqft for size-based filtering)
+    scope_same = compute_scope_stats(projects_same, bedroom, buyer_price, sqft)
+    scope_1km = compute_scope_stats(projects_1km, bedroom, buyer_price, sqft)
+    scope_2km = compute_scope_stats(projects_2km, bedroom, buyer_price, sqft)
 
     # Get transaction stats per project for map display and table
     # Includes count, median price, and median sqft
