@@ -142,8 +142,8 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: height }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-6">
           <div className="flex items-center gap-3">
             <div className="w-5 h-5 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
             <span className="text-[#547792]">Loading region comparison...</span>
@@ -155,8 +155,8 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: height }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-red-500">Error: {error}</div>
         </div>
       </div>
@@ -167,8 +167,8 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
   const hasData = Object.values(regionData).some(d => d.length > 0);
   if (!hasData) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: height }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-[#547792]">No floor level data available</div>
         </div>
       </div>
@@ -303,9 +303,9 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ minHeight: height }}>
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
         <h3 className="font-semibold text-[#213448]">Floor Premium by Market Segment</h3>
         <p className="text-xs text-[#547792] mt-0.5">
           Compare how floor premiums vary across market segments
@@ -313,12 +313,12 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
       </div>
 
       {/* Chart */}
-      <div className="p-4" style={{ height: height - 100 }}>
+      <div className="flex-1 p-4 min-h-0">
         <Chart ref={chartRef} type="line" data={chartData} options={options} />
       </div>
 
       {/* Footer Insights */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
+      <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30 shrink-0">
         <div className="flex flex-wrap items-center gap-4 text-xs">
           <span className="text-[#547792] font-medium">Peak Premium:</span>
           <div className="flex items-center gap-1.5">

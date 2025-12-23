@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { DISTRICT_NAMES } from '../../constants';
 
@@ -33,6 +33,108 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     roomSize: true,
     propertyDetails: true,
   });
+
+  // Date preset state: '3M', '12M', '2Y', '5Y', 'custom', or null (all data)
+  const [datePreset, setDatePreset] = useState(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Calculate date range for a preset relative to the latest data date
+  const calculatePresetDateRange = useCallback((preset, maxDateStr) => {
+    if (!maxDateStr) return { start: null, end: null };
+
+    const maxDate = new Date(maxDateStr);
+    let startDate;
+
+    switch (preset) {
+      case '3M':
+        startDate = new Date(maxDate);
+        startDate.setMonth(startDate.getMonth() - 3);
+        break;
+      case '12M':
+        startDate = new Date(maxDate);
+        startDate.setMonth(startDate.getMonth() - 12);
+        break;
+      case '2Y':
+        startDate = new Date(maxDate);
+        startDate.setFullYear(startDate.getFullYear() - 2);
+        break;
+      case '5Y':
+        startDate = new Date(maxDate);
+        startDate.setFullYear(startDate.getFullYear() - 5);
+        break;
+      default:
+        return { start: null, end: null };
+    }
+
+    // Format as YYYY-MM-DD
+    const formatDate = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    return {
+      start: formatDate(startDate),
+      end: maxDateStr
+    };
+  }, []);
+
+  // Initialize with 12M preset when filter options load
+  useEffect(() => {
+    if (!hasInitialized && filterOptions.dateRange.max && !filterOptions.loading) {
+      const { start, end } = calculatePresetDateRange('12M', filterOptions.dateRange.max);
+      if (start && end) {
+        setDateRange(start, end);
+        setDatePreset('12M');
+        setHasInitialized(true);
+      }
+    }
+  }, [filterOptions.dateRange.max, filterOptions.loading, hasInitialized, calculatePresetDateRange, setDateRange]);
+
+  // Handle preset button click
+  const handlePresetClick = useCallback((preset) => {
+    if (preset === datePreset) {
+      // Clicking same preset clears it (show all data)
+      setDateRange(null, null);
+      setDatePreset(null);
+    } else {
+      const { start, end } = calculatePresetDateRange(preset, filterOptions.dateRange.max);
+      if (start && end) {
+        setDateRange(start, end);
+        setDatePreset(preset);
+      }
+    }
+  }, [datePreset, filterOptions.dateRange.max, calculatePresetDateRange, setDateRange]);
+
+  // Detect custom date changes (when user manually edits)
+  const handleCustomDateChange = useCallback((start, end) => {
+    setDateRange(start, end);
+    // If either date is set, mark as custom (unless it matches a preset)
+    if (start || end) {
+      setDatePreset('custom');
+    } else {
+      setDatePreset(null);
+    }
+  }, [setDateRange]);
+
+  // Wrap resetFilters to also reset local datePreset state and re-initialize to 12M
+  const handleResetFilters = useCallback(() => {
+    resetFilters();
+    // Re-apply 12M default after reset
+    if (filterOptions.dateRange.max) {
+      const { start, end } = calculatePresetDateRange('12M', filterOptions.dateRange.max);
+      if (start && end) {
+        // Use setTimeout to ensure resetFilters completes first
+        setTimeout(() => {
+          setDateRange(start, end);
+          setDatePreset('12M');
+        }, 0);
+      }
+    }
+    setShowAdvanced(false);
+  }, [resetFilters, filterOptions.dateRange.max, calculatePresetDateRange, setDateRange]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -78,7 +180,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
         {activeFilterCount > 0 && (
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); resetFilters(); }}
+            onClick={(e) => { e.preventDefault(); handleResetFilters(); }}
             className="text-xs text-[#547792] hover:text-[#213448] px-2 py-1 rounded hover:bg-[#94B4C1]/30 transition-colors"
           >
             Clear all
@@ -258,40 +360,94 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           onToggle={() => toggleSection('date')}
           activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
         >
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 w-10">From</span>
-              <input
-                type="month"
-                value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
-                onChange={(e) => setDateRange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
-                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
-                max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 w-10">To</span>
-              <input
-                type="month"
-                value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    // Get last day of the selected month (e.g., Sep has 30, Feb has 28/29)
-                    // month from input is 1-based (01-12), day 0 trick gives last day of that month
-                    const [year, month] = e.target.value.split('-');
-                    const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-                    setDateRange(filters.dateRange.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
-                  } else {
-                    setDateRange(filters.dateRange.start, null);
-                  }
-                }}
-                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
-                max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
-              />
-            </div>
+          {/* Preset Buttons - Primary interaction */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {['3M', '12M', '2Y', '5Y'].map(preset => (
+              <button
+                type="button"
+                key={preset}
+                onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
+                className={`min-h-[40px] py-2 text-sm rounded-md border transition-colors ${
+                  datePreset === preset
+                    ? 'bg-[#547792] text-white border-[#547792]'
+                    : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
+                }`}
+              >
+                {preset}
+              </button>
+            ))}
           </div>
+
+          {/* Custom indicator when manually edited */}
+          {datePreset === 'custom' && (
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs text-[#547792] font-medium">Custom range selected</span>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); handlePresetClick('12M'); }}
+                className="text-xs text-[#547792] hover:text-[#213448] underline"
+              >
+                Reset to 12M
+              </button>
+            </div>
+          )}
+
+          {/* Advanced toggle for custom date inputs */}
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); setShowAdvanced(!showAdvanced); }}
+            className="flex items-center gap-1 mt-3 text-xs text-[#547792] hover:text-[#213448] transition-colors"
+          >
+            <span>Custom dates</span>
+            <svg
+              className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Custom date inputs (Advanced) */}
+          {showAdvanced && (
+            <div className="space-y-2 mt-2 pt-2 border-t border-[#94B4C1]/30">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 w-10">From</span>
+                <input
+                  type="month"
+                  value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
+                  onChange={(e) => handleCustomDateChange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
+                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
+                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 w-10">To</span>
+                <input
+                  type="month"
+                  value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      // Get last day of the selected month (e.g., Sep has 30, Feb has 28/29)
+                      // month from input is 1-based (01-12), day 0 trick gives last day of that month
+                      const [year, month] = e.target.value.split('-');
+                      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+                      handleCustomDateChange(filters.dateRange.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
+                    } else {
+                      handleCustomDateChange(filters.dateRange.start, null);
+                    }
+                  }}
+                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
+                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Data range info */}
           {filterOptions.dateRange.min && filterOptions.dateRange.max && (
             <div className="text-[10px] text-slate-500 mt-2 italic">
               Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
@@ -391,7 +547,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
       <div className="px-4 py-3 border-t border-[#94B4C1] bg-[#EAE0CF]">
         <button
           type="button"
-          onClick={(e) => { e.preventDefault(); resetFilters(); }}
+          onClick={(e) => { e.preventDefault(); handleResetFilters(); }}
           disabled={activeFilterCount === 0}
           className={`w-full min-h-[44px] py-2.5 text-sm rounded-md transition-colors ${
             activeFilterCount > 0

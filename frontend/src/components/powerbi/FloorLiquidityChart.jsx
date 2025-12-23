@@ -115,8 +115,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: height }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-6">
           <div className="flex items-center gap-3">
             <div className="w-5 h-5 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
             <span className="text-[#547792]">Loading floor analysis...</span>
@@ -128,8 +128,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: height }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-red-500">Error: {error}</div>
         </div>
       </div>
@@ -138,8 +138,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: height }}>
-        <div className="flex items-center justify-center h-full">
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+        <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-[#547792]">No floor level data available for current filters</div>
         </div>
       </div>
@@ -336,9 +336,9 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   const mostLiquidTier = data[counts.indexOf(Math.max(...counts))]?.floor_level;
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
+    <div className={`bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`} style={{ minHeight: height }}>
       {/* Header */}
-      <div className="px-6 py-4 border-b border-[#94B4C1]/30">
+      <div className="px-6 py-4 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-3">
@@ -355,7 +355,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
       </div>
 
       {/* Simple Legend */}
-      <div className="px-6 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20">
+      <div className="px-6 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20 shrink-0">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
           <div className="flex items-center gap-2">
             <div className="w-4 h-0.5 bg-[#213448]" />
@@ -373,7 +373,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
       </div>
 
       {/* Premium Pills Row */}
-      <div className="px-6 py-2 border-b border-[#94B4C1]/20 bg-[#213448]/5">
+      <div className="px-6 py-2 border-b border-[#94B4C1]/20 bg-[#213448]/5 shrink-0">
         <div className="flex items-center gap-2 overflow-x-auto">
           <span className="text-xs font-semibold text-[#547792] uppercase tracking-wide shrink-0">Premium vs Low:</span>
           {data.map((d, i) => {
@@ -399,12 +399,12 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
 
       {/* Chart */}
-      <div className="p-4" style={{ height: height - 200 }}>
+      <div className="flex-1 p-4 min-h-0">
         <Chart ref={chartRef} type="bar" data={chartData} options={options} />
       </div>
 
       {/* Footer Stats */}
-      <div className="px-6 py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30">
+      <div className="px-6 py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 shrink-0">
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-1.5">

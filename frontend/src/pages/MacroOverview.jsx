@@ -16,6 +16,8 @@ import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
 import { KPICard, PageSummaryBox } from '../components/ui';
+// Responsive chart height hook
+import { useChartHeight, CHART_HEIGHT_PRESETS } from '../hooks';
 
 /**
  * Macro Overview Page - Power BI-style Dashboard (Market Pulse)
