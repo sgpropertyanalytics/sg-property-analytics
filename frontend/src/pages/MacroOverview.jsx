@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
+import { MedianPsfTrendChart } from '../components/powerbi/MedianPsfTrendChart';
 import { VolumeByLocationChart } from '../components/powerbi/VolumeByLocationChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
@@ -234,6 +235,11 @@ export function MacroOverviewContent() {
                     onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
                     height={280}
                   />
+                </div>
+
+                {/* Median PSF Trend Chart - Full width, shows price trends by CCR/RCR/OCR */}
+                <div className="lg:col-span-2">
+                  <MedianPsfTrendChart height={280} />
                 </div>
 
                 {/* Volume by Location - Chart component unchanged */}
