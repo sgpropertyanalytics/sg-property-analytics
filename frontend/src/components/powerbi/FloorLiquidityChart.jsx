@@ -180,13 +180,22 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   const minPSF = Math.min(...psf25ths.filter(v => v !== null));
   const totalTransactions = counts.reduce((a, b) => a + b, 0);
 
-  // Volume bar colors - EXPLICIT confidence encoding
+  // Volume bar colors - Gradient shading based on confidence + position
+  // Beyond cliff: subtle fade rather than alarm colors
   const volumeBarColors = data.map((d, i) => {
     const conf = getConfidence(d.count);
     const isCliff = i >= liquidityCliffIndex && liquidityCliffIndex >= 0;
 
-    if (conf === 'high') return isCliff ? 'rgba(220, 38, 38, 0.4)' : 'rgba(84, 119, 146, 0.6)';
-    if (conf === 'medium') return isCliff ? 'rgba(220, 38, 38, 0.25)' : 'rgba(84, 119, 146, 0.3)';
+    // Beyond cliff: use muted/faded tones
+    if (isCliff) {
+      if (conf === 'high') return 'rgba(148, 180, 193, 0.4)';   // Faded sky blue
+      if (conf === 'medium') return 'rgba(148, 180, 193, 0.25)';
+      return 'rgba(180, 180, 180, 0.15)';
+    }
+
+    // Normal: standard confidence coloring
+    if (conf === 'high') return 'rgba(84, 119, 146, 0.6)';
+    if (conf === 'medium') return 'rgba(84, 119, 146, 0.3)';
     return 'rgba(180, 180, 180, 0.2)';
   });
 
@@ -194,8 +203,14 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
     const conf = getConfidence(d.count);
     const isCliff = i >= liquidityCliffIndex && liquidityCliffIndex >= 0;
 
-    if (conf === 'high') return isCliff ? 'rgba(220, 38, 38, 0.8)' : 'rgba(84, 119, 146, 0.9)';
-    if (conf === 'medium') return isCliff ? 'rgba(220, 38, 38, 0.5)' : 'rgba(84, 119, 146, 0.5)';
+    if (isCliff) {
+      if (conf === 'high') return 'rgba(148, 180, 193, 0.6)';
+      if (conf === 'medium') return 'rgba(148, 180, 193, 0.4)';
+      return 'rgba(180, 180, 180, 0.3)';
+    }
+
+    if (conf === 'high') return 'rgba(84, 119, 146, 0.9)';
+    if (conf === 'medium') return 'rgba(84, 119, 146, 0.5)';
     return 'rgba(180, 180, 180, 0.4)';
   });
 
@@ -375,15 +390,12 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
             if (isCliff) {
               lines.push('');
-              lines.push('⚠️ LIQUIDITY CLIFF');
-              lines.push('   Prices beyond here are aspirational,');
-              lines.push('   not market-clearing.');
+              lines.push('📉 Lower liquidity zone');
             }
 
             if (conf === 'low') {
               lines.push('');
-              lines.push('❌ Weak price signal');
-              lines.push('   Insufficient data to trust');
+              lines.push('○ Limited data');
             }
 
             return lines;
@@ -492,6 +504,14 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
             <span className="text-[#547792]">P25–P75 Range</span>
             <span className="text-[#94B4C1] ml-1">(Narrow = Consensus, Wide = Risk)</span>
           </div>
+
+          {/* Faded zone indicator */}
+          {liquidityCliffIndex >= 0 && (
+            <div className="flex items-center gap-2 border-l border-[#94B4C1]/30 pl-6">
+              <div className="w-4 h-3 bg-[#94B4C1]/20 border border-[#94B4C1]/30 rounded" />
+              <span className="text-[#94B4C1]">Lower volume zone</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -523,25 +543,9 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         </div>
       </div>
 
-      {/* Liquidity Cliff Warning */}
-      {liquidityCliffIndex >= 0 && (
-        <div className="px-6 py-2 bg-red-50 border-b border-red-200">
-          <div className="flex items-center gap-2 text-red-700">
-            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span className="text-sm font-medium">
-              Liquidity Cliff at <span className="font-bold">{data[liquidityCliffIndex]?.floor_level}</span>
-            </span>
-            <span className="text-xs text-red-600">
-              — Volume drops {Math.round((1 - counts[liquidityCliffIndex] / counts[liquidityCliffIndex - 1]) * 100)}%. Prices beyond are aspirational, not market-clearing.
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Chart */}
-      <div className="p-4" style={{ height: height - 220 }}>
+      <div className="p-4" style={{ height: height - 200 }}>
         <Chart ref={chartRef} type="bar" data={chartData} options={options} />
       </div>
 
@@ -571,6 +575,12 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
               <span className="text-[#94B4C1]">Most Liquid:</span>
               <span className="text-[#213448] font-bold">{mostLiquidTier}</span>
             </div>
+            {liquidityCliffIndex >= 0 && (
+              <div className="flex items-center gap-1.5 border-l border-[#94B4C1]/30 pl-4">
+                <span className="text-[#94B4C1]">Thins at:</span>
+                <span className="text-[#547792] font-medium">{data[liquidityCliffIndex]?.floor_level}</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 text-[#94B4C1]">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
