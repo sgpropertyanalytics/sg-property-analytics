@@ -1,6 +1,5 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import {
   ArrowRight,
   BarChart3,
@@ -138,45 +137,13 @@ const LandingPage = () => {
 };
 
 /**
- * Hero Section - "The Insider" Design
- * Problem/Solution structure with typewriter animation
+ * Hero Section - Outcome-driven design
+ * Addresses buyer fear: "Am I overpaying?"
  */
 function HeroSection({ navigate }) {
   const { scrollY } = useScroll();
   const floatingCardY = useTransform(scrollY, [0, 500], [0, -60]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0]);
-
-  // Typewriter animation state
-  const words = ["Data.", "Trends.", "Value.", "Insights."];
-  const [displayText, setDisplayText] = useState("");
-  const [wordIndex, setWordIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const currentWord = words[wordIndex];
-
-    const timeout = setTimeout(() => {
-      if (!isDeleting) {
-        // Typing
-        if (displayText.length < currentWord.length) {
-          setDisplayText(currentWord.slice(0, displayText.length + 1));
-        } else {
-          // Pause before deleting
-          setTimeout(() => setIsDeleting(true), 2000);
-        }
-      } else {
-        // Deleting
-        if (displayText.length > 0) {
-          setDisplayText(displayText.slice(0, -1));
-        } else {
-          setIsDeleting(false);
-          setWordIndex((prev) => (prev + 1) % words.length);
-        }
-      }
-    }, isDeleting ? 50 : displayText.length === currentWord.length ? 2000 : 100);
-
-    return () => clearTimeout(timeout);
-  }, [displayText, isDeleting, wordIndex, words]);
 
   return (
     // Paper layering effect for dashboard to pop
@@ -202,63 +169,55 @@ function HeroSection({ navigate }) {
           </div>
         </motion.div>
 
-        {/* Headline - Problem/Solution contrast */}
+        {/* Headline - Outcome-driven, addresses buyer fear */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-center max-w-4xl mx-auto mb-6"
+          className="text-center max-w-4xl mx-auto mb-4"
         >
-          {/* The "Old Way" - Lighter color, medium weight */}
-          <span className="block text-3xl md:text-5xl font-medium text-[#547792] mb-2 md:mb-4">
-            Stop Looking at Listings.
-          </span>
-
-          {/* The "New Way" - Darkest color, boldest weight */}
-          <span className="block text-4xl md:text-6xl font-extrabold text-[#213448] tracking-tight">
-            Start Looking at{' '}
-            <span className="border-b-4 border-[#94B4C1]/50">
-              {displayText}
-              <span className="inline-block w-[2px] h-[0.9em] bg-[#94B4C1] ml-0.5 animate-pulse align-middle"></span>
-            </span>
+          <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#213448] tracking-tight leading-[1.1]">
+            Know If You're{' '}
+            <span className="text-[#547792]">Overpaying.</span>
           </span>
         </motion.h1>
 
-        {/* Subtext - with visual highlights */}
+        {/* Trust anchor - prominent, differentiating */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.15 }}
           className="text-center max-w-2xl mx-auto mb-10 text-lg md:text-xl text-[#547792] leading-relaxed"
         >
-          Uncover the hidden value in the{' '}
-          <strong className="text-[#213448] font-semibold">Singapore Private Condo</strong>{' '}
-          market. We consolidated{' '}
-          <span className="text-[#213448] font-bold border-b-2 border-[#94B4C1]/50 border-dotted cursor-help" title="View Data Sources">
-            100k+ raw data records
-          </span>{' '}
-          into one clear path to your next asset.
+          Based on{' '}
+          <span className="text-[#213448] font-bold">100,000+ real transactions</span>
+          {' '}— not agent listings, not asking prices.
         </motion.p>
 
-        {/* CTA Buttons - Upgraded styling */}
+        {/* CTA Buttons - Split by intent: Buyer vs Seller */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.2 }}
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
+          {/* Buyer CTA - Primary */}
           <button
             onClick={() => navigate('/market-pulse')}
-            className="px-8 py-4 rounded-lg bg-[#213448] text-[#EAE0CF] font-semibold shadow-lg shadow-[#213448]/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+            className="group px-8 py-4 rounded-lg bg-[#213448] text-[#EAE0CF] font-semibold shadow-lg shadow-[#213448]/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
           >
-            Unlock Market Data
-            <ArrowRight className="w-4 h-4" />
+            <span className="text-lg">🔍</span>
+            <span>Check If I'm Overpaying</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
+
+          {/* Seller CTA - Secondary */}
           <button
-            onClick={() => navigate('/analytics-view')}
-            className="px-8 py-4 rounded-lg bg-white border border-[#94B4C1] text-[#547792] font-semibold hover:bg-[#EAE0CF]/50 transition-colors flex items-center justify-center gap-2 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+            onClick={() => navigate('/value-parity')}
+            className="group px-8 py-4 rounded-lg bg-white border border-[#94B4C1] text-[#547792] font-semibold hover:bg-[#EAE0CF]/50 hover:border-[#547792] transition-all flex items-center justify-center gap-3 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
           >
-            View Analytics Demo
+            <span className="text-lg">📈</span>
+            <span>Find My Exit Price</span>
           </button>
         </motion.div>
       </motion.div>
