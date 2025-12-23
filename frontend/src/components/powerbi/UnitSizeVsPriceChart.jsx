@@ -10,7 +10,6 @@ import { Scatter } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import apiClient from '../../api/client';
 import { formatPrice, getBedroomLabelShort } from '../../constants';
-import { KeyInsightBox } from '../ui';
 
 ChartJS.register(
   LinearScale,
@@ -189,7 +188,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
           color: '#547792',
           font: { size: 10 },
           callback: (value) => formatPrice(value),
-          maxTicksLimit: 8,
+          stepSize: 500000, // $0.5M intervals
         },
         grid: {
           color: 'rgba(148, 180, 193, 0.2)',
@@ -223,7 +222,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   // Loading state
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50" style={{ height: height + 120 }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50" style={{ height: height + 80 }}>
         <div className="p-4 border-b border-[#94B4C1]/30">
           <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
         </div>
@@ -237,7 +236,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   // Error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50" style={{ height: height + 120 }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50" style={{ height: height + 80 }}>
         <div className="p-4 border-b border-[#94B4C1]/30">
           <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
         </div>
@@ -264,16 +263,6 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
           </div>
         </div>
       </div>
-
-      {/* How to Interpret - Static explanations */}
-      <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-          <div><span className="font-semibold text-[#213448]">X-Axis</span> — Your budget (transaction price).</div>
-          <div><span className="font-semibold text-[#213448]">Y-Axis</span> — What you get (unit size in sqft).</div>
-          <div><span className="font-semibold text-[#213448]">Colors</span> — Bedroom types cluster in bands.</div>
-          <div><span className="font-semibold text-[#213448]">Density</span> — More dots = popular price point.</div>
-        </div>
-      </KeyInsightBox>
 
       {/* Chart */}
       <div className="p-4" style={{ height }}>
