@@ -31,7 +31,7 @@ import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
 const PAGE_CONFIG = {
   'market-pulse': { showFilterSidebar: true },
   'value-parity': { showFilterSidebar: false },
-  'analytics-view': { showFilterSidebar: false },
+  'floor-dispersion': { showFilterSidebar: false },
   'insights': { showFilterSidebar: false },
 };
 
@@ -45,7 +45,7 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
       return 'market-pulse';
     }
     if (pathname.startsWith('/value-parity')) return 'value-parity';
-    if (pathname.startsWith('/analytics-view')) return 'analytics-view';
+    if (pathname.startsWith('/floor-dispersion')) return 'floor-dispersion';
     if (pathname.startsWith('/insights')) return 'insights';
     return 'market-pulse';
   };

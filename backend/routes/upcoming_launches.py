@@ -45,7 +45,7 @@ def get_all():
 
     market_segment = request.args.get("market_segment")
     district = request.args.get("district")
-    launch_year = request.args.get("launch_year", "2026")
+    launch_year = request.args.get("launch_year")  # Optional - shows all years if not specified
     needs_review = request.args.get("needs_review", "").lower() == "true"
     limit = int(request.args.get("limit", 100))
     sort_by = request.args.get("sort", "project_name")
@@ -57,6 +57,10 @@ def get_all():
         # Apply filters
         if launch_year:
             query = query.filter(UpcomingLaunch.launch_year == int(launch_year))
+
+        # Order by launch_year first if not filtered by year
+        if not launch_year:
+            query = query.order_by(UpcomingLaunch.launch_year)
 
         if market_segment:
             query = query.filter(UpcomingLaunch.market_segment == market_segment.upper())

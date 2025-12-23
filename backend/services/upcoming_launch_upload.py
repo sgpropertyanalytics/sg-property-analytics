@@ -7,7 +7,7 @@ Usage:
     from services.upcoming_launch_upload import upload_upcoming_launches
 
     stats = upload_upcoming_launches(
-        file_path='data/upcoming_launches_2026.csv',
+        file_path='data/upcoming_launches.csv',
         db_session=db.session,
         dry_run=False
     )
@@ -38,6 +38,7 @@ REQUIRED_COLUMNS = [
 OPTIONAL_COLUMNS = [
     'psf_max',
     'launch_date',
+    'launch_year',  # Can be extracted from launch_date if not provided
     'top_date',
     'address',
     'planning_area',
@@ -198,7 +199,7 @@ def upload_upcoming_launches(
     db_session=None,
     dry_run: bool = False,
     reset: bool = False,
-    year: int = 2026
+    year: int = None
 ) -> Dict[str, Any]:
     """
     Upload upcoming launches from CSV file into database.
@@ -207,8 +208,8 @@ def upload_upcoming_launches(
         file_path: Path to CSV file
         db_session: SQLAlchemy session
         dry_run: If True, validate only without saving
-        reset: If True, delete existing records for the year first
-        year: Launch year (default 2026)
+        reset: If True, delete existing records (for specified year or all if year=None)
+        year: Launch year filter for reset (optional, deletes all if None)
 
     Returns:
         Upload statistics and any errors
@@ -277,20 +278,22 @@ def upload_upcoming_launches(
 
     # Reset existing data if requested
     if reset:
-        deleted = db_session.query(UpcomingLaunch).filter(
-            UpcomingLaunch.launch_year == year
-        ).delete()
+        if year:
+            deleted = db_session.query(UpcomingLaunch).filter(
+                UpcomingLaunch.launch_year == year
+            ).delete()
+            print(f"\nDeleted {deleted} existing records for {year}")
+        else:
+            deleted = db_session.query(UpcomingLaunch).delete()
+            print(f"\nDeleted {deleted} existing records (all years)")
         db_session.commit()
-        print(f"\nDeleted {deleted} existing records for {year}")
 
     # Upload valid rows
     print("\nUploading data...")
-    existing_names = {
-        r[0].lower(): r[1] for r in
-        db_session.query(UpcomingLaunch.project_name, UpcomingLaunch.id).filter(
-            UpcomingLaunch.launch_year == year
-        ).all()
-    }
+    existing_query = db_session.query(UpcomingLaunch.project_name, UpcomingLaunch.id)
+    if year:
+        existing_query = existing_query.filter(UpcomingLaunch.launch_year == year)
+    existing_names = {r[0].lower(): r[1] for r in existing_query.all()}
 
     for i, row in enumerate(rows, start=2):
         row_errors = validate_row(row, i)
@@ -335,13 +338,27 @@ def upload_upcoming_launches(
     return stats
 
 
-def _create_from_csv(row: Dict[str, Any], year: int):
+def _create_from_csv(row: Dict[str, Any], default_year: int = None):
     """Create an UpcomingLaunch record from CSV row."""
     from models.upcoming_launch import UpcomingLaunch
 
     district = str(row['district']).strip().upper()
     if not district.startswith('D'):
         district = f"D{district.zfill(2)}"
+
+    # Determine launch_year from row data or default
+    launch_year = None
+    if row.get('launch_year'):
+        launch_year = int(row['launch_year'])
+    elif row.get('launch_date'):
+        # Extract year from launch_date (expects YYYY-MM-DD or similar)
+        try:
+            date_str = str(row['launch_date']).strip()
+            launch_year = int(date_str[:4])
+        except (ValueError, IndexError):
+            pass
+    if not launch_year:
+        launch_year = default_year
 
     return UpcomingLaunch(
         project_name=str(row['project_name']).strip(),
@@ -354,7 +371,7 @@ def _create_from_csv(row: Dict[str, Any], year: int):
         indicative_psf_low=float(row.get('psf_min', 0)) or None,
         indicative_psf_high=float(row.get('psf_max') or row.get('psf_min', 0)) or None,
         tenure=str(row.get('tenure', '')).strip() or None,
-        launch_year=year,
+        launch_year=launch_year,
         property_type='Condominium',
         land_bid_psf=float(row.get('land_bid_psf', 0)) or None if row.get('land_bid_psf') else None,
         data_source=str(row.get('source', '')).strip(),
