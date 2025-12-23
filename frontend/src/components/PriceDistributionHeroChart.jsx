@@ -268,6 +268,7 @@ function formatPriceShort(value) {
  * @param {Function} [props.onBinClick] - Callback when a histogram bin is clicked
  * @param {Object} [props.selectedPriceRange] - Currently selected price range filter
  * @param {Object} [props.scopeToggle] - Optional scope toggle configuration for deal checker
+ * @param {Array} [props.precomputedBins] - Pre-computed bins from backend (skips client-side binning)
  */
 export function PriceDistributionHeroChart({
   buyerPrice,
@@ -277,21 +278,60 @@ export function PriceDistributionHeroChart({
   activeFilters = {},
   onBinClick,
   selectedPriceRange,
-  scopeToggle
+  scopeToggle,
+  precomputedBins
 }) {
   const chartRef = useRef(null);
 
-  // Compute percentile statistics
-  const stats = useMemo(() =>
-    computePricePercentile(buyerPrice, transactions),
-    [buyerPrice, transactions]
-  );
+  // Use precomputed bins if provided, otherwise compute from transactions
+  const bins = useMemo(() => {
+    if (precomputedBins && precomputedBins.length > 0) {
+      // Add labels to precomputed bins if missing
+      return precomputedBins.map(bin => ({
+        ...bin,
+        label: bin.label || formatPriceShort(bin.start)
+      }));
+    }
+    return createHistogramBins(transactions, HISTOGRAM_BINS);
+  }, [precomputedBins, transactions]);
 
-  // Create histogram bins
-  const bins = useMemo(() =>
-    createHistogramBins(transactions, HISTOGRAM_BINS),
-    [transactions]
-  );
+  // Compute total count from bins (for precomputed) or transactions
+  const totalCount = useMemo(() => {
+    if (precomputedBins && precomputedBins.length > 0) {
+      return precomputedBins.reduce((sum, bin) => sum + bin.count, 0);
+    }
+    return transactions.length;
+  }, [precomputedBins, transactions]);
+
+  // Compute percentile statistics
+  const stats = useMemo(() => {
+    if (precomputedBins && precomputedBins.length > 0) {
+      // Estimate percentile from bins for precomputed data
+      let below = 0;
+      let above = 0;
+      for (const bin of precomputedBins) {
+        const binMid = (bin.start + bin.end) / 2;
+        if (binMid < buyerPrice) below += bin.count;
+        else if (binMid > buyerPrice) above += bin.count;
+        else {
+          // Price is in this bin - split count
+          below += Math.floor(bin.count / 2);
+          above += Math.ceil(bin.count / 2);
+        }
+      }
+      const total = below + above;
+      const percentile = total > 0 ? Math.round((above / total) * 100) : 0;
+      return {
+        percentile,
+        higherCount: above,
+        totalCount: total,
+        isLimitedData: total < MIN_COMPARABLE_TRANSACTIONS,
+        isOutsideRange: false,
+        position: 'within'
+      };
+    }
+    return computePricePercentile(buyerPrice, transactions);
+  }, [buyerPrice, transactions, precomputedBins]);
 
   // Find which bin the buyer price falls into (for highlighting)
   const buyerBinIndex = useMemo(() => {
@@ -397,8 +437,8 @@ export function PriceDistributionHeroChart({
           },
           label: (context) => {
             const count = context.parsed.y;
-            const pct = stats.totalCount > 0
-              ? ((count / stats.totalCount) * 100).toFixed(1)
+            const pct = totalCount > 0
+              ? ((count / totalCount) * 100).toFixed(1)
               : 0;
             const lines = [
               `Transactions: ${count.toLocaleString()}`,
@@ -464,7 +504,7 @@ export function PriceDistributionHeroChart({
         }
       },
     },
-  }), [bins, stats.totalCount, buyerPrice, onBinClick]);
+  }), [bins, totalCount, buyerPrice, onBinClick]);
 
   // Loading state
   if (loading) {
@@ -484,7 +524,7 @@ export function PriceDistributionHeroChart({
   }
 
   // No data state
-  if (!transactions || transactions.length === 0 || !chartData) {
+  if (totalCount === 0 || !chartData) {
     return (
       <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
         <div className="px-4 py-3 border-b border-[#94B4C1]/30">
@@ -571,7 +611,7 @@ export function PriceDistributionHeroChart({
             <p className="text-xs text-[#547792] mt-0.5">
               {scopeToggle
                 ? `${scopeToggle.transactionCount.toLocaleString()} comparable transactions`
-                : `How your target price compares to ${stats.totalCount.toLocaleString()} comparable transactions`
+                : `How your target price compares to ${totalCount.toLocaleString()} comparable transactions`
               }
             </p>
             <p className="text-xs text-[#547792]/70 mt-0.5">
