@@ -390,14 +390,9 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                           title={hasData ? `${zone}: ${districtZone.count} of ${districtTotal} transactions (${percentage.toFixed(1)}%)` : `${zone}: No data`}
                         >
                           {hasData ? (
-                            <div className="flex flex-col items-center leading-tight">
-                              <span className="text-[11px] font-mono text-[#213448]">
-                                {districtZone.count}
-                              </span>
-                              <span className="text-[9px] text-[#547792]">
-                                {percentage.toFixed(0)}%
-                              </span>
-                            </div>
+                            <span className="text-[11px] font-mono text-[#213448]">
+                              {districtZone.count}
+                            </span>
                           ) : (
                             <span className="text-xs text-gray-300">—</span>
                           )}
