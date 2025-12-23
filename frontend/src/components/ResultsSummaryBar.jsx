@@ -37,49 +37,51 @@ export function ResultsSummaryBar({
   );
 
   return (
-    <div className="sticky top-0 z-30 bg-gradient-to-r from-[#213448] to-[#547792] rounded-lg px-4 py-3 text-white shadow-lg">
+    <div className="sticky top-0 z-30 bg-gradient-to-r from-[#213448] to-[#547792] rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-white shadow-lg">
       {/* Budget message */}
-      <p className="text-sm mb-2 text-white/90">
-        Based on your target price of <span className="font-semibold text-white">{formatBudget(budget)}</span> <span className="text-white/70">(+/- $100K)</span>, here are the properties you can buy:
+      <p className="text-xs sm:text-sm mb-2 text-white/90">
+        Based on your target price of <span className="font-semibold text-white">{formatBudget(budget)}</span> <span className="text-white/70">(+/- $100K)</span>:
       </p>
 
-      {/* Stats row - compact */}
-      <div className="flex items-center flex-wrap gap-3">
+      {/* Stats row - responsive grid on mobile, flex on desktop */}
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-4">
         {/* New Launches */}
         <button
           onClick={onJumpToNewLaunches}
           disabled={loading}
-          className="flex items-center gap-1.5 hover:bg-white/10 rounded px-2 py-1 -mx-2 transition-colors disabled:opacity-70"
+          className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1.5 hover:bg-white/10 active:bg-white/20 rounded px-1 py-1 transition-colors disabled:opacity-70"
         >
-          <span className="text-lg">🏗️</span>
-          <span className="text-xs text-white/70">New Launches</span>
-          {loading ? <LoadingSpinner /> : <span className="text-base font-bold">{hotProjectsCount}</span>}
+          <span className="text-base sm:text-lg">🏗️</span>
+          <span className="text-[10px] sm:text-xs text-white/70 leading-tight">New</span>
+          {loading ? <LoadingSpinner /> : <span className="text-sm sm:text-base font-bold">{hotProjectsCount}</span>}
         </button>
 
-        <div className="border-l border-white/30 h-5" />
+        {/* Divider - hidden on mobile */}
+        <div className="hidden sm:block border-l border-white/30 h-5" />
 
         {/* Young Resale */}
         <button
           onClick={onJumpToYoungResale}
           disabled={loading}
-          className="flex items-center gap-1.5 hover:bg-white/10 rounded px-2 py-1 -mx-2 transition-colors disabled:opacity-70"
+          className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1.5 hover:bg-white/10 active:bg-white/20 rounded px-1 py-1 transition-colors disabled:opacity-70"
         >
-          <span className="text-lg">🏠</span>
-          <span className="text-xs text-white/70">Young Resale</span>
-          {loading ? <LoadingSpinner /> : <span className="text-base font-bold">{youngResaleCount.toLocaleString()}</span>}
+          <span className="text-base sm:text-lg">🏠</span>
+          <span className="text-[10px] sm:text-xs text-white/70 leading-tight">Young</span>
+          {loading ? <LoadingSpinner /> : <span className="text-sm sm:text-base font-bold">{youngResaleCount.toLocaleString()}</span>}
         </button>
 
-        <div className="border-l border-white/30 h-5" />
+        {/* Divider - hidden on mobile */}
+        <div className="hidden sm:block border-l border-white/30 h-5" />
 
         {/* Resale Market */}
         <button
           onClick={onJumpToResaleMarket}
           disabled={loading}
-          className="flex items-center gap-1.5 hover:bg-white/10 rounded px-2 py-1 -mx-2 transition-colors disabled:opacity-70"
+          className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1.5 hover:bg-white/10 active:bg-white/20 rounded px-1 py-1 transition-colors disabled:opacity-70"
         >
-          <span className="text-lg">🏘️</span>
-          <span className="text-xs text-white/70">Resale Market</span>
-          {loading ? <LoadingSpinner /> : <span className="text-base font-bold">{resaleMarketCount.toLocaleString()}</span>}
+          <span className="text-base sm:text-lg">🏘️</span>
+          <span className="text-[10px] sm:text-xs text-white/70 leading-tight">Resale</span>
+          {loading ? <LoadingSpinner /> : <span className="text-sm sm:text-base font-bold">{resaleMarketCount.toLocaleString()}</span>}
         </button>
       </div>
     </div>
