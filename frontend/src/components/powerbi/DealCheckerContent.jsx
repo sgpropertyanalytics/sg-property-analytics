@@ -197,7 +197,8 @@ export default function DealCheckerContent() {
   return (
     <div className="space-y-6">
       {/* Input Form Card - Prominent Design */}
-      <div className="bg-gradient-to-r from-[#213448] to-[#547792] rounded-xl shadow-lg overflow-hidden">
+      {/* IMPORTANT: Do NOT add overflow-hidden here - it clips the project dropdown */}
+      <div className="bg-gradient-to-r from-[#213448] to-[#547792] rounded-xl shadow-lg">
         <form onSubmit={handleCheck} className="p-4 md:p-5">
           {/* All inputs in a single responsive row */}
           <div className="flex flex-col lg:flex-row gap-3 items-end">
