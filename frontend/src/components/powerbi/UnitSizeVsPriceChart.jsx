@@ -248,7 +248,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   }
 
   return (
-    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 ${updating ? 'opacity-70' : ''}`}>
+    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden ${updating ? 'opacity-70' : ''}`}>
       {/* Header */}
       <div className="p-4 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between">
