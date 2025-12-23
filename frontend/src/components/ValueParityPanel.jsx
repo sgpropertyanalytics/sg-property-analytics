@@ -690,14 +690,17 @@ export function ValueParityPanel() {
         </form>
       </div>
 
-      {/* Results Summary Bar - only show after data has loaded */}
-      {hasSearched && !loading && (
+      {/* Results Summary Bar - shows immediately with loading state */}
+      {hasSearched && (
         <ResultsSummaryBar
           budget={budget}
+          loading={loading || resaleMarketLoading}
           hotProjectsCount={hotProjectsCount}
           youngResaleCount={pagination.totalRecords}
+          resaleMarketCount={resaleMarketPagination.totalRecords}
           onJumpToNewLaunches={() => newLaunchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          onJumpToResale={() => resaleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          onJumpToYoungResale={() => resaleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          onJumpToResaleMarket={() => resaleMarketRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
         />
       )}
 
