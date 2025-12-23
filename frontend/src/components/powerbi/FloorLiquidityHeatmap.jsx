@@ -357,25 +357,31 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                     </td>
                     {floorZones.map((zone) => {
                       const districtZone = projectsByDistrict.districtAggregates[district]?.zones?.[zone];
+                      const districtTotal = projectsByDistrict.districtAggregates[district]?.totalTxns || 1;
                       const hasData = districtZone && districtZone.count > 0;
+                      const percentage = hasData ? (districtZone.count / districtTotal * 100) : 0;
+                      // Color intensity based on percentage (higher % = darker)
+                      const intensity = Math.min(percentage / 40, 1); // 40% = max intensity
                       const bgColor = hasData
-                        ? getLiquidityColor(districtZone.z_score, districtZone.count)
+                        ? `rgba(84, 119, 146, ${0.15 + intensity * 0.45})`
                         : LIQUIDITY_COLORS.insufficient;
-                      const textColor = hasData && districtZone.z_score >= 0.25
-                        ? 'text-white'
-                        : 'text-gray-700';
 
                       return (
                         <td
                           key={zone}
-                          className="text-center px-1 py-1.5 font-semibold"
+                          className="text-center px-1 py-1 font-semibold"
                           style={{ backgroundColor: bgColor }}
-                          title={hasData ? `${zone}: ${districtZone.count} transactions (${districtZone.velocity.toFixed(1)}/mo)` : `${zone}: No data`}
+                          title={hasData ? `${zone}: ${districtZone.count} of ${districtTotal} transactions (${percentage.toFixed(1)}%)` : `${zone}: No data`}
                         >
                           {hasData ? (
-                            <span className={`text-xs font-mono ${textColor}`}>
-                              {districtZone.z_score > 0 ? '+' : ''}{districtZone.z_score.toFixed(2)}
-                            </span>
+                            <div className="flex flex-col items-center leading-tight">
+                              <span className="text-[11px] font-mono text-[#213448]">
+                                {districtZone.count}
+                              </span>
+                              <span className="text-[9px] text-[#547792]">
+                                {percentage.toFixed(0)}%
+                              </span>
+                            </div>
                           ) : (
                             <span className="text-xs text-gray-300">—</span>
                           )}
