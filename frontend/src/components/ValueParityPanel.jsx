@@ -357,103 +357,53 @@ export function ValueParityPanel() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Tab Navigation - Creative Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Affordability Tab */}
+      {/* Tab Navigation - Segmented Toggle */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Explore Budget Tab */}
         <button
           onClick={() => setActiveTab('budget')}
-          className={`group relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-300 ${
+          className={`relative p-6 rounded-xl border text-left transition-all duration-200 ease-in-out flex items-start gap-4 group ${
             activeTab === 'budget'
-              ? 'bg-gradient-to-br from-[#213448] to-[#547792] shadow-xl scale-[1.02]'
-              : 'bg-white border-2 border-[#94B4C1]/40 hover:border-[#547792] hover:shadow-lg'
+              ? 'bg-[#213448] border-[#213448] shadow-lg'
+              : 'bg-white border-[#94B4C1]/50 hover:border-[#547792] hover:bg-[#EAE0CF]/10'
           }`}
         >
-          {/* Decorative circles for active state */}
-          {activeTab === 'budget' && (
-            <>
-              <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
-              <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-white/5 rounded-full" />
-            </>
-          )}
-          <div className="relative flex items-start gap-4">
-            {/* Icon with background */}
-            <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all ${
-              activeTab === 'budget'
-                ? 'bg-white/20'
-                : 'bg-[#EAE0CF]/50 group-hover:bg-[#EAE0CF]'
-            }`}>
-              💰
-            </div>
-            {/* Text content */}
-            <div className="flex-1 min-w-0">
-              <div className={`text-lg font-bold transition-colors ${
-                activeTab === 'budget' ? 'text-white' : 'text-[#213448]'
-              }`}>
-                Affordability
-              </div>
-              <div className={`text-sm mt-1 transition-colors ${
-                activeTab === 'budget' ? 'text-white/80' : 'text-[#547792]'
-              }`}>
-                What can I buy with my budget?
-              </div>
-            </div>
-            {/* Active indicator */}
-            {activeTab === 'budget' && (
-              <div className="absolute top-0 right-0 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-            )}
+          <div className={`p-3 rounded-lg ${activeTab === 'budget' ? 'bg-white/10' : 'bg-[#EAE0CF]/30'}`}>
+            <svg className={`w-6 h-6 ${activeTab === 'budget' ? 'text-[#EAE0CF]' : 'text-[#547792]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className={`font-bold text-lg mb-1 ${activeTab === 'budget' ? 'text-white' : 'text-[#213448]'}`}>
+              Explore Budget
+            </h3>
+            <p className={`text-sm ${activeTab === 'budget' ? 'text-[#94B4C1]' : 'text-[#547792]'}`}>
+              I am looking to buy a property
+            </p>
           </div>
         </button>
 
-        {/* Valuation Tab */}
+        {/* Evaluate Deal Tab */}
         <button
           onClick={() => setActiveTab('deal-checker')}
-          className={`group relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-300 ${
+          className={`relative p-6 rounded-xl border text-left transition-all duration-200 ease-in-out flex items-start gap-4 group ${
             activeTab === 'deal-checker'
-              ? 'bg-gradient-to-br from-[#213448] to-[#547792] shadow-xl scale-[1.02]'
-              : 'bg-white border-2 border-[#94B4C1]/40 hover:border-[#547792] hover:shadow-lg'
+              ? 'bg-[#213448] border-[#213448] shadow-lg'
+              : 'bg-white border-[#94B4C1]/50 hover:border-[#547792] hover:bg-[#EAE0CF]/10'
           }`}
         >
-          {/* Decorative circles for active state */}
-          {activeTab === 'deal-checker' && (
-            <>
-              <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
-              <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-white/5 rounded-full" />
-            </>
-          )}
-          <div className="relative flex items-start gap-4">
-            {/* Icon with background */}
-            <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all ${
-              activeTab === 'deal-checker'
-                ? 'bg-white/20'
-                : 'bg-[#EAE0CF]/50 group-hover:bg-[#EAE0CF]'
-            }`}>
-              ⚖️
-            </div>
-            {/* Text content */}
-            <div className="flex-1 min-w-0">
-              <div className={`text-lg font-bold transition-colors ${
-                activeTab === 'deal-checker' ? 'text-white' : 'text-[#213448]'
-              }`}>
-                Valuation
-              </div>
-              <div className={`text-sm mt-1 transition-colors ${
-                activeTab === 'deal-checker' ? 'text-white/80' : 'text-[#547792]'
-              }`}>
-                Am I paying a fair price?
-              </div>
-            </div>
-            {/* Active indicator */}
-            {activeTab === 'deal-checker' && (
-              <div className="absolute top-0 right-0 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-            )}
+          <div className={`p-3 rounded-lg ${activeTab === 'deal-checker' ? 'bg-white/10' : 'bg-[#EAE0CF]/30'}`}>
+            <svg className={`w-6 h-6 ${activeTab === 'deal-checker' ? 'text-[#EAE0CF]' : 'text-[#547792]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+          <div>
+            <h3 className={`font-bold text-lg mb-1 ${activeTab === 'deal-checker' ? 'text-white' : 'text-[#213448]'}`}>
+              Evaluate Deal
+            </h3>
+            <p className={`text-sm ${activeTab === 'deal-checker' ? 'text-[#94B4C1]' : 'text-[#547792]'}`}>
+              I have a specific project in mind
+            </p>
           </div>
         </button>
       </div>
@@ -594,7 +544,7 @@ export function ValueParityPanel() {
                     <select
                       value={bedroom}
                       onChange={(e) => setBedroom(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
                       <option value="1">1BR</option>
@@ -614,7 +564,7 @@ export function ValueParityPanel() {
                         setRegion(e.target.value);
                         setDistrict('');
                       }}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
                       <option value="CCR">CCR</option>
@@ -629,7 +579,7 @@ export function ValueParityPanel() {
                     <select
                       value={district}
                       onChange={(e) => setDistrict(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                       disabled={filterOptions.loading}
                     >
                       <option value="">All</option>
@@ -645,7 +595,7 @@ export function ValueParityPanel() {
                     <select
                       value={tenure}
                       onChange={(e) => setTenure(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
                       <option value="Freehold">Freehold</option>
@@ -660,7 +610,7 @@ export function ValueParityPanel() {
                     <select
                       value={saleType}
                       onChange={(e) => setSaleType(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
                       <option value="New Sale">New Sale</option>
@@ -674,7 +624,7 @@ export function ValueParityPanel() {
                     <select
                       value={leaseAge}
                       onChange={(e) => setLeaseAge(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
                       <option value="0-5">New / Recently TOP (≤5 yrs)</option>

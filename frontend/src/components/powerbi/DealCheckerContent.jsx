@@ -219,7 +219,7 @@ export default function DealCheckerContent() {
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={projectOptionsLoading}
-                  className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded text-left bg-white focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent flex items-center justify-between"
+                  className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded text-left bg-[#EAE0CF]/20 focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent flex items-center justify-between"
                 >
                   <span className={projectName ? 'text-[#213448] truncate' : 'text-[#94B4C1]'}>
                     {projectName
@@ -290,7 +290,7 @@ export default function DealCheckerContent() {
               <select
                 value={bedroom}
                 onChange={(e) => setBedroom(e.target.value)}
-                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white"
+                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
               >
                 <option value="">All</option>
                 <option value="1">1 BR</option>
@@ -311,7 +311,7 @@ export default function DealCheckerContent() {
                 value={sqft}
                 onChange={handleSqftChange}
                 placeholder="1,200"
-                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white placeholder-[#94B4C1]"
+                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20 placeholder-[#94B4C1]"
               />
             </div>
 
@@ -325,7 +325,7 @@ export default function DealCheckerContent() {
                 value={price}
                 onChange={handlePriceChange}
                 placeholder="2,500,000"
-                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-white placeholder-[#94B4C1]"
+                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20 placeholder-[#94B4C1]"
               />
             </div>
           </div>
