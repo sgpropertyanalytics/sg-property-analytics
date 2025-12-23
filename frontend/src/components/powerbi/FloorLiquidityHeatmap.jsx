@@ -179,16 +179,16 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
 
       {/* Table Container - Dynamic height based on project count */}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full border-collapse text-xs">
           <thead className="sticky top-0 bg-white z-10">
             <tr>
-              <th className="sticky left-0 bg-[#EAE0CF]/50 text-left px-4 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[200px]">
+              <th className="sticky left-0 bg-[#EAE0CF]/50 text-left px-3 py-1 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[180px]">
                 Project
               </th>
               {floorZones.map((zone) => (
                 <th
                   key={zone}
-                  className="bg-[#EAE0CF]/50 text-center px-3 py-2 font-medium text-[#547792] border-b border-[#94B4C1]/30 min-w-[80px]"
+                  className="bg-[#EAE0CF]/50 text-center px-2 py-1 font-medium text-[#547792] border-b border-[#94B4C1]/30 min-w-[60px]"
                 >
                   {zone}
                 </th>
@@ -198,15 +198,13 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
           <tbody>
             {data.projects.map((project, idx) => (
               <tr key={project.project_name} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'}>
-                {/* Project Name (sticky) */}
-                <td className={`sticky left-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-4 py-2 font-medium text-[#213448] border-r border-[#94B4C1]/30 truncate`}>
-                  <div className="max-w-[200px] truncate" title={project.project_name}>
-                    {project.project_name}
-                  </div>
-                  <div className="text-xs text-[#94B4C1]">{project.district} • {project.total_transactions} transactions</div>
+                {/* Project Name (sticky) - Compact single line */}
+                <td className={`sticky left-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-3 py-1 text-xs font-medium text-[#213448] border-r border-[#94B4C1]/30`}>
+                  <span className="truncate" title={project.project_name}>{project.project_name}</span>
+                  <span className="text-[#94B4C1] ml-1">({project.district})</span>
                 </td>
 
-                {/* Floor Zone Cells */}
+                {/* Floor Zone Cells - Compact */}
                 {floorZones.map((zone) => {
                   const zoneData = project.floor_zones[zone];
                   const hasData = zoneData && zoneData.count > 0;
@@ -221,7 +219,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                   return (
                     <td
                       key={zone}
-                      className="text-center px-2 py-3 cursor-pointer transition-all duration-100 hover:ring-2 hover:ring-[#213448] hover:ring-inset"
+                      className="text-center px-1 py-1 cursor-pointer transition-all duration-100 hover:ring-2 hover:ring-[#213448] hover:ring-inset"
                       style={{
                         backgroundColor: bgColor,
                         opacity: isInsufficient ? 0.6 : 1
