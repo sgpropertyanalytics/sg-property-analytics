@@ -2312,3 +2312,141 @@ def get_project_inventory(project_name):
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+@analytics_bp.route("/scatter-sample", methods=["GET"])
+def scatter_sample():
+    """
+    Get a random sample of transactions for scatter plot visualization.
+
+    Returns sampled points for Unit Size vs Price chart (memory-safe).
+    Uses SQL TABLESAMPLE for efficient random sampling.
+
+    Query params:
+      Filters (same as other endpoints):
+        - date_from, date_to: date range
+        - district: comma-separated districts
+        - bedroom: comma-separated bedroom counts
+        - segment: CCR, RCR, OCR
+        - sale_type: 'New Sale' or 'Resale'
+        - psf_min, psf_max: PSF range
+        - size_min, size_max: sqft range
+
+      Options:
+        - sample_size: max points to return (default: 2000, max: 5000)
+
+    Returns:
+      {
+        "data": [
+          {"price": 1500000, "area_sqft": 850, "bedroom": 2, "district": "D15"},
+          ...
+        ],
+        "meta": {
+          "sample_size": 2000,
+          "total_count": 45000,
+          "elapsed_ms": 123.4
+        }
+      }
+    """
+    start = time.time()
+
+    from models.transaction import Transaction
+    from models.database import db
+    from sqlalchemy import func, or_, text
+    from constants import CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS
+
+    try:
+        # Parse sample size
+        sample_size = min(int(request.args.get('sample_size', 2000)), 5000)
+
+        # Build base query with outlier exclusion
+        query = db.session.query(
+            Transaction.price,
+            Transaction.area_sqft,
+            Transaction.bedroom_count,
+            Transaction.district
+        ).filter(
+            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+        )
+
+        # Apply filters
+        # Date range
+        if request.args.get('date_from'):
+            query = query.filter(Transaction.transaction_date >= request.args.get('date_from'))
+        if request.args.get('date_to'):
+            query = query.filter(Transaction.transaction_date <= request.args.get('date_to'))
+
+        # District filter
+        if request.args.get('district'):
+            districts = [d.strip() for d in request.args.get('district').split(',') if d.strip()]
+            if districts:
+                query = query.filter(Transaction.district.in_(districts))
+
+        # Segment filter (CCR/RCR/OCR)
+        if request.args.get('segment'):
+            segment = request.args.get('segment').upper()
+            if segment == 'CCR':
+                query = query.filter(Transaction.district.in_(CCR_DISTRICTS))
+            elif segment == 'RCR':
+                query = query.filter(Transaction.district.in_(RCR_DISTRICTS))
+            elif segment == 'OCR':
+                query = query.filter(Transaction.district.in_(OCR_DISTRICTS))
+
+        # Bedroom filter
+        if request.args.get('bedroom'):
+            bedrooms = [int(b.strip()) for b in request.args.get('bedroom').split(',') if b.strip()]
+            if bedrooms:
+                query = query.filter(Transaction.bedroom_count.in_(bedrooms))
+
+        # Sale type filter
+        if request.args.get('sale_type'):
+            query = query.filter(Transaction.sale_type == request.args.get('sale_type'))
+
+        # PSF range
+        if request.args.get('psf_min'):
+            query = query.filter(Transaction.psf >= float(request.args.get('psf_min')))
+        if request.args.get('psf_max'):
+            query = query.filter(Transaction.psf <= float(request.args.get('psf_max')))
+
+        # Size range
+        if request.args.get('size_min'):
+            query = query.filter(Transaction.area_sqft >= float(request.args.get('size_min')))
+        if request.args.get('size_max'):
+            query = query.filter(Transaction.area_sqft <= float(request.args.get('size_max')))
+
+        # Get total count first (for meta)
+        total_count = query.count()
+
+        # Random sample using ORDER BY RANDOM() LIMIT n
+        # This is PostgreSQL-compatible and memory-safe
+        sampled = query.order_by(func.random()).limit(sample_size).all()
+
+        # Format response
+        data = [
+            {
+                "price": row.price,
+                "area_sqft": row.area_sqft,
+                "bedroom": row.bedroom_count,
+                "district": row.district
+            }
+            for row in sampled
+        ]
+
+        elapsed = time.time() - start
+        print(f"GET /api/scatter-sample returned {len(data)} points in {elapsed:.4f}s")
+
+        return jsonify({
+            "data": data,
+            "meta": {
+                "sample_size": len(data),
+                "total_count": total_count,
+                "elapsed_ms": round(elapsed * 1000, 2)
+            }
+        })
+
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/scatter-sample ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500

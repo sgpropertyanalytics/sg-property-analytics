@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { MedianPsfTrendChart } from '../components/powerbi/MedianPsfTrendChart';
-import { VolumeByLocationChart } from '../components/powerbi/VolumeByLocationChart';
+import { UnitSizeVsPriceChart } from '../components/powerbi/UnitSizeVsPriceChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { PriceCompressionChart } from '../components/powerbi/PriceCompressionChart';
@@ -251,12 +251,8 @@ export function MacroOverviewContent() {
                   <MedianPsfTrendChart height={280} />
                 </div>
 
-                {/* Volume by Location - Chart component unchanged */}
-                <VolumeByLocationChart
-                  onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
-                  height={350}
-                  maxBars={12}
-                />
+                {/* Unit Size vs Price - Scatter chart showing value trade-offs */}
+                <UnitSizeVsPriceChart height={350} />
 
                 {/* Price Distribution - Chart component unchanged */}
                 <PriceDistributionChart
