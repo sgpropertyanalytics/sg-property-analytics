@@ -103,7 +103,10 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
       return txnsB - txnsA; // Descending order
     });
 
-    return { grouped, sortedDistricts, districtAggregates };
+    // Calculate max volume for bar scaling
+    const maxVolume = Math.max(...Object.values(districtAggregates).map(d => d.totalTxns || 0), 1);
+
+    return { grouped, sortedDistricts, districtAggregates, maxVolume };
   }, [data.projects, windowMonths]);
 
   // Toggle district expansion
@@ -319,6 +322,9 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                   {zone}
                 </th>
               ))}
+              <th className="bg-[#EAE0CF]/50 text-center px-2 py-1 font-medium text-[#547792] border-b border-l border-[#94B4C1]/30 min-w-[80px]">
+                Volume
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -364,6 +370,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                           key={zone}
                           className="text-center px-1 py-1.5 font-semibold"
                           style={{ backgroundColor: bgColor }}
+                          title={hasData ? `${zone}: ${districtZone.count} transactions (${districtZone.velocity.toFixed(1)}/mo)` : `${zone}: No data`}
                         >
                           {hasData ? (
                             <span className={`text-xs font-mono ${textColor}`}>
@@ -375,6 +382,20 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                         </td>
                       );
                     })}
+                    {/* Volume Bar */}
+                    <td className="px-2 py-1.5 border-l border-[#94B4C1]/30">
+                      <div className="flex items-center gap-1">
+                        <div className="flex-1 h-3 bg-gray-100 rounded overflow-hidden">
+                          <div
+                            className="h-full bg-[#547792] rounded"
+                            style={{ width: `${(projectsByDistrict.districtAggregates[district]?.totalTxns || 0) / projectsByDistrict.maxVolume * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-[#547792] font-mono w-8 text-right">
+                          {projectsByDistrict.districtAggregates[district]?.totalTxns || 0}
+                        </span>
+                      </div>
+                    </td>
                   </tr>
 
                   {/* Project Rows - Show when expanded */}
@@ -405,6 +426,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                               backgroundColor: bgColor,
                               opacity: isInsufficient ? 0.6 : 1
                             }}
+                            title={hasData ? `${zone}: ${zoneData.count} txns (${zoneData.velocity.toFixed(1)}/mo)` : `${zone}: No data`}
                             onMouseEnter={(e) => handleCellHover(e, project, zone, zoneData)}
                             onMouseLeave={handleCellLeave}
                           >
@@ -422,6 +444,12 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
                           </td>
                         );
                       })}
+                      {/* Project Volume */}
+                      <td className="px-2 py-1 border-l border-[#94B4C1]/30 text-center">
+                        <span className="text-[10px] text-[#94B4C1] font-mono">
+                          {project.total_transactions}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </React.Fragment>

@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion';
-import { TrendingDown, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Activity } from 'lucide-react';
 
 /**
  * "You vs Market" Hero Visual
  * Shows a price distribution with user position marker
  * Demonstrates the core value prop: "Are you overpaying?"
  */
-export default function YouVsMarketVisual() {
+export default function YouVsMarketVisual({ compact = false }) {
   // Simulated price distribution data (PSF values)
   const distribution = [
     { psf: 1650, count: 2, label: '$1,650' },
@@ -23,33 +23,46 @@ export default function YouVsMarketVisual() {
   const medianIndex = 3; // $1,800 is median
   const userIndex = 6; // User is at $1,950 (above median)
   const userPremium = 8; // 8% above median
+  const transactionCount = 45;
+  const isHighLiquidity = transactionCount >= 30;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.3 }}
-      className="w-full max-w-2xl mx-auto"
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.6, delay: 0.4 }}
+      className={compact ? "w-full max-w-md" : "w-full max-w-2xl mx-auto"}
     >
       {/* Card container */}
-      <div className="relative bg-white rounded-2xl shadow-2xl shadow-[#213448]/15 border border-[#94B4C1]/30 overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl shadow-[#213448]/20 border border-[#94B4C1]/30 overflow-hidden">
 
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-[#94B4C1]/20 bg-[#FDFBF7]">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-[#94B4C1] uppercase tracking-wider font-semibold mb-1">
-                Price Analysis
+        {/* Header with Liquidity Badge */}
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#94B4C1]/20 bg-[#FDFBF7]">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs text-[#94B4C1] uppercase tracking-wider font-semibold">
+                  Price Analysis
+                </span>
+                {/* Liquidity Badge */}
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  isHighLiquidity
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-amber-100 text-amber-700'
+                }`}>
+                  <Activity className="w-3 h-3" />
+                  {isHighLiquidity ? 'High Liquidity' : 'Thin Market'}
+                </span>
               </div>
-              <div className="text-lg font-bold text-[#213448]">
+              <div className="text-base sm:text-lg font-bold text-[#213448] truncate">
                 The Continuum, D15
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-xs text-[#94B4C1] uppercase tracking-wider font-semibold mb-1">
+            <div className="text-right flex-shrink-0">
+              <div className="text-[10px] sm:text-xs text-[#94B4C1] uppercase tracking-wider font-semibold mb-1">
                 Unit Type
               </div>
-              <div className="text-sm font-medium text-[#547792]">
+              <div className="text-xs sm:text-sm font-medium text-[#547792]">
                 3BR • 1,100 sqft
               </div>
             </div>
