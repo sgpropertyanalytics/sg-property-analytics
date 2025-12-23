@@ -145,9 +145,26 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
 
   if (collapsed) {
     return (
-      <div className="w-12 bg-[#EAE0CF] border-r border-[#94B4C1]/30 flex flex-col items-center py-4 h-full">
+      <div
+        id="filters-panel"
+        className="w-12 bg-[#EAE0CF] border-r border-[#94B4C1]/30 flex flex-col items-center h-full"
+      >
+        {/* Expand button */}
+        <button
+          type="button"
+          onClick={onToggle}
+          className="w-full h-11 flex items-center justify-center hover:bg-[#94B4C1]/30 transition-colors border-b border-[#94B4C1]/30"
+          aria-label="Expand filters"
+          aria-expanded="false"
+          aria-controls="filters-panel"
+          title="Expand filters"
+        >
+          <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
         {/* Filter icon */}
-        <div className="p-2">
+        <div className="p-2 mt-2">
           <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
@@ -162,9 +179,12 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
   }
 
   return (
-    <div className="w-full sm:w-72 bg-[#EAE0CF] border-r border-[#94B4C1]/30 flex flex-col h-full overflow-hidden">
-      {/* Header - Sand/Cream background with Navy text */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between bg-[#EAE0CF]">
+    <div
+      id="filters-panel"
+      className="w-full sm:w-72 bg-[#EAE0CF] border-r border-[#94B4C1]/30 flex flex-col h-full overflow-hidden"
+    >
+      {/* Header - Sticky so collapse control is always reachable */}
+      <div className="sticky top-0 z-10 px-3 py-2 border-b border-[#94B4C1]/30 flex items-center justify-between bg-[#EAE0CF]">
         <div className="flex items-center gap-2">
           <svg className="w-5 h-5 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -176,16 +196,32 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
             </span>
           )}
         </div>
-        {/* Clear all button - only show when filters are active */}
-        {activeFilterCount > 0 && (
+        <div className="flex items-center gap-1">
+          {/* Clear all button - only show when filters are active */}
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); handleResetFilters(); }}
+              className="text-xs text-[#547792] hover:text-[#213448] px-2 py-1 rounded hover:bg-[#94B4C1]/30 transition-colors"
+            >
+              Clear all
+            </button>
+          )}
+          {/* Collapse button */}
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); handleResetFilters(); }}
-            className="text-xs text-[#547792] hover:text-[#213448] px-2 py-1 rounded hover:bg-[#94B4C1]/30 transition-colors"
+            onClick={onToggle}
+            className="w-10 h-10 flex items-center justify-center rounded hover:bg-[#94B4C1]/30 transition-colors"
+            aria-label="Collapse filters"
+            aria-expanded="true"
+            aria-controls="filters-panel"
+            title="Collapse filters"
           >
-            Clear all
+            <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
-        )}
+        </div>
       </div>
 
       {/* Cross-filter indicator */}

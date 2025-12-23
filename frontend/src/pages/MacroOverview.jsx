@@ -16,8 +16,8 @@ import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
 import { KPICard, PageSummaryBox } from '../components/ui';
-// Responsive chart height hook
-import { useChartHeight, CHART_HEIGHT_PRESETS } from '../hooks';
+// Desktop-first chart height with mobile guardrail
+import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
 /**
  * Macro Overview Page - Power BI-style Dashboard (Market Pulse)
@@ -49,6 +49,13 @@ export function MacroOverviewContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalFilters, setModalFilters] = useState({});
+
+  // Desktop-first chart heights with mobile guardrails
+  // Desktop: exact pixels | Mobile (<768px): capped to prevent viewport domination
+  const trendChartHeight = useChartHeight(280, MOBILE_CAPS.compact);      // 280px desktop, max 260px mobile
+  const standardChartHeight = useChartHeight(350, MOBILE_CAPS.standard);  // 350px desktop, max 300px mobile
+  const compressionHeight = useChartHeight(380, MOBILE_CAPS.tall);        // 380px desktop, max 320px mobile
+  const tableHeight = useChartHeight(400, MOBILE_CAPS.tall);              // 400px desktop, max 320px mobile
 
   // Summary KPIs - Last 30 days snapshot (ignores sidebar filters for market overview)
   const [kpis, setKpis] = useState({
@@ -244,48 +251,48 @@ export function MacroOverviewContent() {
                   {/* Chart component - DO NOT MODIFY PROPS (ui-freeze) */}
                   <TimeTrendChart
                     onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
-                    height={280}
+                    height={trendChartHeight}
                   />
                 </div>
 
                 {/* Median PSF Trend Chart - Full width, shows price trends by CCR/RCR/OCR */}
                 <div className="lg:col-span-2">
-                  <MedianPsfTrendChart height={280} />
+                  <MedianPsfTrendChart height={trendChartHeight} />
                 </div>
 
                 {/* Unit Size vs Price - Scatter chart showing value trade-offs */}
-                <UnitSizeVsPriceChart height={350} />
+                <UnitSizeVsPriceChart height={standardChartHeight} />
 
                 {/* Price Distribution - Chart component unchanged */}
                 <PriceDistributionChart
                   onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
-                  height={350}
+                  height={standardChartHeight}
                 />
 
                 {/* New Launch vs Resale Comparison - Full width */}
                 <div className="lg:col-span-2">
-                  <NewVsResaleChart height={350} />
+                  <NewVsResaleChart height={standardChartHeight} />
                 </div>
 
                 {/* Price Compression Analysis - Full width, shows spread between market segments */}
                 <div className="lg:col-span-2">
-                  <PriceCompressionChart height={380} />
+                  <PriceCompressionChart height={compressionHeight} />
                 </div>
               </div>
 
               {/* GLS Data Table - Government Land Sales */}
               <div className="mb-4 md:mb-6">
-                <GLSDataTable height={350} />
+                <GLSDataTable height={standardChartHeight} />
               </div>
 
               {/* Upcoming Launches Table - Pre-launch projects (not yet launched) */}
               <div className="mb-4 md:mb-6">
-                <UpcomingLaunchesTable height={350} />
+                <UpcomingLaunchesTable height={standardChartHeight} />
               </div>
 
               {/* Transaction Data Table - Component unchanged */}
               <div className="mb-4 md:mb-6">
-                <TransactionDataTable height={400} />
+                <TransactionDataTable height={tableHeight} />
               </div>
           </div>
         </div>
