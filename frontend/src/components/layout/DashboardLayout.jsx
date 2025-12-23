@@ -106,37 +106,12 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
         )}
 
         {/* ===== FILTER SIDEBAR (Secondary Sidebar - Market Pulse Only) ===== */}
-        {/* Desktop: Visible with collapse handle | Mobile: Drawer */}
-        {showFilterSidebar && (
-          <div className="hidden lg:flex flex-shrink-0 relative">
-            {/* Filter Sidebar */}
-            <div
-              className={`
-                transition-all duration-200 ease-out
-                ${filterSidebarCollapsed ? 'w-12' : 'w-72'}
-              `}
-            >
-              <PowerBIFilterSidebar
-                collapsed={filterSidebarCollapsed}
-                onToggle={() => setFilterSidebarCollapsed(!filterSidebarCollapsed)}
-              />
-            </div>
-
-            {/* Collapse Handle - Chevron at border (Sand/Cream styling) */}
-            <button
-              onClick={() => setFilterSidebarCollapsed(!filterSidebarCollapsed)}
-              className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-[#EAE0CF] border border-[#94B4C1]/30 rounded-r-lg shadow-sm flex items-center justify-center hover:bg-[#94B4C1]/30 transition-colors"
-              aria-label={filterSidebarCollapsed ? 'Expand filters' : 'Collapse filters'}
-            >
-              <svg
-                className={`w-4 h-4 text-[#547792] transition-transform duration-200 ${filterSidebarCollapsed ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+        {/* Desktop: Drawer pattern - fully hidden when collapsed | Mobile: Drawer */}
+        {showFilterSidebar && !filterSidebarCollapsed && (
+          <div className="hidden lg:block flex-shrink-0 w-72">
+            <PowerBIFilterSidebar
+              onToggle={() => setFilterSidebarCollapsed(true)}
+            />
           </div>
         )}
 
@@ -206,8 +181,22 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto relative">
             {children}
+
+            {/* Floating Filters Button - Desktop only, when sidebar is collapsed */}
+            {showFilterSidebar && filterSidebarCollapsed && (
+              <button
+                onClick={() => setFilterSidebarCollapsed(false)}
+                className="hidden lg:flex fixed top-4 left-20 z-30 items-center gap-2 px-3 py-2 bg-[#213448] text-white rounded-lg shadow-lg hover:bg-[#547792] transition-colors"
+                aria-label="Open filters"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                <span className="text-sm font-medium">Filters</span>
+              </button>
+            )}
           </main>
         </div>
       </div>
