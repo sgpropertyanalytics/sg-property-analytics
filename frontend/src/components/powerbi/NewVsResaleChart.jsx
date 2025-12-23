@@ -13,9 +13,11 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { getNewVsResale } from '../../api/client';
-import { DrillButtons } from './DrillButtons';
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
+import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { KeyInsightBox } from '../ui';
+
+// Time level labels for display
+const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
 ChartJS.register(
   CategoryScale,
@@ -46,8 +48,8 @@ ChartJS.register(
  * Power BI Pattern: Global slicers MUST apply to ALL visuals.
  */
 export function NewVsResaleChart({ height = 350 }) {
-  // Get GLOBAL filters from context - respects sidebar selections
-  const { buildApiParams, filters } = usePowerBIFilters();
+  // Get GLOBAL filters and timeGrouping from context
+  const { buildApiParams, filters, timeGrouping } = usePowerBIFilters();
 
   // Provide safe defaults for filters if context not ready
   const safeFilters = {
@@ -55,9 +57,6 @@ export function NewVsResaleChart({ height = 350 }) {
     bedroomTypes: filters?.bedroomTypes || [],
     segment: filters?.segment || null,
   };
-
-  // LOCAL drill state only - year → quarter → month (visual-local)
-  const [localDrillLevel, setLocalDrillLevel] = useState('quarter');
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -79,9 +78,9 @@ export function NewVsResaleChart({ height = 350 }) {
       try {
         // Use buildApiParams to include GLOBAL filters from sidebar
         // excludeHighlight: true - this is a time-series chart, preserve full timeline
-        // (same pattern as TimeTrendChart - SOURCE charts don't filter themselves)
+        // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
         const params = buildApiParams({
-          timeGrain: localDrillLevel,
+          timeGrain: TIME_GROUP_BY[timeGrouping],
         }, { excludeHighlight: true });
 
         console.log('[NewVsResale] Fetching with params:', params);
@@ -100,26 +99,7 @@ export function NewVsResaleChart({ height = 350 }) {
       }
     };
     fetchData();
-  }, [buildApiParams, localDrillLevel, filters]); // Re-fetch when global filters change (excludes highlight - preserves timeline)
-
-  // LOCAL drill handlers - visual-local only, does NOT affect other charts
-  const drillLevels = ['year', 'quarter', 'month'];
-  const drillLevelLabels = { year: 'Year', quarter: 'Quarter', month: 'Month' };
-  const currentDrillIndex = drillLevels.indexOf(localDrillLevel);
-  const canDrillUp = currentDrillIndex > 0;
-  const canDrillDown = currentDrillIndex < drillLevels.length - 1;
-
-  const handleDrillUp = () => {
-    if (canDrillUp) {
-      setLocalDrillLevel(drillLevels[currentDrillIndex - 1]);
-    }
-  };
-
-  const handleDrillDown = () => {
-    if (canDrillDown) {
-      setLocalDrillLevel(drillLevels[currentDrillIndex + 1]);
-    }
-  };
+  }, [buildApiParams, timeGrouping, filters]); // Re-fetch when global filters or timeGrouping change
 
   // Build filter summary for display
   const getFilterSummary = () => {
@@ -334,33 +314,23 @@ export function NewVsResaleChart({ height = 350 }) {
     <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
       {/* Header */}
       <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-                New Sale vs Young Resale (4-9 yrs)
-              </h3>
-              {updating && (
-                <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin flex-shrink-0" />
-              )}
-            </div>
-            <p className="text-xs text-[#547792] mt-0.5">
-              {getFilterSummary()} · by {drillLevelLabels[localDrillLevel].toLowerCase()}
-              {hasSignificantGaps && (
-                <span className="ml-2 text-amber-600">
-                  (sparse resale data)
-                </span>
-              )}
-            </p>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-[#213448] text-sm md:text-base">
+              New Sale vs Young Resale (4-9 yrs)
+            </h3>
+            {updating && (
+              <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+            )}
           </div>
-          {/* Standardized DrillButtons in LOCAL mode - visual-local only */}
-          <DrillButtons
-            localLevel={localDrillLevel}
-            localLevels={drillLevels}
-            localLevelLabels={drillLevelLabels}
-            onLocalDrillUp={handleDrillUp}
-            onLocalDrillDown={handleDrillDown}
-          />
+          <p className="text-xs text-[#547792] mt-0.5">
+            {getFilterSummary()} · by {TIME_LABELS[timeGrouping].toLowerCase()}
+            {hasSignificantGaps && (
+              <span className="ml-2 text-amber-600">
+                (sparse resale data)
+              </span>
+            )}
+          </p>
         </div>
 
         {/* Premium KPIs */}
@@ -396,7 +366,7 @@ export function NewVsResaleChart({ height = 350 }) {
       {/* Chart Container - follows chart-container-contract skill */}
       <div className="p-2 md:p-3 lg:p-4" style={{ height }}>
         {chartData.length > 0 ? (
-          <Line key={localDrillLevel} ref={chartRef} data={chartConfig} options={options} />
+          <Line key={timeGrouping} ref={chartRef} data={chartConfig} options={options} />
         ) : (
           <div className="flex items-center justify-center h-full text-[#547792]">
             <div className="text-center">

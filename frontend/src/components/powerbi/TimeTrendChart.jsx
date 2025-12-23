@@ -13,9 +13,8 @@ import {
   Legend,
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
+import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { DrillButtons } from './DrillButtons';
 
 ChartJS.register(
   CategoryScale,
@@ -41,8 +40,12 @@ ChartJS.register(
  * - Cross-highlighting: clicking a bar highlights it and dims others (no data filtering)
  * - Drill-down: double-click to drill into finer time granularity
  */
+// Time level labels for display
+const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
+
 export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) {
-  const { buildApiParams, highlight, applyHighlight } = usePowerBIFilters();
+  // Use global timeGrouping from context (controlled by toolbar toggle)
+  const { buildApiParams, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
   const [data, setData] = useState([]);
   const [dataTimeGrain, setDataTimeGrain] = useState(null); // Track which time grain the data is for
   const [loading, setLoading] = useState(true);
@@ -50,26 +53,6 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
-
-  // LOCAL drill state - each chart controls its own time granularity
-  // This follows Power BI principle: Drill = Visual-local (only this chart changes)
-  const [localDrillLevel, setLocalDrillLevel] = useState('year');
-  const LOCAL_TIME_LEVELS = ['year', 'quarter', 'month'];
-  const LOCAL_TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
-
-  const handleLocalDrillUp = () => {
-    const currentIndex = LOCAL_TIME_LEVELS.indexOf(localDrillLevel);
-    if (currentIndex > 0) {
-      setLocalDrillLevel(LOCAL_TIME_LEVELS[currentIndex - 1]);
-    }
-  };
-
-  const handleLocalDrillDown = () => {
-    const currentIndex = LOCAL_TIME_LEVELS.indexOf(localDrillLevel);
-    if (currentIndex < LOCAL_TIME_LEVELS.length - 1) {
-      setLocalDrillLevel(LOCAL_TIME_LEVELS[currentIndex + 1]);
-    }
-  };
 
   // Fetch data when filters change
   useEffect(() => {
@@ -85,9 +68,9 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         // Use excludeHighlight: true so time chart shows ALL periods
         // even when a specific time period is highlighted
         // Group by time AND sale_type for stacked bar breakdown
-        // Uses LOCAL drill level (not global drillPath.time) for visual-local drill behavior
+        // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
         const params = buildApiParams({
-          group_by: `${localDrillLevel},sale_type`,
+          group_by: `${TIME_GROUP_BY[timeGrouping]},sale_type`,
           metrics: 'count,total_value'
         }, { excludeHighlight: true });
         const response = await getAggregate(params);
@@ -96,7 +79,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         // Transform data: group by time period with New Sale/Resale breakdown
         const groupedByTime = {};
         rawData.forEach(row => {
-          const period = row[localDrillLevel];
+          const period = row[timeGrouping];
           if (!groupedByTime[period]) {
             groupedByTime[period] = {
               period,
@@ -133,7 +116,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         });
 
         setData(sortedData);
-        setDataTimeGrain(localDrillLevel); // Store which time grain this data is for
+        setDataTimeGrain(timeGrouping); // Store which time grain this data is for
         isInitialLoad.current = false;
       } catch (err) {
         console.error('Error fetching time trend data:', err);
@@ -144,7 +127,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
       }
     };
     fetchData();
-  }, [buildApiParams, localDrillLevel]);
+  }, [buildApiParams, timeGrouping]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;
@@ -159,19 +142,8 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
 
         // Apply highlight - this triggers cross-filter for OTHER charts
         // TimeTrendChart itself uses excludeHighlight:true to preserve full timeline
-        applyHighlight('time', localDrillLevel, timeValue);
+        applyHighlight('time', timeGrouping, timeValue);
       }
-    }
-  };
-
-  const handleDoubleClick = (event) => {
-    const chart = chartRef.current;
-    if (!chart) return;
-
-    const elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
-    if (elements.length > 0) {
-      // Double-click drills down locally (visual-local behavior)
-      handleLocalDrillDown();
     }
   };
 
@@ -361,33 +333,21 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   return (
     <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[#213448]">Transaction Trend</h3>
-            {updating && (
-              <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-            )}
-          </div>
-          <DrillButtons
-            localLevel={localDrillLevel}
-            localLevels={LOCAL_TIME_LEVELS}
-            localLevelLabels={LOCAL_TIME_LABELS}
-            onLocalDrillUp={handleLocalDrillUp}
-            onLocalDrillDown={handleLocalDrillDown}
-          />
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-[#213448]">Transaction Trend</h3>
+          {updating && (
+            <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
+          )}
         </div>
         <p className="text-xs text-[#547792] mt-1">
-          Volume and price by {LOCAL_TIME_LABELS[localDrillLevel]}
-          {localDrillLevel !== 'month' && (
-            <span className="text-[#547792] font-medium ml-1">(double-click to drill down)</span>
-          )}
+          Volume and price by {TIME_LABELS[timeGrouping]}
         </p>
         <div className="text-xs text-[#547792] text-center mt-1">
           {data.length} periods | {data.reduce((sum, d) => sum + d.newSaleCount, 0).toLocaleString()} new + {data.reduce((sum, d) => sum + d.resaleCount, 0).toLocaleString()} resale
         </div>
       </div>
       <div className="p-4" style={{ height }}>
-        <Chart key={localDrillLevel} ref={chartRef} type="bar" data={chartData} options={options} />
+        <Chart key={timeGrouping} ref={chartRef} type="bar" data={chartData} options={options} />
       </div>
     </div>
   );

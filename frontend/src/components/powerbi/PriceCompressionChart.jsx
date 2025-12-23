@@ -14,8 +14,7 @@ import {
 import annotationPlugin from 'chartjs-plugin-annotation';
 import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
-import { DrillButtons } from './DrillButtons';
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
+import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 
 ChartJS.register(
   CategoryScale,
@@ -30,9 +29,8 @@ ChartJS.register(
   annotationPlugin
 );
 
-// Constants for local drill
-const LOCAL_TIME_LEVELS = ['year', 'quarter', 'month'];
-const LOCAL_TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
+// Time level labels for display
+const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
 /**
  * Price Compression Analysis Chart
@@ -52,11 +50,8 @@ const LOCAL_TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * Uses excludeHighlight: true (time-series chart pattern).
  */
 export function PriceCompressionChart({ height = 380 }) {
-  // Get GLOBAL filters from context
-  const { buildApiParams, filters, highlight, applyHighlight } = usePowerBIFilters();
-
-  // LOCAL drill state - year → quarter → month (visual-local only)
-  const [localDrillLevel, setLocalDrillLevel] = useState('quarter');
+  // Get GLOBAL filters and timeGrouping from context
+  const { buildApiParams, filters, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
 
   // Data state
   const [data, setData] = useState([]);
@@ -78,15 +73,15 @@ export function PriceCompressionChart({ height = 380 }) {
       setError(null);
 
       try {
-        // Use LOCAL drill level, excludeHighlight for time-series pattern
+        // Use global timeGrouping via TIME_GROUP_BY mapping, excludeHighlight for time-series pattern
         const params = buildApiParams({
-          group_by: `${localDrillLevel},region`,
+          group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
           metrics: 'median_psf,count'
         }, { excludeHighlight: true });
 
         const response = await getAggregate(params);
         const rawData = response.data.data || [];
-        const transformed = transformData(rawData, localDrillLevel);
+        const transformed = transformData(rawData, timeGrouping);
         setData(transformed);
         isInitialLoad.current = false;
       } catch (err) {
@@ -98,7 +93,7 @@ export function PriceCompressionChart({ height = 380 }) {
       }
     };
     fetchData();
-  }, [buildApiParams, localDrillLevel, filters]);
+  }, [buildApiParams, timeGrouping, filters]);
 
   // Transform raw API data into spread-friendly format
   const transformData = (rawData, timeGrain) => {
@@ -153,21 +148,6 @@ export function PriceCompressionChart({ height = 380 }) {
     });
   };
 
-  // LOCAL drill handlers
-  const currentDrillIndex = LOCAL_TIME_LEVELS.indexOf(localDrillLevel);
-
-  const handleLocalDrillUp = () => {
-    if (currentDrillIndex > 0) {
-      setLocalDrillLevel(LOCAL_TIME_LEVELS[currentDrillIndex - 1]);
-    }
-  };
-
-  const handleLocalDrillDown = () => {
-    if (currentDrillIndex < LOCAL_TIME_LEVELS.length - 1) {
-      setLocalDrillLevel(LOCAL_TIME_LEVELS[currentDrillIndex + 1]);
-    }
-  };
-
   // Click handler for highlight
   const handleChartClick = (event) => {
     const chart = chartRef.current;
@@ -178,7 +158,7 @@ export function PriceCompressionChart({ height = 380 }) {
       const index = elements[0].index;
       const period = data[index]?.period;
       if (period) {
-        applyHighlight('time', localDrillLevel, period);
+        applyHighlight('time', timeGrouping, period);
       }
     }
   };
@@ -425,16 +405,9 @@ export function PriceCompressionChart({ height = 380 }) {
               )}
             </div>
             <p className="text-xs text-[#547792] mt-0.5">
-              Spread widening = fragmentation; spread narrowing = compression
+              Spread widening = fragmentation; spread narrowing = compression ({TIME_LABELS[timeGrouping]})
             </p>
           </div>
-          <DrillButtons
-            localLevel={localDrillLevel}
-            localLevels={LOCAL_TIME_LEVELS}
-            localLevelLabels={LOCAL_TIME_LABELS}
-            onLocalDrillUp={handleLocalDrillUp}
-            onLocalDrillDown={handleLocalDrillDown}
-          />
         </div>
 
         {/* KPI Row: Compression Score + Market Signals */}
@@ -467,7 +440,7 @@ export function PriceCompressionChart({ height = 380 }) {
       {/* Main Spread Chart */}
       <div className="p-2 md:p-3 lg:p-4" style={{ height: showContext ? height * 0.65 : height }}>
         {data.length > 0 ? (
-          <Line key={localDrillLevel} ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
+          <Line key={timeGrouping} ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
         ) : (
           <div className="flex items-center justify-center h-full text-[#547792]">
             <div className="text-center">

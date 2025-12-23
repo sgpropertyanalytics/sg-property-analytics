@@ -3,6 +3,15 @@ import { getFilterOptions } from '../api/client';
 
 const PowerBIFilterContext = createContext(null);
 
+// ===== Time Grouping Constants =====
+// Single source of truth for API mapping
+// This is a VIEW CONTEXT control (not a filter) - controls how data is aggregated
+export const TIME_GROUP_BY = {
+  year: 'year',
+  quarter: 'quarter',
+  month: 'month'
+};
+
 /**
  * PowerBI-style Filter State Management
  *
@@ -83,6 +92,25 @@ export function PowerBIFilterProvider({ children }) {
     time: [],      // e.g., ['All', '2024', 'Q3']
     location: [],  // e.g., ['All', 'CCR', 'D09']
   });
+
+  // ===== Time Grouping (View Context) =====
+  // This is NOT a filter - it's a view context control that determines time aggregation
+  // Lives in toolbar (not sidebar) because it changes how data is displayed, not what data
+  // Persisted to localStorage so user preference is remembered
+  const [timeGrouping, setTimeGroupingState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('user_time_pref') || 'quarter';
+    }
+    return 'quarter';
+  });
+
+  // Wrapped setter that persists to localStorage
+  const setTimeGrouping = useCallback((val) => {
+    setTimeGroupingState(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('user_time_pref', val);
+    }
+  }, []);
 
   // ===== Filter Options =====
   // Available values loaded from API
@@ -708,6 +736,11 @@ export function PowerBIFilterProvider({ children }) {
     activeFilters,
     activeFilterCount,
     selectedProject,   // Drill-through only - does NOT affect global charts
+
+    // Time Grouping (View Context - NOT a filter)
+    // Controls how time is aggregated across all time-series charts
+    timeGrouping,
+    setTimeGrouping,
 
     // Filter setters
     setDateRange,

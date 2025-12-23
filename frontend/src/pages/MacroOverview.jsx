@@ -8,6 +8,7 @@ import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { PriceCompressionChart } from '../components/powerbi/PriceCompressionChart';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
+import { TimeGranularityToggle } from '../components/powerbi/TimeGranularityToggle';
 import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
 import { GLSDataTable } from '../components/powerbi/GLSDataTable';
 import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
@@ -158,6 +159,9 @@ export function MacroOverviewContent() {
                 )}
               </div>
               <div className="flex items-center gap-3 flex-wrap">
+                {/* Time Grouping Toggle - View context control (not a filter) */}
+                <TimeGranularityToggle />
+
                 {/* Highlight indicator (visual emphasis on time, no filtering) */}
                 {highlight.value && (
                   <button

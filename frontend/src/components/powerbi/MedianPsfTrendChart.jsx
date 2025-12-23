@@ -11,9 +11,11 @@ import {
   Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
+import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { DrillButtons } from './DrillButtons';
+
+// Time level labels for display
+const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
 ChartJS.register(
   CategoryScale,
@@ -37,33 +39,14 @@ ChartJS.register(
  * whether prices are rising or falling in different regions.
  */
 export function MedianPsfTrendChart({ height = 300 }) {
-  const { buildApiParams, highlight, applyHighlight } = usePowerBIFilters();
+  // Use global timeGrouping from context (controlled by toolbar toggle)
+  const { buildApiParams, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
   const [data, setData] = useState({ labels: [], ccr: [], rcr: [], ocr: [] });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
-
-  // LOCAL drill state - each chart controls its own time granularity
-  // This follows Power BI principle: Drill = Visual-local (only this chart changes)
-  const [localDrillLevel, setLocalDrillLevel] = useState('year');
-  const LOCAL_TIME_LEVELS = ['year', 'quarter', 'month'];
-  const LOCAL_TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
-
-  const handleLocalDrillUp = () => {
-    const currentIndex = LOCAL_TIME_LEVELS.indexOf(localDrillLevel);
-    if (currentIndex > 0) {
-      setLocalDrillLevel(LOCAL_TIME_LEVELS[currentIndex - 1]);
-    }
-  };
-
-  const handleLocalDrillDown = () => {
-    const currentIndex = LOCAL_TIME_LEVELS.indexOf(localDrillLevel);
-    if (currentIndex < LOCAL_TIME_LEVELS.length - 1) {
-      setLocalDrillLevel(LOCAL_TIME_LEVELS[currentIndex + 1]);
-    }
-  };
 
   // Fetch data when filters change
   useEffect(() => {
@@ -77,9 +60,9 @@ export function MedianPsfTrendChart({ height = 300 }) {
       try {
         // Use excludeHighlight: true so chart shows ALL periods
         // Group by time AND region for segment breakdown
-        // Uses LOCAL drill level (not global drillPath.time) for visual-local drill behavior
+        // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
         const params = buildApiParams({
-          group_by: `${localDrillLevel},region`,
+          group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
           metrics: 'median_psf,count'
         }, { excludeHighlight: true });
 
@@ -89,7 +72,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
         // Transform data: group by time period with CCR/RCR/OCR breakdown
         const groupedByTime = {};
         rawData.forEach(row => {
-          const period = row[localDrillLevel];
+          const period = row[timeGrouping];
           if (!groupedByTime[period]) {
             groupedByTime[period] = {
               period,
@@ -145,7 +128,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
       }
     };
     fetchData();
-  }, [buildApiParams, localDrillLevel]);
+  }, [buildApiParams, timeGrouping]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;
@@ -157,7 +140,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
       const timeValue = data.labels[index];
       if (timeValue) {
         // Apply highlight - triggers cross-filter for OTHER charts
-        applyHighlight('time', localDrillLevel, timeValue);
+        applyHighlight('time', timeGrouping, timeValue);
       }
     }
   };
@@ -342,23 +325,14 @@ export function MedianPsfTrendChart({ height = 300 }) {
   return (
     <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[#213448]">Median PSF Trend</h3>
-            {updating && (
-              <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-            )}
-          </div>
-          <DrillButtons
-            localLevel={localDrillLevel}
-            localLevels={LOCAL_TIME_LEVELS}
-            localLevelLabels={LOCAL_TIME_LABELS}
-            onLocalDrillUp={handleLocalDrillUp}
-            onLocalDrillDown={handleLocalDrillDown}
-          />
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-[#213448]">Median PSF Trend</h3>
+          {updating && (
+            <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
+          )}
         </div>
         <p className="text-xs text-[#547792] mt-1">
-          Price per sqft by market segment ({LOCAL_TIME_LABELS[localDrillLevel]})
+          Price per sqft by market segment ({TIME_LABELS[timeGrouping]})
         </p>
         <div className="text-xs text-[#547792] flex justify-center gap-3 mt-1">
           {latestCcr && <span>CCR: ${latestCcr.toLocaleString()}</span>}
@@ -367,7 +341,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
         </div>
       </div>
       <div className="p-4" style={{ height }}>
-        <Line key={localDrillLevel} ref={chartRef} data={chartData} options={options} />
+        <Line key={timeGrouping} ref={chartRef} data={chartData} options={options} />
       </div>
       <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
         <span>{data.labels.length} periods | Click to highlight time period</span>
