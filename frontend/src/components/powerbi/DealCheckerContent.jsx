@@ -206,27 +206,27 @@ export default function DealCheckerContent() {
           </p>
         </div>
 
-        <form onSubmit={handleCheck} className="p-4 md:p-5">
-          {/* All inputs in a responsive grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {/* Project Selector - Takes more space */}
-            <div className="col-span-2" ref={dropdownRef}>
-              <label className="block text-[10px] font-medium text-[#547792] mb-0.5">
+        <form onSubmit={handleCheck}>
+          {/* Two-column layout matching Explore Budget tab */}
+          <div className="grid grid-cols-1 lg:grid-cols-2">
+            {/* LEFT: Project Selector + Check Deal Button */}
+            <div className="min-w-0 px-4 md:px-5 py-4 md:py-5 lg:pr-6" ref={dropdownRef}>
+              <label className="block text-xs font-medium text-[#547792] mb-1">
                 Select your Project <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
+              <div className="relative mb-4">
                 <button
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={projectOptionsLoading}
-                  className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded text-left bg-[#EAE0CF]/20 focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent flex items-center justify-between"
+                  className="w-full px-3 py-2.5 text-sm border border-[#94B4C1]/50 rounded text-left bg-[#EAE0CF]/20 focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent flex items-center justify-between"
                 >
-                  <span className={projectName ? 'text-[#213448] truncate' : 'text-[#94B4C1]'}>
+                  <span className={projectName ? 'text-[#213448] truncate font-medium' : 'text-[#94B4C1]'}>
                     {projectName
                       ? `${projectName}${selectedProjectInfo?.district ? ` (${selectedProjectInfo.district})` : ''}`
                       : 'Search projects...'}
                   </span>
-                  <svg className={`w-3 h-3 text-[#547792] transition-transform flex-shrink-0 ml-1 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className={`w-4 h-4 text-[#547792] transition-transform flex-shrink-0 ml-2 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
@@ -272,89 +272,97 @@ export default function DealCheckerContent() {
                 )}
 
                 {projectOptionsLoading && (
-                  <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
-                    <svg className="w-3 h-3 animate-spin text-[#547792]" fill="none" viewBox="0 0 24 24">
+                  <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
+                    <svg className="w-4 h-4 animate-spin text-[#547792]" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Bedroom */}
-            <div>
-              <label className="block text-[10px] font-medium text-[#547792] mb-0.5">
-                Bedroom <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={bedroom}
-                onChange={(e) => setBedroom(e.target.value)}
-                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+              {/* Check Deal Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
               >
-                <option value="">All</option>
-                <option value="1">1 BR</option>
-                <option value="2">2 BR</option>
-                <option value="3">3 BR</option>
-                <option value="4">4 BR</option>
-                <option value="5">5+ BR</option>
-              </select>
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Checking...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Check Deal
+                  </span>
+                )}
+              </button>
             </div>
 
-            {/* Unit Size */}
-            <div>
-              <label className="block text-[10px] font-medium text-[#547792] mb-0.5">
-                Size (sqft)
-              </label>
-              <input
-                type="text"
-                value={sqft}
-                onChange={handleSqftChange}
-                placeholder="1,200"
-                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20 placeholder-[#94B4C1]"
-              />
-            </div>
+            {/* RIGHT: Optional Filters with shaded background */}
+            <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03]">
+              <div className="px-4 md:px-5 py-4 md:py-5 w-full">
+                <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-3 font-medium">Property Details</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Bedroom */}
+                  <div>
+                    <label className="block text-xs font-medium text-[#547792] mb-1">
+                      Bedroom <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={bedroom}
+                      onChange={(e) => setBedroom(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                    >
+                      <option value="">All</option>
+                      <option value="1">1 BR</option>
+                      <option value="2">2 BR</option>
+                      <option value="3">3 BR</option>
+                      <option value="4">4 BR</option>
+                      <option value="5">5+ BR</option>
+                    </select>
+                  </div>
 
-            {/* Price */}
-            <div>
-              <label className="block text-[10px] font-medium text-[#547792] mb-0.5">
-                Price ($) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={price}
-                onChange={handlePriceChange}
-                placeholder="2,500,000"
-                className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20 placeholder-[#94B4C1]"
-              />
+                  {/* Unit Size */}
+                  <div>
+                    <label className="block text-xs font-medium text-[#547792] mb-1">
+                      Size (sqft)
+                    </label>
+                    <input
+                      type="text"
+                      value={sqft}
+                      onChange={handleSqftChange}
+                      placeholder="1,200"
+                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20 placeholder-[#94B4C1]"
+                    />
+                  </div>
+
+                  {/* Price */}
+                  <div>
+                    <label className="block text-xs font-medium text-[#547792] mb-1">
+                      Price ($) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={price}
+                      onChange={handlePriceChange}
+                      placeholder="2,500,000"
+                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20 placeholder-[#94B4C1]"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Submit Button - Full width below inputs */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-4 px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Checking...
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-                Check Deal
-              </span>
-            )}
-          </button>
-
           {error && (
-            <p className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>
+            <p className="mx-4 mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>
           )}
         </form>
       </div>

@@ -536,15 +536,15 @@ export function ValueParityPanel() {
 
               {/* Desktop: Always visible / Mobile: Collapsible */}
               <div className={`${filtersExpanded ? 'block' : 'hidden'} lg:block px-4 md:px-5 py-4 md:py-5 w-full`}>
-                <p className="hidden lg:block text-[10px] uppercase tracking-wide text-[#547792]/60 mb-2 font-medium">Optional filters</p>
+                <p className="hidden lg:block text-[10px] uppercase tracking-wide text-[#547792]/60 mb-3 font-medium">Optional filters</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {/* Bedroom */}
                   <div>
-                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Bedroom</label>
+                    <label className="block text-xs font-medium text-[#547792] mb-1">Bedroom</label>
                     <select
                       value={bedroom}
                       onChange={(e) => setBedroom(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
                       <option value="1">1BR</option>
@@ -557,14 +557,14 @@ export function ValueParityPanel() {
 
                   {/* Market Segment */}
                   <div>
-                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Segment</label>
+                    <label className="block text-xs font-medium text-[#547792] mb-1">Segment</label>
                     <select
                       value={region}
                       onChange={(e) => {
                         setRegion(e.target.value);
                         setDistrict('');
                       }}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
                       <option value="CCR">CCR</option>
@@ -575,11 +575,11 @@ export function ValueParityPanel() {
 
                   {/* District */}
                   <div>
-                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">District</label>
+                    <label className="block text-xs font-medium text-[#547792] mb-1">District</label>
                     <select
                       value={district}
                       onChange={(e) => setDistrict(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                       disabled={filterOptions.loading}
                     >
                       <option value="">All</option>
@@ -591,11 +591,11 @@ export function ValueParityPanel() {
 
                   {/* Tenure */}
                   <div>
-                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Tenure</label>
+                    <label className="block text-xs font-medium text-[#547792] mb-1">Tenure</label>
                     <select
                       value={tenure}
                       onChange={(e) => setTenure(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
                       <option value="Freehold">Freehold</option>
@@ -606,11 +606,11 @@ export function ValueParityPanel() {
 
                   {/* Sale Type */}
                   <div>
-                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Sale Type</label>
+                    <label className="block text-xs font-medium text-[#547792] mb-1">Sale Type</label>
                     <select
                       value={saleType}
                       onChange={(e) => setSaleType(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
                       <option value="New Sale">New Sale</option>
@@ -620,11 +620,11 @@ export function ValueParityPanel() {
 
                   {/* Property Age */}
                   <div>
-                    <label className="block text-[10px] font-medium text-[#547792] mb-0.5">Property Age</label>
+                    <label className="block text-xs font-medium text-[#547792] mb-1">Property Age</label>
                     <select
                       value={leaseAge}
                       onChange={(e) => setLeaseAge(e.target.value)}
-                      className="w-full px-2 py-1.5 text-xs border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
                       <option value="0-5">New / Recently TOP (≤5 yrs)</option>
