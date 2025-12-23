@@ -145,23 +145,23 @@ export function HotProjectsTable({
     );
   };
 
-  // Column definitions
+  // Column definitions - standardized labels to match UpcomingLaunchesTable
   // Note: Shows ACTIVE NEW SALES (projects with New Sale transactions but NO resales yet)
   // - units_sold: count of New Sale transactions
   // - total_units: from project_inventory (URA API or manual entry)
   // - Only shows projects with ZERO resale transactions (true new launches)
   const columns = [
     { key: 'first_new_sale', label: 'Launch Date', sortable: true, width: 'w-24' },
-    { key: 'project_name', label: 'Project Name', sortable: true, width: 'w-56' },
+    { key: 'project_name', label: 'Project', sortable: true, width: 'w-48' },
     { key: 'developer', label: 'Developer', sortable: true, width: 'w-40' },
-    { key: 'district', label: 'Location', sortable: true, width: 'w-36' },
+    { key: 'district', label: 'Location', sortable: true, width: 'w-32' },
     { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-20' },
     { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-20', align: 'right' },
-    { key: 'units_sold', label: 'Units Sold', sortable: true, width: 'w-20', align: 'right' },
-    { key: 'percent_sold', label: '% Sold', sortable: true, width: 'w-20', align: 'right' },
-    { key: 'unsold_inventory', label: 'Unsold Inventory', sortable: true, width: 'w-24', align: 'right' },
-    { key: 'median_price', label: 'Median Price', sortable: true, width: 'w-28', align: 'right' },
-    { key: 'median_psf', label: 'Median PSF', sortable: true, width: 'w-24', align: 'right' },
+    { key: 'units_sold', label: 'Sold', sortable: true, width: 'w-16', align: 'right' },
+    { key: 'percent_sold', label: '% Sold', sortable: true, width: 'w-16', align: 'right' },
+    { key: 'unsold_inventory', label: 'Unsold', sortable: true, width: 'w-16', align: 'right' },
+    { key: 'median_price', label: 'Med. Price', sortable: true, width: 'w-24', align: 'right' },
+    { key: 'median_psf', label: 'Med. PSF', sortable: true, width: 'w-20', align: 'right' },
   ];
 
   return (
@@ -242,7 +242,7 @@ export function HotProjectsTable({
                     className="hover:bg-slate-50 transition-colors"
                   >
                     {/* Launch Date */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-sm">
                       {project.first_new_sale ? (
                         new Date(project.first_new_sale).toLocaleDateString('en-SG', {
                           year: 'numeric',
@@ -255,41 +255,32 @@ export function HotProjectsTable({
 
                     {/* Project Name with School Tag (inline) */}
                     <td className="px-3 py-2 border-b border-slate-100">
-                      <div className="flex flex-col gap-1">
-                        <span className="font-medium text-slate-800 truncate max-w-[200px]">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium text-slate-800 truncate max-w-[200px] text-sm" title={project.project_name}>
                           {project.project_name || '-'}
                         </span>
                         {project.has_popular_school && (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded whitespace-nowrap w-fit">
-                              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
-                              </svg>
-                              <span>Popular School within 1km</span>
-                            </span>
-                            {project.nearby_schools && project.nearby_schools.length > 0 && (
-                              <span className="text-[10px] text-emerald-600 pl-1 truncate max-w-[200px]">
-                                {project.nearby_schools.slice(0, 2).join(', ')}
-                                {project.nearby_schools.length > 2 && ` +${project.nearby_schools.length - 2} more`}
-                              </span>
-                            )}
-                          </div>
+                          <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded whitespace-nowrap w-fit">
+                            <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                            </svg>
+                            <span>Popular School</span>
+                          </span>
                         )}
                       </div>
                     </td>
 
                     {/* Developer */}
                     <td className="px-3 py-2 border-b border-slate-100">
-                      <span className="text-slate-600 truncate max-w-[150px] block">
+                      <span className="text-slate-600 truncate max-w-[150px] block text-sm" title={project.developer}>
                         {project.developer || <span className="text-slate-400 italic">-</span>}
                       </span>
                     </td>
 
-                    {/* Region / District - stacked with full name */}
+                    {/* Location / District - simplified */}
                     <td className="px-3 py-2 border-b border-slate-100">
                       <div className="flex flex-col">
-                        <span className="font-medium text-slate-700">{project.district_name || project.region || '-'}</span>
-                        <span className="text-xs text-slate-500">{project.district || '-'}</span>
+                        <span className="text-slate-600 text-sm">{project.district || '-'}</span>
                       </div>
                     </td>
 
@@ -305,78 +296,52 @@ export function HotProjectsTable({
                     </td>
 
                     {/* Total Units */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
                       {project.total_units?.toLocaleString() || (
-                        <span className="text-slate-400 text-xs italic">N/A</span>
+                        <span className="text-slate-400 italic">-</span>
                       )}
                     </td>
 
                     {/* Units Sold */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right font-medium">
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
                       {project.units_sold?.toLocaleString() || '0'}
                     </td>
 
                     {/* % Sold with color coding */}
                     <td className="px-3 py-2 border-b border-slate-100 text-right">
                       {project.percent_sold !== null && project.percent_sold !== undefined ? (
-                        <span className="inline-flex items-center gap-1">
-                          <span className={`inline-block px-1.5 py-0.5 text-xs font-semibold rounded ${getPercentClass(project.percent_sold)}`}>
-                            {project.percent_sold.toFixed(1)}%
-                          </span>
-                          {project.data_discrepancy && (
-                            <span className="text-amber-500 text-xs">*</span>
-                          )}
+                        <span className={`inline-block px-1.5 py-0.5 text-[10px] font-semibold rounded ${getPercentClass(project.percent_sold)}`}>
+                          {project.percent_sold.toFixed(0)}%
                         </span>
                       ) : (
-                        <span className="text-slate-400 text-xs italic">N/A</span>
+                        <span className="text-slate-400 text-sm italic">-</span>
                       )}
                     </td>
 
                     {/* Unsold Inventory */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
                       {project.unsold_inventory !== null && project.unsold_inventory !== undefined ? (
-                        <span className="inline-flex items-center gap-1 justify-end">
-                          <span>{project.unsold_inventory.toLocaleString()}</span>
-                          {project.data_discrepancy && (
-                            <span className="text-amber-500 text-xs">*</span>
-                          )}
-                        </span>
+                        project.unsold_inventory.toLocaleString()
                       ) : (
-                        <span className="text-slate-400 text-xs italic">N/A</span>
+                        <span className="text-slate-400 italic">-</span>
                       )}
                     </td>
 
-                    {/* Median Price with color scale */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-right">
-                      {project.median_price ? (() => {
-                        const colors = getValueColor(project.median_price, priceRange.minPrice, priceRange.maxPrice);
-                        return (
-                          <span
-                            className="inline-block px-2 py-0.5 rounded font-medium text-xs"
-                            style={{ backgroundColor: colors.bg, color: colors.text }}
-                          >
-                            ${(project.median_price / 1000000).toFixed(2)}M
-                          </span>
-                        );
-                      })() : (
-                        <span className="text-slate-400 text-xs italic">N/A</span>
+                    {/* Median Price */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
+                      {project.median_price ? (
+                        `$${(project.median_price / 1000000).toFixed(2)}M`
+                      ) : (
+                        <span className="text-slate-400 italic">-</span>
                       )}
                     </td>
 
-                    {/* Median PSF with color scale */}
-                    <td className="px-3 py-2 border-b border-slate-100 text-right">
-                      {project.median_psf ? (() => {
-                        const colors = getValueColor(project.median_psf, priceRange.minPsf, priceRange.maxPsf);
-                        return (
-                          <span
-                            className="inline-block px-2 py-0.5 rounded font-medium text-xs"
-                            style={{ backgroundColor: colors.bg, color: colors.text }}
-                          >
-                            ${project.median_psf.toLocaleString()}
-                          </span>
-                        );
-                      })() : (
-                        <span className="text-slate-400 text-xs italic">N/A</span>
+                    {/* Median PSF */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
+                      {project.median_psf ? (
+                        `$${project.median_psf.toLocaleString()}`
+                      ) : (
+                        <span className="text-slate-400 italic">-</span>
                       )}
                     </td>
                   </tr>

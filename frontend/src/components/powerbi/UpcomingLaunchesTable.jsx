@@ -114,14 +114,14 @@ export function UpcomingLaunchesTable({ height = 400 }) {
     );
   };
 
-  // Column definitions
+  // Column definitions - standardized to match HotProjectsTable
   const columns = [
-    { key: 'expected_launch_date', label: 'Launch', sortable: true, width: 'w-20' },
-    { key: 'project_name', label: 'Project', sortable: true, width: 'w-40' },
-    { key: 'developer', label: 'Developer', sortable: true, width: 'w-36' },
-    { key: 'market_segment', label: 'Seg', sortable: true, width: 'w-12' },
-    { key: 'total_units', label: 'Units', sortable: true, width: 'w-14', align: 'right' },
-    { key: 'indicative_psf', label: 'Est. PSF', sortable: false, width: 'w-28', align: 'right' },
+    { key: 'expected_launch_date', label: 'Launch Date', sortable: true, width: 'w-24' },
+    { key: 'project_name', label: 'Project', sortable: true, width: 'w-48' },
+    { key: 'developer', label: 'Developer', sortable: true, width: 'w-40' },
+    { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-20' },
+    { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-20', align: 'right' },
+    { key: 'indicative_psf', label: 'Est. PSF', sortable: false, width: 'w-32', align: 'right' },
   ];
 
   // Count by segment
@@ -234,44 +234,54 @@ export function UpcomingLaunchesTable({ height = 400 }) {
                     key={project.id || idx}
                     className="hover:bg-slate-50 transition-colors"
                   >
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-xs">
+                    {/* Launch Date */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-sm">
                       {formatDate(project.expected_launch_date, project.launch_year)}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[180px]" title={project.project_name}>
-                      {project.project_name || '-'}
+                    {/* Project Name */}
+                    <td className="px-3 py-2 border-b border-slate-100">
+                      <span className="font-medium text-slate-800 truncate max-w-[200px] block text-sm" title={project.project_name}>
+                        {project.project_name || '-'}
+                      </span>
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-xs truncate max-w-[160px]" title={project.developer}>
-                      {project.developer === 'TBD' ? (
-                        <span className="text-slate-400 italic">TBD</span>
-                      ) : (
-                        project.developer || <span className="text-slate-400 italic">TBD</span>
-                      )}
+                    {/* Developer */}
+                    <td className="px-3 py-2 border-b border-slate-100">
+                      <span className="text-slate-600 truncate max-w-[150px] block text-sm" title={project.developer}>
+                        {project.developer === 'TBD' ? (
+                          <span className="text-slate-400 italic">-</span>
+                        ) : (
+                          project.developer || <span className="text-slate-400 italic">-</span>
+                        )}
+                      </span>
                     </td>
+                    {/* Segment - using theme colors to match HotProjectsTable */}
                     <td className="px-3 py-2 border-b border-slate-100">
                       {project.market_segment ? (
-                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
-                          project.market_segment === 'CCR'
-                            ? 'bg-purple-100 text-purple-700'
-                            : project.market_segment === 'RCR'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-teal-100 text-teal-700'
+                        <span className={`inline-block px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                          project.market_segment === 'CCR' ? 'bg-[#213448] text-white' :
+                          project.market_segment === 'RCR' ? 'bg-[#547792] text-white' :
+                          'bg-[#94B4C1] text-[#213448]'
                         }`}>
                           {project.market_segment}
                         </span>
                       ) : (
-                        <span className="text-slate-400">-</span>
+                        <span className="text-slate-400 text-sm">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right text-xs">
-                      {project.total_units ? project.total_units.toLocaleString() : '-'}
+                    {/* Total Units */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
+                      {project.total_units ? project.total_units.toLocaleString() : (
+                        <span className="text-slate-400 italic">-</span>
+                      )}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 text-slate-700 text-right text-xs">
+                    {/* Est. PSF */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
                       {project.indicative_psf_low || project.indicative_psf_high ? (
                         <span title="Indicative pricing from cross-validated sources">
                           {formatPSFRange(project.indicative_psf_low, project.indicative_psf_high)}
                         </span>
                       ) : (
-                        <span className="text-slate-400">-</span>
+                        <span className="text-slate-400 italic">-</span>
                       )}
                     </td>
                   </tr>
@@ -282,21 +292,21 @@ export function UpcomingLaunchesTable({ height = 400 }) {
         )}
       </div>
 
-      {/* Footer with legend */}
+      {/* Footer with legend - using theme colors to match HotProjectsTable */}
       <div className="px-4 py-2 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30">
         <div className="flex items-center justify-between text-xs text-[#547792]">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-              <span>CCR</span>
+              <span className="px-1 py-0.5 bg-[#213448] text-white text-[9px] rounded">CCR</span>
+              <span>Core Central</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-              <span>RCR</span>
+              <span className="px-1 py-0.5 bg-[#547792] text-white text-[9px] rounded">RCR</span>
+              <span>Rest of Central</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-teal-400 rounded-full"></span>
-              <span>OCR</span>
+              <span className="px-1 py-0.5 bg-[#94B4C1] text-[#213448] text-[9px] rounded">OCR</span>
+              <span>Outside Central</span>
             </span>
           </div>
           <span className="text-[#547792]/70">
