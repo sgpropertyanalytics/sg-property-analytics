@@ -31,9 +31,48 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Collapsible district state
+  const [expandedDistricts, setExpandedDistricts] = useState(new Set());
+
   // Tooltip state
   const [hoveredCell, setHoveredCell] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+  // Group projects by district
+  const projectsByDistrict = useMemo(() => {
+    const grouped = {};
+    for (const project of data.projects) {
+      const district = project.district || 'Unknown';
+      if (!grouped[district]) {
+        grouped[district] = [];
+      }
+      grouped[district].push(project);
+    }
+    // Sort districts (D01, D02, etc.)
+    const sortedDistricts = Object.keys(grouped).sort((a, b) => {
+      const numA = parseInt(a.replace('D', ''), 10) || 99;
+      const numB = parseInt(b.replace('D', ''), 10) || 99;
+      return numA - numB;
+    });
+    return { grouped, sortedDistricts };
+  }, [data.projects]);
+
+  // Toggle district expansion
+  const toggleDistrict = (district) => {
+    setExpandedDistricts(prev => {
+      const next = new Set(prev);
+      if (next.has(district)) {
+        next.delete(district);
+      } else {
+        next.add(district);
+      }
+      return next;
+    });
+  };
+
+  // Expand/collapse all
+  const expandAll = () => setExpandedDistricts(new Set(projectsByDistrict.sortedDistricts));
+  const collapseAll = () => setExpandedDistricts(new Set());
 
   // Fetch data
   useEffect(() => {
@@ -143,22 +182,43 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
             </div>
           </div>
 
-          {/* Window Toggle */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[#94B4C1] font-medium">Window:</span>
-            {[6, 12, 24].map((months) => (
+          <div className="flex items-center gap-4">
+            {/* Expand/Collapse All */}
+            <div className="flex items-center gap-1">
               <button
-                key={months}
-                onClick={() => setWindowMonths(months)}
-                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                  windowMonths === months
-                    ? 'bg-[#213448] text-white'
-                    : 'bg-[#EAE0CF]/50 text-[#547792] hover:bg-[#EAE0CF]'
-                }`}
+                onClick={expandAll}
+                className="px-2 py-1 text-xs text-[#547792] hover:bg-[#EAE0CF]/50 rounded transition-colors"
+                title="Expand all districts"
               >
-                {months}M
+                Expand All
               </button>
-            ))}
+              <span className="text-[#94B4C1]">|</span>
+              <button
+                onClick={collapseAll}
+                className="px-2 py-1 text-xs text-[#547792] hover:bg-[#EAE0CF]/50 rounded transition-colors"
+                title="Collapse all districts"
+              >
+                Collapse
+              </button>
+            </div>
+
+            {/* Window Toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#94B4C1] font-medium">Window:</span>
+              {[6, 12, 24].map((months) => (
+                <button
+                  key={months}
+                  onClick={() => setWindowMonths(months)}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                    windowMonths === months
+                      ? 'bg-[#213448] text-white'
+                      : 'bg-[#EAE0CF]/50 text-[#547792] hover:bg-[#EAE0CF]'
+                  }`}
+                >
+                  {months}M
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -213,53 +273,86 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
             </tr>
           </thead>
           <tbody>
-            {data.projects.map((project, idx) => (
-              <tr key={project.project_name} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'}>
-                {/* Project Name (sticky) - Compact single line */}
-                <td className={`sticky left-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-3 py-1 text-xs font-medium text-[#213448] border-r border-[#94B4C1]/30`}>
-                  <span className="truncate" title={project.project_name}>{project.project_name}</span>
-                  <span className="text-[#94B4C1] ml-1">({project.district})</span>
-                </td>
+            {projectsByDistrict.sortedDistricts.map((district) => {
+              const projects = projectsByDistrict.grouped[district];
+              const isExpanded = expandedDistricts.has(district);
 
-                {/* Floor Zone Cells - Compact */}
-                {floorZones.map((zone) => {
-                  const zoneData = project.floor_zones[zone];
-                  const hasData = zoneData && zoneData.count > 0;
-                  const isInsufficient = hasData && zoneData.count < 5;
-                  const bgColor = hasData
-                    ? getLiquidityColor(zoneData.z_score, zoneData.count)
-                    : LIQUIDITY_COLORS.insufficient;
-                  const textColor = hasData && zoneData.z_score >= 0.25 && zoneData.count >= 5
-                    ? 'text-white'
-                    : 'text-gray-600';
-
-                  return (
-                    <td
-                      key={zone}
-                      className="text-center px-1 py-1 cursor-pointer transition-all duration-100 hover:ring-2 hover:ring-[#213448] hover:ring-inset"
-                      style={{
-                        backgroundColor: bgColor,
-                        opacity: isInsufficient ? 0.6 : 1
-                      }}
-                      onMouseEnter={(e) => handleCellHover(e, project, zone, zoneData)}
-                      onMouseLeave={handleCellLeave}
-                    >
-                      {hasData ? (
-                        isInsufficient ? (
-                          <span className="text-xs text-gray-400">n&lt;5</span>
-                        ) : (
-                          <span className={`text-xs font-mono font-medium ${textColor}`}>
-                            {zoneData.z_score > 0 ? '+' : ''}{zoneData.z_score.toFixed(2)}
-                          </span>
-                        )
-                      ) : (
-                        <span className="text-xs text-gray-300">—</span>
-                      )}
+              return (
+                <React.Fragment key={district}>
+                  {/* District Header Row - Clickable */}
+                  <tr
+                    className="bg-[#547792]/10 cursor-pointer hover:bg-[#547792]/20 transition-colors"
+                    onClick={() => toggleDistrict(district)}
+                  >
+                    <td className="sticky left-0 bg-[#547792]/10 px-3 py-1.5 font-semibold text-[#213448] border-r border-[#94B4C1]/30">
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className={`w-3 h-3 text-[#547792] transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        <span>{district}</span>
+                        <span className="text-[#94B4C1] font-normal">({projects.length} projects)</span>
+                      </div>
                     </td>
-                  );
-                })}
-              </tr>
-            ))}
+                    {floorZones.map((zone) => (
+                      <td key={zone} className="bg-[#547792]/10 px-1 py-1.5" />
+                    ))}
+                  </tr>
+
+                  {/* Project Rows - Show when expanded */}
+                  {isExpanded && projects.map((project, idx) => (
+                    <tr key={project.project_name} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'}>
+                      {/* Project Name (sticky) - Indented */}
+                      <td className={`sticky left-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} pl-8 pr-3 py-1 text-xs font-medium text-[#213448] border-r border-[#94B4C1]/30`}>
+                        <span className="truncate" title={project.project_name}>{project.project_name}</span>
+                      </td>
+
+                      {/* Floor Zone Cells - Compact */}
+                      {floorZones.map((zone) => {
+                        const zoneData = project.floor_zones[zone];
+                        const hasData = zoneData && zoneData.count > 0;
+                        const isInsufficient = hasData && zoneData.count < 5;
+                        const bgColor = hasData
+                          ? getLiquidityColor(zoneData.z_score, zoneData.count)
+                          : LIQUIDITY_COLORS.insufficient;
+                        const textColor = hasData && zoneData.z_score >= 0.25 && zoneData.count >= 5
+                          ? 'text-white'
+                          : 'text-gray-600';
+
+                        return (
+                          <td
+                            key={zone}
+                            className="text-center px-1 py-1 cursor-pointer transition-all duration-100 hover:ring-2 hover:ring-[#213448] hover:ring-inset"
+                            style={{
+                              backgroundColor: bgColor,
+                              opacity: isInsufficient ? 0.6 : 1
+                            }}
+                            onMouseEnter={(e) => handleCellHover(e, project, zone, zoneData)}
+                            onMouseLeave={handleCellLeave}
+                          >
+                            {hasData ? (
+                              isInsufficient ? (
+                                <span className="text-xs text-gray-400">n&lt;5</span>
+                              ) : (
+                                <span className={`text-xs font-mono font-medium ${textColor}`}>
+                                  {zoneData.z_score > 0 ? '+' : ''}{zoneData.z_score.toFixed(2)}
+                                </span>
+                              )
+                            ) : (
+                              <span className="text-xs text-gray-300">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

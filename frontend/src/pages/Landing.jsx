@@ -219,7 +219,7 @@ function HeroSection({ navigate }) {
             Start Looking at{' '}
             <span className="border-b-4 border-[#94B4C1]/50">
               {displayText}
-              <span className="animate-pulse">|</span>
+              <span className="inline-block w-[2px] h-[0.9em] bg-[#94B4C1] ml-0.5 animate-pulse align-middle"></span>
             </span>
           </span>
         </motion.h1>
@@ -234,7 +234,7 @@ function HeroSection({ navigate }) {
           Uncover the hidden value in the{' '}
           <strong className="text-[#213448] font-semibold">Singapore Private Condo</strong>{' '}
           market. We consolidated{' '}
-          <span className="bg-white/80 px-1 rounded text-[#213448] font-medium border border-[#94B4C1]/30">
+          <span className="text-[#213448] font-bold border-b-2 border-[#94B4C1]/50 border-dotted cursor-help" title="View Data Sources">
             100k+ raw data records
           </span>{' '}
           into one clear path to your next asset.
@@ -278,7 +278,7 @@ function HeroSection({ navigate }) {
              transformOrigin: 'top center'
           }}
         >
-           <div className="relative rounded-t-2xl overflow-hidden shadow-[0_-20px_80px_-20px_rgba(33,52,72,0.15)] bg-white ring-1 ring-[#213448]/5 border border-white">
+           <div className="relative rounded-t-2xl overflow-hidden shadow-2xl shadow-[#213448]/15 bg-white ring-1 ring-[#213448]/5 border border-white">
              <div className="absolute top-0 inset-x-0 h-px bg-white/80 z-20" />
              <img
                src="/dashboard-screenshot.png"
@@ -289,10 +289,10 @@ function HeroSection({ navigate }) {
              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/30 pointer-events-none mix-blend-overlay" />
            </div>
 
-           {/* Floating Notification Card (Parallax) */}
+           {/* Floating Notification Card (Parallax + Glassmorphism) */}
            <motion.div
              style={{ y: floatingCardY }}
-             className="absolute -top-10 sm:-top-12 right-[5%] sm:right-[10%] bg-[#213448] text-[#EAE0CF] p-3 sm:p-4 rounded-xl shadow-2xl border border-[#547792]/30 z-30 flex items-center gap-3 sm:gap-4 max-w-[200px] sm:max-w-xs"
+             className="absolute -top-6 sm:-top-8 right-[-2%] sm:right-[2%] bg-[#213448]/95 backdrop-blur-md text-[#EAE0CF] p-3 sm:p-4 rounded-xl shadow-2xl border border-white/10 z-30 flex items-center gap-3 sm:gap-4 max-w-[200px] sm:max-w-xs"
            >
               <div className="p-2 sm:p-2.5 bg-[#547792] rounded-lg flex-shrink-0">
                 <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
