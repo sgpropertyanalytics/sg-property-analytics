@@ -22,27 +22,21 @@ export function UpcomingLaunchesTable({ height = 400 }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [segmentFilter, setSegmentFilter] = useState(''); // '', 'CCR', 'RCR', 'OCR'
   const [sortConfig, setSortConfig] = useState({
     column: 'project_name',
     order: 'asc',
   });
 
-  // Fetch data when filters change
+  // Fetch data when sort changes
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const params = {
         limit: 100,
-        // No launch_year filter - show all upcoming launches
         sort: sortConfig.column,
         order: sortConfig.order,
       };
-
-      if (segmentFilter) {
-        params.market_segment = segmentFilter;
-      }
 
       const response = await getUpcomingLaunchesAll(params);
       setData(response.data.data || []);
@@ -52,7 +46,7 @@ export function UpcomingLaunchesTable({ height = 400 }) {
     } finally {
       setLoading(false);
     }
-  }, [segmentFilter, sortConfig]);
+  }, [sortConfig]);
 
   useEffect(() => {
     fetchData();
@@ -134,51 +128,29 @@ export function UpcomingLaunchesTable({ height = 400 }) {
   return (
     <div id="upcoming-launches-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h3 className="font-semibold text-[#213448]">Upcoming Launches</h3>
-            <p className="text-xs text-[#547792]">
-              {loading ? 'Loading...' : `${data.length} projects`}
-              {!loading && data.length > 0 && (
-                <span className="ml-2">
-                  (CCR: {segmentCounts.CCR || 0} | RCR: {segmentCounts.RCR || 0} | OCR: {segmentCounts.OCR || 0})
-                </span>
-              )}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={(e) => { e.preventDefault(); fetchData(); }}
-              className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
-              title="Refresh data"
-              disabled={loading}
-            >
-              <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          </div>
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-[#213448]">Upcoming Launches</h3>
+          <p className="text-xs text-[#547792]">
+            {loading ? 'Loading...' : `${data.length} projects`}
+            {!loading && data.length > 0 && (
+              <span className="ml-2">
+                (CCR: {segmentCounts.CCR || 0} | RCR: {segmentCounts.RCR || 0} | OCR: {segmentCounts.OCR || 0})
+              </span>
+            )}
+          </p>
         </div>
-
-        {/* Filter controls */}
-        <div className="flex items-center gap-3">
-          {/* Segment filter */}
-          <div className="flex items-center gap-1 text-xs">
-            <span className="text-[#547792]">Segment:</span>
-            <select
-              value={segmentFilter}
-              onChange={(e) => setSegmentFilter(e.target.value)}
-              className="text-xs border border-[#94B4C1] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
-            >
-              <option value="">All</option>
-              <option value="CCR">CCR</option>
-              <option value="RCR">RCR</option>
-              <option value="OCR">OCR</option>
-            </select>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); fetchData(); }}
+          className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
+          title="Refresh data"
+          disabled={loading}
+        >
+          <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
       </div>
 
       {/* Table Container */}
