@@ -2034,6 +2034,7 @@ def floor_liquidity_heatmap():
     from sqlalchemy import func, and_
     from services.data_processor import _get_market_segment
     from services.dashboard_service import _dashboard_cache
+    from services.new_launch_units import get_units_for_project
 
     start = time.time()
 
@@ -2042,7 +2043,9 @@ def floor_liquidity_heatmap():
     if window_months not in [6, 12, 24]:
         window_months = 12
 
-    min_transactions = int(request.args.get('min_transactions', 10))
+    # Exclusion thresholds for reliable liquidity analysis
+    min_transactions = int(request.args.get('min_transactions', 30))  # Exclude projects with <30 resale txns
+    min_units = int(request.args.get('min_units', 100))  # Exclude boutique projects with <100 units
     limit = int(request.args.get('limit', 0))  # 0 = no limit (show all projects)
     skip_cache = request.args.get('skip_cache', '').lower() == 'true'
 
@@ -2129,8 +2132,28 @@ def floor_liquidity_heatmap():
             }
             projects_dict[proj]['total_transactions'] += row.count
 
-        # Filter by minimum transactions
-        projects = [p for p in projects_dict.values() if p['total_transactions'] >= min_transactions]
+        # Filter by minimum transactions and minimum units
+        # Track exclusions for transparency
+        excluded_low_txns = 0
+        excluded_boutique = 0
+        projects = []
+
+        for p in projects_dict.values():
+            # Check minimum transactions
+            if p['total_transactions'] < min_transactions:
+                excluded_low_txns += 1
+                continue
+
+            # Check minimum units (exclude boutique projects)
+            project_info = get_units_for_project(p['project_name'], check_resale=False)
+            total_units = project_info.get('total_units')
+            p['total_units'] = total_units  # Store for reference
+
+            if total_units is not None and total_units < min_units:
+                excluded_boutique += 1
+                continue
+
+            projects.append(p)
 
         # Calculate Z-scores within each project
         for project in projects:
@@ -2185,6 +2208,12 @@ def floor_liquidity_heatmap():
                 'filters_applied': filters_applied,
                 'total_projects': total_projects,
                 'projects_returned': len(projects),
+                'exclusions': {
+                    'low_transactions': excluded_low_txns,
+                    'boutique_projects': excluded_boutique,
+                    'min_transactions_threshold': min_transactions,
+                    'min_units_threshold': min_units
+                },
                 'cache_hit': False,
                 'elapsed_ms': 0
             }

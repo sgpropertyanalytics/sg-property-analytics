@@ -27,6 +27,7 @@ export function FloorLiquidityHeatmap({ height = 500, bedroom, segment }) {
 
   // Data state
   const [data, setData] = useState({ projects: [], floor_zone_order: [] });
+  const [meta, setMeta] = useState({ exclusions: {} });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -42,14 +43,14 @@ export function FloorLiquidityHeatmap({ height = 500, bedroom, segment }) {
 
       try {
         const params = buildApiParams({
-          window_months: windowMonths,
-          min_transactions: 10
+          window_months: windowMonths
         });
         if (bedroom) params.bedroom = bedroom;
         if (segment) params.segment = segment;
 
         const response = await getFloorLiquidityHeatmap(params);
-        setData(response.data.data || { projects: [], floor_zone_order: [] });
+        setData(response.data?.data || { projects: [], floor_zone_order: [] });
+        setMeta(response.data?.meta || { exclusions: {} });
       } catch (err) {
         console.error('Error fetching heatmap data:', err);
         setError(err.message);
@@ -293,6 +294,23 @@ export function FloorLiquidityHeatmap({ height = 500, bedroom, segment }) {
           </div>
         </div>
       )}
+
+      {/* Exclusion Note */}
+      <div className="px-6 py-2 bg-[#547792]/10 border-t border-[#94B4C1]/20">
+        <div className="flex items-center gap-2 text-xs text-[#547792]">
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>
+            Excluded: Boutique projects (&lt;100 units) and projects with &lt;30 resale transactions
+            {meta.exclusions?.low_transactions > 0 || meta.exclusions?.boutique_projects > 0 ? (
+              <span className="text-[#94B4C1] ml-1">
+                ({meta.exclusions.boutique_projects || 0} boutique, {meta.exclusions.low_transactions || 0} low volume)
+              </span>
+            ) : null}
+          </span>
+        </div>
+      </div>
 
       {/* Footer */}
       <div className="px-6 py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30">
