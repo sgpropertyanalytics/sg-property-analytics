@@ -9,6 +9,7 @@ import {
   LineChart,
   TrendingUp
 } from 'lucide-react';
+import YouVsMarketVisual from '../components/landing/YouVsMarketVisual';
 
 /**
  * Landing Page - "Warm Precision" Design System with Unified Texture
@@ -142,7 +143,6 @@ const LandingPage = () => {
  */
 function HeroSection({ navigate }) {
   const { scrollY } = useScroll();
-  const floatingCardY = useTransform(scrollY, [0, 500], [0, -60]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0]);
 
   return (
@@ -222,51 +222,9 @@ function HeroSection({ navigate }) {
         </motion.div>
       </motion.div>
 
-      {/* Aligned Container (max-w-7xl matches Navbar) */}
-      <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10" style={{ perspective: '2000px' }}>
-
-        {/* Dashboard Slab */}
-        <motion.div
-          initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          className="relative w-full"
-          style={{
-             transformStyle: 'preserve-3d',
-             transform: 'rotateX(20deg)',
-             transformOrigin: 'top center'
-          }}
-        >
-           <div className="relative rounded-t-2xl overflow-hidden shadow-2xl shadow-[#213448]/15 bg-white ring-1 ring-[#213448]/5 border border-white">
-             <div className="absolute top-0 inset-x-0 h-px bg-white/80 z-20" />
-             <img
-               src="/dashboard-screenshot.png"
-               alt="PropAnalytics Dashboard"
-               className="w-full h-auto object-cover"
-             />
-             <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(33,52,72,0.05)] pointer-events-none rounded-t-2xl" />
-             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/30 pointer-events-none mix-blend-overlay" />
-           </div>
-
-           {/* Floating Notification Card (Parallax + Glassmorphism) */}
-           <motion.div
-             style={{ y: floatingCardY }}
-             className="absolute -top-6 sm:-top-8 right-[-2%] sm:right-[2%] bg-[#213448]/95 backdrop-blur-md text-[#EAE0CF] p-3 sm:p-4 rounded-xl shadow-2xl border border-white/10 z-30 flex items-center gap-3 sm:gap-4 max-w-[200px] sm:max-w-xs"
-           >
-              <div className="p-2 sm:p-2.5 bg-[#547792] rounded-lg flex-shrink-0">
-                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[9px] sm:text-[10px] opacity-70 uppercase tracking-wider font-bold mb-0.5">Market Alert</div>
-                <div className="font-bold text-xs sm:text-sm leading-tight truncate">D15 Rental Yield +4.2%</div>
-              </div>
-           </motion.div>
-
-        </motion.div>
-
-        {/* Bottom Fade Mask - uses transparent gradient */}
-        <div className="absolute -bottom-20 left-0 right-0 h-48 bg-gradient-to-t from-[#FDFBF7] to-transparent z-20 pointer-events-none" />
-
+      {/* "You vs Market" Visual - demonstrates core value prop */}
+      <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10">
+        <YouVsMarketVisual />
       </div>
 
     </section>
