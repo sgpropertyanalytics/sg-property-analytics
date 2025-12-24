@@ -81,7 +81,7 @@ function Login() {
         </div>
 
         {/* Center Section - Floating Dashboard Preview with Poker Deck Stack */}
-        <div className="relative z-10 flex-1 flex items-center justify-center py-8">
+        <div className="relative z-10 flex-1 flex items-center justify-center py-8 pl-8">
           <motion.div
             initial={{ opacity: 0, y: 30, rotateX: 5 }}
             animate={{ opacity: 1, y: 0, rotateX: 0 }}
@@ -91,26 +91,24 @@ function Login() {
           >
             {/* Ghost Card 2 - Way Behind (lowest z-index) */}
             <div
-              className="absolute inset-0 bg-[#547792]/30 rounded-2xl border border-[#547792]/20"
+              className="absolute top-0 left-0 right-0 bottom-0 bg-[#547792]/50 rounded-2xl border border-[#547792]/30"
               style={{
-                transform: 'rotate(-6deg) translateX(-20px) translateY(10px) scale(0.9)',
-                opacity: 0.2,
-                zIndex: 1,
+                transform: 'rotate(-6deg) translate(-25px, 15px) scale(0.92)',
+                zIndex: -2,
               }}
             />
 
             {/* Ghost Card 1 - Behind */}
             <div
-              className="absolute inset-0 bg-[#547792]/40 rounded-2xl border border-[#547792]/30"
+              className="absolute top-0 left-0 right-0 bottom-0 bg-[#547792]/70 rounded-2xl border border-[#547792]/40"
               style={{
-                transform: 'rotate(-3deg) translateX(-10px) translateY(5px) scale(0.95)',
-                opacity: 0.5,
-                zIndex: 2,
+                transform: 'rotate(-3deg) translate(-12px, 8px) scale(0.96)',
+                zIndex: -1,
               }}
             />
 
             {/* Preview Mode Badge */}
-            <div className="absolute -top-3 left-8 z-30">
+            <div className="absolute -top-3 left-8" style={{ zIndex: 20 }}>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#213448] border border-[#547792]/50 rounded-full text-xs font-semibold text-[#94B4C1] shadow-lg backdrop-blur-sm">
                 <span className="w-1.5 h-1.5 bg-[#EAE0CF] rounded-full animate-pulse" />
                 Preview Mode
@@ -119,11 +117,10 @@ function Login() {
 
             {/* Main Card - Dashboard Snippet (highest z-index) */}
             <div
-              className="relative bg-[#213448]/90 backdrop-blur-xl rounded-2xl border border-[#547792]/40 overflow-hidden"
+              className="relative bg-[#213448] backdrop-blur-xl rounded-2xl border border-[#547792]/40 overflow-hidden"
               style={{
                 transform: 'rotateY(-2deg) rotateX(2deg)',
                 boxShadow: '0 25px 80px -12px rgba(148, 180, 193, 0.3), 0 12px 40px -8px rgba(33, 52, 72, 0.4)',
-                zIndex: 10,
               }}
             >
               {/* Card Header */}
