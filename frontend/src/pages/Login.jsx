@@ -89,8 +89,8 @@ function Login() {
 
         {/* Bottom Section - Value Proposition + Stats (Spec Sheet) */}
         <div className="relative z-10">
-          {/* Headline - single line at desktop */}
-          <h3 className="text-2xl xl:text-[1.75rem] font-bold text-[#EAE0CF] tracking-tight leading-tight mb-2">
+          {/* Headline - single line at desktop, max size without overflow */}
+          <h3 className="text-lg lg:text-xl xl:text-2xl 2xl:text-[1.75rem] font-bold text-[#EAE0CF] tracking-tight leading-tight mb-2 whitespace-nowrap">
             Institutional-grade analytics for Singapore private property
           </h3>
           <p className="text-base xl:text-lg text-[#94B4C1] leading-relaxed">
