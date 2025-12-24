@@ -4,6 +4,8 @@ import { GlobalNavRail, NAV_ITEMS } from './GlobalNavRail';
 import { PowerBIFilterProvider } from '../../context/PowerBIFilterContext';
 import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
 import { ErrorBoundary } from '../ui';
+import { useSubscription } from '../../context/SubscriptionContext';
+import { PricingModal } from '../PricingModal';
 
 /**
  * DashboardLayout - Double Sidebar Navigation System
@@ -39,6 +41,7 @@ const PAGE_CONFIG = {
 
 export function DashboardLayout({ children, activePage: propActivePage }) {
   const location = useLocation();
+  const { showPricingModal, hidePaywall } = useSubscription();
 
   // Determine active page from URL or prop
   const getActivePageFromPath = (pathname) => {
@@ -215,6 +218,9 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
             </ErrorBoundary>
           </main>
         </div>
+
+        {/* Pricing Modal - Global paywall trigger */}
+        <PricingModal isOpen={showPricingModal} onClose={hidePaywall} />
       </div>
     </PowerBIFilterProvider>
   );

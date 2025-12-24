@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
+import { SubscriptionProvider } from './context/SubscriptionContext';
 import LandingPage from './pages/Landing';
 import Login from './pages/Login';
+import Pricing from './pages/Pricing';
 import { DashboardLayout } from './components/layout';
 import { MacroOverviewContent } from './pages/MacroOverview';
 import { FloorDispersionContent } from './pages/FloorDispersion';
@@ -32,17 +34,21 @@ import { ValueParityPanel } from './components/ValueParityPanel';
 function App() {
   return (
     <AuthProvider>
-      <DataProvider>
-        <BrowserRouter>
-          <Routes>
-          {/* ===== Public Routes (No Dashboard Layout) ===== */}
+      <SubscriptionProvider>
+        <DataProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* ===== Public Routes (No Dashboard Layout) ===== */}
 
-          {/* Landing Page - Public home page */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/landing" element={<LandingPage />} />
+              {/* Landing Page - Public home page */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/landing" element={<LandingPage />} />
 
-          {/* Login - Authentication */}
-          <Route path="/login" element={<Login />} />
+              {/* Login - Authentication */}
+              <Route path="/login" element={<Login />} />
+
+              {/* Pricing - Subscription plans */}
+              <Route path="/pricing" element={<Pricing />} />
 
           {/* ===== Dashboard Routes with Double-Sidebar Layout ===== */}
 
@@ -125,11 +131,12 @@ function App() {
           <Route path="/dashboard" element={<Navigate to="/market-pulse" replace />} />
           <Route path="/macro-overview" element={<Navigate to="/market-pulse" replace />} />
 
-            {/* Catch-all -> Landing Page */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </DataProvider>
+              {/* Catch-all -> Landing Page */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </DataProvider>
+      </SubscriptionProvider>
     </AuthProvider>
   );
 }

@@ -560,12 +560,16 @@ def district_liquidity():
         filter_conditions.append(Transaction.sale_type == sale_type_filter)
 
     try:
-        # Query transaction counts by district with sale type breakdown
+        # =================================================================
+        # MARKET STRUCTURE METRICS (Combined: respects user's sale_type filter)
+        # These show total market activity based on user's filter selection
+        # =================================================================
         query = db.session.query(
             Transaction.district,
             func.count(Transaction.id).label("tx_count"),
             func.count(case((Transaction.sale_type == 'New Sale', 1))).label("new_sale_count"),
             func.count(case((Transaction.sale_type == 'Resale', 1))).label("resale_count"),
+            func.count(func.distinct(Transaction.project_name)).label("project_count"),
         ).filter(
             and_(*filter_conditions)
         ).group_by(
@@ -575,7 +579,7 @@ def district_liquidity():
         results = query.all()
         district_data = {row.district: row for row in results}
 
-        # Query bedroom breakdown per district
+        # Query bedroom breakdown per district (combined)
         bedroom_query = db.session.query(
             Transaction.district,
             Transaction.bedroom_count,
@@ -594,13 +598,53 @@ def district_liquidity():
                 bedroom_by_district[row.district] = {}
             bedroom_by_district[row.district][str(row.bedroom_count)] = row.count
 
-        # Query project-level transaction counts per district for concentration calculation
+        # =================================================================
+        # EXIT SAFETY METRICS (Resale-only: ignores user's sale_type filter)
+        # These measure organic market depth and exit conditions
+        # New sales are excluded because:
+        # - Developer-controlled release schedules distort velocity
+        # - Marketing-driven spikes create false liquidity signals
+        # - New launch concentration is 100% by definition (one developer)
+        # =================================================================
+        resale_filter_conditions = [
+            Transaction.outlier_filter(),
+            Transaction.sale_type == 'Resale'  # ALWAYS resale only for exit safety
+        ]
+        if date_from:
+            resale_filter_conditions.append(Transaction.transaction_date >= date_from)
+        # Apply bedroom filter to resale metrics too
+        if bed_filter != "all":
+            if bed_filter == "1":
+                resale_filter_conditions.append(Transaction.bedroom_count == 1)
+            elif bed_filter == "2":
+                resale_filter_conditions.append(Transaction.bedroom_count == 2)
+            elif bed_filter == "3":
+                resale_filter_conditions.append(Transaction.bedroom_count == 3)
+            elif bed_filter == "4":
+                resale_filter_conditions.append(Transaction.bedroom_count == 4)
+            elif bed_filter == "5":
+                resale_filter_conditions.append(Transaction.bedroom_count >= 5)
+
+        # Query resale transaction counts for velocity/Z-score calculation
+        resale_velocity_query = db.session.query(
+            Transaction.district,
+            func.count(Transaction.id).label("resale_tx_count"),
+        ).filter(
+            and_(*resale_filter_conditions)
+        ).group_by(
+            Transaction.district
+        )
+
+        resale_velocity_results = resale_velocity_query.all()
+        resale_velocity_data = {row.district: row.resale_tx_count for row in resale_velocity_results}
+
+        # Query project-level resale transaction counts for concentration calculation
         project_query = db.session.query(
             Transaction.district,
             Transaction.project_name,
             func.count(Transaction.id).label("count")
         ).filter(
-            and_(*filter_conditions)
+            and_(*resale_filter_conditions)
         ).group_by(
             Transaction.district,
             Transaction.project_name
@@ -613,12 +657,13 @@ def district_liquidity():
                 projects_by_district[row.district] = []
             projects_by_district[row.district].append(row.count)
 
-        # Gini coefficient calculation function
+        # Gini coefficient calculation function (applied to resale only)
         def calculate_gini(values):
             """
             Calculate Gini coefficient for concentration measurement.
             0 = perfect equality (transactions spread evenly across projects)
             1 = perfect inequality (one project dominates all transactions)
+            NOTE: This is calculated on RESALE transactions only.
             """
             if not values or len(values) < 2:
                 return 0.0
@@ -634,13 +679,13 @@ def district_liquidity():
             cumsum = sum((i + 1) * v for i, v in enumerate(sorted_values))
             return (2 * cumsum) / (n * total) - (n + 1) / n
 
-        # Get fragility label based on Gini coefficient
+        # Get fragility label based on Gini coefficient (resale-only)
         def get_fragility_label(gini):
             """
-            Fragility based on concentration:
-            - Low Gini (<0.4): Robust - spread across many projects
-            - Medium Gini (0.4-0.7): Moderate - some concentration
-            - High Gini (>0.7): Fragile - dominated by few projects
+            Fragility based on concentration of RESALE transactions:
+            - Low Gini (<0.4): Robust - resale spread across many projects
+            - Medium Gini (0.4-0.7): Moderate - some concentration in resale
+            - High Gini (>0.7): Fragile - resale dominated by few projects
             """
             if gini < 0.4:
                 return "Robust"
@@ -660,31 +705,35 @@ def district_liquidity():
                 "top_project_share": round(max(project_counts) / sum(project_counts) * 100, 1) if project_counts else 0
             }
 
-        # Calculate velocities and Z-scores
+        # Calculate velocities and Z-scores (RESALE ONLY for exit safety)
+        # Velocity = resale transactions / months (organic demand signal)
         velocities = []
-        for row in results:
-            velocity = row.tx_count / months_in_period
-            velocities.append((row.district, velocity))
+        for district, resale_tx_count in resale_velocity_data.items():
+            velocity = resale_tx_count / months_in_period
+            velocities.append((district, velocity, resale_tx_count))
 
-        # Calculate mean and stddev for Z-score
+        # Calculate mean and stddev for Z-score (resale velocity)
         if len(velocities) > 1:
-            velocity_values = [v for _, v in velocities]
+            velocity_values = [v for _, v, _ in velocities]
             mean_velocity = statistics.mean(velocity_values)
             stddev_velocity = statistics.stdev(velocity_values)
         else:
             mean_velocity = velocities[0][1] if velocities else 0
             stddev_velocity = 1  # Avoid division by zero
 
-        # Calculate Z-scores
+        # Calculate Z-scores (resale velocity deviation from mean)
         z_scores = {}
-        for district, velocity in velocities:
+        resale_velocities = {}
+        for district, velocity, resale_count in velocities:
+            resale_velocities[district] = velocity
             if stddev_velocity > 0:
                 z_scores[district] = (velocity - mean_velocity) / stddev_velocity
             else:
                 z_scores[district] = 0
 
-        # Determine liquidity tier based on Z-score
+        # Determine liquidity tier based on Z-score (resale-based)
         def get_liquidity_tier(z_score):
+            """Tier based on resale velocity Z-score (exit safety indicator)"""
             if z_score >= 1.5:
                 return "Very High"
             elif z_score >= 0.5:
@@ -714,17 +763,28 @@ def district_liquidity():
             full_name = DISTRICT_NAMES.get(district_id, district_id)
             short_name = full_name.split(" / ")[0] if " / " in full_name else full_name
 
-            if district_id in district_data:
-                row = district_data[district_id]
-                tx_count = row.tx_count or 0
-                new_sale_count = row.new_sale_count or 0
-                resale_count = row.resale_count or 0
-                total_transactions += tx_count
+            # Check if district has any data (combined or resale)
+            has_combined = district_id in district_data
+            has_resale = district_id in resale_velocities
 
-                # Calculate velocity
-                monthly_velocity = round(tx_count / months_in_period, 2)
+            if has_combined or has_resale:
+                # MARKET STRUCTURE METRICS (Combined - based on user's filter)
+                if has_combined:
+                    row = district_data[district_id]
+                    tx_count = row.tx_count or 0
+                    new_sale_count = row.new_sale_count or 0
+                    resale_count = row.resale_count or 0
+                    project_count = row.project_count or 0  # All active projects
+                    total_transactions += tx_count
+                else:
+                    tx_count = 0
+                    new_sale_count = 0
+                    resale_count = 0
+                    project_count = 0
 
-                # Get Z-score and tier
+                # EXIT SAFETY METRICS (Resale-only - organic demand signals)
+                # Velocity = resale transactions / months
+                monthly_velocity = round(resale_velocities.get(district_id, 0), 2)
                 z_score = round(z_scores.get(district_id, 0), 2)
                 liquidity_tier = get_liquidity_tier(z_score)
 
@@ -732,7 +792,7 @@ def district_liquidity():
                 new_sale_pct = round((new_sale_count / tx_count) * 100, 1) if tx_count > 0 else 0
                 resale_pct = round((resale_count / tx_count) * 100, 1) if tx_count > 0 else 0
 
-                # Get concentration metrics
+                # Get concentration metrics (resale-only)
                 concentration = concentration_by_district.get(district_id, {
                     "gini": 0,
                     "fragility": "Unknown",
@@ -747,18 +807,21 @@ def district_liquidity():
                     "region": region,
                     "has_data": True,
                     "liquidity_metrics": {
+                        # Market Structure (Combined)
                         "tx_count": tx_count,
-                        "monthly_velocity": monthly_velocity,
-                        "z_score": z_score,
-                        "liquidity_tier": liquidity_tier,
                         "new_sale_count": new_sale_count,
                         "resale_count": resale_count,
                         "new_sale_pct": new_sale_pct,
                         "resale_pct": resale_pct,
-                        # Concentration metrics
+                        "project_count": project_count,  # All active projects
+                        # Exit Safety (Resale-only)
+                        "monthly_velocity": monthly_velocity,  # Resale velocity
+                        "z_score": z_score,  # Resale velocity Z-score
+                        "liquidity_tier": liquidity_tier,  # Based on resale Z-score
+                        # Concentration Risks (Resale-only)
                         "concentration_gini": concentration["gini"],
                         "fragility_label": concentration["fragility"],
-                        "project_count": concentration["project_count"],
+                        "resale_project_count": concentration["project_count"],  # Projects with resale
                         "top_project_share": concentration["top_project_share"]
                     },
                     "bedroom_breakdown": bedroom_by_district.get(district_id, {})
@@ -772,18 +835,21 @@ def district_liquidity():
                     "region": region,
                     "has_data": False,
                     "liquidity_metrics": {
+                        # Market Structure (Combined)
                         "tx_count": 0,
-                        "monthly_velocity": 0,
-                        "z_score": None,
-                        "liquidity_tier": None,
                         "new_sale_count": 0,
                         "resale_count": 0,
                         "new_sale_pct": 0,
                         "resale_pct": 0,
-                        # Concentration metrics
+                        "project_count": 0,
+                        # Exit Safety (Resale-only)
+                        "monthly_velocity": 0,
+                        "z_score": None,
+                        "liquidity_tier": None,
+                        # Concentration Risks (Resale-only)
                         "concentration_gini": None,
                         "fragility_label": None,
-                        "project_count": 0,
+                        "resale_project_count": 0,
                         "top_project_share": 0
                     },
                     "bedroom_breakdown": {}
@@ -805,6 +871,11 @@ def district_liquidity():
                 "total_transactions": total_transactions,
                 "mean_velocity": round(mean_velocity, 2),
                 "stddev_velocity": round(stddev_velocity, 2),
+                "methodology_notes": {
+                    "exit_safety_metrics": "Velocity, Z-Score, Tier, Rank calculated on RESALE only (organic demand signal)",
+                    "concentration_metrics": "Gini, Fragility, Top Share calculated on RESALE only (avoids developer release distortion)",
+                    "market_structure_metrics": "Transactions, Projects, New%/Resale% include all sale types (total activity)"
+                },
                 "elapsed_ms": int(elapsed * 1000)
             }
         })

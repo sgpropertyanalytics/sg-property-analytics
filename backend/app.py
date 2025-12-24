@@ -240,6 +240,10 @@ def create_app():
     from routes.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
 
+    # Payment routes (Stripe integration)
+    from routes.payments import payments_bp
+    app.register_blueprint(payments_bp, url_prefix='/api/payments')
+
     # Ad serving routes
     from routes.ads import ads_bp
     app.register_blueprint(ads_bp, url_prefix='/api/ads')

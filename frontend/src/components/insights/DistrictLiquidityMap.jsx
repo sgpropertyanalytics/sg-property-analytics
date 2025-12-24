@@ -305,13 +305,13 @@ function HoverCard({ district, data }) {
           </div>
         </div>
 
-        {/* Concentration / Fragility */}
+        {/* Concentration / Fragility (Resale Only) */}
         {metrics.fragility_label && (
           <>
             <div className="h-px bg-[#94B4C1]/30 my-2" />
             <div className="space-y-1">
               <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold">
-                Market Concentration
+                Concentration Risk <span className="text-rose-400 font-normal">(resale)</span>
               </p>
               <div className="flex items-center justify-between">
                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
@@ -324,7 +324,7 @@ function HoverCard({ district, data }) {
                   {metrics.fragility_label}
                 </span>
                 <span className="text-[10px] text-[#547792]">
-                  {metrics.project_count} projects
+                  {metrics.resale_project_count || metrics.project_count || 0} resale projects
                 </span>
               </div>
               <div className="flex justify-between items-center text-[10px]">
@@ -884,14 +884,25 @@ function LiquidityRankingTable({ districtData }) {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            {/* Group Header Row */}
+            {/* Group Header Row - Exit Safety + Concentration (Resale-only) */}
             <tr className="bg-[#EAE0CF]/20">
-              <th colSpan={11} className="border-b border-[#94B4C1]/20"></th>
+              <th colSpan={6} className="border-b border-[#94B4C1]/20"></th>
               <th
                 colSpan={3}
-                className="px-3 py-1.5 text-center text-[10px] font-bold text-[#547792] uppercase tracking-wider border-l-2 border-r-2 border-t-2 border-dashed border-[#94B4C1]/60 bg-rose-50/30"
+                className="px-3 py-1.5 text-center text-[10px] font-bold text-[#547792] uppercase tracking-wider border-l-2 border-t-2 border-dashed border-emerald-400/60 bg-emerald-50/30"
+                title="Exit Safety metrics: Velocity, Z-Score, Tier calculated on RESALE only (organic demand signal)"
+              >
+                Exit Safety
+                <span className="ml-1 text-[8px] font-normal text-emerald-500">(resale)</span>
+              </th>
+              <th colSpan={2} className="border-b border-[#94B4C1]/20"></th>
+              <th
+                colSpan={3}
+                className="px-3 py-1.5 text-center text-[10px] font-bold text-[#547792] uppercase tracking-wider border-l-2 border-r-2 border-t-2 border-dashed border-rose-400/60 bg-rose-50/30"
+                title="Concentration metrics: Gini, Fragility, Top Share calculated on RESALE only (avoids developer release distortion)"
               >
                 Concentration Risks
+                <span className="ml-1 text-[8px] font-normal text-rose-400">(resale)</span>
               </th>
             </tr>
             {/* Column Header Row */}
@@ -900,16 +911,16 @@ function LiquidityRankingTable({ districtData }) {
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap">District</th>
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap min-w-[200px]">Area</th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Region</th>
-              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Tier</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Projects</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Velocity/mo</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Transactions</th>
+              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap border-l-2 border-dashed border-emerald-400/60">Tier</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Velocity/mo</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Z-Score</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">New %</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Resale %</th>
-              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap border-l-2 border-dashed border-[#94B4C1]/60">Fragility</th>
+              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap border-l-2 border-dashed border-rose-400/60">Fragility</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Gini</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap border-r-2 border-dashed border-[#94B4C1]/60">Top Share</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap border-r-2 border-dashed border-rose-400/60">Top Share</th>
             </tr>
           </thead>
           <tbody>
@@ -951,29 +962,29 @@ function LiquidityRankingTable({ districtData }) {
                     </span>
                   </td>
 
-                  {/* Liquidity Tier */}
-                  <td className="px-3 py-2 text-center">
+                  {/* Project Count (Market Structure - Combined) */}
+                  <td className="px-3 py-2 text-right text-[#547792]">
+                    {m.project_count || 0}
+                  </td>
+
+                  {/* Transaction Count (Market Structure - Combined) */}
+                  <td className="px-3 py-2 text-right text-[#213448]">
+                    {m.tx_count?.toLocaleString() || '0'}
+                  </td>
+
+                  {/* Exit Safety Group - Liquidity Tier (Resale-only) */}
+                  <td className="px-3 py-2 text-center border-l-2 border-dashed border-emerald-400/60">
                     <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${getTierBadge(m.liquidity_tier)}`}>
                       {m.liquidity_tier || '-'}
                     </span>
                   </td>
 
-                  {/* Project Count - moved before velocity */}
-                  <td className="px-3 py-2 text-right text-[#547792]">
-                    {m.project_count || 0}
-                  </td>
-
-                  {/* Monthly Velocity */}
+                  {/* Exit Safety Group - Monthly Velocity (Resale-only) */}
                   <td className="px-3 py-2 text-right font-bold text-[#213448]">
                     {m.monthly_velocity?.toFixed(1) || '0'}
                   </td>
 
-                  {/* Transaction Count */}
-                  <td className="px-3 py-2 text-right text-[#213448]">
-                    {m.tx_count?.toLocaleString() || '0'}
-                  </td>
-
-                  {/* Z-Score */}
+                  {/* Exit Safety Group - Z-Score (Resale-only) */}
                   <td className="px-3 py-2 text-right">
                     <span className={`font-semibold ${
                       (m.z_score || 0) >= 0.5 ? 'text-emerald-600' :
@@ -984,30 +995,30 @@ function LiquidityRankingTable({ districtData }) {
                     </span>
                   </td>
 
-                  {/* New Sale % */}
+                  {/* New Sale % (Market Structure - Combined) */}
                   <td className="px-3 py-2 text-right text-[#547792]">
                     {m.new_sale_pct?.toFixed(0) || '0'}%
                   </td>
 
-                  {/* Resale % */}
+                  {/* Resale % (Market Structure - Combined) */}
                   <td className="px-3 py-2 text-right text-[#547792]">
                     {m.resale_pct?.toFixed(0) || '0'}%
                   </td>
 
-                  {/* Concentration Risks Group - Fragility Badge */}
-                  <td className="px-3 py-2 text-center border-l-2 border-dashed border-[#94B4C1]/60">
+                  {/* Concentration Risks Group - Fragility Badge (Resale-only) */}
+                  <td className="px-3 py-2 text-center border-l-2 border-dashed border-rose-400/60">
                     <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${getFragilityBadge(m.fragility_label)}`}>
                       {m.fragility_label || '-'}
                     </span>
                   </td>
 
-                  {/* Concentration Risks Group - Gini Index */}
+                  {/* Concentration Risks Group - Gini Index (Resale-only) */}
                   <td className="px-3 py-2 text-right text-[#547792]">
                     {m.concentration_gini?.toFixed(2) || '-'}
                   </td>
 
-                  {/* Concentration Risks Group - Top Project Share */}
-                  <td className="px-3 py-2 text-right text-[#547792] border-r-2 border-dashed border-[#94B4C1]/60">
+                  {/* Concentration Risks Group - Top Project Share (Resale-only) */}
+                  <td className="px-3 py-2 text-right text-[#547792] border-r-2 border-dashed border-rose-400/60">
                     {m.top_project_share?.toFixed(0) || '0'}%
                   </td>
                 </tr>

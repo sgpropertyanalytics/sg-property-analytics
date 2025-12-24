@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
+import { BlurredCell } from '../BlurredCell';
 
 /**
  * Transaction Data Table - Responsive table showing transaction-level details
@@ -218,7 +219,7 @@ export function TransactionDataTable({ height = 400 }) {
                       {formatDate(txn.transaction_date)}
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[200px]" title={txn.project_name}>
-                      {txn.project_name || '-'}
+                      <BlurredCell value={txn.project_name} blurType="project" district={txn.district} />
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                       {txn.district || '-'}
@@ -227,13 +228,13 @@ export function TransactionDataTable({ height = 400 }) {
                       {txn.bedroom_count || '-'}
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      {txn.area_sqft?.toLocaleString() || '-'}
+                      <BlurredCell value={txn.area_sqft} blurType="size" />
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-800 font-medium text-right">
-                      {formatCurrency(txn.price)}
+                      <BlurredCell value={txn.price} blurType="price" />
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      {formatCurrency(txn.psf)}
+                      <BlurredCell value={txn.psf} blurType="psf" />
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100">
                       <span className={`px-1.5 py-0.5 text-xs rounded ${

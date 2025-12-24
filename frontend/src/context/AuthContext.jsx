@@ -1,12 +1,18 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
+import apiClient from '../api/client';
 
 /**
  * Authentication Context
  *
  * Provides authentication state and methods throughout the app.
  * Uses Firebase Authentication with Google OAuth.
+ *
+ * After Firebase sign-in, syncs with backend to:
+ * - Create/find user in database
+ * - Get JWT token for API calls
+ * - Get subscription status
  *
  * Firebase is lazily initialized - only when sign-in is attempted.
  * This prevents blocking the landing page when API keys aren't configured.
@@ -54,6 +60,34 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Sync Firebase user with backend
+  const syncWithBackend = useCallback(async (firebaseUser) => {
+    if (!firebaseUser) return null;
+
+    try {
+      // Get Firebase ID token
+      const idToken = await firebaseUser.getIdToken();
+
+      // Sync with backend
+      const response = await apiClient.post('/auth/firebase-sync', {
+        idToken,
+        email: firebaseUser.email,
+      });
+
+      // Store JWT for subsequent API calls
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+
+      return response.data;
+    } catch (err) {
+      console.error('Backend sync failed:', err);
+      // Don't fail auth - user is still signed in with Firebase
+      // Backend sync will retry on next API call
+      return null;
+    }
+  }, []);
+
   // Sign in with Google
   const signInWithGoogle = useCallback(async () => {
     setError(null);
@@ -67,17 +101,27 @@ export function AuthProvider({ children }) {
       const auth = getFirebaseAuth();
       const provider = getGoogleProvider();
       const result = await signInWithPopup(auth, provider);
-      return result.user;
+
+      // Sync with backend to get JWT and subscription status
+      const backendData = await syncWithBackend(result.user);
+
+      return {
+        firebaseUser: result.user,
+        backendData,
+      };
     } catch (err) {
       console.error('Google sign-in error:', err);
       setError(getErrorMessage(err.code));
       throw err;
     }
-  }, []);
+  }, [syncWithBackend]);
 
   // Sign out
   const logout = useCallback(async () => {
     setError(null);
+
+    // Clear JWT token
+    localStorage.removeItem('token');
 
     if (!isFirebaseConfigured()) {
       setUser(null);
@@ -120,6 +164,7 @@ export function AuthProvider({ children }) {
     error,
     signInWithGoogle,
     logout,
+    syncWithBackend,
     isAuthenticated: !!user,
     isConfigured: isFirebaseConfigured(),
   };

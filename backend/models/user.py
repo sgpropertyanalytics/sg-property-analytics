@@ -7,10 +7,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model):
     __tablename__ = 'users'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    firebase_uid = db.Column(db.String(128), unique=True, nullable=True, index=True)
     tier = db.Column(db.String(20), default='free')  # 'free', 'premium', 'enterprise'
     stripe_customer_id = db.Column(db.String(255))
     subscription_ends_at = db.Column(db.DateTime)
@@ -39,6 +40,7 @@ class User(db.Model):
             'email': self.email,
             'tier': self.tier,
             'subscribed': self.is_subscribed(),
+            'subscription_ends_at': self.subscription_ends_at.isoformat() if self.subscription_ends_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

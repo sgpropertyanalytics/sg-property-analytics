@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getHotProjects } from '../../api/client';
+import { BlurredCell } from '../BlurredCell';
 
 /**
  * Active New Sales Table - Shows LAUNCHED projects with sales progress
@@ -258,7 +259,7 @@ export function HotProjectsTable({
                     <td className="px-3 py-2 border-b border-slate-100">
                       <div className="flex flex-col gap-0.5">
                         <span className="font-medium text-slate-800 truncate max-w-[200px] text-sm" title={project.project_name}>
-                          {project.project_name || '-'}
+                          <BlurredCell value={project.project_name} blurType="project" district={project.district} />
                         </span>
                         {project.has_popular_school && (
                           <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded whitespace-nowrap w-fit">
@@ -330,20 +331,12 @@ export function HotProjectsTable({
 
                     {/* Median Price */}
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
-                      {project.median_price ? (
-                        `$${(project.median_price / 1000000).toFixed(2)}M`
-                      ) : (
-                        <span className="text-slate-400 italic">-</span>
-                      )}
+                      <BlurredCell value={project.median_price} blurType="price" />
                     </td>
 
                     {/* Median PSF */}
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
-                      {project.median_psf ? (
-                        `$${project.median_psf.toLocaleString()}`
-                      ) : (
-                        <span className="text-slate-400 italic">-</span>
-                      )}
+                      <BlurredCell value={project.median_psf} blurType="psf" />
                     </td>
                   </tr>
                 ))

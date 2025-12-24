@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
 import { DISTRICT_NAMES, formatPrice, formatPSF } from '../../constants';
+import { BlurredCell } from '../BlurredCell';
 
 /**
  * Transaction Detail Modal - Drill-Through
@@ -182,7 +183,7 @@ export function TransactionDetailModal({ isOpen, onClose, title, additionalFilte
                         {txn.transaction_date}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-800 font-medium max-w-xs truncate">
-                        {txn.project_name}
+                        <BlurredCell value={txn.project_name} blurType="project" district={txn.district} />
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
                         <span className="font-medium">{txn.district}</span>
@@ -194,13 +195,13 @@ export function TransactionDetailModal({ isOpen, onClose, title, additionalFilte
                         {txn.bedroom_count}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600 text-right">
-                        {txn.area_sqft?.toLocaleString()}
+                        <BlurredCell value={txn.area_sqft} blurType="size" />
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-800 font-medium text-right">
-                        ${txn.price?.toLocaleString()}
+                        <BlurredCell value={txn.price} blurType="price" />
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600 text-right">
-                        ${txn.psf?.toLocaleString()}
+                        <BlurredCell value={txn.psf} blurType="psf" />
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className={`text-xs px-2 py-1 rounded-full ${
