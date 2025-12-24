@@ -203,7 +203,8 @@ function HeroSection({ navigate }) {
             onClick={() => navigate('/market-pulse')}
             className="group px-8 py-4 rounded-lg bg-[#213448] text-[#EAE0CF] font-semibold shadow-lg shadow-[#213448]/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
           >
-            <span>Access Pricing Intelligence</span>
+            <Database className="w-4 h-4" />
+            <span>Access Dashboard</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
         </motion.div>
