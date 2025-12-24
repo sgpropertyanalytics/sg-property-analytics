@@ -2317,10 +2317,17 @@ def get_project_inventory(project_name):
 @analytics_bp.route("/scatter-sample", methods=["GET"])
 def scatter_sample():
     """
-    Get a random sample of transactions for scatter plot visualization.
+    Get a stable sample of transactions for scatter plot visualization.
 
     Returns sampled points for Unit Size vs Price chart (memory-safe).
-    Uses SQL TABLESAMPLE for efficient random sampling.
+    Uses stable hash-based sampling (md5 of ID) for consistent results.
+
+    Sampling Strategy:
+      - Without seed: Deterministic sample (same filters = same data points)
+      - With seed: Different sample (used by refresh button for new view)
+
+    This solves the "flickering" UX problem where charts would show different
+    points on every filter change, confusing users.
 
     Query params:
       Filters (same as other endpoints):
@@ -2334,6 +2341,7 @@ def scatter_sample():
 
       Options:
         - sample_size: max points to return (default: 2000, max: 5000)
+        - seed: random string to generate different sample (used by refresh)
 
     Returns:
       {
@@ -2359,8 +2367,14 @@ def scatter_sample():
         # Parse sample size
         sample_size = min(int(request.args.get('sample_size', 2000)), 5000)
 
+        # Parse optional seed for refresh functionality
+        # - No seed: stable hash (same filters = same sample)
+        # - With seed: different sample (used by refresh button)
+        seed = request.args.get('seed', '')
+
         # Build base query with outlier exclusion
         query = db.session.query(
+            Transaction.id,  # Need ID for stable hashing
             Transaction.price,
             Transaction.area_sqft,
             Transaction.bedroom_count,
@@ -2417,9 +2431,18 @@ def scatter_sample():
         # Get total count first (for meta)
         total_count = query.count()
 
-        # Random sample using ORDER BY RANDOM() LIMIT n
-        # This is PostgreSQL-compatible and memory-safe
-        sampled = query.order_by(func.random()).limit(sample_size).all()
+        # Stable hash-based sampling using md5(id || seed)
+        # - Without seed: deterministic sample (same filters = same dots)
+        # - With seed: different sample (refresh button generates new seed)
+        # This solves the "flickering" UX problem where samples change unexpectedly
+        if seed:
+            # Seed provided (from refresh button) - include it for variation
+            hash_expr = func.md5(func.concat(func.cast(Transaction.id, text('TEXT')), seed))
+        else:
+            # No seed - stable hash based only on ID
+            hash_expr = func.md5(func.cast(Transaction.id, text('TEXT')))
+
+        sampled = query.order_by(hash_expr).limit(sample_size).all()
 
         # Format response
         data = [

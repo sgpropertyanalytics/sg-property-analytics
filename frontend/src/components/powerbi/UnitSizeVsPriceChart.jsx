@@ -29,6 +29,8 @@ ChartJS.register(
  * "What's my budget?" (Price Distribution) + "What can I get?" (This chart)
  *
  * Features:
+ * - Stable sampling: same filters = same data points (no flickering)
+ * - Refresh button: generates new random sample on demand
  * - Sampled data (2000 points) for performance
  * - Color-coded by bedroom type
  * - Opacity handles overplotting
@@ -41,13 +43,13 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
   const [meta, setMeta] = useState({ sample_size: 0, total_count: 0 });
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshSeed, setRefreshSeed] = useState(null); // null = stable sample, string = new sample
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
-  // Handle refresh button click
+  // Handle refresh button click - generates random seed for new sample
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
+    setRefreshSeed(Math.random().toString(36).substring(2, 10));
   };
 
   // Bedroom colors - matches BedroomMixChart palette
@@ -81,12 +83,20 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         // Build params using global filter system
         const baseParams = buildApiParams({});
 
+        // Build request params
+        // - Without seed: stable sample (same filters = same data points)
+        // - With seed: different sample (triggered by refresh button)
+        const requestParams = {
+          ...baseParams,
+          sample_size: 2000,
+        };
+        if (refreshSeed) {
+          requestParams.seed = refreshSeed;
+        }
+
         // Call the scatter-sample endpoint
         const response = await apiClient.get('/scatter-sample', {
-          params: {
-            ...baseParams,
-            sample_size: 2000,
-          }
+          params: requestParams
         });
 
         setData(response.data.data || []);
@@ -102,7 +112,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     };
 
     fetchData();
-  }, [buildApiParams, filters, highlight, crossFilter, refreshKey]);
+  }, [buildApiParams, filters, highlight, crossFilter, refreshSeed]);
 
   // Transform data for Chart.js - group by bedroom
   const chartData = useMemo(() => {
