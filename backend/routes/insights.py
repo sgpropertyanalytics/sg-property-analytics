@@ -594,6 +594,72 @@ def district_liquidity():
                 bedroom_by_district[row.district] = {}
             bedroom_by_district[row.district][str(row.bedroom_count)] = row.count
 
+        # Query project-level transaction counts per district for concentration calculation
+        project_query = db.session.query(
+            Transaction.district,
+            Transaction.project_name,
+            func.count(Transaction.id).label("count")
+        ).filter(
+            and_(*filter_conditions)
+        ).group_by(
+            Transaction.district,
+            Transaction.project_name
+        )
+
+        project_results = project_query.all()
+        projects_by_district = {}
+        for row in project_results:
+            if row.district not in projects_by_district:
+                projects_by_district[row.district] = []
+            projects_by_district[row.district].append(row.count)
+
+        # Gini coefficient calculation function
+        def calculate_gini(values):
+            """
+            Calculate Gini coefficient for concentration measurement.
+            0 = perfect equality (transactions spread evenly across projects)
+            1 = perfect inequality (one project dominates all transactions)
+            """
+            if not values or len(values) < 2:
+                return 0.0
+
+            sorted_values = sorted(values)
+            n = len(sorted_values)
+            total = sum(sorted_values)
+
+            if total == 0:
+                return 0.0
+
+            # Gini formula: G = (2 * sum(i * x_i)) / (n * sum(x_i)) - (n + 1) / n
+            cumsum = sum((i + 1) * v for i, v in enumerate(sorted_values))
+            return (2 * cumsum) / (n * total) - (n + 1) / n
+
+        # Get fragility label based on Gini coefficient
+        def get_fragility_label(gini):
+            """
+            Fragility based on concentration:
+            - Low Gini (<0.4): Robust - spread across many projects
+            - Medium Gini (0.4-0.7): Moderate - some concentration
+            - High Gini (>0.7): Fragile - dominated by few projects
+            """
+            if gini < 0.4:
+                return "Robust"
+            elif gini < 0.7:
+                return "Moderate"
+            else:
+                return "Fragile"
+
+        # Calculate concentration metrics per district
+        concentration_by_district = {}
+        for district, project_counts in projects_by_district.items():
+            gini = calculate_gini(project_counts)
+            concentration_by_district[district] = {
+                "gini": round(gini, 3),
+                "fragility": get_fragility_label(gini),
+                "project_count": len(project_counts),
+                "top_project_share": round(max(project_counts) / sum(project_counts) * 100, 1) if project_counts else 0
+            }
+
         # Calculate velocities and Z-scores
         velocities = []
         for row in results:
@@ -666,6 +732,14 @@ def district_liquidity():
                 new_sale_pct = round((new_sale_count / tx_count) * 100, 1) if tx_count > 0 else 0
                 resale_pct = round((resale_count / tx_count) * 100, 1) if tx_count > 0 else 0
 
+                # Get concentration metrics
+                concentration = concentration_by_district.get(district_id, {
+                    "gini": 0,
+                    "fragility": "Unknown",
+                    "project_count": 0,
+                    "top_project_share": 0
+                })
+
                 districts_response.append({
                     "district_id": district_id,
                     "name": short_name,
@@ -680,7 +754,12 @@ def district_liquidity():
                         "new_sale_count": new_sale_count,
                         "resale_count": resale_count,
                         "new_sale_pct": new_sale_pct,
-                        "resale_pct": resale_pct
+                        "resale_pct": resale_pct,
+                        # Concentration metrics
+                        "concentration_gini": concentration["gini"],
+                        "fragility_label": concentration["fragility"],
+                        "project_count": concentration["project_count"],
+                        "top_project_share": concentration["top_project_share"]
                     },
                     "bedroom_breakdown": bedroom_by_district.get(district_id, {})
                 })
@@ -700,7 +779,12 @@ def district_liquidity():
                         "new_sale_count": 0,
                         "resale_count": 0,
                         "new_sale_pct": 0,
-                        "resale_pct": 0
+                        "resale_pct": 0,
+                        # Concentration metrics
+                        "concentration_gini": None,
+                        "fragility_label": None,
+                        "project_count": 0,
+                        "top_project_share": 0
                     },
                     "bedroom_breakdown": {}
                 })

@@ -305,6 +305,44 @@ function HoverCard({ district, data }) {
           </div>
         </div>
 
+        {/* Concentration / Fragility */}
+        {metrics.fragility_label && (
+          <>
+            <div className="h-px bg-[#94B4C1]/30 my-2" />
+            <div className="space-y-1">
+              <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold">
+                Market Concentration
+              </p>
+              <div className="flex items-center justify-between">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                  metrics.fragility_label === 'Robust'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : metrics.fragility_label === 'Moderate'
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-rose-100 text-rose-700'
+                }`}>
+                  {metrics.fragility_label}
+                </span>
+                <span className="text-[10px] text-[#547792]">
+                  {metrics.project_count} projects
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-[10px]">
+                <span className="text-[#547792]">Gini Index</span>
+                <span className="font-semibold text-[#213448]">
+                  {metrics.concentration_gini?.toFixed(2) || '-'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-[10px]">
+                <span className="text-[#547792]">Top Project Share</span>
+                <span className="font-semibold text-[#213448]">
+                  {metrics.top_project_share?.toFixed(0) || 0}%
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Bedroom breakdown if available */}
         {Object.keys(bedroom).length > 0 && (
           <>
