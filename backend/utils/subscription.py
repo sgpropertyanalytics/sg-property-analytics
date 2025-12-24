@@ -7,9 +7,13 @@ teaser data for free users.
 
 SECURITY: This is the SERVER-SIDE enforcement layer. Frontend blur is UI only.
 
-Preview Dashboard Model:
-- Free users: Last 60 days only, aggregated data (district/segment level)
-- Premium users: Full history, project/unit level precision
+Preview Dashboard Model (Hard Paywall with Blur):
+- Free users: Full data access BUT blurred UI (6px blur, no interaction)
+- Premium users: Full access, no blur
+
+NOTE: The 60-day time restriction has been removed. Protection is now via
+frontend blur overlay. Free users see transaction counts for ALL data,
+but cannot view the actual content.
 """
 from flask import request
 from functools import wraps

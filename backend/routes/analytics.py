@@ -1317,7 +1317,7 @@ def aggregate():
     metrics = [m.strip() for m in metrics_param.split(",") if m.strip()]
 
     # SUBSCRIPTION CHECK: Granularity restriction for free users
-    from utils.subscription import check_granularity_allowed, get_time_filter_for_tier, is_premium_user, get_time_filter_meta
+    from utils.subscription import check_granularity_allowed, is_premium_user
     is_premium = is_premium_user()
 
     allowed, error_msg = check_granularity_allowed(group_by_param, is_premium=is_premium)
@@ -1333,11 +1333,7 @@ def aggregate():
     filter_conditions = [Transaction.outlier_filter()]
     filters_applied = {}
 
-    # SUBSCRIPTION CHECK: Time restriction for free users (60-day window)
-    time_cutoff = get_time_filter_for_tier(is_premium=is_premium)
-    if time_cutoff:
-        filter_conditions.append(Transaction.transaction_date >= time_cutoff.date())
-        filters_applied["_time_restricted"] = True
+    # NOTE: 60-day time restriction removed - using blur paywall instead
 
     # District filter
     districts_param = request.args.get("district")
@@ -1662,16 +1658,11 @@ def filter_count():
     from models.database import db
     from sqlalchemy import func, and_, or_
     from services.data_processor import _get_market_segment
-    from utils.subscription import get_time_filter_for_tier, is_premium_user
 
     # Build filter conditions - ALWAYS exclude outliers
     filter_conditions = [Transaction.outlier_filter()]
 
-    # Time restriction for free users (60-day window)
-    is_premium = is_premium_user()
-    time_cutoff = get_time_filter_for_tier(is_premium=is_premium)
-    if time_cutoff:
-        filter_conditions.append(Transaction.transaction_date >= time_cutoff.date())
+    # NOTE: 60-day time restriction removed - using blur paywall instead
 
     # District filter
     districts_param = request.args.get("district")
