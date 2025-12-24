@@ -2754,7 +2754,8 @@ def kpi_summary():
             ),
             previous_period AS (
                 SELECT
-                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
+                    COUNT(*) as txn_count
                 FROM transactions
                 WHERE {filter_sql}
                   AND transaction_date > :sixty_days_ago
@@ -2781,6 +2782,7 @@ def kpi_summary():
                 c.psf_75,
                 c.txn_count,
                 p.median_psf as prev_psf,
+                p.txn_count as prev_txn_count,
                 n.median_psf as new_sale_psf,
                 r.median_psf as resale_psf
             FROM current_period c
@@ -2816,6 +2818,7 @@ def kpi_summary():
         new_sale_psf = float(result.new_sale_psf or 0)
         resale_psf = float(result.resale_psf or 0)
         txn_count = int(result.txn_count or 0)
+        prev_txn_count = int(result.prev_txn_count or 0)
 
         # PSF trend
         psf_trend = ((current_psf - prev_psf) / prev_psf * 100) if prev_psf > 0 else 0
@@ -2836,46 +2839,21 @@ def kpi_summary():
         momentum_score = max(20, min(80, momentum_score))
         momentum_label = "Buyer's market" if momentum_score >= 55 else "Seller's market" if momentum_score <= 45 else "Balanced"
 
-        # Generate insights with calculation breakdown
-        # PSF insight - show last month vs this month comparison
-        trend_direction = "up" if psf_trend > 0 else "down" if psf_trend < 0 else "flat"
-        if abs(psf_trend) > 2:
-            trend_meaning = "sellers have leverage" if psf_trend > 0 else "buyers gaining leverage"
-        else:
-            trend_meaning = "market stable"
-        psf_insight = f"${round(prev_psf):,} → ${round(current_psf):,} ({'+' if psf_trend > 0 else ''}{psf_trend:.1f}%) — {trend_meaning}"
+        # Generate compact insights - just the numbers, no filler words
+        # PSF: show previous vs current
+        psf_insight = f"Prev ${round(prev_psf):,} → Now ${round(current_psf):,}"
 
-        # Spread insight - show 25th, 75th percentile and IQR calculation
-        if iqr_ratio > 40:
-            spread_meaning = "wide range, negotiate hard"
-        elif iqr_ratio < 20:
-            spread_meaning = "tight range, be competitive"
-        else:
-            spread_meaning = "typical variance"
-        spread_insight = f"25th: ${round(psf_25):,} | 75th: ${round(psf_75):,} | IQR ${round(iqr):,} — {spread_meaning}"
+        # Spread: show percentiles
+        spread_insight = f"P25 ${round(psf_25):,} · P75 ${round(psf_75):,}"
 
-        # Premium insight - show new vs resale PSF comparison
+        # Premium: show new vs resale PSF
         if new_sale_psf > 0 and resale_psf > 0:
-            if new_premium > 20:
-                premium_meaning = "consider resale for value"
-            elif new_premium > 10:
-                premium_meaning = "weigh new amenities vs cost"
-            elif new_premium > 0:
-                premium_meaning = "new launches competitive"
-            else:
-                premium_meaning = "unusual, check specific projects"
-            premium_insight = f"New ${round(new_sale_psf):,} vs Resale ${round(resale_psf):,} — {premium_meaning}"
+            premium_insight = f"New ${round(new_sale_psf):,} vs Resale ${round(resale_psf):,}"
         else:
-            premium_insight = "Insufficient data for comparison"
+            premium_insight = "Insufficient data"
 
-        # Momentum insight - show score calculation basis
-        if momentum_score >= 55:
-            momentum_meaning = "favors buyers"
-        elif momentum_score <= 45:
-            momentum_meaning = "favors sellers"
-        else:
-            momentum_meaning = "no rush either way"
-        momentum_insight = f"Based on {psf_trend:+.1f}% price trend — {momentum_meaning}"
+        # Momentum: show the trend driving it
+        momentum_insight = f"Price trend {psf_trend:+.1f}% MoM"
 
         elapsed = time.time() - start
         print(f"GET /api/kpi-summary completed in {elapsed:.4f}s")
@@ -2907,8 +2885,16 @@ def kpi_summary():
             },
             "meta": {
                 "elapsed_ms": round(elapsed * 1000, 2),
-                "txn_count": txn_count,
-                "period": "30 days"
+                "current_period": {
+                    "from": str(thirty_days_ago),
+                    "to": str(max_date),
+                    "txn_count": txn_count
+                },
+                "previous_period": {
+                    "from": str(sixty_days_ago),
+                    "to": str(thirty_days_ago),
+                    "txn_count": prev_txn_count
+                }
             }
         })
 
