@@ -4,24 +4,21 @@ import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/client';
 
 /**
- * PricingModal - One-Step Checkout Modal
+ * PricingModal - Conversion-Optimized Checkout Modal
  *
- * Wide landscape modal with side-by-side cards.
- * Clicking "Select" goes directly to Stripe - no intermediate page.
- *
- * Design: "Black Card Effect"
- * - Left: Quarterly (white, anchor)
- * - Right: Annual (navy, hero with shadow)
+ * Strategy: "Black Card Effect" + "Mirror Strategy" + "IQ Test" pricing
+ * - Both cards have IDENTICAL features (forces price comparison)
+ * - Annual card physically dominates (10% taller, shadow, navy)
+ * - Direct to Stripe on click
  */
 export function PricingModal({ isOpen, onClose }) {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const [loading, setLoading] = useState(null); // Track which plan is loading
+  const [loading, setLoading] = useState(null);
 
   if (!isOpen) return null;
 
   const handleSelectPlan = async (planId) => {
-    // If not logged in, redirect to login
     if (!isAuthenticated) {
       onClose();
       navigate('/login', { state: { returnTo: window.location.pathname, selectedPlan: planId } });
@@ -31,14 +28,12 @@ export function PricingModal({ isOpen, onClose }) {
     setLoading(planId);
 
     try {
-      // Create Stripe checkout session
       const response = await apiClient.post('/payments/create-checkout', {
         plan_id: planId,
         success_url: `${window.location.origin}/market-pulse?upgraded=true`,
         cancel_url: window.location.href,
       });
 
-      // Redirect to Stripe Checkout
       if (response.data.checkout_url) {
         window.location.href = response.data.checkout_url;
       }
@@ -48,9 +43,19 @@ export function PricingModal({ isOpen, onClose }) {
     }
   };
 
+  // Mirror Strategy: Identical features on both cards (clean, no sub-text)
+  const features = [
+    'Exact Transaction Prices',
+    'Deal Percentile Ranking',
+    'Floor-Level Pricing Patterns',
+    'New Launch vs Resale Gap',
+    'Market Signals & Distribution',
+    'Upcoming Supply Pipeline',
+  ];
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop - dimmed dashboard visible behind */}
+      {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
@@ -58,7 +63,7 @@ export function PricingModal({ isOpen, onClose }) {
 
       {/* Modal - Wide Landscape */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-[#EAE0CF] rounded-2xl shadow-2xl w-full max-w-[780px] p-6 md:p-8">
+        <div className="relative bg-[#EAE0CF] rounded-2xl shadow-2xl w-full max-w-[820px] p-6 md:p-8">
           {/* Close button */}
           <button
             onClick={onClose}
@@ -69,35 +74,39 @@ export function PricingModal({ isOpen, onClose }) {
             </svg>
           </button>
 
-          {/* Header */}
+          {/* Hero Section */}
           <div className="text-center mb-8">
-            <div className="w-14 h-14 bg-[#213448] rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-[#EAE0CF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-[#213448] mb-2">
-              Unlock Full Data Access
+            <h2 className="text-2xl md:text-3xl font-bold text-[#213448] mb-2">
+              Stop Guessing. Start Knowing.
             </h2>
-            <p className="text-[#547792] text-sm">
-              See exact prices, project names, and PSF details
+            <p className="text-[#547792] text-sm md:text-base">
+              Unlock the hidden valuation data for the unit you just viewed.
             </p>
           </div>
 
-          {/* Side-by-Side Cards */}
-          <div className="flex flex-col md:flex-row gap-5 items-stretch mb-6">
+          {/* Side-by-Side Cards - Aligned at bottom, Annual taller */}
+          <div className="flex flex-col md:flex-row gap-5 items-end mb-6">
 
-            {/* LEFT: Quarterly Card (Anchor) */}
-            <div className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1]/50 flex flex-col">
+            {/* LEFT: Quarterly Flex (The Anchor - ~450px equivalent) */}
+            <div className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1] flex flex-col md:mb-0">
               <div className="flex-1">
-                <h3 className="text-[#547792] font-semibold text-lg mb-1">Quarterly</h3>
+                <h3 className="text-[#213448] font-bold text-xl mb-2">Quarterly</h3>
                 <p className="text-[#213448] text-3xl font-bold mb-1">
                   $25<span className="text-[#547792] text-base font-normal">/mo</span>
                 </p>
-                <p className="text-[#94B4C1] text-xs mb-4">Billed $75 quarterly</p>
+                <p className="text-[#213448] text-sm mb-1">Billed $75 every 3 months</p>
+                <p className="text-[#547792] text-xs mb-5">Cancel anytime.</p>
 
-                <div className="text-[#547792] text-sm">
-                  <p>• Standard Access</p>
+                {/* Features - Ocean Blue */}
+                <div className="space-y-2.5">
+                  {features.map((feature, i) => (
+                    <p key={i} className="flex items-start gap-2 text-[#547792] text-sm">
+                      <svg className="w-4 h-4 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {feature}
+                    </p>
+                  ))}
                 </div>
               </div>
 
@@ -106,61 +115,62 @@ export function PricingModal({ isOpen, onClose }) {
                 disabled={loading === 'quarterly'}
                 className="mt-6 w-full border-2 border-[#547792] text-[#547792] px-5 py-3 rounded-lg font-semibold hover:bg-[#547792]/10 transition-colors disabled:opacity-50"
               >
-                {loading === 'quarterly' ? 'Loading...' : 'Select'}
+                {loading === 'quarterly' ? 'Loading...' : 'Select Quarterly'}
               </button>
             </div>
 
-            {/* RIGHT: Annual Card (Hero - Black Card) */}
+            {/* RIGHT: Annual Pro (The Winner - ~500px equivalent, 10% taller) */}
+            {/* Uses negative margin-top and extra padding to physically dominate */}
             <div
-              className="flex-1 bg-[#213448] rounded-xl p-6 flex flex-col relative md:scale-105 md:py-8"
-              style={{ boxShadow: '0px 10px 30px rgba(0,0,0,0.25)' }}
+              className="flex-1 bg-[#213448] rounded-xl flex flex-col relative md:-mt-6 md:mb-0"
+              style={{
+                boxShadow: '0px 16px 48px rgba(33, 52, 72, 0.45)',
+                padding: '2rem 1.5rem 1.5rem 1.5rem',
+              }}
             >
-              {/* SAVE 40% Badge */}
-              <div className="absolute -top-3 left-4">
-                <span className="bg-[#94B4C1] text-[#213448] text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+              {/* SAVE 40% Badge - Breaking top edge */}
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                <span className="bg-[#94B4C1] text-[#213448] text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wide whitespace-nowrap">
                   Save 40%
                 </span>
               </div>
 
-              <div className="flex-1">
-                <h3 className="text-[#EAE0CF] font-semibold text-lg mb-1">Annual</h3>
-                <p className="text-white text-3xl font-bold mb-1">
-                  $15<span className="text-[#94B4C1] text-base font-normal">/mo</span>
+              <div className="flex-1 pt-1">
+                <h3 className="text-[#EAE0CF] font-bold text-xl mb-2">Annual Pro</h3>
+                <p className="mb-1">
+                  <span className="text-white text-4xl font-bold">$15</span>
+                  <span className="text-[#94B4C1] text-base font-normal">/mo</span>
                 </p>
-                <p className="text-[#94B4C1] text-xs mb-4">Billed $180 yearly</p>
+                <p className="text-[#94B4C1] text-sm mb-1">Billed $180 yearly</p>
+                <p className="text-[#EAE0CF] text-xs mb-5">Same features. Smart savings.</p>
 
-                {/* Feature Bullets */}
-                <div className="space-y-2 text-white text-sm">
-                  <p className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Full 10-Year History
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Export to Excel
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Priority Support
-                  </p>
+                {/* Features - White Text */}
+                <div className="space-y-2.5">
+                  {features.map((feature, i) => (
+                    <p key={i} className="flex items-start gap-2 text-white text-sm">
+                      <svg className="w-4 h-4 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {feature}
+                    </p>
+                  ))}
                 </div>
               </div>
 
               <button
                 onClick={() => handleSelectPlan('annual')}
                 disabled={loading === 'annual'}
-                className="mt-6 w-full bg-[#EAE0CF] text-[#213448] px-5 py-3 rounded-lg font-bold hover:bg-white transition-colors disabled:opacity-50"
+                className="mt-6 w-full bg-[#EAE0CF] text-[#213448] px-5 py-3.5 rounded-lg font-bold hover:bg-white transition-colors disabled:opacity-50"
               >
-                {loading === 'annual' ? 'Loading...' : 'Unlock Access'}
+                {loading === 'annual' ? 'Loading...' : 'Unlock & Save $120'}
               </button>
             </div>
           </div>
+
+          {/* The Closer */}
+          <p className="text-center text-[#547792] text-sm italic mb-4">
+            "The price of one bad property decision &gt; 10 years of this subscription."
+          </p>
 
           {/* Trust signals */}
           <div className="flex items-center justify-center gap-6 text-xs text-[#547792]">
