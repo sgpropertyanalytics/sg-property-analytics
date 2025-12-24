@@ -1,21 +1,22 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apiClient from '../api/client';
 
 /**
- * PricingModal - Modal version of the pricing page
+ * PricingModal - One-Step Checkout Modal
  *
- * Triggered when:
- * - User clicks on blurred data
- * - User tries to access premium features
+ * Wide landscape modal with side-by-side cards.
+ * Clicking "Select" goes directly to Stripe - no intermediate page.
  *
- * Follows the "Black Card Effect" design:
- * - Quarterly: Standard white card
- * - Annual: Premium navy "black card"
+ * Design: "Black Card Effect"
+ * - Left: Quarterly (white, anchor)
+ * - Right: Annual (navy, hero with shadow)
  */
 export function PricingModal({ isOpen, onClose }) {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const [loading, setLoading] = useState(null); // Track which plan is loading
 
   if (!isOpen) return null;
 
@@ -23,9 +24,11 @@ export function PricingModal({ isOpen, onClose }) {
     // If not logged in, redirect to login
     if (!isAuthenticated) {
       onClose();
-      navigate('/login', { state: { returnTo: '/pricing', selectedPlan: planId } });
+      navigate('/login', { state: { returnTo: window.location.pathname, selectedPlan: planId } });
       return;
     }
+
+    setLoading(planId);
 
     try {
       // Create Stripe checkout session
@@ -41,29 +44,25 @@ export function PricingModal({ isOpen, onClose }) {
       }
     } catch (error) {
       console.error('Failed to create checkout session:', error);
+      setLoading(null);
     }
-  };
-
-  const handleViewFullPricing = () => {
-    onClose();
-    navigate('/pricing');
   };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
+      {/* Backdrop - dimmed dashboard visible behind */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      {/* Modal */}
+      {/* Modal - Wide Landscape */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-[#EAE0CF] rounded-2xl shadow-2xl max-w-lg w-full p-6 md:p-8">
+        <div className="relative bg-[#EAE0CF] rounded-2xl shadow-2xl w-full max-w-[780px] p-6 md:p-8">
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-[#547792] hover:text-[#213448] hover:bg-white/50 rounded-lg transition-colors"
+            className="absolute top-4 right-4 p-2 text-[#547792] hover:text-[#213448] hover:bg-white/50 rounded-lg transition-colors z-10"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -71,7 +70,7 @@ export function PricingModal({ isOpen, onClose }) {
           </button>
 
           {/* Header */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-8">
             <div className="w-14 h-14 bg-[#213448] rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-[#EAE0CF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -85,76 +84,104 @@ export function PricingModal({ isOpen, onClose }) {
             </p>
           </div>
 
-          {/* Quick Plan Options */}
-          <div className="space-y-4 mb-6">
+          {/* Side-by-Side Cards */}
+          <div className="flex flex-col md:flex-row gap-5 items-stretch mb-6">
 
-            {/* Annual - Recommended (Black Card) */}
-            <div className="bg-[#213448] rounded-xl p-5 relative">
-              <div className="absolute -top-2.5 left-4">
-                <span className="bg-[#94B4C1] text-[#213448] text-[10px] font-bold px-2 py-1 rounded-full">
-                  BEST VALUE
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-[#EAE0CF] font-semibold">Annual</h3>
-                  <p className="text-white text-2xl font-bold">
-                    $15<span className="text-[#94B4C1] text-sm font-normal">/mo</span>
-                  </p>
-                  <p className="text-[#94B4C1] text-xs">$180/year (save 40%)</p>
+            {/* LEFT: Quarterly Card (Anchor) */}
+            <div className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1]/50 flex flex-col">
+              <div className="flex-1">
+                <h3 className="text-[#547792] font-semibold text-lg mb-1">Quarterly</h3>
+                <p className="text-[#213448] text-3xl font-bold mb-1">
+                  $25<span className="text-[#547792] text-base font-normal">/mo</span>
+                </p>
+                <p className="text-[#94B4C1] text-xs mb-4">Billed $75 quarterly</p>
+
+                <div className="text-[#547792] text-sm">
+                  <p>• Standard Access</p>
                 </div>
-                <button
-                  onClick={() => handleSelectPlan('annual')}
-                  className="bg-[#EAE0CF] text-[#213448] px-5 py-2.5 rounded-lg font-bold hover:bg-white transition-colors"
-                >
-                  Select
-                </button>
               </div>
+
+              <button
+                onClick={() => handleSelectPlan('quarterly')}
+                disabled={loading === 'quarterly'}
+                className="mt-6 w-full border-2 border-[#547792] text-[#547792] px-5 py-3 rounded-lg font-semibold hover:bg-[#547792]/10 transition-colors disabled:opacity-50"
+              >
+                {loading === 'quarterly' ? 'Loading...' : 'Select'}
+              </button>
             </div>
 
-            {/* Quarterly - Standard */}
-            <div className="bg-white rounded-xl p-5 border border-[#94B4C1]/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-[#547792] font-semibold">Quarterly</h3>
-                  <p className="text-[#213448] text-2xl font-bold">
-                    $25<span className="text-[#547792] text-sm font-normal">/quarter</span>
+            {/* RIGHT: Annual Card (Hero - Black Card) */}
+            <div
+              className="flex-1 bg-[#213448] rounded-xl p-6 flex flex-col relative md:scale-105 md:py-8"
+              style={{ boxShadow: '0px 10px 30px rgba(0,0,0,0.25)' }}
+            >
+              {/* SAVE 40% Badge */}
+              <div className="absolute -top-3 left-4">
+                <span className="bg-[#94B4C1] text-[#213448] text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                  Save 40%
+                </span>
+              </div>
+
+              <div className="flex-1">
+                <h3 className="text-[#EAE0CF] font-semibold text-lg mb-1">Annual</h3>
+                <p className="text-white text-3xl font-bold mb-1">
+                  $15<span className="text-[#94B4C1] text-base font-normal">/mo</span>
+                </p>
+                <p className="text-[#94B4C1] text-xs mb-4">Billed $180 yearly</p>
+
+                {/* Feature Bullets */}
+                <div className="space-y-2 text-white text-sm">
+                  <p className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Full 10-Year History
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Export to Excel
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Priority Support
                   </p>
                 </div>
-                <button
-                  onClick={() => handleSelectPlan('quarterly')}
-                  className="border-2 border-[#547792] text-[#547792] px-5 py-2 rounded-lg font-medium hover:bg-[#547792]/10 transition-colors"
-                >
-                  Select
-                </button>
               </div>
+
+              <button
+                onClick={() => handleSelectPlan('annual')}
+                disabled={loading === 'annual'}
+                className="mt-6 w-full bg-[#EAE0CF] text-[#213448] px-5 py-3 rounded-lg font-bold hover:bg-white transition-colors disabled:opacity-50"
+              >
+                {loading === 'annual' ? 'Loading...' : 'Unlock Access'}
+              </button>
             </div>
           </div>
 
           {/* Trust signals */}
-          <div className="flex items-center justify-center gap-4 text-xs text-[#547792] mb-4">
-            <span className="flex items-center gap-1">
+          <div className="flex items-center justify-center gap-6 text-xs text-[#547792]">
+            <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               Secure via Stripe
             </span>
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               Cancel anytime
             </span>
-          </div>
-
-          {/* View full pricing link */}
-          <div className="text-center">
-            <button
-              onClick={handleViewFullPricing}
-              className="text-[#547792] hover:text-[#213448] underline text-sm"
-            >
-              View full pricing details
-            </button>
+            <span className="flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              7-day money-back
+            </span>
           </div>
         </div>
       </div>
