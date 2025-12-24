@@ -7,21 +7,15 @@ teaser data for free users.
 
 SECURITY: This is the SERVER-SIDE enforcement layer. Frontend blur is UI only.
 
-Preview Dashboard Model (Hard Paywall with Blur):
-- Free users: Full data access BUT blurred UI (6px blur, no interaction)
+Preview Dashboard Model (Blur Paywall):
+- Free users: ALL data returned, but frontend shows blurred UI
 - Premium users: Full access, no blur
-
-NOTE: The 60-day time restriction has been removed. Protection is now via
-frontend blur overlay. Free users see transaction counts for ALL data,
-but cannot view the actual content.
+- NO time restrictions - all historical data available to everyone
+- Granularity restrictions: Free users cannot group by project-level fields
 """
 from flask import request
 from functools import wraps
-from datetime import datetime, timedelta
 from models.user import User
-
-# Time window for free tier (rolling 60 days)
-FREE_TIER_DAYS = 60
 
 
 def get_user_from_request():
@@ -75,56 +69,6 @@ def get_subscription_tier():
     if user.is_subscribed():
         return 'premium'
     return 'free'
-
-
-def get_time_filter_for_tier(is_premium=None):
-    """
-    Get the time filter cutoff date based on subscription tier.
-
-    Free users only see the last 60 days of data.
-    Premium users see full history.
-
-    Args:
-        is_premium: Override tier check (useful when already checked)
-
-    Returns:
-        datetime or None - cutoff date for free users, None for premium
-    """
-    if is_premium is None:
-        is_premium = is_premium_user()
-
-    if is_premium:
-        return None  # No time restriction for premium users
-
-    # Free users: rolling 60-day window
-    return datetime.now() - timedelta(days=FREE_TIER_DAYS)
-
-
-def get_time_filter_meta(is_premium=None):
-    """
-    Get metadata about time filtering for API responses.
-
-    Helps frontend understand what time range is being returned.
-
-    Returns:
-        dict with time restriction info
-    """
-    if is_premium is None:
-        is_premium = is_premium_user()
-
-    if is_premium:
-        return {
-            'time_restricted': False,
-            'window_days': None,
-            'cutoff_date': None
-        }
-
-    cutoff = datetime.now() - timedelta(days=FREE_TIER_DAYS)
-    return {
-        'time_restricted': True,
-        'window_days': FREE_TIER_DAYS,
-        'cutoff_date': cutoff.strftime('%Y-%m-%d')
-    }
 
 
 def check_granularity_allowed(group_by, is_premium=None):

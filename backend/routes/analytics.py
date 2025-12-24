@@ -1317,7 +1317,8 @@ def aggregate():
     metrics = [m.strip() for m in metrics_param.split(",") if m.strip()]
 
     # SUBSCRIPTION CHECK: Granularity restriction for free users
-    from utils.subscription import check_granularity_allowed, get_time_filter_for_tier, is_premium_user, get_time_filter_meta
+    # NOTE: 60-day time restriction removed - using blur paywall instead (all data visible but blurred)
+    from utils.subscription import check_granularity_allowed, is_premium_user
     is_premium = is_premium_user()
 
     allowed, error_msg = check_granularity_allowed(group_by_param, is_premium=is_premium)
@@ -1332,12 +1333,6 @@ def aggregate():
     # ALWAYS exclude outliers first
     filter_conditions = [Transaction.outlier_filter()]
     filters_applied = {}
-
-    # SUBSCRIPTION CHECK: Time restriction for free users (60-day window)
-    time_cutoff = get_time_filter_for_tier(is_premium=is_premium)
-    if time_cutoff:
-        filter_conditions.append(Transaction.transaction_date >= time_cutoff.date())
-        filters_applied["_time_restricted"] = True
 
     # District filter
     districts_param = request.args.get("district")
@@ -1620,9 +1615,6 @@ def aggregate():
     elapsed = time.time() - start
     print(f"GET /api/aggregate took: {elapsed:.4f} seconds (returned {len(data)} groups from {total_records} records)")
 
-    # Get time restriction metadata
-    time_meta = get_time_filter_meta(is_premium=is_premium)
-
     result = {
         "data": data,
         "meta": {
@@ -1635,7 +1627,7 @@ def aggregate():
             "note": "median values are approximated using avg for memory efficiency",
             "subscription": {
                 "is_premium": is_premium,
-                **time_meta
+                "time_restricted": False  # All data available, blur paywall instead of time restriction
             }
         }
     }
