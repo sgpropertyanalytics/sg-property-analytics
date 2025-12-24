@@ -89,10 +89,9 @@ function Login() {
 
         {/* Bottom Section - Value Proposition + Stats (Spec Sheet) */}
         <div className="relative z-10">
-          {/* Headline with controlled width for clean 2-line break */}
-          <h3 className="max-w-[580px] text-2xl xl:text-3xl font-bold text-[#EAE0CF] tracking-tight leading-tight mb-2">
-            Institutional-grade analytics for Singapore's{' '}
-            <span className="whitespace-nowrap">private property market.</span>
+          {/* Headline - single line at desktop */}
+          <h3 className="text-xl xl:text-2xl font-bold text-[#EAE0CF] tracking-tight leading-tight mb-2">
+            Institutional-grade analytics for Singapore private property.
           </h3>
           <p className="text-base xl:text-lg text-[#94B4C1] leading-relaxed">
             Make decisions using raw transaction data and current market trends.
