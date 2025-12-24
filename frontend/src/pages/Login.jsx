@@ -80,126 +80,156 @@ function Login() {
           </div>
         </div>
 
-        {/* Center Section - Floating Dashboard Preview with Data Collage */}
-        <div className="relative z-10 flex-1 flex items-center justify-center py-8">
-          {/* ===== DATA COLLAGE - Real Dashboard Chart Types ===== */}
+        {/* Center Section - Isometric Exploded Dashboard Preview */}
+        <div
+          className="relative z-10 flex-1 flex items-center justify-center py-8 overflow-hidden"
+          style={{ perspective: '2000px' }}
+        >
+          {/* ===== ISOMETRIC FLOATING CARDS ===== */}
 
-          {/* BG Card 1: TimeTrendChart - Stacked Bar + Line (Top Left) */}
+          {/* TOP CENTER CARD: Outlier Detection / Scatter Plot (Way Behind) */}
           <div
-            className="absolute w-96 h-64 bg-[#213448]/60 border border-[#547792]/30 rounded-xl backdrop-blur-sm overflow-hidden"
+            className="absolute w-72 h-56 rounded-2xl border border-[#547792]/40 overflow-hidden"
             style={{
-              top: '8%',
-              left: '-30px',
-              transform: 'rotate(-6deg)',
-              zIndex: 5,
-              opacity: 0.45,
-            }}
-          >
-            {/* Stacked bar chart with line overlay - like TimeTrendChart */}
-            <svg className="w-full h-full" viewBox="0 0 384 256" preserveAspectRatio="none">
-              <rect width="100%" height="100%" fill="#213448" />
-              {/* Grid lines */}
-              <line x1="40" y1="220" x2="360" y2="220" stroke="#547792" strokeWidth="1" opacity="0.3" />
-              <line x1="40" y1="170" x2="360" y2="170" stroke="#547792" strokeWidth="1" opacity="0.2" />
-              <line x1="40" y1="120" x2="360" y2="120" stroke="#547792" strokeWidth="1" opacity="0.2" />
-              {/* Stacked bars - New Sale (Deep Navy) + Resale (Ocean Blue) */}
-              <rect x="55" y="140" width="28" height="80" fill="#213448" rx="2" />
-              <rect x="55" y="100" width="28" height="40" fill="#547792" rx="2" />
-              <rect x="100" y="120" width="28" height="100" fill="#213448" rx="2" />
-              <rect x="100" y="70" width="28" height="50" fill="#547792" rx="2" />
-              <rect x="145" y="150" width="28" height="70" fill="#213448" rx="2" />
-              <rect x="145" y="110" width="28" height="40" fill="#547792" rx="2" />
-              <rect x="190" y="100" width="28" height="120" fill="#213448" rx="2" />
-              <rect x="190" y="55" width="28" height="45" fill="#547792" rx="2" />
-              <rect x="235" y="130" width="28" height="90" fill="#213448" rx="2" />
-              <rect x="235" y="85" width="28" height="45" fill="#547792" rx="2" />
-              <rect x="280" y="110" width="28" height="110" fill="#213448" rx="2" />
-              <rect x="280" y="65" width="28" height="45" fill="#547792" rx="2" />
-              <rect x="325" y="125" width="28" height="95" fill="#213448" rx="2" />
-              <rect x="325" y="80" width="28" height="45" fill="#547792" rx="2" />
-              {/* Trend line overlay (Sand/Cream color) */}
-              <path d="M69,90 L114,60 L159,85 L204,45 L249,70 L294,55 L339,65" fill="none" stroke="#EAE0CF" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="69" cy="90" r="4" fill="#EAE0CF" />
-              <circle cx="204" cy="45" r="4" fill="#EAE0CF" />
-              <circle cx="339" cy="65" r="4" fill="#EAE0CF" />
-            </svg>
-          </div>
-
-          {/* BG Card 2: PriceDistributionChart - Histogram with Median Line (Bottom Right) */}
-          <div
-            className="absolute w-80 h-52 bg-[#213448]/60 border border-[#547792]/30 rounded-xl backdrop-blur-sm overflow-hidden"
-            style={{
-              bottom: '8%',
-              right: '-25px',
-              transform: 'rotate(5deg)',
-              zIndex: 5,
-              opacity: 0.45,
-            }}
-          >
-            {/* Histogram with median annotation - like PriceDistributionChart */}
-            <svg className="w-full h-full" viewBox="0 0 320 208" preserveAspectRatio="none">
-              <rect width="100%" height="100%" fill="#213448" />
-              {/* Grid */}
-              <line x1="30" y1="175" x2="295" y2="175" stroke="#547792" strokeWidth="1" opacity="0.3" />
-              {/* Histogram bars (Ocean Blue gradient) */}
-              <rect x="35" y="155" width="22" height="20" fill="#547792" opacity="0.5" rx="1" />
-              <rect x="62" y="135" width="22" height="40" fill="#547792" opacity="0.6" rx="1" />
-              <rect x="89" y="100" width="22" height="75" fill="#547792" opacity="0.7" rx="1" />
-              <rect x="116" y="65" width="22" height="110" fill="#547792" opacity="0.85" rx="1" />
-              <rect x="143" y="45" width="22" height="130" fill="#547792" opacity="1" rx="1" />
-              <rect x="170" y="70" width="22" height="105" fill="#547792" opacity="0.8" rx="1" />
-              <rect x="197" y="95" width="22" height="80" fill="#547792" opacity="0.7" rx="1" />
-              <rect x="224" y="125" width="22" height="50" fill="#547792" opacity="0.55" rx="1" />
-              <rect x="251" y="150" width="22" height="25" fill="#547792" opacity="0.4" rx="1" />
-              <rect x="278" y="160" width="22" height="15" fill="#547792" opacity="0.3" rx="1" />
-              {/* Median line (dashed) */}
-              <line x1="154" y1="30" x2="154" y2="175" stroke="#EAE0CF" strokeWidth="2" strokeDasharray="6,4" />
-              {/* IQR shaded band */}
-              <rect x="116" y="30" width="76" height="145" fill="#94B4C1" opacity="0.15" />
-            </svg>
-          </div>
-
-          {/* BG Card 3: MedianPsfTrendChart - Multi-line by Region (Top Right, Deep) */}
-          <div
-            className="absolute w-72 h-56 bg-[#213448]/40 border border-[#547792]/20 rounded-xl backdrop-blur-sm overflow-hidden"
-            style={{
-              top: '12%',
-              right: '-50px',
-              transform: 'rotate(10deg)',
-              zIndex: 2,
+              transform: 'translateY(-140px) scale(0.75)',
+              zIndex: 10,
               opacity: 0.3,
+              filter: 'blur(2px)',
+              background: 'linear-gradient(180deg, #1e293b 0%, #213448 100%)',
             }}
           >
-            {/* Multi-line trend - CCR, RCR, OCR like MedianPsfTrendChart */}
-            <svg className="w-full h-full" viewBox="0 0 288 224" preserveAspectRatio="none">
-              <rect width="100%" height="100%" fill="#213448" />
-              {/* Grid */}
-              <line x1="30" y1="190" x2="260" y2="190" stroke="#547792" strokeWidth="1" opacity="0.3" />
-              <line x1="30" y1="140" x2="260" y2="140" stroke="#547792" strokeWidth="1" opacity="0.15" />
-              <line x1="30" y1="90" x2="260" y2="90" stroke="#547792" strokeWidth="1" opacity="0.15" />
-              {/* CCR line (Deep Navy - highest PSF) */}
-              <path d="M40,70 L80,55 L120,60 L160,45 L200,50 L240,40" fill="none" stroke="#EAE0CF" strokeWidth="2.5" strokeLinecap="round" />
-              {/* RCR line (Ocean Blue - mid PSF) */}
-              <path d="M40,110 L80,100 L120,95 L160,85 L200,90 L240,80" fill="none" stroke="#547792" strokeWidth="2.5" strokeLinecap="round" />
-              {/* OCR line (Sky Blue - lower PSF) */}
-              <path d="M40,150 L80,145 L120,140 L160,130 L200,135 L240,125" fill="none" stroke="#94B4C1" strokeWidth="2.5" strokeLinecap="round" />
-              {/* Point markers */}
-              <circle cx="160" cy="45" r="4" fill="#EAE0CF" />
-              <circle cx="160" cy="85" r="3" fill="#547792" />
-              <circle cx="160" cy="130" r="3" fill="#94B4C1" />
-            </svg>
+            {/* Card Header */}
+            <div className="px-4 py-3 border-b border-[#547792]/20 flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-semibold text-[#EAE0CF]">Outlier Detection</h4>
+                <p className="text-[10px] text-[#94B4C1]">Price anomalies</p>
+              </div>
+              <div className="flex gap-1">
+                <div className="w-2 h-2 rounded-full bg-[#547792]/50" />
+                <div className="w-2 h-2 rounded-full bg-[#EAE0CF]" />
+              </div>
+            </div>
+            {/* Scatter Plot Content */}
+            <div className="p-3">
+              <svg className="w-full h-32" viewBox="0 0 240 120">
+                <line x1="20" y1="100" x2="220" y2="100" stroke="#547792" strokeWidth="1" opacity="0.3" />
+                <line x1="20" y1="20" x2="20" y2="100" stroke="#547792" strokeWidth="1" opacity="0.3" />
+                {/* Scatter dots */}
+                <circle cx="45" cy="75" r="4" fill="#547792" opacity="0.8" />
+                <circle cx="65" cy="60" r="3" fill="#547792" opacity="0.7" />
+                <circle cx="85" cy="70" r="5" fill="#547792" opacity="0.9" />
+                <circle cx="105" cy="50" r="4" fill="#547792" opacity="0.8" />
+                <circle cx="125" cy="65" r="3" fill="#547792" opacity="0.6" />
+                <circle cx="145" cy="40" r="4" fill="#EAE0CF" opacity="0.9" />
+                <circle cx="165" cy="55" r="5" fill="#547792" opacity="0.8" />
+                <circle cx="185" cy="45" r="3" fill="#547792" opacity="0.7" />
+                <circle cx="200" cy="35" r="4" fill="#EAE0CF" opacity="0.9" />
+                <circle cx="75" cy="85" r="3" fill="#547792" opacity="0.5" />
+                <circle cx="155" cy="80" r="4" fill="#547792" opacity="0.6" />
+              </svg>
+            </div>
           </div>
 
-          {/* ===== MAIN CARD ===== */}
+          {/* LEFT FLANK CARD: Heatmap Analysis (Floating Left) */}
+          <div
+            className="absolute w-80 h-56 rounded-2xl border border-[#547792]/40 overflow-hidden"
+            style={{
+              transform: 'translateX(-280px) translateY(-30px) rotateY(15deg) rotateZ(-5deg) scale(0.9)',
+              transformStyle: 'preserve-3d',
+              zIndex: 15,
+              opacity: 0.6,
+              filter: 'blur(1px)',
+              background: 'linear-gradient(180deg, #1e293b 0%, #213448 100%)',
+            }}
+          >
+            {/* Card Header */}
+            <div className="px-4 py-3 border-b border-[#547792]/20 flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-semibold text-[#EAE0CF]">Heatmap Analysis</h4>
+                <p className="text-[10px] text-[#94B4C1]">Regional liquidity</p>
+              </div>
+              <div className="flex gap-1">
+                <div className="w-2 h-2 rounded-full bg-[#547792]/50" />
+                <div className="w-2 h-2 rounded-full bg-[#EAE0CF]" />
+              </div>
+            </div>
+            {/* Heatmap Content */}
+            <div className="p-3">
+              <svg className="w-full h-32" viewBox="0 0 280 120">
+                <defs>
+                  <radialGradient id="heatSpot1" cx="30%" cy="40%" r="40%">
+                    <stop offset="0%" stopColor="#547792" stopOpacity="0.9" />
+                    <stop offset="100%" stopColor="#547792" stopOpacity="0" />
+                  </radialGradient>
+                  <radialGradient id="heatSpot2" cx="70%" cy="60%" r="35%">
+                    <stop offset="0%" stopColor="#94B4C1" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#94B4C1" stopOpacity="0" />
+                  </radialGradient>
+                  <radialGradient id="heatSpot3" cx="50%" cy="30%" r="25%">
+                    <stop offset="0%" stopColor="#EAE0CF" stopOpacity="0.6" />
+                    <stop offset="100%" stopColor="#EAE0CF" stopOpacity="0" />
+                  </radialGradient>
+                </defs>
+                <rect width="100%" height="100%" fill="#213448" rx="8" />
+                <ellipse cx="84" cy="48" rx="70" ry="45" fill="url(#heatSpot1)" />
+                <ellipse cx="196" cy="72" rx="60" ry="40" fill="url(#heatSpot2)" />
+                <ellipse cx="140" cy="36" rx="40" ry="30" fill="url(#heatSpot3)" />
+              </svg>
+            </div>
+          </div>
+
+          {/* RIGHT FLANK CARD: Volume Distribution (Floating Right) */}
+          <div
+            className="absolute w-80 h-56 rounded-2xl border border-[#547792]/40 overflow-hidden"
+            style={{
+              transform: 'translateX(280px) translateY(50px) rotateY(-15deg) rotateZ(5deg) scale(0.9)',
+              transformStyle: 'preserve-3d',
+              zIndex: 15,
+              opacity: 0.6,
+              filter: 'blur(1px)',
+              background: 'linear-gradient(180deg, #1e293b 0%, #213448 100%)',
+            }}
+          >
+            {/* Card Header */}
+            <div className="px-4 py-3 border-b border-[#547792]/20 flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-semibold text-[#EAE0CF]">Volume Distribution</h4>
+                <p className="text-[10px] text-[#94B4C1]">Price segments</p>
+              </div>
+              <div className="flex gap-1">
+                <div className="w-2 h-2 rounded-full bg-[#547792]/50" />
+                <div className="w-2 h-2 rounded-full bg-[#EAE0CF]" />
+              </div>
+            </div>
+            {/* Bar Chart Content */}
+            <div className="p-3">
+              <svg className="w-full h-32" viewBox="0 0 280 120">
+                <line x1="20" y1="100" x2="260" y2="100" stroke="#547792" strokeWidth="1" opacity="0.3" />
+                {/* Histogram bars */}
+                <rect x="30" y="85" width="20" height="15" fill="#547792" opacity="0.5" rx="2" />
+                <rect x="58" y="70" width="20" height="30" fill="#547792" opacity="0.6" rx="2" />
+                <rect x="86" y="50" width="20" height="50" fill="#547792" opacity="0.75" rx="2" />
+                <rect x="114" y="30" width="20" height="70" fill="#547792" opacity="0.9" rx="2" />
+                <rect x="142" y="20" width="20" height="80" fill="#EAE0CF" opacity="0.9" rx="2" />
+                <rect x="170" y="35" width="20" height="65" fill="#547792" opacity="0.85" rx="2" />
+                <rect x="198" y="55" width="20" height="45" fill="#547792" opacity="0.7" rx="2" />
+                <rect x="226" y="75" width="20" height="25" fill="#547792" opacity="0.5" rx="2" />
+                {/* Median line */}
+                <line x1="152" y1="10" x2="152" y2="100" stroke="#EAE0CF" strokeWidth="2" strokeDasharray="4,3" />
+              </svg>
+            </div>
+          </div>
+
+          {/* ===== MAIN CARD (Front & Center) ===== */}
           <motion.div
             initial={{ opacity: 0, y: 30, rotateX: 5 }}
             animate={{ opacity: 1, y: 0, rotateX: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative w-[480px] max-w-full"
-            style={{ perspective: '1000px', zIndex: 20 }}
+            className="relative w-[420px] max-w-full"
+            style={{ zIndex: 50 }}
           >
             {/* Preview Mode Badge */}
-            <div className="absolute -top-3 left-8" style={{ zIndex: 30 }}>
+            <div className="absolute -top-3 left-6" style={{ zIndex: 60 }}>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#213448] border border-[#547792]/50 rounded-full text-xs font-semibold text-[#94B4C1] shadow-lg backdrop-blur-sm">
                 <span className="w-1.5 h-1.5 bg-[#EAE0CF] rounded-full animate-pulse" />
                 Preview Mode
@@ -208,10 +238,10 @@ function Login() {
 
             {/* Main Card - Dashboard Snippet (highest z-index) */}
             <div
-              className="relative bg-[#213448] backdrop-blur-xl rounded-2xl border border-[#547792]/40 overflow-hidden"
+              className="relative rounded-2xl border border-[#547792]/50 overflow-hidden"
               style={{
-                transform: 'rotateY(-2deg) rotateX(2deg)',
-                boxShadow: '0 25px 80px -12px rgba(148, 180, 193, 0.3), 0 12px 40px -8px rgba(33, 52, 72, 0.4)',
+                background: 'linear-gradient(180deg, #1e293b 0%, #213448 100%)',
+                boxShadow: '0 35px 100px -15px rgba(0, 0, 0, 0.5), 0 15px 50px -10px rgba(148, 180, 193, 0.2)',
               }}
             >
               {/* Card Header */}
