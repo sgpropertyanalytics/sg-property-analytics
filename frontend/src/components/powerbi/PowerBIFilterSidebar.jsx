@@ -503,27 +503,28 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
 
           {/* Property Age Range */}
           <FilterGroup label="Property Age (years)">
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center flex-nowrap">
               <input
                 type="number"
                 value={filters.propertyAge.min ?? ''}
                 onChange={(e) => setPropertyAge(e.target.value ? parseInt(e.target.value) : null, filters.propertyAge.max)}
                 placeholder="Min"
                 min={0}
-                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-[70px] min-w-0 px-2 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <span className="text-slate-400">-</span>
+              <span className="text-slate-400 flex-shrink-0">-</span>
               <input
                 type="number"
                 value={filters.propertyAge.max ?? ''}
                 onChange={(e) => setPropertyAge(filters.propertyAge.min, e.target.value ? parseInt(e.target.value) : null)}
                 placeholder="Max"
                 min={0}
-                className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-[70px] min-w-0 px-2 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <span className="text-[10px] text-slate-400 flex-shrink-0">yrs</span>
             </div>
-            <p className="text-[10px] text-slate-500 mt-2 italic">
-              Age calculated from TOP date to transaction date.
+            <p className="text-[10px] text-slate-500 mt-1.5 italic">
+              Age from TOP date to transaction.
             </p>
           </FilterGroup>
         </FilterSection>
