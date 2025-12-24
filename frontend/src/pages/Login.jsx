@@ -30,13 +30,6 @@ function Login() {
   // Get the page they were trying to access (from ProtectedRoute)
   const from = location.state?.from?.pathname || '/market-pulse';
 
-  // Social proof metrics
-  const metrics = [
-    { value: '$2.8B+', label: 'Analyzed' },
-    { value: '103K+', label: 'Transactions' },
-    { value: '28', label: 'Districts' },
-  ];
-
   const handleGoogleSignIn = async () => {
     if (!isConfigured) return;
 
@@ -101,23 +94,9 @@ function Login() {
             Institutional-grade analytics for Singapore's{' '}
             <span className="whitespace-nowrap">private property market.</span>
           </h3>
-          <p className="text-base xl:text-lg text-[#94B4C1] leading-relaxed mb-6">
+          <p className="text-base xl:text-lg text-[#94B4C1] leading-relaxed">
             Make decisions using raw transaction data and current market trends.
           </p>
-
-          {/* Stats Row */}
-          <div className="flex items-center gap-8">
-            {metrics.map((metric, i) => (
-              <div key={i} className="flex flex-col">
-                <span className="text-2xl font-bold text-[#EAE0CF] font-mono tracking-tight">
-                  {metric.value}
-                </span>
-                <span className="text-xs text-[#94B4C1] uppercase tracking-wide">
-                  {metric.label}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
