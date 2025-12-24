@@ -2449,46 +2449,96 @@ def scatter_sample():
         # This ensures equal representation across market segments
         samples_per_segment = max(1, sample_size // 3)
 
-        # Build stable hash expression for deterministic sampling
-        # - Without seed: same filters = same sample
-        # - With seed: different sample (refresh button)
-        if seed:
-            hash_expr = func.md5(func.concat(func.cast(Transaction.id, text('TEXT')), seed))
-        else:
-            hash_expr = func.md5(func.cast(Transaction.id, text('TEXT')))
+        # Build WHERE clause conditions from filters
+        where_conditions = ["(is_outlier = false OR is_outlier IS NULL)"]
+        params = {"samples_per_segment": samples_per_segment, "sample_size": sample_size}
 
-        # Build segment expression using SQL CASE
-        # Maps districts to market segments (CCR/RCR/OCR)
+        if request.args.get('date_from'):
+            where_conditions.append("transaction_date >= :date_from")
+            params["date_from"] = request.args.get('date_from')
+        if request.args.get('date_to'):
+            where_conditions.append("transaction_date <= :date_to")
+            params["date_to"] = request.args.get('date_to')
+        if request.args.get('district'):
+            districts = [d.strip() for d in request.args.get('district').split(',') if d.strip()]
+            if districts:
+                district_placeholders = ", ".join([f":district_{i}" for i in range(len(districts))])
+                where_conditions.append(f"district IN ({district_placeholders})")
+                for i, d in enumerate(districts):
+                    params[f"district_{i}"] = d
+        if request.args.get('segment'):
+            segment = request.args.get('segment').upper()
+            if segment == 'CCR':
+                where_conditions.append("district IN :ccr_districts")
+                params["ccr_districts"] = tuple(CCR_DISTRICTS)
+            elif segment == 'RCR':
+                where_conditions.append("district IN :rcr_districts")
+                params["rcr_districts"] = tuple(RCR_DISTRICTS)
+            elif segment == 'OCR':
+                where_conditions.append("district IN :ocr_districts")
+                params["ocr_districts"] = tuple(OCR_DISTRICTS)
+        if request.args.get('bedroom'):
+            bedrooms = [int(b.strip()) for b in request.args.get('bedroom').split(',') if b.strip()]
+            if bedrooms:
+                bedroom_placeholders = ", ".join([f":bedroom_{i}" for i in range(len(bedrooms))])
+                where_conditions.append(f"bedroom_count IN ({bedroom_placeholders})")
+                for i, b in enumerate(bedrooms):
+                    params[f"bedroom_{i}"] = b
+        if request.args.get('sale_type'):
+            where_conditions.append("sale_type = :sale_type")
+            params["sale_type"] = request.args.get('sale_type')
+        if request.args.get('psf_min'):
+            where_conditions.append("psf >= :psf_min")
+            params["psf_min"] = float(request.args.get('psf_min'))
+        if request.args.get('psf_max'):
+            where_conditions.append("psf <= :psf_max")
+            params["psf_max"] = float(request.args.get('psf_max'))
+        if request.args.get('size_min'):
+            where_conditions.append("area_sqft >= :size_min")
+            params["size_min"] = float(request.args.get('size_min'))
+        if request.args.get('size_max'):
+            where_conditions.append("area_sqft <= :size_max")
+            params["size_max"] = float(request.args.get('size_max'))
+
+        where_clause = " AND ".join(where_conditions)
+
+        # Build hash expression for stable/seeded sampling
+        if seed:
+            hash_expr = f"md5(id::TEXT || '{seed}')"
+        else:
+            hash_expr = "md5(id::TEXT)"
+
+        # Build segment CASE expression
         ccr_list = ",".join([f"'{d}'" for d in CCR_DISTRICTS])
         rcr_list = ",".join([f"'{d}'" for d in RCR_DISTRICTS])
 
-        segment_expr = text(f"""
-            CASE
-                WHEN district IN ({ccr_list}) THEN 'CCR'
-                WHEN district IN ({rcr_list}) THEN 'RCR'
-                ELSE 'OCR'
-            END
+        # Full raw SQL query with stratified sampling
+        sql = text(f"""
+            WITH ranked AS (
+                SELECT
+                    price,
+                    area_sqft,
+                    bedroom_count,
+                    district,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY CASE
+                            WHEN district IN ({ccr_list}) THEN 'CCR'
+                            WHEN district IN ({rcr_list}) THEN 'RCR'
+                            ELSE 'OCR'
+                        END
+                        ORDER BY {hash_expr}
+                    ) as rn
+                FROM transactions
+                WHERE {where_clause}
+            )
+            SELECT price, area_sqft, bedroom_count, district
+            FROM ranked
+            WHERE rn <= :samples_per_segment
+            LIMIT :sample_size
         """)
 
-        # Stratified sampling using window function:
-        # ROW_NUMBER() OVER (PARTITION BY segment ORDER BY hash) ranks rows within each segment
-        # Then we select top N per segment to ensure CCR/RCR/OCR are equally represented
-        row_num = func.row_number().over(
-            partition_by=segment_expr,
-            order_by=hash_expr
-        ).label('rn')
-
-        subquery = query.add_columns(row_num).subquery()
-
-        # Select from subquery where row number <= samples_per_segment
-        sampled = db.session.query(
-            subquery.c.price,
-            subquery.c.area_sqft,
-            subquery.c.bedroom_count,
-            subquery.c.district
-        ).filter(
-            subquery.c.rn <= samples_per_segment
-        ).limit(sample_size).all()  # Global safety limit
+        result = db.session.execute(sql, params)
+        sampled = result.fetchall()
 
         # Format response
         data = [
