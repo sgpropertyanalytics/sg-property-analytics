@@ -80,7 +80,7 @@ function Login() {
           </div>
         </div>
 
-        {/* Center Section - Floating Dashboard Preview */}
+        {/* Center Section - Floating Dashboard Preview with Poker Deck Stack */}
         <div className="relative z-10 flex-1 flex items-center justify-center py-8">
           <motion.div
             initial={{ opacity: 0, y: 30, rotateX: 5 }}
@@ -89,20 +89,41 @@ function Login() {
             className="relative w-[480px] max-w-full"
             style={{ perspective: '1000px' }}
           >
+            {/* Ghost Card 2 - Way Behind (lowest z-index) */}
+            <div
+              className="absolute inset-0 bg-[#547792]/30 rounded-2xl border border-[#547792]/20"
+              style={{
+                transform: 'rotate(-6deg) translateX(-20px) translateY(10px) scale(0.9)',
+                opacity: 0.2,
+                zIndex: 1,
+              }}
+            />
+
+            {/* Ghost Card 1 - Behind */}
+            <div
+              className="absolute inset-0 bg-[#547792]/40 rounded-2xl border border-[#547792]/30"
+              style={{
+                transform: 'rotate(-3deg) translateX(-10px) translateY(5px) scale(0.95)',
+                opacity: 0.5,
+                zIndex: 2,
+              }}
+            />
+
             {/* Preview Mode Badge */}
-            <div className="absolute -top-3 left-8 z-20">
+            <div className="absolute -top-3 left-8 z-30">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#213448] border border-[#547792]/50 rounded-full text-xs font-semibold text-[#94B4C1] shadow-lg backdrop-blur-sm">
                 <span className="w-1.5 h-1.5 bg-[#EAE0CF] rounded-full animate-pulse" />
                 Preview Mode
               </span>
             </div>
 
-            {/* Floating Card - Dashboard Snippet */}
+            {/* Main Card - Dashboard Snippet (highest z-index) */}
             <div
               className="relative bg-[#213448]/90 backdrop-blur-xl rounded-2xl border border-[#547792]/40 overflow-hidden"
               style={{
                 transform: 'rotateY(-2deg) rotateX(2deg)',
-                boxShadow: '0 25px 80px -12px rgba(148, 180, 193, 0.3), 0 12px 40px -8px rgba(33, 52, 72, 0.4)'
+                boxShadow: '0 25px 80px -12px rgba(148, 180, 193, 0.3), 0 12px 40px -8px rgba(33, 52, 72, 0.4)',
+                zIndex: 10,
               }}
             >
               {/* Card Header */}
@@ -173,11 +194,6 @@ function Login() {
               </div>
             </div>
 
-            {/* Decorative Shadow Card Behind */}
-            <div
-              className="absolute -bottom-4 -right-4 w-full h-full bg-[#547792]/10 rounded-2xl -z-10"
-              style={{ transform: 'rotateY(-4deg) rotateX(4deg)' }}
-            />
           </motion.div>
         </div>
 
@@ -238,14 +254,14 @@ function Login() {
 
           {/* Header - Editorial style with eyebrow badge */}
           <div className="mb-10 text-center">
-            {/* Eyebrow Badge - Professional slate grey */}
-            <span className="inline-block text-xs font-semibold tracking-wider text-slate-600 bg-white border border-slate-200 rounded-full px-3 py-1 mb-3 shadow-sm">
+            {/* Eyebrow Badge - Neutral slate on cream */}
+            <span className="inline-block text-xs font-semibold tracking-wider text-slate-600 bg-slate-100 border border-slate-200 rounded-full px-3 py-1 mb-3">
               PREVIEW MODE
             </span>
             <h2 className="text-4xl font-bold text-slate-900 tracking-tight mb-3">
               Unlock Market Data
             </h2>
-            <p className="text-lg text-slate-500 leading-relaxed max-w-md mx-auto">
+            <p className="text-lg text-slate-500 leading-relaxed max-w-xl mx-auto text-balance">
               Access aggregated market trends from the last 60 days.
             </p>
           </div>
