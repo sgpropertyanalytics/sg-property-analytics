@@ -2820,8 +2820,11 @@ def kpi_summary():
         txn_count = int(result.txn_count or 0)
         prev_txn_count = int(result.prev_txn_count or 0)
 
-        # PSF trend
-        psf_trend = ((current_psf - prev_psf) / prev_psf * 100) if prev_psf > 0 else 0
+        # PSF trend (only calculate if we have previous data)
+        if prev_txn_count > 0 and prev_psf > 0:
+            psf_trend = ((current_psf - prev_psf) / prev_psf * 100)
+        else:
+            psf_trend = None  # No data to compare
 
         # Price spread (IQR)
         iqr = psf_75 - psf_25
@@ -2834,14 +2837,20 @@ def kpi_summary():
         new_premium = ((new_sale_psf - resale_psf) / resale_psf * 100) if resale_psf > 0 else 0
         premium_trend = "widening" if new_premium > 15 else "narrowing" if new_premium < 10 else "stable"
 
-        # Market momentum (based on PSF trend)
-        momentum_score = 50 - (psf_trend * 5)
-        momentum_score = max(20, min(80, momentum_score))
+        # Market momentum (based on PSF trend, default to 50 if no trend data)
+        if psf_trend is not None:
+            momentum_score = 50 - (psf_trend * 5)
+            momentum_score = max(20, min(80, momentum_score))
+        else:
+            momentum_score = 50  # Neutral when no data
         momentum_label = "Buyer's market" if momentum_score >= 55 else "Seller's market" if momentum_score <= 45 else "Balanced"
 
         # Generate compact insights - just the numbers, no filler words
-        # PSF: show previous vs current
-        psf_insight = f"Prev ${round(prev_psf):,} → Now ${round(current_psf):,}"
+        # PSF: show previous vs current (handle no data case)
+        if prev_txn_count > 0:
+            psf_insight = f"Prev ${round(prev_psf):,} → Now ${round(current_psf):,}"
+        else:
+            psf_insight = f"Now ${round(current_psf):,} (no prev data)"
 
         # Spread: show percentiles
         spread_insight = f"P25 ${round(psf_25):,} · P75 ${round(psf_75):,}"
@@ -2853,7 +2862,10 @@ def kpi_summary():
             premium_insight = "Insufficient data"
 
         # Momentum: show the trend driving it
-        momentum_insight = f"Price trend {psf_trend:+.1f}% MoM"
+        if psf_trend is not None:
+            momentum_insight = f"Trend {psf_trend:+.1f}% MoM"
+        else:
+            momentum_insight = "No trend data"
 
         elapsed = time.time() - start
         print(f"GET /api/kpi-summary completed in {elapsed:.4f}s")
@@ -2861,8 +2873,8 @@ def kpi_summary():
         return jsonify({
             "medianPsf": {
                 "current": round(current_psf),
-                "previous": round(prev_psf),
-                "trend": round(psf_trend, 1)
+                "previous": round(prev_psf) if prev_txn_count > 0 else None,
+                "trend": round(psf_trend, 1) if psf_trend is not None else None
             },
             "priceSpread": {
                 "iqr": round(iqr),

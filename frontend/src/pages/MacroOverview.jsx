@@ -220,9 +220,11 @@ export function MacroOverviewContent() {
                         <span className="text-2xl md:text-3xl font-bold text-[#213448]">
                           ${kpis.medianPsf.current.toLocaleString()}
                         </span>
-                        <span className={`text-xs font-medium ${kpis.medianPsf.trend > 0 ? 'text-red-500' : kpis.medianPsf.trend < 0 ? 'text-green-600' : 'text-[#547792]'}`}>
-                          {kpis.medianPsf.trend > 0 ? '+' : ''}{kpis.medianPsf.trend}%
-                        </span>
+                        {kpis.medianPsf.trend !== null && (
+                          <span className={`text-xs font-medium ${kpis.medianPsf.trend > 0 ? 'text-red-500' : kpis.medianPsf.trend < 0 ? 'text-green-600' : 'text-[#547792]'}`}>
+                            {kpis.medianPsf.trend > 0 ? '+' : ''}{kpis.medianPsf.trend}%
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
