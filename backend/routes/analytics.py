@@ -2510,42 +2510,53 @@ def scatter_sample():
 
         where_clause = " AND ".join(where_conditions)
 
-        # Build ordering expression for sampling
-        # - With seed (refresh): use random() for speed (no need for stability)
-        # - Without seed (initial): use md5(id) for deterministic/stable results
-        if seed:
-            # random() is faster - computes on-the-fly, no full table hash
-            order_expr = "random()"
-        else:
-            # md5(id) is slower but stable (same filters = same sample)
-            order_expr = "md5(id::TEXT)"
-
         # Build segment district lists for SQL
         ccr_list = ",".join([f"'{d}'" for d in CCR_DISTRICTS])
         rcr_list = ",".join([f"'{d}'" for d in RCR_DISTRICTS])
         ocr_list = ",".join([f"'{d}'" for d in OCR_DISTRICTS])
 
-        # Optimized query: UNION ALL of 3 segment queries (faster than window function)
-        # Each segment query uses ORDER BY + LIMIT, avoiding expensive window function
-        sql = text(f"""
-            (SELECT price, area_sqft, bedroom_count, district
-             FROM transactions
-             WHERE {where_clause} AND district IN ({ccr_list})
-             ORDER BY {order_expr}
-             LIMIT :samples_per_segment)
-            UNION ALL
-            (SELECT price, area_sqft, bedroom_count, district
-             FROM transactions
-             WHERE {where_clause} AND district IN ({rcr_list})
-             ORDER BY {order_expr}
-             LIMIT :samples_per_segment)
-            UNION ALL
-            (SELECT price, area_sqft, bedroom_count, district
-             FROM transactions
-             WHERE {where_clause} AND district IN ({ocr_list})
-             ORDER BY {order_expr}
-             LIMIT :samples_per_segment)
-        """)
+        # Fast sampling using random() with LIMIT
+        # For refresh (with seed): pure random, very fast
+        # For stable (no seed): use md5(id) for deterministic results
+        if seed:
+            # Fast random sampling - no sorting needed, just pick random rows
+            sql = text(f"""
+                (SELECT price, area_sqft, bedroom_count, district
+                 FROM transactions TABLESAMPLE BERNOULLI(10)
+                 WHERE {where_clause} AND district IN ({ccr_list})
+                 LIMIT :samples_per_segment)
+                UNION ALL
+                (SELECT price, area_sqft, bedroom_count, district
+                 FROM transactions TABLESAMPLE BERNOULLI(10)
+                 WHERE {where_clause} AND district IN ({rcr_list})
+                 LIMIT :samples_per_segment)
+                UNION ALL
+                (SELECT price, area_sqft, bedroom_count, district
+                 FROM transactions TABLESAMPLE BERNOULLI(10)
+                 WHERE {where_clause} AND district IN ({ocr_list})
+                 LIMIT :samples_per_segment)
+            """)
+        else:
+            # Stable sampling using md5(id) - slower but deterministic
+            sql = text(f"""
+                (SELECT price, area_sqft, bedroom_count, district
+                 FROM transactions
+                 WHERE {where_clause} AND district IN ({ccr_list})
+                 ORDER BY md5(id::TEXT)
+                 LIMIT :samples_per_segment)
+                UNION ALL
+                (SELECT price, area_sqft, bedroom_count, district
+                 FROM transactions
+                 WHERE {where_clause} AND district IN ({rcr_list})
+                 ORDER BY md5(id::TEXT)
+                 LIMIT :samples_per_segment)
+                UNION ALL
+                (SELECT price, area_sqft, bedroom_count, district
+                 FROM transactions
+                 WHERE {where_clause} AND district IN ({ocr_list})
+                 ORDER BY md5(id::TEXT)
+                 LIMIT :samples_per_segment)
+            """)
 
         result = db.session.execute(sql, params)
         sampled = result.fetchall()
