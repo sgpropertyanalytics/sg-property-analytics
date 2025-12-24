@@ -884,21 +884,32 @@ function LiquidityRankingTable({ districtData }) {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
+            {/* Group Header Row */}
+            <tr className="bg-[#EAE0CF]/20">
+              <th colSpan={11} className="border-b border-[#94B4C1]/20"></th>
+              <th
+                colSpan={3}
+                className="px-3 py-1.5 text-center text-[10px] font-bold text-[#547792] uppercase tracking-wider border-l-2 border-r-2 border-t-2 border-dashed border-[#94B4C1]/60 bg-rose-50/30"
+              >
+                Concentration Risks
+              </th>
+            </tr>
+            {/* Column Header Row */}
             <tr className="bg-[#EAE0CF]/30 border-b border-[#94B4C1]/30">
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap">Rank</th>
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap">District</th>
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap min-w-[200px]">Area</th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Region</th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Tier</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Projects</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Velocity/mo</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Transactions</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Z-Score</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">New %</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Resale %</th>
-              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Fragility</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Projects</th>
+              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap border-l-2 border-dashed border-[#94B4C1]/60">Fragility</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Gini</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Top Share</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap border-r-2 border-dashed border-[#94B4C1]/60">Top Share</th>
             </tr>
           </thead>
           <tbody>
@@ -947,6 +958,11 @@ function LiquidityRankingTable({ districtData }) {
                     </span>
                   </td>
 
+                  {/* Project Count - moved before velocity */}
+                  <td className="px-3 py-2 text-right text-[#547792]">
+                    {m.project_count || 0}
+                  </td>
+
                   {/* Monthly Velocity */}
                   <td className="px-3 py-2 text-right font-bold text-[#213448]">
                     {m.monthly_velocity?.toFixed(1) || '0'}
@@ -978,25 +994,20 @@ function LiquidityRankingTable({ districtData }) {
                     {m.resale_pct?.toFixed(0) || '0'}%
                   </td>
 
-                  {/* Fragility Badge */}
-                  <td className="px-3 py-2 text-center">
+                  {/* Concentration Risks Group - Fragility Badge */}
+                  <td className="px-3 py-2 text-center border-l-2 border-dashed border-[#94B4C1]/60">
                     <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${getFragilityBadge(m.fragility_label)}`}>
                       {m.fragility_label || '-'}
                     </span>
                   </td>
 
-                  {/* Project Count */}
-                  <td className="px-3 py-2 text-right text-[#547792]">
-                    {m.project_count || 0}
-                  </td>
-
-                  {/* Gini Index */}
+                  {/* Concentration Risks Group - Gini Index */}
                   <td className="px-3 py-2 text-right text-[#547792]">
                     {m.concentration_gini?.toFixed(2) || '-'}
                   </td>
 
-                  {/* Top Project Share */}
-                  <td className="px-3 py-2 text-right text-[#547792]">
+                  {/* Concentration Risks Group - Top Project Share */}
+                  <td className="px-3 py-2 text-right text-[#547792] border-r-2 border-dashed border-[#94B4C1]/60">
                     {m.top_project_share?.toFixed(0) || '0'}%
                   </td>
                 </tr>
