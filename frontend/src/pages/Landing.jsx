@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BarChart3,
   Building2,
+  Database,
   Map,
   ShieldCheck,
   LineChart,
@@ -54,7 +55,7 @@ const LandingPage = () => {
               onClick={() => navigate('/login')}
               className="px-4 md:px-5 py-2 text-sm font-medium bg-[#213448] text-[#EAE0CF] rounded-lg hover:bg-[#547792] hover:shadow-lg active:scale-[0.98] transition-all shadow-lg shadow-[#213448]/10 min-h-[44px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
             >
-              Get Started
+              Log In
             </button>
           </div>
         </div>
