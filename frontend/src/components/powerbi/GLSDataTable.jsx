@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { getGLSAll } from '../../api/client';
 
 /**
@@ -19,7 +19,9 @@ import { getGLSAll } from '../../api/client';
 export function GLSDataTable({ height = 400 }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
+  const isInitialLoad = useRef(true);
   const [filter, setFilter] = useState('all'); // 'all', 'launched', 'awarded'
   const [segmentFilter, setSegmentFilter] = useState(''); // '', 'CCR', 'RCR', 'OCR'
   const [sortConfig, setSortConfig] = useState({
@@ -29,7 +31,12 @@ export function GLSDataTable({ height = 400 }) {
 
   // Fetch data when filters change
   const fetchData = useCallback(async () => {
-    setLoading(true);
+    // Show full loading skeleton only on initial load, subtle opacity change for updates
+    if (isInitialLoad.current) {
+      setLoading(true);
+    } else {
+      setUpdating(true);
+    }
     setError(null);
     try {
       const params = {
@@ -53,6 +60,8 @@ export function GLSDataTable({ height = 400 }) {
       setError(err.message);
     } finally {
       setLoading(false);
+      setUpdating(false);
+      isInitialLoad.current = false;
     }
   }, [filter, segmentFilter, sortConfig]);
 
@@ -155,7 +164,7 @@ export function GLSDataTable({ height = 400 }) {
   const awardedCount = data.filter(t => t.status === 'awarded').length;
 
   return (
-    <div id="gls-data-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div id="gls-data-table" className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity ${updating ? 'opacity-70' : ''}`}>
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between mb-2">

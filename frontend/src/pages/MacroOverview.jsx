@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
@@ -14,13 +14,12 @@ import { TransactionDataTable } from '../components/powerbi/TransactionDataTable
 import { GLSDataTable } from '../components/powerbi/GLSDataTable';
 import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
-import { getKpiSummary } from '../api/client';
+import { getKpiSummary, getFilterCount } from '../api/client';
 import { useData } from '../context/DataContext';
-// Standardized responsive UI components (layout wrappers only)
-import { KPICard, ErrorBoundary, ChartWatermark } from '../components/ui';
+// Standardized responsive UI components
+import { ErrorBoundary, BlurredDashboard, PreviewModeBar } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
-import { Lock } from 'lucide-react';
 
 /**
  * Macro Overview Page - Power BI-style Dashboard (Market Pulse)
@@ -49,11 +48,16 @@ export function MacroOverviewContent() {
     highlight,
     clearCrossFilter,
     clearHighlight,
+    buildApiParams,
   } = usePowerBIFilters();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalFilters, setModalFilters] = useState({});
+
+  // Filter count for preview mode bar (free users only)
+  const [filterCount, setFilterCount] = useState(null);
+  const [filterCountLoading, setFilterCountLoading] = useState(false);
 
   // Desktop-first chart heights with mobile guardrails
   // Desktop: exact pixels | Mobile (<768px): capped to prevent viewport domination
@@ -86,8 +90,8 @@ export function MacroOverviewContent() {
         if (filters.bedroomTypes?.length > 0) {
           params.bedroom = filters.bedroomTypes.join(',');
         }
-        if (filters.segment) {
-          params.segment = filters.segment;
+        if (filters.segments?.length > 0) {
+          params.segment = filters.segments.join(',');
         }
 
         // Single API call for all KPI metrics
@@ -123,7 +127,29 @@ export function MacroOverviewContent() {
       }
     };
     fetchKpis();
-  }, [filters.districts, filters.bedroomTypes, filters.segment]); // Re-fetch when location filters change
+  }, [filters.districts, filters.bedroomTypes, filters.segments]); // Re-fetch when location filters change
+
+  // Fetch filter count for preview mode bar (free users only)
+  useEffect(() => {
+    // Only fetch for free users
+    if (isPremium) return;
+
+    const fetchFilterCount = async () => {
+      setFilterCountLoading(true);
+      try {
+        const params = buildApiParams({});
+        const response = await getFilterCount(params);
+        setFilterCount(response.data.count);
+      } catch (err) {
+        console.error('Error fetching filter count:', err);
+        setFilterCount(null);
+      } finally {
+        setFilterCountLoading(false);
+      }
+    };
+
+    fetchFilterCount();
+  }, [isPremium, buildApiParams, filters, crossFilter, highlight]);
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
     setModalTitle(title);
@@ -203,7 +229,18 @@ export function MacroOverviewContent() {
             <DrillBreadcrumb />
           </div>
 
+          {/* Preview Mode Bar - Shows for free users */}
+          {!isPremium && (
+            <PreviewModeBar
+              resultCount={filterCount}
+              loading={filterCountLoading}
+              onUnlock={() => showPaywall({ source: 'preview-bar' })}
+            />
+          )}
+
           {/* Analytics View - Dashboard with charts */}
+          {/* Blurred for free users, normal for premium */}
+          <BlurredDashboard>
           <div className="animate-view-enter">
               {/* KPI Summary Cards with Insight Boxes */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
@@ -315,38 +352,34 @@ export function MacroOverviewContent() {
                   </ErrorBoundary>
                 </div>
 
-                {/* Unit Size vs Price - Scatter chart (Watermarked for free users) */}
-                <ErrorBoundary name="Unit Size vs Price" compact>
-                  <ChartWatermark>
+                {/* Unit Size vs Price - Scatter chart - Full width */}
+                <div className="lg:col-span-2">
+                  <ErrorBoundary name="Unit Size vs Price" compact>
                     <UnitSizeVsPriceChart height={standardChartHeight} />
-                  </ChartWatermark>
-                </ErrorBoundary>
+                  </ErrorBoundary>
+                </div>
 
-                {/* Price Distribution - Histogram (Watermarked for free users) */}
-                <ErrorBoundary name="Price Distribution" compact>
-                  <ChartWatermark>
+                {/* Price Distribution - Histogram - Full width */}
+                <div className="lg:col-span-2">
+                  <ErrorBoundary name="Price Distribution" compact>
                     <PriceDistributionChart
                       onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
                       height={standardChartHeight}
                     />
-                  </ChartWatermark>
-                </ErrorBoundary>
-
-                {/* New Launch vs Resale Comparison - Full width (Watermarked for free users) */}
-                <div className="lg:col-span-2">
-                  <ErrorBoundary name="New vs Resale Chart" compact>
-                    <ChartWatermark>
-                      <NewVsResaleChart height={standardChartHeight} />
-                    </ChartWatermark>
                   </ErrorBoundary>
                 </div>
 
-                {/* Price Compression Analysis - Full width (Watermarked for free users) */}
+                {/* New Launch vs Resale Comparison - Full width */}
+                <div className="lg:col-span-2">
+                  <ErrorBoundary name="New vs Resale Chart" compact>
+                    <NewVsResaleChart height={standardChartHeight} />
+                  </ErrorBoundary>
+                </div>
+
+                {/* Price Compression Analysis - Full width */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Price Compression" compact>
-                    <ChartWatermark>
-                      <PriceCompressionChart height={compressionHeight} />
-                    </ChartWatermark>
+                    <PriceCompressionChart height={compressionHeight} />
                   </ErrorBoundary>
                 </div>
               </div>
@@ -365,44 +398,14 @@ export function MacroOverviewContent() {
                 </ErrorBoundary>
               </div>
 
-              {/* Transaction Data Table - Hidden for free users */}
+              {/* Transaction Data Table - Blurred for free users */}
               <div className="mb-4 md:mb-6">
                 <ErrorBoundary name="Transaction Table" compact>
-                  {isPremium ? (
-                    <TransactionDataTable height={tableHeight} />
-                  ) : (
-                    /* Locked Transaction Table CTA for free users */
-                    <div
-                      className="bg-white rounded-lg border border-[#94B4C1]/50 p-8 md:p-12 text-center"
-                      style={{ minHeight: tableHeight }}
-                    >
-                      <div className="max-w-md mx-auto">
-                        <div className="w-16 h-16 bg-[#213448] rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Lock className="w-8 h-8 text-[#EAE0CF]" />
-                        </div>
-                        <h3 className="text-xl font-bold text-[#213448] mb-2">
-                          Transaction Details
-                        </h3>
-                        <p className="text-[#547792] mb-6">
-                          See exactly what your neighbors paid. Unlock unit numbers,
-                          exact prices, and detailed transaction records.
-                        </p>
-                        <button
-                          onClick={() => showPaywall({ source: 'transaction-table' })}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-[#213448] text-white rounded-lg font-semibold hover:bg-[#547792] transition-colors"
-                        >
-                          <Lock className="w-4 h-4" />
-                          Unlock Unit-Level Precision
-                        </button>
-                        <p className="text-xs text-[#94B4C1] mt-4">
-                          Preview mode shows aggregated data only
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                  <TransactionDataTable height={tableHeight} />
                 </ErrorBoundary>
               </div>
           </div>
+          </BlurredDashboard>
         </div>
       </div>
 

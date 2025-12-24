@@ -330,6 +330,15 @@ export const getFilterOptions = () =>
   apiClient.get('/filter-options');
 
 /**
+ * Get count of transactions matching current filters.
+ * Used for preview mode to show "X transactions match your filters".
+ * @param {Object} params - Same filter params as /aggregate
+ * @returns {Promise<{count: number}>}
+ */
+export const getFilterCount = (params = {}) =>
+  apiClient.get('/filter-count', { params });
+
+/**
  * Floor liquidity heatmap - shows which floor zones resell faster by project
  * Uses Z-score normalization within each project for fair comparison
  * @param {Object} params - Query parameters

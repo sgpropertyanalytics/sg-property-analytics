@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { getUpcomingLaunchesAll } from '../../api/client';
 
 /**
@@ -21,7 +21,9 @@ import { getUpcomingLaunchesAll } from '../../api/client';
 export function UpcomingLaunchesTable({ height = 400 }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
+  const isInitialLoad = useRef(true);
   const [sortConfig, setSortConfig] = useState({
     column: 'project_name',
     order: 'asc',
@@ -29,7 +31,12 @@ export function UpcomingLaunchesTable({ height = 400 }) {
 
   // Fetch data when sort changes
   const fetchData = useCallback(async () => {
-    setLoading(true);
+    // Show full loading skeleton only on initial load, subtle opacity change for updates
+    if (isInitialLoad.current) {
+      setLoading(true);
+    } else {
+      setUpdating(true);
+    }
     setError(null);
     try {
       const params = {
@@ -45,6 +52,8 @@ export function UpcomingLaunchesTable({ height = 400 }) {
       setError(err.message);
     } finally {
       setLoading(false);
+      setUpdating(false);
+      isInitialLoad.current = false;
     }
   }, [sortConfig]);
 
@@ -126,7 +135,7 @@ export function UpcomingLaunchesTable({ height = 400 }) {
   }, {});
 
   return (
-    <div id="upcoming-launches-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div id="upcoming-launches-table" className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity ${updating ? 'opacity-70' : ''}`}>
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
         <div>

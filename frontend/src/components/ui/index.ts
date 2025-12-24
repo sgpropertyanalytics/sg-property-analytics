@@ -24,3 +24,5 @@ export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
 
 // Premium gating
 export { ChartWatermark } from './ChartWatermark';
+export { BlurredDashboard } from './BlurredDashboard';
+export { PreviewModeBar } from './PreviewModeBar';
