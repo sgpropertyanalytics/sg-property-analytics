@@ -2510,11 +2510,15 @@ def scatter_sample():
 
         where_clause = " AND ".join(where_conditions)
 
-        # Build hash expression for stable/seeded sampling
+        # Build ordering expression for sampling
+        # - With seed (refresh): use random() for speed (no need for stability)
+        # - Without seed (initial): use md5(id) for deterministic/stable results
         if seed:
-            hash_expr = f"md5(id::TEXT || '{seed}')"
+            # random() is faster - computes on-the-fly, no full table hash
+            order_expr = "random()"
         else:
-            hash_expr = "md5(id::TEXT)"
+            # md5(id) is slower but stable (same filters = same sample)
+            order_expr = "md5(id::TEXT)"
 
         # Build segment district lists for SQL
         ccr_list = ",".join([f"'{d}'" for d in CCR_DISTRICTS])
@@ -2522,24 +2526,24 @@ def scatter_sample():
         ocr_list = ",".join([f"'{d}'" for d in OCR_DISTRICTS])
 
         # Optimized query: UNION ALL of 3 segment queries (faster than window function)
-        # Each segment query uses ORDER BY hash LIMIT N, avoiding expensive window function
+        # Each segment query uses ORDER BY + LIMIT, avoiding expensive window function
         sql = text(f"""
             (SELECT price, area_sqft, bedroom_count, district
              FROM transactions
              WHERE {where_clause} AND district IN ({ccr_list})
-             ORDER BY {hash_expr}
+             ORDER BY {order_expr}
              LIMIT :samples_per_segment)
             UNION ALL
             (SELECT price, area_sqft, bedroom_count, district
              FROM transactions
              WHERE {where_clause} AND district IN ({rcr_list})
-             ORDER BY {hash_expr}
+             ORDER BY {order_expr}
              LIMIT :samples_per_segment)
             UNION ALL
             (SELECT price, area_sqft, bedroom_count, district
              FROM transactions
              WHERE {where_clause} AND district IN ({ocr_list})
-             ORDER BY {hash_expr}
+             ORDER BY {order_expr}
              LIMIT :samples_per_segment)
         """)
 
