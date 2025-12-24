@@ -30,6 +30,13 @@ function Login() {
   // Get the page they were trying to access (from ProtectedRoute)
   const from = location.state?.from?.pathname || '/market-pulse';
 
+  // Social proof metrics
+  const metrics = [
+    { value: '$2.8B+', label: 'Analyzed' },
+    { value: '103K+', label: 'Transactions' },
+    { value: '28', label: 'Districts' },
+  ];
+
   const handleGoogleSignIn = async () => {
     if (!isConfigured) return;
 
@@ -84,14 +91,33 @@ function Login() {
           <ResearchStackPreview />
         </motion.div>
 
-        {/* Bottom Section - Value Proposition */}
+        {/* Divider Line - separates "The Tool" from "The Description" */}
+        <div className="relative z-10 w-full border-t border-white/10 my-6" />
+
+        {/* Bottom Section - Value Proposition + Stats (Spec Sheet) */}
         <div className="relative z-10">
-          <h3 className="text-2xl xl:text-3xl font-bold text-[#EAE0CF] tracking-tight leading-tight mb-2">
-            Institutional-grade analytics for Singapore's private property market.
+          {/* Headline with controlled width for clean 2-line break */}
+          <h3 className="max-w-[580px] text-2xl xl:text-3xl font-bold text-[#EAE0CF] tracking-tight leading-tight mb-2">
+            Institutional-grade analytics for Singapore's{' '}
+            <span className="whitespace-nowrap">private property market.</span>
           </h3>
-          <p className="text-base xl:text-lg text-[#94B4C1] leading-relaxed">
+          <p className="text-base xl:text-lg text-[#94B4C1] leading-relaxed mb-6">
             Make decisions using raw transaction data and current market trends.
           </p>
+
+          {/* Stats Row */}
+          <div className="flex items-center gap-8">
+            {metrics.map((metric, i) => (
+              <div key={i} className="flex flex-col">
+                <span className="text-2xl font-bold text-[#EAE0CF] font-mono tracking-tight">
+                  {metric.value}
+                </span>
+                <span className="text-xs text-[#94B4C1] uppercase tracking-wide">
+                  {metric.label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
