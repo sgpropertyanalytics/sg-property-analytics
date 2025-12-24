@@ -243,7 +243,6 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
       intersect: false,
     },
     onClick: handleClick,
-    onDblClick: handleDoubleClick,
     plugins: {
       legend: {
         position: 'top',
