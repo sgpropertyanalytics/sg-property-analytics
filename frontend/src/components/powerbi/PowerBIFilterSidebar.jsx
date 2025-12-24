@@ -81,17 +81,12 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     };
   }, []);
 
-  // Initialize with 12M preset when filter options load
+  // Mark as initialized when filter options load (no default filter applied)
   useEffect(() => {
     if (!hasInitialized && filterOptions.dateRange.max && !filterOptions.loading) {
-      const { start, end } = calculatePresetDateRange('12M', filterOptions.dateRange.max);
-      if (start && end) {
-        setDateRange(start, end);
-        setDatePreset('12M');
-        setHasInitialized(true);
-      }
+      setHasInitialized(true);
     }
-  }, [filterOptions.dateRange.max, filterOptions.loading, hasInitialized, calculatePresetDateRange, setDateRange]);
+  }, [filterOptions.dateRange.max, filterOptions.loading, hasInitialized]);
 
   // Handle preset button click
   const handlePresetClick = useCallback((preset) => {
@@ -119,22 +114,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     }
   }, [setDateRange]);
 
-  // Wrap resetFilters to also reset local datePreset state and re-initialize to 12M
+  // Wrap resetFilters to also reset local datePreset state
   const handleResetFilters = useCallback(() => {
     resetFilters();
-    // Re-apply 12M default after reset
-    if (filterOptions.dateRange.max) {
-      const { start, end } = calculatePresetDateRange('12M', filterOptions.dateRange.max);
-      if (start && end) {
-        // Use setTimeout to ensure resetFilters completes first
-        setTimeout(() => {
-          setDateRange(start, end);
-          setDatePreset('12M');
-        }, 0);
-      }
-    }
+    // Reset to no filter (all data)
+    setDatePreset(null);
     setShowAdvanced(false);
-  }, [resetFilters, filterOptions.dateRange.max, calculatePresetDateRange, setDateRange]);
+  }, [resetFilters]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
