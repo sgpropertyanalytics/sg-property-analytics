@@ -3,7 +3,8 @@ import FloorLiquidityChart from '../components/powerbi/FloorLiquidityChart';
 import FloorPremiumByRegionChart from '../components/powerbi/FloorPremiumByRegionChart';
 import FloorPremiumTrendChart from '../components/powerbi/FloorPremiumTrendChart';
 import FloorLiquidityHeatmap from '../components/powerbi/FloorLiquidityHeatmap';
-import { ErrorBoundary, ChartWatermark } from '../components/ui';
+import { ErrorBoundary, BlurredDashboard, PreviewModeBar } from '../components/ui';
+import { useSubscription } from '../context/SubscriptionContext';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
@@ -37,6 +38,7 @@ const SEGMENT_OPTIONS = [
 export function FloorDispersionContent() {
   const [bedroom, setBedroom] = useState('');
   const [segment, setSegment] = useState('');
+  const { isPremium, showPaywall } = useSubscription();
 
   // Desktop-first chart heights with mobile guardrails
   const heroChartHeight = useChartHeight(420, MOBILE_CAPS.tall);          // 420px desktop, max 320px mobile
@@ -111,16 +113,23 @@ export function FloorDispersionContent() {
           )}
         </div>
 
+        {/* Preview Mode Bar - Shows for free users */}
+        {!isPremium && (
+          <PreviewModeBar
+            onUnlock={() => showPaywall({ source: 'floor-dispersion-preview' })}
+          />
+        )}
+
         {/* Floor Liquidity Chart - Hero Visualization */}
         <div className="mb-6">
           <ErrorBoundary name="Floor Liquidity Chart" compact>
-            <ChartWatermark>
+            <BlurredDashboard>
               <FloorLiquidityChart
                 height={heroChartHeight}
                 bedroom={bedroom || undefined}
                 segment={segment || undefined}
               />
-            </ChartWatermark>
+            </BlurredDashboard>
           </ErrorBoundary>
         </div>
 
@@ -128,35 +137,35 @@ export function FloorDispersionContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Floor Premium by Region - Comparison Chart */}
           <ErrorBoundary name="Floor Premium by Region" compact>
-            <ChartWatermark>
+            <BlurredDashboard>
               <FloorPremiumByRegionChart
                 height={secondaryChartHeight}
                 bedroom={bedroom || undefined}
               />
-            </ChartWatermark>
+            </BlurredDashboard>
           </ErrorBoundary>
 
           {/* Floor Premium Trend Chart */}
           <ErrorBoundary name="Floor Premium Trend" compact>
-            <ChartWatermark>
+            <BlurredDashboard>
               <FloorPremiumTrendChart
                 height={secondaryChartHeight}
                 bedroom={bedroom || undefined}
                 segment={segment || undefined}
               />
-            </ChartWatermark>
+            </BlurredDashboard>
           </ErrorBoundary>
         </div>
 
         {/* Liquidity Heatmap - Full tower view */}
         <div className="mt-6">
           <ErrorBoundary name="Liquidity Heatmap" compact>
-            <ChartWatermark>
+            <BlurredDashboard>
               <FloorLiquidityHeatmap
                 bedroom={bedroom || undefined}
                 segment={segment || undefined}
               />
-            </ChartWatermark>
+            </BlurredDashboard>
           </ErrorBoundary>
         </div>
       </div>

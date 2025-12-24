@@ -1,5 +1,6 @@
 import { MarketStrategyMap } from '../components/insights';
-import { ErrorBoundary, ChartWatermark } from '../components/ui';
+import { ErrorBoundary, BlurredDashboard, PreviewModeBar } from '../components/ui';
+import { useSubscription } from '../context/SubscriptionContext';
 
 /**
  * Insights Page - Visual Analytics for Singapore Property Market
@@ -17,6 +18,8 @@ import { ErrorBoundary, ChartWatermark } from '../components/ui';
  * - Market alerts and notifications
  */
 export function InsightsContent() {
+  const { isPremium, showPaywall } = useSubscription();
+
   return (
     <div className="h-full overflow-auto">
       <div className="p-3 md:p-4 lg:p-6">
@@ -30,14 +33,21 @@ export function InsightsContent() {
           </p>
         </div>
 
+        {/* Preview Mode Bar - Shows for free users */}
+        {!isPremium && (
+          <PreviewModeBar
+            onUnlock={() => showPaywall({ source: 'insights-preview' })}
+          />
+        )}
+
         {/* Main Content Grid */}
         <div className="space-y-6">
           {/* Strategy Map with Data Flags - Full Width */}
           <div className="animate-view-enter">
             <ErrorBoundary name="District Price Map" compact>
-              <ChartWatermark>
+              <BlurredDashboard>
                 <MarketStrategyMap />
-              </ChartWatermark>
+              </BlurredDashboard>
             </ErrorBoundary>
           </div>
 

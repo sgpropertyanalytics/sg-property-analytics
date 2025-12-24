@@ -239,8 +239,6 @@ export function MacroOverviewContent() {
           )}
 
           {/* Analytics View - Dashboard with charts */}
-          {/* Blurred for free users, normal for premium */}
-          <BlurredDashboard>
           <div className="animate-view-enter">
               {/* KPI Summary Cards with Insight Boxes */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
@@ -332,54 +330,65 @@ export function MacroOverviewContent() {
               </div>
 
               {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
-              {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
+              {/* Each chart wrapped with ErrorBoundary + BlurredDashboard for free users */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
                 {/* Time Trend Chart - Full width on all screens */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Time Trend Chart" compact>
-                    {/* Chart component - DO NOT MODIFY PROPS (ui-freeze) */}
-                    <TimeTrendChart
-                      onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
-                      height={trendChartHeight}
-                    />
+                    <BlurredDashboard>
+                      <TimeTrendChart
+                        onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
+                        height={trendChartHeight}
+                      />
+                    </BlurredDashboard>
                   </ErrorBoundary>
                 </div>
 
                 {/* Median PSF Trend Chart - Full width, shows price trends by CCR/RCR/OCR */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Median PSF Trend" compact>
-                    <MedianPsfTrendChart height={trendChartHeight} />
+                    <BlurredDashboard>
+                      <MedianPsfTrendChart height={trendChartHeight} />
+                    </BlurredDashboard>
                   </ErrorBoundary>
                 </div>
 
                 {/* Unit Size vs Price - Scatter chart - Full width */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Unit Size vs Price" compact>
-                    <UnitSizeVsPriceChart height={standardChartHeight} />
+                    <BlurredDashboard>
+                      <UnitSizeVsPriceChart height={standardChartHeight} />
+                    </BlurredDashboard>
                   </ErrorBoundary>
                 </div>
 
                 {/* Price Distribution - Histogram - Full width */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Price Distribution" compact>
-                    <PriceDistributionChart
-                      onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
-                      height={standardChartHeight}
-                    />
+                    <BlurredDashboard>
+                      <PriceDistributionChart
+                        onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
+                        height={standardChartHeight}
+                      />
+                    </BlurredDashboard>
                   </ErrorBoundary>
                 </div>
 
                 {/* New Launch vs Resale Comparison - Full width */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="New vs Resale Chart" compact>
-                    <NewVsResaleChart height={standardChartHeight} />
+                    <BlurredDashboard>
+                      <NewVsResaleChart height={standardChartHeight} />
+                    </BlurredDashboard>
                   </ErrorBoundary>
                 </div>
 
                 {/* Price Compression Analysis - Full width */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Price Compression" compact>
-                    <PriceCompressionChart height={compressionHeight} />
+                    <BlurredDashboard>
+                      <PriceCompressionChart height={compressionHeight} />
+                    </BlurredDashboard>
                   </ErrorBoundary>
                 </div>
               </div>
@@ -401,11 +410,12 @@ export function MacroOverviewContent() {
               {/* Transaction Data Table - Blurred for free users */}
               <div className="mb-4 md:mb-6">
                 <ErrorBoundary name="Transaction Table" compact>
-                  <TransactionDataTable height={tableHeight} />
+                  <BlurredDashboard>
+                    <TransactionDataTable height={tableHeight} />
+                  </BlurredDashboard>
                 </ErrorBoundary>
               </div>
           </div>
-          </BlurredDashboard>
         </div>
       </div>
 
