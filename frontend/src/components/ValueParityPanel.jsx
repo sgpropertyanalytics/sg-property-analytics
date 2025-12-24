@@ -7,6 +7,8 @@ import { HotProjectsTable } from './powerbi/HotProjectsTable';
 import { UpcomingLaunchesTable } from './powerbi/UpcomingLaunchesTable';
 import { MobileTransactionCard } from './MobileTransactionCard';
 import { ResultsSummaryBar } from './ResultsSummaryBar';
+import { BlurredDashboard, PreviewModeBar } from './ui';
+import { useSubscription } from '../context/SubscriptionContext';
 
 /**
  * ValueParityPanel - Budget-based property search tool with Deal Checker
@@ -31,6 +33,9 @@ const ACTIVE_RANGE_MIN = 1500000;  // $1.5M
 const ACTIVE_RANGE_MAX = 3500000;  // $3.5M
 
 export function ValueParityPanel() {
+  // Subscription state for blur paywall
+  const { isPremium, showPaywall } = useSubscription();
+
   // Tab state
   const [activeTab, setActiveTab] = useState('budget'); // 'budget' | 'deal-checker'
 
@@ -357,6 +362,13 @@ export function ValueParityPanel() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Preview Mode Bar - Shows for free users */}
+      {!isPremium && (
+        <PreviewModeBar
+          onUnlock={() => showPaywall({ source: 'value-parity-preview' })}
+        />
+      )}
+
       {/* Tab Navigation - Segmented Toggle */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Explore Budget Tab */}
@@ -410,7 +422,9 @@ export function ValueParityPanel() {
 
       {/* Tab Content */}
       {activeTab === 'deal-checker' ? (
-        <DealCheckerContent />
+        <BlurredDashboard>
+          <DealCheckerContent />
+        </BlurredDashboard>
       ) : (
         <>
       {/* Input Panel */}
@@ -683,7 +697,9 @@ export function ValueParityPanel() {
           </div>
 
           {/* Upcoming Launches Table */}
-          <UpcomingLaunchesTable height={300} />
+          <BlurredDashboard>
+            <UpcomingLaunchesTable height={300} />
+          </BlurredDashboard>
         </div>
       )}
 
@@ -719,21 +735,23 @@ export function ValueParityPanel() {
           </div>
 
           {/* Hot Projects Table */}
-          <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-            <HotProjectsTable
-              height={300}
-              showHeader={false}
-              compact={true}
-              filters={{
-                priceMin: budget - 100000,
-                priceMax: budget + 100000,
-                bedroom: bedroom || null,
-                region: region || null,
-                district: district || null,
-              }}
-              onDataLoad={setHotProjectsCount}
-            />
-          </div>
+          <BlurredDashboard>
+            <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+              <HotProjectsTable
+                height={300}
+                showHeader={false}
+                compact={true}
+                filters={{
+                  priceMin: budget - 100000,
+                  priceMax: budget + 100000,
+                  bedroom: bedroom || null,
+                  region: region || null,
+                  district: district || null,
+                }}
+                onDataLoad={setHotProjectsCount}
+              />
+            </div>
+          </BlurredDashboard>
         </div>
       )}
 
@@ -755,6 +773,7 @@ export function ValueParityPanel() {
           </div>
 
           {/* Results Table */}
+          <BlurredDashboard>
           <div ref={resaleRef} className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden animate-fade-in">
             {/* Section Header: Young Resale */}
             <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
@@ -975,6 +994,7 @@ export function ValueParityPanel() {
             </div>
           )}
         </div>
+          </BlurredDashboard>
 
           {/* ===== STEP 4: RESALE MARKET ===== */}
           {/* Flow Arrow: Young Resale → Resale Market */}
@@ -992,6 +1012,7 @@ export function ValueParityPanel() {
           </div>
 
           {/* Resale Market Section */}
+          <BlurredDashboard>
           <div ref={resaleMarketRef} className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
             <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1141,6 +1162,7 @@ export function ValueParityPanel() {
               </div>
             )}
           </div>
+          </BlurredDashboard>
         </>
       )}
 
