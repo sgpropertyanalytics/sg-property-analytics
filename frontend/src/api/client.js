@@ -581,5 +581,13 @@ export const getCurrentUser = () => {
   return apiClient.get('/auth/me');
 };
 
+export const deleteAccount = () => {
+  return apiClient.delete('/auth/delete-account');
+};
+
+export const createPortalSession = (returnUrl) => {
+  return apiClient.post('/payments/portal', { return_url: returnUrl });
+};
+
 export default apiClient;
 

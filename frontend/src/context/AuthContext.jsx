@@ -68,10 +68,12 @@ export function AuthProvider({ children }) {
       // Get Firebase ID token
       const idToken = await firebaseUser.getIdToken();
 
-      // Sync with backend
+      // Sync with backend - include profile data from Google OAuth
       const response = await apiClient.post('/auth/firebase-sync', {
         idToken,
         email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
       });
 
       // Store JWT for subsequent API calls

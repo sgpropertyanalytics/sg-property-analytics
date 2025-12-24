@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useSubscription } from '../../context/SubscriptionContext';
+import { UserProfileMenu } from './UserProfileMenu';
+import { AccountSettingsModal } from '../AccountSettingsModal';
 
 /**
  * GlobalNavRail - Primary Navigation Rail (64px fixed width)
@@ -75,6 +78,8 @@ export const NAV_ITEMS = [
 export function GlobalNavRail({ activePage, onPageChange, expanded = false }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { showPaywall } = useSubscription();
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
 
   // Determine active page from URL or prop
   const currentPath = location.pathname;
@@ -183,42 +188,20 @@ export function GlobalNavRail({ activePage, onPageChange, expanded = false }) {
         })}
       </div>
 
-      {/* Bottom section - Settings/Help */}
+      {/* Bottom section - User Profile */}
       <div className={`mt-auto pt-4 w-full ${expanded ? 'px-1' : 'px-2'}`}>
-        <button
-          className={`
-            group relative flex items-center
-            ${expanded ? 'gap-3 px-3 py-3 rounded-lg w-full' : 'flex-col justify-center w-full aspect-square rounded-xl'}
-            text-[#94B4C1]/60 hover:bg-[#547792]/30 hover:text-[#EAE0CF] transition-all duration-200
-          `}
-          aria-label="Settings"
-        >
-          <svg className="w-5 h-5 group-hover:scale-105 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-
-          {/* Label when expanded */}
-          {expanded && (
-            <span className="text-sm font-medium">Settings</span>
-          )}
-
-          {/* Tooltip - only when collapsed */}
-          {!expanded && (
-            <div className="
-              absolute left-full ml-4 px-3 py-2
-              bg-[#213448] text-[#EAE0CF] text-sm font-medium
-              rounded-lg shadow-xl
-              opacity-0 invisible group-hover:opacity-100 group-hover:visible
-              pointer-events-none transition-all duration-200 delay-100
-              whitespace-nowrap z-50 border border-[#94B4C1]/30
-            ">
-              Settings
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-[#213448] rotate-45 border-l border-b border-[#94B4C1]/30" />
-            </div>
-          )}
-        </button>
+        <UserProfileMenu
+          expanded={expanded}
+          onOpenSettings={() => setShowAccountSettings(true)}
+        />
       </div>
+
+      {/* Account Settings Modal */}
+      <AccountSettingsModal
+        isOpen={showAccountSettings}
+        onClose={() => setShowAccountSettings(false)}
+        onShowPricing={() => showPaywall({ source: 'account_settings' })}
+      />
     </nav>
   );
 }

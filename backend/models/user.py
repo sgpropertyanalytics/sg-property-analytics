@@ -39,6 +39,8 @@ class User(db.Model):
     subscription_status = db.Column(db.String(50), default=None)  # Stripe subscription.status
     subscription_ends_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    display_name = db.Column(db.String(255), nullable=True)
+    avatar_url = db.Column(db.String(512), nullable=True)
 
     def set_password(self, password):
         """Hash and set password"""
@@ -105,6 +107,8 @@ class User(db.Model):
         return {
             'id': self.id,
             'email': self.email,
+            'display_name': self.display_name,
+            'avatar_url': self.avatar_url,
             'tier': self.tier,
             'subscription_status': self.subscription_status,
             'subscribed': self.is_subscribed(),

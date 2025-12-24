@@ -178,11 +178,14 @@ def firebase_sync():
 
     Called after successful Google OAuth sign-in on frontend.
     Creates user if doesn't exist, returns JWT for API calls.
+    Also saves profile data (displayName, photoURL) from Google OAuth.
     """
     try:
         data = request.get_json()
         id_token = data.get('idToken')
         email = data.get('email')
+        display_name = data.get('displayName')
+        avatar_url = data.get('photoURL')
 
         if not id_token:
             return jsonify({"error": "idToken is required"}), 400
@@ -196,6 +199,11 @@ def firebase_sync():
                 decoded_token = firebase_auth.verify_id_token(id_token)
                 firebase_uid = decoded_token.get('uid')
                 email = decoded_token.get('email', email)
+                # Get profile data from token if not provided in request
+                if not display_name:
+                    display_name = decoded_token.get('name')
+                if not avatar_url:
+                    avatar_url = decoded_token.get('picture')
         except Exception as e:
             print(f"Firebase token verification failed: {e}")
             # In development, allow fallback to email-only sync
@@ -211,19 +219,32 @@ def firebase_sync():
         user = User.query.filter_by(email=email).first()
 
         if not user:
-            # Create new user with Firebase auth
+            # Create new user with Firebase auth and profile data
             user = User(
                 email=email,
                 firebase_uid=firebase_uid,
                 password_hash='firebase_auth',  # Placeholder - not used for Firebase auth
-                tier='free'
+                tier='free',
+                display_name=display_name,
+                avatar_url=avatar_url
             )
             db.session.add(user)
             db.session.commit()
-        elif firebase_uid and not user.firebase_uid:
-            # Link Firebase UID to existing user
-            user.firebase_uid = firebase_uid
-            db.session.commit()
+        else:
+            # Update existing user - link Firebase UID and update profile if changed
+            needs_update = False
+            if firebase_uid and not user.firebase_uid:
+                user.firebase_uid = firebase_uid
+                needs_update = True
+            # Always update profile from OAuth (may have changed on Google side)
+            if display_name and display_name != user.display_name:
+                user.display_name = display_name
+                needs_update = True
+            if avatar_url and avatar_url != user.avatar_url:
+                user.avatar_url = avatar_url
+                needs_update = True
+            if needs_update:
+                db.session.commit()
 
         # Generate JWT for API calls
         token = generate_token(user.id, user.email)
@@ -271,5 +292,60 @@ def get_subscription():
         }), 200
 
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@auth_bp.route("/delete-account", methods=["DELETE"])
+def delete_account():
+    """
+    Delete user account and cancel any active Stripe subscription.
+
+    This permanently deletes the user and all associated data.
+    """
+    try:
+        # Verify JWT
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "Authorization required"}), 401
+
+        token = auth_header.split(' ')[1]
+        user_id = verify_token(token)
+        if not user_id:
+            return jsonify({"error": "Invalid or expired token"}), 401
+
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        # If user has Stripe customer ID, cancel any active subscriptions
+        if user.stripe_customer_id:
+            try:
+                import stripe
+                stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+                if stripe.api_key:
+                    # List and cancel all active subscriptions for this customer
+                    subscriptions = stripe.Subscription.list(
+                        customer=user.stripe_customer_id,
+                        status='active'
+                    )
+                    for sub in subscriptions.data:
+                        stripe.Subscription.delete(sub.id)
+                        print(f"Cancelled subscription {sub.id} for user {user.email}")
+            except Exception as stripe_error:
+                print(f"Failed to cancel Stripe subscription: {stripe_error}")
+                # Continue with account deletion even if Stripe cancellation fails
+
+        # Delete user from database
+        db.session.delete(user)
+        db.session.commit()
+        print(f"User account deleted: {user.email}")
+
+        return jsonify({
+            "message": "Account deleted successfully"
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Account deletion error: {e}")
         return jsonify({"error": str(e)}), 500
 
