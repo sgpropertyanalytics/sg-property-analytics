@@ -48,7 +48,7 @@ function Login() {
     <div className="min-h-screen min-h-[100dvh] bg-[#213448] flex">
 
       {/* ===== LEFT PANEL - The "Value" Zone (50/50 split) ===== */}
-      <div className="hidden lg:flex lg:w-1/2 p-8 xl:p-12 flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 p-8 xl:p-12 pb-16 flex-col justify-between relative overflow-hidden">
 
         {/* Ambient Background Orbs */}
         <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-[#547792]/30 rounded-full blur-[100px] pointer-events-none" />
@@ -85,7 +85,7 @@ function Login() {
         </motion.div>
 
         {/* Divider Line - separates "The Tool" from "The Description" */}
-        <div className="relative z-10 w-full border-t border-white/10 my-6" />
+        <div className="relative z-10 w-full border-t border-white/10 my-8" />
 
         {/* Bottom Section - Value Proposition + Stats (Spec Sheet) */}
         <div className="relative z-10">
