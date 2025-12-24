@@ -112,7 +112,7 @@ function Login() {
       </div>
 
       {/* ===== RIGHT PANEL - The "Unlock" Action ===== */}
-      <div className="flex-1 bg-[#FBF9F4] flex flex-col items-center justify-center p-6 md:p-10 relative overflow-hidden">
+      <div className="flex-1 bg-[#FBF9F4] flex flex-col items-center justify-center p-6 md:p-10 pb-32 md:pb-36 relative overflow-hidden">
 
         {/* Subtle Texture */}
         <div
@@ -309,6 +309,16 @@ function Login() {
             <a href="#" className="text-slate-500 hover:underline">Privacy Policy</a>
           </p>
         </motion.div>
+
+        {/* Bottom Value Proposition Banner */}
+        <div className="absolute bottom-0 left-0 right-0 bg-[#213448] px-6 py-8 md:px-10">
+          <h3 className="text-2xl md:text-3xl font-bold text-[#EAE0CF] tracking-tight leading-tight mb-2">
+            Institutional-grade analytics for Singapore's private property market.
+          </h3>
+          <p className="text-base md:text-lg text-[#94B4C1] leading-relaxed">
+            Make decisions using raw transaction data and current market trends.
+          </p>
+        </div>
       </div>
     </div>
   );
