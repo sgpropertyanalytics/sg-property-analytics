@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
 import { BlurredProject, BlurredCurrency, BlurredArea, BlurredPSF } from '../BlurredCell';
@@ -17,9 +17,7 @@ export function TransactionDataTable({ height = 400 }) {
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
-  const isInitialLoad = useRef(true);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 25,
@@ -33,12 +31,7 @@ export function TransactionDataTable({ height = 400 }) {
 
   // Fetch data when filters, pagination, or sort changes
   const fetchData = useCallback(async () => {
-    // Show full loading skeleton only on initial load, subtle opacity change for updates
-    if (isInitialLoad.current) {
-      setLoading(true);
-    } else {
-      setUpdating(true);
-    }
+    setLoading(true);
     setError(null);
     try {
       // includeFactFilter: true enables one-way filtering from dimension charts
@@ -61,8 +54,6 @@ export function TransactionDataTable({ height = 400 }) {
       setError(err.message);
     } finally {
       setLoading(false);
-      setUpdating(false);
-      isInitialLoad.current = false;
     }
   }, [buildApiParams, pagination.page, pagination.limit, sortConfig, highlight]);
 
@@ -140,7 +131,7 @@ export function TransactionDataTable({ height = 400 }) {
   ];
 
   return (
-    <div id="transaction-data-table" className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity ${updating ? 'opacity-70' : ''}`}>
+    <div id="transaction-data-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
         <div>
@@ -167,7 +158,7 @@ export function TransactionDataTable({ height = 400 }) {
             className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
             title="Refresh data"
           >
-            <svg className={`w-4 h-4 ${loading || updating ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           </button>

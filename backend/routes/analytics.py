@@ -1317,7 +1317,7 @@ def aggregate():
     metrics = [m.strip() for m in metrics_param.split(",") if m.strip()]
 
     # SUBSCRIPTION CHECK: Granularity restriction for free users
-    from utils.subscription import check_granularity_allowed, is_premium_user, get_time_filter_meta
+    from utils.subscription import check_granularity_allowed, get_time_filter_for_tier, is_premium_user, get_time_filter_meta
     is_premium = is_premium_user()
 
     allowed, error_msg = check_granularity_allowed(group_by_param, is_premium=is_premium)
@@ -1333,7 +1333,11 @@ def aggregate():
     filter_conditions = [Transaction.outlier_filter()]
     filters_applied = {}
 
-    # NOTE: 60-day time restriction removed - using blur paywall instead
+    # SUBSCRIPTION CHECK: Time restriction for free users (60-day window)
+    time_cutoff = get_time_filter_for_tier(is_premium=is_premium)
+    if time_cutoff:
+        filter_conditions.append(Transaction.transaction_date >= time_cutoff.date())
+        filters_applied["_time_restricted"] = True
 
     # District filter
     districts_param = request.args.get("district")
@@ -1640,120 +1644,6 @@ def aggregate():
     _dashboard_cache.set(cache_key, result)
 
     return jsonify(result)
-
-
-@analytics_bp.route("/filter-count", methods=["GET"])
-def filter_count():
-    """
-    Lightweight endpoint to get transaction count matching current filters.
-    Used for preview mode to show "X transactions match your filters".
-
-    Query params: Same as /aggregate (district, bedroom, segment, sale_type, date_from, date_to, etc.)
-
-    Returns:
-      { "count": 1284 }
-    """
-    from datetime import datetime
-    from models.transaction import Transaction
-    from models.database import db
-    from sqlalchemy import func, and_, or_
-    from services.data_processor import _get_market_segment
-
-    # Build filter conditions - ALWAYS exclude outliers
-    filter_conditions = [Transaction.outlier_filter()]
-
-    # NOTE: 60-day time restriction removed - using blur paywall instead
-
-    # District filter
-    districts_param = request.args.get("district")
-    if districts_param:
-        districts = [d.strip().upper() for d in districts_param.split(",") if d.strip()]
-        normalized = []
-        for d in districts:
-            if not d.startswith("D"):
-                d = f"D{d.zfill(2)}"
-            normalized.append(d)
-        filter_conditions.append(Transaction.district.in_(normalized))
-
-    # Bedroom filter
-    bedroom_param = request.args.get("bedroom")
-    if bedroom_param:
-        bedrooms = [int(b.strip()) for b in bedroom_param.split(",") if b.strip()]
-        filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
-
-    # Segment filter
-    segment = request.args.get("segment")
-    if segment:
-        segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
-        all_districts = db.session.query(Transaction.district).distinct().all()
-        segment_districts = [
-            d[0] for d in all_districts
-            if _get_market_segment(d[0]) in segments
-        ]
-        filter_conditions.append(Transaction.district.in_(segment_districts))
-
-    # Sale type filter
-    sale_type = request.args.get("sale_type")
-    if sale_type:
-        filter_conditions.append(func.lower(Transaction.sale_type) == sale_type.lower())
-
-    # Date range filter
-    date_from = request.args.get("date_from")
-    date_to = request.args.get("date_to")
-    if date_from:
-        try:
-            from_dt = datetime.strptime(date_from, "%Y-%m-%d").date()
-            filter_conditions.append(Transaction.transaction_date >= from_dt)
-        except ValueError:
-            pass
-    if date_to:
-        try:
-            to_dt = datetime.strptime(date_to, "%Y-%m-%d").date()
-            filter_conditions.append(Transaction.transaction_date <= to_dt)
-        except ValueError:
-            pass
-
-    # PSF range filter
-    psf_min = request.args.get("psf_min")
-    psf_max = request.args.get("psf_max")
-    if psf_min:
-        filter_conditions.append(Transaction.psf >= float(psf_min))
-    if psf_max:
-        filter_conditions.append(Transaction.psf <= float(psf_max))
-
-    # Size range filter
-    size_min = request.args.get("size_min")
-    size_max = request.args.get("size_max")
-    if size_min:
-        filter_conditions.append(Transaction.area_sqft >= float(size_min))
-    if size_max:
-        filter_conditions.append(Transaction.area_sqft <= float(size_max))
-
-    # Tenure filter
-    tenure = request.args.get("tenure")
-    if tenure:
-        tenure_lower = tenure.lower()
-        if tenure_lower == "freehold":
-            filter_conditions.append(or_(
-                Transaction.tenure.ilike("%freehold%"),
-                Transaction.remaining_lease == 999
-            ))
-        elif tenure_lower in ["99-year", "99"]:
-            filter_conditions.append(and_(
-                Transaction.remaining_lease < 999,
-                Transaction.remaining_lease >= 90
-            ))
-
-    # Execute count query
-    try:
-        count = db.session.query(func.count(Transaction.id)).filter(
-            and_(*filter_conditions)
-        ).scalar()
-
-        return jsonify({"count": count or 0})
-    except Exception as e:
-        print(f"Error in filter-count: {e}")
-        return jsonify({"count": 0, "error": str(e)}), 500
 
 
 @analytics_bp.route("/transactions/list", methods=["GET"])

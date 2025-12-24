@@ -4,6 +4,7 @@ import { GlobalNavRail, NAV_ITEMS } from './GlobalNavRail';
 import { PowerBIFilterProvider } from '../../context/PowerBIFilterContext';
 import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
 import { ErrorBoundary } from '../ui';
+import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PricingModal } from '../PricingModal';
 
@@ -41,7 +42,7 @@ const PAGE_CONFIG = {
 
 export function DashboardLayout({ children, activePage: propActivePage }) {
   const location = useLocation();
-  const { showPricingModal, hidePaywall } = useSubscription();
+  const { showPricingModal, hidePaywall, isPremium, showPaywall } = useSubscription();
 
   // Determine active page from URL or prop
   const getActivePageFromPath = (pathname) => {
@@ -211,11 +212,49 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
             </div>
           </header>
 
+          {/* Simple Blur Paywall for Free Users */}
+          {!isPremium && (
+            <>
+              {/* Blur layer - visual blur over content */}
+              <div
+                className="fixed inset-0 z-40 pointer-events-none"
+                style={{ backdropFilter: 'blur(4px)' }}
+                aria-hidden="true"
+              />
+
+              {/* Click blocker - blocks chart interactions */}
+              <div className="fixed inset-0 z-[41]" aria-hidden="true" />
+
+              {/* Floating CTA banner - above blockers, keyboard accessible */}
+              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
+                <button
+                  onClick={() => showPaywall({ source: 'preview_banner' })}
+                  className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full
+                             bg-[#213448] text-white text-sm font-medium
+                             border border-[#547792]/30 shadow-lg
+                             hover:bg-[#213448]/90
+                             focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2
+                             transition-all"
+                >
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                  <span>Preview Mode</span>
+                  <span className="text-[#94B4C1]">·</span>
+                  <span className="text-[#EAE0CF]">Unlock Full Access →</span>
+                </button>
+              </div>
+            </>
+          )}
+
           {/* Main Content - Wrapped with ErrorBoundary to prevent blank page crashes */}
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto flex flex-col">
             <ErrorBoundary name="Page Content">
-              {children}
+              <div className="flex-1">
+                {children}
+              </div>
             </ErrorBoundary>
+
+            {/* Upgrade CTA - Sticky footer for free users */}
+            <UpgradeFooterCTA />
           </main>
         </div>
 

@@ -11,6 +11,7 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import apiClient from '../../api/client';
 import { formatPrice, getBedroomLabelShort } from '../../constants';
+import { KeyInsightBox } from '../ui';
 
 ChartJS.register(
   LinearScale,
@@ -284,9 +285,9 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
 
   return (
     <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col ${updating ? 'opacity-70' : ''}`} style={{ minHeight: height }}>
-      {/* Header - compact with integrated sampling note */}
-      <div className="p-3 border-b border-[#94B4C1]/30 shrink-0">
-        <div className="flex items-center justify-between mb-1">
+      {/* Header - fixed height, won't grow */}
+      <div className="p-4 border-b border-[#94B4C1]/30 shrink-0">
+        <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
             <p className="text-xs text-[#547792] mt-0.5">
@@ -320,11 +321,12 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
             </button>
           </div>
         </div>
-        {/* Compact sampling note - integrated into header */}
-        <p className="text-[10px] text-[#94B4C1] leading-tight">
-          Stable sample (n=2,000) balanced across CCR/RCR/OCR. ~2-3% margin of error for trends.
-        </p>
       </div>
+
+      {/* Sampling Note - KeyInsightBox style */}
+      <KeyInsightBox variant="info" compact title="Sampling Note" className="shrink-0">
+        Stable sample (n = 2,000) balanced across CCR / RCR / OCR. ~2–3% margin of error (95% CI) for macro-level trends.
+      </KeyInsightBox>
 
       {/* Chart - fills remaining space */}
       <div className="flex-1 p-4 min-h-0">

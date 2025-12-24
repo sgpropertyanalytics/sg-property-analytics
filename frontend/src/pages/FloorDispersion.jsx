@@ -3,7 +3,7 @@ import FloorLiquidityChart from '../components/powerbi/FloorLiquidityChart';
 import FloorPremiumByRegionChart from '../components/powerbi/FloorPremiumByRegionChart';
 import FloorPremiumTrendChart from '../components/powerbi/FloorPremiumTrendChart';
 import FloorLiquidityHeatmap from '../components/powerbi/FloorLiquidityHeatmap';
-import { ErrorBoundary, BlurredDashboard, PageHeader } from '../components/ui';
+import { ErrorBoundary, ChartWatermark } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
@@ -45,11 +45,15 @@ export function FloorDispersionContent() {
   return (
     <div className="h-full overflow-auto">
       <div className="p-3 md:p-4 lg:p-6">
-        {/* Header with Preview Mode badge */}
-        <PageHeader
-          title="Floor Dispersion"
-          subtitle="Institutional-grade floor level analysis — where price meets liquidity"
-        />
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
+            Floor Dispersion
+          </h1>
+          <p className="text-[#547792] text-sm mt-1">
+            Institutional-grade floor level analysis — where price meets liquidity
+          </p>
+        </div>
 
         {/* Inline Filters */}
         <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -110,13 +114,13 @@ export function FloorDispersionContent() {
         {/* Floor Liquidity Chart - Hero Visualization */}
         <div className="mb-6">
           <ErrorBoundary name="Floor Liquidity Chart" compact>
-            <BlurredDashboard>
+            <ChartWatermark>
               <FloorLiquidityChart
                 height={heroChartHeight}
                 bedroom={bedroom || undefined}
                 segment={segment || undefined}
               />
-            </BlurredDashboard>
+            </ChartWatermark>
           </ErrorBoundary>
         </div>
 
@@ -124,35 +128,35 @@ export function FloorDispersionContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Floor Premium by Region - Comparison Chart */}
           <ErrorBoundary name="Floor Premium by Region" compact>
-            <BlurredDashboard>
+            <ChartWatermark>
               <FloorPremiumByRegionChart
                 height={secondaryChartHeight}
                 bedroom={bedroom || undefined}
               />
-            </BlurredDashboard>
+            </ChartWatermark>
           </ErrorBoundary>
 
           {/* Floor Premium Trend Chart */}
           <ErrorBoundary name="Floor Premium Trend" compact>
-            <BlurredDashboard>
+            <ChartWatermark>
               <FloorPremiumTrendChart
                 height={secondaryChartHeight}
                 bedroom={bedroom || undefined}
                 segment={segment || undefined}
               />
-            </BlurredDashboard>
+            </ChartWatermark>
           </ErrorBoundary>
         </div>
 
         {/* Liquidity Heatmap - Full tower view */}
         <div className="mt-6">
           <ErrorBoundary name="Liquidity Heatmap" compact>
-            <BlurredDashboard>
+            <ChartWatermark>
               <FloorLiquidityHeatmap
                 bedroom={bedroom || undefined}
                 segment={segment || undefined}
               />
-            </BlurredDashboard>
+            </ChartWatermark>
           </ErrorBoundary>
         </div>
       </div>

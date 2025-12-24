@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { MedianPsfTrendChart } from '../components/powerbi/MedianPsfTrendChart';
 import { UnitSizeVsPriceChart } from '../components/powerbi/UnitSizeVsPriceChart';
@@ -15,10 +16,11 @@ import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTab
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getKpiSummary } from '../api/client';
 import { useData } from '../context/DataContext';
-// Standardized responsive UI components
-import { ErrorBoundary, BlurredDashboard, PageHeader } from '../components/ui';
+// Standardized responsive UI components (layout wrappers only)
+import { KPICard, ErrorBoundary, ChartWatermark } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
+import { Lock } from 'lucide-react';
 
 /**
  * Macro Overview Page - Power BI-style Dashboard (Market Pulse)
@@ -40,13 +42,13 @@ import { useChartHeight, MOBILE_CAPS } from '../hooks';
  */
 export function MacroOverviewContent() {
   const { apiMetadata } = useData();
+  const { isPremium, showPaywall } = useSubscription();
   const {
     filters,
     crossFilter,
     highlight,
     clearCrossFilter,
     clearHighlight,
-    buildApiParams,
   } = usePowerBIFilters();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -84,8 +86,8 @@ export function MacroOverviewContent() {
         if (filters.bedroomTypes?.length > 0) {
           params.bedroom = filters.bedroomTypes.join(',');
         }
-        if (filters.segments?.length > 0) {
-          params.segment = filters.segments.join(',');
+        if (filters.segment) {
+          params.segment = filters.segment;
         }
 
         // Single API call for all KPI metrics
@@ -121,7 +123,7 @@ export function MacroOverviewContent() {
       }
     };
     fetchKpis();
-  }, [filters.districts, filters.bedroomTypes, filters.segments]); // Re-fetch when location filters change
+  }, [filters.districts, filters.bedroomTypes, filters.segment]); // Re-fetch when location filters change
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
     setModalTitle(title);
@@ -134,47 +136,72 @@ export function MacroOverviewContent() {
       {/* Main Content Area - Scrollable */}
       <div className="h-full overflow-auto">
         <div className="p-3 md:p-4 lg:p-6">
-          {/* Header with Preview Mode badge */}
-          <PageHeader
-            title="Singapore Property Market Analytics"
-            subtitle={apiMetadata ? `Data source from URA (${((apiMetadata.row_count || 0) + (apiMetadata.total_records_removed || apiMetadata.outliers_excluded || 0)).toLocaleString()} records)` : null}
-          >
-            {/* Time Grouping Toggle */}
-            <TimeGranularityToggle />
+          {/* Header */}
+          <div className="mb-4 md:mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-2">
+              <div className="min-w-0">
+                <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
+                  Singapore Property Market Analytics
+                </h1>
+                {/* Data source info - shows raw database count and date range */}
+                {apiMetadata && (
+                  <p className="text-[#547792] text-xs md:text-sm italic truncate">
+                    Data source from URA (Total of {((apiMetadata.row_count || 0) + (apiMetadata.total_records_removed || apiMetadata.outliers_excluded || 0)).toLocaleString()} transaction records
+                    <span className="hidden md:inline">
+                    {apiMetadata.min_date && apiMetadata.max_date && (
+                      <> found from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short'
+                      })} to {new Date(apiMetadata.max_date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short'
+                      })}</>
+                    )})
+                    {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded) > 0 && (
+                      <> | {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded)?.toLocaleString()} outlier records excluded</>
+                    )}
+                    </span>
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Time Grouping Toggle - View context control (not a filter) */}
+                <TimeGranularityToggle />
 
-            {/* Highlight indicator */}
-            {highlight.value && (
-              <button
-                onClick={clearHighlight}
-                className="flex items-center gap-2 px-3 py-1.5 bg-[#213448]/10 text-[#213448] rounded-lg hover:bg-[#213448]/20 transition-colors text-sm border border-[#213448]/20"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                <span>Viewing: {highlight.value}</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
+                {/* Highlight indicator (visual emphasis on time, no filtering) */}
+                {highlight.value && (
+                  <button
+                    onClick={clearHighlight}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-[#213448]/10 text-[#213448] rounded-lg hover:bg-[#213448]/20 transition-colors text-sm border border-[#213448]/20"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span>Viewing: {highlight.value}</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+                {/* Cross-filter indicator (actual data filtering) */}
+                {crossFilter.value && (
+                  <button
+                    onClick={clearCrossFilter}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-[#547792]/20 text-[#213448] rounded-lg hover:bg-[#547792]/30 transition-colors text-sm"
+                  >
+                    <span>Filter: {crossFilter.value}</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
 
-            {/* Cross-filter indicator */}
-            {crossFilter.value && (
-              <button
-                onClick={clearCrossFilter}
-                className="flex items-center gap-2 px-3 py-1.5 bg-[#547792]/20 text-[#213448] rounded-lg hover:bg-[#547792]/30 transition-colors text-sm"
-              >
-                <span>Filter: {crossFilter.value}</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </PageHeader>
-
-          {/* Breadcrumb navigation */}
-          <DrillBreadcrumb />
+            {/* Breadcrumb navigation */}
+            <DrillBreadcrumb />
+          </div>
 
           {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">
@@ -268,65 +295,58 @@ export function MacroOverviewContent() {
               </div>
 
               {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
-              {/* Each chart wrapped with ErrorBoundary + BlurredDashboard for free users */}
+              {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
                 {/* Time Trend Chart - Full width on all screens */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Time Trend Chart" compact>
-                    <BlurredDashboard>
-                      <TimeTrendChart
-                        onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
-                        height={trendChartHeight}
-                      />
-                    </BlurredDashboard>
+                    {/* Chart component - DO NOT MODIFY PROPS (ui-freeze) */}
+                    <TimeTrendChart
+                      onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
+                      height={trendChartHeight}
+                    />
                   </ErrorBoundary>
                 </div>
 
                 {/* Median PSF Trend Chart - Full width, shows price trends by CCR/RCR/OCR */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Median PSF Trend" compact>
-                    <BlurredDashboard>
-                      <MedianPsfTrendChart height={trendChartHeight} />
-                    </BlurredDashboard>
+                    <MedianPsfTrendChart height={trendChartHeight} />
                   </ErrorBoundary>
                 </div>
 
-                {/* Unit Size vs Price - Scatter chart - Full width */}
-                <div className="lg:col-span-2">
-                  <ErrorBoundary name="Unit Size vs Price" compact>
-                    <BlurredDashboard>
-                      <UnitSizeVsPriceChart height={standardChartHeight} />
-                    </BlurredDashboard>
-                  </ErrorBoundary>
-                </div>
+                {/* Unit Size vs Price - Scatter chart (Watermarked for free users) */}
+                <ErrorBoundary name="Unit Size vs Price" compact>
+                  <ChartWatermark>
+                    <UnitSizeVsPriceChart height={standardChartHeight} />
+                  </ChartWatermark>
+                </ErrorBoundary>
 
-                {/* Price Distribution - Histogram - Full width */}
-                <div className="lg:col-span-2">
-                  <ErrorBoundary name="Price Distribution" compact>
-                    <BlurredDashboard>
-                      <PriceDistributionChart
-                        onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
-                        height={standardChartHeight}
-                      />
-                    </BlurredDashboard>
-                  </ErrorBoundary>
-                </div>
+                {/* Price Distribution - Histogram (Watermarked for free users) */}
+                <ErrorBoundary name="Price Distribution" compact>
+                  <ChartWatermark>
+                    <PriceDistributionChart
+                      onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
+                      height={standardChartHeight}
+                    />
+                  </ChartWatermark>
+                </ErrorBoundary>
 
-                {/* New Launch vs Resale Comparison - Full width */}
+                {/* New Launch vs Resale Comparison - Full width (Watermarked for free users) */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="New vs Resale Chart" compact>
-                    <BlurredDashboard>
+                    <ChartWatermark>
                       <NewVsResaleChart height={standardChartHeight} />
-                    </BlurredDashboard>
+                    </ChartWatermark>
                   </ErrorBoundary>
                 </div>
 
-                {/* Price Compression Analysis - Full width */}
+                {/* Price Compression Analysis - Full width (Watermarked for free users) */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Price Compression" compact>
-                    <BlurredDashboard>
+                    <ChartWatermark>
                       <PriceCompressionChart height={compressionHeight} />
-                    </BlurredDashboard>
+                    </ChartWatermark>
                   </ErrorBoundary>
                 </div>
               </div>
@@ -345,12 +365,41 @@ export function MacroOverviewContent() {
                 </ErrorBoundary>
               </div>
 
-              {/* Transaction Data Table - Blurred for free users */}
+              {/* Transaction Data Table - Hidden for free users */}
               <div className="mb-4 md:mb-6">
                 <ErrorBoundary name="Transaction Table" compact>
-                  <BlurredDashboard>
+                  {isPremium ? (
                     <TransactionDataTable height={tableHeight} />
-                  </BlurredDashboard>
+                  ) : (
+                    /* Locked Transaction Table CTA for free users */
+                    <div
+                      className="bg-white rounded-lg border border-[#94B4C1]/50 p-8 md:p-12 text-center"
+                      style={{ minHeight: tableHeight }}
+                    >
+                      <div className="max-w-md mx-auto">
+                        <div className="w-16 h-16 bg-[#213448] rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Lock className="w-8 h-8 text-[#EAE0CF]" />
+                        </div>
+                        <h3 className="text-xl font-bold text-[#213448] mb-2">
+                          Transaction Details
+                        </h3>
+                        <p className="text-[#547792] mb-6">
+                          See exactly what your neighbors paid. Unlock unit numbers,
+                          exact prices, and detailed transaction records.
+                        </p>
+                        <button
+                          onClick={() => showPaywall({ source: 'transaction-table' })}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-[#213448] text-white rounded-lg font-semibold hover:bg-[#547792] transition-colors"
+                        >
+                          <Lock className="w-4 h-4" />
+                          Unlock Unit-Level Precision
+                        </button>
+                        <p className="text-xs text-[#94B4C1] mt-4">
+                          Preview mode shows aggregated data only
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </ErrorBoundary>
               </div>
           </div>
