@@ -1317,7 +1317,7 @@ def aggregate():
     metrics = [m.strip() for m in metrics_param.split(",") if m.strip()]
 
     # SUBSCRIPTION CHECK: Granularity restriction for free users
-    from utils.subscription import check_granularity_allowed, is_premium_user
+    from utils.subscription import check_granularity_allowed, is_premium_user, get_time_filter_meta
     is_premium = is_premium_user()
 
     allowed, error_msg = check_granularity_allowed(group_by_param, is_premium=is_premium)
