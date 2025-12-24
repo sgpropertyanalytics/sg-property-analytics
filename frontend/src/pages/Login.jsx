@@ -80,35 +80,115 @@ function Login() {
           </div>
         </div>
 
-        {/* Center Section - Floating Dashboard Preview with Poker Deck Stack */}
-        <div className="relative z-10 flex-1 flex items-center justify-center py-8 pl-8">
+        {/* Center Section - Floating Dashboard Preview with Data Collage */}
+        <div className="relative z-10 flex-1 flex items-center justify-center py-8">
+          {/* ===== DATA COLLAGE BACKGROUND CARDS ===== */}
+
+          {/* BG Card 1: The Heatmap (Top Left Behind) */}
+          <div
+            className="absolute w-96 h-64 bg-slate-800/50 border border-slate-700/30 rounded-xl backdrop-blur-sm overflow-hidden"
+            style={{
+              top: '10%',
+              left: '-20px',
+              transform: 'rotate(-8deg)',
+              zIndex: 5,
+              opacity: 0.4,
+            }}
+          >
+            {/* Abstract heatmap visualization */}
+            <svg className="w-full h-full" viewBox="0 0 384 256" preserveAspectRatio="none">
+              <defs>
+                <radialGradient id="heat1" cx="30%" cy="40%" r="35%">
+                  <stop offset="0%" stopColor="#2DD4BF" stopOpacity="0.6" />
+                  <stop offset="100%" stopColor="#2DD4BF" stopOpacity="0" />
+                </radialGradient>
+                <radialGradient id="heat2" cx="70%" cy="60%" r="40%">
+                  <stop offset="0%" stopColor="#06B6D4" stopOpacity="0.5" />
+                  <stop offset="100%" stopColor="#06B6D4" stopOpacity="0" />
+                </radialGradient>
+                <radialGradient id="heat3" cx="50%" cy="30%" r="25%">
+                  <stop offset="0%" stopColor="#94B4C1" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#94B4C1" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+              <rect width="100%" height="100%" fill="#1e293b" />
+              <ellipse cx="115" cy="102" rx="80" ry="60" fill="url(#heat1)" />
+              <ellipse cx="269" cy="154" rx="100" ry="70" fill="url(#heat2)" />
+              <ellipse cx="192" cy="77" rx="50" ry="40" fill="url(#heat3)" />
+            </svg>
+          </div>
+
+          {/* BG Card 2: The Bar Chart (Bottom Right Behind) */}
+          <div
+            className="absolute w-80 h-56 bg-slate-800/50 border border-slate-700/30 rounded-xl backdrop-blur-sm overflow-hidden"
+            style={{
+              bottom: '5%',
+              right: '-30px',
+              transform: 'rotate(5deg)',
+              zIndex: 5,
+              opacity: 0.4,
+            }}
+          >
+            {/* Abstract bar chart */}
+            <svg className="w-full h-full" viewBox="0 0 320 224" preserveAspectRatio="none">
+              <rect width="100%" height="100%" fill="#1e293b" />
+              {/* Grid lines */}
+              <line x1="40" y1="40" x2="40" y2="184" stroke="#334155" strokeWidth="1" />
+              <line x1="40" y1="184" x2="280" y2="184" stroke="#334155" strokeWidth="1" />
+              {/* Bars */}
+              <rect x="60" y="120" width="24" height="64" fill="#2DD4BF" opacity="0.7" rx="2" />
+              <rect x="100" y="80" width="24" height="104" fill="#2DD4BF" opacity="0.8" rx="2" />
+              <rect x="140" y="140" width="24" height="44" fill="#2DD4BF" opacity="0.5" rx="2" />
+              <rect x="180" y="60" width="24" height="124" fill="#2DD4BF" opacity="0.9" rx="2" />
+              <rect x="220" y="100" width="24" height="84" fill="#2DD4BF" opacity="0.6" rx="2" />
+              <rect x="260" y="90" width="24" height="94" fill="#2DD4BF" opacity="0.75" rx="2" />
+            </svg>
+          </div>
+
+          {/* BG Card 3: The Scatter Plot (Deep Background Top Right) */}
+          <div
+            className="absolute w-72 h-72 bg-slate-800/30 border border-slate-700/20 rounded-xl backdrop-blur-sm overflow-hidden"
+            style={{
+              top: '5%',
+              right: '-60px',
+              transform: 'rotate(12deg)',
+              zIndex: 0,
+              opacity: 0.2,
+            }}
+          >
+            {/* Abstract scatter plot */}
+            <svg className="w-full h-full" viewBox="0 0 288 288" preserveAspectRatio="none">
+              <rect width="100%" height="100%" fill="#1e293b" />
+              {/* Grid */}
+              <line x1="40" y1="40" x2="40" y2="248" stroke="#334155" strokeWidth="1" />
+              <line x1="40" y1="248" x2="248" y2="248" stroke="#334155" strokeWidth="1" />
+              {/* Scatter dots */}
+              <circle cx="70" cy="180" r="4" fill="#2DD4BF" opacity="0.8" />
+              <circle cx="95" cy="160" r="3" fill="#2DD4BF" opacity="0.6" />
+              <circle cx="120" cy="140" r="5" fill="#2DD4BF" opacity="0.9" />
+              <circle cx="145" cy="170" r="3" fill="#2DD4BF" opacity="0.5" />
+              <circle cx="160" cy="120" r="4" fill="#2DD4BF" opacity="0.7" />
+              <circle cx="180" cy="100" r="3" fill="#2DD4BF" opacity="0.6" />
+              <circle cx="200" cy="130" r="5" fill="#2DD4BF" opacity="0.8" />
+              <circle cx="220" cy="90" r="4" fill="#2DD4BF" opacity="0.7" />
+              <circle cx="110" cy="200" r="3" fill="#2DD4BF" opacity="0.5" />
+              <circle cx="150" cy="210" r="4" fill="#2DD4BF" opacity="0.6" />
+              <circle cx="190" cy="180" r="3" fill="#2DD4BF" opacity="0.7" />
+              <circle cx="80" cy="120" r="4" fill="#2DD4BF" opacity="0.6" />
+              <circle cx="230" cy="150" r="3" fill="#2DD4BF" opacity="0.5" />
+            </svg>
+          </div>
+
+          {/* ===== MAIN CARD ===== */}
           <motion.div
             initial={{ opacity: 0, y: 30, rotateX: 5 }}
             animate={{ opacity: 1, y: 0, rotateX: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative w-[480px] max-w-full"
-            style={{ perspective: '1000px' }}
+            style={{ perspective: '1000px', zIndex: 20 }}
           >
-            {/* Ghost Card 2 - Way Behind (lowest z-index) */}
-            <div
-              className="absolute top-0 left-0 right-0 bottom-0 bg-[#547792]/50 rounded-2xl border border-[#547792]/30"
-              style={{
-                transform: 'rotate(-6deg) translate(-25px, 15px) scale(0.92)',
-                zIndex: -2,
-              }}
-            />
-
-            {/* Ghost Card 1 - Behind */}
-            <div
-              className="absolute top-0 left-0 right-0 bottom-0 bg-[#547792]/70 rounded-2xl border border-[#547792]/40"
-              style={{
-                transform: 'rotate(-3deg) translate(-12px, 8px) scale(0.96)',
-                zIndex: -1,
-              }}
-            />
-
             {/* Preview Mode Badge */}
-            <div className="absolute -top-3 left-8" style={{ zIndex: 20 }}>
+            <div className="absolute -top-3 left-8" style={{ zIndex: 30 }}>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#213448] border border-[#547792]/50 rounded-full text-xs font-semibold text-[#94B4C1] shadow-lg backdrop-blur-sm">
                 <span className="w-1.5 h-1.5 bg-[#EAE0CF] rounded-full animate-pulse" />
                 Preview Mode
