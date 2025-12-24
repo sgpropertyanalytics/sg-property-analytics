@@ -13,16 +13,18 @@
 export default function ResearchStackPreview() {
   return (
     // ===== THE STAGE (Centering Container) =====
-    <div className="relative w-[420px] h-[380px]">
+    <div className="relative w-[420px] h-[380px] group cursor-default">
 
       {/* ===== CARD 3 (Back Layer): Liquidity Overview ===== */}
       <div
-        className="absolute left-1/2 -translate-x-1/2 w-[340px] h-[180px] rounded-[18px] overflow-hidden
+        className="absolute left-1/2 w-[340px] h-[180px] rounded-[18px] overflow-hidden
                    bg-gradient-to-b from-slate-800/60 to-slate-800/40
                    backdrop-blur-xl
                    border border-white/[0.08]
                    ring-1 ring-inset ring-white/[0.03]
-                   shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)]"
+                   shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)]
+                   transition-all duration-300 ease-out
+                   group-hover:-translate-y-1"
         style={{
           bottom: '170px',
           zIndex: 10,
@@ -55,12 +57,14 @@ export default function ResearchStackPreview() {
 
       {/* ===== CARD 2 (Middle Layer): Price Distribution ===== */}
       <div
-        className="absolute left-1/2 -translate-x-1/2 w-[340px] h-[180px] rounded-[18px] overflow-hidden
+        className="absolute left-1/2 w-[340px] h-[180px] rounded-[18px] overflow-hidden
                    bg-gradient-to-b from-slate-800/75 to-slate-800/55
                    backdrop-blur-xl
                    border border-white/[0.10]
                    ring-1 ring-inset ring-white/[0.05]
-                   shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)]"
+                   shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)]
+                   transition-all duration-300 ease-out
+                   group-hover:-translate-y-1"
         style={{
           bottom: '95px',
           zIndex: 20,
@@ -96,12 +100,14 @@ export default function ResearchStackPreview() {
 
       {/* ===== CARD 1 (Front Hero): Market Pulse ===== */}
       <div
-        className="absolute left-1/2 -translate-x-1/2 w-[340px] rounded-[18px] overflow-hidden
+        className="absolute left-1/2 w-[340px] rounded-[18px] overflow-hidden
                    bg-gradient-to-b from-slate-900/95 to-slate-900/80
                    backdrop-blur-xl
                    border border-white/[0.12]
                    ring-1 ring-inset ring-white/[0.08]
-                   shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)]"
+                   shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)]
+                   transition-all duration-300 ease-out
+                   group-hover:-translate-y-1"
         style={{
           bottom: '0',
           zIndex: 30,
