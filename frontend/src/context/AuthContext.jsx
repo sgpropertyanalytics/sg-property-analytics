@@ -163,6 +163,7 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     loading,
+    initialized,
     error,
     signInWithGoogle,
     logout,
