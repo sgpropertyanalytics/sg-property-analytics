@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LineChart, ArrowLeft, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { LineChart, ArrowLeft, Lock, Mail, Eye, EyeOff, ShieldCheck, Clock, Building } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 /**
@@ -53,8 +53,8 @@ function Login() {
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[#213448] flex">
 
-      {/* ===== LEFT PANEL - The "Value" Zone ===== */}
-      <div className="hidden lg:flex lg:w-[55%] p-8 xl:p-12 flex-col justify-between relative overflow-hidden">
+      {/* ===== LEFT PANEL - The "Value" Zone (50/50 split) ===== */}
+      <div className="hidden lg:flex lg:w-1/2 p-8 xl:p-12 flex-col justify-between relative overflow-hidden">
 
         {/* Ambient Background Orbs */}
         <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-[#547792]/30 rounded-full blur-[100px] pointer-events-none" />
@@ -236,12 +236,16 @@ function Login() {
             </div>
           </div>
 
-          {/* Header - Editorial style, no card */}
+          {/* Header - Editorial style with eyebrow badge */}
           <div className="mb-10 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-[#213448] tracking-tight mb-4">
+            {/* Eyebrow Badge */}
+            <span className="inline-block text-xs font-semibold tracking-wider text-teal-700 bg-teal-50 border border-teal-100 rounded-full px-3 py-1 mb-4">
+              PREVIEW MODE
+            </span>
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-3">
               Unlock Market Data
             </h2>
-            <p className="text-[#547792] text-base leading-relaxed">
+            <p className="text-slate-500 text-base leading-relaxed">
               Access aggregated market trends from the last 60 days.
             </p>
           </div>
@@ -260,12 +264,12 @@ function Login() {
             )}
           </AnimatePresence>
 
-          {/* Primary CTA - Google Sign In (Clean white button) */}
+          {/* Primary CTA - Google Sign In (Large, prominent button) */}
           {isConfigured ? (
             <button
               onClick={handleGoogleSignIn}
               disabled={isSigningIn || authLoading}
-              className="w-full py-4 bg-white border border-[#E0DCD4] text-[#3c4043] rounded-xl font-medium hover:bg-[#f8f8f8] hover:border-[#d0ccc4] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-sm"
+              className="w-full h-14 bg-white border border-slate-300 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 hover:border-slate-400 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-sm"
             >
               {/* Standard multi-color Google 'G' icon */}
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -279,7 +283,7 @@ function Login() {
           ) : (
             <button
               disabled
-              className="w-full py-4 bg-white/50 border border-[#E0DCD4] text-[#94B4C1] rounded-xl font-medium cursor-not-allowed flex items-center justify-center gap-3"
+              className="w-full h-14 bg-white/50 border border-slate-200 text-slate-400 rounded-xl font-semibold cursor-not-allowed flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5 opacity-50" viewBox="0 0 24 24">
                 <path fill="#ccc" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -369,18 +373,30 @@ function Login() {
             )}
           </AnimatePresence>
 
-          {/* Trust Signal - at the bottom */}
-          <div className="mt-10 flex items-center justify-center gap-2 text-sm text-[#94B4C1]">
-            <Lock className="w-4 h-4" />
-            <span>No credit card required</span>
+          {/* Trust Floor - micro-trust signals */}
+          <div className="mt-8 flex items-center justify-center gap-4 text-xs text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <Building className="w-3.5 h-3.5" />
+              <span>Official Data</span>
+            </div>
+            <span className="text-slate-300">·</span>
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Secure Access</span>
+            </div>
+            <span className="text-slate-300">·</span>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              <span>No Credit Card</span>
+            </div>
           </div>
 
           {/* Footer */}
-          <p className="mt-4 text-center text-xs text-[#94B4C1]">
+          <p className="mt-6 text-center text-xs text-slate-400">
             By continuing, you agree to our{' '}
-            <a href="#" className="text-[#547792] hover:underline">Terms</a>
+            <a href="#" className="text-slate-500 hover:underline">Terms</a>
             {' '}and{' '}
-            <a href="#" className="text-[#547792] hover:underline">Privacy Policy</a>
+            <a href="#" className="text-slate-500 hover:underline">Privacy Policy</a>
           </p>
         </motion.div>
       </div>
