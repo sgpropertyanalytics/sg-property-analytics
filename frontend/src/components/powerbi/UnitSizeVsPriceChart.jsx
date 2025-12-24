@@ -8,6 +8,7 @@ import {
 } from 'chart.js';
 import { Scatter } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
+import { useSubscription } from '../../context/SubscriptionContext';
 import apiClient from '../../api/client';
 import { formatPrice, getBedroomLabelShort } from '../../constants';
 import { KeyInsightBox } from '../ui';
@@ -39,6 +40,7 @@ ChartJS.register(
  */
 export function UnitSizeVsPriceChart({ height = 350 }) {
   const { buildApiParams, filters, highlight, crossFilter } = usePowerBIFilters();
+  const { isPremium, showPaywall } = useSubscription();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -53,7 +55,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     setRefreshSeed(Math.random().toString(36).substring(2, 10));
   };
 
-  // Bedroom colors - matches BedroomMixChart palette
+  // Bedroom colors - consistent palette across charts
   const bedroomColors = {
     1: 'rgba(247, 190, 129, 0.7)', // Light orange
     2: 'rgba(79, 129, 189, 0.7)',  // Blue
@@ -148,7 +150,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     return { datasets };
   }, [data]);
 
-  // Chart options
+  // Chart options - isPremium determines tooltip detail level
   const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
@@ -177,15 +179,26 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
           title: (items) => {
             if (!items.length) return '';
             const point = items[0].raw;
-            return `${point.district}`;
+            // Both tiers see district + bedroom type
+            return `${getBedroomLabelShort(point.bedroom)} Condo · ${point.district}`;
           },
           label: (context) => {
             const point = context.raw;
+
+            // Premium users: Full transaction details
+            if (isPremium) {
+              return [
+                `Price: ${formatPrice(point.x)}`,
+                `Size: ${point.y.toLocaleString()} sqft`,
+                `PSF: ${formatPrice(point.x / point.y)}/sqft`,
+              ];
+            }
+
+            // Free users: Generic info with upgrade CTA
             return [
-              `Price: ${formatPrice(point.x)}`,
-              `Size: ${point.y.toLocaleString()} sqft`,
-              `PSF: ${formatPrice(point.x / point.y)}/sqft`,
-              `Type: ${getBedroomLabelShort(point.bedroom)}`,
+              `Size range: ${Math.round(point.y / 100) * 100}+ sqft`,
+              '',
+              '🔒 Unlock exact price & PSF',
             ];
           },
         },
@@ -234,7 +247,13 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
       mode: 'nearest',
       intersect: true,
     },
-  }), []);
+    // Free users clicking a point triggers upgrade modal
+    onClick: (event, elements) => {
+      if (!isPremium && elements.length > 0) {
+        showPaywall({ source: 'scatter-tooltip' });
+      }
+    },
+  }), [isPremium, showPaywall]);
 
   // Loading state
   if (loading) {

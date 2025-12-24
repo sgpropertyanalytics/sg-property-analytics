@@ -31,7 +31,7 @@ ChartJS.register(
 /**
  * Project Detail Panel - Drill-Through View
  *
- * Opens when a project is selected from VolumeByLocationChart.
+ * Opens when a project is selected from a chart or table.
  * Shows project-specific data (trend + price distribution).
  *
  * IMPORTANT: This component does NOT affect global charts.

@@ -6,6 +6,7 @@ import LandingPage from './pages/Landing';
 import Login from './pages/Login';
 import Pricing from './pages/Pricing';
 import { DashboardLayout } from './components/layout';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { MacroOverviewContent } from './pages/MacroOverview';
 import { FloorDispersionContent } from './pages/FloorDispersion';
 import { InsightsContent } from './pages/Insights';
@@ -52,75 +53,85 @@ function App() {
 
           {/* ===== Dashboard Routes with Double-Sidebar Layout ===== */}
 
-          {/* Market Pulse - Main analytics dashboard */}
+          {/* Market Pulse - Main analytics dashboard (Protected) */}
           <Route
             path="/market-pulse"
             element={
-              <DashboardLayout activePage="market-pulse">
-                <MacroOverviewContent />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout activePage="market-pulse">
+                  <MacroOverviewContent />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
 
           {/* Project Analysis - Redirects to Value Parity (content merged) */}
           <Route path="/project-analysis" element={<Navigate to="/value-parity" replace />} />
 
-          {/* Value Parity Tool - No filter sidebar */}
+          {/* Value Parity Tool - No filter sidebar (Protected) */}
           <Route
             path="/value-parity"
             element={
-              <DashboardLayout activePage="value-parity">
-                <div className="h-full overflow-auto">
-                  <div className="p-3 md:p-4 lg:p-6">
-                    {/* Header */}
-                    <div className="mb-4 md:mb-6">
-                      <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
-                        Value Parity Tool
-                      </h1>
-                      <p className="text-[#547792] text-sm mt-1">
-                        Find properties within your budget and compare value across districts
-                      </p>
-                    </div>
-                    {/* Value Parity Panel - existing component */}
-                    <div className="animate-view-enter">
-                      <ValueParityPanel />
+              <ProtectedRoute>
+                <DashboardLayout activePage="value-parity">
+                  <div className="h-full overflow-auto">
+                    <div className="p-3 md:p-4 lg:p-6">
+                      {/* Header */}
+                      <div className="mb-4 md:mb-6">
+                        <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
+                          Value Parity Tool
+                        </h1>
+                        <p className="text-[#547792] text-sm mt-1">
+                          Find properties within your budget and compare value across districts
+                        </p>
+                      </div>
+                      {/* Value Parity Panel - existing component */}
+                      <div className="animate-view-enter">
+                        <ValueParityPanel />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </DashboardLayout>
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
 
-          {/* Floor Dispersion - Floor level analysis */}
+          {/* Floor Dispersion - Floor level analysis (Protected) */}
           <Route
             path="/floor-dispersion"
             element={
-              <DashboardLayout activePage="floor-dispersion">
-                <FloorDispersionContent />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout activePage="floor-dispersion">
+                  <FloorDispersionContent />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
 
           {/* Legacy route redirect */}
           <Route path="/analytics-view" element={<Navigate to="/floor-dispersion" replace />} />
 
-          {/* District & Project Deep Dive */}
+          {/* District & Project Deep Dive (Protected) */}
           <Route
             path="/district-deep-dive"
             element={
-              <DashboardLayout activePage="district-deep-dive">
-                <DistrictDeepDiveContent />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout activePage="district-deep-dive">
+                  <DistrictDeepDiveContent />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
 
-          {/* Insights - Placeholder */}
+          {/* Insights - Placeholder (Protected) */}
           <Route
             path="/insights"
             element={
-              <DashboardLayout activePage="insights">
-                <InsightsContent />
-              </DashboardLayout>
+              <ProtectedRoute>
+                <DashboardLayout activePage="insights">
+                  <InsightsContent />
+                </DashboardLayout>
+              </ProtectedRoute>
             }
           />
 

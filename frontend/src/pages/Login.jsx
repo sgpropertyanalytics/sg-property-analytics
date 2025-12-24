@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LineChart, ArrowLeft, Shield, TrendingUp, BarChart3 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -18,8 +18,12 @@ import { useAuth } from '../context/AuthContext';
  */
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signInWithGoogle, error: authError, loading: authLoading, isConfigured } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
+
+  // Get the page they were trying to access (from ProtectedRoute)
+  const from = location.state?.from?.pathname || '/market-pulse';
 
   const handleGoogleSignIn = async () => {
     if (!isConfigured) {
@@ -29,7 +33,8 @@ function Login() {
     setIsSigningIn(true);
     try {
       await signInWithGoogle();
-      navigate('/market-pulse');
+      // Redirect to the original page they were trying to access
+      navigate(from, { replace: true });
     } catch (err) {
       console.error('Sign-in failed:', err);
     } finally {
@@ -232,16 +237,6 @@ function Login() {
               </div>
             </div>
 
-            {/* Guest Escape Hatch (Demoted) */}
-            <div className="mt-6 pt-4 border-t border-[#EAE0CF]/50 text-center">
-              <button
-                onClick={() => navigate('/market-pulse')}
-                className="text-sm text-[#94B4C1] hover:text-[#547792] transition-colors"
-              >
-                Just browsing?{' '}
-                <span className="underline decoration-dotted underline-offset-2">View Guest Dashboard</span>
-              </button>
-            </div>
           </div>
 
           {/* Footer Links */}

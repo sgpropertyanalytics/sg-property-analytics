@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import apiClient from '../api/client';
 
 /**
@@ -10,13 +11,51 @@ import apiClient from '../api/client';
  * - Both cards have IDENTICAL features (forces price comparison)
  * - Annual card physically dominates (10% taller, shadow, navy)
  * - Direct to Stripe on click
+ * - Contextual headers based on trigger source
  */
+
+// Intent-based upgrade messages
+const UPGRADE_MESSAGES = {
+  'project-drill': {
+    title: 'Unlock Unit-Level Precision',
+    subtitle: 'See exactly what your neighbors paid.',
+  },
+  'time-range': {
+    title: 'See the Full Cycle',
+    subtitle: 'Compare today\'s prices to past market lows.',
+  },
+  'confidence-scores': {
+    title: 'Stop Guessing',
+    subtitle: 'Unlock Confidence Scores and Fair Value estimates.',
+  },
+  'transaction-table': {
+    title: 'Unlock Transaction Details',
+    subtitle: 'See every unit, price, and date.',
+  },
+  'preview-banner': {
+    title: 'Unlock Full Access',
+    subtitle: 'Full history, unit-level data, and advanced analytics.',
+  },
+  'scatter-tooltip': {
+    title: 'Unlock Unit-Level Details',
+    subtitle: 'See the exact project, price, and PSF for every transaction.',
+  },
+  default: {
+    title: 'Stop Guessing. Start Knowing.',
+    subtitle: 'Unlock the hidden valuation data for the unit you just viewed.',
+  },
+};
+
 export function PricingModal({ isOpen, onClose }) {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { upsellContext } = useSubscription();
   const [loading, setLoading] = useState(null);
 
   if (!isOpen) return null;
+
+  // Get contextual messaging based on trigger source
+  const message = UPGRADE_MESSAGES[upsellContext?.source] || UPGRADE_MESSAGES.default;
 
   const handleSelectPlan = async (planId) => {
     if (!isAuthenticated) {
@@ -74,13 +113,13 @@ export function PricingModal({ isOpen, onClose }) {
             </svg>
           </button>
 
-          {/* Hero Section */}
+          {/* Hero Section - Contextual based on trigger */}
           <div className="text-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold text-[#213448] mb-2">
-              Stop Guessing. Start Knowing.
+              {message.title}
             </h2>
             <p className="text-[#547792] text-sm md:text-base">
-              Unlock the hidden valuation data for the unit you just viewed.
+              {message.subtitle}
             </p>
           </div>
 

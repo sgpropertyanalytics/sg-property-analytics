@@ -42,7 +42,7 @@ const PAGE_CONFIG = {
 
 export function DashboardLayout({ children, activePage: propActivePage }) {
   const location = useLocation();
-  const { showPricingModal, hidePaywall } = useSubscription();
+  const { showPricingModal, hidePaywall, isPremium, showPaywall } = useSubscription();
 
   // Determine active page from URL or prop
   const getActivePageFromPath = (pathname) => {
@@ -211,6 +211,32 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
               </div>
             </div>
           </header>
+
+          {/* Preview Mode Banner - Visible for free users */}
+          {!isPremium && (
+            <div className="bg-[#EAE0CF]/60 border-b border-[#94B4C1]/40 px-4 py-2.5 flex-shrink-0">
+              <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-[#213448] text-[#EAE0CF] text-xs font-medium rounded">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    PREVIEW
+                  </span>
+                  <span className="text-sm text-[#547792] truncate">
+                    Last 60 days · District-level data
+                  </span>
+                </div>
+                <button
+                  onClick={() => showPaywall({ source: 'preview-banner' })}
+                  className="text-sm font-medium text-[#213448] hover:text-[#547792] whitespace-nowrap underline decoration-dotted underline-offset-2"
+                >
+                  Unlock full access
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Main Content - Wrapped with ErrorBoundary to prevent blank page crashes */}
           <main className="flex-1 overflow-auto flex flex-col">

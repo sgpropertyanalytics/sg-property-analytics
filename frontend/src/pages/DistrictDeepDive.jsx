@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DistrictLiquidityMap } from '../components/insights';
+import { ChartWatermark } from '../components/ui';
 
 /**
  * District & Project Deep Dive Page
@@ -104,7 +105,9 @@ function DistrictOverviewContent() {
   return (
     <div className="space-y-6">
       {/* District Liquidity Map */}
-      <DistrictLiquidityMap />
+      <ChartWatermark>
+        <DistrictLiquidityMap />
+      </ChartWatermark>
 
       {/* Coming Soon Features */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

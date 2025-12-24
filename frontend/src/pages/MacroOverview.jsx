@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { MedianPsfTrendChart } from '../components/powerbi/MedianPsfTrendChart';
 import { UnitSizeVsPriceChart } from '../components/powerbi/UnitSizeVsPriceChart';
@@ -16,9 +17,10 @@ import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getKpiSummary } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
-import { KPICard, ErrorBoundary, ChartGate } from '../components/ui';
+import { KPICard, ErrorBoundary, ChartWatermark } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
+import { Lock } from 'lucide-react';
 
 /**
  * Macro Overview Page - Power BI-style Dashboard (Market Pulse)
@@ -40,6 +42,7 @@ import { useChartHeight, MOBILE_CAPS } from '../hooks';
  */
 export function MacroOverviewContent() {
   const { apiMetadata } = useData();
+  const { isPremium, showPaywall } = useSubscription();
   const {
     filters,
     crossFilter,
@@ -312,38 +315,38 @@ export function MacroOverviewContent() {
                   </ErrorBoundary>
                 </div>
 
-                {/* Unit Size vs Price - Scatter chart showing value trade-offs (GATED) */}
+                {/* Unit Size vs Price - Scatter chart (Watermarked for free users) */}
                 <ErrorBoundary name="Unit Size vs Price" compact>
-                  <ChartGate chartId="unit-size-vs-price">
+                  <ChartWatermark>
                     <UnitSizeVsPriceChart height={standardChartHeight} />
-                  </ChartGate>
+                  </ChartWatermark>
                 </ErrorBoundary>
 
-                {/* Price Distribution - Histogram showing price ranges (GATED) */}
+                {/* Price Distribution - Histogram (Watermarked for free users) */}
                 <ErrorBoundary name="Price Distribution" compact>
-                  <ChartGate chartId="price-distribution">
+                  <ChartWatermark>
                     <PriceDistributionChart
                       onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
                       height={standardChartHeight}
                     />
-                  </ChartGate>
+                  </ChartWatermark>
                 </ErrorBoundary>
 
-                {/* New Launch vs Resale Comparison - Full width (GATED) */}
+                {/* New Launch vs Resale Comparison - Full width (Watermarked for free users) */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="New vs Resale Chart" compact>
-                    <ChartGate chartId="new-vs-resale">
+                    <ChartWatermark>
                       <NewVsResaleChart height={standardChartHeight} />
-                    </ChartGate>
+                    </ChartWatermark>
                   </ErrorBoundary>
                 </div>
 
-                {/* Price Compression Analysis - Full width (GATED) */}
+                {/* Price Compression Analysis - Full width (Watermarked for free users) */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Price Compression" compact>
-                    <ChartGate chartId="price-compression">
+                    <ChartWatermark>
                       <PriceCompressionChart height={compressionHeight} />
-                    </ChartGate>
+                    </ChartWatermark>
                   </ErrorBoundary>
                 </div>
               </div>
@@ -362,10 +365,41 @@ export function MacroOverviewContent() {
                 </ErrorBoundary>
               </div>
 
-              {/* Transaction Data Table - Component unchanged */}
+              {/* Transaction Data Table - Hidden for free users */}
               <div className="mb-4 md:mb-6">
                 <ErrorBoundary name="Transaction Table" compact>
-                  <TransactionDataTable height={tableHeight} />
+                  {isPremium ? (
+                    <TransactionDataTable height={tableHeight} />
+                  ) : (
+                    /* Locked Transaction Table CTA for free users */
+                    <div
+                      className="bg-white rounded-lg border border-[#94B4C1]/50 p-8 md:p-12 text-center"
+                      style={{ minHeight: tableHeight }}
+                    >
+                      <div className="max-w-md mx-auto">
+                        <div className="w-16 h-16 bg-[#213448] rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Lock className="w-8 h-8 text-[#EAE0CF]" />
+                        </div>
+                        <h3 className="text-xl font-bold text-[#213448] mb-2">
+                          Transaction Details
+                        </h3>
+                        <p className="text-[#547792] mb-6">
+                          See exactly what your neighbors paid. Unlock unit numbers,
+                          exact prices, and detailed transaction records.
+                        </p>
+                        <button
+                          onClick={() => showPaywall({ source: 'transaction-table' })}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-[#213448] text-white rounded-lg font-semibold hover:bg-[#547792] transition-colors"
+                        >
+                          <Lock className="w-4 h-4" />
+                          Unlock Unit-Level Precision
+                        </button>
+                        <p className="text-xs text-[#94B4C1] mt-4">
+                          Preview mode shows aggregated data only
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </ErrorBoundary>
               </div>
           </div>

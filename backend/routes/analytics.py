@@ -1316,10 +1316,28 @@ def aggregate():
     group_by = [g.strip() for g in group_by_param.split(",") if g.strip()]
     metrics = [m.strip() for m in metrics_param.split(",") if m.strip()]
 
+    # SUBSCRIPTION CHECK: Granularity restriction for free users
+    from utils.subscription import check_granularity_allowed, get_time_filter_for_tier, is_premium_user, get_time_filter_meta
+    is_premium = is_premium_user()
+
+    allowed, error_msg = check_granularity_allowed(group_by_param, is_premium=is_premium)
+    if not allowed:
+        return jsonify({
+            "error": error_msg,
+            "code": "PREMIUM_REQUIRED",
+            "upgrade_prompt": "Unlock Unit-Level Precision"
+        }), 403
+
     # Build filter conditions (we'll reuse these)
     # ALWAYS exclude outliers first
     filter_conditions = [Transaction.outlier_filter()]
     filters_applied = {}
+
+    # SUBSCRIPTION CHECK: Time restriction for free users (60-day window)
+    time_cutoff = get_time_filter_for_tier(is_premium=is_premium)
+    if time_cutoff:
+        filter_conditions.append(Transaction.transaction_date >= time_cutoff.date())
+        filters_applied["_time_restricted"] = True
 
     # District filter
     districts_param = request.args.get("district")
@@ -1602,6 +1620,9 @@ def aggregate():
     elapsed = time.time() - start
     print(f"GET /api/aggregate took: {elapsed:.4f} seconds (returned {len(data)} groups from {total_records} records)")
 
+    # Get time restriction metadata
+    time_meta = get_time_filter_meta(is_premium=is_premium)
+
     result = {
         "data": data,
         "meta": {
@@ -1611,7 +1632,11 @@ def aggregate():
             "metrics": metrics,
             "elapsed_ms": int(elapsed * 1000),
             "cache_hit": False,
-            "note": "median values are approximated using avg for memory efficiency"
+            "note": "median values are approximated using avg for memory efficiency",
+            "subscription": {
+                "is_premium": is_premium,
+                **time_meta
+            }
         }
     }
 

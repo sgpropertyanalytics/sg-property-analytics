@@ -6,10 +6,18 @@ Use this for tier-aware API responses - return full data for premium users,
 teaser data for free users.
 
 SECURITY: This is the SERVER-SIDE enforcement layer. Frontend blur is UI only.
+
+Preview Dashboard Model:
+- Free users: Last 60 days only, aggregated data (district/segment level)
+- Premium users: Full history, project/unit level precision
 """
 from flask import request
 from functools import wraps
+from datetime import datetime, timedelta
 from models.user import User
+
+# Time window for free tier (rolling 60 days)
+FREE_TIER_DAYS = 60
 
 
 def get_user_from_request():
@@ -63,6 +71,95 @@ def get_subscription_tier():
     if user.is_subscribed():
         return 'premium'
     return 'free'
+
+
+def get_time_filter_for_tier(is_premium=None):
+    """
+    Get the time filter cutoff date based on subscription tier.
+
+    Free users only see the last 60 days of data.
+    Premium users see full history.
+
+    Args:
+        is_premium: Override tier check (useful when already checked)
+
+    Returns:
+        datetime or None - cutoff date for free users, None for premium
+    """
+    if is_premium is None:
+        is_premium = is_premium_user()
+
+    if is_premium:
+        return None  # No time restriction for premium users
+
+    # Free users: rolling 60-day window
+    return datetime.now() - timedelta(days=FREE_TIER_DAYS)
+
+
+def get_time_filter_meta(is_premium=None):
+    """
+    Get metadata about time filtering for API responses.
+
+    Helps frontend understand what time range is being returned.
+
+    Returns:
+        dict with time restriction info
+    """
+    if is_premium is None:
+        is_premium = is_premium_user()
+
+    if is_premium:
+        return {
+            'time_restricted': False,
+            'window_days': None,
+            'cutoff_date': None
+        }
+
+    cutoff = datetime.now() - timedelta(days=FREE_TIER_DAYS)
+    return {
+        'time_restricted': True,
+        'window_days': FREE_TIER_DAYS,
+        'cutoff_date': cutoff.strftime('%Y-%m-%d')
+    }
+
+
+def check_granularity_allowed(group_by, is_premium=None):
+    """
+    Check if the requested grouping granularity is allowed for the user's tier.
+
+    Free users can only group by:
+    - district, region, segment (location)
+    - year, quarter, month (time)
+    - bedroom, sale_type (general dimensions)
+
+    Free users CANNOT group by:
+    - project (project-level precision)
+    - Any other granular identifiers
+
+    Args:
+        group_by: Comma-separated grouping fields (e.g., 'district,quarter')
+        is_premium: Override tier check
+
+    Returns:
+        tuple: (allowed: bool, error_message: str or None)
+    """
+    if is_premium is None:
+        is_premium = is_premium_user()
+
+    # Premium users can use any granularity
+    if is_premium:
+        return (True, None)
+
+    # Free tier: check for project-level grouping
+    BLOCKED_FIELDS = ['project', 'project_name', 'address', 'unit', 'floor']
+
+    if group_by:
+        fields = [f.strip().lower() for f in group_by.split(',')]
+        for field in fields:
+            if any(blocked in field for blocked in BLOCKED_FIELDS):
+                return (False, f"Project-level data requires premium subscription. Upgrade to see exact project names.")
+
+    return (True, None)
 
 
 def require_premium(f):
