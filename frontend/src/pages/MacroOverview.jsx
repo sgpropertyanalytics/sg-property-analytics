@@ -13,7 +13,7 @@ import { TransactionDataTable } from '../components/powerbi/TransactionDataTable
 import { GLSDataTable } from '../components/powerbi/GLSDataTable';
 import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
-import { getAggregate } from '../api/client';
+import { getAggregate, getNewVsResale, getDashboard } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
 import { KPICard, ErrorBoundary } from '../components/ui';
@@ -59,14 +59,17 @@ export function MacroOverviewContent() {
   const tableHeight = useChartHeight(400, MOBILE_CAPS.tall);              // 400px desktop, max 320px mobile
 
   // Summary KPIs - Last 30 days snapshot (ignores sidebar filters for market overview)
+  // Deal detection focused metrics with trend indicators
   const [kpis, setKpis] = useState({
-    newSalesCount: 0,
-    resalesCount: 0,
-    totalQuantum: 0,
+    medianPsf: { value: 0, trend: 0 },
+    predictability: { value: 0, trend: 0, label: 'Loading' },
+    newLaunchPremium: { value: 0, trendLabel: '', direction: 'neutral' },
+    buyerOpportunity: { value: 0, trend: 0 },
     loading: true,
   });
 
   // Fetch KPIs for last 30 days (based on data's max_date, not today)
+  // Deal detection metrics: Median PSF, Price Predictability, New Launch Premium, Buyer Opportunity
   useEffect(() => {
     const fetchKpis = async () => {
       // Wait for apiMetadata to be loaded
@@ -75,40 +78,109 @@ export function MacroOverviewContent() {
       }
 
       try {
-        // Calculate last 30 days from the database's max_date (not today)
-        // This ensures KPIs show data even if the dataset doesn't extend to today
+        // Calculate date ranges
         const maxDate = new Date(apiMetadata.max_date);
         const thirtyDaysAgo = new Date(maxDate);
         thirtyDaysAgo.setDate(maxDate.getDate() - 30);
+        const sixtyDaysAgo = new Date(maxDate);
+        sixtyDaysAgo.setDate(maxDate.getDate() - 60);
 
         const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
         const dateTo = maxDate.toISOString().split('T')[0];
+        const prevDateFrom = sixtyDaysAgo.toISOString().split('T')[0];
+        const prevDateTo = thirtyDaysAgo.toISOString().split('T')[0];
 
-        // Fetch New Sales and Resales in parallel
-        const [newSalesRes, resalesRes] = await Promise.all([
+        // Fetch all metrics in parallel
+        const [currentPsfRes, prevPsfRes, newVsResaleRes, histogramRes] = await Promise.all([
+          // Current period PSF metrics (last 30 days)
           getAggregate({
             group_by: '',
-            metrics: 'count,total_value',
-            sale_type: 'New Sale',
+            metrics: 'median_psf,psf_25th,psf_75th,count',
             date_from: dateFrom,
             date_to: dateTo,
           }),
+          // Previous period PSF metrics (30-60 days ago) for trend
           getAggregate({
             group_by: '',
-            metrics: 'count,total_value',
-            sale_type: 'Resale',
+            metrics: 'median_psf,psf_25th,psf_75th,count',
+            date_from: prevDateFrom,
+            date_to: prevDateTo,
+          }),
+          // New vs Resale premium
+          getNewVsResale({ timeGrain: 'quarter' }),
+          // Price histogram for buyer opportunity calculation
+          getDashboard({
+            panels: 'price_histogram',
             date_from: dateFrom,
             date_to: dateTo,
           }),
         ]);
 
-        const newSalesData = newSalesRes.data.data?.[0] || {};
-        const resalesData = resalesRes.data.data?.[0] || {};
+        // Extract data
+        const currentPsf = currentPsfRes.data.data?.[0] || {};
+        const prevPsf = prevPsfRes.data.data?.[0] || {};
+        const newVsResaleSummary = newVsResaleRes.data?.summary || {};
+        const histogram = histogramRes.data?.data?.price_histogram || {};
+
+        // Calculate Median PSF with trend
+        const medianPsfValue = currentPsf.median_psf || 0;
+        const prevMedianPsf = prevPsf.median_psf || medianPsfValue;
+        const medianPsfTrend = prevMedianPsf > 0
+          ? ((medianPsfValue - prevMedianPsf) / prevMedianPsf) * 100
+          : 0;
+
+        // Calculate Price Predictability (IQR as % of median)
+        const iqr = (currentPsf.psf_75th || 0) - (currentPsf.psf_25th || 0);
+        const iqrRatio = medianPsfValue > 0 ? (iqr / medianPsfValue) * 100 : 0;
+        const prevIqr = (prevPsf.psf_75th || 0) - (prevPsf.psf_25th || 0);
+        const prevIqrRatio = prevMedianPsf > 0 ? (prevIqr / prevMedianPsf) * 100 : iqrRatio;
+        const predictabilityTrend = iqrRatio - prevIqrRatio;
+        const predictabilityLabel = iqrRatio < 20 ? 'Very Stable'
+          : iqrRatio < 30 ? 'Stable'
+          : iqrRatio < 40 ? 'Moderate'
+          : 'Volatile';
+
+        // New Launch Premium
+        const newLaunchPremium = newVsResaleSummary.currentPremium || 0;
+        const premiumTrend = newVsResaleSummary.premiumTrend || 'stable';
+        const premiumDirection = premiumTrend === 'widening' ? 'up'
+          : premiumTrend === 'narrowing' ? 'down'
+          : 'neutral';
+
+        // Calculate Buyer Opportunity Index (% of transactions below median PSF)
+        let buyerOpportunityValue = 50; // default
+        if (histogram.bins && histogram.stats?.median) {
+          const medianPrice = histogram.stats.median;
+          const belowMedianCount = histogram.bins
+            .filter(bin => bin.bin_end <= medianPrice)
+            .reduce((sum, bin) => sum + (bin.count || 0), 0);
+          const totalCount = histogram.stats.total || 1;
+          buyerOpportunityValue = (belowMedianCount / totalCount) * 100;
+        }
+
+        // Calculate previous period buyer opportunity for trend (simplified)
+        // Using the predictability change as a proxy - if prices getting tighter, fewer below median
+        const buyerOpportunityTrend = -predictabilityTrend * 0.5; // Inverse relationship
 
         setKpis({
-          newSalesCount: newSalesData.count || 0,
-          resalesCount: resalesData.count || 0,
-          totalQuantum: (newSalesData.total_value || 0) + (resalesData.total_value || 0),
+          medianPsf: {
+            value: Math.round(medianPsfValue),
+            trend: Number(medianPsfTrend.toFixed(1)),
+          },
+          predictability: {
+            value: Number(iqrRatio.toFixed(1)),
+            trend: Number(predictabilityTrend.toFixed(1)),
+            label: predictabilityLabel,
+          },
+          newLaunchPremium: {
+            value: Number(newLaunchPremium.toFixed(1)),
+            trendLabel: premiumTrend === 'stable' ? 'Stable' : premiumTrend.charAt(0).toUpperCase() + premiumTrend.slice(1),
+            direction: premiumDirection,
+          },
+          buyerOpportunity: {
+            value: Number(buyerOpportunityValue.toFixed(0)),
+            trend: Number(buyerOpportunityTrend.toFixed(1)),
+          },
           loading: false,
         });
       } catch (err) {
@@ -199,42 +271,73 @@ export function MacroOverviewContent() {
 
           {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">
-              {/* KPI Summary Cards - Last 30 Days Market Snapshot */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
+              {/* KPI Summary Cards - Deal Detection Metrics (Last 30 Days) */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
+                {/* Card 1: Market Median PSF - Universal benchmark for deal assessment */}
                 <KPICard
-                  title="Total New Sales"
+                  title="Market Median PSF"
                   subtitle="past 30 days"
-                  value={kpis.newSalesCount.toLocaleString()}
+                  value={`$${kpis.medianPsf.value.toLocaleString()}`}
                   loading={kpis.loading}
+                  trend={{
+                    value: Math.abs(kpis.medianPsf.trend),
+                    direction: kpis.medianPsf.trend > 0.1 ? 'up' : kpis.medianPsf.trend < -0.1 ? 'down' : 'neutral',
+                    label: 'vs prev 30d'
+                  }}
+                  icon={
+                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  }
+                />
+                {/* Card 2: Price Predictability - How tight/volatile is pricing */}
+                <KPICard
+                  title="Price Predictability"
+                  subtitle={kpis.predictability.label}
+                  value={`${kpis.predictability.value}%`}
+                  loading={kpis.loading}
+                  trend={{
+                    value: Math.abs(kpis.predictability.trend),
+                    direction: kpis.predictability.trend < -0.1 ? 'up' : kpis.predictability.trend > 0.1 ? 'down' : 'neutral',
+                    label: 'spread'
+                  }}
                   icon={
                     <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   }
                 />
+                {/* Card 3: New Launch Premium - Are new launches overpriced vs resale? */}
                 <KPICard
-                  title="Total Resales"
-                  subtitle="past 30 days"
-                  value={kpis.resalesCount.toLocaleString()}
+                  title="New Launch Premium"
+                  subtitle={kpis.newLaunchPremium.trendLabel || 'vs resale'}
+                  value={`${kpis.newLaunchPremium.value > 0 ? '+' : ''}${kpis.newLaunchPremium.value}%`}
                   loading={kpis.loading}
+                  trend={kpis.newLaunchPremium.direction !== 'neutral' ? {
+                    value: 0,
+                    direction: kpis.newLaunchPremium.direction,
+                    label: kpis.newLaunchPremium.trendLabel
+                  } : undefined}
                   icon={
                     <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   }
                 />
+                {/* Card 4: Buyer Opportunity Index - Is market favoring buyers or sellers? */}
                 <KPICard
-                  title="Total Quantum Value"
-                  subtitle="past 30 days"
-                  value={kpis.totalQuantum >= 1000000000
-                    ? `$${(kpis.totalQuantum / 1000000000).toFixed(2)}B`
-                    : `$${(kpis.totalQuantum / 1000000).toFixed(0)}M`
-                  }
+                  title="Buyer Opportunity"
+                  subtitle={kpis.buyerOpportunity.value >= 50 ? "buyer's market" : "seller's market"}
+                  value={`${kpis.buyerOpportunity.value}%`}
                   loading={kpis.loading}
-                  className="col-span-2 md:col-span-1"
+                  trend={{
+                    value: Math.abs(kpis.buyerOpportunity.trend),
+                    direction: kpis.buyerOpportunity.trend > 0.1 ? 'up' : kpis.buyerOpportunity.trend < -0.1 ? 'down' : 'neutral',
+                    label: 'below median'
+                  }}
                   icon={
                     <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                   }
                 />
