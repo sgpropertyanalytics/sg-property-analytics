@@ -86,7 +86,7 @@ function Login() {
             initial={{ opacity: 0, y: 30, rotateX: 5 }}
             animate={{ opacity: 1, y: 0, rotateX: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative w-full max-w-xl"
+            className="relative w-[480px] max-w-full"
             style={{ perspective: '1000px' }}
           >
             {/* Preview Mode Badge */}
@@ -238,14 +238,14 @@ function Login() {
 
           {/* Header - Editorial style with eyebrow badge */}
           <div className="mb-10 text-center">
-            {/* Eyebrow Badge */}
-            <span className="inline-block text-xs font-semibold tracking-wider text-teal-700 bg-teal-50 border border-teal-100 rounded-full px-3 py-1 mb-4">
+            {/* Eyebrow Badge - Professional slate grey */}
+            <span className="inline-block text-xs font-semibold tracking-wider text-slate-600 bg-white border border-slate-200 rounded-full px-3 py-1 mb-3 shadow-sm">
               PREVIEW MODE
             </span>
-            <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-3">
+            <h2 className="text-4xl font-bold text-slate-900 tracking-tight mb-3">
               Unlock Market Data
             </h2>
-            <p className="text-slate-500 text-base leading-relaxed">
+            <p className="text-lg text-slate-500 leading-relaxed max-w-md mx-auto">
               Access aggregated market trends from the last 60 days.
             </p>
           </div>
@@ -269,7 +269,7 @@ function Login() {
             <button
               onClick={handleGoogleSignIn}
               disabled={isSigningIn || authLoading}
-              className="w-full h-14 bg-white border border-slate-300 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 hover:border-slate-400 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-sm"
+              className="w-full h-14 bg-white border border-slate-400 text-slate-700 rounded-xl font-medium hover:bg-slate-50 hover:border-slate-500 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-md"
             >
               {/* Standard multi-color Google 'G' icon */}
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -374,20 +374,20 @@ function Login() {
           </AnimatePresence>
 
           {/* Trust Floor - micro-trust signals */}
-          <div className="mt-8 flex items-center justify-center gap-4 text-xs text-slate-400">
+          <div className="mt-8 flex items-center justify-center gap-4 text-xs">
             <div className="flex items-center gap-1.5">
-              <Building className="w-3.5 h-3.5" />
-              <span>Official Data</span>
+              <Building className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-slate-500">Official Data</span>
             </div>
             <span className="text-slate-300">·</span>
             <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Secure Access</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-slate-500">Secure Access</span>
             </div>
             <span className="text-slate-300">·</span>
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" />
-              <span>No Credit Card</span>
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-slate-500">No Credit Card</span>
             </div>
           </div>
 
