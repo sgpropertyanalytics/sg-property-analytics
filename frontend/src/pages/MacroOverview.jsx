@@ -14,10 +14,10 @@ import { TransactionDataTable } from '../components/powerbi/TransactionDataTable
 import { GLSDataTable } from '../components/powerbi/GLSDataTable';
 import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
-import { getKpiSummary, getFilterCount } from '../api/client';
+import { getKpiSummary } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components
-import { ErrorBoundary, BlurredDashboard, PreviewModeBar } from '../components/ui';
+import { ErrorBoundary, BlurredDashboard } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
@@ -54,10 +54,6 @@ export function MacroOverviewContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalFilters, setModalFilters] = useState({});
-
-  // Filter count for preview mode bar (free users only)
-  const [filterCount, setFilterCount] = useState(null);
-  const [filterCountLoading, setFilterCountLoading] = useState(false);
 
   // Desktop-first chart heights with mobile guardrails
   // Desktop: exact pixels | Mobile (<768px): capped to prevent viewport domination
@@ -128,28 +124,6 @@ export function MacroOverviewContent() {
     };
     fetchKpis();
   }, [filters.districts, filters.bedroomTypes, filters.segments]); // Re-fetch when location filters change
-
-  // Fetch filter count for preview mode bar (free users only)
-  useEffect(() => {
-    // Only fetch for free users
-    if (isPremium) return;
-
-    const fetchFilterCount = async () => {
-      setFilterCountLoading(true);
-      try {
-        const params = buildApiParams({});
-        const response = await getFilterCount(params);
-        setFilterCount(response.data.count);
-      } catch (err) {
-        console.error('Error fetching filter count:', err);
-        setFilterCount(null);
-      } finally {
-        setFilterCountLoading(false);
-      }
-    };
-
-    fetchFilterCount();
-  }, [isPremium, buildApiParams, filters, crossFilter, highlight]);
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
     setModalTitle(title);
@@ -228,15 +202,6 @@ export function MacroOverviewContent() {
             {/* Breadcrumb navigation */}
             <DrillBreadcrumb />
           </div>
-
-          {/* Preview Mode Bar - Shows for free users */}
-          {!isPremium && (
-            <PreviewModeBar
-              resultCount={filterCount}
-              loading={filterCountLoading}
-              onUnlock={() => showPaywall({ source: 'preview-bar' })}
-            />
-          )}
 
           {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">

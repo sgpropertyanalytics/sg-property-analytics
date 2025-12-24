@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { DistrictLiquidityMap } from '../components/insights';
-import { BlurredDashboard, PreviewModeBar } from '../components/ui';
-import { useSubscription } from '../context/SubscriptionContext';
+import { BlurredDashboard } from '../components/ui';
 
 /**
  * District & Project Deep Dive Page
@@ -19,7 +18,6 @@ import { useSubscription } from '../context/SubscriptionContext';
  */
 export function DistrictDeepDiveContent() {
   const [activeTab, setActiveTab] = useState('district'); // 'district' | 'project'
-  const { isPremium, showPaywall } = useSubscription();
 
   return (
     <div className="h-full overflow-auto">
@@ -33,13 +31,6 @@ export function DistrictDeepDiveContent() {
             Detailed analysis of districts and individual projects
           </p>
         </div>
-
-        {/* Preview Mode Bar - Shows for free users */}
-        {!isPremium && (
-          <PreviewModeBar
-            onUnlock={() => showPaywall({ source: 'district-deep-dive-preview' })}
-          />
-        )}
 
         {/* Main Content */}
         <div className="space-y-6 animate-fade-in">

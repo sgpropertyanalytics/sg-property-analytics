@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { GlobalNavRail, NAV_ITEMS } from './GlobalNavRail';
 import { PowerBIFilterProvider } from '../../context/PowerBIFilterContext';
 import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
-import { ErrorBoundary } from '../ui';
+import { ErrorBoundary, PreviewModeBar } from '../ui';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PricingModal } from '../PricingModal';
 
@@ -221,6 +221,9 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
 
         {/* Pricing Modal - Global paywall trigger */}
         <PricingModal isOpen={showPricingModal} onClose={hidePaywall} />
+
+        {/* Preview Mode Overlay - Fixed position, doesn't affect layout */}
+        {!isPremium && <PreviewModeBar />}
       </div>
     </PowerBIFilterProvider>
   );

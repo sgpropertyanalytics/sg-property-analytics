@@ -3,8 +3,7 @@ import FloorLiquidityChart from '../components/powerbi/FloorLiquidityChart';
 import FloorPremiumByRegionChart from '../components/powerbi/FloorPremiumByRegionChart';
 import FloorPremiumTrendChart from '../components/powerbi/FloorPremiumTrendChart';
 import FloorLiquidityHeatmap from '../components/powerbi/FloorLiquidityHeatmap';
-import { ErrorBoundary, BlurredDashboard, PreviewModeBar } from '../components/ui';
-import { useSubscription } from '../context/SubscriptionContext';
+import { ErrorBoundary, BlurredDashboard } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
@@ -38,7 +37,6 @@ const SEGMENT_OPTIONS = [
 export function FloorDispersionContent() {
   const [bedroom, setBedroom] = useState('');
   const [segment, setSegment] = useState('');
-  const { isPremium, showPaywall } = useSubscription();
 
   // Desktop-first chart heights with mobile guardrails
   const heroChartHeight = useChartHeight(420, MOBILE_CAPS.tall);          // 420px desktop, max 320px mobile
@@ -112,13 +110,6 @@ export function FloorDispersionContent() {
             </div>
           )}
         </div>
-
-        {/* Preview Mode Bar - Shows for free users */}
-        {!isPremium && (
-          <PreviewModeBar
-            onUnlock={() => showPaywall({ source: 'floor-dispersion-preview' })}
-          />
-        )}
 
         {/* Floor Liquidity Chart - Hero Visualization */}
         <div className="mb-6">

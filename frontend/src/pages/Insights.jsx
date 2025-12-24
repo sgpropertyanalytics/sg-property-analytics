@@ -1,6 +1,5 @@
 import { MarketStrategyMap } from '../components/insights';
-import { ErrorBoundary, BlurredDashboard, PreviewModeBar } from '../components/ui';
-import { useSubscription } from '../context/SubscriptionContext';
+import { ErrorBoundary, BlurredDashboard } from '../components/ui';
 
 /**
  * Insights Page - Visual Analytics for Singapore Property Market
@@ -18,8 +17,6 @@ import { useSubscription } from '../context/SubscriptionContext';
  * - Market alerts and notifications
  */
 export function InsightsContent() {
-  const { isPremium, showPaywall } = useSubscription();
-
   return (
     <div className="h-full overflow-auto">
       <div className="p-3 md:p-4 lg:p-6">
@@ -32,13 +29,6 @@ export function InsightsContent() {
             Visual analytics and market intelligence for Singapore property
           </p>
         </div>
-
-        {/* Preview Mode Bar - Shows for free users */}
-        {!isPremium && (
-          <PreviewModeBar
-            onUnlock={() => showPaywall({ source: 'insights-preview' })}
-          />
-        )}
 
         {/* Main Content Grid */}
         <div className="space-y-6">

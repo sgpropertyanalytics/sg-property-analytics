@@ -7,8 +7,7 @@ import { HotProjectsTable } from './powerbi/HotProjectsTable';
 import { UpcomingLaunchesTable } from './powerbi/UpcomingLaunchesTable';
 import { MobileTransactionCard } from './MobileTransactionCard';
 import { ResultsSummaryBar } from './ResultsSummaryBar';
-import { BlurredDashboard, PreviewModeBar } from './ui';
-import { useSubscription } from '../context/SubscriptionContext';
+import { BlurredDashboard } from './ui';
 
 /**
  * ValueParityPanel - Budget-based property search tool with Deal Checker
@@ -33,9 +32,6 @@ const ACTIVE_RANGE_MIN = 1500000;  // $1.5M
 const ACTIVE_RANGE_MAX = 3500000;  // $3.5M
 
 export function ValueParityPanel() {
-  // Subscription state for blur paywall
-  const { isPremium, showPaywall } = useSubscription();
-
   // Tab state
   const [activeTab, setActiveTab] = useState('budget'); // 'budget' | 'deal-checker'
 
@@ -362,13 +358,6 @@ export function ValueParityPanel() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Preview Mode Bar - Shows for free users */}
-      {!isPremium && (
-        <PreviewModeBar
-          onUnlock={() => showPaywall({ source: 'value-parity-preview' })}
-        />
-      )}
-
       {/* Tab Navigation - Segmented Toggle */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Explore Budget Tab */}
