@@ -2323,9 +2323,9 @@ def scatter_sample():
 
     Sampling Methodology:
     =====================
-    1. STRATIFIED by district: Ensures all 28 districts are represented proportionally,
-       preventing high-volume districts (OCR) from drowning out low-volume ones (CCR).
-       Each district gets up to (sample_size / num_districts) points.
+    1. STRATIFIED by market segment (CCR/RCR/OCR): Ensures all 3 segments are
+       represented equally, preventing high-volume OCR from drowning out CCR.
+       Each segment gets up to (sample_size / 3) points (~667 each for n=2000).
 
     2. STABLE hash-based selection: Uses md5(id) for deterministic sampling.
        Same filters always return the same data points (no "flickering").
@@ -2339,7 +2339,7 @@ def scatter_sample():
       margin of error ~2.2% at 95% confidence (formula: 1.96 * sqrt(0.5*0.5/n))
     - Visual clarity: More points cause overplotting; 2000 balances coverage vs clarity
     - Performance: Keeps response time <200ms and payload <100KB
-    - Per-district: ~71 points per district (2000/28) ensures minority segments visible
+    - Per-segment: ~667 points per segment (2000/3) ensures CCR visible alongside OCR
 
     Query params:
       Filters (same as other endpoints):
@@ -2364,7 +2364,8 @@ def scatter_sample():
         "meta": {
           "sample_size": 2000,
           "total_count": 45000,
-          "sampling_method": "stratified_by_district",
+          "samples_per_segment": 667,
+          "sampling_method": "stratified_by_segment",
           "elapsed_ms": 123.4
         }
       }
@@ -2444,15 +2445,9 @@ def scatter_sample():
         # Get total count first (for meta)
         total_count = query.count()
 
-        # Count distinct districts to calculate samples per district
-        district_count = db.session.query(
-            func.count(func.distinct(Transaction.district))
-        ).filter(
-            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
-        ).scalar() or 28  # Default to 28 districts
-
-        # Calculate samples per district (stratified allocation)
-        samples_per_district = max(1, sample_size // district_count)
+        # Calculate samples per segment (CCR/RCR/OCR = 3 segments)
+        # This ensures equal representation across market segments
+        samples_per_segment = max(1, sample_size // 3)
 
         # Build stable hash expression for deterministic sampling
         # - Without seed: same filters = same sample
@@ -2462,27 +2457,34 @@ def scatter_sample():
         else:
             hash_expr = func.md5(func.cast(Transaction.id, text('TEXT')))
 
-        # Stratified sampling using window function:
-        # ROW_NUMBER() OVER (PARTITION BY district ORDER BY hash) ranks rows within each district
-        # Then we select top N per district to ensure all districts are represented
-        from sqlalchemy import over
+        # Build segment expression using SQL CASE
+        # Maps districts to market segments (CCR/RCR/OCR)
+        from sqlalchemy import case, literal
 
-        # Create subquery with row numbers partitioned by district
+        segment_expr = case(
+            (Transaction.district.in_(CCR_DISTRICTS), literal('CCR')),
+            (Transaction.district.in_(RCR_DISTRICTS), literal('RCR')),
+            else_=literal('OCR')
+        ).label('segment')
+
+        # Stratified sampling using window function:
+        # ROW_NUMBER() OVER (PARTITION BY segment ORDER BY hash) ranks rows within each segment
+        # Then we select top N per segment to ensure CCR/RCR/OCR are equally represented
         row_num = func.row_number().over(
-            partition_by=Transaction.district,
+            partition_by=segment_expr,
             order_by=hash_expr
         ).label('rn')
 
-        subquery = query.add_columns(row_num).subquery()
+        subquery = query.add_columns(segment_expr, row_num).subquery()
 
-        # Select from subquery where row number <= samples_per_district
+        # Select from subquery where row number <= samples_per_segment
         sampled = db.session.query(
             subquery.c.price,
             subquery.c.area_sqft,
             subquery.c.bedroom_count,
             subquery.c.district
         ).filter(
-            subquery.c.rn <= samples_per_district
+            subquery.c.rn <= samples_per_segment
         ).limit(sample_size).all()  # Global safety limit
 
         # Format response
@@ -2497,15 +2499,15 @@ def scatter_sample():
         ]
 
         elapsed = time.time() - start
-        print(f"GET /api/scatter-sample returned {len(data)} points (stratified by district) in {elapsed:.4f}s")
+        print(f"GET /api/scatter-sample returned {len(data)} points (stratified by segment) in {elapsed:.4f}s")
 
         return jsonify({
             "data": data,
             "meta": {
                 "sample_size": len(data),
                 "total_count": total_count,
-                "samples_per_district": samples_per_district,
-                "sampling_method": "stratified_by_district",
+                "samples_per_segment": samples_per_segment,
+                "sampling_method": "stratified_by_segment",
                 "elapsed_ms": round(elapsed * 1000, 2)
             }
         })

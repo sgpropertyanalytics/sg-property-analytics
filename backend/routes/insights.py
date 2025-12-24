@@ -452,3 +452,282 @@ def district_summary():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+@insights_bp.route("/district-liquidity", methods=["GET"])
+def district_liquidity():
+    """
+    Get liquidity metrics by district for the District Liquidity Heatmap.
+
+    Measures market liquidity using transaction velocity, concentration, and Z-scores.
+
+    Query params:
+      - period: Time period - 3m, 6m, 12m, all (default: 12m)
+      - bed: Bedroom filter - all, 1, 2, 3, 4, 5 (default: all)
+      - sale_type: Sale type filter - all, New Sale, Resale (default: all)
+
+    Returns:
+      {
+        "districts": [
+          {
+            "district_id": "D01",
+            "name": "Raffles Place / Marina",
+            "region": "CCR",
+            "has_data": true,
+            "liquidity_metrics": {
+              "tx_count": 156,
+              "monthly_velocity": 13.0,
+              "z_score": 1.24,
+              "liquidity_tier": "Very High",
+              "new_sale_count": 55,
+              "resale_count": 101,
+              "new_sale_pct": 35.2,
+              "resale_pct": 64.8
+            },
+            "bedroom_breakdown": { "1": 23, "2": 67, ... }
+          },
+          ...
+        ],
+        "meta": {
+          "period": "12m",
+          "months_in_period": 12,
+          "date_range": {"from": "...", "to": "..."},
+          "total_transactions": 12450,
+          "mean_velocity": 37.2,
+          "stddev_velocity": 28.5,
+          "elapsed_ms": 45
+        }
+      }
+    """
+    import statistics
+
+    start = time.time()
+
+    # Parse query params
+    period = request.args.get("period", "12m")
+    bed_filter = request.args.get("bed", "all")
+    sale_type_filter = request.args.get("sale_type", "all")
+
+    # Calculate date range and months count
+    today = datetime.now().date()
+    if period == "3m":
+        date_from = months_ago(today, 3)
+        months_in_period = 3
+    elif period == "6m":
+        date_from = months_ago(today, 6)
+        months_in_period = 6
+    elif period == "12m":
+        date_from = months_ago(today, 12)
+        months_in_period = 12
+    elif period == "all":
+        # For "all", get the earliest transaction date
+        earliest = db.session.query(func.min(Transaction.transaction_date)).filter(
+            Transaction.outlier_filter()
+        ).scalar()
+        if earliest:
+            date_from = earliest
+            # Calculate months between earliest and today
+            months_in_period = (today.year - earliest.year) * 12 + (today.month - earliest.month)
+            months_in_period = max(months_in_period, 1)  # At least 1 month
+        else:
+            date_from = None
+            months_in_period = 12  # Default
+    else:
+        date_from = months_ago(today, 12)
+        months_in_period = 12
+
+    # Build base filter conditions
+    filter_conditions = [Transaction.outlier_filter()]
+
+    if date_from:
+        filter_conditions.append(Transaction.transaction_date >= date_from)
+
+    # Apply bedroom filter
+    if bed_filter != "all":
+        if bed_filter == "1":
+            filter_conditions.append(Transaction.bedroom_count == 1)
+        elif bed_filter == "2":
+            filter_conditions.append(Transaction.bedroom_count == 2)
+        elif bed_filter == "3":
+            filter_conditions.append(Transaction.bedroom_count == 3)
+        elif bed_filter == "4":
+            filter_conditions.append(Transaction.bedroom_count == 4)
+        elif bed_filter == "5":
+            filter_conditions.append(Transaction.bedroom_count >= 5)
+
+    # Apply sale type filter
+    if sale_type_filter != "all":
+        filter_conditions.append(Transaction.sale_type == sale_type_filter)
+
+    try:
+        # Query transaction counts by district with sale type breakdown
+        query = db.session.query(
+            Transaction.district,
+            func.count(Transaction.id).label("tx_count"),
+            func.count(case((Transaction.sale_type == 'New Sale', 1))).label("new_sale_count"),
+            func.count(case((Transaction.sale_type == 'Resale', 1))).label("resale_count"),
+        ).filter(
+            and_(*filter_conditions)
+        ).group_by(
+            Transaction.district
+        )
+
+        results = query.all()
+        district_data = {row.district: row for row in results}
+
+        # Query bedroom breakdown per district
+        bedroom_query = db.session.query(
+            Transaction.district,
+            Transaction.bedroom_count,
+            func.count(Transaction.id).label("count")
+        ).filter(
+            and_(*filter_conditions)
+        ).group_by(
+            Transaction.district,
+            Transaction.bedroom_count
+        )
+
+        bedroom_results = bedroom_query.all()
+        bedroom_by_district = {}
+        for row in bedroom_results:
+            if row.district not in bedroom_by_district:
+                bedroom_by_district[row.district] = {}
+            bedroom_by_district[row.district][str(row.bedroom_count)] = row.count
+
+        # Calculate velocities and Z-scores
+        velocities = []
+        for row in results:
+            velocity = row.tx_count / months_in_period
+            velocities.append((row.district, velocity))
+
+        # Calculate mean and stddev for Z-score
+        if len(velocities) > 1:
+            velocity_values = [v for _, v in velocities]
+            mean_velocity = statistics.mean(velocity_values)
+            stddev_velocity = statistics.stdev(velocity_values)
+        else:
+            mean_velocity = velocities[0][1] if velocities else 0
+            stddev_velocity = 1  # Avoid division by zero
+
+        # Calculate Z-scores
+        z_scores = {}
+        for district, velocity in velocities:
+            if stddev_velocity > 0:
+                z_scores[district] = (velocity - mean_velocity) / stddev_velocity
+            else:
+                z_scores[district] = 0
+
+        # Determine liquidity tier based on Z-score
+        def get_liquidity_tier(z_score):
+            if z_score >= 1.5:
+                return "Very High"
+            elif z_score >= 0.5:
+                return "High"
+            elif z_score >= -0.5:
+                return "Neutral"
+            elif z_score >= -1.5:
+                return "Low"
+            else:
+                return "Very Low"
+
+        # Build response with all 28 districts
+        all_districts = [f"D{str(i).zfill(2)}" for i in range(1, 29)]
+        districts_response = []
+        total_transactions = 0
+
+        for district_id in all_districts:
+            # Determine region
+            if district_id in CCR_DISTRICTS:
+                region = "CCR"
+            elif district_id in RCR_DISTRICTS:
+                region = "RCR"
+            else:
+                region = "OCR"
+
+            # Get district name
+            full_name = DISTRICT_NAMES.get(district_id, district_id)
+            short_name = full_name.split(" / ")[0] if " / " in full_name else full_name
+
+            if district_id in district_data:
+                row = district_data[district_id]
+                tx_count = row.tx_count or 0
+                new_sale_count = row.new_sale_count or 0
+                resale_count = row.resale_count or 0
+                total_transactions += tx_count
+
+                # Calculate velocity
+                monthly_velocity = round(tx_count / months_in_period, 2)
+
+                # Get Z-score and tier
+                z_score = round(z_scores.get(district_id, 0), 2)
+                liquidity_tier = get_liquidity_tier(z_score)
+
+                # Calculate percentages
+                new_sale_pct = round((new_sale_count / tx_count) * 100, 1) if tx_count > 0 else 0
+                resale_pct = round((resale_count / tx_count) * 100, 1) if tx_count > 0 else 0
+
+                districts_response.append({
+                    "district_id": district_id,
+                    "name": short_name,
+                    "full_name": full_name,
+                    "region": region,
+                    "has_data": True,
+                    "liquidity_metrics": {
+                        "tx_count": tx_count,
+                        "monthly_velocity": monthly_velocity,
+                        "z_score": z_score,
+                        "liquidity_tier": liquidity_tier,
+                        "new_sale_count": new_sale_count,
+                        "resale_count": resale_count,
+                        "new_sale_pct": new_sale_pct,
+                        "resale_pct": resale_pct
+                    },
+                    "bedroom_breakdown": bedroom_by_district.get(district_id, {})
+                })
+            else:
+                # No data for this district
+                districts_response.append({
+                    "district_id": district_id,
+                    "name": short_name,
+                    "full_name": full_name,
+                    "region": region,
+                    "has_data": False,
+                    "liquidity_metrics": {
+                        "tx_count": 0,
+                        "monthly_velocity": 0,
+                        "z_score": None,
+                        "liquidity_tier": None,
+                        "new_sale_count": 0,
+                        "resale_count": 0,
+                        "new_sale_pct": 0,
+                        "resale_pct": 0
+                    },
+                    "bedroom_breakdown": {}
+                })
+
+        elapsed = time.time() - start
+
+        return jsonify({
+            "districts": districts_response,
+            "meta": {
+                "period": period,
+                "bed_filter": bed_filter,
+                "sale_type_filter": sale_type_filter,
+                "months_in_period": months_in_period,
+                "date_range": {
+                    "from": date_from.isoformat() if date_from else None,
+                    "to": today.isoformat()
+                },
+                "total_transactions": total_transactions,
+                "mean_velocity": round(mean_velocity, 2),
+                "stddev_velocity": round(stddev_velocity, 2),
+                "elapsed_ms": int(elapsed * 1000)
+            }
+        })
+
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/insights/district-liquidity ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500

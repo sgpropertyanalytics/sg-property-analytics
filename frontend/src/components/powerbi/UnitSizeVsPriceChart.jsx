@@ -289,10 +289,10 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
                 </svg>
               </button>
               {/* Tooltip */}
-              <div className="absolute right-0 top-full mt-1 w-64 p-3 bg-[#213448] text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              <div className="absolute right-0 top-full mt-1 w-72 p-3 bg-[#213448] text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                 <div className="font-semibold mb-1">Sampling Methodology</div>
                 <ul className="space-y-1 text-[#EAE0CF]">
-                  <li><span className="text-white">Stratified:</span> Equal representation per district</li>
+                  <li><span className="text-white">Stratified:</span> Equal samples from CCR, RCR, OCR (~667 each)</li>
                   <li><span className="text-white">Stable:</span> Same filters = same data points</li>
                   <li><span className="text-white">n=2,000:</span> ~2.2% margin of error at 95% confidence</li>
                 </ul>
@@ -335,7 +335,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
 
       {/* Footer - fixed height, won't grow */}
       <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] shrink-0">
-        <span>Hover for details | Colors show bedroom types | Stratified sample ensures all districts represented</span>
+        <span>Hover for details | Colors show bedroom types | Stratified by CCR/RCR/OCR</span>
       </div>
     </div>
   );
