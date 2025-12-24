@@ -1,51 +1,40 @@
-import { Lock } from 'lucide-react';
-
 /**
- * PreviewModeBar - Thin sticky bar for free users
+ * PreviewModeBar - Floating Status Capsule for free users
  *
- * Displays at top of content area:
- * - "PREVIEW MODE" badge
- * - Result count (e.g., "1,284 transactions match your filters")
- * - "Unlock Full Access" button
+ * A compact, modern floating capsule that indicates preview mode.
+ * Looks like a "Dynamic System Status" rather than a rigid banner.
  *
- * Color palette:
- * - Background: Deep Navy (#213448)
- * - Text: Sand/Cream (#EAE0CF)
- * - Badge: Ocean Blue (#547792)
- * - Count: Sky Blue (#94B4C1)
+ * Design:
+ * - Rounded-full capsule shape
+ * - Centered horizontally, floats with content
+ * - Subtle amber/warm tint
+ * - Pulsing status dot
  */
 export function PreviewModeBar({ resultCount, loading, onUnlock }) {
   return (
-    <div className="sticky top-0 z-20 bg-[#213448] border-b border-[#547792]/30 px-4 py-2">
-      <div className="flex items-center justify-between max-w-screen-2xl mx-auto">
-        {/* Left side: Badge + Result count */}
-        <div className="flex items-center gap-4">
-          {/* Preview Mode Badge */}
-          <span className="inline-flex items-center gap-1.5 bg-[#547792] text-[#EAE0CF] text-xs font-medium px-2.5 py-1 rounded">
-            <Lock className="w-3 h-3" />
-            PREVIEW MODE
-          </span>
+    <div className="flex justify-center mt-4 mb-2">
+      <div className="inline-flex items-center gap-2 h-8 px-4 rounded-full bg-amber-50 border border-amber-200/50">
+        {/* Pulsing status dot */}
+        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
 
-          {/* Result Count */}
-          <span className="text-sm text-[#94B4C1]">
-            {loading ? (
-              <span className="animate-pulse">Counting...</span>
-            ) : resultCount !== null && resultCount !== undefined ? (
-              <>
-                <span className="font-medium text-[#EAE0CF]">{resultCount.toLocaleString()}</span>
-                {' '}transactions match your filters
-              </>
-            ) : null}
-          </span>
-        </div>
+        {/* Status text */}
+        <span className="text-amber-700 font-mono text-xs font-bold uppercase tracking-wider">
+          Preview Mode
+        </span>
 
-        {/* Right side: Unlock button */}
-        <button
-          onClick={onUnlock}
-          className="bg-[#EAE0CF] text-[#213448] text-sm font-medium px-4 py-1.5 rounded hover:bg-white transition-colors"
-        >
-          Unlock Full Access
-        </button>
+        {/* Separator */}
+        <span className="text-amber-300">•</span>
+
+        {/* Data range info */}
+        <span className="text-amber-600 font-mono text-xs">
+          {loading ? (
+            <span className="animate-pulse">Loading...</span>
+          ) : resultCount !== null && resultCount !== undefined ? (
+            <>{resultCount.toLocaleString()} transactions</>
+          ) : (
+            <>Historical Data: Dec 2020 - Present</>
+          )}
+        </span>
       </div>
     </div>
   );
