@@ -84,11 +84,8 @@ function Login() {
           <ResearchStackPreview />
         </motion.div>
 
-        {/* Divider Line - separates "The Tool" from "The Description" */}
-        <div className="relative z-10 w-full border-t border-white/10 my-8" />
-
-        {/* Bottom Section - Value Proposition + Stats (Spec Sheet) */}
-        <div className="relative z-10">
+        {/* Bottom Section - Value Proposition (unified hero block) */}
+        <div className="relative z-10 mt-6">
           {/* Headline - single line at desktop, max size without overflow */}
           <h3 className="text-lg lg:text-xl xl:text-2xl 2xl:text-[1.75rem] font-bold text-[#EAE0CF] tracking-tight leading-tight mb-2 whitespace-nowrap">
             Institutional-grade analytics for Singapore private property
@@ -143,8 +140,8 @@ function Login() {
             <h2 className="text-4xl font-bold text-slate-900 tracking-tight mb-3">
               Unlock Market Data
             </h2>
-            <p className="text-lg text-slate-500 leading-relaxed max-w-xl mx-auto text-balance">
-              Access aggregated market trends · Last 60 days
+            <p className="text-base text-slate-500 leading-relaxed">
+              Aggregated market trends across the last 60 days
             </p>
           </div>
 
