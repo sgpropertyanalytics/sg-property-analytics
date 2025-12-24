@@ -304,6 +304,17 @@ export const getAggregate = (params = {}, options = {}) => {
 };
 
 /**
+ * KPI Summary - Single optimized endpoint for all KPI card metrics
+ * Returns all 4 KPI metrics in one fast API call.
+ * @param {Object} params - Filter parameters
+ * @param {string} params.district - Comma-separated districts
+ * @param {string} params.bedroom - Comma-separated bedroom counts
+ * @param {string} params.segment - CCR, RCR, OCR
+ */
+export const getKpiSummary = (params = {}) =>
+  apiClient.get(`/kpi-summary?${buildQueryString(params)}`);
+
+/**
  * Paginated transaction list for drill-through
  * @param {Object} params - Same filters as aggregate, plus pagination
  * @param {number} params.page - Page number (default 1)

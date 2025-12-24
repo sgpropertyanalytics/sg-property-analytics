@@ -13,7 +13,7 @@ import { TransactionDataTable } from '../components/powerbi/TransactionDataTable
 import { GLSDataTable } from '../components/powerbi/GLSDataTable';
 import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
-import { getAggregate, getNewVsResale, getDashboard } from '../api/client';
+import { getKpiSummary } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
 import { KPICard, ErrorBoundary } from '../components/ui';
@@ -60,169 +60,57 @@ export function MacroOverviewContent() {
   const tableHeight = useChartHeight(400, MOBILE_CAPS.tall);              // 400px desktop, max 320px mobile
 
   // Summary KPIs - Deal detection metrics with trend indicators
+  // Uses single optimized API call for fast loading
   // Reacts to: Location filters (district, bedroom, segment)
   // Ignores: Date range filters (always shows "current market" status)
   const [kpis, setKpis] = useState({
-    medianPsf: { value: 0, trend: 0, insight: '' },
-    predictability: { value: 0, trend: 0, label: 'Loading', insight: '' },
-    newLaunchPremium: { value: 0, trendLabel: '', direction: 'neutral', insight: '' },
-    buyerOpportunity: { value: 50, label: 'Loading', insight: '' },
+    medianPsf: { current: 0, trend: 0, insight: '' },
+    priceSpread: { iqrRatio: 0, label: 'Loading', insight: '' },
+    newLaunchPremium: { value: 0, trend: 'stable', insight: '' },
+    marketMomentum: { score: 50, label: 'Loading', insight: '' },
     loading: true,
   });
 
-  // Fetch KPIs based on current filters (but ignore date range - always use "current market")
-  // - Cards 1, 2, 4: Last 30 days (pulse metrics)
-  // - Card 3 (New Launch Premium): Full data (structural metric - needs data density)
+  // Fetch KPIs using single optimized API call
   useEffect(() => {
     const fetchKpis = async () => {
-      // Wait for apiMetadata to be loaded
-      if (!apiMetadata?.max_date) {
-        return;
-      }
-
       try {
-        // Calculate date ranges (ignore sidebar date range - always show current market)
-        const maxDate = new Date(apiMetadata.max_date);
-        const thirtyDaysAgo = new Date(maxDate);
-        thirtyDaysAgo.setDate(maxDate.getDate() - 30);
-        const sixtyDaysAgo = new Date(maxDate);
-        sixtyDaysAgo.setDate(maxDate.getDate() - 60);
-
-        const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
-        const dateTo = maxDate.toISOString().split('T')[0];
-        const prevDateFrom = sixtyDaysAgo.toISOString().split('T')[0];
-        const prevDateTo = thirtyDaysAgo.toISOString().split('T')[0];
-
         // Build location/property filters (react to sidebar, but NOT date range)
-        const locationFilters = {};
+        const params = {};
         if (filters.districts?.length > 0) {
-          locationFilters.district = filters.districts.join(',');
+          params.district = filters.districts.join(',');
         }
         if (filters.bedroomTypes?.length > 0) {
-          locationFilters.bedroom = filters.bedroomTypes.join(',');
+          params.bedroom = filters.bedroomTypes.join(',');
         }
         if (filters.segment) {
-          locationFilters.segment = filters.segment;
+          params.segment = filters.segment;
         }
 
-        // Fetch all metrics in parallel
-        const [currentPsfRes, prevPsfRes, newVsResaleRes, histogramRes] = await Promise.all([
-          // Current period PSF metrics (last 30 days)
-          getAggregate({
-            group_by: '',
-            metrics: 'median_psf,psf_25th,psf_75th,count',
-            date_from: dateFrom,
-            date_to: dateTo,
-            ...locationFilters,
-          }),
-          // Previous period PSF metrics (30-60 days ago) for trend
-          getAggregate({
-            group_by: '',
-            metrics: 'median_psf,psf_25th,psf_75th,count',
-            date_from: prevDateFrom,
-            date_to: prevDateTo,
-            ...locationFilters,
-          }),
-          // New vs Resale premium (full data for structural metric, but with location filters)
-          getNewVsResale({
-            timeGrain: 'quarter',
-            ...locationFilters,
-          }),
-          // Price histogram for buyer opportunity calculation
-          getDashboard({
-            panels: 'price_histogram',
-            date_from: dateFrom,
-            date_to: dateTo,
-            ...locationFilters,
-          }),
-        ]);
-
-        // Extract data
-        const currentPsf = currentPsfRes.data.data?.[0] || {};
-        const prevPsf = prevPsfRes.data.data?.[0] || {};
-        const newVsResaleSummary = newVsResaleRes.data?.summary || {};
-        const histogram = histogramRes.data?.data?.price_histogram || {};
-
-        // Calculate Median PSF with trend
-        const medianPsfValue = currentPsf.median_psf || 0;
-        const prevMedianPsf = prevPsf.median_psf || medianPsfValue;
-        const medianPsfTrend = prevMedianPsf > 0
-          ? ((medianPsfValue - prevMedianPsf) / prevMedianPsf) * 100
-          : 0;
-
-        // Calculate Price Predictability (IQR as % of median)
-        // Sanity check: IQR ratio should typically be 15-50% for property markets
-        const iqr = (currentPsf.psf_75th || 0) - (currentPsf.psf_25th || 0);
-        let iqrRatio = medianPsfValue > 0 ? (iqr / medianPsfValue) * 100 : 0;
-        // Cap at 100% - anything higher indicates a data issue
-        if (iqrRatio > 100) {
-          console.warn('Price Predictability ratio too high, capping at 100%', { iqr, medianPsfValue, psf_25th: currentPsf.psf_25th, psf_75th: currentPsf.psf_75th });
-          iqrRatio = 100;
-        }
-        const prevIqr = (prevPsf.psf_75th || 0) - (prevPsf.psf_25th || 0);
-        let prevIqrRatio = prevMedianPsf > 0 ? (prevIqr / prevMedianPsf) * 100 : iqrRatio;
-        if (prevIqrRatio > 100) prevIqrRatio = 100;
-        const predictabilityTrend = iqrRatio - prevIqrRatio;
-        const predictabilityLabel = iqrRatio < 20 ? 'Very Stable'
-          : iqrRatio < 30 ? 'Stable'
-          : iqrRatio < 40 ? 'Moderate'
-          : 'Volatile';
-
-        // New Launch Premium
-        const newLaunchPremium = newVsResaleSummary.currentPremium || 0;
-        const premiumTrend = newVsResaleSummary.premiumTrend || 'stable';
-        const premiumDirection = premiumTrend === 'widening' ? 'up'
-          : premiumTrend === 'narrowing' ? 'down'
-          : 'neutral';
-
-        // Calculate Buyer Opportunity Score (based on price momentum)
-        // Falling prices = buyer's market, Rising prices = seller's market
-        // Score: 50 = balanced, >50 = buyer's market, <50 = seller's market
-        let buyerOpportunityScore = 50 - (medianPsfTrend * 5); // -5% trend = 75 score (buyer's), +5% trend = 25 score (seller's)
-        buyerOpportunityScore = Math.max(20, Math.min(80, buyerOpportunityScore)); // Cap between 20-80
-        const buyerOpportunityLabel = buyerOpportunityScore >= 55 ? "Buyer's market"
-          : buyerOpportunityScore <= 45 ? "Seller's market"
-          : "Balanced";
-
-        // Generate individual insights for each card
-        const psfInsight = medianPsfTrend > 2 ? 'Rising - sellers have leverage'
-          : medianPsfTrend < -2 ? 'Falling - buyers have leverage'
-          : 'Stable pricing';
-
-        const predictabilityInsight = iqrRatio > 40 ? 'Wide range - negotiate hard'
-          : iqrRatio < 20 ? 'Tight range - be competitive'
-          : 'Normal variance';
-
-        const premiumInsight = newLaunchPremium > 20 ? 'High premium - consider resale'
-          : newLaunchPremium < 10 && newLaunchPremium > 0 ? 'Low premium - new worth it'
-          : 'Fair premium';
-
-        const opportunityInsight = buyerOpportunityScore >= 55 ? 'Good time to buy'
-          : buyerOpportunityScore <= 45 ? 'Good time to sell'
-          : 'Market balanced';
+        // Single API call for all KPI metrics
+        const response = await getKpiSummary(params);
+        const data = response.data;
 
         setKpis({
           medianPsf: {
-            value: Math.round(medianPsfValue),
-            trend: Number(medianPsfTrend.toFixed(1)),
-            insight: psfInsight,
+            current: data.medianPsf.current,
+            trend: data.medianPsf.trend,
+            insight: data.insights.psf,
           },
-          predictability: {
-            value: Number(iqrRatio.toFixed(1)),
-            trend: Number(predictabilityTrend.toFixed(1)),
-            label: predictabilityLabel,
-            insight: predictabilityInsight,
+          priceSpread: {
+            iqrRatio: data.priceSpread.iqrRatio,
+            label: data.priceSpread.label,
+            insight: data.insights.spread,
           },
           newLaunchPremium: {
-            value: Number(newLaunchPremium.toFixed(1)),
-            trendLabel: premiumTrend === 'stable' ? 'Stable' : premiumTrend.charAt(0).toUpperCase() + premiumTrend.slice(1),
-            direction: premiumDirection,
-            insight: premiumInsight,
+            value: data.newLaunchPremium.value,
+            trend: data.newLaunchPremium.trend,
+            insight: data.insights.premium,
           },
-          buyerOpportunity: {
-            value: Math.round(buyerOpportunityScore),
-            label: buyerOpportunityLabel,
-            insight: opportunityInsight,
+          marketMomentum: {
+            score: data.marketMomentum.score,
+            label: data.marketMomentum.label,
+            insight: data.insights.momentum,
           },
           loading: false,
         });
@@ -232,7 +120,7 @@ export function MacroOverviewContent() {
       }
     };
     fetchKpis();
-  }, [apiMetadata?.max_date, filters.districts, filters.bedroomTypes, filters.segment]); // Re-fetch when data or location filters change
+  }, [filters.districts, filters.bedroomTypes, filters.segment]); // Re-fetch when location filters change
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
     setModalTitle(title);
@@ -314,76 +202,91 @@ export function MacroOverviewContent() {
 
           {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">
-              {/* KPI Summary Cards - Deal Detection Metrics (Last 30 Days) */}
+              {/* KPI Summary Cards with Insight Boxes */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
-                {/* Card 1: Market Median PSF - Universal benchmark for deal assessment */}
-                <KPICard
-                  title="Market Median PSF"
-                  subtitle={kpis.medianPsf.insight || 'past 30 days'}
-                  value={`$${kpis.medianPsf.value.toLocaleString()}`}
-                  loading={kpis.loading}
-                  trend={{
-                    value: Math.abs(kpis.medianPsf.trend),
-                    direction: kpis.medianPsf.trend > 0.1 ? 'up' : kpis.medianPsf.trend < -0.1 ? 'down' : 'neutral',
-                    label: 'vs prev 30d'
-                  }}
-                  icon={
-                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  }
-                />
-                {/* Card 2: Price Predictability - How tight/volatile is pricing */}
-                <KPICard
-                  title="Price Spread"
-                  subtitle={kpis.predictability.insight || kpis.predictability.label}
-                  value={kpis.predictability.label}
-                  loading={kpis.loading}
-                  trend={{
-                    value: Math.abs(kpis.predictability.trend),
-                    direction: kpis.predictability.trend < -0.1 ? 'up' : kpis.predictability.trend > 0.1 ? 'down' : 'neutral',
-                    label: `${kpis.predictability.value}% IQR`
-                  }}
-                  icon={
-                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  }
-                />
-                {/* Card 3: New Launch Premium - Are new launches overpriced vs resale? */}
-                <KPICard
-                  title="New Launch Premium"
-                  subtitle={kpis.newLaunchPremium.insight || 'vs resale'}
-                  value={`${kpis.newLaunchPremium.value > 0 ? '+' : ''}${kpis.newLaunchPremium.value}%`}
-                  loading={kpis.loading}
-                  trend={kpis.newLaunchPremium.direction !== 'neutral' ? {
-                    value: 0,
-                    direction: kpis.newLaunchPremium.direction,
-                    label: kpis.newLaunchPremium.trendLabel
-                  } : undefined}
-                  icon={
-                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  }
-                />
-                {/* Card 4: Market Momentum - Is market favoring buyers or sellers? */}
-                <KPICard
-                  title="Market Momentum"
-                  subtitle={kpis.buyerOpportunity.insight || kpis.buyerOpportunity.label}
-                  value={kpis.buyerOpportunity.label}
-                  loading={kpis.loading}
-                  trend={{
-                    value: Math.abs(kpis.medianPsf.trend),
-                    direction: kpis.medianPsf.trend < -0.1 ? 'up' : kpis.medianPsf.trend > 0.1 ? 'down' : 'neutral',
-                    label: 'price trend'
-                  }}
-                  icon={
-                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  }
-                />
+                {/* Card 1: Market Median PSF */}
+                <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+                  {/* Insight Box */}
+                  <div className="bg-[#213448] px-3 py-2 text-white">
+                    <span className="text-[10px] md:text-xs">{kpis.loading ? 'Loading...' : kpis.medianPsf.insight}</span>
+                  </div>
+                  {/* Number Display */}
+                  <div className="p-3 md:p-4">
+                    <div className="text-xs text-[#547792] mb-1">Market Median PSF</div>
+                    {kpis.loading ? (
+                      <div className="h-8 bg-[#94B4C1]/30 rounded animate-pulse" />
+                    ) : (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl md:text-3xl font-bold text-[#213448]">
+                          ${kpis.medianPsf.current.toLocaleString()}
+                        </span>
+                        <span className={`text-xs font-medium ${kpis.medianPsf.trend > 0 ? 'text-red-500' : kpis.medianPsf.trend < 0 ? 'text-green-600' : 'text-[#547792]'}`}>
+                          {kpis.medianPsf.trend > 0 ? '+' : ''}{kpis.medianPsf.trend}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card 2: Price Spread (IQR) */}
+                <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+                  <div className="bg-[#213448] px-3 py-2 text-white">
+                    <span className="text-[10px] md:text-xs">{kpis.loading ? 'Loading...' : kpis.priceSpread.insight}</span>
+                  </div>
+                  <div className="p-3 md:p-4">
+                    <div className="text-xs text-[#547792] mb-1">Price Spread (IQR)</div>
+                    {kpis.loading ? (
+                      <div className="h-8 bg-[#94B4C1]/30 rounded animate-pulse" />
+                    ) : (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl md:text-3xl font-bold text-[#213448]">
+                          {kpis.priceSpread.iqrRatio}%
+                        </span>
+                        <span className="text-xs text-[#547792]">{kpis.priceSpread.label}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card 3: New Launch Premium */}
+                <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+                  <div className="bg-[#213448] px-3 py-2 text-white">
+                    <span className="text-[10px] md:text-xs">{kpis.loading ? 'Loading...' : kpis.newLaunchPremium.insight}</span>
+                  </div>
+                  <div className="p-3 md:p-4">
+                    <div className="text-xs text-[#547792] mb-1">New Launch Premium</div>
+                    {kpis.loading ? (
+                      <div className="h-8 bg-[#94B4C1]/30 rounded animate-pulse" />
+                    ) : (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl md:text-3xl font-bold text-[#213448]">
+                          {kpis.newLaunchPremium.value > 0 ? '+' : ''}{kpis.newLaunchPremium.value}%
+                        </span>
+                        <span className="text-xs text-[#547792]">{kpis.newLaunchPremium.trend}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card 4: Market Momentum */}
+                <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+                  <div className="bg-[#213448] px-3 py-2 text-white">
+                    <span className="text-[10px] md:text-xs">{kpis.loading ? 'Loading...' : kpis.marketMomentum.insight}</span>
+                  </div>
+                  <div className="p-3 md:p-4">
+                    <div className="text-xs text-[#547792] mb-1">Market Momentum</div>
+                    {kpis.loading ? (
+                      <div className="h-8 bg-[#94B4C1]/30 rounded animate-pulse" />
+                    ) : (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl md:text-3xl font-bold text-[#213448]">
+                          {kpis.marketMomentum.score}
+                        </span>
+                        <span className="text-xs text-[#547792]">{kpis.marketMomentum.label}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
