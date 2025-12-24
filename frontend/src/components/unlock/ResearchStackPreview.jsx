@@ -1,21 +1,20 @@
 /**
- * ResearchStackPreview - Flat 2.5D Overlap with High-Fidelity Geometrics
+ * ResearchStackPreview - Premium Analytical Dashboard Preview
  *
- * NO blurry blobs. Sharp, crisp geometric data shapes.
- * - Heatmap: CSS Grid of colored squares (density map)
- * - Bar Chart: Clean vertical bars with outlier highlights
- * - Hero: Full Market Pulse dashboard
- *
- * Color Rule: Only teal/cyan in charts. Everything else is white/grey/slate.
+ * Design Principles:
+ * - Strong visual hierarchy: Hero card commands focus, background cards whisper "context exists"
+ * - Project color palette: Deep Navy (#213448), Ocean Blue (#547792), Sky Blue (#94B4C1)
+ * - Sharper geometry for institutional/analytical feel
+ * - Subtle effects - reduced glow, minimal shadows
  */
 
 export default function ResearchStackPreview() {
-  // Heatmap grid data - mix of intensities
+  // Heatmap grid data - desaturated for background card
   const heatmapCells = [
-    'bg-slate-800', 'bg-teal-900', 'bg-teal-800', 'bg-teal-700', 'bg-teal-900', 'bg-slate-800',
-    'bg-teal-900', 'bg-teal-700', 'bg-teal-500', 'bg-teal-600', 'bg-teal-800', 'bg-teal-900',
-    'bg-teal-800', 'bg-teal-600', 'bg-teal-400', 'bg-teal-500', 'bg-teal-700', 'bg-slate-800',
-    'bg-slate-800', 'bg-teal-800', 'bg-teal-600', 'bg-teal-700', 'bg-teal-900', 'bg-slate-800',
+    'bg-[#213448]', 'bg-[#2a4560]', 'bg-[#325575]', 'bg-[#3d6588]', 'bg-[#2a4560]', 'bg-[#213448]',
+    'bg-[#2a4560]', 'bg-[#3d6588]', 'bg-[#547792]', 'bg-[#4a6d88]', 'bg-[#325575]', 'bg-[#2a4560]',
+    'bg-[#325575]', 'bg-[#4a6d88]', 'bg-[#6a8fa8]', 'bg-[#547792]', 'bg-[#3d6588]', 'bg-[#213448]',
+    'bg-[#213448]', 'bg-[#325575]', 'bg-[#4a6d88]', 'bg-[#3d6588]', 'bg-[#2a4560]', 'bg-[#213448]',
   ];
 
   // Bar chart heights (percentages) - some are outliers
@@ -23,89 +22,91 @@ export default function ResearchStackPreview() {
     { h: 25, highlight: false },
     { h: 45, highlight: false },
     { h: 65, highlight: false },
-    { h: 85, highlight: true },  // outlier
-    { h: 95, highlight: true },  // outlier
+    { h: 85, highlight: true },
+    { h: 95, highlight: true },
     { h: 75, highlight: false },
     { h: 55, highlight: false },
-    { h: 40, highlight: true },  // outlier
+    { h: 40, highlight: true },
     { h: 30, highlight: false },
     { h: 20, highlight: false },
   ];
 
   return (
-    // ===== THE STAGE (Centering Container) =====
-    <div className="relative w-[600px] h-[450px] flex items-center justify-center group">
+    // ===== THE STAGE (Column-Anchored Container) =====
+    <div className="relative w-[560px] h-[420px] flex items-center justify-center group">
 
-      {/* ===== CARD 3 (Back Right): Bar Chart - Geometric ===== */}
+      {/* ===== CARD 3 (Back Right): Bar Chart ===== */}
+      {/* Quieted: 35% opacity, subtle blur, desaturated */}
       <div
-        className="absolute w-[460px] h-[300px] rounded-[20px] overflow-hidden
-                   bg-gradient-to-b from-slate-800 to-slate-900
-                   border border-white/[0.10]
-                   shadow-[0_25px_70px_-15px_rgba(0,0,0,0.6)]
+        className="absolute w-[420px] h-[260px] rounded-[14px] overflow-hidden
+                   bg-gradient-to-b from-[#1a2d3d] to-[#162535]
+                   border border-[#94B4C1]/10
+                   shadow-[0_20px_50px_-15px_rgba(0,0,0,0.4)]
                    transition-transform duration-300 ease-out
-                   group-hover:-translate-y-1"
+                   group-hover:-translate-y-0.5"
         style={{
-          bottom: '-50px',
-          right: '-50px',
+          bottom: '-35px',
+          right: '-35px',
           zIndex: 10,
-          opacity: 0.7,
+          opacity: 0.35,
+          filter: 'blur(1px)',
         }}
       >
         {/* Header */}
-        <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400">Volume Distribution</span>
+        <div className="px-4 py-2.5 border-b border-white/5 flex items-center justify-between">
+          <span className="text-[11px] font-medium text-[#94B4C1]/70">Volume Distribution</span>
           <div className="flex gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-            <div className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+            <div className="w-1.5 h-1.5 rounded-full bg-[#547792]/50" />
+            <div className="w-1.5 h-1.5 rounded-full bg-[#94B4C1]/60" />
           </div>
         </div>
-        {/* Geometric Bar Chart */}
-        <div className="p-5 h-[240px] flex flex-col">
-          {/* Y-axis labels */}
+        {/* Bar Chart */}
+        <div className="p-4 h-[200px] flex flex-col">
           <div className="flex-1 flex items-end">
-            <div className="flex items-end justify-between gap-2 w-full h-[180px] px-2">
+            <div className="flex items-end justify-between gap-1.5 w-full h-[150px] px-2">
               {barData.map((bar, i) => (
                 <div
                   key={i}
-                  className={`flex-1 rounded-t-sm transition-colors ${
-                    bar.highlight ? 'bg-teal-400' : 'bg-teal-800'
+                  className={`flex-1 rounded-t-sm ${
+                    bar.highlight ? 'bg-[#94B4C1]/80' : 'bg-[#547792]/50'
                   }`}
                   style={{ height: `${bar.h}%` }}
                 />
               ))}
             </div>
           </div>
-          {/* X-axis line */}
-          <div className="h-[1px] bg-slate-700 mt-2" />
+          <div className="h-[1px] bg-[#547792]/30 mt-2" />
         </div>
       </div>
 
-      {/* ===== CARD 2 (Back Left): Heatmap Grid - Geometric ===== */}
+      {/* ===== CARD 2 (Back Left): Heatmap Grid ===== */}
+      {/* Quieted: 40% opacity, subtle blur, desaturated */}
       <div
-        className="absolute w-[460px] h-[300px] rounded-[20px] overflow-hidden
-                   bg-gradient-to-b from-slate-800 to-slate-900
-                   border border-white/[0.10]
-                   shadow-[0_25px_70px_-15px_rgba(0,0,0,0.6)]
+        className="absolute w-[420px] h-[260px] rounded-[14px] overflow-hidden
+                   bg-gradient-to-b from-[#1a2d3d] to-[#162535]
+                   border border-[#94B4C1]/10
+                   shadow-[0_20px_50px_-15px_rgba(0,0,0,0.4)]
                    transition-transform duration-300 ease-out
-                   group-hover:-translate-y-1"
+                   group-hover:-translate-y-0.5"
         style={{
-          top: '-50px',
-          left: '-50px',
+          top: '-35px',
+          left: '-35px',
           zIndex: 20,
-          opacity: 0.8,
+          opacity: 0.4,
+          filter: 'blur(1px)',
         }}
       >
         {/* Header */}
-        <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-300">District Density Map</span>
+        <div className="px-4 py-2.5 border-b border-white/5 flex items-center justify-between">
+          <span className="text-[11px] font-medium text-[#94B4C1]/70">District Density</span>
           <div className="flex gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-            <div className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+            <div className="w-1.5 h-1.5 rounded-full bg-[#547792]/50" />
+            <div className="w-1.5 h-1.5 rounded-full bg-[#94B4C1]/60" />
           </div>
         </div>
-        {/* Geometric Heatmap Grid */}
-        <div className="p-5">
-          <div className="grid grid-cols-6 gap-1.5">
+        {/* Heatmap Grid */}
+        <div className="p-4">
+          <div className="grid grid-cols-6 gap-1">
             {heatmapCells.map((color, i) => (
               <div
                 key={i}
@@ -113,109 +114,95 @@ export default function ResearchStackPreview() {
               />
             ))}
           </div>
-          {/* Legend */}
-          <div className="flex items-center justify-end gap-3 mt-4 text-[9px] text-slate-500">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-teal-400" />
-              <span>High</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-teal-700" />
-              <span>Med</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded-sm bg-slate-800" />
-              <span>Low</span>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* ===== CARD 1 (Hero): Market Pulse ===== */}
+      {/* Sharper geometry, faint outer stroke, reduced effects */}
       <div
-        className="relative w-[520px] rounded-[20px] overflow-hidden
-                   bg-gradient-to-b from-slate-900/98 to-slate-900/95
-                   backdrop-blur-xl
-                   border border-white/[0.12]
-                   ring-1 ring-inset ring-white/[0.06]
-                   shadow-[0_35px_100px_-25px_rgba(0,0,0,0.8)]
+        className="relative w-[480px] rounded-[16px] overflow-hidden
+                   bg-gradient-to-b from-[#1a2d3d] to-[#162535]
+                   backdrop-blur-lg
+                   border border-[#94B4C1]/15
+                   ring-1 ring-[#547792]/10
+                   shadow-[0_25px_60px_-20px_rgba(33,52,72,0.6)]
                    transition-transform duration-300 ease-out
                    group-hover:-translate-y-1"
         style={{ zIndex: 30 }}
       >
-        {/* Preview Mode Pill */}
-        <div className="absolute -top-3 left-5 z-40">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-900 border border-white/15 rounded-full text-[10px] font-semibold text-slate-300 shadow-lg">
-            <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
-            Preview Mode
+        {/* Preview Mode Badge - Subtle system indicator */}
+        <div className="absolute -top-2.5 left-4 z-40">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#162535] border border-[#547792]/20 rounded-full text-[9px] font-medium text-[#94B4C1]/60">
+            <span className="w-1 h-1 bg-[#94B4C1]/50 rounded-full animate-pulse" />
+            Preview
           </span>
         </div>
 
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
+        <div className="px-5 py-3.5 border-b border-[#547792]/15 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-white">Market Pulse</h3>
-            <p className="text-xs text-slate-500">Last 60 days · District-level data</p>
+            <h3 className="text-sm font-semibold text-white/95">Market Pulse</h3>
+            <p className="text-[11px] text-[#94B4C1]/60">Last 60 days · District-level</p>
           </div>
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-slate-600" />
-            <div className="w-2.5 h-2.5 rounded-full bg-slate-500" />
-            <div className="w-2.5 h-2.5 rounded-full bg-teal-400" />
+          <div className="flex gap-1">
+            <div className="w-2 h-2 rounded-full bg-[#547792]/40" />
+            <div className="w-2 h-2 rounded-full bg-[#547792]/60" />
+            <div className="w-2 h-2 rounded-full bg-[#94B4C1]/70" />
           </div>
         </div>
 
         {/* Body */}
-        <div className="p-6">
-          {/* KPI Tiles */}
-          <div className="flex gap-3 mb-5">
-            <div className="flex-1 bg-slate-800/60 rounded-xl px-4 py-3 border border-slate-700/50">
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Median PSF</div>
-              <div className="text-xl font-bold text-white font-mono">$1,847</div>
+        <div className="p-5">
+          {/* KPI Tiles - Improved scanability */}
+          <div className="flex gap-2.5 mb-4">
+            <div className="flex-1 bg-[#213448]/50 rounded-lg px-3.5 py-2.5 border border-[#547792]/20">
+              <div className="text-[9px] text-[#94B4C1]/70 uppercase tracking-wider mb-0.5">Median PSF</div>
+              <div className="text-lg font-semibold text-white/90 font-mono">$1,847</div>
             </div>
-            <div className="flex-1 bg-slate-800/60 rounded-xl px-4 py-3 border border-slate-700/50">
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Volume</div>
-              <div className="text-xl font-bold text-white font-mono">1,284</div>
+            <div className="flex-1 bg-[#213448]/50 rounded-lg px-3.5 py-2.5 border border-[#547792]/20">
+              <div className="text-[9px] text-[#94B4C1]/70 uppercase tracking-wider mb-0.5">Volume</div>
+              <div className="text-lg font-semibold text-white/90 font-mono">1,284</div>
             </div>
-            <div className="flex-1 bg-slate-800/60 rounded-xl px-4 py-3 border border-slate-700/50">
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Avg Days</div>
-              <div className="text-xl font-bold text-teal-400 font-mono">42</div>
+            <div className="flex-1 bg-[#213448]/50 rounded-lg px-3.5 py-2.5 border border-[#547792]/20">
+              <div className="text-[9px] text-[#94B4C1]/70 uppercase tracking-wider mb-0.5">Avg Days</div>
+              <div className="text-lg font-semibold text-[#94B4C1] font-mono">42</div>
             </div>
           </div>
 
-          {/* Area Chart */}
-          <div className="relative h-[130px] bg-slate-800/40 rounded-xl border border-slate-700/40 overflow-hidden">
+          {/* Area Chart - Reduced glow for analytical feel */}
+          <div className="relative h-[115px] bg-[#213448]/30 rounded-lg border border-[#547792]/15 overflow-hidden">
             {/* Grid lines */}
             <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-              <line x1="0" y1="25%" x2="100%" y2="25%" stroke="rgba(148,163,184,0.08)" strokeWidth="1" />
-              <line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(148,163,184,0.08)" strokeWidth="1" />
-              <line x1="0" y1="75%" x2="100%" y2="75%" stroke="rgba(148,163,184,0.08)" strokeWidth="1" />
+              <line x1="0" y1="25%" x2="100%" y2="25%" stroke="rgba(148,180,193,0.06)" strokeWidth="1" />
+              <line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(148,180,193,0.06)" strokeWidth="1" />
+              <line x1="0" y1="75%" x2="100%" y2="75%" stroke="rgba(148,180,193,0.06)" strokeWidth="1" />
             </svg>
             {/* Chart */}
-            <svg className="w-full h-full" viewBox="0 0 460 130" preserveAspectRatio="none">
+            <svg className="w-full h-full" viewBox="0 0 420 115" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="heroAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#14b8a6" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#94B4C1" stopOpacity="0.18" />
+                  <stop offset="100%" stopColor="#94B4C1" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <path
-                d="M0,100 Q57,90 115,93 T230,78 T345,60 T460,65 L460,130 L0,130 Z"
+                d="M0,90 Q52,82 105,85 T210,70 T315,55 T420,60 L420,115 L0,115 Z"
                 fill="url(#heroAreaGrad)"
               />
               <path
-                d="M0,100 Q57,90 115,93 T230,78 T345,60 T460,65"
+                d="M0,90 Q52,82 105,85 T210,70 T315,55 T420,60"
                 fill="none"
-                stroke="#14b8a6"
-                strokeWidth="2.5"
+                stroke="#94B4C1"
+                strokeWidth="2"
                 strokeLinecap="round"
               />
               {/* Data points */}
-              <circle cx="115" cy="93" r="4" fill="#2dd4bf" />
-              <circle cx="230" cy="78" r="4" fill="#2dd4bf" />
-              <circle cx="345" cy="60" r="4" fill="#2dd4bf" />
+              <circle cx="105" cy="85" r="3" fill="#94B4C1" />
+              <circle cx="210" cy="70" r="3" fill="#94B4C1" />
+              <circle cx="315" cy="55" r="3" fill="#94B4C1" />
             </svg>
             {/* X-axis labels */}
-            <div className="absolute bottom-2 left-4 right-4 flex justify-between text-[10px] text-slate-500">
+            <div className="absolute bottom-1.5 left-3 right-3 flex justify-between text-[9px] text-[#547792]/70">
               <span>Oct</span>
               <span>Nov</span>
               <span>Dec</span>
