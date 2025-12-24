@@ -201,6 +201,8 @@ def get_nearby_transactions():
     """
     Find transactions within radius of a project, filtered by bedroom type.
 
+    PREMIUM FEATURE: Requires active subscription.
+
     Query params:
         project_name (required): Name of the project
         bedroom (required): Bedroom count (1-5)
@@ -211,6 +213,14 @@ def get_nearby_transactions():
     Returns:
         JSON with project info, histogram, percentile, nearby projects
     """
+    # SECURITY: Premium feature - require subscription
+    from utils.subscription import is_premium_user
+    if not is_premium_user():
+        return jsonify({
+            "error": "Premium subscription required",
+            "code": "PREMIUM_REQUIRED",
+            "message": "The Deal Checker is a premium feature. Subscribe to analyze your deals."
+        }), 403
     start_time = time.time()
 
     # Get and validate parameters
@@ -383,6 +393,8 @@ def get_multi_scope_comparison():
     """
     Enhanced endpoint with multi-scope comparison.
 
+    PREMIUM FEATURE: Requires active subscription.
+
     Returns data for three comparison scopes:
     - same_project: Transactions in the exact same project
     - radius_1km: Transactions within 1km radius (includes same project)
@@ -397,6 +409,15 @@ def get_multi_scope_comparison():
     Returns:
         JSON with scopes data, map_data, and project info
     """
+    # SECURITY: Premium feature - require subscription
+    from utils.subscription import is_premium_user
+    if not is_premium_user():
+        return jsonify({
+            "error": "Premium subscription required",
+            "code": "PREMIUM_REQUIRED",
+            "message": "The Deal Checker is a premium feature. Subscribe to analyze your deals."
+        }), 403
+
     start_time = time.time()
 
     # Get and validate parameters

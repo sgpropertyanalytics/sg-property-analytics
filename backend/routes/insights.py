@@ -409,6 +409,30 @@ def district_summary():
 
         elapsed = time.time() - start
 
+        # SECURITY: Mask project names and PSF values for free users
+        from utils.subscription import is_premium_user
+        is_premium = is_premium_user()
+
+        if is_premium:
+            top_projects_data = [
+                {
+                    "name": row.project_name,
+                    "tx_count": row.tx_count,
+                    "median_psf": round(row.median_psf, 0) if row.median_psf else None
+                }
+                for row in top_projects
+            ]
+        else:
+            top_projects_data = [
+                {
+                    "name": f"{district} Project #{i+1}",
+                    "tx_count": row.tx_count,
+                    "median_psf": f"${int(row.median_psf // 500) * 500:,} - ${int(row.median_psf // 500 + 1) * 500:,}" if row.median_psf else None,
+                    "_is_teaser": True
+                }
+                for i, row in enumerate(top_projects)
+            ]
+
         return jsonify({
             "district_id": district,
             "name": DISTRICT_NAMES.get(district, district),
@@ -431,14 +455,7 @@ def district_summary():
                 }
                 for row in bedroom_breakdown
             ],
-            "top_projects": [
-                {
-                    "name": row.project_name,
-                    "tx_count": row.tx_count,
-                    "median_psf": round(row.median_psf, 0) if row.median_psf else None
-                }
-                for row in top_projects
-            ],
+            "top_projects": top_projects_data,
             "meta": {
                 "period": period,
                 "bed_filter": bed_filter,

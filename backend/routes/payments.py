@@ -17,6 +17,10 @@ payments_bp = Blueprint('payments', __name__)
 # Stripe configuration (lazy import)
 _stripe = None
 
+# In-memory cache for processed event IDs (for idempotency)
+# In production, use Redis or database table for persistence across restarts
+_processed_events = set()
+
 
 def get_stripe():
     """Lazy initialize Stripe"""

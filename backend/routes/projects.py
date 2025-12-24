@@ -619,6 +619,37 @@ def get_hot_projects():
                 "last_new_sale": row.last_new_sale.isoformat() if row.last_new_sale else None,
             })
 
+        # SECURITY: Mask sensitive data for free users
+        from utils.subscription import is_premium_user
+        if not is_premium_user():
+            for i, proj in enumerate(projects, 1):
+                # Mask project name and developer
+                proj['project_name'] = f"{proj['district']} New Launch #{i}"
+                proj['developer'] = None
+                # Mask price values to ranges
+                if proj['median_price']:
+                    mp = proj['median_price']
+                    if mp < 1000000:
+                        proj['median_price'] = f"${int(mp // 100000) * 100}K - ${int(mp // 100000 + 1) * 100}K"
+                    elif mp < 5000000:
+                        lower = int(mp / 1000000 * 2) / 2
+                        proj['median_price'] = f"${lower:.1f}M - ${lower + 0.5:.1f}M"
+                    else:
+                        lower = int(mp / 1000000)
+                        proj['median_price'] = f"${lower}M - ${lower + 1}M"
+                # Mask PSF to ranges
+                if proj['median_psf']:
+                    lower = int(proj['median_psf'] // 500) * 500
+                    proj['median_psf'] = f"${lower:,} - ${lower + 500:,}"
+                if proj['avg_psf']:
+                    lower = int(proj['avg_psf'] // 500) * 500
+                    proj['avg_psf'] = f"${lower:,} - ${lower + 500:,}"
+                # Mask total value
+                if proj['total_value']:
+                    proj['total_value'] = None
+                # Mark as teaser data
+                proj['_is_teaser'] = True
+
         # Sort by units_sold descending (most active first)
         projects.sort(key=lambda x: -x['units_sold'])
 

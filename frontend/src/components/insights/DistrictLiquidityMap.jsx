@@ -921,7 +921,7 @@ function LiquidityRankingTable({ districtData }) {
               <th colSpan={6} className="border-b border-[#94B4C1]/20"></th>
               <th
                 colSpan={3}
-                className="px-3 py-1.5 text-center text-[10px] font-bold text-[#547792] uppercase tracking-wider border-l-2 border-t-2 border-dashed border-emerald-400/60 bg-emerald-50/30"
+                className="px-3 py-1.5 text-center text-[10px] font-bold text-[#547792] uppercase tracking-wider border-l-2 border-r-2 border-t-2 border-dashed border-emerald-400/60 bg-emerald-50/30"
                 title="Exit Safety metrics: Velocity, Z-Score, Tier calculated on RESALE only (organic demand signal)"
               >
                 Exit Safety
@@ -930,7 +930,7 @@ function LiquidityRankingTable({ districtData }) {
               <th colSpan={2} className="border-b border-[#94B4C1]/20"></th>
               <th
                 colSpan={3}
-                className="px-3 py-1.5 text-center text-[10px] font-bold text-[#547792] uppercase tracking-wider border-l-2 border-r-2 border-t-2 border-dashed border-rose-400/60 bg-rose-50/30"
+                className="px-3 py-1.5 text-center text-[10px] font-bold text-[#547792] uppercase tracking-wider border-l-2 border-t-2 border-dashed border-rose-400/60 bg-rose-50/30"
                 title="Concentration metrics: Gini, Fragility, Top Share calculated on RESALE only (avoids developer release distortion)"
               >
                 Concentration Risks
@@ -947,12 +947,12 @@ function LiquidityRankingTable({ districtData }) {
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Transactions</th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap border-l-2 border-dashed border-emerald-400/60">Tier</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Velocity/mo</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Z-Score</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap border-r-2 border-dashed border-emerald-400/60">Z-Score</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">New %</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Resale %</th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap border-l-2 border-dashed border-rose-400/60">Fragility</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Gini</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap border-r-2 border-dashed border-rose-400/60">Top Share</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap pr-4">Top Share</th>
             </tr>
           </thead>
           <tbody>
@@ -1017,7 +1017,7 @@ function LiquidityRankingTable({ districtData }) {
                   </td>
 
                   {/* Exit Safety Group - Z-Score (Resale-only) */}
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-right border-r-2 border-dashed border-emerald-400/60">
                     <span className={`font-semibold ${
                       (m.z_score || 0) >= 0.5 ? 'text-emerald-600' :
                       (m.z_score || 0) <= -0.5 ? 'text-rose-600' :
@@ -1050,7 +1050,7 @@ function LiquidityRankingTable({ districtData }) {
                   </td>
 
                   {/* Concentration Risks Group - Top Project Share (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-[#547792] border-r-2 border-dashed border-rose-400/60">
+                  <td className="px-3 py-2 text-right text-[#547792] pr-4">
                     {m.top_project_share?.toFixed(0) || '0'}%
                   </td>
                 </tr>

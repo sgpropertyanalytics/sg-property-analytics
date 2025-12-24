@@ -170,6 +170,17 @@ def dashboard():
             skip_cache=skip_cache
         )
 
+        # SECURITY: Mask project names in volume_by_location for free users
+        # when location_grain=project
+        from utils.subscription import is_premium_user
+        if not is_premium_user() and options.get('location_grain') == 'project':
+            if 'volume_by_location' in result.get('data', {}):
+                # Mask project names to generic format: "Project #1", "Project #2", etc.
+                for i, item in enumerate(result['data']['volume_by_location'], 1):
+                    item['location'] = f"Project #{i}"
+                # Add flag so frontend knows data is masked
+                result['meta']['data_masked'] = True
+
         elapsed = time.time() - start
         print(f"GET /api/dashboard took: {elapsed:.4f} seconds (cache_hit: {result['meta'].get('cache_hit', False)})")
 
