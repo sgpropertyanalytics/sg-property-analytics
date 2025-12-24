@@ -44,13 +44,6 @@ function Login() {
     }
   };
 
-  // Social proof metrics with Teal accent
-  const metrics = [
-    { value: '$2.8B+', label: 'Analyzed' },
-    { value: '103K+', label: 'Transactions' },
-    { value: '28', label: 'Districts' },
-  ];
-
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[#213448] flex">
 
@@ -91,28 +84,19 @@ function Login() {
           <ResearchStackPreview />
         </motion.div>
 
-        {/* Bottom Section - Social Proof Metrics */}
+        {/* Bottom Section - Value Proposition */}
         <div className="relative z-10">
-          <div className="flex items-center gap-8">
-            {metrics.map((metric, i) => (
-              <div key={i} className="flex flex-col">
-                <span className="text-2xl font-bold text-[#EAE0CF] font-mono tracking-tight">
-                  {metric.value}
-                </span>
-                <span className="text-xs text-[#94B4C1] uppercase tracking-wide">
-                  {metric.label}
-                </span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 text-sm text-[#94B4C1]">
-            Trusted by property investors, agents, and analysts.
+          <h3 className="text-2xl xl:text-3xl font-bold text-[#EAE0CF] tracking-tight leading-tight mb-2">
+            Institutional-grade analytics for Singapore's private property market.
+          </h3>
+          <p className="text-base xl:text-lg text-[#94B4C1] leading-relaxed">
+            Make decisions using raw transaction data and current market trends.
           </p>
         </div>
       </div>
 
       {/* ===== RIGHT PANEL - The "Unlock" Action ===== */}
-      <div className="flex-1 bg-[#FBF9F4] flex flex-col items-center justify-center p-6 md:p-10 pb-32 md:pb-36 relative overflow-hidden">
+      <div className="flex-1 bg-[#FBF9F4] flex flex-col items-center justify-center p-6 md:p-10 relative overflow-hidden">
 
         {/* Subtle Texture */}
         <div
@@ -309,16 +293,6 @@ function Login() {
             <a href="#" className="text-slate-500 hover:underline">Privacy Policy</a>
           </p>
         </motion.div>
-
-        {/* Bottom Value Proposition Banner */}
-        <div className="absolute bottom-0 left-0 right-0 bg-[#213448] px-6 py-8 md:px-10">
-          <h3 className="text-2xl md:text-3xl font-bold text-[#EAE0CF] tracking-tight leading-tight mb-2">
-            Institutional-grade analytics for Singapore's private property market.
-          </h3>
-          <p className="text-base md:text-lg text-[#94B4C1] leading-relaxed">
-            Make decisions using raw transaction data and current market trends.
-          </p>
-        </div>
       </div>
     </div>
   );
