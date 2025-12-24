@@ -17,10 +17,6 @@ payments_bp = Blueprint('payments', __name__)
 # Stripe configuration (lazy import)
 _stripe = None
 
-# In-memory cache for processed event IDs (for idempotency)
-# In production, use Redis or database table for persistence across restarts
-_processed_events = set()
-
 
 def get_stripe():
     """Lazy initialize Stripe"""
@@ -172,8 +168,9 @@ def stripe_webhook():
 
     print(f"Stripe webhook received: {event_type} (id: {event_id})")
 
-    # IDEMPOTENCY: Check if we've already processed this event
-    if event_id in _processed_events:
+    # IDEMPOTENCY: Check if we've already processed this event (DB-backed)
+    from models.processed_webhook import ProcessedWebhook
+    if ProcessedWebhook.is_processed(event_id):
         print(f"Event {event_id} already processed, skipping")
         return jsonify({"received": True, "skipped": True}), 200
 
@@ -188,6 +185,7 @@ def stripe_webhook():
                 user = User.query.get(int(user_id))
                 if user:
                     user.tier = 'premium'
+                    user.subscription_status = 'active'
                     user.subscription_ends_at = datetime.utcnow() + PLAN_DURATIONS.get(plan_id, timedelta(days=90))
                     db.session.commit()
                     print(f"User {user.email} upgraded to premium via {plan_id}")
@@ -201,11 +199,12 @@ def stripe_webhook():
                 user = User.query.filter_by(stripe_customer_id=customer_id).first()
                 if user:
                     user.tier = 'free'
+                    user.subscription_status = None
                     user.subscription_ends_at = None
                     db.session.commit()
-                    print(f"User {user.email} subscription cancelled")
+                    print(f"User {user.email} subscription deleted")
 
-        # Handle subscription updates
+        # Handle subscription updates (status changes)
         elif event_type == 'customer.subscription.updated':
             subscription = event_data
             customer_id = subscription.get('customer')
@@ -214,14 +213,25 @@ def stripe_webhook():
             if customer_id:
                 user = User.query.filter_by(stripe_customer_id=customer_id).first()
                 if user:
-                    if status == 'active':
+                    # Always update the status from Stripe
+                    user.subscription_status = status
+
+                    # Update end date from subscription
+                    current_period_end = subscription.get('current_period_end')
+                    if current_period_end:
+                        user.subscription_ends_at = datetime.fromtimestamp(current_period_end)
+
+                    # Set tier based on status
+                    if status in ('active', 'trialing'):
                         user.tier = 'premium'
-                        # Update end date from subscription
-                        current_period_end = subscription.get('current_period_end')
-                        if current_period_end:
-                            user.subscription_ends_at = datetime.fromtimestamp(current_period_end)
-                    elif status in ['canceled', 'unpaid', 'past_due']:
+                    elif status == 'canceled':
+                        # Canceled but still has access until period end
+                        # Keep tier as premium, is_subscribed() will check dates
+                        pass  # Don't change tier yet
+                    elif status in ('unpaid', 'incomplete', 'incomplete_expired'):
                         user.tier = 'free'
+                    # past_due: keep premium tier but is_subscribed() handles grace
+
                     db.session.commit()
                     print(f"User {user.email} subscription updated: {status}")
 
@@ -233,14 +243,11 @@ def stripe_webhook():
             if customer_id:
                 user = User.query.filter_by(stripe_customer_id=customer_id).first()
                 if user:
+                    # Update status to past_due (Stripe will send subscription.updated too)
                     print(f"Payment failed for user {user.email}")
-                    # Could send notification email here
 
-        # IDEMPOTENCY: Mark event as processed
-        # Limit set size to prevent memory issues (keep last 10000 events)
-        if len(_processed_events) > 10000:
-            _processed_events.clear()
-        _processed_events.add(event_id)
+        # IDEMPOTENCY: Mark event as processed in database
+        ProcessedWebhook.mark_processed(event_id, event_type)
 
         return jsonify({"received": True}), 200
 

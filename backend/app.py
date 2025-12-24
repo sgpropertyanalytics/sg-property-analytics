@@ -130,6 +130,35 @@ def create_app():
             response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         return response
 
+    # SECURITY: Prevent caching of tier-sensitive API responses
+    # This prevents premium data from being cached and served to free users
+    @app.after_request
+    def add_cache_control(response):
+        # List of endpoints that vary by subscription tier
+        tier_sensitive_paths = [
+            '/api/transactions',
+            '/api/dashboard',
+            '/api/scatter-sample',
+            '/api/projects/hot',
+            '/api/insights/',
+            '/api/deal-checker/',
+            '/api/comparable_value_analysis',
+        ]
+
+        # Check if current path is tier-sensitive
+        path = request.path
+        is_tier_sensitive = any(path.startswith(p) for p in tier_sensitive_paths)
+
+        if is_tier_sensitive:
+            # Prevent any caching of tier-sensitive responses
+            response.headers['Cache-Control'] = 'private, no-store, no-cache, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            # Vary header ensures different responses for different auth states
+            response.headers['Vary'] = 'Authorization'
+
+        return response
+
     # Initialize SQLAlchemy
     db.init_app(app)
 

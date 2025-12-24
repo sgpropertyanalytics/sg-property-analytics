@@ -1792,6 +1792,23 @@ def transactions_list():
     total_records = query.count()
     total_pages = (total_records + limit - 1) // limit
 
+    # SECURITY: K-anonymity check for free users
+    # Prevents re-identification by requiring minimum result count
+    from utils.subscription import check_k_anonymity, is_premium_user
+    passes_k_check, k_error = check_k_anonymity(total_records)
+    if not passes_k_check:
+        return jsonify({
+            "transactions": [],
+            "pagination": {
+                "page": 1,
+                "limit": limit,
+                "total_records": 0,
+                "total_pages": 0
+            },
+            "warning": k_error,
+            "_restricted": True
+        })
+
     # Apply sorting
     sort_col = getattr(Transaction, sort_by, Transaction.transaction_date)
     if sort_order == "asc":

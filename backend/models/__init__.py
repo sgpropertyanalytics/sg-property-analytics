@@ -10,6 +10,7 @@ from models.gls_tender import GLSTender
 from models.upcoming_launch import UpcomingLaunch
 from models.popular_school import PopularSchool
 from models.project_location import ProjectLocation
+from models.processed_webhook import ProcessedWebhook
 
 __all__ = [
     'db',
@@ -20,5 +21,6 @@ __all__ = [
     'GLSTender',
     'UpcomingLaunch',
     'PopularSchool',
-    'ProjectLocation'
+    'ProjectLocation',
+    'ProcessedWebhook'
 ]

@@ -127,8 +127,8 @@ class Transaction(db.Model):
 
         PREMIUM FIELDS (masked/omitted for free users):
         - project_name → masked to "D{district} Condo"
-        - price → shown as range
-        - psf → shown as range
+        - price → shown as range (with bucket_min/max for charts)
+        - psf → shown as range (with bucket_min/max for charts)
         - area_sqft → shown as rounded
         - street_name → omitted entirely
 
@@ -136,50 +136,64 @@ class Transaction(db.Model):
         - district, bedroom_count, sale_type, tenure
         - transaction_date (month only)
         - floor_level, market_segment
+
+        CHART COMPATIBILITY:
+        - price_bucket_min, price_bucket_max for numeric chart operations
+        - psf_bucket_min, psf_bucket_max for numeric chart operations
+        - area_sqft_rounded for numeric chart operations
         """
         # Mask project name to generic format
         masked_project = f"{self.district} Condo" if self.district else "Condo"
 
         # Mask price to range (e.g., $2.5M - $3M)
+        # Also provide numeric bucket values for charts
+        price_bucket_min = None
+        price_bucket_max = None
+        masked_price = None
         if self.price:
             millions = self.price / 1000000
             if millions < 1:
-                lower = int(self.price // 100000) * 100000
-                upper = lower + 100000
-                masked_price = f"${lower // 1000}K - ${upper // 1000}K"
+                price_bucket_min = int(self.price // 100000) * 100000
+                price_bucket_max = price_bucket_min + 100000
+                masked_price = f"${price_bucket_min // 1000}K - ${price_bucket_max // 1000}K"
             elif millions < 5:
-                lower = int(millions * 2) / 2
-                upper = lower + 0.5
-                masked_price = f"${lower:.1f}M - ${upper:.1f}M"
+                price_bucket_min = int(millions * 2) / 2 * 1000000
+                price_bucket_max = price_bucket_min + 500000
+                masked_price = f"${price_bucket_min/1000000:.1f}M - ${price_bucket_max/1000000:.1f}M"
             else:
-                lower = int(millions)
-                upper = lower + 1
-                masked_price = f"${lower}M - ${upper}M"
-        else:
-            masked_price = None
+                price_bucket_min = int(millions) * 1000000
+                price_bucket_max = price_bucket_min + 1000000
+                masked_price = f"${int(price_bucket_min/1000000)}M - ${int(price_bucket_max/1000000)}M"
 
         # Mask PSF to range (e.g., $2,000 - $2,500)
+        psf_bucket_min = None
+        psf_bucket_max = None
+        masked_psf = None
         if self.psf:
-            lower = int(self.psf // 500) * 500
-            upper = lower + 500
-            masked_psf = f"${lower:,} - ${upper:,}"
-        else:
-            masked_psf = None
+            psf_bucket_min = int(self.psf // 500) * 500
+            psf_bucket_max = psf_bucket_min + 500
+            masked_psf = f"${psf_bucket_min:,} - ${psf_bucket_max:,}"
 
         # Mask area to rounded value (e.g., ~1,200)
+        area_rounded = None
+        masked_area = None
         if self.area_sqft:
-            rounded = round(self.area_sqft / 100) * 100
-            masked_area = f"~{rounded:,}"
-        else:
-            masked_area = None
+            area_rounded = round(self.area_sqft / 100) * 100
+            masked_area = f"~{area_rounded:,}"
 
         return {
             'id': self.id,
             # MASKED fields - shown as ranges/generic
             'project_name': masked_project,
-            'price': masked_price,  # String range, not number
-            'psf': masked_psf,  # String range, not number
-            'area_sqft': masked_area,  # String rounded, not number
+            'price': masked_price,  # String range for display
+            'psf': masked_psf,  # String range for display
+            'area_sqft': masked_area,  # String rounded for display
+            # NUMERIC BUCKETS - for chart operations (sorting, filtering, plotting)
+            'price_bucket_min': price_bucket_min,
+            'price_bucket_max': price_bucket_max,
+            'psf_bucket_min': psf_bucket_min,
+            'psf_bucket_max': psf_bucket_max,
+            'area_sqft_rounded': area_rounded,
             # VISIBLE fields - shown as-is
             'transaction_date': self.transaction_date.strftime('%Y-%m') if self.transaction_date else None,
             'district': self.district,

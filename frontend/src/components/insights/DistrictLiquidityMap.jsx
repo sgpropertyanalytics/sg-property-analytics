@@ -918,19 +918,18 @@ function LiquidityRankingTable({ districtData }) {
           <thead>
             {/* Group Header Row - Exit Safety + Concentration (Resale-only) */}
             <tr className="bg-[#EAE0CF]/20">
-              <th colSpan={6} className="border-b border-[#94B4C1]/20"></th>
+              <th colSpan={8} className="border-b border-[#94B4C1]/20"></th>
               <th
                 colSpan={3}
-                className="px-3 py-1.5 text-center text-[10px] font-bold text-[#547792] uppercase tracking-wider border-l-2 border-r-2 border-t-2 border-dashed border-emerald-400/60 bg-emerald-50/30"
+                className="px-3 py-1.5 text-center text-[10px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-100/70"
                 title="Exit Safety metrics: Velocity, Z-Score, Tier calculated on RESALE only (organic demand signal)"
               >
                 Exit Safety
                 <span className="ml-1 text-[8px] font-normal text-emerald-500">(resale)</span>
               </th>
-              <th colSpan={2} className="border-b border-[#94B4C1]/20"></th>
               <th
                 colSpan={3}
-                className="px-3 py-1.5 text-center text-[10px] font-bold text-[#547792] uppercase tracking-wider border-l-2 border-t-2 border-dashed border-rose-400/60 bg-rose-50/30"
+                className="px-3 py-1.5 text-center text-[10px] font-bold text-rose-700 uppercase tracking-wider bg-rose-100/70"
                 title="Concentration metrics: Gini, Fragility, Top Share calculated on RESALE only (avoids developer release distortion)"
               >
                 Concentration Risks
@@ -944,15 +943,15 @@ function LiquidityRankingTable({ districtData }) {
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap min-w-[200px]">Area</th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Region</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Projects</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Transactions</th>
-              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap border-l-2 border-dashed border-emerald-400/60">Tier</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Velocity/mo</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap border-r-2 border-dashed border-emerald-400/60">Z-Score</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">New %</th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Resale %</th>
-              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap border-l-2 border-dashed border-rose-400/60">Fragility</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Gini</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap pr-4">Top Share</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Transactions</th>
+              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">Tier</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">Velocity/mo</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">Z-Score</th>
+              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">Fragility</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">Gini</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">Top Share</th>
             </tr>
           </thead>
           <tbody>

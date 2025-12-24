@@ -9,6 +9,9 @@ from .subscription import (
     require_auth,
     serialize_transaction,
     serialize_transactions,
+    check_k_anonymity,
+    enforce_filter_granularity,
+    K_ANONYMITY_THRESHOLD,
 )
 
 __all__ = [
@@ -19,4 +22,7 @@ __all__ = [
     'require_auth',
     'serialize_transaction',
     'serialize_transactions',
+    'check_k_anonymity',
+    'enforce_filter_granularity',
+    'K_ANONYMITY_THRESHOLD',
 ]

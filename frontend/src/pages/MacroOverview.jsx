@@ -63,12 +63,11 @@ export function MacroOverviewContent() {
   // Reacts to: Location filters (district, bedroom, segment)
   // Ignores: Date range filters (always shows "current market" status)
   const [kpis, setKpis] = useState({
-    medianPsf: { value: 0, trend: 0 },
-    predictability: { value: 0, trend: 0, label: 'Loading' },
-    newLaunchPremium: { value: 0, trendLabel: '', direction: 'neutral' },
-    buyerOpportunity: { value: 0, trend: 0 },
+    medianPsf: { value: 0, trend: 0, insight: '' },
+    predictability: { value: 0, trend: 0, label: 'Loading', insight: '' },
+    newLaunchPremium: { value: 0, trendLabel: '', direction: 'neutral', insight: '' },
+    buyerOpportunity: { value: 50, label: 'Loading', insight: '' },
     loading: true,
-    insight: '', // Key insight summary
   });
 
   // Fetch KPIs based on current filters (but ignore date range - always use "current market")
@@ -176,80 +175,55 @@ export function MacroOverviewContent() {
           : premiumTrend === 'narrowing' ? 'down'
           : 'neutral';
 
-        // Calculate Buyer Opportunity Index (% of transactions below median PSF)
-        let buyerOpportunityValue = 50; // default
-        if (histogram.bins && histogram.stats?.median) {
-          const medianPrice = histogram.stats.median;
-          const belowMedianCount = histogram.bins
-            .filter(bin => bin.bin_end <= medianPrice)
-            .reduce((sum, bin) => sum + (bin.count || 0), 0);
-          const totalCount = histogram.stats.total || 1;
-          buyerOpportunityValue = (belowMedianCount / totalCount) * 100;
-        }
+        // Calculate Buyer Opportunity Score (based on price momentum)
+        // Falling prices = buyer's market, Rising prices = seller's market
+        // Score: 50 = balanced, >50 = buyer's market, <50 = seller's market
+        let buyerOpportunityScore = 50 - (medianPsfTrend * 5); // -5% trend = 75 score (buyer's), +5% trend = 25 score (seller's)
+        buyerOpportunityScore = Math.max(20, Math.min(80, buyerOpportunityScore)); // Cap between 20-80
+        const buyerOpportunityLabel = buyerOpportunityScore >= 55 ? "Buyer's market"
+          : buyerOpportunityScore <= 45 ? "Seller's market"
+          : "Balanced";
 
-        // Calculate previous period buyer opportunity for trend (simplified)
-        // Using the predictability change as a proxy - if prices getting tighter, fewer below median
-        const buyerOpportunityTrend = -predictabilityTrend * 0.5; // Inverse relationship
+        // Generate individual insights for each card
+        const psfInsight = medianPsfTrend > 2 ? 'Rising - sellers have leverage'
+          : medianPsfTrend < -2 ? 'Falling - buyers have leverage'
+          : 'Stable pricing';
 
-        // Generate key insight based on all metrics
-        const generateInsight = () => {
-          const insights = [];
+        const predictabilityInsight = iqrRatio > 40 ? 'Wide range - negotiate hard'
+          : iqrRatio < 20 ? 'Tight range - be competitive'
+          : 'Normal variance';
 
-          // Price trend insight
-          if (medianPsfTrend > 2) {
-            insights.push(`prices rising ${medianPsfTrend.toFixed(1)}%`);
-          } else if (medianPsfTrend < -2) {
-            insights.push(`prices falling ${Math.abs(medianPsfTrend).toFixed(1)}%`);
-          }
+        const premiumInsight = newLaunchPremium > 20 ? 'High premium - consider resale'
+          : newLaunchPremium < 10 && newLaunchPremium > 0 ? 'Low premium - new worth it'
+          : 'Fair premium';
 
-          // Market type insight
-          if (buyerOpportunityValue >= 55) {
-            insights.push("buyer's market with deals available");
-          } else if (buyerOpportunityValue <= 45) {
-            insights.push("seller's market with premium pricing");
-          }
-
-          // New launch insight
-          if (newLaunchPremium > 20) {
-            insights.push(`new launches at ${newLaunchPremium.toFixed(0)}% premium - consider resale`);
-          } else if (newLaunchPremium < 10 && newLaunchPremium > 0) {
-            insights.push(`new launches only ${newLaunchPremium.toFixed(0)}% over resale - good value`);
-          }
-
-          // Volatility insight
-          if (iqrRatio > 40) {
-            insights.push("high price volatility - negotiate aggressively");
-          } else if (iqrRatio < 20) {
-            insights.push("tight pricing - offers must be competitive");
-          }
-
-          if (insights.length === 0) {
-            return "Market conditions are balanced. Standard negotiation applies.";
-          }
-
-          return insights.slice(0, 2).join('. ') + '.';
-        };
+        const opportunityInsight = buyerOpportunityScore >= 55 ? 'Good time to buy'
+          : buyerOpportunityScore <= 45 ? 'Good time to sell'
+          : 'Market balanced';
 
         setKpis({
           medianPsf: {
             value: Math.round(medianPsfValue),
             trend: Number(medianPsfTrend.toFixed(1)),
+            insight: psfInsight,
           },
           predictability: {
             value: Number(iqrRatio.toFixed(1)),
             trend: Number(predictabilityTrend.toFixed(1)),
             label: predictabilityLabel,
+            insight: predictabilityInsight,
           },
           newLaunchPremium: {
             value: Number(newLaunchPremium.toFixed(1)),
             trendLabel: premiumTrend === 'stable' ? 'Stable' : premiumTrend.charAt(0).toUpperCase() + premiumTrend.slice(1),
             direction: premiumDirection,
+            insight: premiumInsight,
           },
           buyerOpportunity: {
-            value: Number(buyerOpportunityValue.toFixed(0)),
-            trend: Number(buyerOpportunityTrend.toFixed(1)),
+            value: Math.round(buyerOpportunityScore),
+            label: buyerOpportunityLabel,
+            insight: opportunityInsight,
           },
-          insight: generateInsight(),
           loading: false,
         });
       } catch (err) {
@@ -340,25 +314,12 @@ export function MacroOverviewContent() {
 
           {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">
-              {/* Key Insight Box - Summarizes market conditions */}
-              {!kpis.loading && kpis.insight && (
-                <div className="mb-4 p-3 md:p-4 bg-[#213448] text-white rounded-lg flex items-start gap-3">
-                  <svg className="w-5 h-5 mt-0.5 flex-shrink-0 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <div>
-                    <span className="text-xs text-[#94B4C1] uppercase tracking-wide font-medium">Market Insight</span>
-                    <p className="text-sm md:text-base mt-0.5">{kpis.insight}</p>
-                  </div>
-                </div>
-              )}
-
               {/* KPI Summary Cards - Deal Detection Metrics (Last 30 Days) */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
                 {/* Card 1: Market Median PSF - Universal benchmark for deal assessment */}
                 <KPICard
                   title="Market Median PSF"
-                  subtitle="past 30 days"
+                  subtitle={kpis.medianPsf.insight || 'past 30 days'}
                   value={`$${kpis.medianPsf.value.toLocaleString()}`}
                   loading={kpis.loading}
                   trend={{
@@ -374,14 +335,14 @@ export function MacroOverviewContent() {
                 />
                 {/* Card 2: Price Predictability - How tight/volatile is pricing */}
                 <KPICard
-                  title="Price Predictability"
-                  subtitle={kpis.predictability.label}
-                  value={`${kpis.predictability.value}%`}
+                  title="Price Spread"
+                  subtitle={kpis.predictability.insight || kpis.predictability.label}
+                  value={kpis.predictability.label}
                   loading={kpis.loading}
                   trend={{
                     value: Math.abs(kpis.predictability.trend),
                     direction: kpis.predictability.trend < -0.1 ? 'up' : kpis.predictability.trend > 0.1 ? 'down' : 'neutral',
-                    label: 'spread'
+                    label: `${kpis.predictability.value}% IQR`
                   }}
                   icon={
                     <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -392,7 +353,7 @@ export function MacroOverviewContent() {
                 {/* Card 3: New Launch Premium - Are new launches overpriced vs resale? */}
                 <KPICard
                   title="New Launch Premium"
-                  subtitle={kpis.newLaunchPremium.trendLabel || 'vs resale'}
+                  subtitle={kpis.newLaunchPremium.insight || 'vs resale'}
                   value={`${kpis.newLaunchPremium.value > 0 ? '+' : ''}${kpis.newLaunchPremium.value}%`}
                   loading={kpis.loading}
                   trend={kpis.newLaunchPremium.direction !== 'neutral' ? {
@@ -406,20 +367,20 @@ export function MacroOverviewContent() {
                     </svg>
                   }
                 />
-                {/* Card 4: Buyer Opportunity Index - Is market favoring buyers or sellers? */}
+                {/* Card 4: Market Momentum - Is market favoring buyers or sellers? */}
                 <KPICard
-                  title="Buyer Opportunity"
-                  subtitle={kpis.buyerOpportunity.value >= 50 ? "buyer's market" : "seller's market"}
-                  value={`${kpis.buyerOpportunity.value}%`}
+                  title="Market Momentum"
+                  subtitle={kpis.buyerOpportunity.insight || kpis.buyerOpportunity.label}
+                  value={kpis.buyerOpportunity.label}
                   loading={kpis.loading}
                   trend={{
-                    value: Math.abs(kpis.buyerOpportunity.trend),
-                    direction: kpis.buyerOpportunity.trend > 0.1 ? 'up' : kpis.buyerOpportunity.trend < -0.1 ? 'down' : 'neutral',
-                    label: 'below median'
+                    value: Math.abs(kpis.medianPsf.trend),
+                    direction: kpis.medianPsf.trend < -0.1 ? 'up' : kpis.medianPsf.trend > 0.1 ? 'down' : 'neutral',
+                    label: 'price trend'
                   }}
                   icon={
                     <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
                   }
                 />

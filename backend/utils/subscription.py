@@ -143,3 +143,74 @@ def serialize_transactions(transactions, is_premium=None):
         return [t.to_dict() for t in transactions]
     else:
         return [t.to_teaser_dict() for t in transactions]
+
+
+# K-anonymity threshold for free tier
+# If a query returns fewer than this many records, don't return individual data
+K_ANONYMITY_THRESHOLD = 10
+
+
+def check_k_anonymity(count, is_premium=None):
+    """
+    Check if result set is large enough to prevent re-identification.
+
+    For free users, if a filtered query returns fewer than K records,
+    the data is too specific and could identify individual transactions.
+
+    Args:
+        count: Number of records in result set
+        is_premium: Override tier check
+
+    Returns:
+        tuple: (passes_check: bool, error_message: str or None)
+    """
+    if is_premium is None:
+        is_premium = is_premium_user()
+
+    # Premium users get all data
+    if is_premium:
+        return (True, None)
+
+    # Free users: enforce k-anonymity
+    if count < K_ANONYMITY_THRESHOLD:
+        return (False, f"Not enough data. Broaden your filters to see results (minimum {K_ANONYMITY_THRESHOLD} transactions required).")
+
+    return (True, None)
+
+
+def enforce_filter_granularity(filters, is_premium=None):
+    """
+    Limit filter granularity for free users to prevent re-identification.
+
+    Free tier restrictions:
+    - No exact project filter (can use district)
+    - No date filter more specific than quarter
+    - No exact price filter (can use ranges)
+
+    Args:
+        filters: Dict of filter parameters
+        is_premium: Override tier check
+
+    Returns:
+        tuple: (sanitized_filters: dict, warnings: list)
+    """
+    if is_premium is None:
+        is_premium = is_premium_user()
+
+    # Premium users: no restrictions
+    if is_premium:
+        return (filters, [])
+
+    sanitized = dict(filters)
+    warnings = []
+
+    # Block exact project filter for free users
+    if 'project_exact' in sanitized:
+        del sanitized['project_exact']
+        warnings.append("Exact project search requires premium subscription")
+
+    if 'project' in sanitized:
+        del sanitized['project']
+        warnings.append("Project search requires premium subscription")
+
+    return (sanitized, warnings)
