@@ -1,162 +1,196 @@
 import { useSubscription } from '../context/SubscriptionContext';
 
 /**
- * BlurredCell - Renders blurred or visible data based on subscription status
+ * BlurredCell - Production-grade component for premium data visualization
+ *
+ * SECURITY PRINCIPLE:
+ * - Server returns masked values, NOT real values that get CSS-blurred
+ * - `value` prop is null for free users (server withholds it)
+ * - `masked` prop contains pre-computed masked display value
+ * - No client-side masking/blurring of real data
  *
  * Usage:
- * <BlurredCell value={txn.project_name} blurType="project" district={txn.district} />
- * <BlurredCell value={txn.price} blurType="price" />
- * <BlurredCell value={txn.psf} blurType="psf" />
- * <BlurredCell value={txn.area_sqft} blurType="size" />
+ * <BlurredCell
+ *   value={txn.project_name}          // null for free, real for premium
+ *   masked={txn.project_name_masked}  // "D09 Condo A" (always present)
+ *   field="project name"              // For analytics/CTA copy
+ *   variant="label"                   // "label" | "currency" | "number"
+ *   district={txn.district}           // Optional: for contextual CTA
+ *   source="table"                    // "table" | "modal" | "chart"
+ * />
  *
- * Blur Types:
- * - project: Shows "D09 Condo A" format (district visible, name masked)
- * - price: Shows "$2.5M - $3M" range
- * - psf: Shows "$2,000 - $2,500" range
- * - size: Shows "~1,200 sqft" rounded
+ * Props:
+ * - value: Real value (null for free users, actual for premium)
+ * - masked: Pre-computed masked display value from server
+ * - field: Human-readable field name for analytics ("project name", "price")
+ * - variant: Display variant - "label" | "currency" | "number"
+ * - district: Optional district for contextual upgrade CTA
+ * - source: Where the cell is rendered (for analytics)
+ * - className: Additional CSS classes
  */
+
+// Format value based on variant type
+function formatValue(value, variant) {
+  if (value === null || value === undefined) return '-';
+
+  switch (variant) {
+    case 'currency':
+      return `$${Number(value).toLocaleString()}`;
+    case 'number':
+      return Number(value).toLocaleString();
+    case 'area':
+      return `${Number(value).toLocaleString()} sqft`;
+    case 'label':
+    default:
+      return value;
+  }
+}
+
 export function BlurredCell({
   value,
-  blurType,
+  masked,
+  field = 'data',
+  variant = 'label',
   district = null,
+  source = 'table',
   className = '',
-  onClick,
 }) {
   const { isPremium, showPaywall } = useSubscription();
 
-  // If premium user, show full value
-  if (isPremium) {
-    return <span className={className}>{formatValue(value, blurType)}</span>;
+  // Premium users see the real value (formatted)
+  if (isPremium && value !== null && value !== undefined) {
+    return (
+      <span className={className}>
+        {formatValue(value, variant)}
+      </span>
+    );
   }
 
-  // For free users, show masked value with blur effect
-  const maskedValue = getMaskedValue(value, blurType, district);
+  // Free users see the masked value with blur effect and upgrade prompt
+  const displayValue = masked || '-';
 
+  // Handle click - triggers paywall with analytics context
   const handleClick = (e) => {
     e.stopPropagation();
-    if (onClick) onClick();
-    showPaywall();
+    showPaywall({
+      field,
+      source,
+      district,
+    });
   };
+
+  // Handle keyboard - Enter/Space triggers same as click (a11y)
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick(e);
+    }
+  };
+
+  // Build contextual tooltip
+  const tooltipText = district
+    ? `Unlock exact ${field} for ${district} transactions`
+    : `Unlock exact ${field}`;
 
   return (
     <span
-      className={`blur-[3px] cursor-pointer hover:blur-[2px] transition-all select-none ${className}`}
+      className={`relative inline-flex items-center gap-1 cursor-pointer group ${className}`}
       onClick={handleClick}
-      title="Subscribe to view full data"
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`${displayValue} - ${tooltipText}`}
+      title={tooltipText}
     >
-      {maskedValue}
+      {/* Masked value with blur effect */}
+      <span className="blur-[3px] group-hover:blur-[2px] transition-all select-none">
+        {displayValue}
+      </span>
+
+      {/* PRO badge - visible on hover */}
+      <span
+        className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity
+                   bg-[#213448] text-white text-[8px] font-bold px-1 py-0.5 rounded
+                   pointer-events-none"
+        aria-hidden="true"
+      >
+        PRO
+      </span>
     </span>
   );
 }
 
 /**
- * Format value for premium users (proper formatting)
+ * BlurredCurrency - Convenience wrapper for currency values
+ *
+ * Usage:
+ * <BlurredCurrency value={txn.price} masked={txn.price_masked} field="price" />
  */
-function formatValue(value, blurType) {
-  if (value === null || value === undefined) return '-';
-
-  switch (blurType) {
-    case 'price':
-      return `$${Number(value).toLocaleString()}`;
-    case 'psf':
-      return `$${Number(value).toLocaleString()}`;
-    case 'size':
-      return `${Number(value).toLocaleString()} sqft`;
-    case 'project':
-    default:
-      return value;
-  }
+export function BlurredCurrency({ value, masked, field = 'price', ...props }) {
+  return (
+    <BlurredCell
+      value={value}
+      masked={masked}
+      field={field}
+      variant="currency"
+      {...props}
+    />
+  );
 }
 
 /**
- * Get masked value for free users
+ * BlurredArea - Convenience wrapper for area values
+ *
+ * Usage:
+ * <BlurredArea value={txn.area_sqft} masked={txn.area_sqft_masked} />
  */
-function getMaskedValue(value, blurType, district) {
-  if (value === null || value === undefined) return '-';
-
-  switch (blurType) {
-    case 'project':
-      return getMaskedProject(value, district);
-    case 'price':
-      return getMaskedPrice(value);
-    case 'psf':
-      return getMaskedPsf(value);
-    case 'size':
-      return getMaskedSize(value);
-    default:
-      return value;
-  }
+export function BlurredArea({ value, masked, field = 'size', ...props }) {
+  return (
+    <BlurredCell
+      value={value}
+      masked={masked}
+      field={field}
+      variant="area"
+      {...props}
+    />
+  );
 }
 
 /**
- * Mask project name - show district + generic label
- * Example: "D09 Condo A" instead of "RIVIERE"
+ * BlurredPSF - Convenience wrapper for PSF values
+ *
+ * Usage:
+ * <BlurredPSF value={txn.psf} masked={txn.psf_masked} />
  */
-function getMaskedProject(projectName, district) {
-  if (!projectName) return '-';
-
-  // Use district if provided, otherwise extract from project name pattern
-  const districtCode = district || 'D??';
-
-  // Generate a consistent letter based on first char of project name
-  const firstChar = projectName.charAt(0).toUpperCase();
-  const letterIndex = firstChar.charCodeAt(0) % 26;
-  const letter = String.fromCharCode(65 + letterIndex); // A-Z
-
-  return `${districtCode} Condo ${letter}`;
+export function BlurredPSF({ value, masked, field = 'PSF', ...props }) {
+  return (
+    <BlurredCell
+      value={value}
+      masked={masked}
+      field={field}
+      variant="currency"
+      {...props}
+    />
+  );
 }
 
 /**
- * Mask price - show as range
- * Example: "$2,850,000" → "$2.5M - $3M"
+ * BlurredProject - Convenience wrapper for project names
+ *
+ * Usage:
+ * <BlurredProject value={txn.project_name} masked={txn.project_name_masked} district={txn.district} />
  */
-function getMaskedPrice(price) {
-  if (!price || isNaN(price)) return '-';
-
-  const millions = price / 1000000;
-
-  if (millions < 1) {
-    // Under $1M - show in $100K ranges
-    const lowerBound = Math.floor(price / 100000) * 100000;
-    const upperBound = lowerBound + 100000;
-    return `$${(lowerBound / 1000).toFixed(0)}K - $${(upperBound / 1000).toFixed(0)}K`;
-  } else if (millions < 5) {
-    // $1M - $5M - show in $0.5M ranges
-    const lowerBound = Math.floor(millions * 2) / 2;
-    const upperBound = lowerBound + 0.5;
-    return `$${lowerBound.toFixed(1)}M - $${upperBound.toFixed(1)}M`;
-  } else {
-    // $5M+ - show in $1M ranges
-    const lowerBound = Math.floor(millions);
-    const upperBound = lowerBound + 1;
-    return `$${lowerBound}M - $${upperBound}M`;
-  }
-}
-
-/**
- * Mask PSF - show as range
- * Example: "$2,156" → "$2,000 - $2,500"
- */
-function getMaskedPsf(psf) {
-  if (!psf || isNaN(psf)) return '-';
-
-  // Round to nearest $500
-  const lowerBound = Math.floor(psf / 500) * 500;
-  const upperBound = lowerBound + 500;
-
-  return `$${lowerBound.toLocaleString()} - $${upperBound.toLocaleString()}`;
-}
-
-/**
- * Mask size - show rounded value
- * Example: "1,184 sqft" → "~1,200 sqft"
- */
-function getMaskedSize(size) {
-  if (!size || isNaN(size)) return '-';
-
-  // Round to nearest 100 sqft
-  const rounded = Math.round(size / 100) * 100;
-  return `~${rounded.toLocaleString()} sqft`;
+export function BlurredProject({ value, masked, district, field = 'project name', ...props }) {
+  return (
+    <BlurredCell
+      value={value}
+      masked={masked}
+      field={field}
+      variant="label"
+      district={district}
+      {...props}
+    />
+  );
 }
 
 export default BlurredCell;

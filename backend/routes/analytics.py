@@ -2773,7 +2773,7 @@ def kpi_summary():
                 WHERE {filter_sql}
                   AND sale_type = 'Resale'
                   AND transaction_date > :max_date - INTERVAL '12 months'
-                  AND EXTRACT(YEAR FROM transaction_date) - COALESCE(lease_commence_year, EXTRACT(YEAR FROM transaction_date) - 5) BETWEEN 4 AND 9
+                  AND EXTRACT(YEAR FROM transaction_date) - COALESCE(lease_start_year, EXTRACT(YEAR FROM transaction_date) - 5) BETWEEN 4 AND 9
             )
             SELECT
                 c.median_psf as current_psf,

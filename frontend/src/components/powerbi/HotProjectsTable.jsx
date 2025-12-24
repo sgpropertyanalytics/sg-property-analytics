@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getHotProjects } from '../../api/client';
-import { BlurredCell } from '../BlurredCell';
+import { BlurredProject, BlurredCurrency } from '../BlurredCell';
 
 /**
  * Active New Sales Table - Shows LAUNCHED projects with sales progress
@@ -258,8 +258,13 @@ export function HotProjectsTable({
                     {/* Project Name with School Tag (inline) */}
                     <td className="px-3 py-2 border-b border-slate-100">
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-medium text-slate-800 truncate max-w-[200px] text-sm" title={project.project_name}>
-                          <BlurredCell value={project.project_name} blurType="project" district={project.district} />
+                        <span className="font-medium text-slate-800 truncate max-w-[200px] text-sm">
+                          <BlurredProject
+                            value={project.project_name}
+                            masked={project.project_name_masked}
+                            district={project.district}
+                            source="hot-projects"
+                          />
                         </span>
                         {project.has_popular_school && (
                           <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded whitespace-nowrap w-fit">
@@ -331,12 +336,22 @@ export function HotProjectsTable({
 
                     {/* Median Price */}
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
-                      <BlurredCell value={project.median_price} blurType="price" />
+                      <BlurredCurrency
+                        value={project.median_price}
+                        masked={project.median_price_masked}
+                        field="median price"
+                        source="hot-projects"
+                      />
                     </td>
 
                     {/* Median PSF */}
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
-                      <BlurredCell value={project.median_psf} blurType="psf" />
+                      <BlurredCurrency
+                        value={project.median_psf}
+                        masked={project.median_psf_masked}
+                        field="median PSF"
+                        source="hot-projects"
+                      />
                     </td>
                   </tr>
                 ))

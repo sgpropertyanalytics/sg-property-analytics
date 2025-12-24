@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
-import { BlurredCell } from '../BlurredCell';
+import { BlurredProject, BlurredCurrency, BlurredArea, BlurredPSF } from '../BlurredCell';
 
 /**
  * Transaction Data Table - Responsive table showing transaction-level details
@@ -218,8 +218,13 @@ export function TransactionDataTable({ height = 400 }) {
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                       {formatDate(txn.transaction_date)}
                     </td>
-                    <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[200px]" title={txn.project_name}>
-                      <BlurredCell value={txn.project_name} blurType="project" district={txn.district} />
+                    <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[200px]">
+                      <BlurredProject
+                        value={txn.project_name}
+                        masked={txn.project_name_masked}
+                        district={txn.district}
+                        source="table"
+                      />
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                       {txn.district || '-'}
@@ -228,13 +233,26 @@ export function TransactionDataTable({ height = 400 }) {
                       {txn.bedroom_count || '-'}
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      <BlurredCell value={txn.area_sqft} blurType="size" />
+                      <BlurredArea
+                        value={txn.area_sqft}
+                        masked={txn.area_sqft_masked}
+                        source="table"
+                      />
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-800 font-medium text-right">
-                      <BlurredCell value={txn.price} blurType="price" />
+                      <BlurredCurrency
+                        value={txn.price}
+                        masked={txn.price_masked}
+                        field="price"
+                        source="table"
+                      />
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                      <BlurredCell value={txn.psf} blurType="psf" />
+                      <BlurredPSF
+                        value={txn.psf}
+                        masked={txn.psf_masked}
+                        source="table"
+                      />
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100">
                       <span className={`px-1.5 py-0.5 text-xs rounded ${

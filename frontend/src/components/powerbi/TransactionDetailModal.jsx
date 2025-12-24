@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
 import { DISTRICT_NAMES, formatPrice, formatPSF } from '../../constants';
-import { BlurredCell } from '../BlurredCell';
+import { BlurredProject, BlurredCurrency, BlurredArea, BlurredPSF } from '../BlurredCell';
 
 /**
  * Transaction Detail Modal - Drill-Through
@@ -183,7 +183,12 @@ export function TransactionDetailModal({ isOpen, onClose, title, additionalFilte
                         {txn.transaction_date}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-800 font-medium max-w-xs truncate">
-                        <BlurredCell value={txn.project_name} blurType="project" district={txn.district} />
+                        <BlurredProject
+                          value={txn.project_name}
+                          masked={txn.project_name_masked}
+                          district={txn.district}
+                          source="modal"
+                        />
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
                         <span className="font-medium">{txn.district}</span>
@@ -195,13 +200,26 @@ export function TransactionDetailModal({ isOpen, onClose, title, additionalFilte
                         {txn.bedroom_count}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600 text-right">
-                        <BlurredCell value={txn.area_sqft} blurType="size" />
+                        <BlurredArea
+                          value={txn.area_sqft}
+                          masked={txn.area_sqft_masked}
+                          source="modal"
+                        />
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-800 font-medium text-right">
-                        <BlurredCell value={txn.price} blurType="price" />
+                        <BlurredCurrency
+                          value={txn.price}
+                          masked={txn.price_masked}
+                          field="price"
+                          source="modal"
+                        />
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600 text-right">
-                        <BlurredCell value={txn.psf} blurType="psf" />
+                        <BlurredPSF
+                          value={txn.psf}
+                          masked={txn.psf_masked}
+                          source="modal"
+                        />
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className={`text-xs px-2 py-1 rounded-full ${

@@ -125,28 +125,37 @@ class Transaction(db.Model):
         """
         Convert to dictionary for TEASER mode - masks sensitive fields for free users.
 
-        PREMIUM FIELDS (masked/omitted for free users):
-        - project_name → masked to "D{district} Condo"
-        - price → shown as range (with bucket_min/max for charts)
-        - psf → shown as range (with bucket_min/max for charts)
-        - area_sqft → shown as rounded
-        - street_name → omitted entirely
+        SECURITY PRINCIPLE: Server returns masked values, NOT real values that get blurred.
+        Frontend receives pre-masked data - no CSS-based hiding of real values.
+
+        RESPONSE FORMAT (for each premium field):
+        - field_name → null (real value withheld)
+        - field_name_masked → masked display value
+        - field_name_bucket_min/max → numeric buckets for charts
+
+        PREMIUM FIELDS (null for free users, masked value provided):
+        - project_name → null, project_name_masked → "D09 Condo A"
+        - price → null, price_masked → "$2.5M - $3.0M"
+        - psf → null, psf_masked → "$2,000 - $2,500"
+        - area_sqft → null, area_sqft_masked → "~1,200 sqft"
+        - street_name → null (no masked version)
 
         VISIBLE FIELDS (shown to all users):
         - district, bedroom_count, sale_type, tenure
         - transaction_date (month only)
         - floor_level, market_segment
-
-        CHART COMPATIBILITY:
-        - price_bucket_min, price_bucket_max for numeric chart operations
-        - psf_bucket_min, psf_bucket_max for numeric chart operations
-        - area_sqft_rounded for numeric chart operations
         """
-        # Mask project name to generic format
-        masked_project = f"{self.district} Condo" if self.district else "Condo"
+        # Generate consistent masked project name (deterministic based on first char)
+        # This creates "D09 Condo A", "D09 Condo B" etc.
+        if self.project_name:
+            first_char = self.project_name[0].upper()
+            letter_index = ord(first_char) % 26
+            suffix = chr(65 + letter_index)  # A-Z
+            masked_project = f"{self.district} Condo {suffix}" if self.district else f"Condo {suffix}"
+        else:
+            masked_project = f"{self.district} Condo" if self.district else "Condo"
 
-        # Mask price to range (e.g., $2.5M - $3M)
-        # Also provide numeric bucket values for charts
+        # Mask price to range (e.g., "$2.5M - $3.0M")
         price_bucket_min = None
         price_bucket_max = None
         masked_price = None
@@ -165,7 +174,7 @@ class Transaction(db.Model):
                 price_bucket_max = price_bucket_min + 1000000
                 masked_price = f"${int(price_bucket_min/1000000)}M - ${int(price_bucket_max/1000000)}M"
 
-        # Mask PSF to range (e.g., $2,000 - $2,500)
+        # Mask PSF to range (e.g., "$2,000 - $2,500")
         psf_bucket_min = None
         psf_bucket_max = None
         masked_psf = None
@@ -174,27 +183,36 @@ class Transaction(db.Model):
             psf_bucket_max = psf_bucket_min + 500
             masked_psf = f"${psf_bucket_min:,} - ${psf_bucket_max:,}"
 
-        # Mask area to rounded value (e.g., ~1,200)
+        # Mask area to rounded value (e.g., "~1,200 sqft")
         area_rounded = None
         masked_area = None
         if self.area_sqft:
             area_rounded = round(self.area_sqft / 100) * 100
-            masked_area = f"~{area_rounded:,}"
+            masked_area = f"~{area_rounded:,} sqft"
 
         return {
             'id': self.id,
-            # MASKED fields - shown as ranges/generic
-            'project_name': masked_project,
-            'price': masked_price,  # String range for display
-            'psf': masked_psf,  # String range for display
-            'area_sqft': masked_area,  # String rounded for display
-            # NUMERIC BUCKETS - for chart operations (sorting, filtering, plotting)
-            'price_bucket_min': price_bucket_min,
+
+            # PREMIUM FIELDS - null for free, masked value provided separately
+            # Frontend uses: value={txn.project_name} masked={txn.project_name_masked}
+            'project_name': None,  # Real value withheld
+            'project_name_masked': masked_project,  # Display this instead
+
+            'price': None,  # Real value withheld
+            'price_masked': masked_price,  # Display string (e.g., "$2.5M - $3.0M")
+            'price_bucket_min': price_bucket_min,  # For chart sorting/filtering
             'price_bucket_max': price_bucket_max,
-            'psf_bucket_min': psf_bucket_min,
+
+            'psf': None,  # Real value withheld
+            'psf_masked': masked_psf,  # Display string (e.g., "$2,000 - $2,500")
+            'psf_bucket_min': psf_bucket_min,  # For chart sorting/filtering
             'psf_bucket_max': psf_bucket_max,
-            'area_sqft_rounded': area_rounded,
-            # VISIBLE fields - shown as-is
+
+            'area_sqft': None,  # Real value withheld
+            'area_sqft_masked': masked_area,  # Display string (e.g., "~1,200 sqft")
+            'area_sqft_rounded': area_rounded,  # For chart sorting/filtering
+
+            # VISIBLE FIELDS - shown as-is to all users
             'transaction_date': self.transaction_date.strftime('%Y-%m') if self.transaction_date else None,
             'district': self.district,
             'bedroom_count': self.bedroom_count,
@@ -202,11 +220,13 @@ class Transaction(db.Model):
             'tenure': self.tenure,
             'floor_level': self.floor_level,
             'market_segment': self.market_segment,
-            # Explicitly NULL fields - never exposed to free users
+
+            # Explicitly NULL fields - never exposed to free users (no masked version)
             'street_name': None,
             'floor_range': None,
             'contract_date': None,
             'nett_price': None,
+
             # Flag to indicate this is teaser data
             '_is_teaser': True,
         }

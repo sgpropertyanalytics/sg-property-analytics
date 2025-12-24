@@ -942,16 +942,16 @@ function LiquidityRankingTable({ districtData }) {
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap">District</th>
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap min-w-[200px]">Area</th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Region</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Projects</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">New %</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Resale %</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Transactions</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-help" title="Number of distinct condo projects with transactions in this period. Higher = more market breadth.">Projects</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-help" title="Percentage of transactions that are new launches (developer sales). High % = supply-driven market.">New %</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-help" title="Percentage of transactions that are resales (secondary market). High % = organic demand.">Resale %</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-help" title="Total number of unit transactions across all projects in this district.">Transactions</th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">Tier</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">Velocity/mo</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">Z-Score</th>
-              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">Fragility</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">Gini</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">Top Share</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-help" title="Average resale transactions per month. Higher velocity = easier to exit. Based on resale only.">Velocity/mo</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-help" title="Standard deviations from mean resale velocity. Positive = above average liquidity, Negative = below average.">Z-Score</th>
+              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-help" title="Market concentration risk level. Robust = spread across many projects. Fragile = dominated by few projects.">Fragility</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-help" title="Gini coefficient (0-1). Lower = transactions evenly spread. Higher = concentrated in few projects. Based on resale only.">Gini</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-help" title="Percentage of resale transactions from the single most active project. High % = reliance on one project.">Top Share</th>
             </tr>
           </thead>
           <tbody>

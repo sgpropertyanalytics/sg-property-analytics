@@ -36,6 +36,14 @@ export function SubscriptionProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
 
+  // Analytics context for upsell tracking
+  // Tracks which field/source triggered the paywall
+  const [upsellContext, setUpsellContext] = useState({
+    field: null,    // e.g., "project name", "price", "PSF"
+    source: null,   // e.g., "table", "modal", "chart"
+    district: null, // e.g., "D09" for contextual copy
+  });
+
   // Fetch subscription status from backend when user changes
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -91,14 +99,24 @@ export function SubscriptionProvider({ children }) {
   // Is subscription expiring soon (within 7 days)?
   const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 7;
 
-  // Show the pricing modal/paywall
-  const showPaywall = useCallback(() => {
+  // Show the pricing modal/paywall with optional analytics context
+  // Usage: showPaywall() or showPaywall({ field: 'price', source: 'table', district: 'D09' })
+  const showPaywall = useCallback((context = {}) => {
+    setUpsellContext({
+      field: context.field || null,
+      source: context.source || null,
+      district: context.district || null,
+    });
     setShowPricingModal(true);
   }, []);
 
-  // Hide the pricing modal
+  // Hide the pricing modal and reset context
   const hidePaywall = useCallback(() => {
     setShowPricingModal(false);
+    // Reset context after a delay to allow exit animations
+    setTimeout(() => {
+      setUpsellContext({ field: null, source: null, district: null });
+    }, 300);
   }, []);
 
   // Refresh subscription status (call after successful payment)
@@ -134,6 +152,7 @@ export function SubscriptionProvider({ children }) {
     showPricingModal,
     showPaywall,
     hidePaywall,
+    upsellContext, // Analytics context for pricing modal
 
     // Actions
     refreshSubscription,
