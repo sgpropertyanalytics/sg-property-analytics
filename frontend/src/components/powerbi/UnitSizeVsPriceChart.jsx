@@ -41,8 +41,14 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
   const [meta, setMeta] = useState({ sample_size: 0, total_count: 0 });
+  const [refreshKey, setRefreshKey] = useState(0);
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
+
+  // Handle refresh button click
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   // Bedroom colors - matches BedroomMixChart palette
   const bedroomColors = {
@@ -96,7 +102,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     };
 
     fetchData();
-  }, [buildApiParams, filters, highlight, crossFilter]);
+  }, [buildApiParams, filters, highlight, crossFilter, refreshKey]);
 
   // Transform data for Chart.js - group by bedroom
   const chartData = useMemo(() => {
@@ -258,8 +264,30 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
               What you get for your budget
             </p>
           </div>
-          <div className="text-xs text-[#94B4C1]">
-            {meta.sample_size.toLocaleString()} sampled of {meta.total_count.toLocaleString()} transactions
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[#94B4C1]">
+              {meta.sample_size.toLocaleString()} sampled of {meta.total_count.toLocaleString()}
+            </span>
+            <button
+              onClick={handleRefresh}
+              disabled={updating}
+              className="p-1 rounded hover:bg-[#EAE0CF]/50 text-[#547792] hover:text-[#213448] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh sample"
+            >
+              <svg
+                className={`w-3.5 h-3.5 ${updating ? 'animate-spin' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
