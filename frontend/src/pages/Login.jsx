@@ -46,81 +46,96 @@ function Login() {
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[#213448] flex">
 
-      {/* ===== LEFT PANEL - The "Value" Zone (50/50 split) ===== */}
-      <div className="hidden lg:flex lg:w-1/2 p-8 xl:p-12 flex-col justify-between relative overflow-hidden">
+      {/* ===== LEFT PANEL - The "Value" Zone ===== */}
+      <div className="hidden lg:flex lg:w-1/2 bg-[#213448] text-[#EAE0CF] p-12 flex-col justify-between relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-[#94B4C1] rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#547792] rounded-full blur-3xl" />
+        </div>
 
-        {/* Top Section - Back & Logo */}
+        {/* Logo & Back */}
         <div className="relative z-10">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-[#94B4C1] hover:text-[#EAE0CF] transition-colors mb-8 group"
+            className="flex items-center gap-2 text-[#94B4C1] hover:text-[#EAE0CF] transition-colors mb-12 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Back to home</span>
           </button>
 
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-12 h-12 bg-[#2a4158] rounded-xl flex items-center justify-center border border-[#547792]/30">
-              <LineChart className="w-6 h-6 text-[#94B4C1]" />
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-[#547792]/30 rounded-xl flex items-center justify-center">
+              <LineChart className="w-7 h-7 text-[#94B4C1]" />
             </div>
-            <span className="font-semibold text-xl tracking-tight text-[#EAE0CF]">
-              PropAnalytics.sg
-            </span>
+            <span className="font-bold text-2xl tracking-tight">PropAnalytics.sg</span>
           </div>
 
-          {/* Headline */}
-          <h1 className="text-3xl xl:text-4xl font-bold text-[#EAE0CF] leading-tight mb-4">
-            Institutional-grade analytics for Singapore private property
+          <h1 className="text-4xl font-bold tracking-tight leading-tight mb-4">
+            Institutional-grade analytics for
+            <br />
+            <span className="text-[#94B4C1]">Singapore private property.</span>
           </h1>
-          <p className="text-lg text-[#94B4C1] leading-relaxed max-w-lg">
+
+          <p className="text-[#94B4C1] text-lg max-w-md">
             Make decisions using raw transaction data and current market trends.
           </p>
         </div>
 
-        {/* Middle Section - Feature List */}
-        <div className="relative z-10 space-y-5">
-          <div className="flex items-center gap-4">
-            <div className="w-11 h-11 bg-[#2a4158] rounded-xl flex items-center justify-center border border-[#547792]/30">
+        {/* Features */}
+        <div className="relative z-10 space-y-4">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-[#94B4C1]" />
             </div>
-            <span className="text-[#EAE0CF] font-medium">103,379 transaction records</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-11 h-11 bg-[#2a4158] rounded-xl flex items-center justify-center border border-[#547792]/30">
+            <span className="text-[#EAE0CF]">103,379 transaction records</span>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-[#94B4C1]" />
             </div>
-            <span className="text-[#EAE0CF] font-medium">Real-time market analytics</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-11 h-11 bg-[#2a4158] rounded-xl flex items-center justify-center border border-[#547792]/30">
+            <span className="text-[#EAE0CF]">Real-time market analytics</span>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center">
               <Shield className="w-5 h-5 text-[#94B4C1]" />
             </div>
-            <span className="text-[#EAE0CF] font-medium">Institutional-grade data</span>
-          </div>
+            <span className="text-[#EAE0CF]">Institutional-grade data</span>
+          </motion.div>
         </div>
 
-        {/* Bottom Section - Stats */}
-        <div className="relative z-10">
-          {/* Divider */}
-          <div className="border-t border-[#547792]/30 mb-8" />
-
-          {/* Stats Row */}
-          <div className="flex items-start gap-12 mb-6">
-            <div className="flex flex-col">
-              <span className="text-2xl font-bold text-[#94B4C1] font-mono tracking-tight">$2.8B+</span>
-              <span className="text-xs text-[#547792] uppercase tracking-wider mt-1">Property Value Analyzed</span>
+        {/* Social Proof - Metrics */}
+        <div className="relative z-10 pt-8 border-t border-[#547792]/30">
+          <div className="grid grid-cols-3 gap-6 mb-6">
+            <div>
+              <div className="text-2xl font-bold text-[#EAE0CF] font-mono">$2.8B+</div>
+              <div className="text-xs text-[#94B4C1] uppercase tracking-wide">Property Value Analyzed</div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-2xl font-bold text-[#94B4C1] font-mono tracking-tight">5 Years</span>
-              <span className="text-xs text-[#547792] uppercase tracking-wider mt-1">Historical Data</span>
+            <div>
+              <div className="text-2xl font-bold text-[#EAE0CF] font-mono">5 Years</div>
+              <div className="text-xs text-[#94B4C1] uppercase tracking-wide">Historical Data</div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-2xl font-bold text-[#94B4C1] font-mono tracking-tight">28</span>
-              <span className="text-xs text-[#547792] uppercase tracking-wider mt-1">Districts Covered</span>
+            <div>
+              <div className="text-2xl font-bold text-[#EAE0CF] font-mono">28</div>
+              <div className="text-xs text-[#94B4C1] uppercase tracking-wide">Districts Covered</div>
             </div>
           </div>
-
-          <p className="text-sm text-[#547792]">
+          <p className="text-sm text-[#94B4C1]">
             Trusted by property investors, agents, and analysts across Singapore.
           </p>
         </div>
