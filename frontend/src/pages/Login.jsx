@@ -82,100 +82,111 @@ function Login() {
 
         {/* Center Section - Floating Dashboard Preview with Data Collage */}
         <div className="relative z-10 flex-1 flex items-center justify-center py-8">
-          {/* ===== DATA COLLAGE BACKGROUND CARDS ===== */}
+          {/* ===== DATA COLLAGE - Real Dashboard Chart Types ===== */}
 
-          {/* BG Card 1: The Heatmap (Top Left Behind) */}
+          {/* BG Card 1: TimeTrendChart - Stacked Bar + Line (Top Left) */}
           <div
-            className="absolute w-96 h-64 bg-slate-800/50 border border-slate-700/30 rounded-xl backdrop-blur-sm overflow-hidden"
+            className="absolute w-96 h-64 bg-[#213448]/60 border border-[#547792]/30 rounded-xl backdrop-blur-sm overflow-hidden"
             style={{
-              top: '10%',
-              left: '-20px',
-              transform: 'rotate(-8deg)',
+              top: '8%',
+              left: '-30px',
+              transform: 'rotate(-6deg)',
               zIndex: 5,
-              opacity: 0.4,
+              opacity: 0.45,
             }}
           >
-            {/* Abstract heatmap visualization */}
+            {/* Stacked bar chart with line overlay - like TimeTrendChart */}
             <svg className="w-full h-full" viewBox="0 0 384 256" preserveAspectRatio="none">
-              <defs>
-                <radialGradient id="heat1" cx="30%" cy="40%" r="35%">
-                  <stop offset="0%" stopColor="#2DD4BF" stopOpacity="0.6" />
-                  <stop offset="100%" stopColor="#2DD4BF" stopOpacity="0" />
-                </radialGradient>
-                <radialGradient id="heat2" cx="70%" cy="60%" r="40%">
-                  <stop offset="0%" stopColor="#06B6D4" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="#06B6D4" stopOpacity="0" />
-                </radialGradient>
-                <radialGradient id="heat3" cx="50%" cy="30%" r="25%">
-                  <stop offset="0%" stopColor="#94B4C1" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#94B4C1" stopOpacity="0" />
-                </radialGradient>
-              </defs>
-              <rect width="100%" height="100%" fill="#1e293b" />
-              <ellipse cx="115" cy="102" rx="80" ry="60" fill="url(#heat1)" />
-              <ellipse cx="269" cy="154" rx="100" ry="70" fill="url(#heat2)" />
-              <ellipse cx="192" cy="77" rx="50" ry="40" fill="url(#heat3)" />
+              <rect width="100%" height="100%" fill="#213448" />
+              {/* Grid lines */}
+              <line x1="40" y1="220" x2="360" y2="220" stroke="#547792" strokeWidth="1" opacity="0.3" />
+              <line x1="40" y1="170" x2="360" y2="170" stroke="#547792" strokeWidth="1" opacity="0.2" />
+              <line x1="40" y1="120" x2="360" y2="120" stroke="#547792" strokeWidth="1" opacity="0.2" />
+              {/* Stacked bars - New Sale (Deep Navy) + Resale (Ocean Blue) */}
+              <rect x="55" y="140" width="28" height="80" fill="#213448" rx="2" />
+              <rect x="55" y="100" width="28" height="40" fill="#547792" rx="2" />
+              <rect x="100" y="120" width="28" height="100" fill="#213448" rx="2" />
+              <rect x="100" y="70" width="28" height="50" fill="#547792" rx="2" />
+              <rect x="145" y="150" width="28" height="70" fill="#213448" rx="2" />
+              <rect x="145" y="110" width="28" height="40" fill="#547792" rx="2" />
+              <rect x="190" y="100" width="28" height="120" fill="#213448" rx="2" />
+              <rect x="190" y="55" width="28" height="45" fill="#547792" rx="2" />
+              <rect x="235" y="130" width="28" height="90" fill="#213448" rx="2" />
+              <rect x="235" y="85" width="28" height="45" fill="#547792" rx="2" />
+              <rect x="280" y="110" width="28" height="110" fill="#213448" rx="2" />
+              <rect x="280" y="65" width="28" height="45" fill="#547792" rx="2" />
+              <rect x="325" y="125" width="28" height="95" fill="#213448" rx="2" />
+              <rect x="325" y="80" width="28" height="45" fill="#547792" rx="2" />
+              {/* Trend line overlay (Sand/Cream color) */}
+              <path d="M69,90 L114,60 L159,85 L204,45 L249,70 L294,55 L339,65" fill="none" stroke="#EAE0CF" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="69" cy="90" r="4" fill="#EAE0CF" />
+              <circle cx="204" cy="45" r="4" fill="#EAE0CF" />
+              <circle cx="339" cy="65" r="4" fill="#EAE0CF" />
             </svg>
           </div>
 
-          {/* BG Card 2: The Bar Chart (Bottom Right Behind) */}
+          {/* BG Card 2: PriceDistributionChart - Histogram with Median Line (Bottom Right) */}
           <div
-            className="absolute w-80 h-56 bg-slate-800/50 border border-slate-700/30 rounded-xl backdrop-blur-sm overflow-hidden"
+            className="absolute w-80 h-52 bg-[#213448]/60 border border-[#547792]/30 rounded-xl backdrop-blur-sm overflow-hidden"
             style={{
-              bottom: '5%',
-              right: '-30px',
+              bottom: '8%',
+              right: '-25px',
               transform: 'rotate(5deg)',
               zIndex: 5,
-              opacity: 0.4,
+              opacity: 0.45,
             }}
           >
-            {/* Abstract bar chart */}
-            <svg className="w-full h-full" viewBox="0 0 320 224" preserveAspectRatio="none">
-              <rect width="100%" height="100%" fill="#1e293b" />
-              {/* Grid lines */}
-              <line x1="40" y1="40" x2="40" y2="184" stroke="#334155" strokeWidth="1" />
-              <line x1="40" y1="184" x2="280" y2="184" stroke="#334155" strokeWidth="1" />
-              {/* Bars */}
-              <rect x="60" y="120" width="24" height="64" fill="#2DD4BF" opacity="0.7" rx="2" />
-              <rect x="100" y="80" width="24" height="104" fill="#2DD4BF" opacity="0.8" rx="2" />
-              <rect x="140" y="140" width="24" height="44" fill="#2DD4BF" opacity="0.5" rx="2" />
-              <rect x="180" y="60" width="24" height="124" fill="#2DD4BF" opacity="0.9" rx="2" />
-              <rect x="220" y="100" width="24" height="84" fill="#2DD4BF" opacity="0.6" rx="2" />
-              <rect x="260" y="90" width="24" height="94" fill="#2DD4BF" opacity="0.75" rx="2" />
+            {/* Histogram with median annotation - like PriceDistributionChart */}
+            <svg className="w-full h-full" viewBox="0 0 320 208" preserveAspectRatio="none">
+              <rect width="100%" height="100%" fill="#213448" />
+              {/* Grid */}
+              <line x1="30" y1="175" x2="295" y2="175" stroke="#547792" strokeWidth="1" opacity="0.3" />
+              {/* Histogram bars (Ocean Blue gradient) */}
+              <rect x="35" y="155" width="22" height="20" fill="#547792" opacity="0.5" rx="1" />
+              <rect x="62" y="135" width="22" height="40" fill="#547792" opacity="0.6" rx="1" />
+              <rect x="89" y="100" width="22" height="75" fill="#547792" opacity="0.7" rx="1" />
+              <rect x="116" y="65" width="22" height="110" fill="#547792" opacity="0.85" rx="1" />
+              <rect x="143" y="45" width="22" height="130" fill="#547792" opacity="1" rx="1" />
+              <rect x="170" y="70" width="22" height="105" fill="#547792" opacity="0.8" rx="1" />
+              <rect x="197" y="95" width="22" height="80" fill="#547792" opacity="0.7" rx="1" />
+              <rect x="224" y="125" width="22" height="50" fill="#547792" opacity="0.55" rx="1" />
+              <rect x="251" y="150" width="22" height="25" fill="#547792" opacity="0.4" rx="1" />
+              <rect x="278" y="160" width="22" height="15" fill="#547792" opacity="0.3" rx="1" />
+              {/* Median line (dashed) */}
+              <line x1="154" y1="30" x2="154" y2="175" stroke="#EAE0CF" strokeWidth="2" strokeDasharray="6,4" />
+              {/* IQR shaded band */}
+              <rect x="116" y="30" width="76" height="145" fill="#94B4C1" opacity="0.15" />
             </svg>
           </div>
 
-          {/* BG Card 3: The Scatter Plot (Deep Background Top Right) */}
+          {/* BG Card 3: MedianPsfTrendChart - Multi-line by Region (Top Right, Deep) */}
           <div
-            className="absolute w-72 h-72 bg-slate-800/30 border border-slate-700/20 rounded-xl backdrop-blur-sm overflow-hidden"
+            className="absolute w-72 h-56 bg-[#213448]/40 border border-[#547792]/20 rounded-xl backdrop-blur-sm overflow-hidden"
             style={{
-              top: '5%',
-              right: '-60px',
-              transform: 'rotate(12deg)',
-              zIndex: 0,
-              opacity: 0.2,
+              top: '12%',
+              right: '-50px',
+              transform: 'rotate(10deg)',
+              zIndex: 2,
+              opacity: 0.3,
             }}
           >
-            {/* Abstract scatter plot */}
-            <svg className="w-full h-full" viewBox="0 0 288 288" preserveAspectRatio="none">
-              <rect width="100%" height="100%" fill="#1e293b" />
+            {/* Multi-line trend - CCR, RCR, OCR like MedianPsfTrendChart */}
+            <svg className="w-full h-full" viewBox="0 0 288 224" preserveAspectRatio="none">
+              <rect width="100%" height="100%" fill="#213448" />
               {/* Grid */}
-              <line x1="40" y1="40" x2="40" y2="248" stroke="#334155" strokeWidth="1" />
-              <line x1="40" y1="248" x2="248" y2="248" stroke="#334155" strokeWidth="1" />
-              {/* Scatter dots */}
-              <circle cx="70" cy="180" r="4" fill="#2DD4BF" opacity="0.8" />
-              <circle cx="95" cy="160" r="3" fill="#2DD4BF" opacity="0.6" />
-              <circle cx="120" cy="140" r="5" fill="#2DD4BF" opacity="0.9" />
-              <circle cx="145" cy="170" r="3" fill="#2DD4BF" opacity="0.5" />
-              <circle cx="160" cy="120" r="4" fill="#2DD4BF" opacity="0.7" />
-              <circle cx="180" cy="100" r="3" fill="#2DD4BF" opacity="0.6" />
-              <circle cx="200" cy="130" r="5" fill="#2DD4BF" opacity="0.8" />
-              <circle cx="220" cy="90" r="4" fill="#2DD4BF" opacity="0.7" />
-              <circle cx="110" cy="200" r="3" fill="#2DD4BF" opacity="0.5" />
-              <circle cx="150" cy="210" r="4" fill="#2DD4BF" opacity="0.6" />
-              <circle cx="190" cy="180" r="3" fill="#2DD4BF" opacity="0.7" />
-              <circle cx="80" cy="120" r="4" fill="#2DD4BF" opacity="0.6" />
-              <circle cx="230" cy="150" r="3" fill="#2DD4BF" opacity="0.5" />
+              <line x1="30" y1="190" x2="260" y2="190" stroke="#547792" strokeWidth="1" opacity="0.3" />
+              <line x1="30" y1="140" x2="260" y2="140" stroke="#547792" strokeWidth="1" opacity="0.15" />
+              <line x1="30" y1="90" x2="260" y2="90" stroke="#547792" strokeWidth="1" opacity="0.15" />
+              {/* CCR line (Deep Navy - highest PSF) */}
+              <path d="M40,70 L80,55 L120,60 L160,45 L200,50 L240,40" fill="none" stroke="#EAE0CF" strokeWidth="2.5" strokeLinecap="round" />
+              {/* RCR line (Ocean Blue - mid PSF) */}
+              <path d="M40,110 L80,100 L120,95 L160,85 L200,90 L240,80" fill="none" stroke="#547792" strokeWidth="2.5" strokeLinecap="round" />
+              {/* OCR line (Sky Blue - lower PSF) */}
+              <path d="M40,150 L80,145 L120,140 L160,130 L200,135 L240,125" fill="none" stroke="#94B4C1" strokeWidth="2.5" strokeLinecap="round" />
+              {/* Point markers */}
+              <circle cx="160" cy="45" r="4" fill="#EAE0CF" />
+              <circle cx="160" cy="85" r="3" fill="#547792" />
+              <circle cx="160" cy="130" r="3" fill="#94B4C1" />
             </svg>
           </div>
 
