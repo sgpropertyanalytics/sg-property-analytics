@@ -942,16 +942,61 @@ function LiquidityRankingTable({ districtData }) {
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap">District</th>
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap min-w-[200px]">Area</th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Region</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-help" title="Number of distinct condo projects with transactions in this period. Higher = more market breadth.">Projects</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-help" title="Percentage of transactions that are new launches (developer sales). High % = supply-driven market.">New %</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-help" title="Percentage of transactions that are resales (secondary market). High % = organic demand.">Resale %</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-help" title="Total number of unit transactions across all projects in this district.">Transactions</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">
+                <span className="inline-flex items-center gap-1" title="Number of distinct condo projects with transactions in this period. Higher = more market breadth.">
+                  Projects
+                  <svg className="w-3 h-3 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeWidth="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"/></svg>
+                </span>
+              </th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">
+                <span className="inline-flex items-center gap-1" title="Percentage of transactions that are new launches (developer sales). High % = supply-driven market.">
+                  New %
+                  <svg className="w-3 h-3 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeWidth="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"/></svg>
+                </span>
+              </th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">
+                <span className="inline-flex items-center gap-1" title="Percentage of transactions that are resales (secondary market). High % = organic demand.">
+                  Resale %
+                  <svg className="w-3 h-3 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeWidth="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"/></svg>
+                </span>
+              </th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">
+                <span className="inline-flex items-center gap-1" title="Total number of unit transactions across all projects in this district.">
+                  Transactions
+                  <svg className="w-3 h-3 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeWidth="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"/></svg>
+                </span>
+              </th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">Tier</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-help" title="Average resale transactions per month. Higher velocity = easier to exit. Based on resale only.">Velocity/mo</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-help" title="Standard deviations from mean resale velocity. Positive = above average liquidity, Negative = below average.">Z-Score</th>
-              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-help" title="Market concentration risk level. Robust = spread across many projects. Fragile = dominated by few projects.">Fragility</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-help" title="Gini coefficient (0-1). Lower = transactions evenly spread. Higher = concentrated in few projects. Based on resale only.">Gini</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-help" title="Percentage of resale transactions from the single most active project. High % = reliance on one project.">Top Share</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">
+                <span className="inline-flex items-center gap-1" title="Average resale transactions per month. Higher velocity = easier to exit. Based on resale only.">
+                  Velocity/mo
+                  <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeWidth="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"/></svg>
+                </span>
+              </th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">
+                <span className="inline-flex items-center gap-1" title="Standard deviations from mean resale velocity. Positive = above average liquidity, Negative = below average.">
+                  Z-Score
+                  <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeWidth="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"/></svg>
+                </span>
+              </th>
+              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">
+                <span className="inline-flex items-center gap-1" title="Market concentration risk level. Robust = spread across many projects. Fragile = dominated by few projects.">
+                  Fragility
+                  <svg className="w-3 h-3 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeWidth="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"/></svg>
+                </span>
+              </th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">
+                <span className="inline-flex items-center gap-1" title="Gini coefficient (0-1). Lower = transactions evenly spread. Higher = concentrated in few projects. Based on resale only.">
+                  Gini
+                  <svg className="w-3 h-3 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeWidth="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"/></svg>
+                </span>
+              </th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">
+                <span className="inline-flex items-center gap-1" title="Percentage of resale transactions from the single most active project. High % = reliance on one project.">
+                  Top Share
+                  <svg className="w-3 h-3 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeWidth="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3m.08 4h.01"/></svg>
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>
