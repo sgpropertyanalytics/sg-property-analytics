@@ -16,7 +16,7 @@ import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
-import { KPICard, PageSummaryBox } from '../components/ui';
+import { KPICard, PageSummaryBox, ErrorBoundary } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
@@ -249,54 +249,73 @@ export function MacroOverviewContent() {
               </div>
 
               {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
+              {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
                 {/* Time Trend Chart - Full width on all screens */}
                 <div className="lg:col-span-2">
-                  {/* Chart component - DO NOT MODIFY PROPS (ui-freeze) */}
-                  <TimeTrendChart
-                    onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
-                    height={trendChartHeight}
-                  />
+                  <ErrorBoundary name="Time Trend Chart" compact>
+                    {/* Chart component - DO NOT MODIFY PROPS (ui-freeze) */}
+                    <TimeTrendChart
+                      onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
+                      height={trendChartHeight}
+                    />
+                  </ErrorBoundary>
                 </div>
 
                 {/* Median PSF Trend Chart - Full width, shows price trends by CCR/RCR/OCR */}
                 <div className="lg:col-span-2">
-                  <MedianPsfTrendChart height={trendChartHeight} />
+                  <ErrorBoundary name="Median PSF Trend" compact>
+                    <MedianPsfTrendChart height={trendChartHeight} />
+                  </ErrorBoundary>
                 </div>
 
                 {/* Unit Size vs Price - Scatter chart showing value trade-offs */}
-                <UnitSizeVsPriceChart height={standardChartHeight} />
+                <ErrorBoundary name="Unit Size vs Price" compact>
+                  <UnitSizeVsPriceChart height={standardChartHeight} />
+                </ErrorBoundary>
 
                 {/* Price Distribution - Chart component unchanged */}
-                <PriceDistributionChart
-                  onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
-                  height={standardChartHeight}
-                />
+                <ErrorBoundary name="Price Distribution" compact>
+                  <PriceDistributionChart
+                    onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
+                    height={standardChartHeight}
+                  />
+                </ErrorBoundary>
 
                 {/* New Launch vs Resale Comparison - Full width */}
                 <div className="lg:col-span-2">
-                  <NewVsResaleChart height={standardChartHeight} />
+                  <ErrorBoundary name="New vs Resale Chart" compact>
+                    <NewVsResaleChart height={standardChartHeight} />
+                  </ErrorBoundary>
                 </div>
 
                 {/* Price Compression Analysis - Full width, shows spread between market segments */}
                 <div className="lg:col-span-2">
-                  <PriceCompressionChart height={compressionHeight} />
+                  <ErrorBoundary name="Price Compression" compact>
+                    <PriceCompressionChart height={compressionHeight} />
+                  </ErrorBoundary>
                 </div>
               </div>
 
               {/* GLS Data Table - Government Land Sales */}
               <div className="mb-4 md:mb-6">
-                <GLSDataTable height={standardChartHeight} />
+                <ErrorBoundary name="GLS Data Table" compact>
+                  <GLSDataTable height={standardChartHeight} />
+                </ErrorBoundary>
               </div>
 
               {/* Upcoming Launches Table - Pre-launch projects (not yet launched) */}
               <div className="mb-4 md:mb-6">
-                <UpcomingLaunchesTable height={standardChartHeight} />
+                <ErrorBoundary name="Upcoming Launches" compact>
+                  <UpcomingLaunchesTable height={standardChartHeight} />
+                </ErrorBoundary>
               </div>
 
               {/* Transaction Data Table - Component unchanged */}
               <div className="mb-4 md:mb-6">
-                <TransactionDataTable height={tableHeight} />
+                <ErrorBoundary name="Transaction Table" compact>
+                  <TransactionDataTable height={tableHeight} />
+                </ErrorBoundary>
               </div>
           </div>
         </div>

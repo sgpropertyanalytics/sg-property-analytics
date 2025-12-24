@@ -21,3 +21,6 @@ export { KPICard, KPICardSkeleton, KPICardGroup } from './KPICard';
 export { KeyInsightBox } from './KeyInsightBox';
 export { PageSummaryBox, SectionHeader } from './PageSummaryBox';
 export { SampleSizeWarning } from './SampleSizeWarning';
+
+// Error handling
+export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';

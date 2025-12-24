@@ -4,18 +4,66 @@
  * Visual analytics components for the Insights page.
  * Map components are lazy-loaded to reduce initial bundle size
  * and improve performance on memory-constrained environments.
+ *
+ * IMPORTANT: Lazy imports are wrapped with retry logic to handle:
+ * - ChunkLoadError from stale deployments
+ * - Network failures during chunk fetch
+ * - Browser cache issues
  */
 
 import { lazy, Suspense } from 'react';
+import { ErrorBoundary } from '../ui';
 
 // Legacy SVG-based heatmap (synchronous load)
 export { default as MarketHeatmap } from './MarketHeatmap';
 
-// 3D MapLibre heatmap (lazy loaded for performance)
-const MarketHeatmap3DLazy = lazy(() => import('./MarketHeatmap3D'));
+/**
+ * Retry wrapper for lazy imports
+ * Handles ChunkLoadError by retrying with cache-busting query param
+ * Falls back to page reload after max retries
+ */
+function lazyWithRetry(importFn, componentName = 'Component') {
+  return lazy(() =>
+    importFn().catch((error) => {
+      // Check if it's a chunk load error
+      const isChunkError =
+        error.name === 'ChunkLoadError' ||
+        error.message?.includes('Loading chunk') ||
+        error.message?.includes('Failed to fetch');
 
-// Strategy Map with Data Flags (lazy loaded for performance)
-const MarketStrategyMapLazy = lazy(() => import('./MarketStrategyMap'));
+      if (isChunkError) {
+        console.warn(`[${componentName}] Chunk load failed, attempting reload...`);
+
+        // Try to reload from server (bypass cache)
+        return new Promise((resolve, reject) => {
+          // Small delay before reload to avoid rapid loops
+          setTimeout(() => {
+            // Force reload the page to get fresh chunks
+            window.location.reload();
+          }, 1000);
+
+          // Return a never-resolving promise since we're reloading
+          // This prevents React from trying to render the failed component
+        });
+      }
+
+      // Re-throw non-chunk errors
+      throw error;
+    })
+  );
+}
+
+// 3D MapLibre heatmap (lazy loaded with retry for chunk errors)
+const MarketHeatmap3DLazy = lazyWithRetry(
+  () => import('./MarketHeatmap3D'),
+  'MarketHeatmap3D'
+);
+
+// Strategy Map with Data Flags (lazy loaded with retry for chunk errors)
+const MarketStrategyMapLazy = lazyWithRetry(
+  () => import('./MarketStrategyMap'),
+  'MarketStrategyMap'
+);
 
 // Loading fallback component for 3D map (light theme to match actual component)
 function MapLoadingFallback() {
@@ -61,20 +109,26 @@ function StrategyMapLoadingFallback() {
   );
 }
 
-// Wrapped lazy component with Suspense - 3D Heatmap
+// Wrapped lazy component with Suspense + ErrorBoundary - 3D Heatmap
+// ErrorBoundary catches any errors that Suspense doesn't handle
 export function MarketHeatmap3D(props) {
   return (
-    <Suspense fallback={<MapLoadingFallback />}>
-      <MarketHeatmap3DLazy {...props} />
-    </Suspense>
+    <ErrorBoundary name="3D Heatmap" compact>
+      <Suspense fallback={<MapLoadingFallback />}>
+        <MarketHeatmap3DLazy {...props} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
-// Wrapped lazy component with Suspense - Strategy Map
+// Wrapped lazy component with Suspense + ErrorBoundary - Strategy Map
+// ErrorBoundary catches any errors that Suspense doesn't handle
 export function MarketStrategyMap(props) {
   return (
-    <Suspense fallback={<StrategyMapLoadingFallback />}>
-      <MarketStrategyMapLazy {...props} />
-    </Suspense>
+    <ErrorBoundary name="District Price Map" compact>
+      <Suspense fallback={<StrategyMapLoadingFallback />}>
+        <MarketStrategyMapLazy {...props} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

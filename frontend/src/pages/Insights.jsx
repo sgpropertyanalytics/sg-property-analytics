@@ -1,4 +1,5 @@
 import { MarketStrategyMap } from '../components/insights';
+import { ErrorBoundary } from '../components/ui';
 
 /**
  * Insights Page - Visual Analytics for Singapore Property Market
@@ -33,7 +34,9 @@ export function InsightsContent() {
         <div className="space-y-6">
           {/* Strategy Map with Data Flags - Full Width */}
           <div className="animate-view-enter">
-            <MarketStrategyMap />
+            <ErrorBoundary name="District Price Map" compact>
+              <MarketStrategyMap />
+            </ErrorBoundary>
           </div>
 
           {/* Coming Soon Features */}

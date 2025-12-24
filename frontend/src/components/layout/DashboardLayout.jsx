@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { GlobalNavRail, NAV_ITEMS } from './GlobalNavRail';
 import { PowerBIFilterProvider } from '../../context/PowerBIFilterContext';
 import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
+import { ErrorBoundary } from '../ui';
 
 /**
  * DashboardLayout - Double Sidebar Navigation System
@@ -205,9 +206,11 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
             </div>
           </header>
 
-          {/* Main Content */}
+          {/* Main Content - Wrapped with ErrorBoundary to prevent blank page crashes */}
           <main className="flex-1 overflow-auto">
-            {children}
+            <ErrorBoundary name="Page Content">
+              {children}
+            </ErrorBoundary>
           </main>
         </div>
       </div>
