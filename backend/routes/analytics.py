@@ -2836,11 +2836,52 @@ def kpi_summary():
         momentum_score = max(20, min(80, momentum_score))
         momentum_label = "Buyer's market" if momentum_score >= 55 else "Seller's market" if momentum_score <= 45 else "Balanced"
 
-        # Generate insights
-        psf_insight = "Rising - sellers have leverage" if psf_trend > 2 else "Falling - buyers have leverage" if psf_trend < -2 else "Stable pricing"
-        spread_insight = "Wide range - negotiate hard" if iqr_ratio > 40 else "Tight range - be competitive" if iqr_ratio < 20 else "Normal variance"
-        premium_insight = "High premium - consider resale" if new_premium > 20 else "Low premium - new worth it" if 0 < new_premium < 10 else "Fair premium"
-        momentum_insight = "Good time to buy" if momentum_score >= 55 else "Good time to sell" if momentum_score <= 45 else "Market balanced"
+        # Generate insights with context and numbers
+        # PSF insight - include trend direction and magnitude
+        if psf_trend > 2:
+            psf_insight = f"Up {abs(psf_trend):.1f}% this month — sellers have pricing power"
+        elif psf_trend < -2:
+            psf_insight = f"Down {abs(psf_trend):.1f}% this month — buyers gaining leverage"
+        elif psf_trend > 0:
+            psf_insight = f"Slight uptick of {psf_trend:.1f}% — market holding steady"
+        elif psf_trend < 0:
+            psf_insight = f"Slight dip of {abs(psf_trend):.1f}% — market holding steady"
+        else:
+            psf_insight = "No change from last month — stable market"
+
+        # Spread insight - explain what the IQR means for deal hunting
+        if iqr_ratio > 40:
+            psf_range = f"${round(psf_25):,} - ${round(psf_75):,}"
+            spread_insight = f"Wide spread ({psf_range}) — room to negotiate below median"
+        elif iqr_ratio < 20:
+            spread_insight = f"Tight {iqr_ratio:.0f}% spread — prices clustered, less wiggle room"
+        else:
+            spread_insight = f"{iqr_ratio:.0f}% spread is typical — compare 3-5 similar units"
+
+        # Premium insight - actionable advice based on premium level
+        if new_premium > 25:
+            spread_insight_premium = f"+{new_premium:.0f}% over resale — significant premium for new"
+            premium_insight = f"New launches cost {new_premium:.0f}% more — resale may offer better value"
+        elif new_premium > 15:
+            premium_insight = f"{new_premium:.0f}% premium is moderate — weigh new amenities vs savings"
+        elif new_premium > 5:
+            premium_insight = f"Only {new_premium:.0f}% premium — new launch worth considering"
+        elif new_premium > 0:
+            premium_insight = f"Minimal {new_premium:.0f}% gap — new launches competitively priced"
+        else:
+            premium_insight = f"Resale priced higher — unusual market, check specific projects"
+
+        # Momentum insight - clear buyer/seller guidance
+        if momentum_score >= 60:
+            momentum_insight = f"Score {round(momentum_score)} — prices softening, favor buyers"
+        elif momentum_score >= 55:
+            momentum_insight = f"Score {round(momentum_score)} — slight buyer advantage"
+        elif momentum_score <= 40:
+            momentum_insight = f"Score {round(momentum_score)} — prices firming, favor sellers"
+        elif momentum_score <= 45:
+            momentum_insight = f"Score {round(momentum_score)} — slight seller advantage"
+        else:
+            momentum_insight = f"Score {round(momentum_score)} — balanced market, no rush either way"
 
         elapsed = time.time() - start
         print(f"GET /api/kpi-summary completed in {elapsed:.4f}s")
