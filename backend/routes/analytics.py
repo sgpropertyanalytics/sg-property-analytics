@@ -2459,13 +2459,16 @@ def scatter_sample():
 
         # Build segment expression using SQL CASE
         # Maps districts to market segments (CCR/RCR/OCR)
-        from sqlalchemy import case, literal
+        ccr_list = ",".join([f"'{d}'" for d in CCR_DISTRICTS])
+        rcr_list = ",".join([f"'{d}'" for d in RCR_DISTRICTS])
 
-        segment_expr = case(
-            (Transaction.district.in_(CCR_DISTRICTS), literal('CCR')),
-            (Transaction.district.in_(RCR_DISTRICTS), literal('RCR')),
-            else_=literal('OCR')
-        ).label('segment')
+        segment_expr = text(f"""
+            CASE
+                WHEN district IN ({ccr_list}) THEN 'CCR'
+                WHEN district IN ({rcr_list}) THEN 'RCR'
+                ELSE 'OCR'
+            END
+        """)
 
         # Stratified sampling using window function:
         # ROW_NUMBER() OVER (PARTITION BY segment ORDER BY hash) ranks rows within each segment
@@ -2475,7 +2478,7 @@ def scatter_sample():
             order_by=hash_expr
         ).label('rn')
 
-        subquery = query.add_columns(segment_expr, row_num).subquery()
+        subquery = query.add_columns(row_num).subquery()
 
         # Select from subquery where row number <= samples_per_segment
         sampled = db.session.query(
