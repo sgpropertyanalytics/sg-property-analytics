@@ -41,6 +41,7 @@ import { useChartHeight, MOBILE_CAPS } from '../hooks';
 export function MacroOverviewContent() {
   const { apiMetadata } = useData();
   const {
+    filters,
     crossFilter,
     highlight,
     clearCrossFilter,
@@ -58,8 +59,9 @@ export function MacroOverviewContent() {
   const compressionHeight = useChartHeight(380, MOBILE_CAPS.tall);        // 380px desktop, max 320px mobile
   const tableHeight = useChartHeight(400, MOBILE_CAPS.tall);              // 400px desktop, max 320px mobile
 
-  // Summary KPIs - Last 30 days snapshot (ignores sidebar filters for market overview)
-  // Deal detection focused metrics with trend indicators
+  // Summary KPIs - Deal detection metrics with trend indicators
+  // Reacts to: Location filters (district, bedroom, segment)
+  // Ignores: Date range filters (always shows "current market" status)
   const [kpis, setKpis] = useState({
     medianPsf: { value: 0, trend: 0 },
     predictability: { value: 0, trend: 0, label: 'Loading' },
@@ -68,8 +70,9 @@ export function MacroOverviewContent() {
     loading: true,
   });
 
-  // Fetch KPIs for last 30 days (based on data's max_date, not today)
-  // Deal detection metrics: Median PSF, Price Predictability, New Launch Premium, Buyer Opportunity
+  // Fetch KPIs based on current filters (but ignore date range - always use "current market")
+  // - Cards 1, 2, 4: Last 30 days (pulse metrics)
+  // - Card 3 (New Launch Premium): Full data (structural metric - needs data density)
   useEffect(() => {
     const fetchKpis = async () => {
       // Wait for apiMetadata to be loaded
@@ -78,7 +81,7 @@ export function MacroOverviewContent() {
       }
 
       try {
-        // Calculate date ranges
+        // Calculate date ranges (ignore sidebar date range - always show current market)
         const maxDate = new Date(apiMetadata.max_date);
         const thirtyDaysAgo = new Date(maxDate);
         thirtyDaysAgo.setDate(maxDate.getDate() - 30);
@@ -90,6 +93,18 @@ export function MacroOverviewContent() {
         const prevDateFrom = sixtyDaysAgo.toISOString().split('T')[0];
         const prevDateTo = thirtyDaysAgo.toISOString().split('T')[0];
 
+        // Build location/property filters (react to sidebar, but NOT date range)
+        const locationFilters = {};
+        if (filters.districts?.length > 0) {
+          locationFilters.district = filters.districts.join(',');
+        }
+        if (filters.bedroomTypes?.length > 0) {
+          locationFilters.bedroom = filters.bedroomTypes.join(',');
+        }
+        if (filters.segment) {
+          locationFilters.segment = filters.segment;
+        }
+
         // Fetch all metrics in parallel
         const [currentPsfRes, prevPsfRes, newVsResaleRes, histogramRes] = await Promise.all([
           // Current period PSF metrics (last 30 days)
@@ -98,6 +113,7 @@ export function MacroOverviewContent() {
             metrics: 'median_psf,psf_25th,psf_75th,count',
             date_from: dateFrom,
             date_to: dateTo,
+            ...locationFilters,
           }),
           // Previous period PSF metrics (30-60 days ago) for trend
           getAggregate({
@@ -105,14 +121,19 @@ export function MacroOverviewContent() {
             metrics: 'median_psf,psf_25th,psf_75th,count',
             date_from: prevDateFrom,
             date_to: prevDateTo,
+            ...locationFilters,
           }),
-          // New vs Resale premium
-          getNewVsResale({ timeGrain: 'quarter' }),
+          // New vs Resale premium (full data for structural metric, but with location filters)
+          getNewVsResale({
+            timeGrain: 'quarter',
+            ...locationFilters,
+          }),
           // Price histogram for buyer opportunity calculation
           getDashboard({
             panels: 'price_histogram',
             date_from: dateFrom,
             date_to: dateTo,
+            ...locationFilters,
           }),
         ]);
 
@@ -189,7 +210,7 @@ export function MacroOverviewContent() {
       }
     };
     fetchKpis();
-  }, [apiMetadata?.max_date]); // Re-fetch when max_date is available
+  }, [apiMetadata?.max_date, filters.districts, filters.bedroomTypes, filters.segment]); // Re-fetch when data or location filters change
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
     setModalTitle(title);
