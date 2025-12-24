@@ -26,3 +26,6 @@ export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
 export { ChartWatermark } from './ChartWatermark';
 export { BlurredDashboard } from './BlurredDashboard';
 export { PreviewModeBar } from './PreviewModeBar';
+
+// Layout components
+export { PageHeader } from './PageHeader';

@@ -3,7 +3,7 @@ import FloorLiquidityChart from '../components/powerbi/FloorLiquidityChart';
 import FloorPremiumByRegionChart from '../components/powerbi/FloorPremiumByRegionChart';
 import FloorPremiumTrendChart from '../components/powerbi/FloorPremiumTrendChart';
 import FloorLiquidityHeatmap from '../components/powerbi/FloorLiquidityHeatmap';
-import { ErrorBoundary, BlurredDashboard } from '../components/ui';
+import { ErrorBoundary, BlurredDashboard, PageHeader } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
@@ -45,15 +45,11 @@ export function FloorDispersionContent() {
   return (
     <div className="h-full overflow-auto">
       <div className="p-3 md:p-4 lg:p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
-            Floor Dispersion
-          </h1>
-          <p className="text-[#547792] text-sm mt-1">
-            Institutional-grade floor level analysis — where price meets liquidity
-          </p>
-        </div>
+        {/* Header with Preview Mode badge */}
+        <PageHeader
+          title="Floor Dispersion"
+          subtitle="Institutional-grade floor level analysis — where price meets liquidity"
+        />
 
         {/* Inline Filters */}
         <div className="mb-4 flex flex-wrap items-center gap-3">

@@ -1,5 +1,5 @@
 import { MarketStrategyMap } from '../components/insights';
-import { ErrorBoundary, BlurredDashboard } from '../components/ui';
+import { ErrorBoundary, BlurredDashboard, PageHeader } from '../components/ui';
 
 /**
  * Insights Page - Visual Analytics for Singapore Property Market
@@ -20,15 +20,11 @@ export function InsightsContent() {
   return (
     <div className="h-full overflow-auto">
       <div className="p-3 md:p-4 lg:p-6">
-        {/* Header */}
-        <div className="mb-4 md:mb-6">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
-            Insights
-          </h1>
-          <p className="text-[#547792] text-sm mt-1">
-            Visual analytics and market intelligence for Singapore property
-          </p>
-        </div>
+        {/* Header with Preview Mode badge */}
+        <PageHeader
+          title="Insights"
+          subtitle="Visual analytics and market intelligence for Singapore property"
+        />
 
         {/* Main Content Grid */}
         <div className="space-y-6">

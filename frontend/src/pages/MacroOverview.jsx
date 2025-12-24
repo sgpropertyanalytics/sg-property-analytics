@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
-import { useSubscription } from '../context/SubscriptionContext';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { MedianPsfTrendChart } from '../components/powerbi/MedianPsfTrendChart';
 import { UnitSizeVsPriceChart } from '../components/powerbi/UnitSizeVsPriceChart';
@@ -17,7 +16,7 @@ import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getKpiSummary } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components
-import { ErrorBoundary, BlurredDashboard } from '../components/ui';
+import { ErrorBoundary, BlurredDashboard, PageHeader } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
@@ -41,7 +40,6 @@ import { useChartHeight, MOBILE_CAPS } from '../hooks';
  */
 export function MacroOverviewContent() {
   const { apiMetadata } = useData();
-  const { isPremium, showPaywall } = useSubscription();
   const {
     filters,
     crossFilter,
@@ -136,72 +134,47 @@ export function MacroOverviewContent() {
       {/* Main Content Area - Scrollable */}
       <div className="h-full overflow-auto">
         <div className="p-3 md:p-4 lg:p-6">
-          {/* Header */}
-          <div className="mb-4 md:mb-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-2">
-              <div className="min-w-0">
-                <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
-                  Singapore Property Market Analytics
-                </h1>
-                {/* Data source info - shows raw database count and date range */}
-                {apiMetadata && (
-                  <p className="text-[#547792] text-xs md:text-sm italic truncate">
-                    Data source from URA (Total of {((apiMetadata.row_count || 0) + (apiMetadata.total_records_removed || apiMetadata.outliers_excluded || 0)).toLocaleString()} transaction records
-                    <span className="hidden md:inline">
-                    {apiMetadata.min_date && apiMetadata.max_date && (
-                      <> found from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short'
-                      })} to {new Date(apiMetadata.max_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short'
-                      })}</>
-                    )})
-                    {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded) > 0 && (
-                      <> | {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded)?.toLocaleString()} outlier records excluded</>
-                    )}
-                    </span>
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* Time Grouping Toggle - View context control (not a filter) */}
-                <TimeGranularityToggle />
+          {/* Header with Preview Mode badge */}
+          <PageHeader
+            title="Singapore Property Market Analytics"
+            subtitle={apiMetadata ? `Data source from URA (${((apiMetadata.row_count || 0) + (apiMetadata.total_records_removed || apiMetadata.outliers_excluded || 0)).toLocaleString()} records)` : null}
+          >
+            {/* Time Grouping Toggle */}
+            <TimeGranularityToggle />
 
-                {/* Highlight indicator (visual emphasis on time, no filtering) */}
-                {highlight.value && (
-                  <button
-                    onClick={clearHighlight}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-[#213448]/10 text-[#213448] rounded-lg hover:bg-[#213448]/20 transition-colors text-sm border border-[#213448]/20"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    <span>Viewing: {highlight.value}</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-                {/* Cross-filter indicator (actual data filtering) */}
-                {crossFilter.value && (
-                  <button
-                    onClick={clearCrossFilter}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-[#547792]/20 text-[#213448] rounded-lg hover:bg-[#547792]/30 transition-colors text-sm"
-                  >
-                    <span>Filter: {crossFilter.value}</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </div>
+            {/* Highlight indicator */}
+            {highlight.value && (
+              <button
+                onClick={clearHighlight}
+                className="flex items-center gap-2 px-3 py-1.5 bg-[#213448]/10 text-[#213448] rounded-lg hover:bg-[#213448]/20 transition-colors text-sm border border-[#213448]/20"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span>Viewing: {highlight.value}</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
 
-            {/* Breadcrumb navigation */}
-            <DrillBreadcrumb />
-          </div>
+            {/* Cross-filter indicator */}
+            {crossFilter.value && (
+              <button
+                onClick={clearCrossFilter}
+                className="flex items-center gap-2 px-3 py-1.5 bg-[#547792]/20 text-[#213448] rounded-lg hover:bg-[#547792]/30 transition-colors text-sm"
+              >
+                <span>Filter: {crossFilter.value}</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </PageHeader>
+
+          {/* Breadcrumb navigation */}
+          <DrillBreadcrumb />
 
           {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">

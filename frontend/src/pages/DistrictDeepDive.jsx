@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DistrictLiquidityMap } from '../components/insights';
-import { BlurredDashboard } from '../components/ui';
+import { BlurredDashboard, PageHeader } from '../components/ui';
 
 /**
  * District & Project Deep Dive Page
@@ -22,15 +22,11 @@ export function DistrictDeepDiveContent() {
   return (
     <div className="h-full overflow-auto">
       <div className="p-3 md:p-4 lg:p-6">
-        {/* Header */}
-        <div className="mb-4 md:mb-6">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
-            District & Project Deep Dive
-          </h1>
-          <p className="text-[#547792] text-sm mt-1">
-            Detailed analysis of districts and individual projects
-          </p>
-        </div>
+        {/* Header with Preview Mode badge */}
+        <PageHeader
+          title="District & Project Deep Dive"
+          subtitle="Detailed analysis of districts and individual projects"
+        />
 
         {/* Main Content */}
         <div className="space-y-6 animate-fade-in">

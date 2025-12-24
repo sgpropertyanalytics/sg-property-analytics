@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Pricing from './pages/Pricing';
 import { DashboardLayout } from './components/layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PageHeader } from './components/ui';
 import { MacroOverviewContent } from './pages/MacroOverview';
 import { FloorDispersionContent } from './pages/FloorDispersion';
 import { InsightsContent } from './pages/Insights';
@@ -76,15 +77,11 @@ function App() {
                 <DashboardLayout activePage="value-parity">
                   <div className="h-full overflow-auto">
                     <div className="p-3 md:p-4 lg:p-6">
-                      {/* Header */}
-                      <div className="mb-4 md:mb-6">
-                        <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
-                          Value Parity Tool
-                        </h1>
-                        <p className="text-[#547792] text-sm mt-1">
-                          Find properties within your budget and compare value across districts
-                        </p>
-                      </div>
+                      {/* Header with Preview Mode badge */}
+                      <PageHeader
+                        title="Value Parity Tool"
+                        subtitle="Find properties within your budget and compare value across districts"
+                      />
                       {/* Value Parity Panel - existing component */}
                       <div className="animate-view-enter">
                         <ValueParityPanel />
