@@ -283,20 +283,12 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
                 </div>
 
                 {/* Subscription Status - only for premium */}
-                {isPremium && subscription?.subscription_status && (
+                {isPremium && (
                   <div>
                     <h3 className="text-sm font-medium text-[#547792] mb-3">Subscription Status</h3>
                     <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        subscription.subscription_status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : subscription.subscription_status === 'trialing'
-                          ? 'bg-blue-100 text-blue-800'
-                          : subscription.subscription_status === 'past_due'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {subscription.subscription_status.charAt(0).toUpperCase() + subscription.subscription_status.slice(1).replace('_', ' ')}
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Active
                       </span>
                     </div>
                   </div>
