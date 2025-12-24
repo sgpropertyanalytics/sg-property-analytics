@@ -998,34 +998,6 @@ function LiquidityRankingTable({ districtData }) {
                     {m.project_count || 0}
                   </td>
 
-                  {/* Transaction Count (Market Structure - Combined) */}
-                  <td className="px-3 py-2 text-right text-[#213448]">
-                    {m.tx_count?.toLocaleString() || '0'}
-                  </td>
-
-                  {/* Exit Safety Group - Liquidity Tier (Resale-only) */}
-                  <td className="px-3 py-2 text-center border-l-2 border-dashed border-emerald-400/60">
-                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${getTierBadge(m.liquidity_tier)}`}>
-                      {m.liquidity_tier || '-'}
-                    </span>
-                  </td>
-
-                  {/* Exit Safety Group - Monthly Velocity (Resale-only) */}
-                  <td className="px-3 py-2 text-right font-bold text-[#213448]">
-                    {m.monthly_velocity?.toFixed(1) || '0'}
-                  </td>
-
-                  {/* Exit Safety Group - Z-Score (Resale-only) */}
-                  <td className="px-3 py-2 text-right border-r-2 border-dashed border-emerald-400/60">
-                    <span className={`font-semibold ${
-                      (m.z_score || 0) >= 0.5 ? 'text-emerald-600' :
-                      (m.z_score || 0) <= -0.5 ? 'text-rose-600' :
-                      'text-[#547792]'
-                    }`}>
-                      {m.z_score?.toFixed(2) || '-'}
-                    </span>
-                  </td>
-
                   {/* New Sale % (Market Structure - Combined) */}
                   <td className="px-3 py-2 text-right text-[#547792]">
                     {m.new_sale_pct?.toFixed(0) || '0'}%
@@ -1036,20 +1008,48 @@ function LiquidityRankingTable({ districtData }) {
                     {m.resale_pct?.toFixed(0) || '0'}%
                   </td>
 
+                  {/* Transaction Count (Market Structure - Combined) */}
+                  <td className="px-3 py-2 text-right text-[#213448]">
+                    {m.tx_count?.toLocaleString() || '0'}
+                  </td>
+
+                  {/* Exit Safety Group - Liquidity Tier (Resale-only) */}
+                  <td className="px-3 py-2 text-center bg-emerald-50/40">
+                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${getTierBadge(m.liquidity_tier)}`}>
+                      {m.liquidity_tier || '-'}
+                    </span>
+                  </td>
+
+                  {/* Exit Safety Group - Monthly Velocity (Resale-only) */}
+                  <td className="px-3 py-2 text-right font-bold text-[#213448] bg-emerald-50/40">
+                    {m.monthly_velocity?.toFixed(1) || '0'}
+                  </td>
+
+                  {/* Exit Safety Group - Z-Score (Resale-only) */}
+                  <td className="px-3 py-2 text-right bg-emerald-50/40">
+                    <span className={`font-semibold ${
+                      (m.z_score || 0) >= 0.5 ? 'text-emerald-600' :
+                      (m.z_score || 0) <= -0.5 ? 'text-rose-600' :
+                      'text-[#547792]'
+                    }`}>
+                      {m.z_score?.toFixed(2) || '-'}
+                    </span>
+                  </td>
+
                   {/* Concentration Risks Group - Fragility Badge (Resale-only) */}
-                  <td className="px-3 py-2 text-center border-l-2 border-dashed border-rose-400/60">
+                  <td className="px-3 py-2 text-center bg-rose-50/40">
                     <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${getFragilityBadge(m.fragility_label)}`}>
                       {m.fragility_label || '-'}
                     </span>
                   </td>
 
                   {/* Concentration Risks Group - Gini Index (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-[#547792]">
+                  <td className="px-3 py-2 text-right text-[#547792] bg-rose-50/40">
                     {m.concentration_gini?.toFixed(2) || '-'}
                   </td>
 
                   {/* Concentration Risks Group - Top Project Share (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-[#547792] pr-4">
+                  <td className="px-3 py-2 text-right text-[#547792] bg-rose-50/40">
                     {m.top_project_share?.toFixed(0) || '0'}%
                   </td>
                 </tr>
