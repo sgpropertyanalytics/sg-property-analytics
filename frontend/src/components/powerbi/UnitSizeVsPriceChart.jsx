@@ -304,15 +304,15 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         </div>
       </div>
 
-      {/* Chart - fills remaining space */}
-      <div className="flex-1 p-4 min-h-0">
-        <Scatter ref={chartRef} data={chartData} options={options} />
-      </div>
-
       {/* Sampling Note - KeyInsightBox style */}
       <KeyInsightBox variant="info" compact title="Sampling Note" className="shrink-0">
         Stable sample (n = 2,000) balanced across CCR / RCR / OCR. ~2–3% margin of error (95% CI) for macro-level trends.
       </KeyInsightBox>
+
+      {/* Chart - fills remaining space */}
+      <div className="flex-1 p-4 min-h-0">
+        <Scatter ref={chartRef} data={chartData} options={options} />
+      </div>
     </div>
   );
 }

@@ -2516,33 +2516,31 @@ def scatter_sample():
         else:
             hash_expr = "md5(id::TEXT)"
 
-        # Build segment CASE expression
+        # Build segment district lists for SQL
         ccr_list = ",".join([f"'{d}'" for d in CCR_DISTRICTS])
         rcr_list = ",".join([f"'{d}'" for d in RCR_DISTRICTS])
+        ocr_list = ",".join([f"'{d}'" for d in OCR_DISTRICTS])
 
-        # Full raw SQL query with stratified sampling
+        # Optimized query: UNION ALL of 3 segment queries (faster than window function)
+        # Each segment query uses ORDER BY hash LIMIT N, avoiding expensive window function
         sql = text(f"""
-            WITH ranked AS (
-                SELECT
-                    price,
-                    area_sqft,
-                    bedroom_count,
-                    district,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY CASE
-                            WHEN district IN ({ccr_list}) THEN 'CCR'
-                            WHEN district IN ({rcr_list}) THEN 'RCR'
-                            ELSE 'OCR'
-                        END
-                        ORDER BY {hash_expr}
-                    ) as rn
-                FROM transactions
-                WHERE {where_clause}
-            )
-            SELECT price, area_sqft, bedroom_count, district
-            FROM ranked
-            WHERE rn <= :samples_per_segment
-            LIMIT :sample_size
+            (SELECT price, area_sqft, bedroom_count, district
+             FROM transactions
+             WHERE {where_clause} AND district IN ({ccr_list})
+             ORDER BY {hash_expr}
+             LIMIT :samples_per_segment)
+            UNION ALL
+            (SELECT price, area_sqft, bedroom_count, district
+             FROM transactions
+             WHERE {where_clause} AND district IN ({rcr_list})
+             ORDER BY {hash_expr}
+             LIMIT :samples_per_segment)
+            UNION ALL
+            (SELECT price, area_sqft, bedroom_count, district
+             FROM transactions
+             WHERE {where_clause} AND district IN ({ocr_list})
+             ORDER BY {hash_expr}
+             LIMIT :samples_per_segment)
         """)
 
         result = db.session.execute(sql, params)
