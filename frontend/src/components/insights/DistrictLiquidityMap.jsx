@@ -48,9 +48,12 @@ function InfoTooltip({ text, color = '#94B4C1' }) {
       >
         i
       </span>
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded shadow-lg whitespace-normal w-48 text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+      {/* Tooltip - positioned below icon, light theme */}
+      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 text-xs text-[#213448] bg-white border border-[#94B4C1]/40 rounded-lg shadow-lg whitespace-normal w-52 text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999]">
         {text}
-        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></span>
+        {/* Arrow pointing up */}
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-b-white"></span>
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 border-[7px] border-transparent border-b-[#94B4C1]/40" style={{ marginBottom: '1px' }}></span>
       </span>
     </span>
   );
