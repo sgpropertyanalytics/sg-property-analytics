@@ -370,6 +370,41 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
         elif tenure_lower in ['999-year', '999']:
             conditions.append(Transaction.remaining_lease == 999)
 
+    # Property age filter (years since lease start / TOP date)
+    # NOTE: Freehold properties are EXCLUDED from property age filtering because their
+    # lease_start_year represents the original land grant date (often 1800s), not the
+    # building's actual TOP date. This filter only applies to leasehold properties.
+    property_age_min = filters.get('property_age_min')
+    property_age_max = filters.get('property_age_max')
+    if property_age_min is not None or property_age_max is not None:
+        # Calculate property age: transaction_year - lease_start_year
+        property_age_expr = extract('year', Transaction.transaction_date) - Transaction.lease_start_year
+
+        # Exclude freehold properties (lease_start_year is land grant date, not TOP)
+        # Freehold is identified by: tenure contains 'freehold' OR remaining_lease = 999
+        is_leasehold = and_(
+            ~Transaction.tenure.ilike('%freehold%'),
+            or_(Transaction.remaining_lease.is_(None), Transaction.remaining_lease < 999),
+            Transaction.lease_start_year.isnot(None)
+        )
+
+        if property_age_min is not None and property_age_max is not None:
+            conditions.append(and_(
+                is_leasehold,
+                property_age_expr >= int(property_age_min),
+                property_age_expr <= int(property_age_max)
+            ))
+        elif property_age_min is not None:
+            conditions.append(and_(
+                is_leasehold,
+                property_age_expr >= int(property_age_min)
+            ))
+        elif property_age_max is not None:
+            conditions.append(and_(
+                is_leasehold,
+                property_age_expr <= int(property_age_max)
+            ))
+
     # Project name - supports both partial match (search) and exact match (drill-through)
     # Use project_exact for drill-through views (ProjectDetailPanel)
     # Use project for search functionality (sidebar filter)

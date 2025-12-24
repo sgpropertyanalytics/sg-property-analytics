@@ -524,7 +524,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
               <span className="text-[10px] text-slate-400 flex-shrink-0">yrs</span>
             </div>
             <p className="text-[10px] text-slate-500 mt-1.5 italic">
-              Age from TOP date to transaction.
+              Leasehold only (freehold excluded).
             </p>
           </FilterGroup>
         </FilterSection>

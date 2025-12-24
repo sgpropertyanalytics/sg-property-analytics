@@ -130,6 +130,13 @@ def dashboard():
             if request.args.get('tenure'):
                 filters['tenure'] = request.args.get('tenure')
 
+            # Property age filter (years since TOP/lease start)
+            # Note: This only applies to leasehold properties (freehold excluded)
+            if request.args.get('property_age_min'):
+                filters['property_age_min'] = int(request.args.get('property_age_min'))
+            if request.args.get('property_age_max'):
+                filters['property_age_max'] = int(request.args.get('property_age_max'))
+
             # Project filter - supports both partial match (search) and exact match (drill-through)
             if request.args.get('project_exact'):
                 filters['project_exact'] = request.args.get('project_exact')
@@ -2446,8 +2453,9 @@ def scatter_sample():
         total_count = query.count()
 
         # Calculate samples per segment (CCR/RCR/OCR = 3 segments)
-        # This ensures equal representation across market segments
-        samples_per_segment = max(1, sample_size // 3)
+        # Use ceiling division to ensure we reach sample_size (e.g., 2000/3 = 667, 667*3 = 2001, capped by LIMIT)
+        import math
+        samples_per_segment = max(1, math.ceil(sample_size / 3))
 
         # Build WHERE clause conditions from filters
         where_conditions = ["(is_outlier = false OR is_outlier IS NULL)"]

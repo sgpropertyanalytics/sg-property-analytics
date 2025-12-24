@@ -10,6 +10,7 @@ import { Scatter } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import apiClient from '../../api/client';
 import { formatPrice, getBedroomLabelShort } from '../../constants';
+import { KeyInsightBox } from '../ui';
 
 ChartJS.register(
   LinearScale,
@@ -276,33 +277,8 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-[#94B4C1]">
-              {meta.sample_size.toLocaleString()} sampled of {meta.total_count.toLocaleString()}
+              {meta.sample_size.toLocaleString()} of {meta.total_count.toLocaleString()}
             </span>
-            {/* Info icon with methodology tooltip */}
-            <div className="relative group">
-              <button
-                className="p-1 rounded hover:bg-[#EAE0CF]/50 text-[#94B4C1] hover:text-[#547792] transition-colors"
-                aria-label="Sampling methodology info"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-              {/* Tooltip */}
-              <div className="absolute right-0 top-full mt-1 w-72 p-3 bg-[#213448] text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                <div className="font-semibold mb-2">Sampling Methodology</div>
-                <p className="text-[#EAE0CF] leading-relaxed">
-                  Stable sample (n = 2,000) balanced across CCR / RCR / OCR.
-                  <br />
-                  ~2–3% margin of error (95% CI) for macro-level trends.
-                </p>
-                <div className="mt-2 pt-2 border-t border-[#547792] text-[#94B4C1]">
-                  Click refresh for a different sample
-                </div>
-                {/* Arrow */}
-                <div className="absolute -top-1 right-3 w-2 h-2 bg-[#213448] rotate-45"></div>
-              </div>
-            </div>
             {/* Refresh button */}
             <button
               onClick={handleRefresh}
@@ -333,10 +309,10 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         <Scatter ref={chartRef} data={chartData} options={options} />
       </div>
 
-      {/* Footer - fixed height, won't grow */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] shrink-0">
-        <span>Hover for details | Colors show bedroom types | Stratified by CCR/RCR/OCR</span>
-      </div>
+      {/* Sampling Note - KeyInsightBox style */}
+      <KeyInsightBox variant="info" compact title="Sampling Note" className="shrink-0">
+        Stable sample (n = 2,000) balanced across CCR / RCR / OCR. ~2–3% margin of error (95% CI) for macro-level trends.
+      </KeyInsightBox>
     </div>
   );
 }
