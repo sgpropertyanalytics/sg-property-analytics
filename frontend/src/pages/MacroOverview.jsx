@@ -16,7 +16,7 @@ import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
-import { KPICard, PageSummaryBox, ErrorBoundary } from '../components/ui';
+import { KPICard, ErrorBoundary } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
@@ -196,14 +196,6 @@ export function MacroOverviewContent() {
             {/* Breadcrumb navigation */}
             <DrillBreadcrumb />
           </div>
-
-          {/* Page Summary */}
-          <PageSummaryBox className="mb-4 md:mb-6">
-            Track <span className="font-semibold text-[#213448]">real-time market activity</span> across
-            Singapore's private condo market. Monitor transaction volumes, price trends by region (CCR/RCR/OCR),
-            and compare <span className="font-semibold text-[#213448]">new launches vs resales</span>.
-            Use the sidebar filters to focus on specific time periods, districts, or bedroom types.
-          </PageSummaryBox>
 
           {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">
