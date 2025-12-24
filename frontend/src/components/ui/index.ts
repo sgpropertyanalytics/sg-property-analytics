@@ -24,3 +24,6 @@ export { SampleSizeWarning } from './SampleSizeWarning';
 
 // Error handling
 export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
+
+// Premium gating
+export { ChartGate } from './ChartGate';

@@ -16,7 +16,7 @@ import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getKpiSummary } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
-import { KPICard, ErrorBoundary } from '../components/ui';
+import { KPICard, ErrorBoundary, ChartGate } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
@@ -312,30 +312,38 @@ export function MacroOverviewContent() {
                   </ErrorBoundary>
                 </div>
 
-                {/* Unit Size vs Price - Scatter chart showing value trade-offs */}
+                {/* Unit Size vs Price - Scatter chart showing value trade-offs (GATED) */}
                 <ErrorBoundary name="Unit Size vs Price" compact>
-                  <UnitSizeVsPriceChart height={standardChartHeight} />
+                  <ChartGate chartId="unit-size-vs-price">
+                    <UnitSizeVsPriceChart height={standardChartHeight} />
+                  </ChartGate>
                 </ErrorBoundary>
 
-                {/* Price Distribution - Chart component unchanged */}
+                {/* Price Distribution - Histogram showing price ranges (GATED) */}
                 <ErrorBoundary name="Price Distribution" compact>
-                  <PriceDistributionChart
-                    onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
-                    height={standardChartHeight}
-                  />
+                  <ChartGate chartId="price-distribution">
+                    <PriceDistributionChart
+                      onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
+                      height={standardChartHeight}
+                    />
+                  </ChartGate>
                 </ErrorBoundary>
 
-                {/* New Launch vs Resale Comparison - Full width */}
+                {/* New Launch vs Resale Comparison - Full width (GATED) */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="New vs Resale Chart" compact>
-                    <NewVsResaleChart height={standardChartHeight} />
+                    <ChartGate chartId="new-vs-resale">
+                      <NewVsResaleChart height={standardChartHeight} />
+                    </ChartGate>
                   </ErrorBoundary>
                 </div>
 
-                {/* Price Compression Analysis - Full width, shows spread between market segments */}
+                {/* Price Compression Analysis - Full width (GATED) */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Price Compression" compact>
-                    <PriceCompressionChart height={compressionHeight} />
+                    <ChartGate chartId="price-compression">
+                      <PriceCompressionChart height={compressionHeight} />
+                    </ChartGate>
                   </ErrorBoundary>
                 </div>
               </div>
