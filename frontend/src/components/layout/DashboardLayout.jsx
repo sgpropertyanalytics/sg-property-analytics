@@ -217,8 +217,7 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
             <>
               {/* Blur layer - visual blur over content */}
               <div
-                className="fixed inset-0 z-40 pointer-events-none"
-                style={{ backdropFilter: 'blur(4px)' }}
+                className="fixed inset-0 z-40 pointer-events-none backdrop-blur-[4px]"
                 aria-hidden="true"
               />
 
