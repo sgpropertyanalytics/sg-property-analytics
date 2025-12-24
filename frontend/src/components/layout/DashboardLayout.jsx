@@ -245,7 +245,11 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
           )}
 
           {/* Main Content - Wrapped with ErrorBoundary to prevent blank page crashes */}
-          <main className="flex-1 overflow-auto flex flex-col">
+          {/* inert attribute prevents keyboard focus/interaction when in preview mode */}
+          <main
+            className="flex-1 overflow-auto flex flex-col"
+            {...(!isPremium && { inert: '' })}
+          >
             <ErrorBoundary name="Page Content">
               <div className="flex-1">
                 {children}
