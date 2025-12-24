@@ -2764,14 +2764,14 @@ def kpi_summary():
                 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
                 FROM transactions
                 WHERE {filter_sql}
-                  AND type_of_sale = 'New Sale'
+                  AND sale_type = 'New Sale'
                   AND transaction_date > :max_date - INTERVAL '12 months'
             ),
             young_resales AS (
                 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
                 FROM transactions
                 WHERE {filter_sql}
-                  AND type_of_sale = 'Resale'
+                  AND sale_type = 'Resale'
                   AND transaction_date > :max_date - INTERVAL '12 months'
                   AND EXTRACT(YEAR FROM transaction_date) - COALESCE(lease_commence_year, EXTRACT(YEAR FROM transaction_date) - 5) BETWEEN 4 AND 9
             )
