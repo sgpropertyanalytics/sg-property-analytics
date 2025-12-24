@@ -10,12 +10,11 @@ import { useAuth } from '../context/AuthContext';
  * Premium design for PropAnalytics real estate analytics platform.
  * User has clicked "View Market Data" and is unlocking their preview.
  *
- * Design System:
- * - Warm Cream (#FBF9F4) right panel - NO stark white
- * - Deep Navy (#213448) text
- * - Teal (#2DD4BF) accent for key stats
- * - Floating dashboard preview card on left
- * - Fintech aesthetic with backdrop-blur
+ * Color Palette (from CLAUDE.md):
+ * - Deep Navy (#213448) - Headings, primary text, left panel bg
+ * - Ocean Blue (#547792) - Secondary text, labels, borders
+ * - Sky Blue (#94B4C1) - Icons, disabled states, subtle accents
+ * - Sand/Cream (#EAE0CF) - Accent text, highlights, right panel bg
  */
 function Login() {
   const navigate = useNavigate();
@@ -93,17 +92,17 @@ function Login() {
             {/* Preview Mode Badge */}
             <div className="absolute -top-3 left-8 z-20">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#213448] border border-[#547792]/50 rounded-full text-xs font-semibold text-[#94B4C1] shadow-lg backdrop-blur-sm">
-                <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse" />
+                <span className="w-1.5 h-1.5 bg-[#EAE0CF] rounded-full animate-pulse" />
                 Preview Mode
               </span>
             </div>
 
-            {/* Floating Card - Dashboard Snippet with Teal Glow */}
+            {/* Floating Card - Dashboard Snippet */}
             <div
-              className="relative bg-[#1a2a3a]/80 backdrop-blur-xl rounded-2xl border border-[#547792]/30 overflow-hidden"
+              className="relative bg-[#213448]/90 backdrop-blur-xl rounded-2xl border border-[#547792]/40 overflow-hidden"
               style={{
                 transform: 'rotateY(-2deg) rotateX(2deg)',
-                boxShadow: '0 25px 80px -12px rgba(45, 212, 191, 0.25), 0 12px 40px -8px rgba(0, 0, 0, 0.3)'
+                boxShadow: '0 25px 80px -12px rgba(148, 180, 193, 0.3), 0 12px 40px -8px rgba(33, 52, 72, 0.4)'
               }}
             >
               {/* Card Header */}
@@ -113,9 +112,9 @@ function Login() {
                   <p className="text-sm text-[#94B4C1]">Last 60 days · District-level data</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#547792]/50" />
-                  <div className="w-3 h-3 rounded-full bg-[#547792]/50" />
-                  <div className="w-3 h-3 rounded-full bg-teal-400" />
+                  <div className="w-3 h-3 rounded-full bg-[#547792]/40" />
+                  <div className="w-3 h-3 rounded-full bg-[#94B4C1]/60" />
+                  <div className="w-3 h-3 rounded-full bg-[#EAE0CF]" />
                 </div>
               </div>
 
@@ -124,14 +123,14 @@ function Login() {
                 {/* KPI Row */}
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   {[
-                    { label: 'Median PSF', value: '$1,847', change: '+2.3%' },
-                    { label: 'Volume', value: '1,284', change: '-5.1%' },
-                    { label: 'Avg Days', value: '42', change: '-3d' },
+                    { label: 'Median PSF', value: '$1,847', change: '+2.3%', positive: true },
+                    { label: 'Volume', value: '1,284', change: '-5.1%', positive: false },
+                    { label: 'Avg Days', value: '42', change: '-3d', positive: false },
                   ].map((kpi, i) => (
-                    <div key={i} className="bg-[#213448]/60 rounded-lg p-4 border border-[#547792]/20">
+                    <div key={i} className="bg-[#547792]/20 rounded-lg p-4 border border-[#547792]/30">
                       <div className="text-[11px] text-[#94B4C1] uppercase tracking-wide mb-1">{kpi.label}</div>
                       <div className="text-xl font-bold text-[#EAE0CF] font-mono">{kpi.value}</div>
-                      <div className={`text-sm font-medium ${kpi.change.startsWith('+') ? 'text-teal-400' : 'text-[#94B4C1]'}`}>
+                      <div className={`text-sm font-medium ${kpi.positive ? 'text-[#EAE0CF]' : 'text-[#94B4C1]'}`}>
                         {kpi.change}
                       </div>
                     </div>
@@ -139,12 +138,12 @@ function Login() {
                 </div>
 
                 {/* Mock Area Chart */}
-                <div className="relative h-36 bg-[#213448]/40 rounded-lg border border-[#547792]/20 overflow-hidden">
+                <div className="relative h-36 bg-[#547792]/10 rounded-lg border border-[#547792]/20 overflow-hidden">
                   <svg className="w-full h-full" viewBox="0 0 400 120" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#2DD4BF" stopOpacity="0.3" />
-                        <stop offset="100%" stopColor="#2DD4BF" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#94B4C1" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#94B4C1" stopOpacity="0" />
                       </linearGradient>
                     </defs>
                     <path
@@ -154,7 +153,7 @@ function Login() {
                     <path
                       d="M0,80 Q50,70 100,75 T200,60 T300,50 T400,55"
                       fill="none"
-                      stroke="#2DD4BF"
+                      stroke="#EAE0CF"
                       strokeWidth="2"
                     />
                   </svg>
@@ -187,7 +186,7 @@ function Login() {
           <div className="flex items-center gap-8">
             {metrics.map((metric, i) => (
               <div key={i} className="flex flex-col">
-                <span className="text-2xl font-bold text-teal-400 font-mono tracking-tight">
+                <span className="text-2xl font-bold text-[#EAE0CF] font-mono tracking-tight">
                   {metric.value}
                 </span>
                 <span className="text-xs text-[#94B4C1] uppercase tracking-wide">
@@ -196,7 +195,7 @@ function Login() {
               </div>
             ))}
           </div>
-          <p className="mt-4 text-sm text-[#547792]">
+          <p className="mt-4 text-sm text-[#94B4C1]">
             Trusted by property investors, agents, and analysts.
           </p>
         </div>
