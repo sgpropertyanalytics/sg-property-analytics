@@ -1,4 +1,5 @@
-import { useSubscription } from '../../context/SubscriptionContext';
+import { useContext } from 'react';
+import SubscriptionContext from '../../context/SubscriptionContext';
 
 /**
  * BlurredDashboard - Wrapper that blurs chart content for free users
@@ -17,7 +18,16 @@ import { useSubscription } from '../../context/SubscriptionContext';
  *   </BlurredDashboard>
  */
 export function BlurredDashboard({ children }) {
-  const { isPremium } = useSubscription();
+  // Use context directly to avoid throwing if context is missing
+  const context = useContext(SubscriptionContext);
+
+  // If no context (e.g., outside provider), render children without blur
+  // This prevents crashes and allows graceful degradation
+  if (!context) {
+    return <>{children}</>;
+  }
+
+  const { isPremium } = context;
 
   // Premium users see everything normally
   if (isPremium) {
