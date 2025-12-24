@@ -167,9 +167,15 @@ def stripe_webhook():
         return jsonify({"error": "Invalid signature"}), 400
 
     event_type = event.get('type') if isinstance(event, dict) else event['type']
+    event_id = event.get('id') if isinstance(event, dict) else event['id']
     event_data = event.get('data', {}).get('object') if isinstance(event, dict) else event['data']['object']
 
-    print(f"Stripe webhook received: {event_type}")
+    print(f"Stripe webhook received: {event_type} (id: {event_id})")
+
+    # IDEMPOTENCY: Check if we've already processed this event
+    if event_id in _processed_events:
+        print(f"Event {event_id} already processed, skipping")
+        return jsonify({"received": True, "skipped": True}), 200
 
     try:
         # Handle checkout.session.completed
@@ -229,6 +235,12 @@ def stripe_webhook():
                 if user:
                     print(f"Payment failed for user {user.email}")
                     # Could send notification email here
+
+        # IDEMPOTENCY: Mark event as processed
+        # Limit set size to prevent memory issues (keep last 10000 events)
+        if len(_processed_events) > 10000:
+            _processed_events.clear()
+        _processed_events.add(event_id)
 
         return jsonify({"received": True}), 200
 

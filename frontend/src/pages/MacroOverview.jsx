@@ -68,6 +68,7 @@ export function MacroOverviewContent() {
     newLaunchPremium: { value: 0, trendLabel: '', direction: 'neutral' },
     buyerOpportunity: { value: 0, trend: 0 },
     loading: true,
+    insight: '', // Key insight summary
   });
 
   // Fetch KPIs based on current filters (but ignore date range - always use "current market")
@@ -151,10 +152,17 @@ export function MacroOverviewContent() {
           : 0;
 
         // Calculate Price Predictability (IQR as % of median)
+        // Sanity check: IQR ratio should typically be 15-50% for property markets
         const iqr = (currentPsf.psf_75th || 0) - (currentPsf.psf_25th || 0);
-        const iqrRatio = medianPsfValue > 0 ? (iqr / medianPsfValue) * 100 : 0;
+        let iqrRatio = medianPsfValue > 0 ? (iqr / medianPsfValue) * 100 : 0;
+        // Cap at 100% - anything higher indicates a data issue
+        if (iqrRatio > 100) {
+          console.warn('Price Predictability ratio too high, capping at 100%', { iqr, medianPsfValue, psf_25th: currentPsf.psf_25th, psf_75th: currentPsf.psf_75th });
+          iqrRatio = 100;
+        }
         const prevIqr = (prevPsf.psf_75th || 0) - (prevPsf.psf_25th || 0);
-        const prevIqrRatio = prevMedianPsf > 0 ? (prevIqr / prevMedianPsf) * 100 : iqrRatio;
+        let prevIqrRatio = prevMedianPsf > 0 ? (prevIqr / prevMedianPsf) * 100 : iqrRatio;
+        if (prevIqrRatio > 100) prevIqrRatio = 100;
         const predictabilityTrend = iqrRatio - prevIqrRatio;
         const predictabilityLabel = iqrRatio < 20 ? 'Very Stable'
           : iqrRatio < 30 ? 'Stable'
@@ -183,6 +191,45 @@ export function MacroOverviewContent() {
         // Using the predictability change as a proxy - if prices getting tighter, fewer below median
         const buyerOpportunityTrend = -predictabilityTrend * 0.5; // Inverse relationship
 
+        // Generate key insight based on all metrics
+        const generateInsight = () => {
+          const insights = [];
+
+          // Price trend insight
+          if (medianPsfTrend > 2) {
+            insights.push(`prices rising ${medianPsfTrend.toFixed(1)}%`);
+          } else if (medianPsfTrend < -2) {
+            insights.push(`prices falling ${Math.abs(medianPsfTrend).toFixed(1)}%`);
+          }
+
+          // Market type insight
+          if (buyerOpportunityValue >= 55) {
+            insights.push("buyer's market with deals available");
+          } else if (buyerOpportunityValue <= 45) {
+            insights.push("seller's market with premium pricing");
+          }
+
+          // New launch insight
+          if (newLaunchPremium > 20) {
+            insights.push(`new launches at ${newLaunchPremium.toFixed(0)}% premium - consider resale`);
+          } else if (newLaunchPremium < 10 && newLaunchPremium > 0) {
+            insights.push(`new launches only ${newLaunchPremium.toFixed(0)}% over resale - good value`);
+          }
+
+          // Volatility insight
+          if (iqrRatio > 40) {
+            insights.push("high price volatility - negotiate aggressively");
+          } else if (iqrRatio < 20) {
+            insights.push("tight pricing - offers must be competitive");
+          }
+
+          if (insights.length === 0) {
+            return "Market conditions are balanced. Standard negotiation applies.";
+          }
+
+          return insights.slice(0, 2).join('. ') + '.';
+        };
+
         setKpis({
           medianPsf: {
             value: Math.round(medianPsfValue),
@@ -202,6 +249,7 @@ export function MacroOverviewContent() {
             value: Number(buyerOpportunityValue.toFixed(0)),
             trend: Number(buyerOpportunityTrend.toFixed(1)),
           },
+          insight: generateInsight(),
           loading: false,
         });
       } catch (err) {
@@ -292,6 +340,19 @@ export function MacroOverviewContent() {
 
           {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">
+              {/* Key Insight Box - Summarizes market conditions */}
+              {!kpis.loading && kpis.insight && (
+                <div className="mb-4 p-3 md:p-4 bg-[#213448] text-white rounded-lg flex items-start gap-3">
+                  <svg className="w-5 h-5 mt-0.5 flex-shrink-0 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <span className="text-xs text-[#94B4C1] uppercase tracking-wide font-medium">Market Insight</span>
+                    <p className="text-sm md:text-base mt-0.5">{kpis.insight}</p>
+                  </div>
+                </div>
+              )}
+
               {/* KPI Summary Cards - Deal Detection Metrics (Last 30 Days) */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
                 {/* Card 1: Market Median PSF - Universal benchmark for deal assessment */}
