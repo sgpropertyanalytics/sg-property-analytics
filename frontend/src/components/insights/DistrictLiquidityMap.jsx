@@ -799,11 +799,217 @@ export default function DistrictLiquidityMap() {
         <RegionSummaryBar districtData={districtData} meta={meta} />
       )}
 
+      {/* District Ranking Table */}
+      {!loading && !error && districtData.length > 0 && (
+        <LiquidityRankingTable districtData={districtData} />
+      )}
+
       <style>{`
         .maplibregl-ctrl-attrib {
           display: none !important;
         }
       `}</style>
+    </div>
+  );
+}
+
+// =============================================================================
+// LIQUIDITY RANKING TABLE COMPONENT
+// =============================================================================
+
+function LiquidityRankingTable({ districtData }) {
+  // Sort by monthly velocity descending (highest liquidity first)
+  const sortedData = useMemo(() => {
+    return [...districtData]
+      .filter(d => d.has_data)
+      .sort((a, b) => (b.liquidity_metrics?.monthly_velocity || 0) - (a.liquidity_metrics?.monthly_velocity || 0));
+  }, [districtData]);
+
+  const getRegionBadge = (region) => {
+    switch (region) {
+      case 'CCR':
+        return 'bg-[#213448] text-white';
+      case 'RCR':
+        return 'bg-[#547792] text-white';
+      case 'OCR':
+        return 'bg-[#94B4C1] text-[#213448]';
+      default:
+        return 'bg-gray-200 text-gray-600';
+    }
+  };
+
+  const getFragilityBadge = (fragility) => {
+    switch (fragility) {
+      case 'Robust':
+        return 'bg-emerald-100 text-emerald-700';
+      case 'Moderate':
+        return 'bg-amber-100 text-amber-700';
+      case 'Fragile':
+        return 'bg-rose-100 text-rose-700';
+      default:
+        return 'bg-gray-100 text-gray-500';
+    }
+  };
+
+  const getTierBadge = (tier) => {
+    switch (tier) {
+      case 'Very High':
+        return 'bg-[#213448] text-white';
+      case 'High':
+        return 'bg-[#547792] text-white';
+      case 'Neutral':
+        return 'bg-[#94B4C1] text-[#213448]';
+      case 'Low':
+        return 'bg-[#EAE0CF] text-[#547792]';
+      case 'Very Low':
+        return 'bg-[#EAE0CF] text-[#94B4C1]';
+      default:
+        return 'bg-gray-100 text-gray-500';
+    }
+  };
+
+  return (
+    <div className="border-t border-[#94B4C1]/30">
+      {/* Table Header */}
+      <div className="px-4 py-3 bg-[#EAE0CF]/20">
+        <h3 className="text-sm font-bold text-[#213448]">
+          District Liquidity Ranking
+        </h3>
+        <p className="text-xs text-[#547792]">
+          Sorted by monthly transaction velocity (highest liquidity first)
+        </p>
+      </div>
+
+      {/* Scrollable Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-[#EAE0CF]/30 border-b border-[#94B4C1]/30">
+              <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap">Rank</th>
+              <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap">District</th>
+              <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap min-w-[200px]">Area</th>
+              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Region</th>
+              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Tier</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Velocity/mo</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Transactions</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Z-Score</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">New %</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Resale %</th>
+              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Fragility</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Projects</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Gini</th>
+              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">Top Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedData.map((district, index) => {
+              const m = district.liquidity_metrics || {};
+              return (
+                <tr
+                  key={district.district_id}
+                  className={`border-b border-[#94B4C1]/20 hover:bg-[#EAE0CF]/20 transition-colors ${
+                    index < 3 ? 'bg-[#EAE0CF]/10' : ''
+                  }`}
+                >
+                  {/* Rank */}
+                  <td className="px-3 py-2 text-center">
+                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                      index === 0 ? 'bg-amber-400 text-white' :
+                      index === 1 ? 'bg-gray-300 text-gray-700' :
+                      index === 2 ? 'bg-amber-600 text-white' :
+                      'bg-[#EAE0CF]/50 text-[#547792]'
+                    }`}>
+                      {index + 1}
+                    </span>
+                  </td>
+
+                  {/* District ID */}
+                  <td className="px-3 py-2 font-semibold text-[#213448]">
+                    {district.district_id}
+                  </td>
+
+                  {/* Full Area Name */}
+                  <td className="px-3 py-2 text-[#547792]">
+                    {district.full_name}
+                  </td>
+
+                  {/* Region Badge */}
+                  <td className="px-3 py-2 text-center">
+                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${getRegionBadge(district.region)}`}>
+                      {district.region}
+                    </span>
+                  </td>
+
+                  {/* Liquidity Tier */}
+                  <td className="px-3 py-2 text-center">
+                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${getTierBadge(m.liquidity_tier)}`}>
+                      {m.liquidity_tier || '-'}
+                    </span>
+                  </td>
+
+                  {/* Monthly Velocity */}
+                  <td className="px-3 py-2 text-right font-bold text-[#213448]">
+                    {m.monthly_velocity?.toFixed(1) || '0'}
+                  </td>
+
+                  {/* Transaction Count */}
+                  <td className="px-3 py-2 text-right text-[#213448]">
+                    {m.tx_count?.toLocaleString() || '0'}
+                  </td>
+
+                  {/* Z-Score */}
+                  <td className="px-3 py-2 text-right">
+                    <span className={`font-semibold ${
+                      (m.z_score || 0) >= 0.5 ? 'text-emerald-600' :
+                      (m.z_score || 0) <= -0.5 ? 'text-rose-600' :
+                      'text-[#547792]'
+                    }`}>
+                      {m.z_score?.toFixed(2) || '-'}
+                    </span>
+                  </td>
+
+                  {/* New Sale % */}
+                  <td className="px-3 py-2 text-right text-[#547792]">
+                    {m.new_sale_pct?.toFixed(0) || '0'}%
+                  </td>
+
+                  {/* Resale % */}
+                  <td className="px-3 py-2 text-right text-[#547792]">
+                    {m.resale_pct?.toFixed(0) || '0'}%
+                  </td>
+
+                  {/* Fragility Badge */}
+                  <td className="px-3 py-2 text-center">
+                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${getFragilityBadge(m.fragility_label)}`}>
+                      {m.fragility_label || '-'}
+                    </span>
+                  </td>
+
+                  {/* Project Count */}
+                  <td className="px-3 py-2 text-right text-[#547792]">
+                    {m.project_count || 0}
+                  </td>
+
+                  {/* Gini Index */}
+                  <td className="px-3 py-2 text-right text-[#547792]">
+                    {m.concentration_gini?.toFixed(2) || '-'}
+                  </td>
+
+                  {/* Top Project Share */}
+                  <td className="px-3 py-2 text-right text-[#547792]">
+                    {m.top_project_share?.toFixed(0) || '0'}%
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Table Footer */}
+      <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
+        Showing {sortedData.length} districts with transaction data
+      </div>
     </div>
   );
 }
