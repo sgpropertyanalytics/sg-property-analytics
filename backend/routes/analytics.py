@@ -2749,7 +2749,7 @@ def kpi_summary():
                     COUNT(*) as txn_count
                 FROM transactions
                 WHERE {filter_sql}
-                  AND transaction_date > :thirty_days_ago
+                  AND transaction_date >= :thirty_days_ago
                   AND transaction_date <= :max_date
             ),
             previous_period AS (
@@ -2758,8 +2758,8 @@ def kpi_summary():
                     COUNT(*) as txn_count
                 FROM transactions
                 WHERE {filter_sql}
-                  AND transaction_date > :sixty_days_ago
-                  AND transaction_date <= :thirty_days_ago
+                  AND transaction_date >= :sixty_days_ago
+                  AND transaction_date < :thirty_days_ago
             ),
             new_sales AS (
                 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf

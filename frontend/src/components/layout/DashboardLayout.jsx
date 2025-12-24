@@ -4,6 +4,7 @@ import { GlobalNavRail, NAV_ITEMS } from './GlobalNavRail';
 import { PowerBIFilterProvider } from '../../context/PowerBIFilterContext';
 import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
 import { ErrorBoundary } from '../ui';
+import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PricingModal } from '../PricingModal';
 
@@ -212,10 +213,15 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
           </header>
 
           {/* Main Content - Wrapped with ErrorBoundary to prevent blank page crashes */}
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto flex flex-col">
             <ErrorBoundary name="Page Content">
-              {children}
+              <div className="flex-1">
+                {children}
+              </div>
             </ErrorBoundary>
+
+            {/* Upgrade CTA - Sticky footer for free users */}
+            <UpgradeFooterCTA />
           </main>
         </div>
 
