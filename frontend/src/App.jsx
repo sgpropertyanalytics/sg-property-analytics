@@ -7,6 +7,7 @@ import { DashboardLayout } from './components/layout';
 import { MacroOverviewContent } from './pages/MacroOverview';
 import { FloorDispersionContent } from './pages/FloorDispersion';
 import { InsightsContent } from './pages/Insights';
+import { DistrictDeepDiveContent } from './pages/DistrictDeepDive';
 import { ValueParityPanel } from './components/ValueParityPanel';
 
 /**
@@ -25,6 +26,7 @@ import { ValueParityPanel } from './components/ValueParityPanel';
  * - /market-pulse: Market analytics dashboard (premium)
  * - /value-parity: Budget search tool (premium) - includes New Launches + Resale
  * - /floor-dispersion: Floor level analysis (premium)
+ * - /district-deep-dive: District and project deep dive analysis (premium)
  * - /insights: AI-powered market insights (premium)
  */
 function App() {
@@ -95,6 +97,16 @@ function App() {
 
           {/* Legacy route redirect */}
           <Route path="/analytics-view" element={<Navigate to="/floor-dispersion" replace />} />
+
+          {/* District & Project Deep Dive */}
+          <Route
+            path="/district-deep-dive"
+            element={
+              <DashboardLayout activePage="district-deep-dive">
+                <DistrictDeepDiveContent />
+              </DashboardLayout>
+            }
+          />
 
           {/* Insights - Placeholder */}
           <Route
