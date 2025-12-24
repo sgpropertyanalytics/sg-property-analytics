@@ -1,13 +1,14 @@
 import { useState } from 'react';
+import { DistrictLiquidityMap } from '../components/insights';
 
 /**
  * District & Project Deep Dive Page
  *
  * Two tabs:
  * 1. District Overview - Market-level analysis across districts
- *    - Liquidity Map
- *    - New Launch vs Resale
- *    - Project Quality Distribution
+ *    - Liquidity Map (IMPLEMENTED)
+ *    - New Launch vs Resale (Coming Soon)
+ *    - Project Quality Distribution (Coming Soon)
  *
  * 2. Project Deep Dive - Individual project analysis
  *    - Fundamentals & Pricing
@@ -102,63 +103,46 @@ export function DistrictDeepDiveContent() {
 function DistrictOverviewContent() {
   return (
     <div className="space-y-6">
-      {/* Placeholder Content */}
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6 md:p-8">
-        <div className="flex items-start gap-4">
-          {/* Icon */}
-          <div className="w-12 h-12 rounded-full bg-[#547792]/10 flex items-center justify-center flex-shrink-0">
-            <svg
-              className="w-6 h-6 text-[#547792]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-              />
-            </svg>
+      {/* District Liquidity Map */}
+      <DistrictLiquidityMap />
+
+      {/* Coming Soon Features */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[#EAE0CF]/50 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-sm font-semibold text-[#213448]">New Launch vs Resale</h3>
+                <span className="text-[9px] px-1.5 py-0.5 bg-[#EAE0CF] text-[#547792] rounded-full font-medium">Coming</span>
+              </div>
+              <p className="text-xs text-[#547792]">
+                Compare pricing and volume dynamics between new launches and resale market
+              </p>
+            </div>
           </div>
+        </div>
 
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold text-[#213448] mb-1">
-              District Overview Analytics Coming Soon
-            </h2>
-            <p className="text-[#547792] text-sm mb-4">
-              Compare market performance, liquidity, and pricing trends across Singapore districts.
-            </p>
-
-            {/* Feature Preview Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
-                <div className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-1">
-                  Coming
-                </div>
-                <div className="text-sm font-medium text-[#213448]">Liquidity Map</div>
-                <p className="text-xs text-[#547792] mt-1">
-                  Visualize transaction volume and market depth by district
-                </p>
+        <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[#EAE0CF]/50 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+              </svg>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-sm font-semibold text-[#213448]">Project Quality Distribution</h3>
+                <span className="text-[9px] px-1.5 py-0.5 bg-[#EAE0CF] text-[#547792] rounded-full font-medium">Coming</span>
               </div>
-              <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
-                <div className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-1">
-                  Coming
-                </div>
-                <div className="text-sm font-medium text-[#213448]">New Launch vs Resale</div>
-                <p className="text-xs text-[#547792] mt-1">
-                  Compare new launch and resale market dynamics
-                </p>
-              </div>
-              <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
-                <div className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-1">
-                  Coming
-                </div>
-                <div className="text-sm font-medium text-[#213448]">Project Quality Distribution</div>
-                <p className="text-xs text-[#547792] mt-1">
-                  Distribution of project tiers and quality across districts
-                </p>
-              </div>
+              <p className="text-xs text-[#547792]">
+                Distribution of project tiers and quality ratings across districts
+              </p>
             </div>
           </div>
         </div>

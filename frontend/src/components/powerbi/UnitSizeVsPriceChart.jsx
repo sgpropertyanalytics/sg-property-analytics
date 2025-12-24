@@ -290,12 +290,12 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
               </button>
               {/* Tooltip */}
               <div className="absolute right-0 top-full mt-1 w-72 p-3 bg-[#213448] text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                <div className="font-semibold mb-1">Sampling Methodology</div>
-                <ul className="space-y-1 text-[#EAE0CF]">
-                  <li><span className="text-white">Stratified:</span> Equal samples from CCR, RCR, OCR (~667 each)</li>
-                  <li><span className="text-white">Stable:</span> Same filters = same data points</li>
-                  <li><span className="text-white">n=2,000:</span> ~2.2% margin of error at 95% confidence</li>
-                </ul>
+                <div className="font-semibold mb-2">Sampling Methodology</div>
+                <p className="text-[#EAE0CF] leading-relaxed">
+                  Stable sample (n = 2,000) balanced across CCR / RCR / OCR.
+                  <br />
+                  ~2–3% margin of error (95% CI) for macro-level trends.
+                </p>
                 <div className="mt-2 pt-2 border-t border-[#547792] text-[#94B4C1]">
                   Click refresh for a different sample
                 </div>

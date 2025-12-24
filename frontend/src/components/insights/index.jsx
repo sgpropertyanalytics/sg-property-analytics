@@ -65,6 +65,12 @@ const MarketStrategyMapLazy = lazyWithRetry(
   'MarketStrategyMap'
 );
 
+// District Liquidity Map (lazy loaded with retry for chunk errors)
+const DistrictLiquidityMapLazy = lazyWithRetry(
+  () => import('./DistrictLiquidityMap'),
+  'DistrictLiquidityMap'
+);
+
 // Loading fallback component for 3D map (light theme to match actual component)
 function MapLoadingFallback() {
   return (
@@ -128,6 +134,39 @@ export function MarketStrategyMap(props) {
     <ErrorBoundary name="District Price Map" compact>
       <Suspense fallback={<StrategyMapLoadingFallback />}>
         <MarketStrategyMapLazy {...props} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+// Loading fallback for liquidity map
+function LiquidityMapLoadingFallback() {
+  return (
+    <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
+        <h2 className="text-lg font-bold text-[#213448]">
+          District Liquidity Map
+        </h2>
+        <p className="text-xs text-[#547792]">
+          Transaction velocity by postal district
+        </p>
+      </div>
+      <div className="flex items-center justify-center bg-[#EAE0CF]/20" style={{ height: '500px' }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-[#547792] border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-[#547792]">Loading liquidity map...</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Wrapped lazy component with Suspense + ErrorBoundary - District Liquidity Map
+export function DistrictLiquidityMap(props) {
+  return (
+    <ErrorBoundary name="District Liquidity Map" compact>
+      <Suspense fallback={<LiquidityMapLoadingFallback />}>
+        <DistrictLiquidityMapLazy {...props} />
       </Suspense>
     </ErrorBoundary>
   );
