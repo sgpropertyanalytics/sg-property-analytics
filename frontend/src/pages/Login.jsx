@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LineChart, ArrowLeft, Lock, Mail, Eye, EyeOff, ShieldCheck, Clock, Building } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ResearchStackPreview from '../components/unlock/ResearchStackPreview';
 
 /**
  * Login/Sign Up Page - "Research Terminal Unlock" Experience
@@ -80,165 +81,15 @@ function Login() {
           </div>
         </div>
 
-        {/* Center Section - Dark Mode Glass Stack */}
-        <div
+        {/* Center Section - Vertical Research Stack */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
           className="relative z-10 flex-1 flex items-center justify-center overflow-hidden"
-          style={{ perspective: '1200px' }}
         >
-          {/* ===== MONOCHROMATIC GLASS CARD STACK ===== */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
-            className="relative"
-            style={{
-              transform: 'rotateX(55deg) rotateZ(-5deg)',
-              transformStyle: 'preserve-3d',
-            }}
-          >
-            {/* Card 3 (Back): District Heatmap */}
-            <div
-              className="absolute w-[320px] h-[180px] rounded-2xl overflow-hidden backdrop-blur-xl"
-              style={{
-                transform: 'translateZ(0px) translateY(-135px)',
-                background: 'rgba(30, 41, 59, 0.80)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
-              }}
-            >
-              <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/5">
-                <span className="text-xs font-medium text-slate-300">District Heatmap</span>
-                <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                </div>
-              </div>
-              <div className="p-3">
-                <svg className="w-full h-[120px]" viewBox="0 0 280 110">
-                  <defs>
-                    <radialGradient id="heatA" cx="30%" cy="40%" r="40%">
-                      <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.7" />
-                      <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
-                    </radialGradient>
-                    <radialGradient id="heatB" cx="70%" cy="50%" r="35%">
-                      <stop offset="0%" stopColor="#67e8f9" stopOpacity="0.5" />
-                      <stop offset="100%" stopColor="#67e8f9" stopOpacity="0" />
-                    </radialGradient>
-                    <radialGradient id="heatC" cx="50%" cy="70%" r="30%">
-                      <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.6" />
-                      <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
-                    </radialGradient>
-                  </defs>
-                  <rect width="100%" height="100%" fill="rgba(15,23,42,0.4)" rx="8" />
-                  <ellipse cx="84" cy="44" rx="55" ry="38" fill="url(#heatA)" />
-                  <ellipse cx="196" cy="55" rx="50" ry="35" fill="url(#heatB)" />
-                  <ellipse cx="140" cy="77" rx="45" ry="30" fill="url(#heatC)" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Card 2 (Middle): Price Distribution */}
-            <div
-              className="absolute w-[320px] h-[180px] rounded-2xl overflow-hidden backdrop-blur-xl"
-              style={{
-                transform: 'translateZ(50px) translateY(-68px)',
-                background: 'rgba(30, 41, 59, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
-              }}
-            >
-              <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/5">
-                <span className="text-xs font-medium text-slate-300">Price Distribution</span>
-                <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                </div>
-              </div>
-              <div className="p-3">
-                <svg className="w-full h-[120px]" viewBox="0 0 280 110">
-                  <line x1="20" y1="95" x2="260" y2="95" stroke="rgba(148,163,184,0.2)" strokeWidth="1" />
-                  {/* Histogram bars - Teal/Cyan only */}
-                  <rect x="30" y="80" width="22" height="15" fill="rgba(34,211,238,0.3)" rx="2" />
-                  <rect x="58" y="65" width="22" height="30" fill="rgba(34,211,238,0.4)" rx="2" />
-                  <rect x="86" y="45" width="22" height="50" fill="rgba(34,211,238,0.5)" rx="2" />
-                  <rect x="114" y="25" width="22" height="70" fill="rgba(34,211,238,0.7)" rx="2" />
-                  <rect x="142" y="15" width="22" height="80" fill="rgba(103,232,249,0.85)" rx="2" />
-                  <rect x="170" y="30" width="22" height="65" fill="rgba(34,211,238,0.65)" rx="2" />
-                  <rect x="198" y="50" width="22" height="45" fill="rgba(34,211,238,0.45)" rx="2" />
-                  <rect x="226" y="72" width="22" height="23" fill="rgba(34,211,238,0.3)" rx="2" />
-                  {/* Median line */}
-                  <line x1="153" y1="8" x2="153" y2="95" stroke="#22d3ee" strokeWidth="1.5" strokeDasharray="4,3" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Card 1 (Front): Market Pulse - Main Dashboard */}
-            <div
-              className="relative w-[320px] h-[180px] rounded-2xl overflow-hidden backdrop-blur-xl"
-              style={{
-                transform: 'translateZ(100px)',
-                background: 'rgba(15, 23, 42, 0.90)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.08)',
-              }}
-            >
-              <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/5">
-                <span className="text-xs font-medium text-slate-200">Market Pulse</span>
-                <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-300" />
-                </div>
-              </div>
-              <div className="p-3">
-                {/* Mini KPIs */}
-                <div className="flex gap-2 mb-3">
-                  <div className="flex-1 bg-slate-800/60 rounded-lg px-2.5 py-2 border border-slate-700/50">
-                    <div className="text-[9px] text-slate-500 uppercase tracking-wide">Median PSF</div>
-                    <div className="text-sm font-bold text-white font-mono">$1,847</div>
-                  </div>
-                  <div className="flex-1 bg-slate-800/60 rounded-lg px-2.5 py-2 border border-slate-700/50">
-                    <div className="text-[9px] text-slate-500 uppercase tracking-wide">Volume</div>
-                    <div className="text-sm font-bold text-white font-mono">1,284</div>
-                  </div>
-                  <div className="flex-1 bg-slate-800/60 rounded-lg px-2.5 py-2 border border-slate-700/50">
-                    <div className="text-[9px] text-slate-500 uppercase tracking-wide">Trend</div>
-                    <div className="text-sm font-bold text-cyan-400 font-mono">+2.3%</div>
-                  </div>
-                </div>
-                {/* Area Chart - Teal/Cyan */}
-                <svg className="w-full h-[70px]" viewBox="0 0 280 65">
-                  <defs>
-                    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M0,50 Q35,45 70,47 T140,38 T210,30 T280,34 L280,65 L0,65 Z" fill="url(#tealGrad)" />
-                  <path d="M0,50 Q35,45 70,47 T140,38 T210,30 T280,34" fill="none" stroke="#22d3ee" strokeWidth="2" />
-                  {/* Data points */}
-                  <circle cx="70" cy="47" r="3" fill="#67e8f9" />
-                  <circle cx="140" cy="38" r="3" fill="#67e8f9" />
-                  <circle cx="210" cy="30" r="3" fill="#67e8f9" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Preview Badge - Floating above stack */}
-            <div
-              className="absolute left-1/2"
-              style={{
-                transform: 'translateX(-50%) translateZ(130px) rotateX(-55deg) rotateZ(5deg)',
-                top: '-25px',
-              }}
-            >
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/95 border border-cyan-500/30 rounded-full text-xs font-semibold text-cyan-400 shadow-xl shadow-cyan-500/10">
-                <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
-                Live Preview
-              </span>
-            </div>
-          </motion.div>
-        </div>
+          <ResearchStackPreview />
+        </motion.div>
 
         {/* Bottom Section - Social Proof Metrics */}
         <div className="relative z-10">
@@ -305,7 +156,7 @@ function Login() {
               Unlock Market Data
             </h2>
             <p className="text-lg text-slate-500 leading-relaxed max-w-xl mx-auto text-balance">
-              Access aggregated market trends from the last 60 days.
+              Access aggregated market trends · Last 60 days
             </p>
           </div>
 
