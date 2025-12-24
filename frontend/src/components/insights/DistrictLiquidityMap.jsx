@@ -744,30 +744,62 @@ export default function DistrictLiquidityMap() {
 
         {/* Legend - Liquidity Tiers (top-left) */}
         <div className="absolute top-4 left-4 z-20">
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-[#94B4C1]/50 shadow-md p-2.5 w-[165px]">
-            <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-2">
-              Liquidity Tier (Z-Score)
-            </p>
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-[#94B4C1]/50 shadow-md p-2.5 w-[180px]">
+            {/* Header with methodology tooltip */}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold">
+                Liquidity Tier
+              </p>
+              <div className="group relative">
+                <div className="w-4 h-4 rounded-full bg-[#EAE0CF]/50 flex items-center justify-center cursor-help hover:bg-[#94B4C1]/30 transition-colors">
+                  <svg className="w-2.5 h-2.5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                {/* Tooltip */}
+                <div className="absolute left-0 top-full mt-1 w-56 p-2.5 bg-[#213448] text-white text-[10px] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <p className="font-semibold text-[#EAE0CF] mb-1.5">Methodology</p>
+                  <div className="space-y-1.5 text-[#94B4C1]">
+                    <p>
+                      <span className="text-emerald-300 font-medium">Exit Safety</span> (Tier, Velocity, Z-Score): Calculated on <span className="text-white">resale only</span> to reflect organic demand.
+                    </p>
+                    <p>
+                      <span className="text-rose-300 font-medium">Concentration</span> (Gini, Fragility): Calculated on <span className="text-white">resale only</span> to avoid developer release distortion.
+                    </p>
+                    <p>
+                      <span className="text-[#EAE0CF] font-medium">Market Structure</span> (Tx, Projects): Includes <span className="text-white">all sale types</span>.
+                    </p>
+                  </div>
+                  <div className="absolute -top-1 left-3 w-2 h-2 bg-[#213448] rotate-45" />
+                </div>
+              </div>
+            </div>
+
+            {/* Resale-only badge */}
+            <div className="mb-2 px-1.5 py-0.5 bg-emerald-50 border border-emerald-200 rounded text-[8px] text-emerald-700 text-center">
+              Based on resale transactions
+            </div>
+
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_FILLS.veryHigh }} />
-                <span className="text-[10px] text-[#213448]">Very High (&gt;1.5)</span>
+                <span className="text-[10px] text-[#213448]">Very High (&gt;1.5σ)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_FILLS.high }} />
-                <span className="text-[10px] text-[#213448]">High (0.5 to 1.5)</span>
+                <span className="text-[10px] text-[#213448]">High (0.5 to 1.5σ)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_FILLS.neutral }} />
-                <span className="text-[10px] text-[#213448]">Neutral (-0.5 to 0.5)</span>
+                <span className="text-[10px] text-[#213448]">Neutral (-0.5 to 0.5σ)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_FILLS.low }} />
-                <span className="text-[10px] text-[#213448]">Low (-1.5 to -0.5)</span>
+                <span className="text-[10px] text-[#213448]">Low (-1.5 to -0.5σ)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_FILLS.veryLow }} />
-                <span className="text-[10px] text-[#213448]">Very Low (&lt;-1.5)</span>
+                <span className="text-[10px] text-[#213448]">Very Low (&lt;-1.5σ)</span>
               </div>
             </div>
 

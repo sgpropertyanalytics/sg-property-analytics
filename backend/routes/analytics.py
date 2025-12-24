@@ -598,8 +598,11 @@ def transactions():
         query = query.filter(Transaction.district.in_(segment_districts))
 
     transactions = query.limit(limit).all()
-    result = [t.to_dict() for t in transactions]
-    
+
+    # SECURITY: Use tier-aware serialization
+    from utils.subscription import serialize_transactions
+    result = serialize_transactions(transactions)
+
     elapsed = time.time() - start
     print(f"GET /api/transactions took: {elapsed:.4f} seconds (returned {len(result)} rows)")
     return jsonify({
@@ -911,21 +914,24 @@ def comparable_value_analysis():
             query = query.filter(func.lower(Transaction.sale_type) == sale_type.lower())
 
         transactions = query.limit(100).all()
-        
-        points = [t.to_dict() for t in transactions]
-        
-        # Calculate summary stats
-        if points:
-            prices = [p['price'] for p in points]
-            psfs = [p['psf'] for p in points]
+
+        # Calculate summary stats from RAW data (before serialization)
+        # Summary stats are aggregates and can be shown to all users
+        if transactions:
+            prices = [t.price for t in transactions]
+            psfs = [t.psf for t in transactions]
             summary = {
-                'count': len(points),
+                'count': len(transactions),
                 'price_median': sorted(prices)[len(prices)//2] if prices else None,
                 'psf_median': sorted(psfs)[len(psfs)//2] if psfs else None
             }
         else:
             summary = {'count': 0, 'price_median': None, 'psf_median': None}
-        
+
+        # SECURITY: Use tier-aware serialization for individual points
+        from utils.subscription import serialize_transactions
+        points = serialize_transactions(transactions)
+
         return jsonify({
             'points': points,
             'competitors': [],  # Can be computed if needed
@@ -1789,8 +1795,13 @@ def transactions_list():
     elapsed = time.time() - start
     print(f"GET /api/transactions/list took: {elapsed:.4f} seconds (page {page}, {len(transactions)} records)")
 
+    # SECURITY: Use tier-aware serialization
+    # Premium users get full data, free/anonymous users get masked teaser data
+    from utils.subscription import serialize_transactions
+    serialized = serialize_transactions(transactions)
+
     return jsonify({
-        "transactions": [t.to_dict() for t in transactions],
+        "transactions": serialized,
         "pagination": {
             "page": page,
             "limit": limit,
@@ -2561,16 +2572,34 @@ def scatter_sample():
         result = db.session.execute(sql, params)
         sampled = result.fetchall()
 
-        # Format response
-        data = [
-            {
-                "price": row.price,
-                "area_sqft": row.area_sqft,
-                "bedroom": row.bedroom_count,
-                "district": row.district
-            }
-            for row in sampled
-        ]
+        # SECURITY: Check subscription tier for scatter data precision
+        # Premium: exact values | Free: rounded values (preserves pattern, reduces precision)
+        from utils.subscription import is_premium_user
+        is_premium = is_premium_user()
+
+        # Format response with tier-aware precision
+        if is_premium:
+            data = [
+                {
+                    "price": row.price,
+                    "area_sqft": row.area_sqft,
+                    "bedroom": row.bedroom_count,
+                    "district": row.district
+                }
+                for row in sampled
+            ]
+        else:
+            # Free users: round price to nearest $50K, area to nearest 25 sqft
+            # Preserves market pattern visualization without revealing exact values
+            data = [
+                {
+                    "price": round(row.price / 50000) * 50000 if row.price else None,
+                    "area_sqft": round(row.area_sqft / 25) * 25 if row.area_sqft else None,
+                    "bedroom": row.bedroom_count,
+                    "district": row.district
+                }
+                for row in sampled
+            ]
 
         elapsed = time.time() - start
         print(f"GET /api/scatter-sample returned {len(data)} points (stratified by segment) in {elapsed:.4f}s")

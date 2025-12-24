@@ -93,7 +93,7 @@ class Transaction(db.Model):
         return or_(cls.is_outlier == False, cls.is_outlier.is_(None))
 
     def to_dict(self):
-        """Convert to dictionary for JSON serialization"""
+        """Convert to dictionary for JSON serialization - FULL data for premium users"""
         return {
             # Core fields (existing - do not change keys for frontend compat)
             'id': self.id,
@@ -119,5 +119,81 @@ class Transaction(db.Model):
             'type_of_area': self.type_of_area,
             'market_segment': self.market_segment,
             'is_outlier': self.is_outlier,
+        }
+
+    def to_teaser_dict(self):
+        """
+        Convert to dictionary for TEASER mode - masks sensitive fields for free users.
+
+        PREMIUM FIELDS (masked/omitted for free users):
+        - project_name → masked to "D{district} Condo"
+        - price → shown as range
+        - psf → shown as range
+        - area_sqft → shown as rounded
+        - street_name → omitted entirely
+
+        VISIBLE FIELDS (shown to all users):
+        - district, bedroom_count, sale_type, tenure
+        - transaction_date (month only)
+        - floor_level, market_segment
+        """
+        # Mask project name to generic format
+        masked_project = f"{self.district} Condo" if self.district else "Condo"
+
+        # Mask price to range (e.g., $2.5M - $3M)
+        if self.price:
+            millions = self.price / 1000000
+            if millions < 1:
+                lower = int(self.price // 100000) * 100000
+                upper = lower + 100000
+                masked_price = f"${lower // 1000}K - ${upper // 1000}K"
+            elif millions < 5:
+                lower = int(millions * 2) / 2
+                upper = lower + 0.5
+                masked_price = f"${lower:.1f}M - ${upper:.1f}M"
+            else:
+                lower = int(millions)
+                upper = lower + 1
+                masked_price = f"${lower}M - ${upper}M"
+        else:
+            masked_price = None
+
+        # Mask PSF to range (e.g., $2,000 - $2,500)
+        if self.psf:
+            lower = int(self.psf // 500) * 500
+            upper = lower + 500
+            masked_psf = f"${lower:,} - ${upper:,}"
+        else:
+            masked_psf = None
+
+        # Mask area to rounded value (e.g., ~1,200)
+        if self.area_sqft:
+            rounded = round(self.area_sqft / 100) * 100
+            masked_area = f"~{rounded:,}"
+        else:
+            masked_area = None
+
+        return {
+            'id': self.id,
+            # MASKED fields - shown as ranges/generic
+            'project_name': masked_project,
+            'price': masked_price,  # String range, not number
+            'psf': masked_psf,  # String range, not number
+            'area_sqft': masked_area,  # String rounded, not number
+            # VISIBLE fields - shown as-is
+            'transaction_date': self.transaction_date.strftime('%Y-%m') if self.transaction_date else None,
+            'district': self.district,
+            'bedroom_count': self.bedroom_count,
+            'sale_type': self.sale_type,
+            'tenure': self.tenure,
+            'floor_level': self.floor_level,
+            'market_segment': self.market_segment,
+            # Explicitly NULL fields - never exposed to free users
+            'street_name': None,
+            'floor_range': None,
+            'contract_date': None,
+            'nett_price': None,
+            # Flag to indicate this is teaser data
+            '_is_teaser': True,
         }
 
