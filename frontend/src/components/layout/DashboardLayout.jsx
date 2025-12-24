@@ -33,6 +33,7 @@ const PAGE_CONFIG = {
   'market-pulse': { showFilterSidebar: true },
   'value-parity': { showFilterSidebar: false },
   'floor-dispersion': { showFilterSidebar: false },
+  'district-deep-dive': { showFilterSidebar: false },
   'insights': { showFilterSidebar: false },
 };
 
@@ -47,6 +48,7 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
     }
     if (pathname.startsWith('/value-parity')) return 'value-parity';
     if (pathname.startsWith('/floor-dispersion')) return 'floor-dispersion';
+    if (pathname.startsWith('/district-deep-dive')) return 'district-deep-dive';
     if (pathname.startsWith('/insights')) return 'insights';
     return 'market-pulse';
   };
