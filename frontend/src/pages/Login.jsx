@@ -80,228 +80,220 @@ function Login() {
           </div>
         </div>
 
-        {/* Center Section - Vertical Holographic Stack */}
+        {/* Center Section - Isometric Card Stack (Credit Card Style) */}
         <div
-          className="relative z-10 flex-1 flex items-end justify-start pl-10 pb-10 overflow-hidden"
-          style={{ perspective: '2000px' }}
+          className="relative z-10 flex-1 flex items-center justify-center overflow-hidden"
+          style={{ perspective: '1200px' }}
         >
-          {/* ===== VERTICAL GLASS STACK CONTAINER ===== */}
-          <div
+          {/* ===== ISOMETRIC CARD STACK ===== */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8 }}
             className="relative"
             style={{
-              transform: 'rotateX(5deg) rotateY(5deg) rotateZ(-5deg)',
+              transform: 'rotateX(55deg) rotateZ(-5deg)',
               transformStyle: 'preserve-3d',
             }}
           >
-            {/* ===== CONNECTING SPINE (Dashed Cyan Line) ===== */}
-            <svg
-              className="absolute pointer-events-none"
-              style={{
-                left: '50%',
-                bottom: '0',
-                width: '4px',
-                height: '420px',
-                transform: 'translateX(-50%)',
-                zIndex: 5,
-              }}
-            >
-              <line
-                x1="2"
-                y1="0"
-                x2="2"
-                y2="420"
-                stroke="#67e8f9"
-                strokeWidth="2"
-                strokeDasharray="8,6"
-                opacity="0.5"
-              />
-            </svg>
-
-            {/* ===== CARD 3: Liquidity Map (Foundation Layer - Furthest) ===== */}
+            {/* Card 5 (Top/Back): District Map */}
             <div
-              className="absolute w-[340px] h-[200px] rounded-2xl border border-[#547792]/30 overflow-hidden"
+              className="absolute w-[320px] h-[180px] rounded-2xl overflow-hidden"
               style={{
-                bottom: '160px',
-                left: '120px',
-                transform: 'scale(0.9)',
-                zIndex: 10,
-                opacity: 0.4,
-                background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+                transform: 'translateZ(0px) translateY(-180px)',
+                background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
               }}
             >
-              {/* Card Header */}
-              <div className="px-4 py-3 border-b border-[#547792]/20 flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-semibold text-[#94B4C1]">Liquidity Map</h4>
-                  <p className="text-[10px] text-[#547792]">Regional activity</p>
-                </div>
+              <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/10">
+                <span className="text-xs font-medium text-white/90">District Map</span>
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 rounded-full bg-[#547792]/30" />
-                  <div className="w-2 h-2 rounded-full bg-[#94B4C1]/50" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-violet-300" />
                 </div>
               </div>
-              {/* Heatmap Content */}
               <div className="p-3">
-                <svg className="w-full h-[120px]" viewBox="0 0 300 110">
+                <svg className="w-full h-[120px]" viewBox="0 0 280 110">
+                  {/* Simplified Singapore map outline */}
+                  <path d="M40,60 Q60,40 100,45 T160,35 T220,50 Q250,60 240,80 Q220,95 180,90 T100,85 Q50,80 40,60 Z" fill="none" stroke="rgba(167,139,250,0.4)" strokeWidth="1.5" />
+                  {/* District dots */}
+                  <circle cx="80" cy="55" r="8" fill="rgba(167,139,250,0.6)" />
+                  <circle cx="140" cy="50" r="12" fill="rgba(196,181,253,0.7)" />
+                  <circle cx="200" cy="60" r="6" fill="rgba(167,139,250,0.5)" />
+                  <circle cx="110" cy="70" r="5" fill="rgba(139,92,246,0.5)" />
+                  <circle cx="170" cy="65" r="9" fill="rgba(196,181,253,0.6)" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Card 4: Heatmap */}
+            <div
+              className="absolute w-[320px] h-[180px] rounded-2xl overflow-hidden"
+              style={{
+                transform: 'translateZ(25px) translateY(-135px)',
+                background: 'linear-gradient(135deg, #0c4a6e 0%, #0369a1 50%, #0ea5e9 100%)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+              }}
+            >
+              <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/10">
+                <span className="text-xs font-medium text-white/90">Liquidity Heatmap</span>
+                <div className="flex gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-sky-300" />
+                </div>
+              </div>
+              <div className="p-3">
+                <svg className="w-full h-[120px]" viewBox="0 0 280 110">
                   <defs>
-                    <radialGradient id="heat1" cx="25%" cy="40%" r="35%">
-                      <stop offset="0%" stopColor="#67e8f9" stopOpacity="0.6" />
-                      <stop offset="100%" stopColor="#67e8f9" stopOpacity="0" />
+                    <radialGradient id="heatA" cx="30%" cy="40%" r="40%">
+                      <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.8" />
+                      <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
                     </radialGradient>
-                    <radialGradient id="heat2" cx="65%" cy="55%" r="30%">
-                      <stop offset="0%" stopColor="#94B4C1" stopOpacity="0.5" />
-                      <stop offset="100%" stopColor="#94B4C1" stopOpacity="0" />
-                    </radialGradient>
-                    <radialGradient id="heat3" cx="80%" cy="30%" r="25%">
-                      <stop offset="0%" stopColor="#547792" stopOpacity="0.4" />
-                      <stop offset="100%" stopColor="#547792" stopOpacity="0" />
+                    <radialGradient id="heatB" cx="70%" cy="50%" r="35%">
+                      <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.7" />
+                      <stop offset="100%" stopColor="#7dd3fc" stopOpacity="0" />
                     </radialGradient>
                   </defs>
-                  <rect width="100%" height="100%" fill="#0f172a" rx="6" />
-                  <ellipse cx="75" cy="44" rx="60" ry="40" fill="url(#heat1)" />
-                  <ellipse cx="195" cy="60" rx="50" ry="35" fill="url(#heat2)" />
-                  <ellipse cx="240" cy="33" rx="35" ry="25" fill="url(#heat3)" />
+                  <rect width="100%" height="100%" fill="rgba(0,0,0,0.2)" rx="8" />
+                  <ellipse cx="84" cy="44" rx="55" ry="38" fill="url(#heatA)" />
+                  <ellipse cx="196" cy="55" rx="50" ry="35" fill="url(#heatB)" />
                 </svg>
               </div>
             </div>
 
-            {/* ===== CARD 2: Price Distribution (Middle Layer) ===== */}
+            {/* Card 3: Histogram */}
             <div
-              className="absolute w-[360px] h-[210px] rounded-2xl border border-[#547792]/40 overflow-hidden"
+              className="absolute w-[320px] h-[180px] rounded-2xl overflow-hidden"
               style={{
-                bottom: '80px',
-                left: '60px',
-                transform: 'scale(0.95)',
-                zIndex: 20,
-                opacity: 0.7,
-                background: 'linear-gradient(180deg, #1e293b 0%, #213448 100%)',
+                transform: 'translateZ(50px) translateY(-90px)',
+                background: 'linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%)',
+                border: '1px solid rgba(52, 211, 153, 0.3)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
               }}
             >
-              {/* Card Header */}
-              <div className="px-4 py-3 border-b border-[#547792]/25 flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-semibold text-[#EAE0CF]">Price Distribution</h4>
-                  <p className="text-[10px] text-[#94B4C1]">PSF histogram</p>
-                </div>
+              <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/10">
+                <span className="text-xs font-medium text-white/90">Price Distribution</span>
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 rounded-full bg-[#547792]/40" />
-                  <div className="w-2 h-2 rounded-full bg-[#94B4C1]/70" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
                 </div>
               </div>
-              {/* Bar Chart Content */}
-              <div className="p-4">
-                <svg className="w-full h-[130px]" viewBox="0 0 320 120">
-                  <line x1="20" y1="105" x2="300" y2="105" stroke="#547792" strokeWidth="1" opacity="0.3" />
-                  {/* Histogram bars */}
-                  <rect x="30" y="90" width="24" height="15" fill="#547792" opacity="0.4" rx="3" />
-                  <rect x="62" y="75" width="24" height="30" fill="#547792" opacity="0.5" rx="3" />
-                  <rect x="94" y="55" width="24" height="50" fill="#547792" opacity="0.65" rx="3" />
-                  <rect x="126" y="30" width="24" height="75" fill="#67e8f9" opacity="0.8" rx="3" />
-                  <rect x="158" y="20" width="24" height="85" fill="#67e8f9" opacity="0.9" rx="3" />
-                  <rect x="190" y="35" width="24" height="70" fill="#67e8f9" opacity="0.75" rx="3" />
-                  <rect x="222" y="55" width="24" height="50" fill="#547792" opacity="0.6" rx="3" />
-                  <rect x="254" y="78" width="24" height="27" fill="#547792" opacity="0.45" rx="3" />
-                  {/* Median line */}
-                  <line x1="170" y1="8" x2="170" y2="105" stroke="#67e8f9" strokeWidth="2" strokeDasharray="5,4" />
-                  <text x="175" y="15" fill="#67e8f9" fontSize="9" fontFamily="monospace">Median</text>
+              <div className="p-3">
+                <svg className="w-full h-[120px]" viewBox="0 0 280 110">
+                  <line x1="20" y1="95" x2="260" y2="95" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+                  <rect x="30" y="80" width="22" height="15" fill="rgba(52,211,153,0.5)" rx="2" />
+                  <rect x="58" y="65" width="22" height="30" fill="rgba(52,211,153,0.6)" rx="2" />
+                  <rect x="86" y="45" width="22" height="50" fill="rgba(52,211,153,0.7)" rx="2" />
+                  <rect x="114" y="25" width="22" height="70" fill="rgba(110,231,183,0.85)" rx="2" />
+                  <rect x="142" y="15" width="22" height="80" fill="rgba(167,243,208,0.95)" rx="2" />
+                  <rect x="170" y="30" width="22" height="65" fill="rgba(110,231,183,0.8)" rx="2" />
+                  <rect x="198" y="50" width="22" height="45" fill="rgba(52,211,153,0.65)" rx="2" />
+                  <rect x="226" y="72" width="22" height="23" fill="rgba(52,211,153,0.5)" rx="2" />
                 </svg>
               </div>
             </div>
 
-            {/* ===== CARD 1: Main Dashboard (Hero - Closest) ===== */}
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative w-[400px]"
-              style={{ zIndex: 30 }}
+            {/* Card 2: Volume Trends */}
+            <div
+              className="absolute w-[320px] h-[180px] rounded-2xl overflow-hidden"
+              style={{
+                transform: 'translateZ(75px) translateY(-45px)',
+                background: 'linear-gradient(135deg, #9a3412 0%, #ea580c 50%, #fb923c 100%)',
+                border: '1px solid rgba(251, 146, 60, 0.3)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+              }}
             >
-              {/* Preview Mode Badge */}
-              <div className="absolute -top-3 left-6" style={{ zIndex: 35 }}>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0f172a] border border-cyan-400/50 rounded-full text-xs font-semibold text-cyan-300 shadow-lg shadow-cyan-500/20">
-                  <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
-                  Preview Mode
-                </span>
-              </div>
-
-              {/* Main Card - Electric Cyan Border */}
-              <div
-                className="relative rounded-2xl overflow-hidden"
-                style={{
-                  background: 'linear-gradient(180deg, #1e293b 0%, #213448 100%)',
-                  border: '1.5px solid rgba(103, 232, 249, 0.6)',
-                  boxShadow: '0 0 30px rgba(103, 232, 249, 0.15), 0 25px 60px -15px rgba(0, 0, 0, 0.5)',
-                }}
-              >
-                {/* Card Header */}
-                <div className="px-5 py-4 border-b border-cyan-500/20 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold text-[#EAE0CF]">Market Pulse</h3>
-                    <p className="text-xs text-[#94B4C1]">Last 60 days · District-level data</p>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#547792]/50" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-cyan-400/60" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-cyan-300" />
-                  </div>
-                </div>
-
-                {/* Dashboard Content */}
-                <div className="p-5">
-                  {/* KPI Row */}
-                  <div className="grid grid-cols-3 gap-3 mb-5">
-                    {[
-                      { label: 'Median PSF', value: '$1,847', change: '+2.3%', positive: true },
-                      { label: 'Volume', value: '1,284', change: '-5.1%', positive: false },
-                      { label: 'Avg Days', value: '42', change: '-3d', positive: false },
-                    ].map((kpi, i) => (
-                      <div key={i} className="bg-[#0f172a]/60 rounded-lg p-3 border border-[#547792]/30">
-                        <div className="text-[10px] text-[#94B4C1] uppercase tracking-wide mb-0.5">{kpi.label}</div>
-                        <div className="text-lg font-bold text-[#EAE0CF] font-mono">{kpi.value}</div>
-                        <div className={`text-xs font-medium ${kpi.positive ? 'text-cyan-400' : 'text-[#94B4C1]'}`}>
-                          {kpi.change}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Area Chart */}
-                  <div className="relative h-28 bg-[#0f172a]/40 rounded-lg border border-[#547792]/20 overflow-hidden">
-                    <svg className="w-full h-full" viewBox="0 0 360 100" preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="heroGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#67e8f9" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="#67e8f9" stopOpacity="0" />
-                        </linearGradient>
-                      </defs>
-                      <path
-                        d="M0,70 Q45,60 90,65 T180,50 T270,40 T360,45 L360,100 L0,100 Z"
-                        fill="url(#heroGradient)"
-                      />
-                      <path
-                        d="M0,70 Q45,60 90,65 T180,50 T270,40 T360,45"
-                        fill="none"
-                        stroke="#67e8f9"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                    {/* Chart Labels */}
-                    <div className="absolute bottom-1.5 left-3 right-3 flex justify-between text-[8px] text-[#94B4C1]">
-                      <span>Oct</span>
-                      <span>Nov</span>
-                      <span>Dec</span>
-                    </div>
-                  </div>
-
-                  {/* Lock Hint */}
-                  <div className="mt-3 flex items-center justify-center gap-2 text-xs text-[#94B4C1]">
-                    <Lock className="w-3 h-3" />
-                    <span>Sign in to interact with live data</span>
-                  </div>
+              <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/10">
+                <span className="text-xs font-medium text-white/90">Volume Trends</span>
+                <div className="flex gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-300" />
                 </div>
               </div>
-            </motion.div>
-          </div>
+              <div className="p-3">
+                <svg className="w-full h-[120px]" viewBox="0 0 280 110">
+                  <line x1="20" y1="95" x2="260" y2="95" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+                  {/* Stacked bars */}
+                  <rect x="35" y="55" width="30" height="40" fill="rgba(251,146,60,0.7)" rx="3" />
+                  <rect x="35" y="35" width="30" height="20" fill="rgba(254,215,170,0.8)" rx="3" />
+                  <rect x="75" y="45" width="30" height="50" fill="rgba(251,146,60,0.7)" rx="3" />
+                  <rect x="75" y="20" width="30" height="25" fill="rgba(254,215,170,0.8)" rx="3" />
+                  <rect x="115" y="50" width="30" height="45" fill="rgba(251,146,60,0.7)" rx="3" />
+                  <rect x="115" y="30" width="30" height="20" fill="rgba(254,215,170,0.8)" rx="3" />
+                  <rect x="155" y="40" width="30" height="55" fill="rgba(251,146,60,0.7)" rx="3" />
+                  <rect x="155" y="15" width="30" height="25" fill="rgba(254,215,170,0.8)" rx="3" />
+                  <rect x="195" y="35" width="30" height="60" fill="rgba(251,146,60,0.7)" rx="3" />
+                  <rect x="195" y="10" width="30" height="25" fill="rgba(254,215,170,0.8)" rx="3" />
+                  <rect x="235" y="50" width="30" height="45" fill="rgba(251,146,60,0.7)" rx="3" />
+                  <rect x="235" y="28" width="30" height="22" fill="rgba(254,215,170,0.8)" rx="3" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Card 1 (Front): Market Pulse - Main Dashboard */}
+            <div
+              className="relative w-[320px] h-[180px] rounded-2xl overflow-hidden"
+              style={{
+                transform: 'translateZ(100px)',
+                background: 'linear-gradient(135deg, #831843 0%, #be185d 50%, #ec4899 100%)',
+                border: '1px solid rgba(244, 114, 182, 0.4)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(236, 72, 153, 0.2)',
+              }}
+            >
+              <div className="px-4 py-2.5 flex items-center justify-between border-b border-white/10">
+                <span className="text-xs font-medium text-white/90">Market Pulse</span>
+                <div className="flex gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-pink-400" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-pink-300" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                </div>
+              </div>
+              <div className="p-3">
+                {/* Mini KPIs */}
+                <div className="flex gap-3 mb-3">
+                  <div className="flex-1 bg-white/10 rounded-lg px-2.5 py-2">
+                    <div className="text-[9px] text-white/60 uppercase">Median PSF</div>
+                    <div className="text-sm font-bold text-white font-mono">$1,847</div>
+                  </div>
+                  <div className="flex-1 bg-white/10 rounded-lg px-2.5 py-2">
+                    <div className="text-[9px] text-white/60 uppercase">Volume</div>
+                    <div className="text-sm font-bold text-white font-mono">1,284</div>
+                  </div>
+                  <div className="flex-1 bg-white/10 rounded-lg px-2.5 py-2">
+                    <div className="text-[9px] text-white/60 uppercase">Trend</div>
+                    <div className="text-sm font-bold text-emerald-300 font-mono">+2.3%</div>
+                  </div>
+                </div>
+                {/* Area Chart */}
+                <svg className="w-full h-[65px]" viewBox="0 0 280 60">
+                  <defs>
+                    <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#f9a8d4" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#f9a8d4" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,45 Q35,40 70,42 T140,35 T210,28 T280,32 L280,60 L0,60 Z" fill="url(#pinkGrad)" />
+                  <path d="M0,45 Q35,40 70,42 T140,35 T210,28 T280,32" fill="none" stroke="#fbcfe8" strokeWidth="2" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Preview Badge - Floating above stack */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2"
+              style={{
+                transform: 'translateX(-50%) translateZ(130px) rotateX(-55deg) rotateZ(5deg)',
+                top: '-30px',
+              }}
+            >
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/95 rounded-full text-xs font-semibold text-slate-700 shadow-xl">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                Live Preview
+              </span>
+            </div>
+          </motion.div>
         </div>
 
         {/* Bottom Section - Social Proof Metrics */}
