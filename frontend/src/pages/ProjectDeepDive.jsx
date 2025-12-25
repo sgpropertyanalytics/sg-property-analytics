@@ -22,16 +22,13 @@ import { KeyInsightBox } from '../components/ui/KeyInsightBox';
 const generateRandomProjectName = () => {
   const prefixes = ['The', 'One', 'Park', 'Sky', 'Marina', 'Royal', 'Grand', 'Vista', 'Parc', 'Haus'];
   const middles = ['Residences', 'View', 'Heights', 'Loft', 'Towers', 'Suites', 'Edge', 'Crest', 'Haven', 'Oasis'];
-  const locations = ['@ Orchard', '@ Marina', '@ Sentosa', '@ Tampines', '@ Bishan', '@ Bedok', '@ Clementi', '@ Novena'];
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  return `${pick(prefixes)} ${pick(middles)}`;
+};
 
-  const style = Math.floor(Math.random() * 3);
-  if (style === 0) {
-    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${middles[Math.floor(Math.random() * middles.length)]}`;
-  } else if (style === 1) {
-    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${middles[Math.floor(Math.random() * middles.length)]} ${locations[Math.floor(Math.random() * locations.length)]}`;
-  } else {
-    return `${prefixes[Math.floor(Math.random() * prefixes.length)]}${prefixes[Math.floor(Math.random() * prefixes.length)].toLowerCase()}`;
-  }
+// Generate loading text with 3 random project names
+const generateLoadingText = () => {
+  return `Loading project ${generateRandomProjectName()}, project ${generateRandomProjectName()}, project ${generateRandomProjectName()}...`;
 };
 
 export function ProjectDeepDiveContent() {
@@ -42,7 +39,7 @@ export function ProjectDeepDiveContent() {
   const dropdownRef = useRef(null);
 
   // Loading animation state
-  const [loadingProjectName, setLoadingProjectName] = useState(() => generateRandomProjectName());
+  const [loadingText, setLoadingText] = useState(() => generateLoadingText());
 
   // Data state
   const [projectOptions, setProjectOptions] = useState([]);
@@ -138,12 +135,12 @@ export function ProjectDeepDiveContent() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Animate loading project name
+  // Animate loading text with random project names
   useEffect(() => {
     if (!projectOptionsLoading) return;
     const interval = setInterval(() => {
-      setLoadingProjectName(generateRandomProjectName());
-    }, 150);
+      setLoadingText(generateLoadingText());
+    }, 500);
     return () => clearInterval(interval);
   }, [projectOptionsLoading]);
 
@@ -262,12 +259,7 @@ export function ProjectDeepDiveContent() {
                 {selectedProject
                   ? `${selectedProject.name} (${selectedProject.district})`
                   : projectOptionsLoading
-                    ? (
-                      <span className="flex items-center gap-2">
-                        <span className="inline-block animate-pulse">{loadingProjectName}</span>
-                        <span className="text-xs">loading...</span>
-                      </span>
-                    )
+                    ? <span className="truncate">{loadingText}</span>
                     : 'Search for a project...'}
               </span>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">

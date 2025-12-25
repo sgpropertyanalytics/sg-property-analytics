@@ -84,6 +84,19 @@ function getVolumeColor(txCount, thresholds) {
   return VOLUME_COLORS.cool;
 }
 
+// Random project name generator for loading animation
+const generateRandomProjectName = () => {
+  const prefixes = ['The', 'One', 'Park', 'Sky', 'Marina', 'Royal', 'Grand', 'Vista', 'Parc', 'Haus'];
+  const middles = ['Residences', 'View', 'Heights', 'Loft', 'Towers', 'Suites', 'Edge', 'Crest', 'Haven', 'Oasis'];
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  return `${pick(prefixes)} ${pick(middles)}`;
+};
+
+// Generate loading text with 3 random project names
+const generateLoadingText = () => {
+  return `Loading project ${generateRandomProjectName()}, project ${generateRandomProjectName()}, project ${generateRandomProjectName()}...`;
+};
+
 export default function DealCheckerContent() {
   // Form state
   const [projectName, setProjectName] = useState('');
@@ -99,6 +112,7 @@ export default function DealCheckerContent() {
   // Data state
   const [projectOptions, setProjectOptions] = useState([]);
   const [projectOptionsLoading, setProjectOptionsLoading] = useState(true);
+  const [loadingText, setLoadingText] = useState(() => generateLoadingText());
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -138,6 +152,15 @@ export default function DealCheckerContent() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Animate loading text with random project names
+  useEffect(() => {
+    if (!projectOptionsLoading) return;
+    const interval = setInterval(() => {
+      setLoadingText(generateLoadingText());
+    }, 500);
+    return () => clearInterval(interval);
+  }, [projectOptionsLoading]);
 
   // Filter projects by search term
   const filteredProjects = projectOptions.filter(p =>
@@ -327,7 +350,9 @@ export default function DealCheckerContent() {
                   <span className={projectName ? 'text-[#213448] truncate font-medium' : 'text-[#94B4C1]'}>
                     {projectName
                       ? `${projectName}${selectedProjectInfo?.district ? ` (${selectedProjectInfo.district})` : ''}`
-                      : 'Search projects...'}
+                      : projectOptionsLoading
+                        ? <span className="truncate">{loadingText}</span>
+                        : 'Search projects...'}
                   </span>
                   <svg className={`w-4 h-4 text-[#547792] transition-transform flex-shrink-0 ml-2 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
