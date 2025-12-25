@@ -168,8 +168,77 @@ export function TransactionDataTable({ height = 400 }) {
         </div>
       </div>
 
-      {/* Table Container */}
-      <div className="overflow-auto" style={{ maxHeight: height }}>
+      {/* Mobile Card View */}
+      <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: height }}>
+        {error ? (
+          <div className="flex items-center justify-center h-40 text-red-500">
+            Error: {error}
+          </div>
+        ) : loading ? (
+          [...Array(5)].map((_, i) => (
+            <div key={i} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+            </div>
+          ))
+        ) : data.length === 0 ? (
+          <div className="text-center py-8 text-slate-500">
+            No transactions found matching the current filters
+          </div>
+        ) : (
+          <div className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
+            {data.map((txn, idx) => (
+              <div key={txn.id || idx} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30">
+                {/* Header: Project + Type Badge */}
+                <div className="flex justify-between items-start gap-2 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-[#213448] truncate">
+                      <BlurredProject
+                        value={txn.project_name}
+                        masked={txn.project_name_masked}
+                        district={txn.district}
+                        source="table"
+                      />
+                    </div>
+                    <div className="text-xs text-[#547792]">
+                      {txn.district || '-'} • {formatDate(txn.transaction_date)}
+                    </div>
+                  </div>
+                  <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
+                    txn.sale_type === 'New Sale'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {txn.sale_type === 'New Sale' ? 'New' : 'Resale'}
+                  </span>
+                </div>
+                {/* Metrics Row */}
+                <div className="flex justify-between items-center text-sm">
+                  <div className="text-[#213448] font-semibold">
+                    <BlurredCurrency
+                      value={txn.price}
+                      masked={txn.price_masked}
+                      field="price"
+                      source="table"
+                    />
+                  </div>
+                  <div className="text-xs text-[#547792]">
+                    <BlurredPSF value={txn.psf} masked={txn.psf_masked} source="table" /> PSF
+                  </div>
+                </div>
+                {/* Details Row */}
+                <div className="flex justify-between mt-1 text-xs text-[#547792]">
+                  <span>{txn.bedroom_count || '-'}BR</span>
+                  <span><BlurredArea value={txn.area_sqft} masked={txn.area_sqft_masked} source="table" /> sqft</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-auto" style={{ maxHeight: height }}>
         {error ? (
           <div className="flex items-center justify-center h-40 text-red-500">
             Error: {error}

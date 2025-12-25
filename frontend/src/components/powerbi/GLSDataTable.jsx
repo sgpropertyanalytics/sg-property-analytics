@@ -232,8 +232,94 @@ export function GLSDataTable({ height = 400 }) {
         </div>
       </div>
 
-      {/* Table Container */}
-      <div className="overflow-auto" style={{ maxHeight: height }}>
+      {/* Mobile Card View */}
+      <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: height }}>
+        {error ? (
+          <div className="flex items-center justify-center h-40 text-red-500">
+            Error: {error}
+          </div>
+        ) : loading ? (
+          [...Array(5)].map((_, i) => (
+            <div key={i} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+            </div>
+          ))
+        ) : data.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-slate-500">No GLS tenders found.</div>
+            <p className="text-xs text-slate-400 mt-1">Data will be available once synchronized from URA.</p>
+          </div>
+        ) : (
+          <div className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
+            {data.map((tender, idx) => (
+              <div key={tender.id || idx} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30">
+                {/* Header: Location + Status */}
+                <div className="flex justify-between items-start gap-2 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-[#213448] text-sm line-clamp-2">
+                      {tender.location_raw || '-'}
+                    </div>
+                    <div className="text-xs text-[#547792] mt-0.5">
+                      {formatDate(tender.release_date)}
+                      {tender.market_segment && (
+                        <span className={`ml-2 px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                          tender.market_segment === 'CCR'
+                            ? 'bg-purple-100 text-purple-700'
+                            : tender.market_segment === 'RCR'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-teal-100 text-teal-700'
+                        }`}>
+                          {tender.market_segment}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded-full ${
+                    tender.status === 'awarded'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    {tender.status === 'awarded' ? 'Awarded' : 'Open'}
+                  </span>
+                </div>
+                {/* Developer */}
+                {tender.successful_tenderer && (
+                  <div className="text-xs text-[#547792] mb-2 truncate">
+                    Developer: {tender.successful_tenderer}
+                  </div>
+                )}
+                {/* Metrics Row */}
+                <div className="flex justify-between items-center text-sm">
+                  <div>
+                    <div className="text-[10px] text-[#547792]">Land PSF (PPR)</div>
+                    <div className="text-[#213448] font-semibold">
+                      {tender.psf_ppr ? formatCurrency(tender.psf_ppr) : '-'}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[10px] text-[#547792]">Est. Launch PSF</div>
+                    <div className="text-xs text-[#213448]">
+                      {tender.psf_ppr && tender.market_segment
+                        ? formatImpliedPSF(tender.psf_ppr, tender.market_segment)
+                        : '-'}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[10px] text-[#547792]">Units</div>
+                    <div className="text-xs text-[#213448]">
+                      {tender.estimated_units ? `~${tender.estimated_units.toLocaleString()}` : '-'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-auto" style={{ maxHeight: height }}>
         {error ? (
           <div className="flex items-center justify-center h-40 text-red-500">
             Error: {error}
