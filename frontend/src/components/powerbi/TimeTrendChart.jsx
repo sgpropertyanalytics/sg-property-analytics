@@ -287,16 +287,13 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
 
   return (
     <div
-      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}
+      className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
       style={{ height: cardHeight }}
     >
       {/* Header - shrink-0 */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-[#213448]">Transaction Trend</h3>
-          {updating && (
-            <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-          )}
         </div>
         <p className="text-xs text-[#547792] mt-1">
           Volume and price by {TIME_LABELS[timeGrouping]}
