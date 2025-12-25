@@ -359,16 +359,16 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
           </button>
         </div>
 
-        {/* Stats row - Key price metrics */}
-        <div className="flex flex-wrap items-center gap-3 mt-2">
+        {/* Stats row - Key price metrics (no wrap to prevent height variation) */}
+        <div className="flex items-center gap-3 mt-2 overflow-x-auto">
           {stats?.median && (
-            <div className="bg-[#213448]/5 rounded px-2.5 py-1">
+            <div className="shrink-0 bg-[#213448]/5 rounded px-2.5 py-1">
               <span className="text-[10px] text-[#547792] uppercase tracking-wide">Median</span>
               <div className="text-sm font-semibold text-[#213448]">{formatPrice(stats.median)}</div>
             </div>
           )}
           {stats?.p25 && stats?.p75 && (
-            <div className="bg-[#213448]/5 rounded px-2.5 py-1">
+            <div className="shrink-0 bg-[#213448]/5 rounded px-2.5 py-1">
               <span className="text-[10px] text-[#547792] uppercase tracking-wide">Q1–Q3</span>
               <div className="text-sm font-semibold text-[#213448]">
                 {formatPrice(stats.p25)} – {formatPrice(stats.p75)}
@@ -376,13 +376,13 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
             </div>
           )}
           {stats?.iqr && (
-            <div className="bg-[#213448]/5 rounded px-2.5 py-1">
+            <div className="shrink-0 bg-[#213448]/5 rounded px-2.5 py-1">
               <span className="text-[10px] text-[#547792] uppercase tracking-wide">IQR</span>
               <div className="text-sm font-semibold text-[#213448]">{formatPrice(stats.iqr)}</div>
             </div>
           )}
           {modeBucket && (
-            <div className="bg-[#213448]/5 rounded px-2.5 py-1">
+            <div className="shrink-0 bg-[#213448]/5 rounded px-2.5 py-1">
               <span className="text-[10px] text-[#547792] uppercase tracking-wide">Mode</span>
               <div className="text-sm font-semibold text-[#213448]">{modeBucket.label}</div>
             </div>

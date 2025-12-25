@@ -285,7 +285,8 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
 
   // Card layout contract: flex column with fixed total height
   // Header/Note/Footer are shrink-0, chart slot is flex-1 min-h-0
-  const cardHeight = height + 140; // height prop for chart + ~140px for header/note/footer
+  // Use same height as PriceDistributionChart for side-by-side alignment
+  const cardHeight = height + 190;
 
   return (
     <div

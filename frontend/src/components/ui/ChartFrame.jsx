@@ -19,7 +19,7 @@
  */
 export function ChartFrame({ children, className = '' }) {
   return (
-    <div className={`flex-1 min-h-0 ${className}`}>
+    <div className={`flex-1 min-h-0 overflow-hidden ${className}`}>
       <div className="h-full w-full relative">
         {children}
       </div>
