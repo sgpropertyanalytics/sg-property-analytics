@@ -4,10 +4,22 @@
 
 1. [Quick Start](#1-quick-start)
 2. [Core Principles](#2-core-principles)
+   - [Problem-Solving Rules](#problem-solving-rules-mandatory)
+   - [Power BI Golden Rules](#power-bi-golden-rules)
+   - [API Contract & Architecture Rules](#api-contract--architecture-rules-mandatory)
+   - [SQL Best Practices](#sql-best-practices-mandatory)
 3. [Architecture](#3-architecture)
 4. [Implementation Guides](#4-implementation-guides)
 5. [Styling Guide](#5-styling-guide)
 6. [Reference Appendix](#6-reference-appendix)
+
+## Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md) | Complete filter system reference |
+| [SQL_BEST_PRACTICES.md](./SQL_BEST_PRACTICES.md) | SQL guardrails and v2 API compliance |
+| [TECHNICAL_ARCHITECTURE.md](./TECHNICAL_ARCHITECTURE.md) | System architecture details |
 
 ---
 
@@ -136,6 +148,23 @@ Header pattern:
 </th>
 
 Full pattern: See dashboard-design skill → Data Tables section
+```
+
+### Card 6: SQL Best Practices (MANDATORY)
+
+```
+SQL CHECKLIST (Before Any Query)
+
+[ ] Uses :param style only (no %(param)s)
+[ ] Date params are Python date/datetime objects
+[ ] Enums use api_contract.py methods
+[ ] Outlier filter uses COALESCE(is_outlier, false) = false
+[ ] Numeric values are parameterized
+[ ] SQL lives in service file, not route
+[ ] v2 endpoint returns camelCase
+[ ] Tests cover v1, v2, and edge cases
+
+Full reference: See SQL_BEST_PRACTICES.md
 ```
 
 ---
@@ -298,6 +327,44 @@ Do NOT combine with schema/contract work.
 Dual-mode is temporary:
 - Add TODOs with Phase 1c cleanup plan
 - Legacy fields removed only after frontend migration completes
+
+---
+
+## SQL Best Practices (MANDATORY)
+
+> **Full documentation**: See [SQL_BEST_PRACTICES.md](./SQL_BEST_PRACTICES.md) for complete SQL guardrails reference.
+
+**Key rules (quick reference):**
+
+1. **Parameter Style**: Use `:param` bind parameters ONLY. Never use `%(param)s` or f-string interpolation.
+2. **Date Handling**: Pass Python `date`/`datetime` objects, not strings.
+3. **Enum Normalization**: Always use `api_contract.py` methods (`SaleType.to_db()`).
+4. **Outlier Filter**: Use `COALESCE(is_outlier, false) = false` consistently.
+5. **SQL Location**: Queries in `services/`, not routes. Pure logic in `*_compute.py`.
+6. **v2 Compliance**: New endpoints must support `?schema=v2`.
+
+```python
+# ✅ CORRECT - Parameterized query with proper types
+from datetime import date
+from schemas.api_contract import SaleType
+
+query = text("""
+    SELECT project, COUNT(*) as count
+    FROM transactions
+    WHERE COALESCE(is_outlier, false) = false
+      AND sale_type = :sale_type
+      AND transaction_date >= :date_from
+""")
+
+params = {
+    "sale_type": SaleType.to_db(SaleType.RESALE),
+    "date_from": date(2023, 1, 1),  # Python date, not string
+}
+
+# ❌ WRONG - Mixed styles, string dates, hardcoded enums
+query = f"WHERE psf > {min_psf} AND sale_type = %(sale_type)s"
+params = {"sale_type": "Resale", "date_from": "2024-01-01"}
+```
 
 ---
 
