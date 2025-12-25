@@ -3,6 +3,7 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
 import { DISTRICT_NAMES, formatPrice, formatPSF } from '../../constants';
 import { BlurredProject, BlurredCurrency, BlurredArea, BlurredPSF } from '../BlurredCell';
+import { isSaleType, getTxnField, TxnField } from '../../schemas/apiContract';
 
 /**
  * Transaction Detail Modal - Drill-Through
@@ -223,11 +224,11 @@ export function TransactionDetailModal({ isOpen, onClose, title, additionalFilte
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className={`text-xs px-2 py-1 rounded-full ${
-                          txn.sale_type === 'New Sale'
+                          isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE))
                             ? 'bg-green-100 text-green-700'
                             : 'bg-blue-100 text-blue-700'
                         }`}>
-                          {txn.sale_type === 'New Sale' ? 'New' : 'Resale'}
+                          {isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE)) ? 'New' : 'Resale'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-500 max-w-[120px] truncate">

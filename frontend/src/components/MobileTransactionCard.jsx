@@ -1,4 +1,5 @@
 import React from 'react';
+import { isSaleType, getTxnField, TxnField } from '../schemas/apiContract';
 
 /**
  * MobileTransactionCard - Card view for transactions on mobile devices
@@ -44,11 +45,11 @@ export function MobileTransactionCard({ transaction, formatCurrency, formatDate,
             {txn.psf ? `$${txn.psf.toLocaleString()} PSF` : txn.psf_masked || '-'}
           </div>
           <span className={`inline-block mt-1 px-1.5 py-0.5 text-xs rounded ${
-            txn.sale_type === 'New Sale'
+            isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE))
               ? 'bg-green-100 text-green-700'
               : 'bg-blue-100 text-blue-700'
           }`}>
-            {txn.sale_type === 'New Sale' ? 'New' : 'Resale'}
+            {isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE)) ? 'New' : 'Resale'}
           </span>
         </div>
       </div>

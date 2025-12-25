@@ -7,6 +7,7 @@ import { HotProjectsTable } from './powerbi/HotProjectsTable';
 import { UpcomingLaunchesTable } from './powerbi/UpcomingLaunchesTable';
 import { MobileTransactionCard } from './MobileTransactionCard';
 import { ResultsSummaryBar } from './ResultsSummaryBar';
+import { SaleType, isSaleType, getTxnField, TxnField } from '../schemas/apiContract';
 
 /**
  * ValueParityPanel - Budget-based property search tool with Deal Checker
@@ -151,7 +152,7 @@ export function ValueParityPanel() {
       }
       // Step 3: Young Resale section always shows 4-9 years resale properties
       // Hardcode sale_type and lease_age regardless of user selection
-      params.sale_type = 'Resale';
+      params.saleType = SaleType.RESALE;  // Use v2 API param
       params.lease_age = '4-9';
 
       const response = await getTransactionsList(params);
@@ -180,7 +181,7 @@ export function ValueParityPanel() {
         limit: resaleMarketPagination.limit,
         sort_by: 'transaction_date',
         sort_order: 'desc',
-        sale_type: 'Resale', // Only resale transactions
+        saleType: SaleType.RESALE, // Only resale transactions (v2 API param)
       };
 
       // Apply budget filter
@@ -896,11 +897,11 @@ export function ValueParityPanel() {
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100">
                           <span className={`px-1.5 py-0.5 text-xs rounded ${
-                            txn.sale_type === 'New Sale'
+                            isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE))
                               ? 'bg-green-100 text-green-700'
                               : 'bg-blue-100 text-blue-700'
                           }`}>
-                            {txn.sale_type === 'New Sale' ? 'New' : 'Resale'}
+                            {isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE)) ? 'New' : 'Resale'}
                           </span>
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
