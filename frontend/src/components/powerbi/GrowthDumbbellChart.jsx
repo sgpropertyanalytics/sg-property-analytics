@@ -331,31 +331,33 @@ export function GrowthDumbbellChart() {
       </div>
 
       {/* Column Headers - Sortable (matching other table styling) */}
-      <div className="px-4 py-2 bg-slate-50 border-b border-slate-200">
+      <div className="px-3 md:px-4 py-2 bg-slate-50 border-b border-slate-200">
         <div className="flex items-center text-xs font-medium text-slate-600">
           <div
-            className="w-48 md:w-56 shrink-0 cursor-pointer hover:text-slate-800 select-none"
+            className="w-12 md:w-56 shrink-0 cursor-pointer hover:text-slate-800 select-none"
             onClick={() => handleSort('district')}
           >
-            District<SortIcon column="district" />
+            <span className="md:hidden">Dist</span>
+            <span className="hidden md:inline">District</span>
+            <SortIcon column="district" />
           </div>
-          <div className="flex-1 flex justify-between px-2">
+          <div className="flex-1 flex justify-between px-1 md:px-2">
             <span
-              className="cursor-pointer hover:text-slate-800 select-none"
+              className="cursor-pointer hover:text-slate-800 select-none text-[10px] md:text-xs"
               onClick={() => handleSort('startPsf')}
             >
               {startQuarter}<SortIcon column="startPsf" />
             </span>
-            <span className="text-slate-500">Median PSF</span>
+            <span className="text-slate-500 hidden sm:inline">Median PSF</span>
             <span
-              className="cursor-pointer hover:text-slate-800 select-none"
+              className="cursor-pointer hover:text-slate-800 select-none text-[10px] md:text-xs"
               onClick={() => handleSort('endPsf')}
             >
               {endQuarter}<SortIcon column="endPsf" />
             </span>
           </div>
           <div
-            className="w-16 shrink-0 text-right cursor-pointer hover:text-slate-800 select-none"
+            className="w-14 md:w-16 shrink-0 text-right cursor-pointer hover:text-slate-800 select-none"
             onClick={() => handleSort('growth')}
           >
             Growth<SortIcon column="growth" />
@@ -390,25 +392,26 @@ export function GrowthDumbbellChart() {
           return (
             <div
               key={item.district}
-              className="px-4 py-2.5 hover:bg-slate-50 cursor-pointer transition-colors group"
+              className="px-3 md:px-4 py-2.5 hover:bg-slate-50 cursor-pointer transition-colors group"
               onClick={() => handleDistrictClick(item.district)}
               title={`${DISTRICT_NAMES[item.district]}\n${item.startQuarter}: ${formatPrice(item.startPsf)} → ${item.endQuarter}: ${formatPrice(item.endPsf)}`}
             >
               <div className="flex items-center">
-                {/* Combined District + Area column */}
-                <div className="w-48 md:w-56 shrink-0">
+                {/* Combined District + Area column - responsive */}
+                <div className="w-12 md:w-56 shrink-0">
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded shrink-0 ${regionBg} ${regionText}`}>
+                    <span className={`text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded shrink-0 ${regionBg} ${regionText}`}>
                       {item.district}
                     </span>
-                    <span className="text-sm text-slate-600 truncate" title={DISTRICT_NAMES[item.district]}>
+                    {/* Area names - hidden on mobile */}
+                    <span className="hidden md:block text-sm text-slate-600 truncate" title={DISTRICT_NAMES[item.district]}>
                       {item.areaNames}
                     </span>
                   </div>
                 </div>
 
                 {/* Dumbbell Chart Area */}
-                <div className="flex-1 relative h-7">
+                <div className="flex-1 relative h-7 mx-1 md:mx-0">
                   {/* Background track */}
                   <div className="absolute inset-y-2.5 left-0 right-0 bg-slate-100 rounded-full" />
 
@@ -430,8 +433,8 @@ export function GrowthDumbbellChart() {
                     style={{
                       left: `${startPercent}%`,
                       top: '50%',
-                      width: '14px',
-                      height: '14px',
+                      width: '12px',
+                      height: '12px',
                     }}
                   />
 
@@ -441,16 +444,16 @@ export function GrowthDumbbellChart() {
                     style={{
                       left: `${endPercent}%`,
                       top: '50%',
-                      width: `${endDotSize}px`,
-                      height: `${endDotSize}px`,
+                      width: `${Math.max(endDotSize - 2, 14)}px`,
+                      height: `${Math.max(endDotSize - 2, 14)}px`,
                       backgroundColor: endDotColor,
                     }}
                   />
                 </div>
 
                 {/* Growth Percentage */}
-                <div className="w-16 shrink-0 text-right">
-                  <span className={`text-sm font-bold ${textColorClass}`}>
+                <div className="w-14 md:w-16 shrink-0 text-right">
+                  <span className={`text-xs md:text-sm font-bold ${textColorClass}`}>
                     {item.growthPercent >= 0 ? '+' : ''}{item.growthPercent.toFixed(0)}%
                   </span>
                 </div>
