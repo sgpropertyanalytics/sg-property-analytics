@@ -84,10 +84,10 @@ export function PricingModal({ isOpen, onClose }) {
 
   // Outcome-focused statements (what users achieve, not features)
   const outcomes = [
-    'Know if you over- or under-paid vs recent transactions',
+    'Check whether you over or under paid relatively',
     'Track resale benchmarks within your project',
     'Get alerts when similar units transact',
-    'Validate exit or refinancing timing with live data',
+    'Validate exit plans with market timing cycles',
     'Spot pricing hotspots using district heatmaps',
     'See how floor level impacts price',
   ];
@@ -156,14 +156,14 @@ export function PricingModal({ isOpen, onClose }) {
               </button>
             </div>
 
-            {/* RIGHT: Annual (Slightly elevated with deep shadow - "Pop-out" effect) */}
+            {/* RIGHT: Annual (Subtly elevated with soft shadow) */}
             <div
               className="flex-1 bg-[#213448] rounded-xl flex flex-col relative"
               style={{
-                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+                boxShadow: '0 20px 40px -12px rgba(0,0,0,0.2)',
                 padding: '1.5rem',
-                marginTop: '-12px',
-                marginBottom: '-12px',
+                marginTop: '-6px',
+                marginBottom: '-6px',
               }}
             >
               {/* SAVE 40% Badge */}
