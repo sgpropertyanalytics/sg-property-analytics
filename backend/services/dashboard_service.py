@@ -61,7 +61,8 @@ CACHE_MAX_SIZE = 1000    # Increased capacity (was 500)
 # District to region mapping - import from centralized constants (SINGLE SOURCE OF TRUTH)
 from constants import (
     CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS,
-    get_region_for_district, get_districts_for_region
+    get_region_for_district, get_districts_for_region,
+    TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR
 )
 
 # ============================================================================
@@ -367,12 +368,12 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
                     ~Transaction.tenure.ilike('%999%')
                 )
             ))
-        elif tenure_lower in ['99-year', '99']:
+        elif tenure_lower in [TENURE_99_YEAR.lower(), '99']:
             conditions.append(and_(
                 Transaction.remaining_lease < 999,
                 Transaction.remaining_lease > 0
             ))
-        elif tenure_lower in ['999-year', '999']:
+        elif tenure_lower in [TENURE_999_YEAR.lower(), '999']:
             # Match 999-year leasehold by tenure text, not remaining_lease
             # (remaining_lease=999 would also match Freehold)
             conditions.append(Transaction.tenure.ilike('%999%'))

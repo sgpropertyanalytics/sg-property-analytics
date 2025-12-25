@@ -22,6 +22,8 @@ from datetime import datetime
 import re
 from typing import Optional
 
+from constants import TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR
+
 
 def classify_tenure(tenure_str: Optional[str]) -> str:
     """Classify tenure into Freehold / 99-year / 999-year / Other / Unknown."""
@@ -29,11 +31,11 @@ def classify_tenure(tenure_str: Optional[str]) -> str:
         return "Unknown"
     tenure_lower = tenure_str.lower()
     if "freehold" in tenure_lower or "estate in perpetuity" in tenure_lower:
-        return "Freehold"
+        return TENURE_FREEHOLD
     if "999" in tenure_lower:
-        return "999-year"
+        return TENURE_999_YEAR
     if "99" in tenure_lower:
-        return "99-year"
+        return TENURE_99_YEAR
     return "Other"
 
 
@@ -130,13 +132,13 @@ def calculate_remaining_lease(tenure_str: Optional[str], contract_or_txn_date=No
     """
     tenure_type = classify_tenure(tenure_str)
 
-    if tenure_type == "Freehold":
+    if tenure_type == TENURE_FREEHOLD:
         # Treat as "effectively infinite" lease
         return 999
 
-    if tenure_type == "99-year":
+    if tenure_type == TENURE_99_YEAR:
         lease_duration = 99
-    elif tenure_type == "999-year":
+    elif tenure_type == TENURE_999_YEAR:
         lease_duration = 999
     else:
         lease_duration = None
@@ -174,8 +176,8 @@ def classify_remaining_lease_band(tenure_str: Optional[str], remaining: Optional
     For Freehold tenure, returns "Freehold" regardless of remaining value.
     """
     tenure_type = classify_tenure(tenure_str)
-    if tenure_type == "Freehold":
-        return "Freehold"
+    if tenure_type == TENURE_FREEHOLD:
+        return TENURE_FREEHOLD
 
     if remaining is None:
         return "Unknown"

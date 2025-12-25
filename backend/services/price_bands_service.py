@@ -32,7 +32,8 @@ from models.database import db
 from schemas.api_contract import SaleType
 from constants import (
     get_region_for_district, get_districts_for_region,
-    normalize_tenure, TENURE_TYPE_LABELS_SHORT
+    normalize_tenure, TENURE_TYPE_LABELS_SHORT,
+    TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR
 )
 from services.price_bands_compute import (
     apply_rolling_median_smoothing,
@@ -310,11 +311,11 @@ def _compute_monthly_percentiles(
     if tenure:
         # Normalize tenure first, then match
         normalized = normalize_tenure(tenure)
-        if normalized == 'Freehold':
+        if normalized == TENURE_FREEHOLD:
             conditions.append("LOWER(tenure) LIKE '%freehold%'")
-        elif normalized == '999-year':
+        elif normalized == TENURE_999_YEAR:
             conditions.append("tenure LIKE '%999%'")
-        elif normalized == '99-year':
+        elif normalized == TENURE_99_YEAR:
             conditions.append("tenure LIKE '%99%' AND tenure NOT LIKE '%999%'")
         # 'Unknown' tenure doesn't add a filter
 

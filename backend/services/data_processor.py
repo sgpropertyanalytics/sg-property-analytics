@@ -24,6 +24,7 @@ from services.classifier_extended import (
     classify_property_age_band,
     classify_remaining_lease_band,
 )
+from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
 
 # Table name constant for reference
 MASTER_TABLE = "transactions"  # Use SQLAlchemy transactions table
@@ -443,14 +444,14 @@ def get_sale_type_trends(districts: Optional[list] = None, segment: Optional[str
     # Count transactions by sale type and quarter
     # Default to "Resale" if sale_type is not available (for backward compatibility)
     if 'sale_type' not in df.columns:
-        df['sale_type'] = 'Resale'
-    
+        df['sale_type'] = SALE_TYPE_RESALE
+
     trends_data = []
     for quarter in all_quarters:
         quarter_df = df[df["year_quarter"] == quarter]
-        
-        new_sale_count = len(quarter_df[quarter_df['sale_type'] == 'New Sale']) if 'sale_type' in quarter_df.columns else 0
-        resale_count = len(quarter_df[quarter_df['sale_type'] == 'Resale']) if 'sale_type' in quarter_df.columns else len(quarter_df)
+
+        new_sale_count = len(quarter_df[quarter_df['sale_type'] == SALE_TYPE_NEW]) if 'sale_type' in quarter_df.columns else 0
+        resale_count = len(quarter_df[quarter_df['sale_type'] == SALE_TYPE_RESALE]) if 'sale_type' in quarter_df.columns else len(quarter_df)
         
         trends_data.append({
             "quarter": quarter,
@@ -497,8 +498,8 @@ def get_price_trends_by_sale_type(bedroom_types: list = [2, 3, 4], districts: Op
     
     # Default to "Resale" if sale_type is not available (for backward compatibility)
     if 'sale_type' not in df.columns:
-        df['sale_type'] = 'Resale'
-    
+        df['sale_type'] = SALE_TYPE_RESALE
+
     # Extract year-quarter
     df["year_quarter"] = df["parsed_date"].dt.to_period("Q").astype(str)
     df["year_quarter"] = df["year_quarter"].str.replace("Q", "-Q")
@@ -535,15 +536,15 @@ def get_price_trends_by_sale_type(bedroom_types: list = [2, 3, 4], districts: Op
             
             # Get New Sale median price
             new_sale_data = price_trends[
-                (price_trends["year_quarter"] == quarter) & 
-                (price_trends["sale_type"] == "New Sale")
+                (price_trends["year_quarter"] == quarter) &
+                (price_trends["sale_type"] == SALE_TYPE_NEW)
             ]
             new_sale_price = float(new_sale_data["price"].iloc[0]) if not new_sale_data.empty else None
-            
+
             # Get Resale median price
             resale_data = price_trends[
-                (price_trends["year_quarter"] == quarter) & 
-                (price_trends["sale_type"] == "Resale")
+                (price_trends["year_quarter"] == quarter) &
+                (price_trends["sale_type"] == SALE_TYPE_RESALE)
             ]
             resale_price = float(resale_data["price"].iloc[0]) if not resale_data.empty else None
             
@@ -1037,10 +1038,10 @@ def get_project_aggregation_by_district(district: str, bedroom_types: list = [2,
             if not mix_rows.empty:
                 # Get counts by sale_type
                 new_sale_count = int(
-                    mix_rows[mix_rows["sale_type"] == "New Sale"]["count"].sum()
+                    mix_rows[mix_rows["sale_type"] == SALE_TYPE_NEW]["count"].sum()
                 )
                 resale_count = int(
-                    mix_rows[mix_rows["sale_type"] == "Resale"]["count"].sum()
+                    mix_rows[mix_rows["sale_type"] == SALE_TYPE_RESALE]["count"].sum()
                 )
                 if new_sale_count > resale_count:
                     label = "New Launch"
@@ -1560,8 +1561,8 @@ def get_price_project_stats_by_district(
             if rows.empty:
                 sale_label[project_name] = None
             else:
-                new_sale_count = int(rows[rows["sale_type"] == "New Sale"]["count"].sum())
-                resale_count = int(rows[rows["sale_type"] == "Resale"]["count"].sum())
+                new_sale_count = int(rows[rows["sale_type"] == SALE_TYPE_NEW]["count"].sum())
+                resale_count = int(rows[rows["sale_type"] == SALE_TYPE_RESALE]["count"].sum())
                 sale_label[project_name] = "New Launch" if new_sale_count > resale_count else "Resale"
     else:
         for project_name in df["project_name"].unique():
@@ -1717,7 +1718,7 @@ def get_new_vs_resale_comparison(
             -- This excludes delayed construction projects still selling as "New Sale"
             SELECT DISTINCT project_name
             FROM transactions
-            WHERE sale_type = 'Resale'
+            WHERE sale_type = '{SALE_TYPE_RESALE}'
               AND {OUTLIER_FILTER}
         ),
         new_sales AS (
@@ -1726,7 +1727,7 @@ def get_new_vs_resale_comparison(
                 AVG(price) AS median_price,
                 COUNT(*) AS transaction_count
             FROM transactions
-            WHERE sale_type = 'New Sale'
+            WHERE sale_type = '{SALE_TYPE_NEW}'
               AND {OUTLIER_FILTER}
               AND {where_clause}
             GROUP BY DATE_TRUNC('{date_trunc_grain}', transaction_date)
@@ -1737,7 +1738,7 @@ def get_new_vs_resale_comparison(
                 AVG(price) AS median_price,
                 COUNT(*) AS transaction_count
             FROM transactions t
-            WHERE sale_type = 'Resale'
+            WHERE sale_type = '{SALE_TYPE_RESALE}'
               AND {OUTLIER_FILTER}
               AND lease_start_year IS NOT NULL
               AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) BETWEEN 4 AND 9
@@ -1876,10 +1877,10 @@ def get_comparable_value_analysis(
             # Handle both "New Launch" and "New Sale" as the same
             if sale_type.lower() == "new launch" or sale_type.lower() == "new sale":
                 # Filter for New Sale transactions
-                df = df[df["sale_type"].notna() & df["sale_type"].astype(str).str.contains("New Sale", case=False, na=False)].copy()
+                df = df[df["sale_type"].notna() & df["sale_type"].astype(str).str.contains(SALE_TYPE_NEW, case=False, na=False)].copy()
             elif sale_type.lower() == "resale":
                 # Filter for Resale transactions
-                df = df[df["sale_type"].notna() & df["sale_type"].astype(str).str.contains("Resale", case=False, na=False)].copy()
+                df = df[df["sale_type"].notna() & df["sale_type"].astype(str).str.contains(SALE_TYPE_RESALE, case=False, na=False)].copy()
         else:
             # If sale_type column doesn't exist, can't filter - but don't return empty, just continue without filter
             pass

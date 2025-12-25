@@ -151,13 +151,18 @@ BEDROOM_LABELS = {
 # SALE TYPE CLASSIFICATION - SINGLE SOURCE OF TRUTH
 # =============================================================================
 
+# Individual sale type DB values (use these for comparisons)
+SALE_TYPE_NEW = "New Sale"
+SALE_TYPE_RESALE = "Resale"
+SALE_TYPE_SUB = "Sub Sale"
+
 # Valid sale types from URA transaction data
-SALE_TYPES = ['New Sale', 'Resale', 'Sub Sale']
+SALE_TYPES = [SALE_TYPE_NEW, SALE_TYPE_RESALE, SALE_TYPE_SUB]
 
 SALE_TYPE_LABELS = {
-    'New Sale': 'New Sale',      # Initial sale from developer
-    'Resale': 'Resale',          # Secondary market sale
-    'Sub Sale': 'Sub Sale',      # Subsale (before TOP)
+    SALE_TYPE_NEW: 'New Sale',      # Initial sale from developer
+    SALE_TYPE_RESALE: 'Resale',     # Secondary market sale
+    SALE_TYPE_SUB: 'Sub Sale',      # Subsale (before TOP)
 }
 
 
@@ -170,20 +175,25 @@ def is_valid_sale_type(sale_type: str) -> bool:
 # TENURE CLASSIFICATION - SINGLE SOURCE OF TRUTH
 # =============================================================================
 
+# Individual tenure DB values (use these for comparisons)
+TENURE_FREEHOLD = "Freehold"
+TENURE_99_YEAR = "99-year"
+TENURE_999_YEAR = "999-year"
+
 # Valid tenure types
-TENURE_TYPES = ['Freehold', '99-year', '999-year']
+TENURE_TYPES = [TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR]
 
 TENURE_TYPE_LABELS = {
-    'Freehold': 'Freehold',
-    '99-year': '99-year Leasehold',
-    '999-year': '999-year Leasehold',
+    TENURE_FREEHOLD: 'Freehold',
+    TENURE_99_YEAR: '99-year Leasehold',
+    TENURE_999_YEAR: '999-year Leasehold',
 }
 
 # Short labels for compact UI
 TENURE_TYPE_LABELS_SHORT = {
-    'Freehold': 'FH',
-    '99-year': '99yr',
-    '999-year': '999yr',
+    TENURE_FREEHOLD: 'FH',
+    TENURE_99_YEAR: '99yr',
+    TENURE_999_YEAR: '999yr',
 }
 
 
@@ -195,7 +205,7 @@ def normalize_tenure(tenure_str: str) -> str:
         tenure_str: Raw tenure string from data source
 
     Returns:
-        Normalized tenure: 'Freehold', '99-year', '999-year', or 'Unknown'
+        Normalized tenure: TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR, or 'Unknown'
     """
     if not tenure_str:
         return 'Unknown'
@@ -203,11 +213,11 @@ def normalize_tenure(tenure_str: str) -> str:
     t = tenure_str.lower().strip()
 
     if 'freehold' in t:
-        return 'Freehold'
+        return TENURE_FREEHOLD
     elif '999' in t:
-        return '999-year'
+        return TENURE_999_YEAR
     elif '99' in t:
-        return '99-year'
+        return TENURE_99_YEAR
     else:
         return 'Unknown'
 

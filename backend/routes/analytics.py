@@ -10,6 +10,10 @@ New unified dashboard endpoint uses SQL CTEs for high-performance aggregation.
 from flask import Blueprint, request, jsonify
 import time
 from services.analytics_reader import get_reader
+from constants import (
+    SALE_TYPE_NEW, SALE_TYPE_RESALE,
+    TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR
+)
 
 analytics_bp = Blueprint('analytics', __name__)
 reader = get_reader()
@@ -342,13 +346,13 @@ def debug_data_status():
         new_sales_30d = db.session.query(func.count(Transaction.id)).filter(
             Transaction.transaction_date >= thirty_days_ago,
             Transaction.transaction_date <= today,
-            Transaction.sale_type == 'New Sale'
+            Transaction.sale_type == SALE_TYPE_NEW
         ).scalar()
 
         resales_30d = db.session.query(func.count(Transaction.id)).filter(
             Transaction.transaction_date >= thirty_days_ago,
             Transaction.transaction_date <= today,
-            Transaction.sale_type == 'Resale'
+            Transaction.sale_type == SALE_TYPE_RESALE
         ).scalar()
 
         # Check sale_type values
@@ -855,8 +859,8 @@ def price_projects_by_district():
             # Determine sale_type_label (New Launch vs Resale)
             sale_type_label = None
             if data['sale_types']:
-                new_sale_count = sum(1 for st in data['sale_types'] if st == 'New Sale')
-                resale_count = sum(1 for st in data['sale_types'] if st == 'Resale')
+                new_sale_count = sum(1 for st in data['sale_types'] if st == SALE_TYPE_NEW)
+                resale_count = sum(1 for st in data['sale_types'] if st == SALE_TYPE_RESALE)
                 if new_sale_count > resale_count:
                     sale_type_label = 'New Launch'
                 elif resale_count > 0:
@@ -1447,17 +1451,17 @@ def aggregate():
     tenure = request.args.get("tenure")
     if tenure:
         tenure_lower = tenure.lower()
-        if tenure_lower == "freehold":
+        if tenure_lower == TENURE_FREEHOLD.lower():
             filter_conditions.append(or_(
                 Transaction.tenure.ilike("%freehold%"),
                 Transaction.remaining_lease == 999
             ))
-        elif tenure_lower in ["99-year", "99"]:
+        elif tenure_lower in [TENURE_99_YEAR.lower(), "99"]:
             filter_conditions.append(and_(
                 Transaction.remaining_lease < 999,
                 Transaction.remaining_lease > 0
             ))
-        elif tenure_lower in ["999-year", "999"]:
+        elif tenure_lower in [TENURE_999_YEAR.lower(), "999"]:
             filter_conditions.append(Transaction.remaining_lease == 999)
         filters_applied["tenure"] = tenure
 
@@ -1829,12 +1833,12 @@ def transactions_list():
     if tenure:
         from sqlalchemy import or_, and_
         tenure_lower = tenure.lower()
-        if tenure_lower == "freehold":
+        if tenure_lower == TENURE_FREEHOLD.lower():
             query = query.filter(or_(
                 Transaction.tenure.ilike("%freehold%"),
                 Transaction.remaining_lease == 999
             ))
-        elif tenure_lower in ["99-year", "99"]:
+        elif tenure_lower in [TENURE_99_YEAR.lower(), "99"]:
             query = query.filter(and_(
                 Transaction.remaining_lease < 999,
                 Transaction.remaining_lease > 0
@@ -2210,11 +2214,11 @@ def floor_liquidity_heatmap():
     # Build filter conditions
     filter_conditions = [
         exclude_outliers(Transaction),
-        func.lower(Transaction.sale_type) == 'resale',
+        func.lower(Transaction.sale_type) == SALE_TYPE_RESALE.lower(),
         Transaction.floor_level.isnot(None),
         Transaction.floor_level != 'Unknown'
     ]
-    filters_applied = {'sale_type': 'Resale', 'window_months': window_months}
+    filters_applied = {'sale_type': SALE_TYPE_RESALE, 'window_months': window_months}
 
     # Date filter based on window
     cutoff_date = datetime.now().date() - timedelta(days=window_months * 30)
@@ -2415,13 +2419,13 @@ def get_project_inventory(project_name):
         # Count sales from transactions
         new_sale_count = db.session.query(func.count(Transaction.id)).filter(
             Transaction.project_name == project_name,
-            Transaction.sale_type == 'New Sale',
+            Transaction.sale_type == SALE_TYPE_NEW,
             exclude_outliers(Transaction)
         ).scalar() or 0
 
         resale_count = db.session.query(func.count(Transaction.id)).filter(
             Transaction.project_name == project_name,
-            Transaction.sale_type == 'Resale',
+            Transaction.sale_type == SALE_TYPE_RESALE,
             exclude_outliers(Transaction)
         ).scalar() or 0
 
@@ -2884,14 +2888,14 @@ def kpi_summary():
                 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
                 FROM transactions
                 WHERE {filter_sql}
-                  AND sale_type = 'New Sale'
+                  AND sale_type = '{SALE_TYPE_NEW}'
                   AND transaction_date > :max_date - INTERVAL '12 months'
             ),
             young_resales AS (
                 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
                 FROM transactions
                 WHERE {filter_sql}
-                  AND sale_type = 'Resale'
+                  AND sale_type = '{SALE_TYPE_RESALE}'
                   AND transaction_date > :max_date - INTERVAL '12 months'
                   AND EXTRACT(YEAR FROM transaction_date) - COALESCE(lease_start_year, EXTRACT(YEAR FROM transaction_date) - 5) BETWEEN 4 AND 9
             )
@@ -3147,7 +3151,7 @@ def get_resale_projects():
                 project_name,
                 district,
                 COUNT(*) as transaction_count,
-                COUNT(CASE WHEN sale_type = 'Resale' THEN 1 END) as resale_count
+                COUNT(CASE WHEN sale_type = '{SALE_TYPE_RESALE}' THEN 1 END) as resale_count
             FROM transactions
             WHERE {OUTLIER_FILTER}
             GROUP BY project_name, district

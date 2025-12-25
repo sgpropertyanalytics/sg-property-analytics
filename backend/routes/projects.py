@@ -13,7 +13,7 @@ import time
 from models.project_location import ProjectLocation
 from models.popular_school import PopularSchool
 from models.database import db
-from constants import DISTRICT_NAMES
+from constants import DISTRICT_NAMES, SALE_TYPE_NEW, SALE_TYPE_RESALE
 from services.school_distance import get_schools_within_distance
 from db.sql import OUTLIER_FILTER, exclude_outliers, get_outlier_filter_sql
 
@@ -492,7 +492,7 @@ def get_hot_projects():
                     MAX(t.transaction_date) as last_new_sale
                 FROM transactions t
                 WHERE {get_outlier_filter_sql('t')}
-                  AND t.sale_type = 'New Sale'
+                  AND t.sale_type = '{SALE_TYPE_NEW}'
                 GROUP BY t.project_name, t.district
             ),
             filtered_stats AS (
@@ -501,16 +501,16 @@ def get_hot_projects():
                 SELECT
                     t.project_name,
                     t.district,
-                    COUNT(CASE WHEN t.sale_type = 'New Sale' THEN 1 END) as filtered_count,
-                    COUNT(CASE WHEN t.sale_type = 'Resale' THEN 1 END) as resale_count,
-                    AVG(CASE WHEN t.sale_type = 'New Sale' THEN t.psf END) as avg_psf,
-                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = 'New Sale' THEN t.price END) as median_price,
-                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = 'New Sale' THEN t.psf END) as median_psf
+                    COUNT(CASE WHEN t.sale_type = '{SALE_TYPE_NEW}' THEN 1 END) as filtered_count,
+                    COUNT(CASE WHEN t.sale_type = '{SALE_TYPE_RESALE}' THEN 1 END) as resale_count,
+                    AVG(CASE WHEN t.sale_type = '{SALE_TYPE_NEW}' THEN t.psf END) as avg_psf,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = '{SALE_TYPE_NEW}' THEN t.price END) as median_price,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = '{SALE_TYPE_NEW}' THEN t.psf END) as median_psf
                 FROM transactions t
                 WHERE {filter_where_sql}
                 GROUP BY t.project_name, t.district
-                HAVING COUNT(CASE WHEN t.sale_type = 'New Sale' THEN 1 END) > 0
-                   AND COUNT(CASE WHEN t.sale_type = 'Resale' THEN 1 END) = 0
+                HAVING COUNT(CASE WHEN t.sale_type = '{SALE_TYPE_NEW}' THEN 1 END) > 0
+                   AND COUNT(CASE WHEN t.sale_type = '{SALE_TYPE_RESALE}' THEN 1 END) = 0
             )
             SELECT
                 tps.project_name,
@@ -701,7 +701,7 @@ def get_inventory_status():
         new_sale_projects = db.session.query(
             func.distinct(Transaction.project_name)
         ).filter(
-            Transaction.sale_type == 'New Sale',
+            Transaction.sale_type == SALE_TYPE_NEW,
             exclude_outliers(Transaction)
         ).all()
 

@@ -139,10 +139,11 @@ def _load_resale_projects() -> Set[str]:
             from sqlalchemy import text
 
             from db.sql import OUTLIER_FILTER
+            from constants import SALE_TYPE_RESALE
             result = db.session.execute(text(f"""
                 SELECT DISTINCT UPPER(project_name) as project_name
                 FROM transactions
-                WHERE sale_type = 'Resale'
+                WHERE sale_type = '{SALE_TYPE_RESALE}'
                   AND {OUTLIER_FILTER}
             """)).fetchall()
 

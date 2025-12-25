@@ -475,3 +475,122 @@ class TestNoUnnecessaryDateCasts:
                 msg += f"  {v['file']}:{v['line']} (:{v['param']}::date)\n"
                 msg += f"    {v['content']}\n\n"
             pytest.fail(msg)
+
+
+# =============================================================================
+# HARDCODED ENUM STRING DETECTION
+# =============================================================================
+
+class TestNoHardcodedEnumStrings:
+    """
+    GUARDRAIL: Detect hardcoded sale_type and tenure DB values.
+
+    All sale_type and tenure comparisons should use centralized constants:
+    - SALE_TYPE_NEW, SALE_TYPE_RESALE, SALE_TYPE_SUB
+    - TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR
+
+    This prevents typos and ensures consistency across the codebase.
+    """
+
+    BACKEND_ROOT = Path(__file__).parent.parent
+    SCAN_DIRS = ['routes', 'services']
+
+    # Patterns for hardcoded enum comparisons (excludes comments, docstrings, UI labels)
+    SALE_TYPE_PATTERNS = [
+        # Equality comparisons
+        re.compile(r"==\s*['\"]New Sale['\"]"),
+        re.compile(r"==\s*['\"]Resale['\"]"),
+        re.compile(r"==\s*['\"]Sub Sale['\"]"),
+        # SQL fragments (not using f-string interpolation with constant)
+        re.compile(r"sale_type\s*=\s*'New Sale'"),
+        re.compile(r"sale_type\s*=\s*'Resale'"),
+        re.compile(r"sale_type\s*=\s*'Sub Sale'"),
+    ]
+
+    TENURE_PATTERNS = [
+        # Note: Only check direct string comparisons, not .lower() or LIKE patterns
+        # which may be intentional for flexible matching
+        re.compile(r"==\s*['\"]Freehold['\"](?!\s*\.lower)"),
+        re.compile(r"==\s*['\"]99-year['\"](?!\s*\.lower)"),
+        re.compile(r"==\s*['\"]999-year['\"](?!\s*\.lower)"),
+    ]
+
+    # Files to skip
+    SKIP_FILES = [
+        '__pycache__',
+        'test_',
+        'constants.py',  # The source of truth
+        'api_contract.py',  # API contract definitions
+    ]
+
+    # Line patterns to skip (comments, docstrings, UI labels)
+    SKIP_LINE_PATTERNS = [
+        re.compile(r'^\s*#'),  # Comments
+        re.compile(r'^\s*["\'].*["\']$'),  # Standalone strings (docstrings)
+        re.compile(r'^\s*- '),  # Docstring bullet points
+        re.compile(r'sale_type_label\s*='),  # UI labels
+        re.compile(r"label\s*=\s*['\"]"),  # UI labels
+    ]
+
+    def get_python_files(self):
+        files = []
+        for scan_dir in self.SCAN_DIRS:
+            dir_path = self.BACKEND_ROOT / scan_dir
+            if dir_path.exists():
+                files.extend(dir_path.rglob('*.py'))
+        return files
+
+    def should_skip_file(self, filepath):
+        for skip in self.SKIP_FILES:
+            if skip in str(filepath):
+                return True
+        return False
+
+    def should_skip_line(self, line):
+        for pattern in self.SKIP_LINE_PATTERNS:
+            if pattern.search(line):
+                return True
+        return False
+
+    def test_no_hardcoded_sale_type_strings(self):
+        """
+        GUARDRAIL: Detect hardcoded 'New Sale', 'Resale', 'Sub Sale' strings.
+
+        These should use SALE_TYPE_NEW, SALE_TYPE_RESALE, SALE_TYPE_SUB from constants.
+        """
+        violations = []
+
+        for filepath in self.get_python_files():
+            if self.should_skip_file(filepath):
+                continue
+
+            try:
+                content = filepath.read_text(encoding='utf-8')
+            except Exception:
+                continue
+
+            lines = content.split('\n')
+            for i, line in enumerate(lines, 1):
+                if self.should_skip_line(line):
+                    continue
+
+                for pattern in self.SALE_TYPE_PATTERNS:
+                    if pattern.search(line):
+                        violations.append({
+                            'file': str(filepath.relative_to(self.BACKEND_ROOT)),
+                            'line': i,
+                            'content': line.strip()[:100]
+                        })
+                        break  # Only report once per line
+
+        if violations:
+            msg = "GUARDRAIL VIOLATION: Found hardcoded sale_type strings!\n\n"
+            msg += "Use constants from constants.py:\n"
+            msg += "  - SALE_TYPE_NEW instead of 'New Sale'\n"
+            msg += "  - SALE_TYPE_RESALE instead of 'Resale'\n"
+            msg += "  - SALE_TYPE_SUB instead of 'Sub Sale'\n\n"
+            msg += "For SQL fragments, use f-string: sale_type = '{SALE_TYPE_NEW}'\n\n"
+            for v in violations:
+                msg += f"  {v['file']}:{v['line']}\n"
+                msg += f"    {v['content']}\n\n"
+            pytest.fail(msg)

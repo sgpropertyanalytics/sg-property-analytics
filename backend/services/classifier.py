@@ -17,6 +17,8 @@ from datetime import date
 from typing import Optional, Union
 import pandas as pd
 
+from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
+
 # Harmonization date when AC ledge rules changed (affects unit sizes)
 HARMONIZATION_DATE = pd.Timestamp('2023-06-01')
 
@@ -127,7 +129,7 @@ def classify_bedroom_three_tier(
         Estimated bedroom count (1-5)
     """
     # Normalize sale_type
-    sale_type_str = str(sale_type).strip() if sale_type else 'Resale'
+    sale_type_str = str(sale_type).strip() if sale_type else SALE_TYPE_RESALE
 
     # Parse transaction_date if needed
     if transaction_date is None:
@@ -145,7 +147,7 @@ def classify_bedroom_three_tier(
             sale_date = None
 
     # Determine which tier to use
-    if sale_type_str == 'New Sale' and sale_date is not None:
+    if sale_type_str == SALE_TYPE_NEW and sale_date is not None:
         if sale_date >= HARMONIZATION_DATE:
             # Tier 1: Post-Harmonization New Sale
             return _classify_with_thresholds(area_sqft, TIER1_THRESHOLDS)
@@ -192,9 +194,9 @@ def get_tier_name(sale_type: Optional[str], transaction_date: Optional[pd.Timest
     Returns:
         Tier name string
     """
-    sale_type_str = str(sale_type).strip() if sale_type else 'Resale'
+    sale_type_str = str(sale_type).strip() if sale_type else SALE_TYPE_RESALE
 
-    if sale_type_str == 'New Sale' and transaction_date is not None:
+    if sale_type_str == SALE_TYPE_NEW and transaction_date is not None:
         if transaction_date >= HARMONIZATION_DATE:
             return "Tier 1: New Sale Post-Harmonization (Ultra Compact)"
         else:

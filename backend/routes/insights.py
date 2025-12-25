@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from models.transaction import Transaction
 from models.database import db
 from sqlalchemy import func, and_, or_, extract, case, literal
-from constants import CCR_DISTRICTS, RCR_DISTRICTS, DISTRICT_NAMES
+from constants import CCR_DISTRICTS, RCR_DISTRICTS, DISTRICT_NAMES, SALE_TYPE_NEW, SALE_TYPE_RESALE
 
 
 def build_property_age_filter(age_filter):
@@ -588,8 +588,8 @@ def district_liquidity():
         query = db.session.query(
             Transaction.district,
             func.count(Transaction.id).label("tx_count"),
-            func.count(case((Transaction.sale_type == 'New Sale', 1))).label("new_sale_count"),
-            func.count(case((Transaction.sale_type == 'Resale', 1))).label("resale_count"),
+            func.count(case((Transaction.sale_type == SALE_TYPE_NEW, 1))).label("new_sale_count"),
+            func.count(case((Transaction.sale_type == SALE_TYPE_RESALE, 1))).label("resale_count"),
             func.count(func.distinct(Transaction.project_name)).label("project_count"),
         ).filter(
             and_(*filter_conditions)
@@ -629,7 +629,7 @@ def district_liquidity():
         # =================================================================
         resale_filter_conditions = [
             Transaction.outlier_filter(),
-            Transaction.sale_type == 'Resale'  # ALWAYS resale only for exit safety
+            Transaction.sale_type == SALE_TYPE_RESALE  # ALWAYS resale only for exit safety
         ]
         if date_from:
             resale_filter_conditions.append(Transaction.transaction_date >= date_from)
