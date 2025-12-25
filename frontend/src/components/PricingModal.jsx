@@ -123,17 +123,17 @@ export function PricingModal({ isOpen, onClose }) {
             </p>
           </div>
 
-          {/* Side-by-Side Cards - Aligned at bottom, Annual taller */}
-          <div className="flex flex-col md:flex-row gap-5 items-end mb-6">
+          {/* Side-by-Side Cards - Same height, buttons at bottom */}
+          <div className="flex flex-col md:flex-row gap-5 items-stretch mb-6">
 
-            {/* LEFT: Quarterly (Shorter - References Annual) */}
-            <div className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1] flex flex-col md:mb-0">
+            {/* LEFT: Quarterly (References Annual) */}
+            <div className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1] flex flex-col">
               <div className="flex-1">
                 <h3 className="text-[#213448] font-bold text-xl mb-2">Quarterly</h3>
                 <p className="text-[#213448] text-3xl font-bold mb-1">
-                  $25<span className="text-[#547792] text-base font-normal">/mo</span>
+                  $75<span className="text-[#547792] text-base font-normal"> / quarter</span>
                 </p>
-                <p className="text-[#213448] text-sm mb-1">Billed $75 every 3 months</p>
+                <p className="text-[#547792] text-sm mb-1">Equivalent to $25/mo</p>
                 <p className="text-[#547792] text-xs mb-5">Cancel anytime.</p>
 
                 {/* Reference to Annual features */}
@@ -141,7 +141,7 @@ export function PricingModal({ isOpen, onClose }) {
                   <svg className="w-4 h-4 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span><strong className="text-[#213448]">Includes full access</strong> to all 6 Pro features listed in Annual.</span>
+                  <span className="text-[#213448] font-medium">Includes full access to all 6 features listed in Annual.</span>
                 </p>
               </div>
 
@@ -154,12 +154,12 @@ export function PricingModal({ isOpen, onClose }) {
               </button>
             </div>
 
-            {/* RIGHT: Annual Pro (The Winner - taller with full features) */}
+            {/* RIGHT: Annual (Full features list) */}
             <div
-              className="flex-1 bg-[#213448] rounded-xl flex flex-col relative md:-mt-6 md:mb-0"
+              className="flex-1 bg-[#213448] rounded-xl flex flex-col relative"
               style={{
                 boxShadow: '0px 16px 48px rgba(33, 52, 72, 0.45)',
-                padding: '2rem 1.5rem 1.5rem 1.5rem',
+                padding: '1.5rem',
               }}
             >
               {/* SAVE 40% Badge */}
@@ -169,14 +169,14 @@ export function PricingModal({ isOpen, onClose }) {
                 </span>
               </div>
 
-              <div className="flex-1 pt-1">
-                <h3 className="text-[#EAE0CF] font-bold text-xl mb-2">Annual Pro</h3>
+              <div className="flex-1 pt-2">
+                <h3 className="text-[#EAE0CF] font-bold text-xl mb-2">Annual</h3>
                 <p className="mb-1">
-                  <span className="text-white text-4xl font-bold">$15</span>
-                  <span className="text-[#94B4C1] text-base font-normal">/mo</span>
+                  <span className="text-white text-3xl font-bold">$180</span>
+                  <span className="text-[#94B4C1] text-base font-normal"> / year</span>
                 </p>
-                <p className="text-[#94B4C1] text-sm mb-1">Billed $180 yearly</p>
-                <p className="text-[#EAE0CF] text-xs mb-5">Same features. Smart savings.</p>
+                <p className="text-[#94B4C1] text-sm mb-1">Equivalent to $15/mo · <span className="text-[#EAE0CF]">Save 40%</span></p>
+                <p className="text-[#547792] text-xs mb-5">Cancel anytime.</p>
 
                 {/* Features - Full List (Master List) */}
                 <div className="space-y-2.5">
@@ -194,7 +194,7 @@ export function PricingModal({ isOpen, onClose }) {
               <button
                 onClick={() => handleSelectPlan('annual')}
                 disabled={loading === 'annual'}
-                className="mt-6 w-full bg-[#EAE0CF] text-[#213448] px-5 py-3.5 rounded-lg font-bold hover:bg-white transition-colors disabled:opacity-50"
+                className="mt-6 w-full bg-[#EAE0CF] text-[#213448] px-5 py-3 rounded-lg font-bold hover:bg-white transition-colors disabled:opacity-50"
               >
                 {loading === 'annual' ? 'Loading...' : 'Unlock & Save $120'}
               </button>
