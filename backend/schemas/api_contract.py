@@ -330,11 +330,25 @@ def _mask_psf(psf: Optional[float]) -> Optional[str]:
 def parse_filter_params(request_args: dict) -> Dict[str, Any]:
     """Parse and validate filter parameters, accepting both v1 and v2 formats.
 
+    Canonicalizes all filter inputs at the API boundary.
+    Use the returned values for DB queries.
+
     Args:
         request_args: Flask request.args dict
 
     Returns:
-        dict with normalized parameter values for DB queries
+        dict with normalized parameter values for DB queries:
+        - sale_type_db: DB-format sale type (e.g., 'New Sale')
+        - tenure_db: DB-format tenure (e.g., '99-year')
+        - segment_db: uppercase region (e.g., 'CCR')
+        - districts: list of normalized districts (e.g., ['D01', 'D02'])
+        - bedrooms: list of integers (e.g., [2, 3])
+        - date_from: date string (YYYY-MM-DD)
+        - date_to: date string (YYYY-MM-DD)
+        - psf_min, psf_max: floats
+        - size_min, size_max: floats
+        - project: string (partial match)
+        - project_exact: string (exact match)
     """
     params = {}
 
@@ -345,7 +359,7 @@ def parse_filter_params(request_args: dict) -> Dict[str, Any]:
         if sale_type in SaleType.ALL:
             params['sale_type_db'] = SaleType.to_db(sale_type)
         else:
-            # Assume v1 DB value (backwards compat) - also handle case-insensitive
+            # Assume v1 DB value (backwards compat)
             params['sale_type_db'] = sale_type
 
     # Tenure: accept both tenure (v2 enum) and tenure (v1 DB value)
@@ -357,13 +371,215 @@ def parse_filter_params(request_args: dict) -> Dict[str, Any]:
             params['tenure_db'] = tenure
 
     # Region/segment: accept both region (v2) and segment (v1)
+    # Supports comma-separated values (e.g., "CCR,RCR" or "ccr,rcr")
     region = request_args.get('region') or request_args.get('segment')
     if region:
-        # Handle both lowercase enum and uppercase DB value
-        region_upper = region.upper()
-        if region_upper in ['CCR', 'RCR', 'OCR']:
-            params['segment_db'] = region_upper
-        else:
-            params['segment_db'] = region
+        segments = [s.strip().upper() for s in region.split(',') if s.strip()]
+        valid_segments = [s for s in segments if s in ['CCR', 'RCR', 'OCR']]
+        if valid_segments:
+            params['segments_db'] = valid_segments
+
+    # District: normalize format to DXX
+    district = request_args.get('district')
+    if district:
+        districts = [d.strip().upper() for d in district.split(',') if d.strip()]
+        normalized = []
+        for d in districts:
+            if not d.startswith('D'):
+                d = f"D{d.zfill(2)}"
+            normalized.append(d)
+        if normalized:
+            params['districts'] = normalized
+
+    # Bedroom: parse comma-separated integers
+    bedroom = request_args.get('bedroom')
+    if bedroom:
+        try:
+            bedrooms = [int(b.strip()) for b in bedroom.split(',') if b.strip()]
+            if bedrooms:
+                params['bedrooms'] = bedrooms
+        except ValueError:
+            pass
+
+    # Date range
+    date_from = request_args.get('date_from')
+    date_to = request_args.get('date_to')
+    if date_from:
+        params['date_from'] = date_from
+    if date_to:
+        params['date_to'] = date_to
+
+    # PSF range
+    psf_min = request_args.get('psf_min')
+    psf_max = request_args.get('psf_max')
+    if psf_min:
+        try:
+            params['psf_min'] = float(psf_min)
+        except ValueError:
+            pass
+    if psf_max:
+        try:
+            params['psf_max'] = float(psf_max)
+        except ValueError:
+            pass
+
+    # Size range
+    size_min = request_args.get('size_min')
+    size_max = request_args.get('size_max')
+    if size_min:
+        try:
+            params['size_min'] = float(size_min)
+        except ValueError:
+            pass
+    if size_max:
+        try:
+            params['size_max'] = float(size_max)
+        except ValueError:
+            pass
+
+    # Project filter
+    project = request_args.get('project')
+    project_exact = request_args.get('project_exact')
+    if project_exact:
+        params['project_exact'] = project_exact
+    elif project:
+        params['project'] = project
 
     return params
+
+
+# =============================================================================
+# AGGREGATE RESPONSE SERIALIZATION
+# =============================================================================
+
+class AggregateFields:
+    """Field names for aggregate API responses (camelCase for v2)."""
+    # Dimension fields
+    MONTH = 'month'
+    QUARTER = 'quarter'
+    YEAR = 'year'
+    DISTRICT = 'district'
+    BEDROOM_COUNT = 'bedroomCount'  # v1: bedroom
+    SALE_TYPE = 'saleType'          # v1: sale_type
+    PROJECT = 'project'
+    REGION = 'region'
+    FLOOR_LEVEL = 'floorLevel'      # v1: floor_level
+
+    # Metric fields (snake_case OK - they're computed, not DB columns)
+    COUNT = 'count'
+    AVG_PSF = 'avgPsf'              # v1: avg_psf
+    MEDIAN_PSF = 'medianPsf'        # v1: median_psf
+    TOTAL_VALUE = 'totalValue'      # v1: total_value
+    AVG_PRICE = 'avgPrice'          # v1: avg_price
+    MEDIAN_PRICE = 'medianPrice'    # v1: median_price
+    MIN_PSF = 'minPsf'              # v1: min_psf
+    MAX_PSF = 'maxPsf'              # v1: max_psf
+    PSF_25TH = 'psf25th'            # v1: psf_25th
+    PSF_75TH = 'psf75th'            # v1: psf_75th
+    PRICE_25TH = 'price25th'        # v1: price_25th
+    PRICE_75TH = 'price75th'        # v1: price_75th
+
+
+# Mapping from v1 snake_case to v2 camelCase for aggregate fields
+_AGGREGATE_FIELD_MAP = {
+    # Dimension fields
+    'bedroom': AggregateFields.BEDROOM_COUNT,
+    'sale_type': AggregateFields.SALE_TYPE,
+    'floor_level': AggregateFields.FLOOR_LEVEL,
+    # Metric fields
+    'avg_psf': AggregateFields.AVG_PSF,
+    'median_psf': AggregateFields.MEDIAN_PSF,
+    'total_value': AggregateFields.TOTAL_VALUE,
+    'avg_price': AggregateFields.AVG_PRICE,
+    'median_price': AggregateFields.MEDIAN_PRICE,
+    'min_psf': AggregateFields.MIN_PSF,
+    'max_psf': AggregateFields.MAX_PSF,
+    'psf_25th': AggregateFields.PSF_25TH,
+    'psf_75th': AggregateFields.PSF_75TH,
+    'price_25th': AggregateFields.PRICE_25TH,
+    'price_75th': AggregateFields.PRICE_75TH,
+}
+
+
+def serialize_aggregate_row(row: Dict[str, Any], include_deprecated: bool = True) -> Dict[str, Any]:
+    """Serialize a single aggregate result row to API v2 schema.
+
+    Converts:
+    - sale_type values to lowercase enums (New Sale → new_sale)
+    - floor_level values to lowercase enums (Mid-High → mid_high)
+    - region values to lowercase (CCR → ccr)
+    - Field names to camelCase (avg_psf → avgPsf)
+
+    Args:
+        row: Dict from SQL query result
+        include_deprecated: If True, include old snake_case fields
+
+    Returns:
+        Transformed dict with v2 schema
+    """
+    result = {}
+
+    for key, value in row.items():
+        # Transform enum values
+        if key == 'sale_type' and value:
+            v2_value = SaleType.from_db(value)
+            result[AggregateFields.SALE_TYPE] = v2_value
+            if include_deprecated:
+                result['sale_type'] = value  # Keep old format
+        elif key == 'floor_level' and value:
+            v2_value = FloorLevel.from_db(value)
+            result[AggregateFields.FLOOR_LEVEL] = v2_value
+            if include_deprecated:
+                result['floor_level'] = value
+        elif key == 'region' and value:
+            v2_value = value.lower() if isinstance(value, str) else value
+            result[AggregateFields.REGION] = v2_value
+            if include_deprecated:
+                result['region'] = value  # Keep uppercase
+        elif key == 'bedroom':
+            result[AggregateFields.BEDROOM_COUNT] = value
+            if include_deprecated:
+                result['bedroom'] = value
+        elif key in _AGGREGATE_FIELD_MAP:
+            # Convert snake_case metric to camelCase
+            v2_key = _AGGREGATE_FIELD_MAP[key]
+            result[v2_key] = value
+            if include_deprecated:
+                result[key] = value
+        else:
+            # Pass through unchanged (month, quarter, year, district, project, count)
+            result[key] = value
+
+    return result
+
+
+def serialize_aggregate_response(
+    data: list,
+    meta: Dict[str, Any],
+    include_deprecated: bool = True
+) -> Dict[str, Any]:
+    """Serialize full aggregate response to API v2 schema.
+
+    Args:
+        data: List of aggregate result rows
+        meta: Metadata dict
+        include_deprecated: If True, include old snake_case fields
+
+    Returns:
+        Complete response dict with serialized data and meta
+    """
+    serialized_data = [
+        serialize_aggregate_row(row, include_deprecated=include_deprecated)
+        for row in data
+    ]
+
+    # Add API contract version to meta
+    meta_v2 = {
+        **meta,
+        'apiContractVersion': API_CONTRACT_VERSION,
+    }
+
+    return {
+        'data': serialized_data,
+        'meta': meta_v2,
+    }

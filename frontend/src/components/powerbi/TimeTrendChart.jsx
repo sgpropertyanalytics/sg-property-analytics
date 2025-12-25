@@ -17,6 +17,7 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
+import { isSaleType, getAggField, AggField } from '../../schemas/apiContract';
 
 ChartJS.register(
   CategoryScale,
@@ -93,16 +94,20 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
               totalValue: 0,
             };
           }
-          const saleType = row.sale_type?.toLowerCase() || '';
-          if (saleType.includes('new')) {
-            groupedByTime[period].newSaleCount += row.count || 0;
-            groupedByTime[period].newSaleValue += row.total_value || 0;
+          // Use schema helpers for v1/v2 compatibility
+          const saleType = getAggField(row, AggField.SALE_TYPE);
+          const count = getAggField(row, AggField.COUNT) || 0;
+          const totalValue = getAggField(row, AggField.TOTAL_VALUE) || 0;
+
+          if (isSaleType.newSale(saleType)) {
+            groupedByTime[period].newSaleCount += count;
+            groupedByTime[period].newSaleValue += totalValue;
           } else {
-            groupedByTime[period].resaleCount += row.count || 0;
-            groupedByTime[period].resaleValue += row.total_value || 0;
+            groupedByTime[period].resaleCount += count;
+            groupedByTime[period].resaleValue += totalValue;
           }
-          groupedByTime[period].totalCount += row.count || 0;
-          groupedByTime[period].totalValue += row.total_value || 0;
+          groupedByTime[period].totalCount += count;
+          groupedByTime[period].totalValue += totalValue;
         });
 
         // Convert to sorted array

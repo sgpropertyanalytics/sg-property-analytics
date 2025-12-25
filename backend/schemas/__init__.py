@@ -6,8 +6,11 @@ from .api_contract import (
     Region,
     FloorLevel,
     TransactionFields,
+    AggregateFields,
     serialize_transaction,
     serialize_transaction_teaser,
+    serialize_aggregate_row,
+    serialize_aggregate_response,
     parse_filter_params,
 )
 
@@ -18,7 +21,10 @@ __all__ = [
     'Region',
     'FloorLevel',
     'TransactionFields',
+    'AggregateFields',
     'serialize_transaction',
     'serialize_transaction_teaser',
+    'serialize_aggregate_row',
+    'serialize_aggregate_response',
     'parse_filter_params',
 ]

@@ -1292,8 +1292,13 @@ def aggregate():
     from sqlalchemy import func, and_, or_, extract, cast, String, Integer, literal_column
     from services.data_processor import _get_market_segment
     from services.dashboard_service import _dashboard_cache
+    from schemas.api_contract import serialize_aggregate_response
 
     start = time.time()
+
+    # Schema version: v2 returns camelCase + lowercase enums only, v1 (default) returns both
+    schema_version = request.args.get('schema', 'v1')
+    include_deprecated = (schema_version != 'v2')
 
     # Build cache key from query string
     skip_cache = request.args.get('skip_cache', '').lower() == 'true'
@@ -1450,16 +1455,15 @@ def aggregate():
 
     if total_records == 0:
         elapsed = time.time() - start
-        return jsonify({
-            "data": [],
-            "meta": {
-                "total_records": 0,
-                "filters_applied": filters_applied,
-                "group_by": group_by,
-                "metrics": metrics,
-                "elapsed_ms": int(elapsed * 1000)
-            }
-        })
+        empty_meta = {
+            "total_records": 0,
+            "filters_applied": filters_applied,
+            "group_by": group_by,
+            "metrics": metrics,
+            "elapsed_ms": int(elapsed * 1000),
+            "schemaVersion": schema_version,
+        }
+        return jsonify(serialize_aggregate_response([], empty_meta, include_deprecated=include_deprecated))
 
     # Build group_by columns for SQL
     group_columns = []
@@ -1615,22 +1619,24 @@ def aggregate():
     elapsed = time.time() - start
     print(f"GET /api/aggregate took: {elapsed:.4f} seconds (returned {len(data)} groups from {total_records} records)")
 
-    result = {
-        "data": data,
-        "meta": {
-            "total_records": total_records,
-            "filters_applied": filters_applied,
-            "group_by": group_by,
-            "metrics": metrics,
-            "elapsed_ms": int(elapsed * 1000),
-            "cache_hit": False,
-            "note": "median values are approximated using avg for memory efficiency",
-            "subscription": {
-                "is_premium": is_premium,
-                "time_restricted": False  # All data available, blur paywall instead of time restriction
-            }
+    # Build meta for response
+    meta = {
+        "total_records": total_records,
+        "filters_applied": filters_applied,
+        "group_by": group_by,
+        "metrics": metrics,
+        "elapsed_ms": int(elapsed * 1000),
+        "cache_hit": False,
+        "note": "median values are approximated using avg for memory efficiency",
+        "schemaVersion": schema_version,
+        "subscription": {
+            "is_premium": is_premium,
+            "time_restricted": False  # All data available, blur paywall instead of time restriction
         }
     }
+
+    # Wrap with API contract serializer (transforms field names + enum values)
+    result = serialize_aggregate_response(data, meta, include_deprecated=include_deprecated)
 
     # Cache the result for faster repeated queries
     _dashboard_cache.set(cache_key, result)

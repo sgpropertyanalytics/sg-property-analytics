@@ -374,3 +374,216 @@ class TestTransactionsListEndpointContract:
         assert 'meta' in data
         assert data['meta'].get('apiContractVersion') == API_CONTRACT_VERSION
         assert 'schemaVersion' in data['meta']
+
+
+class TestAggregateSerializer:
+    """Unit tests for aggregate serialization."""
+
+    def test_serialize_aggregate_row_transforms_sale_type(self):
+        """Verify sale_type is converted to lowercase enum."""
+        from schemas.api_contract import serialize_aggregate_row, SaleType
+
+        row = {'sale_type': 'New Sale', 'count': 10, 'avg_psf': 1500.0}
+        result = serialize_aggregate_row(row, include_deprecated=False)
+
+        assert result['saleType'] == SaleType.NEW_SALE
+        assert 'sale_type' not in result
+
+    def test_serialize_aggregate_row_transforms_region(self):
+        """Verify region is converted to lowercase."""
+        from schemas.api_contract import serialize_aggregate_row
+
+        row = {'region': 'CCR', 'count': 10}
+        result = serialize_aggregate_row(row, include_deprecated=False)
+
+        assert result['region'] == 'ccr'
+
+    def test_serialize_aggregate_row_transforms_bedroom(self):
+        """Verify bedroom → bedroomCount."""
+        from schemas.api_contract import serialize_aggregate_row
+
+        row = {'bedroom': 3, 'count': 10}
+        result = serialize_aggregate_row(row, include_deprecated=False)
+
+        assert result['bedroomCount'] == 3
+        assert 'bedroom' not in result
+
+    def test_serialize_aggregate_row_transforms_metrics(self):
+        """Verify metric fields are camelCased."""
+        from schemas.api_contract import serialize_aggregate_row
+
+        row = {
+            'avg_psf': 1500.0,
+            'median_psf': 1450.0,
+            'total_value': 10000000,
+            'count': 10
+        }
+        result = serialize_aggregate_row(row, include_deprecated=False)
+
+        assert result['avgPsf'] == 1500.0
+        assert result['medianPsf'] == 1450.0
+        assert result['totalValue'] == 10000000
+        assert 'avg_psf' not in result
+        assert 'median_psf' not in result
+        assert 'total_value' not in result
+
+    def test_serialize_aggregate_row_dual_mode(self):
+        """Verify dual mode includes both old and new fields."""
+        from schemas.api_contract import serialize_aggregate_row
+
+        row = {'sale_type': 'Resale', 'avg_psf': 1500.0, 'bedroom': 2}
+        result = serialize_aggregate_row(row, include_deprecated=True)
+
+        # Should have both
+        assert result['saleType'] == 'resale'
+        assert result['sale_type'] == 'Resale'
+        assert result['avgPsf'] == 1500.0
+        assert result['avg_psf'] == 1500.0
+        assert result['bedroomCount'] == 2
+        assert result['bedroom'] == 2
+
+    def test_serialize_aggregate_response_adds_meta(self):
+        """Verify response includes API contract version in meta."""
+        from schemas.api_contract import serialize_aggregate_response, API_CONTRACT_VERSION
+
+        data = [{'month': '2024-01', 'count': 10}]
+        meta = {'total_records': 100}
+
+        result = serialize_aggregate_response(data, meta)
+
+        assert result['meta']['apiContractVersion'] == API_CONTRACT_VERSION
+        assert result['meta']['total_records'] == 100
+
+
+class TestAggregateEndpointContract:
+    """
+    Integration tests for /api/aggregate contract.
+
+    These tests verify the actual API response format.
+    Requires: Flask app context and database connection.
+    """
+
+    def _get_test_client(self):
+        """Get Flask test client."""
+        try:
+            from app import create_app
+            app = create_app()
+            app.config['TESTING'] = True
+            return app.test_client()
+        except Exception as e:
+            pytest.skip(f"Could not create test client: {e}")
+
+    def test_v2_schema_transforms_sale_type(self):
+        """v2 schema returns lowercase saleType enum."""
+        client = self._get_test_client()
+        response = client.get('/api/aggregate?group_by=sale_type&metrics=count&schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        from schemas.api_contract import SaleType
+
+        for row in data.get('data', []):
+            sale_type = row.get('saleType')
+            if sale_type:
+                assert sale_type in SaleType.ALL, f"Invalid saleType: {sale_type}"
+                assert sale_type == sale_type.lower()
+                assert ' ' not in sale_type
+
+            # Must NOT have v1 in v2 mode
+            assert 'sale_type' not in row
+
+    def test_v2_schema_transforms_bedroom(self):
+        """v2 schema returns bedroomCount not bedroom."""
+        client = self._get_test_client()
+        response = client.get('/api/aggregate?group_by=bedroom&metrics=count&schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        for row in data.get('data', []):
+            assert 'bedroomCount' in row
+            assert 'bedroom' not in row
+
+    def test_v2_schema_transforms_metrics(self):
+        """v2 schema returns camelCase metric fields."""
+        client = self._get_test_client()
+        response = client.get('/api/aggregate?group_by=month&metrics=avg_psf,median_psf&schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        if data.get('data'):
+            row = data['data'][0]
+            # Should have camelCase
+            assert 'avgPsf' in row or row.get('avgPsf') is not None
+            # Should NOT have snake_case
+            assert 'avg_psf' not in row
+
+    def test_v2_schema_transforms_region(self):
+        """v2 schema returns lowercase region."""
+        client = self._get_test_client()
+        response = client.get('/api/aggregate?group_by=region&metrics=count&schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        for row in data.get('data', []):
+            region = row.get('region')
+            if region:
+                assert region == region.lower(), f"Region should be lowercase: {region}"
+
+    def test_backwards_compat_dual_mode(self):
+        """Default (v1) returns both old and new fields."""
+        client = self._get_test_client()
+        response = client.get('/api/aggregate?group_by=sale_type,bedroom&metrics=avg_psf')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        if data.get('data'):
+            row = data['data'][0]
+            # Should have BOTH formats
+            assert 'saleType' in row and 'sale_type' in row
+            assert 'bedroomCount' in row and 'bedroom' in row
+            assert 'avgPsf' in row and 'avg_psf' in row
+
+    def test_meta_includes_contract_version(self):
+        """Response meta includes API contract version."""
+        client = self._get_test_client()
+        response = client.get('/api/aggregate?group_by=month&metrics=count')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        from schemas.api_contract import API_CONTRACT_VERSION
+
+        assert 'meta' in data
+        assert data['meta'].get('apiContractVersion') == API_CONTRACT_VERSION
+        assert data['meta'].get('schemaVersion') in ['v1', 'v2']
+
+    def test_empty_result_still_has_contract_format(self):
+        """Empty results still return proper contract format."""
+        client = self._get_test_client()
+        # Use an impossible filter to get empty results
+        response = client.get('/api/aggregate?group_by=month&metrics=count&district=D99&schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        from schemas.api_contract import API_CONTRACT_VERSION
+
+        assert data['data'] == []
+        assert 'meta' in data
+        assert data['meta'].get('apiContractVersion') == API_CONTRACT_VERSION

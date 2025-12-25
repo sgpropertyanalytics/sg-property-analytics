@@ -251,3 +251,73 @@ export const toApiParams = (filters) => {
  * Add ?schema=v2 to get only camelCase fields and enum values.
  */
 export const V2_SCHEMA_PARAM = { schema: 'v2' };
+
+// =============================================================================
+// AGGREGATE RESPONSE FIELD HELPERS
+// =============================================================================
+
+/**
+ * Aggregate field names in API v2 responses.
+ */
+export const AggField = {
+  // Dimension fields
+  MONTH: 'month',
+  QUARTER: 'quarter',
+  YEAR: 'year',
+  DISTRICT: 'district',
+  BEDROOM_COUNT: 'bedroomCount',  // v1: bedroom
+  SALE_TYPE: 'saleType',          // v1: sale_type
+  PROJECT: 'project',
+  REGION: 'region',
+  FLOOR_LEVEL: 'floorLevel',      // v1: floor_level
+  // Metric fields
+  COUNT: 'count',
+  AVG_PSF: 'avgPsf',              // v1: avg_psf
+  MEDIAN_PSF: 'medianPsf',        // v1: median_psf
+  TOTAL_VALUE: 'totalValue',      // v1: total_value
+  AVG_PRICE: 'avgPrice',          // v1: avg_price
+  MEDIAN_PRICE: 'medianPrice',    // v1: median_price
+};
+
+/**
+ * Mapping from v2 camelCase to v1 snake_case for aggregate fields.
+ */
+const V1_AGG_FIELD_MAP = {
+  bedroomCount: 'bedroom',
+  saleType: 'sale_type',
+  floorLevel: 'floor_level',
+  avgPsf: 'avg_psf',
+  medianPsf: 'median_psf',
+  totalValue: 'total_value',
+  avgPrice: 'avg_price',
+  medianPrice: 'median_price',
+};
+
+/**
+ * Get field value from aggregate row, handling both v1 and v2 formats.
+ *
+ * @param {Object} row - Aggregate row from API
+ * @param {string} field - Field name (use AggField constants)
+ * @returns {*} Field value or undefined
+ *
+ * @example
+ * const saleType = getAggField(row, AggField.SALE_TYPE);
+ * const count = getAggField(row, AggField.COUNT);
+ */
+export const getAggField = (row, field) => {
+  if (!row) return undefined;
+
+  // Try v2 camelCase first
+  if (row[field] !== undefined) {
+    return row[field];
+  }
+
+  // Fallback to v1 snake_case
+  const v1Field = V1_AGG_FIELD_MAP[field];
+  if (v1Field && row[v1Field] !== undefined) {
+    return row[v1Field];
+  }
+
+  // Field doesn't change between versions (e.g., 'count', 'month', 'quarter')
+  return row[field];
+};
