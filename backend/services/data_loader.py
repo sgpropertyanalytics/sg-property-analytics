@@ -206,27 +206,11 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
         return pd.DataFrame()
 
     # Create transaction_date (YYYY-MM-DD format)
-    # For the most recent month, use the last day of the month to show it as "latest"
-    # For older months, use the 1st day
-    max_year = int(df['parsed_year'].max())
-    max_month_df = df[df['parsed_year'] == max_year]
-    if not max_month_df.empty:
-        max_month = int(max_month_df['parsed_month'].max())
-
-        # Calculate last day of the most recent month
-        from calendar import monthrange
-        last_day = monthrange(max_year, max_month)[1]
-
-        # Create dates: use last day for most recent month, 1st day for others
-        def get_day(row):
-            if int(row['parsed_year']) == max_year and int(row['parsed_month']) == max_month:
-                return last_day
-            else:
-                return 1
-
-        df['parsed_day'] = df.apply(get_day, axis=1)
-    else:
-        df['parsed_day'] = 1
+    # Issue B9: Use consistent day (15th - middle of month) for ALL months
+    # Previous logic used last day for recent months and 1st for older months,
+    # which created artificial ~30-day gaps in time-series charts.
+    # Using day 15 represents the "average" date within a month when exact day is unknown.
+    df['parsed_day'] = 15
 
     # Create transaction_date as datetime (needed for bedroom classification)
     df['transaction_date_dt'] = pd.to_datetime({

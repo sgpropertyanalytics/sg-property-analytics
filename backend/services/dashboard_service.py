@@ -1028,12 +1028,21 @@ def get_dashboard_data(
 
         elapsed = (time.perf_counter() - start_time) * 1000
 
+        # Build filter_notes to explain filter behaviors (Issue B5)
+        filter_notes = []
+        if filters.get('property_age_min') is not None or filters.get('property_age_max') is not None:
+            filter_notes.append(
+                "Property age filter excludes Freehold properties (their lease_start_year "
+                "represents land grant date, not building TOP date)"
+            )
+
         result = {
             'data': data,
             'meta': {
                 'cache_hit': False,
                 'elapsed_ms': round(elapsed, 1),
                 'filters_applied': filters,
+                'filter_notes': filter_notes if filter_notes else None,
                 'panels_returned': panels,
                 'options': options,
                 'total_records_matched': total_records
