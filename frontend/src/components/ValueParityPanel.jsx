@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { getTransactionsList, getFilterOptions } from '../api/client';
-import { DISTRICT_NAMES, isDistrictInRegion } from '../constants';
+import { DISTRICT_NAMES, isDistrictInRegion, SALE_TYPE_OPTIONS, TENURE_OPTIONS } from '../constants';
 import DealCheckerContent from './powerbi/DealCheckerContent';
 import { HotProjectsTable } from './powerbi/HotProjectsTable';
 import { UpcomingLaunchesTable } from './powerbi/UpcomingLaunchesTable';
@@ -720,9 +720,9 @@ export function ValueParityPanel() {
                       className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
-                      <option value="Freehold">Freehold</option>
-                      <option value="99-year">99-year</option>
-                      <option value="999-year">999-year</option>
+                      {TENURE_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -735,8 +735,9 @@ export function ValueParityPanel() {
                       className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                     >
                       <option value="">All</option>
-                      <option value="New Sale">New Sale</option>
-                      <option value="Resale">Resale</option>
+                      {SALE_TYPE_OPTIONS.filter(opt => opt.value !== 'Sub Sale').map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
                     </select>
                   </div>
 

@@ -5,6 +5,19 @@
  * Do NOT duplicate these definitions elsewhere. Always import from here.
  */
 
+// Import canonical enums from apiContract (Single Source of Truth for enums)
+import {
+  SaleType,
+  SaleTypeLabels,
+  Tenure,
+  TenureLabels,
+  TenureLabelsShort,
+  getSaleTypeLabel as getContractSaleTypeLabel,
+  getTenureLabel as getContractTenureLabel,
+  isSaleType,
+  isTenure,
+} from '../schemas/apiContract';
+
 // =============================================================================
 // DISTRICT TO REGION MAPPING (URA Market Segments) - SINGLE SOURCE OF TRUTH
 // =============================================================================
@@ -253,19 +266,35 @@ export const getFloorLevelIndex = (floorLevel) => {
 };
 
 // =============================================================================
-// SALE TYPE CLASSIFICATION - SINGLE SOURCE OF TRUTH
+// SALE TYPE CLASSIFICATION - USES CANONICAL ENUMS FROM apiContract.js
 // =============================================================================
 
+// Re-export enums for convenience
+export { SaleType, SaleTypeLabels, Tenure, TenureLabels, TenureLabelsShort, isSaleType, isTenure };
+
 /**
- * Valid sale types from URA transaction data
- * - New Sale: Initial sale from developer
- * - Resale: Secondary market sale
- * - Sub Sale: Subsale (before TOP)
+ * Sale type enum values as array (for iteration)
+ */
+export const SALE_TYPE_VALUES = [SaleType.NEW_SALE, SaleType.RESALE, SaleType.SUB_SALE];
+
+/**
+ * Sale type options for dropdowns/selects (uses DB values for backend compatibility)
+ * Each option has { value: dbString, label: displayString }
+ */
+export const SALE_TYPE_OPTIONS = SALE_TYPE_VALUES.map(v => ({
+  value: SaleTypeLabels[v],  // DB string value: 'New Sale', 'Resale', 'Sub Sale'
+  label: SaleTypeLabels[v],
+}));
+
+/**
+ * Legacy: DB string values (for backward compatibility during migration)
+ * @deprecated Use SALE_TYPE_VALUES with enum values instead
  */
 export const SALE_TYPES = ['New Sale', 'Resale', 'Sub Sale'];
 
 /**
- * Sale type display labels
+ * Legacy: Sale type display labels keyed by DB string
+ * @deprecated Use SaleTypeLabels from apiContract instead
  */
 export const SALE_TYPE_LABELS = {
   'New Sale': 'New Sale',
@@ -274,37 +303,44 @@ export const SALE_TYPE_LABELS = {
 };
 
 /**
- * Get sale type label for display
- * @param {string} saleType - Sale type value
- * @returns {string} Display label
+ * Get sale type label for display (handles both enum and DB string)
  */
-export const getSaleTypeLabel = (saleType) => {
-  return SALE_TYPE_LABELS[saleType] || saleType || 'Unknown';
-};
+export const getSaleTypeLabel = getContractSaleTypeLabel;
 
 /**
- * Check if a sale type value is valid
- * @param {string} saleType - Sale type to validate
- * @returns {boolean}
+ * Check if a sale type value is valid (handles both enum and DB string)
  */
 export const isValidSaleType = (saleType) => {
-  return SALE_TYPES.includes(saleType);
+  return SALE_TYPE_VALUES.includes(saleType) || SALE_TYPES.includes(saleType);
 };
 
 // =============================================================================
-// TENURE CLASSIFICATION - SINGLE SOURCE OF TRUTH
+// TENURE CLASSIFICATION - USES CANONICAL ENUMS FROM apiContract.js
 // =============================================================================
 
 /**
- * Valid tenure types
- * - Freehold: No lease expiration
- * - 99-year: 99-year leasehold
- * - 999-year: 999-year leasehold (effectively freehold)
+ * Tenure enum values as array (for iteration)
+ */
+export const TENURE_VALUES = [Tenure.FREEHOLD, Tenure.LEASEHOLD_99, Tenure.LEASEHOLD_999];
+
+/**
+ * Tenure options for dropdowns/selects (uses DB values for backend compatibility)
+ * Each option has { value: dbString, label: displayString }
+ */
+export const TENURE_OPTIONS = TENURE_VALUES.map(v => ({
+  value: TenureLabels[v],  // DB string value: 'Freehold', '99-year', '999-year'
+  label: TenureLabels[v],
+}));
+
+/**
+ * Legacy: DB string values (for backward compatibility during migration)
+ * @deprecated Use TENURE_VALUES with enum values instead
  */
 export const TENURE_TYPES = ['Freehold', '99-year', '999-year'];
 
 /**
- * Tenure type display labels (full)
+ * Legacy: Tenure type display labels keyed by DB string (full)
+ * @deprecated Use TenureLabels from apiContract instead
  */
 export const TENURE_TYPE_LABELS = {
   'Freehold': 'Freehold',
@@ -313,7 +349,8 @@ export const TENURE_TYPE_LABELS = {
 };
 
 /**
- * Tenure type short labels (for compact UI like filter buttons)
+ * Legacy: Tenure type short labels keyed by DB string
+ * @deprecated Use TenureLabelsShort from apiContract instead
  */
 export const TENURE_TYPE_LABELS_SHORT = {
   'Freehold': 'FH',
@@ -322,25 +359,15 @@ export const TENURE_TYPE_LABELS_SHORT = {
 };
 
 /**
- * Get tenure label for display
- * @param {string} tenure - Tenure type value
- * @param {boolean} short - Use short label
- * @returns {string} Display label
+ * Get tenure label for display (handles both enum and DB string)
  */
-export const getTenureLabel = (tenure, short = false) => {
-  if (!tenure) return 'Unknown';
-  return short
-    ? (TENURE_TYPE_LABELS_SHORT[tenure] || tenure)
-    : (TENURE_TYPE_LABELS[tenure] || tenure);
-};
+export const getTenureLabel = getContractTenureLabel;
 
 /**
- * Check if a tenure value is valid
- * @param {string} tenure - Tenure to validate
- * @returns {boolean}
+ * Check if a tenure value is valid (handles both enum and DB string)
  */
 export const isValidTenure = (tenure) => {
-  return TENURE_TYPES.includes(tenure);
+  return TENURE_VALUES.includes(tenure) || TENURE_TYPES.includes(tenure);
 };
 
 // =============================================================================
