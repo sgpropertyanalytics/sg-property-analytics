@@ -308,42 +308,6 @@ def get_needs_review():
         return jsonify({"error": str(e)}), 500
 
 
-@upcoming_launches_bp.route("/scrape", methods=["POST"])
-def trigger_scrape():
-    """
-    Trigger an upcoming launches scrape (admin endpoint).
-
-    NOTE: Scraping is deprecated. Use CSV upload instead via:
-        from services.upcoming_launch_upload import upload_upcoming_launches
-        upload_upcoming_launches('data/upcoming_launches_2026.csv')
-
-    Returns:
-        Message indicating scraping is not available
-    """
-    return jsonify({
-        "success": False,
-        "message": "Scraping is deprecated. Use CSV upload instead.",
-        "hint": "Upload data via: upload_upcoming_launches('data/upcoming_launches_2026.csv')"
-    }), 400
-
-
-@upcoming_launches_bp.route("/validate", methods=["POST"])
-def trigger_validation():
-    """
-    Trigger validation of upcoming launches data.
-
-    NOTE: Validation via scraping is deprecated.
-
-    Returns:
-        Message indicating validation is not available
-    """
-    return jsonify({
-        "success": False,
-        "message": "Scrape-based validation is deprecated.",
-        "hint": "Data is now managed via CSV upload with manual verification."
-    }), 400
-
-
 @upcoming_launches_bp.route("/reset", methods=["POST"])
 def reset_data():
     """

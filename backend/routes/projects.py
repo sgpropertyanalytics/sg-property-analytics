@@ -736,45 +736,6 @@ def get_inventory_status():
         return jsonify({"error": str(e)}), 500
 
 
-@projects_bp.route("/projects/cleanup-upcoming-launches", methods=["DELETE"])
-def cleanup_upcoming_launches_from_transactions():
-    """
-    [DEPRECATED] This endpoint is no longer needed.
-
-    The upcoming_launches table is now only for future projects (2026+).
-    For total_units data, use the static JSON file (new_launch_units.json).
-    """
-    return jsonify({
-        "status": "deprecated",
-        "message": "This endpoint is deprecated. upcoming_launches is for future projects only.",
-        "instructions": [
-            "For total_units data, use backend/data/new_launch_units.json",
-            "For upcoming launches (2026+), use /api/upcoming-launches endpoints"
-        ]
-    }), 200
-
-
-@projects_bp.route("/projects/populate-upcoming-launches", methods=["POST"])
-def populate_upcoming_launches_from_transactions():
-    """
-    [DEPRECATED] This endpoint is no longer needed.
-
-    The upcoming_launches table should NOT be populated from transactions.
-    - Transactions = projects that have ALREADY launched
-    - Upcoming launches = projects that have NOT YET launched (future 2026+)
-
-    For total_units data, use the static JSON file (new_launch_units.json).
-    """
-    return jsonify({
-        "status": "deprecated",
-        "message": "This endpoint is deprecated. upcoming_launches is for FUTURE projects only, not existing ones.",
-        "instructions": [
-            "For total_units of existing projects, use backend/data/new_launch_units.json",
-            "For upcoming launches (2026+), upload CSV via /api/upcoming-launches/upload"
-        ]
-    }), 200
-
-
 @projects_bp.route("/projects/compute-school-flags", methods=["POST"])
 def compute_school_flags():
     """
