@@ -33,6 +33,7 @@ from schemas.api_contract import (
     serialize_price_bands_dual,
     PriceBandsFields,
     DataSource,
+    API_CONTRACT_VERSION,
 )
 
 
@@ -499,7 +500,7 @@ class TestPriceBandsDualMode:
         dual = serialize_price_bands_dual(sample_result, include_deprecated=True)
 
         assert 'apiContractVersion' in dual
-        assert dual['apiContractVersion'] == 'v2'
+        assert dual['apiContractVersion'] == API_CONTRACT_VERSION
 
     def test_strict_v2_no_snake_case(self, sample_result):
         """Test that strict v2 mode has no snake_case keys."""
