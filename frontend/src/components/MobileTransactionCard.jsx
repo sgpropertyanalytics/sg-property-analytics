@@ -9,8 +9,15 @@ import React from 'react';
  * - Price and PSF
  * - Sale type badge
  */
-export function MobileTransactionCard({ transaction, formatCurrency, formatDate }) {
+export function MobileTransactionCard({ transaction, formatCurrency, formatDate, formatRemainingLease }) {
   const txn = transaction;
+
+  // Default formatter if not provided
+  const formatLease = formatRemainingLease || ((years) => {
+    if (years === null || years === undefined) return '-';
+    if (years >= 999) return 'Freehold';
+    return `${years} yrs`;
+  });
 
   return (
     <div className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 active:bg-[#EAE0CF]/20">
@@ -24,7 +31,7 @@ export function MobileTransactionCard({ transaction, formatCurrency, formatDate 
             {txn.district || '-'} &bull; {txn.bedroom_count || '-'}BR &bull; {formatDate(txn.transaction_date)}
           </div>
           <div className="text-xs text-[#547792] mt-0.5">
-            {txn.area_sqft?.toLocaleString() || txn.area_sqft_masked || '-'} {txn.area_sqft ? 'sqft' : ''} &bull; {txn.tenure || '-'}
+            {txn.area_sqft?.toLocaleString() || txn.area_sqft_masked || '-'} {txn.area_sqft ? 'sqft' : ''} &bull; {formatLease(txn.remaining_lease)}
           </div>
         </div>
 

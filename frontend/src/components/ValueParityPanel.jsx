@@ -318,8 +318,7 @@ export function ValueParityPanel() {
     { key: 'price', label: 'Price', sortable: true, width: 'w-28', align: 'right' },
     { key: 'psf', label: 'PSF', sortable: true, width: 'w-20', align: 'right' },
     { key: 'sale_type', label: 'Type', sortable: true, width: 'w-20' },
-    { key: 'tenure', label: 'Tenure', sortable: true, width: 'w-24' },
-    { key: 'remaining_lease', label: 'Lease', sortable: true, width: 'w-20' },
+    { key: 'remaining_lease', label: 'Remaining Lease', sortable: true, width: 'w-24' },
   ];
 
   // Filter districts by selected region - use centralized constants (SINGLE SOURCE OF TRUTH)
@@ -815,6 +814,7 @@ export function ValueParityPanel() {
                   transaction={txn}
                   formatCurrency={formatCurrency}
                   formatDate={formatDate}
+                  formatRemainingLease={formatRemainingLease}
                 />
               ))
             )}
@@ -898,9 +898,6 @@ export function ValueParityPanel() {
                           }`}>
                             {txn.sale_type === 'New Sale' ? 'New' : 'Resale'}
                           </span>
-                        </td>
-                        <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
-                          {txn.tenure || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                           {formatRemainingLease(txn.remaining_lease)}
@@ -1044,6 +1041,7 @@ export function ValueParityPanel() {
                     transaction={txn}
                     formatCurrency={formatCurrency}
                     formatDate={formatDate}
+                    formatRemainingLease={formatRemainingLease}
                   />
                 ))
               )}
@@ -1073,7 +1071,7 @@ export function ValueParityPanel() {
                       <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b">Sqft</th>
                       <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b">Price</th>
                       <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b">PSF</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b">Tenure</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b">Remaining Lease</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1101,7 +1099,7 @@ export function ValueParityPanel() {
                           {txn.psf ? formatCurrency(txn.psf) : txn.psf_masked || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
-                          {txn.tenure || '-'}
+                          {formatRemainingLease(txn.remaining_lease)}
                         </td>
                       </tr>
                     ))}
