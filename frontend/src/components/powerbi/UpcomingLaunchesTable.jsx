@@ -123,8 +123,67 @@ export function UpcomingLaunchesTable({ height = 400 }) {
 
   return (
     <div id="upcoming-launches-table">
-      {/* Table Container */}
-      <div className="overflow-auto" style={{ maxHeight: height }}>
+      {/* Mobile Card View */}
+      <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: height }}>
+        {error ? (
+          <div className="flex items-center justify-center h-40 text-red-500">
+            Error: {error}
+          </div>
+        ) : loading ? (
+          [...Array(5)].map((_, i) => (
+            <div key={i} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+            </div>
+          ))
+        ) : data.length === 0 ? (
+          <div className="text-center py-8 text-[#547792] text-sm">
+            No upcoming launches found.
+          </div>
+        ) : (
+          data.map((project, idx) => (
+            <div key={project.id || idx} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 active:bg-[#EAE0CF]/20">
+              <div className="flex justify-between items-start gap-3">
+                {/* Left: Project info */}
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-[#213448] truncate">
+                    {project.project_name || '-'}
+                  </div>
+                  <div className="text-xs text-[#547792] mt-0.5">
+                    {project.developer && project.developer !== 'TBD' ? project.developer : '-'}
+                  </div>
+                  <div className="text-xs text-[#547792] mt-0.5">
+                    {project.total_units ? `${project.total_units.toLocaleString()} units` : '-'}
+                  </div>
+                </div>
+                {/* Right: Date, Segment, PSF */}
+                <div className="flex-shrink-0 text-right">
+                  <div className="text-xs text-[#547792]">
+                    {formatDate(project.expected_launch_date, project.launch_year)}
+                  </div>
+                  {project.market_segment && (
+                    <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                      project.market_segment === 'CCR' ? 'bg-[#213448] text-white' :
+                      project.market_segment === 'RCR' ? 'bg-[#547792] text-white' :
+                      'bg-[#94B4C1] text-[#213448]'
+                    }`}>
+                      {project.market_segment}
+                    </span>
+                  )}
+                  {(project.indicative_psf_low || project.indicative_psf_high) && (
+                    <div className="text-xs text-[#213448] font-medium mt-1">
+                      {formatPSFRange(project.indicative_psf_low, project.indicative_psf_high)} PSF
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-auto" style={{ maxHeight: height }}>
         {error ? (
           <div className="flex items-center justify-center h-40 text-red-500">
             Error: {error}

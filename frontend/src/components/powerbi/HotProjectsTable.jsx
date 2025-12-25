@@ -196,8 +196,86 @@ export function HotProjectsTable({
         </div>
       )}
 
-      {/* Table Container */}
-      <div className="overflow-auto" style={{ maxHeight: height }}>
+      {/* Mobile Card View */}
+      <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: height }}>
+        {error ? (
+          <div className="flex items-center justify-center h-40 text-red-500">
+            Error: {error}
+          </div>
+        ) : loading ? (
+          [...Array(5)].map((_, i) => (
+            <div key={i} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+            </div>
+          ))
+        ) : sortedData.length === 0 ? (
+          <div className="text-center py-8 text-[#547792] text-sm">
+            No active projects found.
+          </div>
+        ) : (
+          sortedData.map((project, idx) => (
+            <div key={project.project_name || idx} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 active:bg-[#EAE0CF]/20">
+              <div className="flex justify-between items-start gap-3">
+                {/* Left: Project info */}
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-[#213448] truncate">
+                    <BlurredProject
+                      value={project.project_name}
+                      masked={project.project_name_masked}
+                      district={project.district}
+                      source="hot-projects"
+                    />
+                  </div>
+                  <div className="text-xs text-[#547792] mt-0.5">
+                    {project.district || '-'} • {project.developer || '-'}
+                  </div>
+                  <div className="text-xs text-[#547792] mt-0.5 flex items-center gap-2">
+                    <span>{project.units_sold || 0}/{project.total_units || '-'} sold</span>
+                    {project.percent_sold !== null && project.percent_sold !== undefined && (
+                      <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded ${getPercentClass(project.percent_sold)}`}>
+                        {project.percent_sold.toFixed(0)}%
+                      </span>
+                    )}
+                  </div>
+                  {project.has_popular_school && (
+                    <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded mt-1">
+                      <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                      </svg>
+                      Popular School
+                    </span>
+                  )}
+                </div>
+                {/* Right: Date, Segment, Price */}
+                <div className="flex-shrink-0 text-right">
+                  <div className="text-xs text-[#547792]">
+                    {project.first_new_sale ? new Date(project.first_new_sale).toLocaleDateString('en-SG', { year: 'numeric', month: 'short' }) : '-'}
+                  </div>
+                  <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                    project.market_segment === 'CCR' ? 'bg-[#213448] text-white' :
+                    project.market_segment === 'RCR' ? 'bg-[#547792] text-white' :
+                    'bg-[#94B4C1] text-[#213448]'
+                  }`}>
+                    {project.market_segment || '-'}
+                  </span>
+                  <div className="text-xs text-[#213448] font-medium mt-1">
+                    <BlurredCurrency
+                      value={project.median_psf}
+                      masked={project.median_psf_masked}
+                      field="PSF"
+                      source="hot-projects"
+                    /> PSF
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-auto" style={{ maxHeight: height }}>
         {error ? (
           <div className="flex items-center justify-center h-40 text-red-500">
             Error: {error}
