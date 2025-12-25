@@ -15,7 +15,8 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { PreviewChartOverlay } from '../ui';
+import { PreviewChartOverlay, ChartFrame } from '../ui';
+import { baseChartJsOptions } from '../../constants/chartOptions';
 
 ChartJS.register(
   CategoryScale,
@@ -237,8 +238,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   };
 
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
+    ...baseChartJsOptions,
     interaction: {
       mode: 'index',
       intersect: false,
@@ -330,9 +330,16 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
     },
   };
 
+  // Card layout: flex column with fixed height, header shrink-0, chart fills remaining
+  const cardHeight = height + 90; // height prop for chart + ~90px for header
+
   return (
-    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
+    <div
+      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}
+      style={{ height: cardHeight }}
+    >
+      {/* Header - shrink-0 */}
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-[#213448]">Transaction Trend</h3>
           {updating && (
@@ -346,11 +353,12 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
           {data.length} periods | {data.reduce((sum, d) => sum + d.newSaleCount, 0).toLocaleString()} new + {data.reduce((sum, d) => sum + d.resaleCount, 0).toLocaleString()} resale
         </div>
       </div>
-      <div className="p-4" style={{ height }}>
+      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+      <ChartFrame className="px-4 pb-3">
         <PreviewChartOverlay chartRef={chartRef}>
           <Chart key={timeGrouping} ref={chartRef} type="bar" data={chartData} options={options} />
         </PreviewChartOverlay>
-      </div>
+      </ChartFrame>
     </div>
   );
 }

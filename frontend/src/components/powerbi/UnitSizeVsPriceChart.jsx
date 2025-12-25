@@ -11,7 +11,8 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import apiClient from '../../api/client';
 import { formatPrice, getBedroomLabelShort } from '../../constants';
-import { KeyInsightBox, PreviewChartOverlay } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay, ChartFrame } from '../ui';
+import { baseChartJsOptions } from '../../constants/chartOptions';
 
 ChartJS.register(
   LinearScale,
@@ -152,8 +153,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
 
   // Chart options - isPremium determines tooltip detail level
   const options = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
+    ...baseChartJsOptions,
     plugins: {
       legend: {
         display: true,
@@ -323,15 +323,12 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         </KeyInsightBox>
       </div>
 
-      {/* Chart slot - flex-1 min-h-0 so it takes remaining height */}
-      <div className="flex-1 min-h-0 px-4 pb-3">
-        {/* Inner wrapper - h-full w-full relative so Chart.js can fill */}
-        <div className="h-full w-full relative">
-          <PreviewChartOverlay chartRef={chartRef}>
-            <Scatter ref={chartRef} data={chartData} options={options} />
-          </PreviewChartOverlay>
-        </div>
-      </div>
+      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+      <ChartFrame className="px-4 pb-3">
+        <PreviewChartOverlay chartRef={chartRef}>
+          <Scatter ref={chartRef} data={chartData} options={options} />
+        </PreviewChartOverlay>
+      </ChartFrame>
 
       {/* Footer - shrink-0 */}
       <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] shrink-0">

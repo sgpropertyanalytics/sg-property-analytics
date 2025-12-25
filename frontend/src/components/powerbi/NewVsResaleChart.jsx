@@ -14,7 +14,8 @@ import {
 import { Line } from 'react-chartjs-2';
 import { getNewVsResale } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
-import { KeyInsightBox, PreviewChartOverlay } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay, ChartFrame } from '../ui';
+import { baseChartJsOptions } from '../../constants/chartOptions';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -195,8 +196,7 @@ export function NewVsResaleChart({ height = 350 }) {
   };
 
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
+    ...baseChartJsOptions,
     interaction: {
       mode: 'index',
       intersect: false,
@@ -317,10 +317,16 @@ export function NewVsResaleChart({ height = 350 }) {
     return null;
   };
 
+  // Card layout: flex column with fixed height, header/note shrink-0, chart fills remaining
+  const cardHeight = height + 180; // height prop for chart + ~180px for header/KeyInsightBox
+
   return (
-    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
-      {/* Header */}
-      <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30">
+    <div
+      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}
+      style={{ height: cardHeight }}
+    >
+      {/* Header - shrink-0 */}
+      <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-[#213448] text-sm md:text-base">
@@ -365,13 +371,15 @@ export function NewVsResaleChart({ height = 350 }) {
         </div>
       </div>
 
-      {/* How to Interpret */}
-      <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-        Tracks the price gap between new launches and recently TOP / young resale units (&lt; 10 years in age) to highlight pricing discrepancies and relative value.
-      </KeyInsightBox>
+      {/* How to Interpret - shrink-0 */}
+      <div className="shrink-0">
+        <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
+          Tracks the price gap between new launches and recently TOP / young resale units (&lt; 10 years in age) to highlight pricing discrepancies and relative value.
+        </KeyInsightBox>
+      </div>
 
-      {/* Chart Container - follows chart-container-contract skill */}
-      <div className="p-2 md:p-3 lg:p-4" style={{ height }}>
+      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+      <ChartFrame className="px-2 md:px-3 lg:px-4 pb-3">
         {chartData.length > 0 ? (
           <PreviewChartOverlay chartRef={chartRef}>
             <Line key={timeGrouping} ref={chartRef} data={chartConfig} options={options} />
@@ -386,7 +394,7 @@ export function NewVsResaleChart({ height = 350 }) {
             </div>
           </div>
         )}
-      </div>
+      </ChartFrame>
     </div>
   );
 }

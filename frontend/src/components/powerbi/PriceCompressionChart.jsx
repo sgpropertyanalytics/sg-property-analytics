@@ -16,7 +16,8 @@ import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { PreviewChartOverlay } from '../ui';
+import { PreviewChartOverlay, ChartFrame } from '../ui';
+import { baseChartJsOptions } from '../../constants/chartOptions';
 
 ChartJS.register(
   CategoryScale,
@@ -253,8 +254,7 @@ export function PriceCompressionChart({ height = 380 }) {
 
   // Chart options with annotations
   const spreadChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
+    ...baseChartJsOptions,
     interaction: { mode: 'index', intersect: false },
     onClick: handleChartClick,
     plugins: {
@@ -375,8 +375,7 @@ export function PriceCompressionChart({ height = 380 }) {
   };
 
   const contextChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
+    ...baseChartJsOptions,
     plugins: {
       legend: {
         position: 'bottom',
@@ -393,10 +392,17 @@ export function PriceCompressionChart({ height = 380 }) {
     },
   };
 
+  // Card layout: flex column with fixed height
+  // When showContext is true, we need extra space for the context chart
+  const cardHeight = height + 200 + (showContext ? height * 0.25 : 0);
+
   return (
-    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
-      {/* Header */}
-      <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30">
+    <div
+      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}
+      style={{ height: cardHeight }}
+    >
+      {/* Header - shrink-0 */}
+      <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -441,8 +447,8 @@ export function PriceCompressionChart({ height = 380 }) {
         </div>
       </div>
 
-      {/* Main Spread Chart */}
-      <div className="p-2 md:p-3 lg:p-4" style={{ height: showContext ? height * 0.65 : height }}>
+      {/* Main Spread Chart - flex-1 min-h-0 */}
+      <ChartFrame className="px-2 md:px-3 lg:px-4 pb-3">
         {data.length > 0 ? (
           <PreviewChartOverlay chartRef={chartRef}>
             <Line key={timeGrouping} ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
@@ -454,18 +460,20 @@ export function PriceCompressionChart({ height = 380 }) {
             </div>
           </div>
         )}
-      </div>
+      </ChartFrame>
 
-      {/* Context Panel (Collapsible) */}
+      {/* Context Panel (Collapsible) - shrink-0 with fixed height */}
       {showContext && data.length > 0 && (
-        <div className="px-3 pb-3 md:px-4 md:pb-4" style={{ height: height * 0.25 }}>
+        <div className="px-3 pb-3 md:px-4 md:pb-4 shrink-0" style={{ height: height * 0.25 }}>
           <div className="text-xs text-[#547792] mb-1 font-medium">Absolute PSF Context</div>
-          <Line data={contextChartData} options={contextChartOptions} />
+          <div className="h-[calc(100%-20px)] w-full relative">
+            <Line data={contextChartData} options={contextChartOptions} />
+          </div>
         </div>
       )}
 
-      {/* Footer */}
-      <div className="px-3 py-2 md:px-4 md:py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex justify-between items-center">
+      {/* Footer - shrink-0 */}
+      <div className="px-3 py-2 md:px-4 md:py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex justify-between items-center shrink-0">
         <button
           onClick={() => setShowContext(!showContext)}
           className="text-xs text-[#547792] hover:text-[#213448] transition-colors"

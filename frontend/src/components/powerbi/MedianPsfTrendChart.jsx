@@ -13,7 +13,8 @@ import {
 import { Line } from 'react-chartjs-2';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { PreviewChartOverlay } from '../ui';
+import { PreviewChartOverlay, ChartFrame } from '../ui';
+import { baseChartJsOptions } from '../../constants/chartOptions';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -254,8 +255,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
   };
 
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
+    ...baseChartJsOptions,
     interaction: {
       mode: 'index',
       intersect: false,
@@ -323,9 +323,16 @@ export function MedianPsfTrendChart({ height = 300 }) {
   const latestRcr = data.rcr.filter(v => v != null).slice(-1)[0];
   const latestOcr = data.ocr.filter(v => v != null).slice(-1)[0];
 
+  // Card layout: flex column with fixed height, header/footer shrink-0, chart fills remaining
+  const cardHeight = height + 120; // height prop for chart + ~120px for header/footer
+
   return (
-    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
+    <div
+      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}
+      style={{ height: cardHeight }}
+    >
+      {/* Header - shrink-0 */}
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-[#213448]">Median PSF Trend</h3>
           {updating && (
@@ -341,12 +348,14 @@ export function MedianPsfTrendChart({ height = 300 }) {
           {latestOcr && <span>OCR: ${latestOcr.toLocaleString()}</span>}
         </div>
       </div>
-      <div className="p-4" style={{ height }}>
+      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+      <ChartFrame className="px-4 pb-3">
         <PreviewChartOverlay chartRef={chartRef}>
           <Line key={timeGrouping} ref={chartRef} data={chartData} options={options} />
         </PreviewChartOverlay>
-      </div>
-      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
+      </ChartFrame>
+      {/* Footer - shrink-0 */}
+      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] shrink-0">
         <span>{data.labels.length} periods | Click to highlight time period</span>
       </div>
     </div>

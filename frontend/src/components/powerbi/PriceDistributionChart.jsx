@@ -12,7 +12,8 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
-import { KeyInsightBox, PreviewChartOverlay } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay, ChartFrame } from '../ui';
+import { baseChartJsOptions } from '../../constants/chartOptions';
 
 ChartJS.register(
   CategoryScale,
@@ -278,8 +279,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
   console.log('Final annotations object:', annotations);
 
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
+    ...baseChartJsOptions,
     // NO onClick - histogram is for context, not filtering
     plugins: {
       legend: {
@@ -402,15 +402,12 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         </KeyInsightBox>
       </div>
 
-      {/* Chart slot - flex-1 min-h-0 so it takes remaining height */}
-      <div className="flex-1 min-h-0 px-4 pb-3">
-        {/* Inner wrapper - h-full w-full relative so Chart.js can fill */}
-        <div className="h-full w-full relative">
-          <PreviewChartOverlay chartRef={chartRef}>
-            <Bar key={showFullRange ? 'full' : 'capped'} ref={chartRef} data={chartData} options={options} />
-          </PreviewChartOverlay>
-        </div>
-      </div>
+      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+      <ChartFrame className="px-4 pb-3">
+        <PreviewChartOverlay chartRef={chartRef}>
+          <Bar key={showFullRange ? 'full' : 'capped'} ref={chartRef} data={chartData} options={options} />
+        </PreviewChartOverlay>
+      </ChartFrame>
 
       {/* Footer - shrink-0 */}
       <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] shrink-0">
