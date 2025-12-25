@@ -18,6 +18,7 @@ import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singapor
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { SaleType } from '../../schemas/apiContract';
+import { useStaleRequestGuard } from '../../hooks';
 
 // =============================================================================
 // CONFIGURATION
@@ -531,6 +532,15 @@ export default function DistrictLiquidityMap() {
   const [selectedPeriod, setSelectedPeriod] = useState('12m');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
+  // Abort/stale request protection
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
+  // Stable filter key for dependency tracking (avoids object reference issues)
+  const filterKey = useMemo(
+    () => `${selectedPeriod}:${selectedBed}:${selectedSaleType}`,
+    [selectedPeriod, selectedBed, selectedSaleType]
+  );
+
   const [viewState, setViewState] = useState({
     longitude: MAP_CONFIG.center.longitude,
     latitude: MAP_CONFIG.center.latitude,
@@ -539,10 +549,14 @@ export default function DistrictLiquidityMap() {
     bearing: 0,
   });
 
-  // Fetch data
+  // Fetch data with abort/stale protection
   const fetchData = useCallback(async () => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     setLoading(true);
     setError(null);
+
     try {
       const response = await apiClient.get('/insights/district-liquidity', {
         params: {
@@ -550,20 +564,34 @@ export default function DistrictLiquidityMap() {
           bed: selectedBed,
           saleType: selectedSaleType,  // v2 API param
         },
+        signal,  // Pass abort signal to cancel on filter change
       });
+
+      // Guard: Don't update state if a newer request started
+      if (isStale(requestId)) return;
+
       setDistrictData(response.data.districts || []);
       setMeta(response.data.meta || {});
+      setLoading(false);
     } catch (err) {
+      // CRITICAL: Never treat abort/cancel as a real error
+      // This prevents "Failed to load" flash when switching filters rapidly
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return;
+      }
+
+      // Guard: Check stale after error too
+      if (isStale(requestId)) return;
+
       console.error('Failed to fetch district liquidity data:', err);
       setError('Failed to load data');
-    } finally {
       setLoading(false);
     }
-  }, [selectedBed, selectedSaleType, selectedPeriod]);
+  }, [selectedBed, selectedSaleType, selectedPeriod, startRequest, getSignal, isStale]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create district data lookup
   const districtMap = useMemo(() => {

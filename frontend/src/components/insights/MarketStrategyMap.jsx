@@ -17,6 +17,7 @@ import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { useStaleRequestGuard } from '../../hooks';
 
 // =============================================================================
 // CONFIGURATION
