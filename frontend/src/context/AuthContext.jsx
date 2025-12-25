@@ -55,7 +55,6 @@ export function AuthProvider({ children }) {
           const existingToken = localStorage.getItem('token');
           if (!existingToken) {
             // No token - sync with backend to get one
-            console.log('[Auth] No JWT token found, syncing with backend...');
             try {
               const idToken = await firebaseUser.getIdToken();
               const response = await apiClient.post('/auth/firebase-sync', {
@@ -66,7 +65,6 @@ export function AuthProvider({ children }) {
               });
               if (response.data.token) {
                 localStorage.setItem('token', response.data.token);
-                console.log('[Auth] JWT token stored successfully');
               }
             } catch (err) {
               console.error('[Auth] Backend sync failed on page load:', err);

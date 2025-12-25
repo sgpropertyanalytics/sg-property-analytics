@@ -93,11 +93,7 @@ export function NewVsResaleChart({ height = 350 }) {
           timeGrain: TIME_GROUP_BY[timeGrouping],
         }, { excludeHighlight: true });
 
-        console.log('[NewVsResale] Fetching with params:', params);
         const response = await getNewVsResale(params, { signal });
-        console.log('[NewVsResale] Response:', response.data);
-        console.log('[NewVsResale] chartData length:', response.data?.chartData?.length);
-        console.log('[NewVsResale] First data point:', response.data?.chartData?.[0]);
 
         // Ignore stale responses - a newer request has started
         if (isStale(requestId)) return;
