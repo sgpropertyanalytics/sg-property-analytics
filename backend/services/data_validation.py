@@ -16,6 +16,7 @@ from typing import Tuple, Dict, Any, List, Optional
 from sqlalchemy import text
 from models.database import db
 from models.transaction import Transaction
+from db.sql import OUTLIER_FILTER, exclude_outliers
 
 # IQR multiplier for outlier detection - MUST match scripts/upload.py
 # Relaxed from standard 1.5x to 5.0x to include luxury condos
@@ -44,7 +45,7 @@ def calculate_iqr_bounds(column: str = 'price') -> Tuple[float, float, Dict[str,
             percentile_cont(0.75) WITHIN GROUP (ORDER BY {column}) as q3
         FROM transactions
         WHERE {column} > 0
-        AND (is_outlier = false OR is_outlier IS NULL)
+        AND {OUTLIER_FILTER}
     """)
     result = db.session.execute(quartile_sql).fetchone()
     q1, q3 = float(result[0]), float(result[1])
@@ -79,7 +80,7 @@ def count_outliers(lower_bound: float, upper_bound: float, column: str = 'price'
     count_sql = text(f"""
         SELECT COUNT(*) FROM transactions
         WHERE ({column} < :lower_bound OR {column} > :upper_bound)
-        AND (is_outlier = false OR is_outlier IS NULL)
+        AND {OUTLIER_FILTER}
     """)
     return db.session.execute(
         count_sql,
@@ -140,7 +141,7 @@ def filter_outliers_sql(column: str = 'price', dry_run: bool = False) -> Tuple[i
     """
     # Count non-outlier records
     before_count = db.session.query(Transaction).filter(
-        Transaction.is_outlier == False
+        exclude_outliers(Transaction)
     ).count()
 
     # Calculate bounds (only from non-outlier records)
@@ -150,7 +151,7 @@ def filter_outliers_sql(column: str = 'price', dry_run: bool = False) -> Tuple[i
     count_sql = text(f"""
         SELECT COUNT(*) FROM transactions
         WHERE ({column} < :lower_bound OR {column} > :upper_bound)
-        AND (is_outlier = false OR is_outlier IS NULL)
+        AND {OUTLIER_FILTER}
     """)
     outlier_count = db.session.execute(
         count_sql,
@@ -170,7 +171,7 @@ def filter_outliers_sql(column: str = 'price', dry_run: bool = False) -> Tuple[i
         UPDATE transactions
         SET is_outlier = true
         WHERE ({column} < :lower_bound OR {column} > :upper_bound)
-        AND (is_outlier = false OR is_outlier IS NULL)
+        AND {OUTLIER_FILTER}
     """)
     result = db.session.execute(mark_sql, {'lower_bound': lower_bound, 'upper_bound': upper_bound})
     db.session.commit()
@@ -179,7 +180,7 @@ def filter_outliers_sql(column: str = 'price', dry_run: bool = False) -> Tuple[i
 
     # Count remaining non-outlier records
     after_count = db.session.query(Transaction).filter(
-        Transaction.is_outlier == False
+        exclude_outliers(Transaction)
     ).count()
 
     stats['action'] = 'marked'
@@ -471,7 +472,7 @@ def run_all_validations() -> Dict[str, Any]:
     )
     # Final count excludes outliers
     results['final_count'] = db.session.query(Transaction).filter(
-        Transaction.is_outlier == False
+        exclude_outliers(Transaction)
     ).count()
 
     if results['total_cleaned'] == 0:

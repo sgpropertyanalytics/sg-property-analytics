@@ -244,7 +244,8 @@ def health():
     """Health check endpoint."""
     from models.transaction import Transaction
     from models.database import db
-    from sqlalchemy import func, or_
+    from sqlalchemy import func
+    from db.sql import exclude_outliers
 
     try:
         # Total records in database
@@ -252,7 +253,7 @@ def health():
 
         # Active records (non-outliers) - this is what analytics use
         active_count = db.session.query(Transaction).filter(
-            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+            exclude_outliers(Transaction)
         ).count()
 
         # Outlier count - directly from database, always accurate
@@ -264,10 +265,10 @@ def health():
 
         # Get min and max transaction dates from non-outlier records
         min_date_result = db.session.query(func.min(Transaction.transaction_date)).filter(
-            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+            exclude_outliers(Transaction)
         ).scalar()
         max_date_result = db.session.query(func.max(Transaction.transaction_date)).filter(
-            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+            exclude_outliers(Transaction)
         ).scalar()
 
         # If transaction_date is None, try contract_date
@@ -2157,6 +2158,7 @@ def floor_liquidity_heatmap():
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func, and_
+    from db.sql import exclude_outliers
     from services.data_processor import _get_market_segment
     from services.dashboard_service import _dashboard_cache
     from services.new_launch_units import get_units_for_project
@@ -2187,7 +2189,7 @@ def floor_liquidity_heatmap():
 
     # Build filter conditions
     filter_conditions = [
-        Transaction.is_outlier == False,
+        exclude_outliers(Transaction),
         func.lower(Transaction.sale_type) == 'resale',
         Transaction.floor_level.isnot(None),
         Transaction.floor_level != 'Unknown'
@@ -2383,6 +2385,7 @@ def get_project_inventory(project_name):
     from models.database import db
     from services.new_launch_units import get_units_for_project
     from sqlalchemy import func
+    from db.sql import exclude_outliers
 
     try:
         # Lookup total_units from CSV
@@ -2393,13 +2396,13 @@ def get_project_inventory(project_name):
         new_sale_count = db.session.query(func.count(Transaction.id)).filter(
             Transaction.project_name == project_name,
             Transaction.sale_type == 'New Sale',
-            Transaction.is_outlier == False
+            exclude_outliers(Transaction)
         ).scalar() or 0
 
         resale_count = db.session.query(func.count(Transaction.id)).filter(
             Transaction.project_name == project_name,
             Transaction.sale_type == 'Resale',
-            Transaction.is_outlier == False
+            exclude_outliers(Transaction)
         ).scalar() or 0
 
         # Build response
@@ -2497,8 +2500,9 @@ def scatter_sample():
 
     from models.transaction import Transaction
     from models.database import db
-    from sqlalchemy import func, or_, text
+    from sqlalchemy import func, text
     from constants import CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS
+    from db.sql import exclude_outliers, OUTLIER_FILTER
 
     try:
         # Parse sample size
@@ -2517,7 +2521,7 @@ def scatter_sample():
             Transaction.bedroom_count,
             Transaction.district
         ).filter(
-            or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+            exclude_outliers(Transaction)
         )
 
         # Apply filters
@@ -2574,7 +2578,7 @@ def scatter_sample():
         samples_per_segment = max(1, math.ceil(sample_size / 3))
 
         # Build WHERE clause conditions from filters
-        where_conditions = ["(is_outlier = false OR is_outlier IS NULL)"]
+        where_conditions = [OUTLIER_FILTER]
         params = {"samples_per_segment": samples_per_segment, "sample_size": sample_size}
 
         if request.args.get('date_from'):
@@ -2763,13 +2767,14 @@ def kpi_summary():
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func, text
+    from db.sql import OUTLIER_FILTER
 
     start = time.time()
 
     try:
         # Get max date from metadata
-        max_date_result = db.session.execute(text("""
-            SELECT MAX(transaction_date) as max_date FROM transactions WHERE is_outlier = false
+        max_date_result = db.session.execute(text(f"""
+            SELECT MAX(transaction_date) as max_date FROM transactions WHERE {OUTLIER_FILTER}
         """)).fetchone()
 
         if not max_date_result or not max_date_result.max_date:
@@ -2780,7 +2785,7 @@ def kpi_summary():
         sixty_days_ago = max_date - timedelta(days=60)
 
         # Build filter conditions
-        filter_sql = "is_outlier = false"
+        filter_sql = OUTLIER_FILTER
         params = {
             'max_date': max_date,
             'thirty_days_ago': thirty_days_ago,
@@ -3097,16 +3102,17 @@ def get_resale_projects():
         from models.database import db
         from sqlalchemy import text
         from services.new_launch_units import get_units_for_project
+        from db.sql import OUTLIER_FILTER
 
         # Get all projects from transactions table
-        result = db.session.execute(text("""
+        result = db.session.execute(text(f"""
             SELECT
                 project_name,
                 district,
                 COUNT(*) as transaction_count,
                 COUNT(CASE WHEN sale_type = 'Resale' THEN 1 END) as resale_count
             FROM transactions
-            WHERE is_outlier = false
+            WHERE {OUTLIER_FILTER}
             GROUP BY project_name, district
             ORDER BY project_name
         """)).fetchall()

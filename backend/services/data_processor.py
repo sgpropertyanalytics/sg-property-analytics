@@ -156,16 +156,13 @@ def get_filtered_transactions(
     # SQLAlchemy database query (PostgreSQL only)
     from models.database import db
     from models.transaction import Transaction
-    from sqlalchemy import or_
+    from db.sql import exclude_outliers
 
     # Build query using SQLAlchemy
     query = db.session.query(Transaction)
 
-    # ALWAYS exclude outliers from all analytics (soft-delete)
-    query = query.filter(or_(
-        Transaction.is_outlier == False,
-        Transaction.is_outlier.is_(None)
-    ))
+    # ALWAYS exclude outliers from all analytics (null-safe)
+    query = query.filter(exclude_outliers(Transaction))
 
     # Normalize districts if provided
     if districts:
@@ -1711,6 +1708,9 @@ def get_new_vs_resale_comparison(
     # - Must be between 4 and 9 years old
     # - Project must have at least one Resale transaction (excludes delayed construction projects)
     # - Excludes NULL lease_start_year (require known age for precise filtering)
+    # Import outlier filter constant for raw SQL
+    from db.sql import OUTLIER_FILTER
+
     sql = text(f"""
         WITH projects_with_resale AS (
             -- Projects that have at least one Resale transaction
@@ -1718,7 +1718,7 @@ def get_new_vs_resale_comparison(
             SELECT DISTINCT project_name
             FROM transactions
             WHERE sale_type = 'Resale'
-              AND is_outlier = false
+              AND {OUTLIER_FILTER}
         ),
         new_sales AS (
             SELECT
@@ -1727,7 +1727,7 @@ def get_new_vs_resale_comparison(
                 COUNT(*) AS transaction_count
             FROM transactions
             WHERE sale_type = 'New Sale'
-              AND is_outlier = false
+              AND {OUTLIER_FILTER}
               AND {where_clause}
             GROUP BY DATE_TRUNC('{date_trunc_grain}', transaction_date)
         ),
@@ -1738,7 +1738,7 @@ def get_new_vs_resale_comparison(
                 COUNT(*) AS transaction_count
             FROM transactions t
             WHERE sale_type = 'Resale'
-              AND is_outlier = false
+              AND {OUTLIER_FILTER}
               AND lease_start_year IS NOT NULL
               AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) BETWEEN 4 AND 9
               AND project_name IN (SELECT project_name FROM projects_with_resale)

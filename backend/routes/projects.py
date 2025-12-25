@@ -13,9 +13,9 @@ import time
 from models.project_location import ProjectLocation
 from models.popular_school import PopularSchool
 from models.database import db
-from sqlalchemy import or_
 from constants import DISTRICT_NAMES
 from services.school_distance import get_schools_within_distance
+from db.sql import OUTLIER_FILTER, exclude_outliers, get_outlier_filter_sql
 
 projects_bp = Blueprint('projects', __name__)
 
@@ -414,7 +414,7 @@ def get_hot_projects():
         # Filters only affect: which projects are shown, and median_price/psf calculations
 
         # Base clause for all queries (outlier exclusion is always applied)
-        base_where = "t.is_outlier = false"
+        base_where = get_outlier_filter_sql('t')
 
         # Filter clauses - affect project visibility and median calculations, NOT units_sold
         filter_clauses = []
@@ -491,7 +491,7 @@ def get_hot_projects():
                     MIN(t.transaction_date) as first_new_sale,
                     MAX(t.transaction_date) as last_new_sale
                 FROM transactions t
-                WHERE t.is_outlier = false
+                WHERE {get_outlier_filter_sql('t')}
                   AND t.sale_type = 'New Sale'
                 GROUP BY t.project_name, t.district
             ),
@@ -702,7 +702,7 @@ def get_inventory_status():
             func.distinct(Transaction.project_name)
         ).filter(
             Transaction.sale_type == 'New Sale',
-            Transaction.is_outlier == False
+            exclude_outliers(Transaction)
         ).all()
 
         total_with_sales = len(new_sale_projects)

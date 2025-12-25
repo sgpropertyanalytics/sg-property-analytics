@@ -36,6 +36,7 @@ from sqlalchemy.orm import Session
 
 from models.database import db
 from models.transaction import Transaction
+from db.sql import OUTLIER_FILTER, exclude_outliers
 
 # Configure logging
 logger = logging.getLogger('dashboard')
@@ -274,15 +275,12 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
     Build SQLAlchemy filter conditions from filter dict.
 
     Returns list of conditions to be combined with and_().
-    Always excludes outliers (is_outlier = false).
+    Always excludes outliers using COALESCE(is_outlier, false) = false.
     """
     conditions = []
 
-    # ALWAYS exclude outliers from all queries (soft-delete)
-    conditions.append(or_(
-        Transaction.is_outlier == False,
-        Transaction.is_outlier.is_(None)
-    ))
+    # ALWAYS exclude outliers from all queries (null-safe)
+    conditions.append(exclude_outliers(Transaction))
 
     # Date range
     if filters.get('date_from'):
@@ -629,9 +627,6 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> D
 
     where_clause = " AND ".join(where_parts) if where_parts else "1=1"
 
-    # Base filter for outliers (always applied)
-    outlier_filter = "(is_outlier = false OR is_outlier IS NULL)"
-
     # Step 1: Get percentiles and count in a single query
     # PostgreSQL PERCENTILE_CONT for accurate percentile calculation
     percentile_sql = text(f"""
@@ -648,7 +643,7 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> D
         WHERE {where_clause}
           AND price IS NOT NULL
           AND price > 0
-          AND {outlier_filter}
+          AND {OUTLIER_FILTER}
     """)
 
     stats_result = db.session.execute(percentile_sql, params).fetchone()
@@ -734,7 +729,7 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> D
           AND price > 0
           AND price >= :hist_min
           AND price <= :hist_max
-          AND {outlier_filter}
+          AND {OUTLIER_FILTER}
         GROUP BY bin_num
         ORDER BY bin_num
     """)

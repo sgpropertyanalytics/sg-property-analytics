@@ -6,14 +6,15 @@ Provides endpoints for the Deal Checker feature:
 - /api/deal-checker/multi-scope - Enhanced endpoint with same-project, 1km, and 2km scopes
 - /api/projects/names - Get project names for dropdown
 
-CRITICAL: All queries MUST include is_outlier = false filter
+CRITICAL: All queries MUST include COALESCE(is_outlier, false) = false filter
 """
 from flask import Blueprint, request, jsonify
 from models.project_location import ProjectLocation
 from models.transaction import Transaction
 from models.database import db
 from services.school_distance import haversine
-from sqlalchemy import func, and_, or_
+from sqlalchemy import func, and_
+from db.sql import exclude_outliers
 import time
 import statistics
 
@@ -266,10 +267,10 @@ def get_nearby_transactions():
         }), 404
 
     # Query transactions for those projects with SAME bedroom type
-    # CRITICAL: Always exclude outliers
+    # CRITICAL: Always exclude outliers (null-safe)
     # Note: bedroom >= 5 handles "5+ BR" option from frontend
     query = db.session.query(Transaction.price).filter(
-        or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
+        exclude_outliers(Transaction),
         Transaction.project_name.in_(nearby_project_names),
         get_bedroom_filter(bedroom)
     )
@@ -288,7 +289,7 @@ def get_nearby_transactions():
         Transaction.project_name,
         func.count(Transaction.id).label('count')
     ).filter(
-        or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
+        exclude_outliers(Transaction),
         Transaction.project_name.in_(nearby_project_names),
         get_bedroom_filter(bedroom)
     ).group_by(Transaction.project_name).all()
@@ -356,7 +357,7 @@ def compute_scope_stats(project_names, bedroom, buyer_price, sqft=None):
         Transaction.psf,
         Transaction.area_sqft
     ).filter(
-        or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
+        exclude_outliers(Transaction),
         Transaction.project_name.in_(project_names),
         get_bedroom_filter(bedroom)
     )
@@ -479,7 +480,7 @@ def get_multi_scope_comparison():
         func.percentile_cont(0.5).within_group(Transaction.price).label('median_price'),
         func.percentile_cont(0.5).within_group(Transaction.area_sqft).label('median_sqft')
     ).filter(
-        or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)),
+        exclude_outliers(Transaction),
         Transaction.project_name.in_(projects_2km),
         get_bedroom_filter(bedroom)
     ).group_by(Transaction.project_name).all()

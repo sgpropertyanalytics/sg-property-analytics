@@ -24,7 +24,8 @@ from db.sql import (
     extract_param_names,
     SQLParamStyleError,
     SQLDateParamError,
-    OUTLIER_FILTER
+    OUTLIER_FILTER,
+    get_outlier_filter_sql
 )
 
 
@@ -266,13 +267,155 @@ class TestExtractParamNames:
 
 
 class TestOutlierFilter:
-    """Test the standard outlier filter constant."""
+    """Test the standard outlier filter constant and usage."""
 
     def test_outlier_filter_format(self):
         """Ensure outlier filter uses COALESCE for null safety."""
         assert 'COALESCE' in OUTLIER_FILTER
         assert 'is_outlier' in OUTLIER_FILTER
         assert 'false' in OUTLIER_FILTER
+
+    def test_outlier_filter_exact_format(self):
+        """Ensure outlier filter matches exact expected format."""
+        expected = "COALESCE(is_outlier, false) = false"
+        assert OUTLIER_FILTER == expected
+
+
+class TestGetOutlierFilterSql:
+    """Test get_outlier_filter_sql() alias handling."""
+
+    def test_no_alias(self):
+        """No alias returns base filter."""
+        result = get_outlier_filter_sql()
+        assert result == "COALESCE(is_outlier, false) = false"
+
+    def test_none_alias(self):
+        """None alias returns base filter."""
+        result = get_outlier_filter_sql(None)
+        assert result == "COALESCE(is_outlier, false) = false"
+
+    def test_empty_string_alias(self):
+        """Empty string alias returns base filter (no malformed SQL)."""
+        result = get_outlier_filter_sql("")
+        assert result == "COALESCE(is_outlier, false) = false"
+        assert ".is_outlier" not in result  # No leading dot
+
+    def test_whitespace_only_alias(self):
+        """Whitespace-only alias returns base filter (no malformed SQL)."""
+        result = get_outlier_filter_sql("   ")
+        assert result == "COALESCE(is_outlier, false) = false"
+        assert ".is_outlier" not in result  # No leading dot
+
+    def test_valid_alias(self):
+        """Valid alias is properly included."""
+        result = get_outlier_filter_sql("t")
+        assert result == "COALESCE(t.is_outlier, false) = false"
+
+    def test_alias_with_whitespace(self):
+        """Alias with surrounding whitespace is trimmed."""
+        result = get_outlier_filter_sql("  t  ")
+        assert result == "COALESCE(t.is_outlier, false) = false"
+
+    def test_longer_alias(self):
+        """Longer alias works correctly."""
+        result = get_outlier_filter_sql("transactions")
+        assert result == "COALESCE(transactions.is_outlier, false) = false"
+
+
+class TestNoLegacyOutlierPatterns:
+    """
+    GUARDRAIL: Detect legacy outlier filtering patterns.
+
+    All outlier filtering should use either:
+    - OUTLIER_FILTER constant for raw SQL
+    - exclude_outliers(Model) for SQLAlchemy ORM
+
+    Legacy patterns that should NOT exist:
+    - is_outlier = false (not null-safe)
+    - is_outlier IS NULL OR is_outlier = false (verbose)
+    - Transaction.is_outlier == False (not null-safe)
+    - or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None)) (verbose)
+    """
+
+    BACKEND_ROOT = Path(__file__).parent.parent
+    SCAN_DIRS = ['routes', 'services']
+
+    # Patterns that indicate legacy outlier filtering
+    # Note: We exclude files that intentionally check for outliers (like data_validation)
+    LEGACY_PATTERNS = [
+        # Raw SQL patterns (should use OUTLIER_FILTER or get_outlier_filter_sql)
+        re.compile(r"is_outlier\s*=\s*false\s+OR\s+is_outlier\s+IS\s+NULL", re.IGNORECASE),
+        # ORM patterns (should use exclude_outliers)
+        re.compile(r"or_\(\s*Transaction\.is_outlier\s*==\s*False"),
+        re.compile(r"or_\(\s*\w+\.is_outlier\s*==\s*False"),
+        # Inverted COALESCE patterns (wrong logic)
+        re.compile(r"COALESCE\s*\(\s*is_outlier\s*,\s*false\s*\)\s*!=\s*true", re.IGNORECASE),
+        re.compile(r"COALESCE\s*\(\s*is_outlier\s*,\s*false\s*\)\s*<>\s*true", re.IGNORECASE),
+        re.compile(r"COALESCE\s*\(\s*\w+\.is_outlier\s*,\s*false\s*\)\s*!=\s*true", re.IGNORECASE),
+        re.compile(r"COALESCE\s*\(\s*\w+\.is_outlier\s*,\s*false\s*\)\s*<>\s*true", re.IGNORECASE),
+    ]
+
+    # Files to skip (they intentionally work with outliers or are in tests/migrations)
+    SKIP_FILES = [
+        'data_validation.py',  # Intentionally marks outliers
+        'test_',  # Test files
+        '__pycache__',
+    ]
+
+    def get_python_files(self):
+        files = []
+        for scan_dir in self.SCAN_DIRS:
+            dir_path = self.BACKEND_ROOT / scan_dir
+            if dir_path.exists():
+                files.extend(dir_path.rglob('*.py'))
+        return files
+
+    def should_skip(self, filepath):
+        """Check if file should be skipped."""
+        name = filepath.name
+        for skip in self.SKIP_FILES:
+            if skip in str(filepath):
+                return True
+        return False
+
+    def test_no_verbose_outlier_patterns(self):
+        """
+        GUARDRAIL: Detect verbose outlier patterns that should use helpers.
+
+        This catches:
+        - is_outlier = false OR is_outlier IS NULL (should use OUTLIER_FILTER)
+        - or_(Transaction.is_outlier == False, ...) (should use exclude_outliers)
+        """
+        violations = []
+
+        for filepath in self.get_python_files():
+            if self.should_skip(filepath):
+                continue
+
+            try:
+                content = filepath.read_text(encoding='utf-8')
+            except Exception:
+                continue
+
+            lines = content.split('\n')
+            for i, line in enumerate(lines, 1):
+                for pattern in self.LEGACY_PATTERNS:
+                    if pattern.search(line):
+                        violations.append({
+                            'file': str(filepath.relative_to(self.BACKEND_ROOT)),
+                            'line': i,
+                            'content': line.strip()[:100]
+                        })
+
+        if violations:
+            msg = "GUARDRAIL VIOLATION: Found legacy outlier filtering patterns!\n\n"
+            msg += "Replace with centralized helpers:\n"
+            msg += "  - Raw SQL: Use OUTLIER_FILTER or get_outlier_filter_sql()\n"
+            msg += "  - ORM: Use exclude_outliers(Transaction)\n\n"
+            for v in violations:
+                msg += f"  {v['file']}:{v['line']}\n"
+                msg += f"    {v['content']}\n\n"
+            pytest.fail(msg)
 
 
 # =============================================================================

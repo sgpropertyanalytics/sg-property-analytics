@@ -138,11 +138,12 @@ def _load_resale_projects() -> Set[str]:
             from models.database import db
             from sqlalchemy import text
 
-            result = db.session.execute(text("""
+            from db.sql import OUTLIER_FILTER
+            result = db.session.execute(text(f"""
                 SELECT DISTINCT UPPER(project_name) as project_name
                 FROM transactions
                 WHERE sale_type = 'Resale'
-                  AND is_outlier = false
+                  AND {OUTLIER_FILTER}
             """)).fetchall()
 
             _resale_projects_cache = {row[0] for row in result}

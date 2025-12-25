@@ -179,5 +179,87 @@ def run_sql_one(
     return result.fetchone()
 
 
-# Standard filter snippets for reuse
+# =============================================================================
+# OUTLIER FILTERING - CANONICAL PREDICATES
+# =============================================================================
+#
+# ALL queries that touch transactions MUST exclude outliers using these helpers.
+# This ensures null-safe, consistent behavior across all endpoints.
+#
+# For raw SQL:     Use OUTLIER_FILTER constant
+# For SQLAlchemy:  Use exclude_outliers(Model) or exclude_outliers_clause(Model)
+#
+# NEVER use these patterns directly:
+#   - is_outlier = false                    (not null-safe)
+#   - is_outlier IS NULL OR is_outlier = false  (verbose, inconsistent)
+#   - Transaction.is_outlier == False       (not null-safe)
+#
+# =============================================================================
+
+# Raw SQL filter snippet
 OUTLIER_FILTER = "COALESCE(is_outlier, false) = false"
+
+
+def exclude_outliers(model_class):
+    """
+    Return a SQLAlchemy filter clause that excludes outliers (null-safe).
+
+    Usage with ORM queries:
+        from db.sql import exclude_outliers
+        from models.transaction import Transaction
+
+        query = db.session.query(Transaction).filter(
+            exclude_outliers(Transaction),
+            Transaction.district == 'D15'
+        )
+
+    Args:
+        model_class: SQLAlchemy model class with is_outlier column
+
+    Returns:
+        SQLAlchemy BinaryExpression for filtering
+    """
+    from sqlalchemy import func
+    return func.coalesce(model_class.is_outlier, False) == False
+
+
+def exclude_outliers_clause(model_class):
+    """
+    Alias for exclude_outliers() - for semantic clarity in filter() calls.
+
+    Usage:
+        query.filter(exclude_outliers_clause(Transaction))
+    """
+    return exclude_outliers(model_class)
+
+
+def get_outlier_filter_sql(table_alias: str = None) -> str:
+    """
+    Get the outlier filter SQL snippet with optional table alias.
+
+    Args:
+        table_alias: Optional table alias (e.g., 't' for 't.is_outlier').
+                     None, empty string, or whitespace-only returns unaliased form.
+
+    Returns:
+        SQL string like "COALESCE(t.is_outlier, false) = false"
+
+    Usage:
+        # Without alias
+        sql = f"WHERE {get_outlier_filter_sql()}"
+        # → "WHERE COALESCE(is_outlier, false) = false"
+
+        # With alias
+        sql = f"WHERE {get_outlier_filter_sql('t')}"
+        # → "WHERE COALESCE(t.is_outlier, false) = false"
+
+    Note on performance:
+        PostgreSQL can use partial indexes with WHERE clauses that match
+        this COALESCE pattern. The query planner recognizes the equivalence
+        between COALESCE(is_outlier, false) = false and
+        (is_outlier = false OR is_outlier IS NULL).
+    """
+    # Handle None, empty string, or whitespace-only alias
+    if table_alias and table_alias.strip():
+        return f"COALESCE({table_alias.strip()}.is_outlier, false) = false"
+    return OUTLIER_FILTER

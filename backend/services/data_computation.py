@@ -18,6 +18,7 @@ from models.database import db
 from models.precomputed_stats import PreComputedStats
 from models.transaction import Transaction
 from services.json_serializer import serialize_for_json
+from db.sql import exclude_outliers
 
 # Import existing business logic - these all use SQL-only queries
 from services.data_processor import (
@@ -69,7 +70,6 @@ def recompute_all_stats(validation_results: dict = None):
     print("=" * 60)
 
     # Get record counts from database
-    from sqlalchemy import or_
     total_count = db.session.query(Transaction).count()
 
     # Get outlier count directly from database (source of truth)
@@ -78,8 +78,9 @@ def recompute_all_stats(validation_results: dict = None):
     ).count()
 
     # Active records (non-outliers) - what analytics actually use
+    # Uses COALESCE(is_outlier, false) = false for null-safe filtering
     active_count = db.session.query(Transaction).filter(
-        or_(Transaction.is_outlier == False, Transaction.is_outlier.is_(None))
+        exclude_outliers(Transaction)
     ).count()
 
     # Use database outlier count as source of truth
