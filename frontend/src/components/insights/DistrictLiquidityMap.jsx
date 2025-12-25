@@ -943,17 +943,85 @@ function LiquidityRankingTable({ districtData }) {
     <div className="border-t border-[#94B4C1]/30">
       {/* Table Header */}
       <div className="px-4 py-3 bg-[#EAE0CF]/20">
-        <h3 className="text-sm font-bold text-[#213448]">
-          District Liquidity Ranking
+        <h3 className="text-lg font-bold text-[#213448]">
+          District Volume Liquidity Ranking
         </h3>
         <p className="text-xs text-[#547792]">
           Sorted by monthly transaction velocity (highest liquidity first)
         </p>
       </div>
 
-      {/* Scrollable Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+      {/* Mobile Card View */}
+      <div className="md:hidden p-3 space-y-2 max-h-[400px] overflow-y-auto">
+        {sortedData.map((district, index) => {
+          const m = district.liquidity_metrics || {};
+          return (
+            <div
+              key={district.district_id}
+              className={`p-3 bg-white rounded-lg border border-[#94B4C1]/30 ${
+                index < 3 ? 'ring-1 ring-[#EAE0CF]' : ''
+              }`}
+            >
+              {/* Header: Rank + District + Region */}
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                  index === 0 ? 'bg-amber-400 text-white' :
+                  index === 1 ? 'bg-gray-300 text-gray-700' :
+                  index === 2 ? 'bg-amber-600 text-white' :
+                  'bg-[#EAE0CF]/50 text-[#547792]'
+                }`}>
+                  {index + 1}
+                </span>
+                <span className="font-semibold text-[#213448]">{district.district_id}</span>
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${getRegionBadge(district.region)}`}>
+                  {district.region}
+                </span>
+                <span className={`ml-auto px-1.5 py-0.5 rounded text-[10px] font-semibold ${getTierBadge(m.liquidity_tier)}`}>
+                  {m.liquidity_tier || '-'}
+                </span>
+              </div>
+
+              {/* Area name */}
+              <div className="text-xs text-[#547792] mb-2 truncate">
+                {district.full_name}
+              </div>
+
+              {/* Key Metrics Grid */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-emerald-50/50 rounded p-1.5">
+                  <div className="text-[10px] text-[#547792]">Velocity</div>
+                  <div className="text-sm font-bold text-[#213448]">{m.monthly_velocity?.toFixed(1) || '0'}</div>
+                </div>
+                <div className="bg-[#EAE0CF]/30 rounded p-1.5">
+                  <div className="text-[10px] text-[#547792]">Tx</div>
+                  <div className="text-sm font-semibold text-[#213448]">{m.tx_count?.toLocaleString() || '0'}</div>
+                </div>
+                <div className="bg-rose-50/50 rounded p-1.5">
+                  <div className="text-[10px] text-[#547792]">Fragility</div>
+                  <div className={`text-[10px] font-semibold ${
+                    m.fragility_label === 'Robust' ? 'text-emerald-600' :
+                    m.fragility_label === 'Moderate' ? 'text-amber-600' :
+                    'text-rose-600'
+                  }`}>
+                    {m.fragility_label || '-'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Secondary row: Z-score, New/Resale % */}
+              <div className="flex justify-between mt-2 text-[10px] text-[#547792]">
+                <span>Z: <span className={m.z_score >= 0 ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'}>{m.z_score?.toFixed(2) || '-'}</span></span>
+                <span>New: {m.new_sale_pct?.toFixed(0) || 0}%</span>
+                <span>Resale: {m.resale_pct?.toFixed(0) || 0}%</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto max-w-full">
+        <table className="w-full text-xs min-w-[1000px]">
           <thead>
             {/* Group Header Row - Exit Safety + Concentration (Resale-only) */}
             <tr className="bg-[#EAE0CF]/20">

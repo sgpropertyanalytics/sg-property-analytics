@@ -487,7 +487,49 @@ export default function DealCheckerContent() {
                   </div>
                 </div>
               </div>
-              <div className="overflow-x-auto" style={{ maxHeight: 350 }}>
+              {/* Mobile Card View */}
+              <div className="md:hidden p-3 space-y-2 overflow-y-auto" style={{ maxHeight: 350 }}>
+                {nearbyProjects.length === 0 ? (
+                  <div className="text-center py-6 text-slate-500">No nearby projects found</div>
+                ) : (
+                  nearbyProjects.map((p) => {
+                    const isUserProject = p.project_name === result.project.name;
+                    const isWithin1km = p.distance_km <= 1.0;
+                    const volumeColor = getVolumeColor(p.transaction_count, volumeThresholds);
+
+                    return (
+                      <div
+                        key={p.project_name}
+                        className={`p-3 rounded-lg border border-[#94B4C1]/30 ${!isWithin1km ? 'opacity-70' : ''}`}
+                        style={{ backgroundColor: isUserProject ? 'rgba(33, 52, 72, 0.05)' : volumeColor }}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-[#213448] truncate">
+                              {p.project_name}
+                              {isUserProject && <span className="ml-1 text-xs text-[#547792]">(yours)</span>}
+                            </div>
+                            <div className="text-xs text-[#94B4C1]">{p.district}</div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-sm font-medium text-[#213448]">
+                              {p.distance_km === 0 ? '-' : `${(p.distance_km * 1000).toFixed(0)}m`}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-between mt-2 text-xs text-[#547792]">
+                          <span>{p.transaction_count || 0} txns</span>
+                          <span>{p.median_price ? `$${(p.median_price / 1000000).toFixed(2)}M` : '-'}</span>
+                          <span>{p.median_sqft ? `${p.median_sqft.toLocaleString()} sqft` : '-'}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto max-w-full" style={{ maxHeight: 350 }}>
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 sticky top-0">
                     <tr>
@@ -499,7 +541,7 @@ export default function DealCheckerContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {nearbyProjects.map((p, idx) => {
+                    {nearbyProjects.map((p) => {
                       const isUserProject = p.project_name === result.project.name;
                       const isWithin1km = p.distance_km <= 1.0;
                       const volumeColor = getVolumeColor(p.transaction_count, volumeThresholds);
