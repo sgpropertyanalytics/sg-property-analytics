@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -59,10 +60,14 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
-  // No longer using confidence thresholds for visual encoding
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Fetch floor level data
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     const fetchData = async () => {
       if (isInitialLoad.current) {
         setLoading(true);
@@ -80,7 +85,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         if (bedroom) params.bedroom = bedroom;
         if (segment) params.segment = segment;
 
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
         const rawData = response.data.data || [];
 
         // Use getAggField for v1/v2 compatibility
@@ -95,20 +100,30 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
             return getFloorLevelIndex(aLevel) - getFloorLevelIndex(bLevel);
           });
 
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setData(sortedData);
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        // Ignore errors from stale requests
+        if (isStale(requestId)) return;
         console.error('Error fetching floor level data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        // Only clear loading for the current request
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
 
     fetchData();
     // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey, bedroom, segment]);
+  }, [debouncedFilterKey, bedroom, segment, startRequest, isStale]);
 
   // Calculate baseline for premium calculation (use getAggField for v1/v2 compatibility)
   const baselinePSF = useMemo(() => {

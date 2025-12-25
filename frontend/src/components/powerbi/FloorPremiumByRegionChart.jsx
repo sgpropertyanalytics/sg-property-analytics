@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -70,8 +71,14 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Fetch data for all regions
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     const fetchAllRegions = async () => {
       setLoading(true);
       setError(null);
@@ -90,7 +97,7 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
             params.segment = region;
             if (bedroom) params.bedroom = bedroom;
 
-            const response = await getAggregate(params);
+            const response = await getAggregate(params, { signal });
             const rawData = response.data.data || [];
 
             // Sort and filter (use getAggField for v1/v2 compatibility)
@@ -107,18 +114,28 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
           })
         );
 
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setRegionData(results);
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        // Ignore errors from stale requests
+        if (isStale(requestId)) return;
         console.error('Error fetching region data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        // Only clear loading for the current request
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
       }
     };
 
     fetchAllRegions();
     // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey, bedroom]);
+  }, [debouncedFilterKey, bedroom, startRequest, isStale]);
 
   // Calculate premiums for each region (use getAggField for v1/v2 compatibility)
   const premiumsByRegion = useMemo(() => {

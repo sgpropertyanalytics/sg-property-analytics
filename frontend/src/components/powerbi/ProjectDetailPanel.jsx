@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -90,8 +90,23 @@ function ProjectDetailPanelInner({
   // State for price histogram data
   const [histogramData, setHistogramData] = useState([]);
 
+  // Request tracking for stale request prevention
+  const requestIdRef = useRef(0);
+  const abortControllerRef = useRef(null);
+
   // Fetch project-specific data
   useEffect(() => {
+    // Abort previous request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+    // Increment request ID for stale detection
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
+
     const fetchProjectData = async () => {
       setLoading(true);
       setError(null);
@@ -145,11 +160,14 @@ function ProjectDetailPanelInner({
 
         // Fetch all data in parallel, including inventory and histogram
         const [trendResponse, priceResponse, inventoryResponse, histogramResponse] = await Promise.all([
-          getAggregate(trendParams),
-          getAggregate(priceParams),
+          getAggregate(trendParams, { signal }),
+          getAggregate(priceParams, { signal }),
           getProjectInventory(selectedProject.name),
-          getDashboard(histogramParams),
+          getDashboard(histogramParams, { signal }),
         ]);
+
+        // Ignore stale responses - a newer request has started
+        if (requestId !== requestIdRef.current) return;
 
         // Sort trend data by month (use getAggField for v1/v2 compatibility)
         const sortedTrend = (trendResponse.data.data || [])
@@ -176,14 +194,28 @@ function ProjectDetailPanelInner({
         setTrendData(sortedTrend);
         setPriceData(sortedPrice);
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        // Ignore errors from stale requests
+        if (requestId !== requestIdRef.current) return;
         console.error('Error fetching project data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        // Only clear loading for the current request
+        if (requestId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
     };
 
     fetchProjectData();
+
+    // Cleanup: abort on unmount or when dependencies change
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [selectedProject.name, filters, setTrendData, setPriceData, setLoading, setError]);
 
   const districtName = selectedProject.district
