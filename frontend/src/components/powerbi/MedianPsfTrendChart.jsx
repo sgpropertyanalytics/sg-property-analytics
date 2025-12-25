@@ -1,5 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery } from '../../hooks';
+import { QueryState } from '../common/QueryState';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -50,7 +51,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
 
   // Fetch and transform data using adapter pattern
   // useAbortableQuery handles: abort controller, stale request protection, loading/error states
-  const { data: rawData, loading, error } = useAbortableQuery(
+  const { data: rawData, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // Build params with excludeHighlight: true so chart shows ALL periods
       const params = buildApiParams({
@@ -101,26 +102,6 @@ export function MedianPsfTrendChart({ height = 300 }) {
       }
     }
   };
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-[#547792]">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-red-500">Error: {error}</div>
-        </div>
-      </div>
-    );
-  }
 
   // Determine highlighted index for visual emphasis
   const highlightedIndex = highlight.source === 'time' && highlight.value
@@ -282,10 +263,11 @@ export function MedianPsfTrendChart({ height = 300 }) {
   const cardHeight = height + 120; // height prop for chart + ~120px for header/footer
 
   return (
-    <div
-      className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
-      style={{ height: cardHeight }}
-    >
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!rawData || rawData.length === 0}>
+      <div
+        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        style={{ height: cardHeight }}
+      >
       {/* Header - shrink-0 */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center gap-2">
@@ -310,7 +292,8 @@ export function MedianPsfTrendChart({ height = 300 }) {
       <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center text-xs text-[#547792]">
         <span className="truncate">{data.labels.length} periods | Click to highlight time period</span>
       </div>
-    </div>
+      </div>
+    </QueryState>
   );
 }
 

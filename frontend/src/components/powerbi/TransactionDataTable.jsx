@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAbortableQuery } from '../../hooks';
+import { QueryState } from '../common/QueryState';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
 import { BlurredProject, BlurredCurrency, BlurredArea, BlurredPSF } from '../BlurredCell';
@@ -35,7 +36,7 @@ export function TransactionDataTable({ height = 400 }) {
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data, loading, error } = useAbortableQuery(
+  const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // includeFactFilter: true enables one-way filtering from dimension charts
       // (e.g., Price Distribution click filters this table but not other dimension charts)
@@ -140,7 +141,8 @@ export function TransactionDataTable({ height = 400 }) {
   ];
 
   return (
-    <div id="transaction-data-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!transactions || transactions.length === 0}>
+      <div id="transaction-data-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
         <div>
@@ -176,24 +178,8 @@ export function TransactionDataTable({ height = 400 }) {
 
       {/* Mobile Card View */}
       <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: height }}>
-        {error ? (
-          <div className="flex items-center justify-center h-40 text-red-500">
-            Error: {error}
-          </div>
-        ) : loading ? (
-          [...Array(5)].map((_, i) => (
-            <div key={i} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 animate-pulse">
-              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
-            </div>
-          ))
-        ) : transactions.length === 0 ? (
-          <div className="text-center py-8 text-slate-500">
-            No transactions found matching the current filters
-          </div>
-        ) : (
-          <div className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
-            {transactions.map((txn, idx) => (
+        <div className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
+          {transactions.map((txn, idx) => (
               <div key={txn.id || idx} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30">
                 {/* Header: Project + Type Badge */}
                 <div className="flex justify-between items-start gap-2 mb-2">
@@ -238,19 +224,13 @@ export function TransactionDataTable({ height = 400 }) {
                   <span><BlurredArea value={txn.area_sqft} masked={txn.area_sqft_masked} source="table" /> sqft</span>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
       </div>
 
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-auto" style={{ maxHeight: height }}>
-        {error ? (
-          <div className="flex items-center justify-center h-40 text-red-500">
-            Error: {error}
-          </div>
-        ) : (
-          <table className="w-full text-sm">
+        <table className="w-full text-sm">
             <thead className="bg-slate-50 sticky top-0">
               <tr>
                 {columns.map(col => (
@@ -270,25 +250,7 @@ export function TransactionDataTable({ height = 400 }) {
               </tr>
             </thead>
             <tbody className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
-              {loading ? (
-                // Loading skeleton
-                [...Array(limit)].map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    {columns.map(col => (
-                      <td key={col.key} className="px-3 py-2 border-b border-slate-100">
-                        <div className="h-4 bg-slate-200 rounded w-full"></div>
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : transactions.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length} className="px-3 py-8 text-center text-slate-500">
-                    No transactions found matching the current filters
-                  </td>
-                </tr>
-              ) : (
-                transactions.map((txn, idx) => (
+              {transactions.map((txn, idx) => (
                   <tr
                     key={txn.id || idx}
                     className="hover:bg-slate-50 transition-colors"
@@ -342,11 +304,9 @@ export function TransactionDataTable({ height = 400 }) {
                       </span>
                     </td>
                   </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
-        )}
       </div>
 
       {/* Pagination Footer */}
@@ -415,7 +375,8 @@ export function TransactionDataTable({ height = 400 }) {
         </div>
         </div>
       </div>
-    </div>
+      </div>
+    </QueryState>
   );
 }
 

@@ -1,5 +1,6 @@
 import React, { useRef, useMemo, useState } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
+import { QueryState } from '../common/QueryState';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -79,7 +80,7 @@ export function PriceCompressionChart({ height = 380 }) {
   });
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data, loading, error } = useAbortableQuery(
+  const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // Use global timeGrouping via TIME_GROUP_BY mapping, excludeHighlight for time-series pattern
       const params = buildApiParams({
@@ -135,31 +136,6 @@ export function PriceCompressionChart({ height = 380 }) {
     }
     return -1;
   }, [highlight, data]);
-
-  // Loading state
-  if (loading) {
-    return (
-      <div ref={containerRef} className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-[#547792]">Loading compression data...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state - show error message for real errors
-  if (error) {
-    return (
-      <div ref={containerRef} className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-red-500">Error: {error.message || error}</div>
-        </div>
-      </div>
-    );
-  }
 
   // Chart data for spread lines
   const spreadChartData = {
@@ -350,11 +326,12 @@ export function PriceCompressionChart({ height = 380 }) {
   const cardHeight = height + 200 + (showContext ? height * 0.25 : 0);
 
   return (
-    <div
-      ref={containerRef}
-      className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
-      style={{ height: cardHeight }}
-    >
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0}>
+      <div
+        ref={containerRef}
+        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        style={{ height: cardHeight }}
+      >
       {/* Header - shrink-0 */}
       <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-start justify-between gap-2">
@@ -431,7 +408,8 @@ export function PriceCompressionChart({ height = 380 }) {
         </button>
         <span className="truncate">{data.length} periods | Click to highlight</span>
       </div>
-    </div>
+      </div>
+    </QueryState>
   );
 }
 

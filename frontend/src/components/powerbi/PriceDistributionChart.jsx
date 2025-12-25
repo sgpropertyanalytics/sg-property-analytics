@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { useAbortableQuery } from '../../hooks';
+import { QueryState } from '../common/QueryState';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -51,7 +52,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
   const chartRef = useRef(null);
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data: histogramData, loading, error } = useAbortableQuery(
+  const { data: histogramData, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // Use dashboard endpoint with price_histogram panel
       // excludeLocationDrill: true - Price Distribution should NOT be affected by
@@ -85,38 +86,6 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
 
   // Extract transformed data
   const { bins, stats, tail, totalCount } = histogramData;
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-[#547792]">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state - show error message for real errors
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-red-500">Error: {error.message || error}</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Empty state - show helpful message, not error
-  if (bins.length === 0) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-[#547792]">No data available for selected filters</div>
-        </div>
-      </div>
-    );
-  }
 
   // Derive chart data from transformed bins
   const labels = bins.map(b => b.label);
@@ -257,10 +226,11 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
   const cardHeight = height + 190; // height prop for chart + ~190px for header(with stats)/note/footer
 
   return (
-    <div
-      className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
-      style={{ height: cardHeight }}
-    >
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!bins || bins.length === 0}>
+      <div
+        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        style={{ height: cardHeight }}
+      >
       {/* Header - shrink-0 */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center justify-between">
@@ -340,7 +310,8 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
           {formatPrice(minPrice)} – {formatPrice(maxPrice)} ({bins.length} bins)
         </span>
       </div>
-    </div>
+      </div>
+    </QueryState>
   );
 }
 

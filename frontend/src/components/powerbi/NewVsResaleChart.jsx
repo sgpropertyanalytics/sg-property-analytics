@@ -1,5 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
+import { QueryState } from '../common/QueryState';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -73,7 +74,7 @@ export function NewVsResaleChart({ height = 350 }) {
   });
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data, loading, error } = useAbortableQuery(
+  const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // Use buildApiParams to include GLOBAL filters from sidebar
       // excludeHighlight: true - this is a time-series chart, preserve full timeline
@@ -122,30 +123,6 @@ export function NewVsResaleChart({ height = 350 }) {
     }
     return parts.length > 0 ? parts.join(' · ') : 'All data';
   };
-
-  if (loading) {
-    return (
-      <div ref={containerRef} className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ minHeight: height }}>
-        <div className="flex items-center justify-center h-full">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-[#547792]">Loading chart...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state - show error message for real errors
-  if (error) {
-    return (
-      <div ref={containerRef} className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ minHeight: height }}>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-red-500">Error: {error.message || error}</div>
-        </div>
-      </div>
-    );
-  }
 
   // Prepare chart data
   const labels = chartData.map(d => d.period);
@@ -318,11 +295,12 @@ export function NewVsResaleChart({ height = 350 }) {
   const cardHeight = height + 180; // height prop for chart + ~180px for header/KeyInsightBox
 
   return (
-    <div
-      ref={containerRef}
-      className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
-      style={{ height: cardHeight }}
-    >
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!hasData}>
+      <div
+        ref={containerRef}
+        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        style={{ height: cardHeight }}
+      >
       {/* Header - shrink-0 */}
       <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="min-w-0">
@@ -388,7 +366,8 @@ export function NewVsResaleChart({ height = 350 }) {
           </div>
         )}
       </ChartSlot>
-    </div>
+      </div>
+    </QueryState>
   );
 }
 

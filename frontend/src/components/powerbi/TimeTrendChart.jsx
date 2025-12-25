@@ -1,5 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery } from '../../hooks';
+import { QueryState } from '../common/QueryState';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -56,7 +57,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
 
   // Fetch and transform data using adapter pattern
   // useAbortableQuery handles: abort controller, stale request protection, loading/error states
-  const { data, loading, error } = useAbortableQuery(
+  const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // Build params with excludeHighlight: true so chart shows ALL periods
       const params = buildApiParams({
@@ -100,26 +101,6 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
       }
     }
   };
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-[#547792]">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-red-500">Error: {error}</div>
-        </div>
-      </div>
-    );
-  }
 
   // Use the time grain that matches the current data to avoid "Unknown" labels during drill transitions
   const labels = data.map(d => d.period ?? '');
@@ -286,30 +267,32 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   const cardHeight = height + 90; // height prop for chart + ~90px for header
 
   return (
-    <div
-      className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
-      style={{ height: cardHeight }}
-    >
-      {/* Header - shrink-0 */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-        <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-[#213448]">Transaction Trend</h3>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0}>
+      <div
+        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        style={{ height: cardHeight }}
+      >
+        {/* Header - shrink-0 */}
+        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-[#213448]">Transaction Trend</h3>
+          </div>
+          <p className="text-xs text-[#547792] mt-1">
+            Volume and price by {TIME_LABELS[timeGrouping]}
+          </p>
+          <div className="text-xs text-[#547792] text-center mt-1">
+            {data.length} periods | {data.reduce((sum, d) => sum + d.newSaleCount, 0).toLocaleString()} new + {data.reduce((sum, d) => sum + d.resaleCount, 0).toLocaleString()} resale
+          </div>
         </div>
-        <p className="text-xs text-[#547792] mt-1">
-          Volume and price by {TIME_LABELS[timeGrouping]}
-        </p>
-        <div className="text-xs text-[#547792] text-center mt-1">
-          {data.length} periods | {data.reduce((sum, d) => sum + d.newSaleCount, 0).toLocaleString()} new + {data.reduce((sum, d) => sum + d.resaleCount, 0).toLocaleString()} resale
-        </div>
+        {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+        {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
+        <ChartSlot>
+          <PreviewChartOverlay chartRef={chartRef}>
+            <Chart ref={chartRef} type="bar" data={chartData} options={options} />
+          </PreviewChartOverlay>
+        </ChartSlot>
       </div>
-      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
-      {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
-      <ChartSlot>
-        <PreviewChartOverlay chartRef={chartRef}>
-          <Chart ref={chartRef} type="bar" data={chartData} options={options} />
-        </PreviewChartOverlay>
-      </ChartSlot>
-    </div>
+    </QueryState>
   );
 }
 

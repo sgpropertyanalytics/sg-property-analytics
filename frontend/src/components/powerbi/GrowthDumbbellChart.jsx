@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAbortableQuery } from '../../hooks';
+import { QueryState } from '../common/QueryState';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
@@ -90,7 +91,7 @@ export function GrowthDumbbellChart() {
   const [sortConfig, setSortConfig] = useState({ column: 'growth', order: 'desc' });
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data, loading, error } = useAbortableQuery(
+  const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       const params = buildApiParams({
         group_by: 'quarter,district',
@@ -221,37 +222,8 @@ export function GrowthDumbbellChart() {
     applyCrossFilter('location', 'district', district);
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-          <div className="h-5 w-64 bg-[#EAE0CF]/50 rounded animate-pulse" />
-        </div>
-        <div className="p-4 space-y-3">
-          {[...Array(10)].map((_, i) => (
-            <div key={i} className="h-8 bg-[#EAE0CF]/20 rounded animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-          <h3 className="text-sm font-semibold text-[#213448]">Median PSF Growth</h3>
-        </div>
-        <div className="p-8 text-center">
-          <p className="text-sm text-[#547792]">Unable to load data</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!sortedData || sortedData.length === 0}>
     <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header with dynamic title */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
@@ -453,6 +425,7 @@ export function GrowthDumbbellChart() {
         </div>
       </div>
     </div>
+    </QueryState>
   );
 }
 
