@@ -80,6 +80,11 @@ Before starting migration, verify:
 | NewVsResaleChart | ✅ Done | `transformNewVsResaleSeries` | Pre-processed data normalization |
 | GrowthDumbbellChart | ✅ Done | `transformGrowthDumbbellSeries` | District grouping w/ growth calc |
 | TransactionDataTable | ✅ Done | `transformTransactionsList` | Paginated table w/ user controls |
+| FloorLiquidityChart | ✅ Done | N/A (inline) | useAbortableQuery + QueryState |
+| FloorPremiumByRegionChart | ✅ Done | N/A (inline) | useAbortableQuery + QueryState |
+| FloorPremiumTrendChart | ✅ Done | N/A (inline) | useAbortableQuery + QueryState |
+| FloorLiquidityHeatmap | ✅ Done | N/A (inline) | useAbortableQuery + QueryState |
+| UnitSizeVsPriceChart | ✅ Done | N/A (inline) | useAbortableQuery + QueryState |
 | VolumeByLocationChart | ❌ N/A | N/A | File doesn't exist in codebase |
 
 ---
@@ -88,7 +93,7 @@ Before starting migration, verify:
 
 | Version | Status | Description |
 |---------|--------|-------------|
-| v1 | ✅ Supported | Legacy snake_case fields |
+| v1 | ⚠️ Deprecated | Legacy snake_case fields - sunset 2026-04-01 |
 | v2 | ✅ Supported | camelCase fields + enum normalization |
 | v3 | ✅ Current | Stabilization release - version flag for deprecation safety |
 

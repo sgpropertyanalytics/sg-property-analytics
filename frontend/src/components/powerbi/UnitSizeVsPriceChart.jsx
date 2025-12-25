@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useState, useRef, useMemo } from 'react';
+import { useAbortableQuery } from '../../hooks';
+import { QueryState } from '../common/QueryState';
 import {
   Chart as ChartJS,
   LinearScale,
@@ -44,22 +45,49 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const { isPremium, showPaywall } = useSubscription();
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [error, setError] = useState(null);
-  const [meta, setMeta] = useState({ sample_size: 0, total_count: 0 });
   const [refreshSeed, setRefreshSeed] = useState(null); // null = stable sample, string = new sample
   const chartRef = useRef(null);
-  const isInitialLoad = useRef(true);
-
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Handle refresh button click - generates random seed for new sample
   const handleRefresh = () => {
     setRefreshSeed(Math.random().toString(36).substring(2, 10));
   };
+
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  const { data: apiResponse, loading, error, refetch } = useAbortableQuery(
+    async (signal) => {
+      // Build params using global filter system
+      const baseParams = buildApiParams({});
+
+      // Build request params
+      // - Without seed: stable sample (same filters = same data points)
+      // - With seed: different sample (triggered by refresh button)
+      const requestParams = {
+        ...baseParams,
+        sample_size: 2000,
+      };
+      if (refreshSeed) {
+        requestParams.seed = refreshSeed;
+      }
+
+      // Call the scatter-sample endpoint
+      const response = await apiClient.get('/scatter-sample', {
+        params: requestParams,
+        signal
+      });
+
+      return {
+        data: response.data.data || [],
+        meta: response.data.meta || { sample_size: 0, total_count: 0 }
+      };
+    },
+    [debouncedFilterKey, refreshSeed],
+    { initialData: { data: [], meta: { sample_size: 0, total_count: 0 } } }
+  );
+
+  // Extract data and meta from response
+  const data = apiResponse?.data || [];
+  const meta = apiResponse?.meta || { sample_size: 0, total_count: 0 };
 
   // Bedroom colors - consistent palette across charts
   const bedroomColors = {
@@ -77,65 +105,6 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     4: 'rgba(17, 43, 60, 1)',
     5: 'rgba(155, 187, 89, 1)',
   };
-
-  // Fetch scatter data
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
-
-    const fetchData = async () => {
-      if (isInitialLoad.current) {
-        setLoading(true);
-      } else {
-        setUpdating(true);
-      }
-      setError(null);
-
-      try {
-        // Build params using global filter system
-        const baseParams = buildApiParams({});
-
-        // Build request params
-        // - Without seed: stable sample (same filters = same data points)
-        // - With seed: different sample (triggered by refresh button)
-        const requestParams = {
-          ...baseParams,
-          sample_size: 2000,
-        };
-        if (refreshSeed) {
-          requestParams.seed = refreshSeed;
-        }
-
-        // Call the scatter-sample endpoint
-        const response = await apiClient.get('/scatter-sample', {
-          params: requestParams,
-          signal
-        });
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        setData(response.data.data || []);
-        setMeta(response.data.meta || { sample_size: 0, total_count: 0 });
-        isInitialLoad.current = false;
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching scatter data:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-          setUpdating(false);
-        }
-      }
-    };
-
-    fetchData();
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-    // refreshSeed is local control for manual sample refresh
-  }, [debouncedFilterKey, refreshSeed]);
 
   // Transform data for Chart.js - group by bedroom
   const chartData = useMemo(() => {
@@ -274,57 +243,27 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     },
   }), [isPremium, showPaywall]);
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="p-4 border-b border-[#94B4C1]/30">
-          <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-[#547792]">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="p-4 border-b border-[#94B4C1]/30">
-          <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-red-500">Error: {error}</div>
-        </div>
-      </div>
-    );
-  }
-
   // Card layout contract: flex column with fixed total height
   // Header/Note/Footer are shrink-0, chart slot is flex-1 min-h-0
   // Use same height as PriceDistributionChart for side-by-side alignment
   const cardHeight = height + 190;
 
   return (
-    <div
-      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col ${updating ? 'opacity-70' : ''}`}
-      style={{ height: cardHeight }}
-    >
-      {/* Header - shrink-0 */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[#213448]">Unit Size vs Price</h3>
-            {updating && (
-              <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-            )}
-          </div>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={data.length === 0}>
+      <div
+        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        style={{ height: cardHeight }}
+      >
+        {/* Header - shrink-0 */}
+        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-[#213448]">Unit Size vs Price</h3>
+            </div>
           {/* Refresh button */}
           <button
             onClick={handleRefresh}
-            disabled={updating}
+            disabled={loading}
             className="text-xs px-2.5 py-1 rounded-full border bg-white text-[#547792] border-[#94B4C1] hover:bg-[#EAE0CF]/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Refresh sample"
           >
@@ -356,6 +295,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         <span className="shrink-0 text-[#94B4C1]">Click refresh ↻ for new sample</span>
       </div>
     </div>
+    </QueryState>
   );
 }
 
