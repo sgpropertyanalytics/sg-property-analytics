@@ -1003,3 +1003,233 @@ def serialize_dashboard_response(
         'data': serialized_data,
         'meta': meta_v2,
     }
+
+
+# =============================================================================
+# EXIT QUEUE SERIALIZATION
+# =============================================================================
+
+class ExitQueueFields:
+    """Field names for exit queue API response (camelCase for v2)."""
+    # Top-level
+    PROJECT_NAME = 'projectName'
+    DATA_QUALITY = 'dataQuality'
+    FUNDAMENTALS = 'fundamentals'
+    RESALE_METRICS = 'resaleMetrics'
+    RISK_ASSESSMENT = 'riskAssessment'
+    GATING_FLAGS = 'gatingFlags'
+
+    # Data Quality
+    HAS_TOP_YEAR = 'hasTopYear'
+    HAS_TOTAL_UNITS = 'hasTotalUnits'
+    COMPLETENESS = 'completeness'
+    SAMPLE_WINDOW_MONTHS = 'sampleWindowMonths'
+    WARNINGS = 'warnings'
+
+    # Fundamentals
+    TOTAL_UNITS = 'totalUnits'
+    TOP_YEAR = 'topYear'
+    PROPERTY_AGE_YEARS = 'propertyAgeYears'
+    AGE_SOURCE = 'ageSource'
+    TENURE = 'tenure'
+    DISTRICT = 'district'
+    DEVELOPER = 'developer'
+    FIRST_RESALE_DATE = 'firstResaleDate'
+
+    # Resale Metrics
+    UNIQUE_RESALE_UNITS_TOTAL = 'uniqueResaleUnitsTotal'
+    UNIQUE_RESALE_UNITS_12M = 'uniqueResaleUnits12m'
+    TOTAL_RESALE_TRANSACTIONS = 'totalResaleTransactions'
+    RESALE_MATURITY_PCT = 'resaleMaturityPct'
+    ACTIVE_EXIT_PRESSURE_PCT = 'activeExitPressurePct'
+    ABSORPTION_SPEED_DAYS = 'absorptionSpeedDays'
+    TRANSACTIONS_PER_100_UNITS = 'transactionsPer100Units'
+    RESALES_LAST_24M = 'resalesLast24m'
+
+    # Risk Assessment
+    MATURITY_ZONE = 'maturityZone'
+    PRESSURE_ZONE = 'pressureZone'
+    QUADRANT = 'quadrant'
+    OVERALL_RISK = 'overallRisk'
+    INTERPRETATION = 'interpretation'
+
+    # Gating Flags
+    IS_BOUTIQUE = 'isBoutique'
+    IS_BRAND_NEW = 'isBrandNew'
+    IS_ULTRA_LUXURY = 'isUltraLuxury'
+    IS_THIN_DATA = 'isThinData'
+    UNIT_TYPE_MIXED = 'unitTypeMixed'
+
+
+class RiskZone:
+    """Risk zone enum values for v2 API."""
+    LOW = 'low'
+    MODERATE = 'moderate'
+    HIGH = 'high'
+    UNKNOWN = 'unknown'
+
+    # Mapping from internal zone colors to API enum
+    COLOR_TO_API = {
+        'green': LOW,
+        'yellow': MODERATE,
+        'red': HIGH,
+        'unknown': UNKNOWN
+    }
+
+    @classmethod
+    def from_color(cls, color: str) -> str:
+        """Convert internal zone color to API enum."""
+        return cls.COLOR_TO_API.get(color, cls.UNKNOWN)
+
+
+class OverallRisk:
+    """Overall risk enum values for v2 API."""
+    LOW = 'low'
+    MODERATE = 'moderate'
+    ELEVATED = 'elevated'
+    UNKNOWN = 'unknown'
+
+    INTERNAL_TO_API = {
+        'low': LOW,
+        'moderate': MODERATE,
+        'elevated': ELEVATED,
+        'unknown': UNKNOWN
+    }
+
+    @classmethod
+    def from_internal(cls, value: str) -> str:
+        """Convert internal risk level to API enum."""
+        return cls.INTERNAL_TO_API.get(value, cls.UNKNOWN)
+
+
+class Completeness:
+    """Data completeness enum values for v2 API."""
+    COMPLETE = 'complete'
+    PARTIAL = 'partial'
+    NO_RESALES = 'no_resales'
+
+
+class AgeSource:
+    """Age source enum values for v2 API."""
+    TOP_DATE = 'top_date'
+    FIRST_RESALE = 'first_resale'
+    NOT_TOPPED_YET = 'not_topped_yet'
+    INSUFFICIENT_DATA = 'insufficient_data'
+
+
+def serialize_exit_queue_v1(result) -> Dict[str, Any]:
+    """
+    Serialize ExitQueueResult to v1 schema (snake_case keys).
+    This is the current production format for backwards compatibility.
+    """
+    return {
+        "project_name": result.project_name,
+        "data_quality": {
+            "has_top_year": result.data_quality.has_top_year,
+            "has_total_units": result.data_quality.has_total_units,
+            "completeness": result.data_quality.completeness,
+            "sample_window_months": result.data_quality.sample_window_months,
+            "warnings": result.data_quality.warnings
+        },
+        "fundamentals": {
+            "total_units": result.fundamentals.total_units,
+            "top_year": result.fundamentals.top_year,
+            "property_age_years": result.fundamentals.property_age_years,
+            "age_source": result.fundamentals.age_source,
+            "tenure": result.fundamentals.tenure,
+            "district": result.fundamentals.district,
+            "developer": result.fundamentals.developer,
+            "first_resale_date": result.fundamentals.first_resale_date.isoformat() if result.fundamentals.first_resale_date else None
+        },
+        "resale_metrics": {
+            "unique_resale_units_total": result.resale_metrics.unique_resale_units_total,
+            "unique_resale_units_12m": result.resale_metrics.unique_resale_units_12m,
+            "total_resale_transactions": result.resale_metrics.total_resale_transactions,
+            "resale_maturity_pct": result.resale_metrics.resale_maturity_pct,
+            "active_exit_pressure_pct": result.resale_metrics.active_exit_pressure_pct,
+            "absorption_speed_days": result.resale_metrics.absorption_speed_days,
+            "transactions_per_100_units": result.resale_metrics.transactions_per_100_units,
+            "resales_last_24m": result.resale_metrics.resales_last_24m
+        },
+        "risk_assessment": {
+            "maturity_zone": result.risk_assessment.maturity_zone,
+            "pressure_zone": result.risk_assessment.pressure_zone,
+            "quadrant": result.risk_assessment.quadrant,
+            "overall_risk": result.risk_assessment.overall_risk,
+            "interpretation": result.risk_assessment.interpretation
+        },
+        "gating_flags": {
+            "is_boutique": result.gating_flags.is_boutique,
+            "is_brand_new": result.gating_flags.is_brand_new,
+            "is_ultra_luxury": result.gating_flags.is_ultra_luxury,
+            "is_thin_data": result.gating_flags.is_thin_data,
+            "unit_type_mixed": result.gating_flags.unit_type_mixed
+        }
+    }
+
+
+def serialize_exit_queue_v2(result) -> Dict[str, Any]:
+    """
+    Serialize ExitQueueResult to v2 schema (camelCase keys + enum values).
+    """
+    return {
+        ExitQueueFields.PROJECT_NAME: result.project_name,
+        ExitQueueFields.DATA_QUALITY: {
+            ExitQueueFields.HAS_TOP_YEAR: result.data_quality.has_top_year,
+            ExitQueueFields.HAS_TOTAL_UNITS: result.data_quality.has_total_units,
+            ExitQueueFields.COMPLETENESS: result.data_quality.completeness,
+            ExitQueueFields.SAMPLE_WINDOW_MONTHS: result.data_quality.sample_window_months,
+            ExitQueueFields.WARNINGS: result.data_quality.warnings
+        },
+        ExitQueueFields.FUNDAMENTALS: {
+            ExitQueueFields.TOTAL_UNITS: result.fundamentals.total_units,
+            ExitQueueFields.TOP_YEAR: result.fundamentals.top_year,
+            ExitQueueFields.PROPERTY_AGE_YEARS: result.fundamentals.property_age_years,
+            ExitQueueFields.AGE_SOURCE: result.fundamentals.age_source,
+            ExitQueueFields.TENURE: result.fundamentals.tenure,
+            ExitQueueFields.DISTRICT: result.fundamentals.district,
+            ExitQueueFields.DEVELOPER: result.fundamentals.developer,
+            ExitQueueFields.FIRST_RESALE_DATE: result.fundamentals.first_resale_date.isoformat() if result.fundamentals.first_resale_date else None
+        },
+        ExitQueueFields.RESALE_METRICS: {
+            ExitQueueFields.UNIQUE_RESALE_UNITS_TOTAL: result.resale_metrics.unique_resale_units_total,
+            ExitQueueFields.UNIQUE_RESALE_UNITS_12M: result.resale_metrics.unique_resale_units_12m,
+            ExitQueueFields.TOTAL_RESALE_TRANSACTIONS: result.resale_metrics.total_resale_transactions,
+            ExitQueueFields.RESALE_MATURITY_PCT: result.resale_metrics.resale_maturity_pct,
+            ExitQueueFields.ACTIVE_EXIT_PRESSURE_PCT: result.resale_metrics.active_exit_pressure_pct,
+            ExitQueueFields.ABSORPTION_SPEED_DAYS: result.resale_metrics.absorption_speed_days,
+            ExitQueueFields.TRANSACTIONS_PER_100_UNITS: result.resale_metrics.transactions_per_100_units,
+            ExitQueueFields.RESALES_LAST_24M: result.resale_metrics.resales_last_24m
+        },
+        ExitQueueFields.RISK_ASSESSMENT: {
+            ExitQueueFields.MATURITY_ZONE: RiskZone.from_color(result.risk_assessment.maturity_zone),
+            ExitQueueFields.PRESSURE_ZONE: RiskZone.from_color(result.risk_assessment.pressure_zone),
+            ExitQueueFields.QUADRANT: result.risk_assessment.quadrant,
+            ExitQueueFields.OVERALL_RISK: OverallRisk.from_internal(result.risk_assessment.overall_risk),
+            ExitQueueFields.INTERPRETATION: result.risk_assessment.interpretation
+        },
+        ExitQueueFields.GATING_FLAGS: {
+            ExitQueueFields.IS_BOUTIQUE: result.gating_flags.is_boutique,
+            ExitQueueFields.IS_BRAND_NEW: result.gating_flags.is_brand_new,
+            ExitQueueFields.IS_ULTRA_LUXURY: result.gating_flags.is_ultra_luxury,
+            ExitQueueFields.IS_THIN_DATA: result.gating_flags.is_thin_data,
+            ExitQueueFields.UNIT_TYPE_MIXED: result.gating_flags.unit_type_mixed
+        }
+    }
+
+
+def serialize_exit_queue_dual(result, include_v2: bool = True) -> Dict[str, Any]:
+    """
+    Serialize ExitQueueResult with dual-mode support.
+    Returns v1 schema with optional _v2 nested object for new consumers.
+
+    Args:
+        result: ExitQueueResult from exit_queue_service
+        include_v2: If True, include _v2 nested object with camelCase schema
+    """
+    response = serialize_exit_queue_v1(result)
+
+    if include_v2:
+        response["_v2"] = serialize_exit_queue_v2(result)
+
+    return response
