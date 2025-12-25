@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { DistrictLiquidityMap } from '../components/insights';
 import { ChartWatermark } from '../components/ui';
-import { MarketMomentumGrid } from '../components/powerbi';
+import { MarketMomentumGrid, GrowthDumbbellChart } from '../components/powerbi';
 
 /**
  * District & Project Deep Dive Page
@@ -113,6 +113,11 @@ function DistrictOverviewContent() {
       {/* Market Momentum Grid - Historical price growth by district */}
       <ChartWatermark>
         <MarketMomentumGrid />
+      </ChartWatermark>
+
+      {/* Growth Leaderboard - Dumbbell chart comparing start vs end price */}
+      <ChartWatermark>
+        <GrowthDumbbellChart />
       </ChartWatermark>
 
       {/* Coming Soon Features */}

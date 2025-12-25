@@ -12,3 +12,4 @@ export { GLSDataTable } from './GLSDataTable';
 // District Deep Dive Components
 export { MarketMomentumGrid } from './MarketMomentumGrid';
 export { DistrictMicroChart } from './DistrictMicroChart';
+export { GrowthDumbbellChart } from './GrowthDumbbellChart';
