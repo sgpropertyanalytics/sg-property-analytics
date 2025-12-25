@@ -19,21 +19,39 @@ const REGION_HEADER_TEXT = {
   OCR: 'text-[#213448]',
 };
 
-// Trend-based colors
-const getTrendColor = (growthPercent) => {
-  if (growthPercent >= 30) return '#166534';   // Dark green
-  if (growthPercent >= 10) return '#16a34a';   // Green
-  if (growthPercent <= -20) return '#991b1b';  // Dark red
-  if (growthPercent <= -5) return '#dc2626';   // Red
-  return '#1f2937';  // Neutral/black
+// Clean state-based colors for end dot (the "target/outcome")
+const getEndDotColor = (growthPercent) => {
+  if (growthPercent >= 30) return '#059669';   // Vibrant emerald (strong growth)
+  if (growthPercent >= 10) return '#10b981';   // Emerald (growth)
+  if (growthPercent <= -20) return '#dc2626';  // Red (strong decline)
+  if (growthPercent <= -5) return '#f87171';   // Soft coral (decline)
+  return '#64748b';  // Slate grey (neutral)
 };
 
-const getTrendBarColor = (growthPercent) => {
-  if (growthPercent >= 30) return 'rgba(22, 101, 52, 0.3)';
-  if (growthPercent >= 10) return 'rgba(22, 163, 74, 0.3)';
-  if (growthPercent <= -20) return 'rgba(153, 27, 27, 0.3)';
-  if (growthPercent <= -5) return 'rgba(220, 38, 38, 0.3)';
-  return 'rgba(31, 41, 55, 0.2)';
+// Line color matches end state but slightly muted
+const getLineColor = (growthPercent) => {
+  if (growthPercent >= 30) return 'rgba(5, 150, 105, 0.6)';   // Emerald
+  if (growthPercent >= 10) return 'rgba(16, 185, 129, 0.5)';  // Lighter emerald
+  if (growthPercent <= -20) return 'rgba(220, 38, 38, 0.5)';  // Red
+  if (growthPercent <= -5) return 'rgba(248, 113, 113, 0.4)'; // Soft coral
+  return 'rgba(100, 116, 139, 0.3)';  // Slate grey
+};
+
+// Line thickness based on growth magnitude
+const getLineThickness = (growthPercent) => {
+  const absGrowth = Math.abs(growthPercent);
+  if (absGrowth >= 50) return 6;   // Very strong movement
+  if (absGrowth >= 30) return 4;   // Strong movement
+  if (absGrowth >= 10) return 2;   // Moderate movement
+  return 1;  // Minimal movement
+};
+
+// End dot size - larger for strong growth
+const getEndDotSize = (growthPercent) => {
+  const absGrowth = Math.abs(growthPercent);
+  if (absGrowth >= 50) return 20;  // Extra large
+  if (absGrowth >= 30) return 18;  // Large
+  return 16;  // Standard
 };
 
 // Get area names (2-3 areas max, respecting space)
@@ -358,17 +376,22 @@ export function GrowthDumbbellChart() {
           const endPercent = psfToPercent(item.endPsf);
           const leftPercent = Math.min(startPercent, endPercent);
           const rightPercent = Math.max(startPercent, endPercent);
-          const trendColor = getTrendColor(item.growthPercent);
-          const trendBarColor = getTrendBarColor(item.growthPercent);
+
+          // Clean state-based styling
+          const endDotColor = getEndDotColor(item.growthPercent);
+          const lineColor = getLineColor(item.growthPercent);
+          const lineThickness = getLineThickness(item.growthPercent);
+          const endDotSize = getEndDotSize(item.growthPercent);
+
           const regionBg = REGION_HEADER_BG[item.region] || REGION_HEADER_BG.OCR;
           const regionText = REGION_HEADER_TEXT[item.region] || REGION_HEADER_TEXT.OCR;
 
-          // Text color class based on trend
-          const textColorClass = item.growthPercent >= 30 ? 'text-emerald-800'
+          // Text color matches end dot state
+          const textColorClass = item.growthPercent >= 30 ? 'text-emerald-700'
             : item.growthPercent >= 10 ? 'text-emerald-600'
-            : item.growthPercent <= -20 ? 'text-red-800'
-            : item.growthPercent <= -5 ? 'text-red-500'
-            : 'text-gray-700';
+            : item.growthPercent <= -20 ? 'text-red-600'
+            : item.growthPercent <= -5 ? 'text-red-400'
+            : 'text-slate-500';
 
           return (
             <div
@@ -395,30 +418,40 @@ export function GrowthDumbbellChart() {
                 {/* Dumbbell Chart Area */}
                 <div className="flex-1 relative h-6">
                   {/* Background track */}
-                  <div className="absolute inset-y-2 left-0 right-0 bg-[#EAE0CF]/30 rounded-full" />
+                  <div className="absolute inset-y-2 left-0 right-0 bg-slate-100 rounded-full" />
 
-                  {/* Connecting bar */}
+                  {/* Connecting line - thickness varies by growth magnitude */}
                   <div
-                    className="absolute top-2.5 h-1 rounded-full transition-all"
+                    className="absolute rounded-full transition-all"
                     style={{
                       left: `${leftPercent}%`,
-                      width: `${rightPercent - leftPercent}%`,
-                      backgroundColor: trendBarColor,
+                      width: `${Math.max(rightPercent - leftPercent, 1)}%`,
+                      height: `${lineThickness}px`,
+                      top: `calc(50% - ${lineThickness / 2}px)`,
+                      backgroundColor: lineColor,
                     }}
                   />
 
-                  {/* Start dot (grey) */}
+                  {/* Start dot - always neutral grey (the past) */}
                   <div
-                    className="absolute top-1 w-4 h-4 rounded-full bg-[#94B4C1] border-2 border-white shadow-sm transform -translate-x-1/2 group-hover:scale-110 transition-transform"
-                    style={{ left: `${startPercent}%` }}
+                    className="absolute rounded-full bg-slate-300 border-2 border-white shadow-sm transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform"
+                    style={{
+                      left: `${startPercent}%`,
+                      top: '50%',
+                      width: '14px',
+                      height: '14px',
+                    }}
                   />
 
-                  {/* End dot (trend-colored) */}
+                  {/* End dot - colored by outcome, size varies */}
                   <div
-                    className="absolute top-1 w-4 h-4 rounded-full border-2 border-white shadow-sm transform -translate-x-1/2 group-hover:scale-110 transition-transform z-10"
+                    className="absolute rounded-full border-2 border-white shadow-md transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform z-10"
                     style={{
                       left: `${endPercent}%`,
-                      backgroundColor: trendColor,
+                      top: '50%',
+                      width: `${endDotSize}px`,
+                      height: `${endDotSize}px`,
+                      backgroundColor: endDotColor,
                     }}
                   />
                 </div>
@@ -446,16 +479,29 @@ export function GrowthDumbbellChart() {
             <span className="text-[#94B4C1]">{chartData.length} districts</span>
           </div>
 
-          {/* Chart legend */}
+          {/* Visual legend */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-[#547792]">
-            <span><strong>Grey dot:</strong> {startQuarter} Median PSF</span>
-            <span><strong>Colored dot:</strong> {endQuarter} Median PSF</span>
-            <span><strong>%:</strong> Total price change between quarters</span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-300 border border-white"></span>
+              <span>Start ({startQuarter})</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-emerald-500 border border-white"></span>
+              <span>Growth</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-400 border border-white"></span>
+              <span>Neutral</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-red-400 border border-white"></span>
+              <span>Decline</span>
+            </span>
           </div>
 
           {/* Additional notes */}
           <div className="text-[10px] text-[#94B4C1]">
-            <p>Green = price increase, Red = price decrease. Click column headers to sort. Click district to filter dashboard.</p>
+            <p>Larger dot & thicker line = stronger price movement. Click headers to sort. Click district to filter.</p>
           </div>
         </div>
       </div>
