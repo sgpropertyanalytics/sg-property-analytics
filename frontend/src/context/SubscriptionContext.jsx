@@ -26,13 +26,39 @@ export function useSubscription() {
   return context;
 }
 
+// Cache key for localStorage
+const SUBSCRIPTION_CACHE_KEY = 'subscription_cache';
+
+// Get cached subscription from localStorage (instant, no flicker)
+const getCachedSubscription = () => {
+  try {
+    const cached = localStorage.getItem(SUBSCRIPTION_CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      // Basic validation
+      if (parsed.tier && typeof parsed.subscribed === 'boolean') {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    // Ignore parse errors
+  }
+  return { tier: 'free', subscribed: false, ends_at: null };
+};
+
+// Save subscription to localStorage
+const cacheSubscription = (sub) => {
+  try {
+    localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(sub));
+  } catch (e) {
+    // Ignore storage errors
+  }
+};
+
 export function SubscriptionProvider({ children }) {
   const { user, isAuthenticated, initialized } = useAuth();
-  const [subscription, setSubscription] = useState({
-    tier: 'free',
-    subscribed: false,
-    ends_at: null,
-  });
+  // Initialize from cache to prevent flash of free→premium
+  const [subscription, setSubscription] = useState(getCachedSubscription);
   const [loading, setLoading] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
 
@@ -54,7 +80,9 @@ export function SubscriptionProvider({ children }) {
       }
 
       if (!isAuthenticated) {
-        setSubscription({ tier: 'free', subscribed: false, ends_at: null });
+        const freeSub = { tier: 'free', subscribed: false, ends_at: null };
+        setSubscription(freeSub);
+        cacheSubscription(freeSub); // Clear cache on sign out
         return;
       }
 
@@ -71,16 +99,20 @@ export function SubscriptionProvider({ children }) {
         const response = await apiClient.get('/auth/subscription');
         console.log('[Subscription] Fetched:', response.data);
         if (response.data) {
-          setSubscription({
+          const newSub = {
             tier: response.data.tier || 'free',
             subscribed: response.data.subscribed || false,
             ends_at: response.data.ends_at || null,
-          });
+          };
+          setSubscription(newSub);
+          cacheSubscription(newSub); // Cache for instant load next time
         }
       } catch (err) {
         // If endpoint doesn't exist yet or fails, default to free
         console.warn('Failed to fetch subscription status:', err.message);
-        setSubscription({ tier: 'free', subscribed: false, ends_at: null });
+        const freeSub = { tier: 'free', subscribed: false, ends_at: null };
+        setSubscription(freeSub);
+        cacheSubscription(freeSub);
       } finally {
         setLoading(false);
       }
