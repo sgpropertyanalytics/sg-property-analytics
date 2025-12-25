@@ -2377,6 +2377,404 @@ def get_project_inventory(project_name):
         return jsonify({"error": str(e)}), 500
 
 
+@analytics_bp.route("/projects/resale-projects", methods=["GET"])
+def get_resale_projects():
+    """
+    Get list of projects with resale transactions for dropdown selection.
+
+    Returns project name, district, resale count, and data availability flags.
+    Used for the Exit Queue Risk feature project selector.
+
+    Returns:
+        {
+            "projects": [
+                {
+                    "name": "PARC CLEMATIS",
+                    "district": "D05",
+                    "resale_count": 45,
+                    "has_total_units": true,
+                    "has_top_year": true
+                },
+                ...
+            ],
+            "count": 150
+        }
+    """
+    start = time.time()
+    from models.transaction import Transaction
+    from models.database import db
+    from services.new_launch_units import get_units_for_project
+    from sqlalchemy import func
+
+    try:
+        # Query distinct projects with resales
+        projects = db.session.query(
+            Transaction.project_name,
+            Transaction.district,
+            func.count(Transaction.id).label('resale_count')
+        ).filter(
+            Transaction.sale_type == 'Resale',
+            Transaction.is_outlier == False
+        ).group_by(
+            Transaction.project_name,
+            Transaction.district
+        ).order_by(
+            Transaction.project_name
+        ).all()
+
+        result = []
+        for p in projects:
+            lookup = get_units_for_project(p.project_name, check_resale=False)
+            result.append({
+                "name": p.project_name,
+                "district": p.district,
+                "resale_count": p.resale_count,
+                "has_total_units": lookup.get("total_units") is not None,
+                "has_top_year": lookup.get("top") is not None
+            })
+
+        elapsed = time.time() - start
+        print(f"GET /api/projects/resale-projects took: {elapsed:.4f}s ({len(result)} projects)")
+
+        return jsonify({
+            "projects": result,
+            "count": len(result)
+        })
+
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/projects/resale-projects ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@analytics_bp.route("/projects/<path:project_name>/exit-queue", methods=["GET"])
+def get_project_exit_queue(project_name):
+    """
+    Get exit queue risk metrics for a specific project.
+
+    Metrics:
+    - Resale maturity: % of unique units that have been resold (market maturity)
+    - Active exit pressure: % of unique units resold in last 12 months
+    - Absorption speed: Median days between resale transactions
+
+    Unit uniqueness is approximated using: project_name + floor_range + area_sqft
+
+    Returns comprehensive response with:
+    - data_quality: Flags for data availability
+    - fundamentals: Property age, total units, first resale, tenure
+    - resale_metrics: Penetration %, pressure %, absorption speed
+    - risk_assessment: Quadrant-based risk level with interpretation
+    - gating_flags: Warnings for special cases
+    """
+    start = time.time()
+    from models.transaction import Transaction
+    from models.database import db
+    from services.new_launch_units import get_units_for_project
+    from sqlalchemy import func, distinct
+    from datetime import datetime, timedelta
+    import statistics
+
+    try:
+        # 1. Get project fundamentals from CSV
+        lookup = get_units_for_project(project_name, check_resale=False)
+        total_units = lookup.get("total_units")
+        top_year = lookup.get("top")
+        tenure = lookup.get("tenure")
+        district = lookup.get("district")
+        developer = lookup.get("developer")
+
+        # 2. Query all resale transactions for this project
+        resales = db.session.query(Transaction).filter(
+            Transaction.project_name == project_name,
+            Transaction.sale_type == 'Resale',
+            Transaction.is_outlier == False
+        ).order_by(Transaction.transaction_date.asc()).all()
+
+        total_resale_transactions = len(resales)
+
+        if total_resale_transactions == 0:
+            # No resale data
+            elapsed = time.time() - start
+            print(f"GET /api/projects/{project_name}/exit-queue took: {elapsed:.4f}s (no resales)")
+            return jsonify({
+                "project_name": project_name,
+                "data_quality": {
+                    "has_top_year": top_year is not None,
+                    "has_total_units": total_units is not None,
+                    "completeness": "no_resales",
+                    "sample_window_months": 0,
+                    "warnings": ["No resale transactions found for this project"]
+                },
+                "fundamentals": {
+                    "total_units": total_units,
+                    "top_year": top_year,
+                    "property_age_years": None,
+                    "age_source": "no_resales",
+                    "tenure": tenure,
+                    "district": district or lookup.get("district"),
+                    "developer": developer,
+                    "first_resale_date": None
+                },
+                "resale_metrics": None,
+                "risk_assessment": None,
+                "gating_flags": {
+                    "is_boutique": total_units is not None and total_units < 50,
+                    "is_brand_new": True,
+                    "is_ultra_luxury": False,
+                    "is_thin_data": True,
+                    "unit_type_mixed": False
+                }
+            })
+
+        # 3. Calculate unique units (approximation using floor_range + area_sqft)
+        # A unit is identified by its floor range and area combination
+        unique_units_all = set()
+        unique_units_12m = set()
+        cutoff_date = datetime.now().date() - timedelta(days=365)
+        cutoff_24m = datetime.now().date() - timedelta(days=730)
+
+        transaction_dates = []
+        resales_24m_count = 0
+        bedroom_counts = set()
+        median_psf = None
+
+        for r in resales:
+            # Create unit identifier (floor_range + area_sqft as tuple)
+            unit_id = (r.floor_range or 'unknown', round(r.area_sqft, 0) if r.area_sqft else 0)
+            unique_units_all.add(unit_id)
+
+            if r.transaction_date >= cutoff_date:
+                unique_units_12m.add(unit_id)
+
+            if r.transaction_date >= cutoff_24m:
+                resales_24m_count += 1
+
+            transaction_dates.append(r.transaction_date)
+            bedroom_counts.add(r.bedroom_count)
+
+        unique_resale_units_total = len(unique_units_all)
+        unique_resale_units_12m = len(unique_units_12m)
+
+        # Get first resale date and district from transactions if not in CSV
+        first_resale_date = resales[0].transaction_date if resales else None
+        if not district:
+            district = resales[0].district if resales else None
+
+        # Calculate median PSF for luxury detection
+        psf_values = [r.psf for r in resales if r.psf]
+        if psf_values:
+            median_psf = statistics.median(psf_values)
+
+        # 4. Calculate absorption speed (median days between transactions)
+        absorption_speed_days = None
+        if len(transaction_dates) >= 2 and resales_24m_count >= 12:
+            deltas = []
+            sorted_dates = sorted(transaction_dates)
+            for i in range(1, len(sorted_dates)):
+                delta = (sorted_dates[i] - sorted_dates[i-1]).days
+                if delta > 0:  # Ignore same-day transactions
+                    deltas.append(delta)
+            if deltas:
+                absorption_speed_days = round(statistics.median(deltas), 1)
+
+        # 5. Calculate percentages
+        resale_maturity_pct = None
+        active_exit_pressure_pct = None
+        transactions_per_100_units = None
+
+        if total_units and total_units > 0:
+            resale_maturity_pct = round((unique_resale_units_total / total_units) * 100, 1)
+            active_exit_pressure_pct = round((unique_resale_units_12m / total_units) * 100, 1)
+            transactions_per_100_units = round((total_resale_transactions / total_units) * 100, 1)
+
+        # 6. Calculate property age
+        current_year = datetime.now().year
+        property_age_years = None
+        age_source = "insufficient_data"
+
+        if top_year:
+            if top_year <= current_year:
+                property_age_years = current_year - top_year
+                age_source = "top_date"
+            else:
+                age_source = "not_topped_yet"
+        elif first_resale_date:
+            property_age_years = current_year - first_resale_date.year
+            age_source = "first_resale"
+
+        # 7. Determine risk zones and quadrant
+        # Maturity zones: Red 0-15%, Yellow 15-40%, Green 40%+
+        # Pressure zones: Green 0-5%, Yellow 5-10%, Red 10%+
+        maturity_zone = "unknown"
+        pressure_zone = "unknown"
+        quadrant = "unknown"
+        overall_risk = "unknown"
+
+        if resale_maturity_pct is not None:
+            if resale_maturity_pct < 15:
+                maturity_zone = "red"
+            elif resale_maturity_pct < 40:
+                maturity_zone = "yellow"
+            else:
+                maturity_zone = "green"
+
+        if active_exit_pressure_pct is not None:
+            if active_exit_pressure_pct < 5:
+                pressure_zone = "green"
+            elif active_exit_pressure_pct < 10:
+                pressure_zone = "yellow"
+            else:
+                pressure_zone = "red"
+
+        # Determine quadrant and overall risk
+        if resale_maturity_pct is not None and active_exit_pressure_pct is not None:
+            if resale_maturity_pct >= 40 and active_exit_pressure_pct < 5:
+                quadrant = "proven_low_pressure"
+                overall_risk = "low"
+            elif resale_maturity_pct < 15 and active_exit_pressure_pct >= 10:
+                quadrant = "immature_high_pressure"
+                overall_risk = "elevated"
+            elif resale_maturity_pct >= 40 and active_exit_pressure_pct >= 10:
+                quadrant = "proven_active"
+                overall_risk = "moderate"
+            elif resale_maturity_pct < 15 and active_exit_pressure_pct < 5:
+                quadrant = "immature_quiet"
+                overall_risk = "moderate"
+            else:
+                quadrant = "developing"
+                overall_risk = "moderate"
+
+        # 8. Generate interpretation text
+        interpretation = _generate_exit_queue_interpretation(
+            resale_maturity_pct, active_exit_pressure_pct,
+            quadrant, overall_risk, unique_resale_units_total, total_units
+        )
+
+        # 9. Set gating flags
+        is_boutique = total_units is not None and total_units < 50
+        is_brand_new = property_age_years is not None and property_age_years < 2
+        is_ultra_luxury = (
+            (median_psf is not None and median_psf > 3000) or
+            (district in ['D09', 'D10'])
+        )
+        is_thin_data = unique_resale_units_total < 8 or resales_24m_count < 10
+        unit_type_mixed = len(bedroom_counts) > 1
+
+        # 10. Build warnings list
+        warnings = []
+        if not total_units:
+            warnings.append("Total units not available - percentages cannot be calculated")
+        if not top_year:
+            warnings.append("TOP year not available - property age estimated from first resale")
+        if is_thin_data:
+            warnings.append("Limited transaction data - interpret with caution")
+
+        # Determine completeness
+        completeness = "complete"
+        if not total_units and not top_year:
+            completeness = "partial"
+        elif not total_units or not top_year:
+            completeness = "limited"
+
+        # Calculate sample window
+        if resales:
+            first_date = min(r.transaction_date for r in resales)
+            months_of_data = (datetime.now().date() - first_date).days // 30
+        else:
+            months_of_data = 0
+
+        elapsed = time.time() - start
+        print(f"GET /api/projects/{project_name}/exit-queue took: {elapsed:.4f}s")
+
+        return jsonify({
+            "project_name": project_name,
+            "data_quality": {
+                "has_top_year": top_year is not None,
+                "has_total_units": total_units is not None,
+                "completeness": completeness,
+                "sample_window_months": months_of_data,
+                "warnings": warnings
+            },
+            "fundamentals": {
+                "total_units": total_units,
+                "top_year": top_year,
+                "property_age_years": property_age_years,
+                "age_source": age_source,
+                "tenure": tenure,
+                "district": district,
+                "developer": developer,
+                "first_resale_date": first_resale_date.isoformat() if first_resale_date else None
+            },
+            "resale_metrics": {
+                "unique_resale_units_total": unique_resale_units_total,
+                "unique_resale_units_12m": unique_resale_units_12m,
+                "total_resale_transactions": total_resale_transactions,
+                "resale_maturity_pct": resale_maturity_pct,
+                "active_exit_pressure_pct": active_exit_pressure_pct,
+                "absorption_speed_days": absorption_speed_days,
+                "transactions_per_100_units": transactions_per_100_units,
+                "resales_last_24m": resales_24m_count
+            },
+            "risk_assessment": {
+                "maturity_zone": maturity_zone,
+                "pressure_zone": pressure_zone,
+                "quadrant": quadrant,
+                "overall_risk": overall_risk,
+                "interpretation": interpretation
+            },
+            "gating_flags": {
+                "is_boutique": is_boutique,
+                "is_brand_new": is_brand_new,
+                "is_ultra_luxury": is_ultra_luxury,
+                "is_thin_data": is_thin_data,
+                "unit_type_mixed": unit_type_mixed
+            }
+        })
+
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/projects/{project_name}/exit-queue ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+def _generate_exit_queue_interpretation(maturity_pct, pressure_pct, quadrant, risk, unique_units, total_units):
+    """Generate human-readable interpretation of exit queue risk metrics."""
+    if maturity_pct is None or pressure_pct is None:
+        if unique_units is not None:
+            return f"This project has seen {unique_units} unique units resold. Total units data is not available to calculate market penetration."
+        return "Insufficient data to assess exit queue risk."
+
+    # Base description of maturity
+    if maturity_pct >= 40:
+        maturity_desc = f"This is a proven resale market with {maturity_pct}% of units having changed hands"
+    elif maturity_pct >= 15:
+        maturity_desc = f"This is a developing resale market with {maturity_pct}% of units having changed hands"
+    else:
+        maturity_desc = f"This is an early-stage resale market with only {maturity_pct}% of units having changed hands"
+
+    # Pressure description
+    if pressure_pct < 5:
+        pressure_desc = f"Low recent activity ({pressure_pct}% in 12m) suggests minimal exit pressure"
+    elif pressure_pct < 10:
+        pressure_desc = f"Moderate recent activity ({pressure_pct}% in 12m) indicates steady turnover"
+    else:
+        pressure_desc = f"High recent activity ({pressure_pct}% in 12m) suggests elevated selling pressure"
+
+    # Risk conclusion
+    if risk == "low":
+        conclusion = "This is a favorable entry point with proven price discovery and low competition."
+    elif risk == "elevated":
+        conclusion = "Exercise caution - limited price discovery combined with active sellers creates uncertainty."
+    else:
+        conclusion = "Market conditions are balanced - proceed with normal due diligence."
+
+    return f"{maturity_desc}. {pressure_desc}. {conclusion}"
+
+
 @analytics_bp.route("/scatter-sample", methods=["GET"])
 def scatter_sample():
     """

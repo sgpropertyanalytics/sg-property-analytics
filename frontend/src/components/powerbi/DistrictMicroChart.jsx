@@ -256,12 +256,14 @@ export function DistrictMicroChart({ district, data, onClick }) {
       </div>
 
       {/* Footer with current PSF and area names */}
-      <div className="px-2 py-0.5 bg-[#EAE0CF]/20 shrink-0 flex items-center justify-between gap-1">
-        <span className="text-[9px] text-[#547792] truncate flex-1" title={DISTRICT_NAMES[district]}>
+      <div className="px-1.5 sm:px-2 py-0.5 bg-[#EAE0CF]/20 shrink-0 flex items-center justify-between gap-1">
+        {/* Area names - hidden on very small screens */}
+        <span className="hidden sm:block text-[9px] text-[#547792] truncate flex-1" title={DISTRICT_NAMES[district]}>
           {areaNames}
         </span>
+        {/* On mobile, just show the PSF centered */}
         {latestPsf && (
-          <span className="text-[9px] font-medium text-[#547792] whitespace-nowrap">
+          <span className="text-[9px] font-medium text-[#547792] whitespace-nowrap sm:flex-none flex-1 text-center sm:text-right">
             {formatPrice(latestPsf)}
           </span>
         )}
