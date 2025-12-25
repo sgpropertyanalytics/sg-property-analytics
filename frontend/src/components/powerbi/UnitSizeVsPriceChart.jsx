@@ -258,11 +258,9 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   // Loading state
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="p-4 border-b border-[#94B4C1]/30 shrink-0">
-          <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
+        <h3 className="text-sm font-semibold text-[#213448] mb-4">Unit Size vs Price</h3>
+        <div className="flex items-center justify-center" style={{ height: height - 80 }}>
           <div className="text-[#547792]">Loading...</div>
         </div>
       </div>
@@ -272,21 +270,22 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   // Error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
-        <div className="p-4 border-b border-[#94B4C1]/30 shrink-0">
-          <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
+        <h3 className="text-sm font-semibold text-[#213448] mb-4">Unit Size vs Price</h3>
+        <div className="flex items-center justify-center" style={{ height: height - 80 }}>
           <div className="text-red-500">Error: {error}</div>
         </div>
       </div>
     );
   }
 
+  // Calculate chart height: total height - header (~70px) - KeyInsightBox (~50px)
+  const chartHeight = height - 120;
+
   return (
-    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col ${updating ? 'opacity-70' : ''}`} style={{ minHeight: height }}>
-      {/* Header - fixed height, won't grow */}
-      <div className="p-4 border-b border-[#94B4C1]/30 shrink-0">
+    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden ${updating ? 'opacity-70' : ''}`}>
+      {/* Header */}
+      <div className="p-4 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
@@ -324,12 +323,12 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
       </div>
 
       {/* Sampling Note - KeyInsightBox style */}
-      <KeyInsightBox variant="info" compact title="Sampling Note" className="shrink-0">
+      <KeyInsightBox variant="info" compact title="Sampling Note">
         Stable sample (n = 2,000) balanced across CCR / RCR / OCR. ~2–3% margin of error (95% CI) for macro-level trends.
       </KeyInsightBox>
 
-      {/* Chart - fills remaining space */}
-      <div className="flex-1 p-4 min-h-0">
+      {/* Chart - explicit height like other charts */}
+      <div className="p-4" style={{ height: chartHeight }}>
         <PreviewChartOverlay chartRef={chartRef}>
           <Scatter ref={chartRef} data={chartData} options={options} />
         </PreviewChartOverlay>
