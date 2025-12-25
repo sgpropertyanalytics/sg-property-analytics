@@ -1,14 +1,9 @@
-import { useContext } from 'react';
-import SubscriptionContext from '../../context/SubscriptionContext';
-
 /**
  * PageHeader - Universal header component for dashboard pages
  *
  * Layout:
  * - Left slot: Title + subtitle (identity)
- * - Right slot: Preview badge + page-specific controls (status & actions)
- *
- * The preview mode badge automatically appears for free users.
+ * - Right slot: Page-specific controls (status & actions)
  *
  * @example
  * <PageHeader title="Market Pulse" subtitle="Real-time market analytics">
@@ -17,11 +12,6 @@ import SubscriptionContext from '../../context/SubscriptionContext';
  * </PageHeader>
  */
 export function PageHeader({ title, subtitle, children }) {
-  // Use context directly to avoid throwing if context is missing
-  const context = useContext(SubscriptionContext);
-  const isPremium = context?.isPremium ?? false;
-  const isPreviewMode = !isPremium;
-
   return (
     <div className="flex flex-row justify-between items-start w-full mb-4 md:mb-6 gap-4">
       {/* SLOT 1: LEFT (Identity) */}
@@ -36,19 +26,12 @@ export function PageHeader({ title, subtitle, children }) {
         )}
       </div>
 
-      {/* SLOT 2: RIGHT (Controls & Status) */}
-      <div className="flex flex-wrap items-center justify-end gap-3 shrink-0">
-        {/* Preview Mode Badge - Always first in the list */}
-        {isPreviewMode && (
-          <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider whitespace-nowrap">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-            Preview Mode
-          </div>
-        )}
-
-        {/* Page-specific controls injected here */}
-        {children}
-      </div>
+      {/* SLOT 2: RIGHT (Controls) */}
+      {children && (
+        <div className="flex flex-wrap items-center justify-end gap-3 shrink-0">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

@@ -32,24 +32,24 @@ export function UpgradeFooterCTA() {
   };
 
   return (
-    <div className="sticky bottom-0 z-30 bg-white border-t border-[#94B4C1]/50 shadow-lg">
+    <div className="sticky bottom-0 z-30 bg-[#213448] shadow-lg">
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Text content */}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-[#213448] text-sm">
+          <p className="font-semibold text-[#EAE0CF] text-sm">
             Unlock Full Access
           </p>
-          <p className="text-xs text-[#547792] truncate">
+          <p className="text-xs text-[#94B4C1] truncate">
             See exact prices, project names, and transaction details
           </p>
         </div>
 
-        {/* CTA Button */}
+        {/* CTA Button - Golden/Cream button on dark background */}
         <button
           onClick={handleClick}
-          className="flex items-center gap-2 px-4 py-2 bg-[#213448] text-white
-                     rounded-lg font-medium text-sm hover:bg-[#547792]
-                     transition-colors whitespace-nowrap"
+          className="flex items-center gap-2 px-4 py-2 bg-[#EAE0CF] text-[#213448]
+                     rounded-lg font-semibold text-sm hover:bg-[#EAE0CF]/90
+                     transition-colors whitespace-nowrap shadow-md"
         >
           <Lock className="w-4 h-4" />
           {isAuthenticated ? 'Upgrade Now' : 'Sign In to Unlock'}

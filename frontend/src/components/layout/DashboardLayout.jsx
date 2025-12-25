@@ -214,25 +214,6 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
 
           {/* Main Content - Wrapped with ErrorBoundary to prevent blank page crashes */}
           <main className="flex-1 overflow-auto flex flex-col">
-            {/* Preview Mode CTA - Sticky banner for free users */}
-            {!isPremium && (
-              <div className="sticky top-0 z-50 flex justify-center py-3 bg-gradient-to-b from-[#EAE0CF]/95 to-[#EAE0CF]/0">
-                <button
-                  onClick={() => showPaywall({ source: 'preview_banner' })}
-                  className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full
-                             bg-[#213448] text-white text-sm font-medium
-                             border border-[#547792]/30 shadow-lg
-                             hover:bg-[#213448]/90
-                             focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2
-                             transition-all"
-                >
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                  <span>Preview Mode</span>
-                  <span className="text-[#94B4C1]">·</span>
-                  <span className="text-[#EAE0CF]">Unlock Full Access →</span>
-                </button>
-              </div>
-            )}
             <ErrorBoundary name="Page Content">
               <div className="flex-1">
                 {children}
