@@ -10,7 +10,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { PageHeader } from './components/ui';
 import { MacroOverviewContent } from './pages/MacroOverview';
 import { FloorDispersionContent } from './pages/FloorDispersion';
-import { InsightsContent } from './pages/Insights';
+import { ProjectDeepDiveContent } from './pages/ProjectDeepDive';
 import { DistrictDeepDiveContent } from './pages/DistrictDeepDive';
 import { ValueParityPanel } from './components/ValueParityPanel';
 
@@ -31,7 +31,7 @@ import { ValueParityPanel } from './components/ValueParityPanel';
  * - /value-parity: Budget search tool (premium) - includes New Launches + Resale
  * - /floor-dispersion: Floor level analysis (premium)
  * - /district-deep-dive: District and project deep dive analysis (premium)
- * - /insights: AI-powered market insights (premium)
+ * - /project-deep-dive: Project-specific analysis with exit queue risk (premium)
  */
 function App() {
   return (
@@ -120,13 +120,13 @@ function App() {
             }
           />
 
-          {/* Insights - Placeholder (Protected) */}
+          {/* Project Deep Dive (Protected) */}
           <Route
-            path="/insights"
+            path="/project-deep-dive"
             element={
               <ProtectedRoute>
-                <DashboardLayout activePage="insights">
-                  <InsightsContent />
+                <DashboardLayout activePage="project-deep-dive">
+                  <ProjectDeepDiveContent />
                 </DashboardLayout>
               </ProtectedRoute>
             }

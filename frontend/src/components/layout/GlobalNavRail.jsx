@@ -64,8 +64,8 @@ export const NAV_ITEMS = [
     ),
   },
   {
-    id: 'insights',
-    path: '/insights',
+    id: 'project-deep-dive',
+    path: '/project-deep-dive',
     label: 'Project Deep Dive',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

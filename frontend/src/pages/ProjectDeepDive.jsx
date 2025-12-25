@@ -18,7 +18,7 @@ import PriceBandChart from '../components/powerbi/PriceBandChart';
 import UnitPsfInput from '../components/powerbi/UnitPsfInput';
 import { KeyInsightBox } from '../components/ui/KeyInsightBox';
 
-export function InsightsContent() {
+export function ProjectDeepDiveContent() {
   // Project selection state
   const [selectedProject, setSelectedProject] = useState(null);
   const [projectSearch, setProjectSearch] = useState('');
@@ -476,4 +476,4 @@ export function InsightsContent() {
   );
 }
 
-export default InsightsContent;
+export default ProjectDeepDiveContent;

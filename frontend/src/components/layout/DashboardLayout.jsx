@@ -37,7 +37,7 @@ const PAGE_CONFIG = {
   'value-parity': { showFilterSidebar: false },
   'floor-dispersion': { showFilterSidebar: false },
   'district-deep-dive': { showFilterSidebar: false },
-  'insights': { showFilterSidebar: false },
+  'project-deep-dive': { showFilterSidebar: false },
 };
 
 export function DashboardLayout({ children, activePage: propActivePage }) {
@@ -53,7 +53,7 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
     if (pathname.startsWith('/value-parity')) return 'value-parity';
     if (pathname.startsWith('/floor-dispersion')) return 'floor-dispersion';
     if (pathname.startsWith('/district-deep-dive')) return 'district-deep-dive';
-    if (pathname.startsWith('/insights')) return 'insights';
+    if (pathname.startsWith('/project-deep-dive')) return 'project-deep-dive';
     return 'market-pulse';
   };
 
