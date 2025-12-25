@@ -172,6 +172,77 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
     return result;
   }, [regionData]);
 
+  // Chart options - memoized (must be before early returns per React hooks rules)
+  const options = useMemo(() => ({
+    ...baseChartJsOptions,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: { size: 11, weight: 'bold' },
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(33, 52, 72, 0.95)',
+        titleColor: '#EAE0CF',
+        bodyColor: '#EAE0CF',
+        padding: 12,
+        displayColors: true,
+        callbacks: {
+          title: (items) => {
+            const index = items[0]?.dataIndex;
+            return `${FLOOR_LEVELS[index]} Floor`;
+          },
+          label: (context) => {
+            const region = Object.keys(REGION_CONFIG)[context.datasetIndex];
+            const premium = context.parsed.y;
+            const data = premiumsByRegion[region];
+            const floorLevel = FLOOR_LEVELS[context.dataIndex];
+            const count = data?.counts?.[floorLevel] || 0;
+            const psf = data?.psfs?.[floorLevel] || 0;
+
+            if (premium === null) return `${context.dataset.label}: No data`;
+
+            return [
+              `${context.dataset.label}`,
+              `  Premium: ${premium >= 0 ? '+' : ''}${premium.toFixed(1)}%`,
+              `  PSF: $${Math.round(psf).toLocaleString()}`,
+              `  Transactions: ${count}`,
+            ];
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: '#547792',
+          font: { size: 11, weight: 'bold' },
+        },
+      },
+      y: {
+        grid: { color: 'rgba(148, 180, 193, 0.2)' },
+        ticks: {
+          color: '#213448',
+          callback: (v) => `${v >= 0 ? '+' : ''}${v}%`,
+        },
+        title: {
+          display: true,
+          text: 'Premium vs Low Floor (%)',
+          color: '#213448',
+          font: { size: 12, weight: 'bold' },
+        },
+      },
+    },
+  }), [premiumsByRegion]);
+
   // Card height for consistent alignment with FloorPremiumTrendChart
   const cardHeight = height + 80;
 
@@ -244,76 +315,6 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
   });
 
   const chartData = { labels, datasets };
-
-  const options = useMemo(() => ({
-    ...baseChartJsOptions,
-    interaction: {
-      mode: 'index',
-      intersect: false,
-    },
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          usePointStyle: true,
-          padding: 20,
-          font: { size: 11, weight: 'bold' },
-        },
-      },
-      tooltip: {
-        backgroundColor: 'rgba(33, 52, 72, 0.95)',
-        titleColor: '#EAE0CF',
-        bodyColor: '#EAE0CF',
-        padding: 12,
-        displayColors: true,
-        callbacks: {
-          title: (items) => {
-            const index = items[0]?.dataIndex;
-            return `${floorLevels[index]} Floor`;
-          },
-          label: (context) => {
-            const region = Object.keys(REGION_CONFIG)[context.datasetIndex];
-            const premium = context.parsed.y;
-            const data = premiumsByRegion[region];
-            const floorLevel = floorLevels[context.dataIndex];
-            const count = data?.counts?.[floorLevel] || 0;
-            const psf = data?.psfs?.[floorLevel] || 0;
-
-            if (premium === null) return `${context.dataset.label}: No data`;
-
-            return [
-              `${context.dataset.label}`,
-              `  Premium: ${premium >= 0 ? '+' : ''}${premium.toFixed(1)}%`,
-              `  PSF: $${Math.round(psf).toLocaleString()}`,
-              `  Transactions: ${count}`,
-            ];
-          },
-        },
-      },
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: {
-          color: '#547792',
-          font: { size: 11, weight: 'bold' },
-        },
-      },
-      y: {
-        grid: { color: 'rgba(148, 180, 193, 0.2)' },
-        ticks: {
-          color: '#213448',
-          callback: (v) => `${v >= 0 ? '+' : ''}${v}%`,
-        },
-        title: {
-          display: true,
-          text: 'Premium vs Low Floor (%)',
-          color: '#213448',
-          font: { size: 12, weight: 'bold' },
-        },
-      },
-    },
-  }), [floorLevels, premiumsByRegion]);
 
   // Calculate insights with transaction counts for transparency
   const getMaxPremium = (region) => {

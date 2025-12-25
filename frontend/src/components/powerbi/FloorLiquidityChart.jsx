@@ -142,6 +142,126 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
     });
   }, [data, baselinePSF]);
 
+  // Pre-compute all values needed for options useMemo (must be before early returns)
+  const chartComputations = useMemo(() => {
+    if (data.length === 0) {
+      return { labels: [], counts: [], medianPSFs: [], psf25ths: [], psf75ths: [], minPSF: 0, maxPSF: 0, maxCount: 0 };
+    }
+    const labels = data.map(d => {
+      const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
+      return FLOOR_LEVEL_LABELS[floorLevel] || floorLevel;
+    });
+    const counts = data.map(d => getAggField(d, AggField.COUNT) || 0);
+    const medianPSFs = data.map(d => getAggField(d, AggField.MEDIAN_PSF) || getAggField(d, AggField.AVG_PSF) || null);
+    const psf25ths = data.map(d => getAggField(d, AggField.PSF_25TH) || null);
+    const psf75ths = data.map(d => getAggField(d, AggField.PSF_75TH) || null);
+    const maxCount = Math.max(...counts);
+    const maxPSF = Math.max(...medianPSFs.filter(v => v !== null));
+    const minPSF = Math.min(...psf25ths.filter(v => v !== null));
+    return { labels, counts, medianPSFs, psf25ths, psf75ths, minPSF, maxPSF, maxCount };
+  }, [data]);
+
+  // Chart options - memoized to prevent unnecessary re-renders (must be before early returns)
+  const options = useMemo(() => ({
+    ...baseChartJsOptions,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(33, 52, 72, 0.97)',
+        titleColor: '#EAE0CF',
+        bodyColor: '#EAE0CF',
+        borderColor: 'rgba(148, 180, 193, 0.4)',
+        borderWidth: 1,
+        padding: 16,
+        displayColors: false,
+        titleFont: { size: 14, weight: 'bold' },
+        bodyFont: { size: 12 },
+        callbacks: {
+          title: (items) => {
+            const i = items[0]?.dataIndex;
+            if (i === undefined || !data[i]) return '';
+            const floorLevel = getAggField(data[i], AggField.FLOOR_LEVEL);
+            return `${floorLevel} Floor`;
+          },
+          label: () => '',
+          afterBody: (items) => {
+            const i = items[0]?.dataIndex;
+            if (i === undefined || !data[i]) return [];
+
+            const d = data[i];
+            const premium = premiums[i];
+            const psf75 = getAggField(d, AggField.PSF_75TH) || 0;
+            const psf25 = getAggField(d, AggField.PSF_25TH) || 0;
+            const bandWidth = psf75 - psf25;
+            const medianPsf = getAggField(d, AggField.MEDIAN_PSF) || getAggField(d, AggField.AVG_PSF) || 0;
+            const count = getAggField(d, AggField.COUNT) || 0;
+
+            return [
+              '',
+              `Median PSF: $${Math.round(medianPsf).toLocaleString()}`,
+              `Premium vs Low: ${premium >= 0 ? '+' : ''}${premium.toFixed(1)}%`,
+              '',
+              `P25: $${Math.round(psf25).toLocaleString()}`,
+              `P75: $${Math.round(psf75).toLocaleString()}`,
+              `Spread: $${Math.round(bandWidth).toLocaleString()}`,
+              '',
+              `Transactions: ${count.toLocaleString()}`,
+            ];
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: '#547792',
+          font: { size: 10, weight: 'bold' },
+          maxRotation: 0,
+        },
+      },
+      yPSF: {
+        type: 'linear',
+        position: 'left',
+        min: chartComputations.minPSF ? Math.floor(chartComputations.minPSF / 500) * 500 : undefined,
+        max: chartComputations.maxPSF ? Math.ceil(chartComputations.maxPSF / 500) * 500 : undefined,
+        grid: { color: 'rgba(148, 180, 193, 0.15)' },
+        ticks: {
+          color: '#213448',
+          font: { weight: 'bold' },
+          stepSize: 500,
+          callback: (v) => `$${v.toLocaleString()}`,
+        },
+        title: {
+          display: true,
+          text: 'Median PSF ($)',
+          color: '#213448',
+          font: { size: 12, weight: 'bold' },
+        },
+      },
+      yVolume: {
+        type: 'linear',
+        position: 'right',
+        min: 0,
+        max: chartComputations.maxCount * 1.3,
+        grid: { display: false },
+        ticks: {
+          color: '#94B4C1',
+          callback: (v) => v.toLocaleString(),
+        },
+        title: {
+          display: true,
+          text: 'Volume',
+          color: '#94B4C1',
+          font: { size: 12 },
+        },
+      },
+    },
+  }), [data, premiums, chartComputations]);
 
   // Card height - hero chart uses full height prop
   const cardHeight = height + 180; // Extra space for header/legend/premium pills/footer
@@ -179,20 +299,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
     );
   }
 
-  // Prepare data arrays (use getAggField for v1/v2 compatibility)
-  const labels = data.map(d => {
-    const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
-    return FLOOR_LEVEL_LABELS[floorLevel] || floorLevel;
-  });
-  const counts = data.map(d => getAggField(d, AggField.COUNT) || 0);
-  const medianPSFs = data.map(d => getAggField(d, AggField.MEDIAN_PSF) || getAggField(d, AggField.AVG_PSF) || null);
-  const psf25ths = data.map(d => getAggField(d, AggField.PSF_25TH) || null);
-  const psf75ths = data.map(d => getAggField(d, AggField.PSF_75TH) || null);
-
-  // Calculate ranges and stats
-  const maxCount = Math.max(...counts);
-  const maxPSF = Math.max(...medianPSFs.filter(v => v !== null));
-  const minPSF = Math.min(...psf25ths.filter(v => v !== null));
+  // Extract from computed values (safe after early returns)
+  const { labels, counts, medianPSFs, psf25ths, psf75ths, maxCount } = chartComputations;
   const totalTransactions = counts.reduce((a, b) => a + b, 0);
 
   // Simple volume bar colors
@@ -265,115 +373,11 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
     ],
   };
 
-  // Chart options - memoized to prevent unnecessary re-renders
-  const options = useMemo(() => ({
-    ...baseChartJsOptions,
-    interaction: {
-      mode: 'index',
-      intersect: false,
-    },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(33, 52, 72, 0.97)',
-        titleColor: '#EAE0CF',
-        bodyColor: '#EAE0CF',
-        borderColor: 'rgba(148, 180, 193, 0.4)',
-        borderWidth: 1,
-        padding: 16,
-        displayColors: false,
-        titleFont: { size: 14, weight: 'bold' },
-        bodyFont: { size: 12 },
-        callbacks: {
-          title: (items) => {
-            const i = items[0]?.dataIndex;
-            if (i === undefined) return '';
-            const floorLevel = getAggField(data[i], AggField.FLOOR_LEVEL);
-            return `${floorLevel} Floor`;
-          },
-          label: () => '',
-          afterBody: (items) => {
-            const i = items[0]?.dataIndex;
-            if (i === undefined) return [];
-
-            const d = data[i];
-            const premium = premiums[i];
-            const psf75 = getAggField(d, AggField.PSF_75TH) || 0;
-            const psf25 = getAggField(d, AggField.PSF_25TH) || 0;
-            const bandWidth = psf75 - psf25;
-            const medianPsf = getAggField(d, AggField.MEDIAN_PSF) || getAggField(d, AggField.AVG_PSF) || 0;
-            const count = getAggField(d, AggField.COUNT) || 0;
-
-            return [
-              '',
-              `Median PSF: $${Math.round(medianPsf).toLocaleString()}`,
-              `Premium vs Low: ${premium >= 0 ? '+' : ''}${premium.toFixed(1)}%`,
-              '',
-              `P25: $${Math.round(psf25).toLocaleString()}`,
-              `P75: $${Math.round(psf75).toLocaleString()}`,
-              `Spread: $${Math.round(bandWidth).toLocaleString()}`,
-              '',
-              `Transactions: ${count.toLocaleString()}`,
-            ];
-          },
-        },
-      },
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: {
-          color: '#547792',
-          font: { size: 10, weight: 'bold' },
-          maxRotation: 0,
-        },
-      },
-      yPSF: {
-        type: 'linear',
-        position: 'left',
-        // Round to nice intervals (e.g., 500, 1000, 1500, 2000)
-        min: minPSF ? Math.floor(minPSF / 500) * 500 : undefined,
-        max: maxPSF ? Math.ceil(maxPSF / 500) * 500 : undefined,
-        grid: { color: 'rgba(148, 180, 193, 0.15)' },
-        ticks: {
-          color: '#213448',
-          font: { weight: 'bold' },
-          stepSize: 500,
-          callback: (v) => `$${v.toLocaleString()}`,
-        },
-        title: {
-          display: true,
-          text: 'Median PSF ($)',
-          color: '#213448',
-          font: { size: 12, weight: 'bold' },
-        },
-      },
-      yVolume: {
-        type: 'linear',
-        position: 'right',
-        min: 0,
-        max: maxCount * 1.3,
-        grid: { display: false },
-        ticks: {
-          color: '#94B4C1',
-          callback: (v) => v.toLocaleString(),
-        },
-        title: {
-          display: true,
-          text: 'Volume',
-          color: '#94B4C1',
-          font: { size: 12 },
-        },
-      },
-    },
-  }), [data, premiums, minPSF, maxPSF, maxCount]);
-
   // Summary stats
   const avgPremiumPerTier = premiums.length > 1
     ? (premiums[premiums.length - 1] - premiums[0]) / (premiums.length - 1)
     : 0;
-  const highestPremiumTier = data[premiums.indexOf(Math.max(...premiums))]?.floor_level;
-  const mostLiquidTier = data[counts.indexOf(Math.max(...counts))]?.floor_level;
+  const mostLiquidTier = data[counts.indexOf(maxCount)]?.floor_level;
 
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`} style={{ height: cardHeight }}>
