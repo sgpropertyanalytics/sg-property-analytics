@@ -284,10 +284,7 @@ export function ProjectDeepDiveContent() {
                         }`}
                       >
                         <span className="truncate">{p.name}</span>
-                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                          <span className="text-xs text-[#94B4C1]">{p.district}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 bg-[#EAE0CF] text-[#547792] rounded">{p.market_segment}</span>
-                        </div>
+                        <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
                       </button>
                     ))
                   )}
