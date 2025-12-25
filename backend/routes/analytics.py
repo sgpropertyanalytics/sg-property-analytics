@@ -3048,7 +3048,7 @@ def get_resale_projects():
                 project_name,
                 district,
                 COUNT(*) as transaction_count,
-                COUNT(CASE WHEN sale_type = 'RESALE' THEN 1 END) as resale_count
+                COUNT(CASE WHEN sale_type = 'Resale' THEN 1 END) as resale_count
             FROM transactions
             WHERE is_outlier = false
             GROUP BY project_name, district
@@ -3137,7 +3137,7 @@ def get_project_exit_queue(project_name):
             FROM transactions
             WHERE project_name = :project_name
               AND is_outlier = false
-              AND sale_type = 'RESALE'
+              AND sale_type = 'Resale'
             GROUP BY district
         """), {
             "project_name": project_name,
@@ -3169,7 +3169,7 @@ def get_project_exit_queue(project_name):
             FROM transactions
             WHERE project_name = :project_name
               AND is_outlier = false
-              AND sale_type = 'RESALE'
+              AND sale_type = 'Resale'
         """), {
             "project_name": project_name,
             "twelve_months_ago": twelve_months_ago
@@ -3193,7 +3193,7 @@ def get_project_exit_queue(project_name):
                     FROM transactions
                     WHERE project_name = :project_name
                       AND is_outlier = false
-                      AND sale_type = 'RESALE'
+                      AND sale_type = 'Resale'
                       AND contract_date >= :twenty_four_months_ago
                 )
                 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (
@@ -3321,7 +3321,7 @@ def get_project_exit_queue(project_name):
             FROM transactions
             WHERE project_name = :project_name
               AND is_outlier = false
-              AND sale_type = 'RESALE'
+              AND sale_type = 'Resale'
         """), {"project_name": project_name}).fetchone()
 
         unit_type_mixed = bedroom_check and bedroom_check[0] > 1
