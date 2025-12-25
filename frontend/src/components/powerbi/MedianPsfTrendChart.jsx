@@ -83,7 +83,15 @@ export function MedianPsfTrendChart({ height = 300 }) {
         // Transform data: group by time period with CCR/RCR/OCR breakdown
         const groupedByTime = {};
         rawData.forEach(row => {
-          const period = row[timeGrouping];
+          // Safe period accessor with fallback for different time grains
+          const period = row[timeGrouping] ?? row.quarter ?? row.month ?? row.year;
+
+          // Skip rows with undefined/null period to prevent transform errors
+          if (period == null) {
+            console.warn('Skipping row with undefined period:', row);
+            return;
+          }
+
           if (!groupedByTime[period]) {
             groupedByTime[period] = {
               period,

@@ -133,7 +133,15 @@ export function PriceCompressionChart({ height = 380 }) {
     // Group by time period
     const grouped = {};
     rawData.forEach(row => {
-      const period = row[timeGrain];
+      // Safe period accessor with fallback for different time grains
+      const period = row[timeGrain] ?? row.quarter ?? row.month ?? row.year;
+
+      // Skip rows with undefined/null period to prevent transform errors
+      if (period == null) {
+        console.warn('Skipping row with undefined period:', row);
+        return;
+      }
+
       if (!grouped[period]) grouped[period] = { CCR: null, RCR: null, OCR: null, counts: {} };
       // Use getAggField for v1/v2 compatibility
       const region = getAggField(row, AggField.REGION);

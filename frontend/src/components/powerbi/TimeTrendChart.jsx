@@ -90,7 +90,15 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         // Transform data: group by time period with New Sale/Resale breakdown
         const groupedByTime = {};
         rawData.forEach(row => {
-          const period = row[timeGrouping];
+          // Safe period accessor with fallback for different time grains
+          const period = row[timeGrouping] ?? row.quarter ?? row.month ?? row.year;
+
+          // Skip rows with undefined/null period to prevent transform errors
+          if (period == null) {
+            console.warn('Skipping row with undefined period:', row);
+            return;
+          }
+
           if (!groupedByTime[period]) {
             groupedByTime[period] = {
               period,
