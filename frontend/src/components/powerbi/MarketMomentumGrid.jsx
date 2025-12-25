@@ -131,11 +131,28 @@ export function MarketMomentumGrid() {
     <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-        <div>
-          <h3 className="text-sm font-semibold text-[#213448]">Market Momentum Grid</h3>
-          <p className="text-xs text-[#547792] mt-0.5">
-            Historical price growth by district (quarterly) • Click to filter
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold text-[#213448]">Median PSF Trend by District</h3>
+            <p className="text-xs text-[#547792] mt-0.5">
+              Quarterly median price per sqft • Click to filter
+            </p>
+          </div>
+          {/* Region Legend */}
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-3 rounded bg-[#213448]" />
+              <span className="text-[#547792]">CCR</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-3 rounded bg-[#547792]" />
+              <span className="text-[#547792]">RCR</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-3 rounded bg-[#94B4C1]" />
+              <span className="text-[#547792]">OCR</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -157,13 +174,8 @@ export function MarketMomentumGrid() {
       {/* Footer with data info */}
       <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
         <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[10px] text-[#94B4C1]">
-            <span>
-              <span className="text-emerald-700">■</span> Strong uptrend •
-              <span className="text-emerald-600"> ■</span> Uptrend •
-              <span className="text-gray-700"> ■</span> Neutral •
-              <span className="text-red-600"> ■</span> Downtrend
-            </span>
+          <div className="flex items-center justify-between text-[10px] text-[#94B4C1]">
+            <span>Line: Median PSF • Bars: Transaction Volume</span>
             <span>{ALL_DISTRICTS.length} districts • Independent Y-axes</span>
           </div>
           <div className="text-[10px] text-[#94B4C1] italic">

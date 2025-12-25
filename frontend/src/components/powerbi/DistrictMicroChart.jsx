@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useEffect, useState } from 'react';
+import React, { useRef, useMemo } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -25,21 +25,20 @@ ChartJS.register(
   Tooltip
 );
 
-// Region-based header background colors (subtle shades)
+// Region-based header colors (more prominent for clarity)
 const REGION_HEADER_BG = {
-  CCR: 'bg-[#213448]/10', // Deep Navy tint
-  RCR: 'bg-[#547792]/10', // Ocean Blue tint
-  OCR: 'bg-[#94B4C1]/10', // Sky Blue tint
+  CCR: 'bg-[#213448]', // Deep Navy - solid
+  RCR: 'bg-[#547792]', // Ocean Blue - solid
+  OCR: 'bg-[#94B4C1]', // Sky Blue - solid
 };
 
-// Trend-based line colors
-const TREND_COLORS = {
-  strong_up: '#166534',   // Dark green (emerald-800)
-  up: '#16a34a',          // Green (emerald-600)
-  neutral: '#1f2937',     // Dark gray/black
-  down: '#dc2626',        // Red
-  strong_down: '#991b1b', // Dark red
+// Region-based text colors for headers
+const REGION_HEADER_TEXT = {
+  CCR: 'text-white',
+  RCR: 'text-white',
+  OCR: 'text-[#213448]',
 };
+
 
 /**
  * DistrictMicroChart - Compact combo chart for a single district
@@ -51,21 +50,24 @@ const TREND_COLORS = {
  */
 export function DistrictMicroChart({ district, data, onClick }) {
   const chartRef = useRef(null);
-  const [gradient, setGradient] = useState(null);
 
-  // Determine region for header background
+  // Determine region for header styling
   const region = getRegionForDistrict(district);
   const headerBg = REGION_HEADER_BG[region] || REGION_HEADER_BG.OCR;
+  const headerText = REGION_HEADER_TEXT[region] || REGION_HEADER_TEXT.OCR;
+
+  // Standard line color (black for all charts)
+  const lineColor = '#1f2937'; // Dark gray/black
 
   // Calculate local min/max and growth metrics
-  const { latestPsf, minPsf, maxPsf, paddedMin, paddedMax, growthPercent, trendColor } = useMemo(() => {
+  const { latestPsf, minPsf, maxPsf, paddedMin, paddedMax, growthPercent } = useMemo(() => {
     if (!data || data.length === 0) {
-      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null, trendColor: TREND_COLORS.neutral };
+      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null };
     }
 
     const psfValues = data.map(d => d.medianPsf).filter(v => v > 0);
     if (psfValues.length === 0) {
-      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null, trendColor: TREND_COLORS.neutral };
+      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null };
     }
 
     const min = Math.min(...psfValues);
@@ -78,16 +80,6 @@ export function DistrictMicroChart({ district, data, onClick }) {
     const lastPsf = [...data].reverse().find(d => d.medianPsf > 0)?.medianPsf;
     const growth = firstPsf && lastPsf ? ((lastPsf - firstPsf) / firstPsf) * 100 : null;
 
-    // Determine trend color based on growth percentage
-    let color = TREND_COLORS.neutral;
-    if (growth !== null) {
-      if (growth >= 30) color = TREND_COLORS.strong_up;
-      else if (growth >= 10) color = TREND_COLORS.up;
-      else if (growth <= -20) color = TREND_COLORS.strong_down;
-      else if (growth <= -5) color = TREND_COLORS.down;
-      else color = TREND_COLORS.neutral;
-    }
-
     return {
       latestPsf: lastPsf,
       minPsf: min,
@@ -95,7 +87,6 @@ export function DistrictMicroChart({ district, data, onClick }) {
       paddedMin: Math.max(0, min - padding),
       paddedMax: max + padding,
       growthPercent: growth,
-      trendColor: color,
     };
   }, [data]);
 
@@ -138,26 +129,6 @@ export function DistrictMicroChart({ district, data, onClick }) {
     return result;
   }, [district]);
 
-  // Create gradient for line based on trend
-  useEffect(() => {
-    const chart = chartRef.current;
-    if (!chart || !data || data.length === 0) return;
-
-    const ctx = chart.ctx;
-    const chartArea = chart.chartArea;
-    if (!chartArea) return;
-
-    // Create horizontal gradient from left to right
-    const gradientLine = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
-
-    // Gradient from neutral/lighter to trend color
-    const neutralColor = '#9ca3af'; // gray-400
-    gradientLine.addColorStop(0, neutralColor);
-    gradientLine.addColorStop(0.5, trendColor);
-    gradientLine.addColorStop(1, trendColor);
-
-    setGradient(gradientLine);
-  }, [data, trendColor]);
 
   // Chart data configuration
   const chartData = useMemo(() => {
@@ -181,18 +152,18 @@ export function DistrictMicroChart({ district, data, onClick }) {
           type: 'line',
           label: 'Median PSF',
           data: data.map(d => d.medianPsf),
-          borderColor: gradient || trendColor, // Use gradient if available, else solid color
+          borderColor: lineColor, // Standard black line for all charts
           borderWidth: 2,
           pointRadius: 0,
           pointHoverRadius: 3,
-          pointBackgroundColor: trendColor,
+          pointBackgroundColor: lineColor,
           tension: 0.3,
           yAxisID: 'y1',
           order: 1, // Render on top
         },
       ],
     };
-  }, [data, trendColor, gradient]);
+  }, [data, lineColor]);
 
   // Chart options - LOCAL SCALING with padded min/max
   const options = useMemo(() => ({
