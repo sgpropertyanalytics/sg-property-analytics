@@ -20,6 +20,7 @@ import {
   FLOOR_LEVEL_LABELS_SHORT,
   getFloorLevelIndex,
 } from '../../constants';
+import { getAggField, AggField } from '../../schemas/apiContract';
 
 ChartJS.register(
   CategoryScale,
@@ -92,10 +93,17 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
             const response = await getAggregate(params);
             const rawData = response.data.data || [];
 
-            // Sort and filter
+            // Sort and filter (use getAggField for v1/v2 compatibility)
             results[region] = rawData
-              .filter(d => d.floor_level && d.floor_level !== 'Unknown')
-              .sort((a, b) => getFloorLevelIndex(a.floor_level) - getFloorLevelIndex(b.floor_level));
+              .filter(d => {
+                const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
+                return floorLevel && floorLevel !== 'Unknown';
+              })
+              .sort((a, b) => {
+                const aLevel = getAggField(a, AggField.FLOOR_LEVEL);
+                const bLevel = getAggField(b, AggField.FLOOR_LEVEL);
+                return getFloorLevelIndex(aLevel) - getFloorLevelIndex(bLevel);
+              });
           })
         );
 
@@ -112,14 +120,16 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
     // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
   }, [debouncedFilterKey, bedroom]);
 
-  // Calculate premiums for each region
+  // Calculate premiums for each region (use getAggField for v1/v2 compatibility)
   const premiumsByRegion = useMemo(() => {
     const result = {};
 
     Object.keys(regionData).forEach(region => {
       const data = regionData[region];
-      const lowFloor = data.find(d => d.floor_level === 'Low');
-      const baselinePSF = lowFloor?.median_psf_actual || lowFloor?.avg_psf || 0;
+      const lowFloor = data.find(d => getAggField(d, AggField.FLOOR_LEVEL) === 'Low');
+      const baselinePSF = lowFloor
+        ? (getAggField(lowFloor, AggField.MEDIAN_PSF) || getAggField(lowFloor, AggField.AVG_PSF) || 0)
+        : 0;
 
       if (baselinePSF === 0) {
         result[region] = { premiums: [], counts: [], psfs: [] };
@@ -131,11 +141,12 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
       const psfs = {};
 
       data.forEach(d => {
-        const psf = d.median_psf_actual || d.avg_psf || 0;
+        const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
+        const psf = getAggField(d, AggField.MEDIAN_PSF) || getAggField(d, AggField.AVG_PSF) || 0;
         const premium = ((psf - baselinePSF) / baselinePSF) * 100;
-        premiums[d.floor_level] = premium;
-        counts[d.floor_level] = d.count || 0;
-        psfs[d.floor_level] = psf;
+        premiums[floorLevel] = premium;
+        counts[floorLevel] = getAggField(d, AggField.COUNT) || 0;
+        psfs[floorLevel] = psf;
       });
 
       result[region] = { premiums, counts, psfs, baselinePSF };

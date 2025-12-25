@@ -17,6 +17,7 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
+import { getAggField, AggField } from '../../schemas/apiContract';
 
 ChartJS.register(
   CategoryScale,
@@ -99,8 +100,11 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
         // Ignore stale responses - a newer request has started
         if (isStale(requestId)) return;
 
-        // Filter out Unknown floor levels
-        const filtered = data.filter(d => d.floor_level && d.floor_level !== 'Unknown');
+        // Filter out Unknown floor levels (use getAggField for v1/v2 compatibility)
+        const filtered = data.filter(d => {
+          const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
+          return floorLevel && floorLevel !== 'Unknown';
+        });
         setRawData(filtered);
       } catch (err) {
         // Ignore abort errors - expected when request is cancelled
@@ -123,8 +127,8 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
   const processedData = useMemo(() => {
     if (rawData.length === 0) return { years: [], tiers: {} };
 
-    // Get unique years and sort
-    const yearsSet = new Set(rawData.map(d => d.year));
+    // Get unique years and sort (use getAggField for v1/v2 compatibility)
+    const yearsSet = new Set(rawData.map(d => getAggField(d, AggField.YEAR)));
     const years = Array.from(yearsSet).sort((a, b) => a - b);
 
     // Group data by year and calculate weighted average PSF for each tier
@@ -133,9 +137,11 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
     Object.entries(FLOOR_TIERS).forEach(([tierKey, tierConfig]) => {
       tierData[tierKey] = years.map(year => {
         // Get all records for this year and these floor levels
-        const records = rawData.filter(
-          d => d.year === year && tierConfig.levels.includes(d.floor_level)
-        );
+        const records = rawData.filter(d => {
+          const rowYear = getAggField(d, AggField.YEAR);
+          const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
+          return rowYear === year && tierConfig.levels.includes(floorLevel);
+        });
 
         if (records.length === 0) return null;
 
@@ -143,8 +149,8 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
         let totalPsf = 0;
         let totalCount = 0;
         records.forEach(r => {
-          const psf = r.median_psf_actual || r.avg_psf || 0;
-          const count = r.count || 0;
+          const psf = getAggField(r, AggField.MEDIAN_PSF) || getAggField(r, AggField.AVG_PSF) || 0;
+          const count = getAggField(r, AggField.COUNT) || 0;
           totalPsf += psf * count;
           totalCount += count;
         });

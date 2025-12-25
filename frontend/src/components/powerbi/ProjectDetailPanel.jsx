@@ -15,6 +15,7 @@ import { Line, Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate, getProjectInventory, getDashboard } from '../../api/client';
 import { DISTRICT_NAMES } from '../../constants';
+import { getAggField, AggField } from '../../schemas/apiContract';
 
 ChartJS.register(
   CategoryScale,
@@ -150,15 +151,15 @@ function ProjectDetailPanelInner({
           getDashboard(histogramParams),
         ]);
 
-        // Sort trend data by month
+        // Sort trend data by month (use getAggField for v1/v2 compatibility)
         const sortedTrend = (trendResponse.data.data || [])
-          .filter(d => d.count > 0)
+          .filter(d => getAggField(d, AggField.COUNT) > 0)
           .sort((a, b) => (a.month || '').localeCompare(b.month || ''));
 
-        // Sort price data by bedroom
+        // Sort price data by bedroom (use getAggField for v1/v2 compatibility)
         const sortedPrice = (priceResponse.data.data || [])
-          .filter(d => d.count > 0)
-          .sort((a, b) => (a.bedroom || 0) - (b.bedroom || 0));
+          .filter(d => getAggField(d, AggField.COUNT) > 0)
+          .sort((a, b) => (getAggField(a, AggField.BEDROOM_COUNT) || 0) - (getAggField(b, AggField.BEDROOM_COUNT) || 0));
 
         // Extract inventory data (includes cumulative sales from backend)
         const inventory = inventoryResponse.data;
@@ -189,7 +190,7 @@ function ProjectDetailPanelInner({
     ? DISTRICT_NAMES[selectedProject.district] || selectedProject.district
     : null;
 
-  // Chart data for trend
+  // Chart data for trend (use getAggField for v1/v2 compatibility)
   const trendChartData = {
     labels: trendData.map(d => {
       const [year, month] = (d.month || '').split('-');
@@ -199,7 +200,7 @@ function ProjectDetailPanelInner({
     datasets: [
       {
         label: 'Median PSF',
-        data: trendData.map(d => d.median_psf || 0),
+        data: trendData.map(d => getAggField(d, AggField.MEDIAN_PSF) || 0),
         borderColor: 'rgba(84, 119, 146, 1)',
         backgroundColor: 'rgba(84, 119, 146, 0.1)',
         fill: true,
@@ -208,7 +209,7 @@ function ProjectDetailPanelInner({
       },
       {
         label: 'Transaction Count',
-        data: trendData.map(d => d.count || 0),
+        data: trendData.map(d => getAggField(d, AggField.COUNT) || 0),
         borderColor: 'rgba(33, 52, 72, 0.8)',
         backgroundColor: 'rgba(33, 52, 72, 0.1)',
         fill: false,
@@ -270,13 +271,16 @@ function ProjectDetailPanelInner({
     },
   };
 
-  // Chart data for bedroom breakdown
+  // Chart data for bedroom breakdown (use getAggField for v1/v2 compatibility)
   const bedroomChartData = {
-    labels: priceData.map(d => d.bedroom >= 5 ? '5BR+' : `${d.bedroom}BR`),
+    labels: priceData.map(d => {
+      const bedroom = getAggField(d, AggField.BEDROOM_COUNT);
+      return bedroom >= 5 ? '5BR+' : `${bedroom}BR`;
+    }),
     datasets: [
       {
         label: 'Median PSF',
-        data: priceData.map(d => d.median_psf || 0),
+        data: priceData.map(d => getAggField(d, AggField.MEDIAN_PSF) || 0),
         backgroundColor: 'rgba(84, 119, 146, 0.8)',
         borderColor: 'rgba(84, 119, 146, 1)',
         borderWidth: 1,
@@ -294,12 +298,17 @@ function ProjectDetailPanelInner({
           label: (context) => {
             const item = priceData[context.dataIndex];
             const formatPrice = (val) => val ? `$${(val / 1000000).toFixed(2)}M` : 'N/A';
+            const medianPsf = getAggField(item, AggField.MEDIAN_PSF);
+            const price25th = getAggField(item, AggField.PRICE_25TH);
+            const medianPrice = getAggField(item, AggField.MEDIAN_PRICE);
+            const price75th = getAggField(item, AggField.PRICE_75TH);
+            const count = getAggField(item, AggField.COUNT);
             return [
-              `Median PSF: $${item.median_psf?.toLocaleString() || 0}`,
-              `25th %: ${formatPrice(item.price_25th)}`,
-              `Median: ${formatPrice(item.median_price)}`,
-              `75th %: ${formatPrice(item.price_75th)}`,
-              `Units Sold: ${item.count?.toLocaleString() || 0}`,
+              `Median PSF: $${medianPsf?.toLocaleString() || 0}`,
+              `25th %: ${formatPrice(price25th)}`,
+              `Median: ${formatPrice(medianPrice)}`,
+              `75th %: ${formatPrice(price75th)}`,
+              `Units Sold: ${count?.toLocaleString() || 0}`,
             ];
           },
         },
@@ -319,10 +328,10 @@ function ProjectDetailPanelInner({
     },
   };
 
-  // Calculate summary stats
-  const totalTransactions = priceData.reduce((sum, d) => sum + (d.count || 0), 0);
+  // Calculate summary stats (use getAggField for v1/v2 compatibility)
+  const totalTransactions = priceData.reduce((sum, d) => sum + (getAggField(d, AggField.COUNT) || 0), 0);
   const overallMedianPsf = priceData.length > 0
-    ? Math.round(priceData.reduce((sum, d) => sum + (d.median_psf || 0) * (d.count || 0), 0) / totalTransactions)
+    ? Math.round(priceData.reduce((sum, d) => sum + (getAggField(d, AggField.MEDIAN_PSF) || 0) * (getAggField(d, AggField.COUNT) || 0), 0) / totalTransactions)
     : 0;
 
   // Helper to format price labels (e.g., $1.2M, $800K)
@@ -580,21 +589,28 @@ function ProjectDetailPanelInner({
                           </tr>
                         </thead>
                         <tbody>
-                          {priceData.map((d) => (
-                            <tr key={d.bedroom} className="border-b border-[#94B4C1]/20 hover:bg-[#EAE0CF]/20">
-                              <td className="py-1.5 pr-2 font-medium text-[#213448]">{d.bedroom >= 5 ? '5BR+' : `${d.bedroom}BR`}</td>
-                              <td className="py-1.5 px-1 text-right text-[#547792]">{d.count?.toLocaleString()}</td>
-                              <td className="py-1.5 px-1 text-right text-[#547792]">
-                                {d.price_25th ? `$${(d.price_25th / 1000000).toFixed(2)}M` : '-'}
-                              </td>
-                              <td className="py-1.5 px-1 text-right font-medium text-[#213448]">
-                                {d.median_price ? `$${(d.median_price / 1000000).toFixed(2)}M` : '-'}
-                              </td>
-                              <td className="py-1.5 pl-1 text-right text-[#547792]">
-                                {d.price_75th ? `$${(d.price_75th / 1000000).toFixed(2)}M` : '-'}
-                              </td>
-                            </tr>
-                          ))}
+                          {priceData.map((d) => {
+                            const bedroom = getAggField(d, AggField.BEDROOM_COUNT);
+                            const count = getAggField(d, AggField.COUNT);
+                            const price25th = getAggField(d, AggField.PRICE_25TH);
+                            const medianPrice = getAggField(d, AggField.MEDIAN_PRICE);
+                            const price75th = getAggField(d, AggField.PRICE_75TH);
+                            return (
+                              <tr key={bedroom} className="border-b border-[#94B4C1]/20 hover:bg-[#EAE0CF]/20">
+                                <td className="py-1.5 pr-2 font-medium text-[#213448]">{bedroom >= 5 ? '5BR+' : `${bedroom}BR`}</td>
+                                <td className="py-1.5 px-1 text-right text-[#547792]">{count?.toLocaleString()}</td>
+                                <td className="py-1.5 px-1 text-right text-[#547792]">
+                                  {price25th ? `$${(price25th / 1000000).toFixed(2)}M` : '-'}
+                                </td>
+                                <td className="py-1.5 px-1 text-right font-medium text-[#213448]">
+                                  {medianPrice ? `$${(medianPrice / 1000000).toFixed(2)}M` : '-'}
+                                </td>
+                                <td className="py-1.5 pl-1 text-right text-[#547792]">
+                                  {price75th ? `$${(price75th / 1000000).toFixed(2)}M` : '-'}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

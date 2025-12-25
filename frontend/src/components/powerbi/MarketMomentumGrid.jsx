@@ -24,7 +24,7 @@ const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
  */
 export function MarketMomentumGrid() {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey, applyCrossFilter } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, applyCrossFilter, filters } = usePowerBIFilters();
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

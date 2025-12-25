@@ -22,6 +22,7 @@ import {
   FLOOR_LEVEL_LABELS,
   getFloorLevelIndex,
 } from '../../constants';
+import { getAggField, AggField } from '../../schemas/apiContract';
 
 ChartJS.register(
   CategoryScale,
@@ -82,9 +83,17 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         const response = await getAggregate(params);
         const rawData = response.data.data || [];
 
+        // Use getAggField for v1/v2 compatibility
         const sortedData = rawData
-          .filter(d => d.floor_level && d.floor_level !== 'Unknown')
-          .sort((a, b) => getFloorLevelIndex(a.floor_level) - getFloorLevelIndex(b.floor_level));
+          .filter(d => {
+            const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
+            return floorLevel && floorLevel !== 'Unknown';
+          })
+          .sort((a, b) => {
+            const aLevel = getAggField(a, AggField.FLOOR_LEVEL);
+            const bLevel = getAggField(b, AggField.FLOOR_LEVEL);
+            return getFloorLevelIndex(aLevel) - getFloorLevelIndex(bLevel);
+          });
 
         setData(sortedData);
         isInitialLoad.current = false;
@@ -101,17 +110,19 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
     // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
   }, [debouncedFilterKey, bedroom, segment]);
 
-  // Calculate baseline for premium calculation
+  // Calculate baseline for premium calculation (use getAggField for v1/v2 compatibility)
   const baselinePSF = useMemo(() => {
-    const lowFloor = data.find(d => d.floor_level === 'Low');
-    return lowFloor?.median_psf_actual || lowFloor?.avg_psf || 0;
+    const lowFloor = data.find(d => getAggField(d, AggField.FLOOR_LEVEL) === 'Low');
+    return lowFloor
+      ? (getAggField(lowFloor, AggField.MEDIAN_PSF) || getAggField(lowFloor, AggField.AVG_PSF) || 0)
+      : 0;
   }, [data]);
 
-  // Calculate premiums
+  // Calculate premiums (use getAggField for v1/v2 compatibility)
   const premiums = useMemo(() => {
     if (!baselinePSF) return data.map(() => 0);
     return data.map(d => {
-      const psf = d.median_psf_actual || d.avg_psf || 0;
+      const psf = getAggField(d, AggField.MEDIAN_PSF) || getAggField(d, AggField.AVG_PSF) || 0;
       return ((psf - baselinePSF) / baselinePSF) * 100;
     });
   }, [data, baselinePSF]);
@@ -153,12 +164,15 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
     );
   }
 
-  // Prepare data arrays
-  const labels = data.map(d => FLOOR_LEVEL_LABELS[d.floor_level] || d.floor_level);
-  const counts = data.map(d => d.count || 0);
-  const medianPSFs = data.map(d => d.median_psf_actual || d.avg_psf || null);
-  const psf25ths = data.map(d => d.psf_25th || null);
-  const psf75ths = data.map(d => d.psf_75th || null);
+  // Prepare data arrays (use getAggField for v1/v2 compatibility)
+  const labels = data.map(d => {
+    const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
+    return FLOOR_LEVEL_LABELS[floorLevel] || floorLevel;
+  });
+  const counts = data.map(d => getAggField(d, AggField.COUNT) || 0);
+  const medianPSFs = data.map(d => getAggField(d, AggField.MEDIAN_PSF) || getAggField(d, AggField.AVG_PSF) || null);
+  const psf25ths = data.map(d => getAggField(d, AggField.PSF_25TH) || null);
+  const psf75ths = data.map(d => getAggField(d, AggField.PSF_75TH) || null);
 
   // Calculate ranges and stats
   const maxCount = Math.max(...counts);
@@ -259,7 +273,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
           title: (items) => {
             const i = items[0]?.dataIndex;
             if (i === undefined) return '';
-            return `${data[i]?.floor_level} Floor`;
+            const floorLevel = getAggField(data[i], AggField.FLOOR_LEVEL);
+            return `${floorLevel} Floor`;
           },
           label: () => '',
           afterBody: (items) => {
@@ -268,18 +283,22 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
             const d = data[i];
             const premium = premiums[i];
-            const bandWidth = (d.psf_75th || 0) - (d.psf_25th || 0);
+            const psf75 = getAggField(d, AggField.PSF_75TH) || 0;
+            const psf25 = getAggField(d, AggField.PSF_25TH) || 0;
+            const bandWidth = psf75 - psf25;
+            const medianPsf = getAggField(d, AggField.MEDIAN_PSF) || getAggField(d, AggField.AVG_PSF) || 0;
+            const count = getAggField(d, AggField.COUNT) || 0;
 
             return [
               '',
-              `Median PSF: $${Math.round(d.median_psf_actual || d.avg_psf || 0).toLocaleString()}`,
+              `Median PSF: $${Math.round(medianPsf).toLocaleString()}`,
               `Premium vs Low: ${premium >= 0 ? '+' : ''}${premium.toFixed(1)}%`,
               '',
-              `P25: $${Math.round(d.psf_25th || 0).toLocaleString()}`,
-              `P75: $${Math.round(d.psf_75th || 0).toLocaleString()}`,
+              `P25: $${Math.round(psf25).toLocaleString()}`,
+              `P75: $${Math.round(psf75).toLocaleString()}`,
               `Spread: $${Math.round(bandWidth).toLocaleString()}`,
               '',
-              `Transactions: ${d.count.toLocaleString()}`,
+              `Transactions: ${count.toLocaleString()}`,
             ];
           },
         },
@@ -384,16 +403,17 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
           <span className="text-xs font-semibold text-[#547792] uppercase tracking-wide shrink-0">Premium vs Low:</span>
           {data.map((d, i) => {
             const premium = premiums[i];
+            const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
             const bgColor = premium > 0
               ? 'bg-green-50 text-green-700 border-green-200'
               : 'bg-gray-50 text-gray-600 border-gray-200';
 
             return (
               <div
-                key={d.floor_level}
+                key={floorLevel}
                 className={`px-2 py-1 rounded border text-xs font-mono shrink-0 ${bgColor}`}
               >
-                <span className="font-semibold">{d.floor_level}</span>
+                <span className="font-semibold">{floorLevel}</span>
                 <span className="ml-1">
                   {premium >= 0 ? '+' : ''}{premium.toFixed(1)}%
                 </span>

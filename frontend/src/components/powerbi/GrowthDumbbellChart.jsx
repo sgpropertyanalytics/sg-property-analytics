@@ -3,7 +3,7 @@ import { useStaleRequestGuard } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
-import { isSaleType } from '../../schemas/apiContract';
+import { isSaleType, getAggField, AggField } from '../../schemas/apiContract';
 
 // All districts
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
@@ -85,7 +85,7 @@ const getAreaNames = (district) => {
  */
 export function GrowthDumbbellChart() {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey, applyCrossFilter } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, applyCrossFilter, filters } = usePowerBIFilters();
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -142,12 +142,13 @@ export function GrowthDumbbellChart() {
       districtData[d] = [];
     });
 
+    // Use getAggField for v1/v2 compatibility
     rawData.forEach(row => {
       const district = row.district;
       if (district && districtData[district]) {
         districtData[district].push({
           quarter: row.quarter,
-          medianPsf: row.median_psf || row.avg_psf || 0,
+          medianPsf: getAggField(row, AggField.MEDIAN_PSF) || getAggField(row, AggField.AVG_PSF) || 0,
         });
       }
     });
