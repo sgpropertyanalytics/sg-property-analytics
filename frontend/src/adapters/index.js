@@ -30,6 +30,16 @@ export {
   calculateAverageSpreads,
   detectMarketSignals,
   detectInversionZones,
+  // Distribution / histogram transformations
+  transformDistributionSeries,
+  formatPrice,
+  findBinIndex,
+  // New vs Resale transformations
+  transformNewVsResaleSeries,
+  // Growth dumbbell transformations
+  transformGrowthDumbbellSeries,
+  // Transaction list transformations
+  transformTransactionsList,
   // Observability
   logFetchDebug,
   logTransformError,

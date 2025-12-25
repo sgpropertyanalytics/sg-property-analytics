@@ -23,6 +23,16 @@ from sqlalchemy import desc, asc
 
 upcoming_launches_bp = Blueprint('upcoming_launches', __name__)
 
+# Import contract versioning for HTTP header
+from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+
+
+@upcoming_launches_bp.after_request
+def add_contract_version_header(response):
+    """Add X-API-Contract-Version header to all upcoming launches responses."""
+    response.headers[API_CONTRACT_HEADER] = CURRENT_API_CONTRACT_VERSION
+    return response
+
 
 @upcoming_launches_bp.route("/all", methods=["GET"])
 def get_all():

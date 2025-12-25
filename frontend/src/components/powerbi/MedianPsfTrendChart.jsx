@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useRef, useMemo } from 'react';
+import { useAbortableQuery } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,7 +16,7 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
-import { getAggField, AggField } from '../../schemas/apiContract';
+import { transformTimeSeriesByRegion, logFetchDebug } from '../../adapters';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -46,121 +46,46 @@ export function MedianPsfTrendChart({ height = 300 }) {
   // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
-  const [data, setData] = useState({ labels: [], ccr: [], rcr: [], ocr: [] });
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [error, setError] = useState(null);
   const chartRef = useRef(null);
-  const isInitialLoad = useRef(true);
 
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+  // Fetch and transform data using adapter pattern
+  // useAbortableQuery handles: abort controller, stale request protection, loading/error states
+  const { data: rawData, loading, error } = useAbortableQuery(
+    async (signal) => {
+      // Build params with excludeHighlight: true so chart shows ALL periods
+      const params = buildApiParams({
+        group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
+        metrics: 'median_psf,count'
+      }, { excludeHighlight: true });
 
-  // Fetch data when filters change
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
+      const response = await getAggregate(params, { signal });
+      const apiData = response.data?.data || [];
 
-    const fetchData = async () => {
-      if (isInitialLoad.current) {
-        setLoading(true);
-      } else {
-        setUpdating(true);
-      }
-      setError(null);
-      try {
-        // Use excludeHighlight: true so chart shows ALL periods
-        // Group by time AND region for segment breakdown
-        // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
-        const params = buildApiParams({
-          group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
-          metrics: 'median_psf,count'
-        }, { excludeHighlight: true });
+      // Debug logging (dev only)
+      logFetchDebug('MedianPsfTrendChart', {
+        endpoint: '/api/aggregate',
+        timeGrain: timeGrouping,
+        response: response.data,
+        rowCount: apiData.length,
+      });
 
-        const response = await getAggregate(params, { signal });
-        const rawData = response.data.data || [];
+      // Use adapter for transformation (schema-safe, sorted)
+      return transformTimeSeriesByRegion(apiData, timeGrouping);
+    },
+    [debouncedFilterKey, timeGrouping],
+    { initialData: [] }
+  );
 
-        // Transform data: group by time period with CCR/RCR/OCR breakdown
-        const groupedByTime = {};
-        rawData.forEach(row => {
-          // Safe period accessor with fallback for different time grains
-          const period = row[timeGrouping] ?? row.quarter ?? row.month ?? row.year;
-
-          // Skip rows with undefined/null period to prevent transform errors
-          if (period == null) {
-            console.warn('Skipping row with undefined period:', row);
-            return;
-          }
-
-          if (!groupedByTime[period]) {
-            groupedByTime[period] = {
-              period,
-              CCR: null,
-              RCR: null,
-              OCR: null,
-              ccrCount: 0,
-              rcrCount: 0,
-              ocrCount: 0,
-            };
-          }
-          // Use getAggField for v1/v2 compatibility
-          const region = getAggField(row, AggField.REGION);
-          const regionUpper = region?.toUpperCase();  // Normalize for comparison
-          const medianPsf = getAggField(row, AggField.MEDIAN_PSF);
-          const count = getAggField(row, AggField.COUNT) || 0;
-          if (regionUpper === 'CCR') {
-            groupedByTime[period].CCR = medianPsf;
-            groupedByTime[period].ccrCount = count;
-          } else if (regionUpper === 'RCR') {
-            groupedByTime[period].RCR = medianPsf;
-            groupedByTime[period].rcrCount = count;
-          } else if (regionUpper === 'OCR') {
-            groupedByTime[period].OCR = medianPsf;
-            groupedByTime[period].ocrCount = count;
-          }
-        });
-
-        // Convert to sorted array
-        const sortedData = Object.values(groupedByTime).sort((a, b) => {
-          const aKey = a.period;
-          const bKey = b.period;
-          if (aKey == null) return -1;
-          if (bKey == null) return 1;
-          if (typeof aKey === 'number' && typeof bKey === 'number') {
-            return aKey - bKey;
-          }
-          return String(aKey).localeCompare(String(bKey));
-        });
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        setData({
-          labels: sortedData.map(d => d.period ?? ''),
-          ccr: sortedData.map(d => d.CCR),
-          rcr: sortedData.map(d => d.RCR),
-          ocr: sortedData.map(d => d.OCR),
-          ccrCount: sortedData.map(d => d.ccrCount),
-          rcrCount: sortedData.map(d => d.rcrCount),
-          ocrCount: sortedData.map(d => d.ocrCount),
-        });
-        isInitialLoad.current = false;
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching median PSF trend data:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-          setUpdating(false);
-        }
-      }
-    };
-    fetchData();
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey, timeGrouping]);
+  // Transform adapter output to chart-ready format
+  const data = useMemo(() => ({
+    labels: rawData.map(d => d.period ?? ''),
+    ccr: rawData.map(d => d.ccrMedianPsf),
+    rcr: rawData.map(d => d.rcrMedianPsf),
+    ocr: rawData.map(d => d.ocrMedianPsf),
+    ccrCount: rawData.map(d => d.ccrCount),
+    rcrCount: rawData.map(d => d.rcrCount),
+    ocrCount: rawData.map(d => d.ocrCount),
+  }), [rawData]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;
@@ -358,16 +283,13 @@ export function MedianPsfTrendChart({ height = 300 }) {
 
   return (
     <div
-      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}
+      className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
       style={{ height: cardHeight }}
     >
       {/* Header - shrink-0 */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-[#213448]">Median PSF Trend</h3>
-          {updating && (
-            <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-          )}
         </div>
         <p className="text-xs text-[#547792] mt-1">
           Price per sqft by market segment ({TIME_LABELS[timeGrouping]})

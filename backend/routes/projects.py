@@ -19,6 +19,16 @@ from db.sql import OUTLIER_FILTER, exclude_outliers, get_outlier_filter_sql
 
 projects_bp = Blueprint('projects', __name__)
 
+# Import contract versioning for HTTP header
+from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+
+
+@projects_bp.after_request
+def add_contract_version_header(response):
+    """Add X-API-Contract-Version header to all project responses."""
+    response.headers[API_CONTRACT_HEADER] = CURRENT_API_CONTRACT_VERSION
+    return response
+
 
 @projects_bp.route("/projects/<path:project_name>/school-flag", methods=["GET"])
 def get_project_school_flag(project_name: str):

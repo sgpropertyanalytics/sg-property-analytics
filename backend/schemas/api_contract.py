@@ -1,16 +1,69 @@
 """
-API Contract Schema v2 - Single Source of Truth
+API Contract Schema v3 - Single Source of Truth
 
 Defines the stable API interface between backend and frontend.
 - Enums: lowercase snake_case (new_sale, resale, sub_sale)
 - Response fields: camelCase (projectName, bedroomCount)
 - Supports dual-mode output for backwards compatibility during migration
+
+Version History:
+- v1: Legacy snake_case fields only
+- v2: Added camelCase fields, enum normalization
+- v3: Stabilization release - no breaking changes, version flag for deprecation safety
 """
 
 from typing import Any, Dict, Optional
 from datetime import datetime
 
-API_CONTRACT_VERSION = 'v2'
+# =============================================================================
+# API CONTRACT VERSIONING
+# =============================================================================
+
+import os
+
+API_CONTRACT_VERSION_V1 = "v1"
+API_CONTRACT_VERSION_V2 = "v2"
+API_CONTRACT_VERSION_V3 = "v3"
+
+SUPPORTED_API_CONTRACT_VERSIONS = {
+    API_CONTRACT_VERSION_V1,
+    API_CONTRACT_VERSION_V2,
+    API_CONTRACT_VERSION_V3,
+}
+
+# Current version emitted in all API responses
+# Can be overridden via env var for emergency rollback
+_DEFAULT_CONTRACT_VERSION = API_CONTRACT_VERSION_V3
+CURRENT_API_CONTRACT_VERSION = os.environ.get(
+    'API_CONTRACT_VERSION_OVERRIDE',
+    _DEFAULT_CONTRACT_VERSION
+)
+
+# Backwards compatibility alias
+API_CONTRACT_VERSION = CURRENT_API_CONTRACT_VERSION
+
+# HTTP Header name for contract version (debugging via Network tab)
+API_CONTRACT_HEADER = 'X-API-Contract-Version'
+
+# =============================================================================
+# CONTRACT SCHEMA HASHES
+# =============================================================================
+# Stable signature strings per endpoint family for instant debugging.
+# When something breaks, you know immediately if the shape changed.
+
+CONTRACT_SCHEMA_HASHES = {
+    'aggregate': 'agg:v3:period|periodGrain|saleType|count|totalValue|medianPsf',
+    'transactions': 'txn:v3:projectName|district|bedroomCount|price|psf|saleType',
+    'dashboard': 'dash:v3:timeSeries|volumeByLocation|priceHistogram|summary',
+    'filter_options': 'fopt:v3:saleTypes|tenures|regions|districts|bedrooms',
+    'price_bands': 'pb:v3:bands|latest|trend|verdict|dataQuality',
+    'exit_queue': 'eq:v3:fundamentals|resaleMetrics|riskAssessment|gatingFlags',
+}
+
+
+def get_schema_hash(endpoint_family: str) -> str:
+    """Get the schema hash for an endpoint family."""
+    return CONTRACT_SCHEMA_HASHES.get(endpoint_family, f'{endpoint_family}:v3:unknown')
 
 
 # =============================================================================
@@ -608,10 +661,11 @@ def serialize_aggregate_response(
         for row in data
     ]
 
-    # Add API contract version to meta
+    # Add API contract version and schema hash to meta
     meta_v2 = {
         **meta,
         'apiContractVersion': API_CONTRACT_VERSION,
+        'contractHash': get_schema_hash('aggregate'),
     }
 
     return {
@@ -751,6 +805,7 @@ def serialize_filter_options(
         FilterOptionsFields.PSF_RANGE: psf_range,
         FilterOptionsFields.SIZE_RANGE: size_range,
         'apiContractVersion': API_CONTRACT_VERSION,
+        'contractHash': get_schema_hash('filter_options'),
     }
 
     if include_deprecated:
@@ -1028,10 +1083,11 @@ def serialize_dashboard_response(
                 panel_name, panel_data, include_deprecated=include_deprecated
             )
 
-    # Add API contract version to meta
+    # Add API contract version and schema hash to meta
     meta_v2 = {
         **meta,
         'apiContractVersion': API_CONTRACT_VERSION,
+        'contractHash': get_schema_hash('dashboard'),
     }
 
     return {
@@ -1550,9 +1606,11 @@ def serialize_price_bands_dual(
         response = serialize_price_bands_v1(result)
         response['_v2'] = serialize_price_bands_v2(result)
         response['apiContractVersion'] = API_CONTRACT_VERSION
+        response['contractHash'] = get_schema_hash('price_bands')
         return response
     else:
         # Strict v2 only
         response = serialize_price_bands_v2(result)
         response['apiContractVersion'] = API_CONTRACT_VERSION
+        response['contractHash'] = get_schema_hash('price_bands')
         return response

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useState, useRef, useMemo } from 'react';
+import { useAbortableQuery } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,6 +15,12 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
+import {
+  transformDistributionSeries,
+  formatPrice,
+  findBinIndex,
+  logFetchDebug,
+} from '../../adapters';
 
 ChartJS.register(
   CategoryScale,
@@ -40,114 +46,45 @@ ChartJS.register(
  */
 export function PriceDistributionChart({ height = 300, numBins = 20 }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey, highlight } = usePowerBIFilters();
-  const [histogramData, setHistogramData] = useState({ bins: [], stats: {}, tail: {} });
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [error, setError] = useState(null);
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const [showFullRange, setShowFullRange] = useState(false);
   const chartRef = useRef(null);
-  const isInitialLoad = useRef(true);
 
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  const { data: histogramData, loading, error } = useAbortableQuery(
+    async (signal) => {
+      // Use dashboard endpoint with price_histogram panel
+      // excludeLocationDrill: true - Price Distribution should NOT be affected by
+      // location drill (Power BI best practice: Drill ≠ Filter, drill is visual-local)
+      const params = buildApiParams({
+        panels: 'price_histogram',
+        histogram_bins: numBins,
+        // Only send show_full_range when true (backend defaults to false)
+        ...(showFullRange && { show_full_range: 'true' })
+      }, { excludeLocationDrill: true });
 
-  // Fetch server-side computed histogram
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
+      // Skip cache when toggling to ensure fresh data
+      const response = await getDashboard(params, { skipCache: showFullRange, signal });
+      const responseData = response.data || {};
+      const apiData = responseData.data || {};
 
-    const fetchData = async () => {
-      if (isInitialLoad.current) {
-        setLoading(true);
-      } else {
-        setUpdating(true);
-      }
-      setError(null);
-      try {
-        // Use dashboard endpoint with price_histogram panel
-        // excludeLocationDrill: true - Price Distribution should NOT be affected by
-        // location drill (Power BI best practice: Drill ≠ Filter, drill is visual-local)
-        const params = buildApiParams({
-          panels: 'price_histogram',
-          histogram_bins: numBins,
-          // Only send show_full_range when true (backend defaults to false)
-          ...(showFullRange && { show_full_range: 'true' })
-        }, { excludeLocationDrill: true });
+      // Debug logging (dev only)
+      logFetchDebug('PriceDistributionChart', {
+        endpoint: '/api/dashboard?panels=price_histogram',
+        timeGrain: null,
+        response: responseData,
+        rowCount: apiData.price_histogram?.bins?.length || 0,
+      });
 
-        // Skip cache when toggling to ensure fresh data
-        const response = await getDashboard(params, { skipCache: showFullRange, signal });
-        const responseData = response.data || {};
-        const data = responseData.data || {};
+      // Use adapter for transformation - handles legacy vs new format
+      return transformDistributionSeries(apiData.price_histogram);
+    },
+    [debouncedFilterKey, numBins, showFullRange],
+    { initialData: { bins: [], stats: {}, tail: {}, totalCount: 0 } }
+  );
 
-        // Handle both old format (array) and new format (object with bins/stats/tail)
-        const rawHistogram = data.price_histogram;
-        let priceHistogram;
-
-        if (Array.isArray(rawHistogram)) {
-          // Old format: price_histogram is array of bins directly
-          priceHistogram = { bins: rawHistogram, stats: {}, tail: {} };
-        } else if (rawHistogram && typeof rawHistogram === 'object') {
-          // New format: price_histogram has bins, stats, tail
-          priceHistogram = {
-            bins: rawHistogram.bins || [],
-            stats: rawHistogram.stats || {},
-            tail: rawHistogram.tail || {}
-          };
-        } else {
-          priceHistogram = { bins: [], stats: {}, tail: {} };
-        }
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        setHistogramData(priceHistogram);
-        isInitialLoad.current = false;
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching price distribution data:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-          setUpdating(false);
-        }
-      }
-    };
-    fetchData();
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-    // numBins and showFullRange are local chart options
-  }, [debouncedFilterKey, numBins, showFullRange]);
-
-  // Helper to format price labels (e.g., $1.2M, $800K)
-  const formatPrice = (value) => {
-    if (value == null) return '-';
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`;
-    }
-    return `$${(value / 1000).toFixed(0)}K`;
-  };
-
-  // Convert server histogram data to chart format
-  const bucketedData = useMemo(() => {
-    const bins = histogramData.bins || [];
-    if (!bins.length) return { buckets: [], bucketSize: 0 };
-
-    const buckets = bins.map(h => ({
-      start: h.bin_start,
-      end: h.bin_end,
-      label: `${formatPrice(h.bin_start)}-${formatPrice(h.bin_end)}`,
-      count: h.count
-    }));
-
-    const bucketSize = buckets.length > 0 ? (buckets[0].end - buckets[0].start) : 0;
-
-    return { buckets, bucketSize };
-  }, [histogramData.bins]);
-
-  const { stats, tail } = histogramData;
+  // Extract transformed data
+  const { bins, stats, tail, totalCount } = histogramData;
 
   if (loading) {
     return (
@@ -159,59 +96,46 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
     );
   }
 
+  // Error state - show error message for real errors
   if (error) {
     return (
       <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-red-500">Error: {error}</div>
+          <div className="text-red-500">Error: {error.message || error}</div>
         </div>
       </div>
     );
   }
 
-  if (bucketedData.buckets.length === 0) {
+  // Empty state - show helpful message, not error
+  if (bins.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-[#547792]">No data available</div>
+          <div className="text-[#547792]">No data available for selected filters</div>
         </div>
       </div>
     );
   }
 
-  const { buckets, bucketSize } = bucketedData;
-  const labels = buckets.map(b => b.label);
-  const counts = buckets.map(b => b.count);
+  // Derive chart data from transformed bins
+  const labels = bins.map(b => b.label);
+  const counts = bins.map(b => b.count);
 
   // Calculate display statistics
-  const displayCount = counts.reduce((sum, c) => sum + c, 0);
+  const displayCount = totalCount;
   const maxCount = Math.max(...counts, 0);
   const modeIndex = counts.length > 0 ? counts.indexOf(maxCount) : -1;
-  const modeBucket = modeIndex >= 0 ? buckets[modeIndex] : null;
+  const modeBucket = modeIndex >= 0 ? bins[modeIndex] : null;
 
   // Price range from histogram bins
-  const minPrice = buckets.length > 0 ? buckets[0].start : 0;
-  const maxPrice = buckets.length > 0 ? buckets[buckets.length - 1].end : 0;
+  const minPrice = bins.length > 0 ? bins[0].start : 0;
+  const maxPrice = bins.length > 0 ? bins[bins.length - 1].end : 0;
 
-  // Helper to find which bin index a price value falls into
-  const findBinIndex = (price) => {
-    if (!price || buckets.length === 0) return -1;
-    for (let i = 0; i < buckets.length; i++) {
-      if (price >= buckets[i].start && price <= buckets[i].end) {
-        return i;
-      }
-    }
-    // If price is beyond the last bin, return the last index
-    if (price > buckets[buckets.length - 1].end) {
-      return buckets.length - 1;
-    }
-    return 0;
-  };
-
-  // Calculate bin indices for median, Q1, Q3
-  const medianBinIndex = findBinIndex(stats?.median);
-  const q1BinIndex = findBinIndex(stats?.p25);
-  const q3BinIndex = findBinIndex(stats?.p75);
+  // Calculate bin indices for median, Q1, Q3 using adapter helper
+  const medianBinIndex = findBinIndex(bins, stats?.median);
+  const q1BinIndex = findBinIndex(bins, stats?.p25);
+  const q3BinIndex = findBinIndex(bins, stats?.p75);
 
   // Determine color gradient based on count using theme colors
   const maxValue = Math.max(...counts, 1);
@@ -288,8 +212,8 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
       tooltip: {
         callbacks: {
           title: (items) => {
-            const bucket = buckets[items[0].dataIndex];
-            return `Price: ${formatPrice(bucket.start)} - ${formatPrice(bucket.end)}`;
+            const bin = bins[items[0].dataIndex];
+            return `Price: ${formatPrice(bin.start)} - ${formatPrice(bin.end)}`;
           },
           label: (context) => {
             const count = context.parsed.y;
@@ -326,7 +250,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         },
       },
     },
-  }), [buckets, displayCount, annotations]);
+  }), [bins, displayCount, annotations]);
 
   // Card layout contract: flex column with fixed total height
   // Header/Note/Footer are shrink-0, chart slot is flex-1 min-h-0
@@ -334,18 +258,13 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
 
   return (
     <div
-      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}
+      className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
       style={{ height: cardHeight }}
     >
       {/* Header - shrink-0 */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
-            {updating && (
-              <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-            )}
-          </div>
+          <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
           {/* Toggle for luxury tail */}
           <button
             onClick={() => setShowFullRange(!showFullRange)}
@@ -418,7 +337,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
           )}
         </span>
         <span className="shrink-0 text-[#94B4C1]">
-          {formatPrice(minPrice)} – {formatPrice(maxPrice)} ({buckets.length} bins)
+          {formatPrice(minPrice)} – {formatPrice(maxPrice)} ({bins.length} bins)
         </span>
       </div>
     </div>

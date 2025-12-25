@@ -58,6 +58,16 @@ def build_property_age_filter(age_filter):
 
 insights_bp = Blueprint('insights', __name__)
 
+# Import contract versioning for HTTP header
+from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+
+
+@insights_bp.after_request
+def add_contract_version_header(response):
+    """Add X-API-Contract-Version header to all insights responses."""
+    response.headers[API_CONTRACT_HEADER] = CURRENT_API_CONTRACT_VERSION
+    return response
+
 
 def months_ago(date, months):
     """

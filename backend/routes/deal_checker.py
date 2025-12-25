@@ -20,6 +20,16 @@ import statistics
 
 deal_checker_bp = Blueprint('deal_checker', __name__)
 
+# Import contract versioning for HTTP header
+from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+
+
+@deal_checker_bp.after_request
+def add_contract_version_header(response):
+    """Add X-API-Contract-Version header to all deal checker responses."""
+    response.headers[API_CONTRACT_HEADER] = CURRENT_API_CONTRACT_VERSION
+    return response
+
 
 def find_projects_within_radius(center_lat, center_lng, radius_km):
     """

@@ -1,5 +1,5 @@
 /**
- * API Contract Schema v2 - Single Source of Truth
+ * API Contract Schema v3 - Single Source of Truth
  *
  * Defines the stable API interface between backend and frontend.
  * Must match backend/schemas/api_contract.py
@@ -7,9 +7,80 @@
  * - Enums: lowercase snake_case (new_sale, resale, sub_sale)
  * - Response fields: camelCase (projectName, bedroomCount)
  * - Includes helpers for backwards compatibility during migration
+ *
+ * Version History:
+ * - v1: Legacy snake_case fields only
+ * - v2: Added camelCase fields, enum normalization
+ * - v3: Stabilization release - no breaking changes, version flag for deprecation safety
  */
 
-export const API_CONTRACT_VERSION = 'v2';
+// =============================================================================
+// API CONTRACT VERSIONING
+// =============================================================================
+
+export const API_CONTRACT_VERSIONS = {
+  V1: 'v1',
+  V2: 'v2',
+  V3: 'v3',
+};
+
+export const SUPPORTED_API_CONTRACT_VERSIONS = new Set([
+  API_CONTRACT_VERSIONS.V1,
+  API_CONTRACT_VERSIONS.V2,
+  API_CONTRACT_VERSIONS.V3,
+]);
+
+// Current expected version from API
+export const CURRENT_API_CONTRACT_VERSION = API_CONTRACT_VERSIONS.V3;
+
+// Backwards compatibility alias
+export const API_CONTRACT_VERSION = CURRENT_API_CONTRACT_VERSION;
+
+/**
+ * Assert that the API contract version is known.
+ *
+ * Behavior by environment:
+ * - TEST mode: Throws an error (fails CI if adapter doesn't handle new version)
+ * - DEV mode: Warns in console but continues
+ * - PROD mode: Silent (graceful degradation)
+ *
+ * @param {Object} meta - Response meta object containing apiContractVersion
+ * @returns {boolean} True if version is known, false otherwise
+ * @throws {Error} In test mode when version is unknown
+ *
+ * @example
+ * const isKnown = assertKnownVersion(response.meta);
+ * // In test: throws if version is 'v999' or unknown
+ * // In dev: logs warning
+ * // In prod: returns false silently
+ */
+export function assertKnownVersion(meta) {
+  const version = meta?.apiContractVersion;
+
+  if (!SUPPORTED_API_CONTRACT_VERSIONS.has(version)) {
+    // In test mode, fail hard to catch contract drift in CI
+    if (import.meta.env.MODE === 'test') {
+      throw new Error(
+        `[API CONTRACT] Unknown apiContractVersion: ${version}. ` +
+        `Supported versions: ${Array.from(SUPPORTED_API_CONTRACT_VERSIONS).join(', ')}. ` +
+        `Update SUPPORTED_API_CONTRACT_VERSIONS or handle the new version in adapters.`
+      );
+    }
+
+    // In dev mode, warn but don't throw (developer visibility)
+    if (import.meta.env.DEV) {
+      console.warn(
+        `[API CONTRACT] Unknown apiContractVersion: ${version}`,
+        meta
+      );
+    }
+
+    // Prod: silent graceful degradation
+    return false;
+  }
+
+  return true;
+}
 
 // =============================================================================
 // ENUM VALUES (what API returns in v2)
@@ -270,10 +341,14 @@ export const V2_SCHEMA_PARAM = { schema: 'v2' };
  * Aggregate field names in API v2 responses.
  */
 export const AggField = {
-  // Dimension fields
+  // Time dimension fields (unified v2)
+  PERIOD: 'period',               // Unified time bucket (canonical)
+  PERIOD_GRAIN: 'periodGrain',    // Time granularity: 'year', 'quarter', 'month'
+  // Legacy time fields (v1 compatibility)
   MONTH: 'month',
   QUARTER: 'quarter',
   YEAR: 'year',
+  // Dimension fields
   DISTRICT: 'district',
   BEDROOM_COUNT: 'bedroomCount',  // v1: bedroom
   SALE_TYPE: 'saleType',          // v1: sale_type
@@ -288,6 +363,11 @@ export const AggField = {
   AVG_PRICE: 'avgPrice',          // v1: avg_price
   MEDIAN_PRICE: 'medianPrice',    // v1: median_price
 };
+
+/**
+ * Time bucket field names for fallback detection.
+ */
+const TIME_BUCKET_FIELDS = ['month', 'quarter', 'year'];
 
 /**
  * Mapping from v2 camelCase to v1 snake_case for aggregate fields.
@@ -330,6 +410,84 @@ export const getAggField = (row, field) => {
 
   // Field doesn't change between versions (e.g., 'count', 'month', 'quarter')
   return row[field];
+};
+
+/**
+ * Get the period value from an aggregate row.
+ * Handles both v2 unified 'period' field and v1 time bucket fields.
+ *
+ * This is the CANONICAL way to access time values from API responses.
+ * DO NOT use: row[timeGrouping] ?? row.quarter ?? row.month ?? row.year
+ * USE: getPeriod(row) or getPeriod(row, 'quarter')
+ *
+ * @param {Object} row - Aggregate row from API
+ * @param {string} [expectedGrain] - Optional expected time grain for validation
+ * @returns {string|number|null} Period value or null
+ *
+ * @example
+ * // Simple usage - just get the period
+ * const period = getPeriod(row);
+ *
+ * // With validation - warn if grain doesn't match
+ * const period = getPeriod(row, 'quarter');
+ */
+export const getPeriod = (row, expectedGrain = null) => {
+  if (!row) return null;
+
+  // v2: Use unified 'period' field (canonical)
+  if (row.period !== undefined) {
+    // Validate grain if provided
+    if (expectedGrain && row.periodGrain && row.periodGrain !== expectedGrain) {
+      console.warn(
+        `Period grain mismatch: expected '${expectedGrain}' but got '${row.periodGrain}'`,
+        row
+      );
+    }
+    return row.period;
+  }
+
+  // v1: Fallback to legacy time bucket fields
+  for (const field of TIME_BUCKET_FIELDS) {
+    if (row[field] !== undefined && row[field] !== null) {
+      return row[field];
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Get the period grain (time granularity) from an aggregate row.
+ *
+ * @param {Object} row - Aggregate row from API
+ * @returns {'year'|'quarter'|'month'|null} Period grain or null
+ */
+export const getPeriodGrain = (row) => {
+  if (!row) return null;
+
+  // v2: Use explicit 'periodGrain' field
+  if (row.periodGrain) {
+    return row.periodGrain;
+  }
+
+  // v1: Detect from which field has data
+  for (const field of TIME_BUCKET_FIELDS) {
+    if (row[field] !== undefined && row[field] !== null) {
+      return field;
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Check if an aggregate row has valid period data.
+ *
+ * @param {Object} row - Aggregate row from API
+ * @returns {boolean} True if row has period data
+ */
+export const hasValidPeriod = (row) => {
+  return getPeriod(row) !== null;
 };
 
 // =============================================================================

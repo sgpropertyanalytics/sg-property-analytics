@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useStaleRequestGuard, useDeferredFetch } from '../../hooks';
+import React, { useRef, useMemo, useState } from 'react';
+import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -19,7 +19,14 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
-import { getAggField, AggField } from '../../schemas/apiContract';
+import {
+  transformCompressionSeries,
+  calculateCompressionScore,
+  calculateAverageSpreads,
+  detectMarketSignals,
+  detectInversionZones,
+  logFetchDebug,
+} from '../../adapters';
 
 ChartJS.register(
   CategoryScale,
@@ -60,17 +67,9 @@ export function PriceCompressionChart({ height = 380 }) {
   const { buildApiParams, debouncedFilterKey, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
 
-  // Data state
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [error, setError] = useState(null);
+  // UI state (not data state - that comes from useAbortableQuery)
   const [showContext, setShowContext] = useState(false);
   const chartRef = useRef(null);
-  const isInitialLoad = useRef(true);
-
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Defer fetch until chart is visible (low priority - below the fold)
   const { shouldFetch, containerRef } = useDeferredFetch({
@@ -79,119 +78,32 @@ export function PriceCompressionChart({ height = 380 }) {
     fetchOnMount: true,
   });
 
-  // Fetch data when filters or drill level change
-  // Only fetch if shouldFetch is true (chart is visible or just became visible)
-  useEffect(() => {
-    if (!shouldFetch) return;
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  const { data, loading, error } = useAbortableQuery(
+    async (signal) => {
+      // Use global timeGrouping via TIME_GROUP_BY mapping, excludeHighlight for time-series pattern
+      const params = buildApiParams({
+        group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
+        metrics: 'median_psf,count'
+      }, { excludeHighlight: true });
 
-    const requestId = startRequest();
-    const signal = getSignal();
+      const response = await getAggregate(params, { signal });
+      const rawData = response.data?.data || [];
 
-    const fetchData = async () => {
-      if (isInitialLoad.current) {
-        setLoading(true);
-      } else {
-        setUpdating(true);
-      }
-      setError(null);
+      // Debug logging (dev only)
+      logFetchDebug('PriceCompressionChart', {
+        endpoint: '/api/aggregate',
+        timeGrain: timeGrouping,
+        response: response.data,
+        rowCount: rawData.length,
+      });
 
-      try {
-        // Use global timeGrouping via TIME_GROUP_BY mapping, excludeHighlight for time-series pattern
-        const params = buildApiParams({
-          group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
-          metrics: 'median_psf,count'
-        }, { excludeHighlight: true });
-
-        const response = await getAggregate(params, { signal });
-        const rawData = response.data.data || [];
-        const transformed = transformData(rawData, timeGrouping);
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        setData(transformed);
-        isInitialLoad.current = false;
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching compression data:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-          setUpdating(false);
-        }
-      }
-    };
-    fetchData();
-    // shouldFetch triggers when chart becomes visible or filter changes
-  }, [shouldFetch, timeGrouping]);
-
-  // Transform raw API data into spread-friendly format
-  const transformData = (rawData, timeGrain) => {
-    // Group by time period
-    const grouped = {};
-    rawData.forEach(row => {
-      // Safe period accessor with fallback for different time grains
-      const period = row[timeGrain] ?? row.quarter ?? row.month ?? row.year;
-
-      // Skip rows with undefined/null period to prevent transform errors
-      if (period == null) {
-        console.warn('Skipping row with undefined period:', row);
-        return;
-      }
-
-      if (!grouped[period]) grouped[period] = { CCR: null, RCR: null, OCR: null, counts: {} };
-      // Use getAggField for v1/v2 compatibility
-      const region = getAggField(row, AggField.REGION);
-      const regionUpper = region?.toUpperCase();  // Normalize for object key
-      const medianPsf = getAggField(row, AggField.MEDIAN_PSF);
-      const count = getAggField(row, AggField.COUNT) || 0;
-      if (regionUpper) {
-        grouped[period][regionUpper] = medianPsf;
-        grouped[period].counts[regionUpper] = count;
-      }
-    });
-
-    // Sort chronologically and calculate spreads
-    const sorted = Object.entries(grouped)
-      .sort(([a], [b]) => String(a).localeCompare(String(b)));
-
-    return sorted.map(([period, values], idx) => {
-      const ccrRcrSpread = values.CCR && values.RCR ? Math.round(values.CCR - values.RCR) : null;
-      const rcrOcrSpread = values.RCR && values.OCR ? Math.round(values.RCR - values.OCR) : null;
-      const combinedSpread = (ccrRcrSpread || 0) + (rcrOcrSpread || 0);
-
-      // Calculate period-over-period change
-      let ccrRcrChange = 0;
-      let rcrOcrChange = 0;
-      if (idx > 0) {
-        const prev = sorted[idx - 1][1];
-        const prevCcrRcr = prev.CCR && prev.RCR ? prev.CCR - prev.RCR : null;
-        const prevRcrOcr = prev.RCR && prev.OCR ? prev.RCR - prev.OCR : null;
-        if (ccrRcrSpread !== null && prevCcrRcr !== null) {
-          ccrRcrChange = Math.round(ccrRcrSpread - prevCcrRcr);
-        }
-        if (rcrOcrSpread !== null && prevRcrOcr !== null) {
-          rcrOcrChange = Math.round(rcrOcrSpread - prevRcrOcr);
-        }
-      }
-
-      return {
-        period,
-        ccr: values.CCR,
-        rcr: values.RCR,
-        ocr: values.OCR,
-        ccrRcrSpread,
-        rcrOcrSpread,
-        combinedSpread,
-        ccrRcrChange,
-        rcrOcrChange,
-        counts: values.counts,
-      };
-    });
-  };
+      // Use adapter for transformation - centralizes all data munging
+      return transformCompressionSeries(rawData, timeGrouping);
+    },
+    [debouncedFilterKey, timeGrouping],
+    { initialData: [], enabled: shouldFetch }
+  );
 
   // Click handler for highlight
   const handleChartClick = (event) => {
@@ -238,12 +150,12 @@ export function PriceCompressionChart({ height = 380 }) {
     );
   }
 
-  // Error state
+  // Error state - show error message for real errors
   if (error) {
     return (
       <div ref={containerRef} className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-red-500">Error: {error}</div>
+          <div className="text-red-500">Error: {error.message || error}</div>
         </div>
       </div>
     );
@@ -440,21 +352,16 @@ export function PriceCompressionChart({ height = 380 }) {
   return (
     <div
       ref={containerRef}
-      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}
+      className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
       style={{ height: cardHeight }}
     >
       {/* Header - shrink-0 */}
       <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-                Market Compression Analysis
-              </h3>
-              {updating && (
-                <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin flex-shrink-0" />
-              )}
-            </div>
+            <h3 className="font-semibold text-[#213448] text-sm md:text-base">
+              Market Compression Analysis
+            </h3>
             <p className="text-xs text-[#547792] mt-0.5">
               Spread widening = fragmentation; spread narrowing = compression ({TIME_LABELS[timeGrouping]})
             </p>
@@ -529,115 +436,8 @@ export function PriceCompressionChart({ height = 380 }) {
 }
 
 // ============================================
-// HELPER FUNCTIONS
+// UI HELPER FUNCTIONS (Chart-specific, not data transforms)
 // ============================================
-
-/**
- * Calculate Compression Score (0-100)
- * 100 = spreads at historical minimum (tight)
- * 0 = spreads at historical maximum (wide)
- */
-function calculateCompressionScore(data) {
-  if (data.length < 2) return { score: 50, label: 'moderate' };
-
-  const spreads = data.map(d => d.combinedSpread).filter(v => v != null && v > 0);
-  if (spreads.length < 2) return { score: 50, label: 'moderate' };
-
-  const current = spreads[spreads.length - 1];
-  const minSpread = Math.min(...spreads);
-  const maxSpread = Math.max(...spreads);
-
-  if (maxSpread === minSpread) return { score: 50, label: 'moderate' };
-
-  // Score: 100 = at min (tight), 0 = at max (wide)
-  const score = Math.round(100 - ((current - minSpread) / (maxSpread - minSpread)) * 100);
-  const clampedScore = Math.max(0, Math.min(100, score));
-
-  let label = 'moderate';
-  if (clampedScore >= 70) label = 'tight';
-  else if (clampedScore <= 30) label = 'wide';
-
-  return { score: clampedScore, label };
-}
-
-/**
- * Calculate average spreads from the filtered data
- */
-function calculateAverageSpreads(data) {
-  if (data.length === 0) return { ccrRcr: null, rcrOcr: null };
-
-  const ccrRcrSpreads = data.map(d => d.ccrRcrSpread).filter(v => v != null);
-  const rcrOcrSpreads = data.map(d => d.rcrOcrSpread).filter(v => v != null);
-
-  const avgCcrRcr = ccrRcrSpreads.length > 0
-    ? Math.round(ccrRcrSpreads.reduce((a, b) => a + b, 0) / ccrRcrSpreads.length)
-    : null;
-
-  const avgRcrOcr = rcrOcrSpreads.length > 0
-    ? Math.round(rcrOcrSpreads.reduce((a, b) => a + b, 0) / rcrOcrSpreads.length)
-    : null;
-
-  return { ccrRcr: avgCcrRcr, rcrOcr: avgRcrOcr };
-}
-
-/**
- * Detect market signal anomalies (inversions)
- * - CCR Discount: When CCR < RCR (negative spread) - opportunity signal
- * - OCR Overheated: When OCR > RCR (negative spread) - risk signal
- */
-function detectMarketSignals(data) {
-  if (data.length === 0) return { ccrDiscount: false, ocrOverheated: false };
-
-  const latest = data[data.length - 1];
-  return {
-    ccrDiscount: latest.ccrRcrSpread !== null && latest.ccrRcrSpread < 0,
-    ocrOverheated: latest.rcrOcrSpread !== null && latest.rcrOcrSpread < 0,
-  };
-}
-
-/**
- * Detect historical inversion zones for chart background
- * Returns arrays of period ranges where inversions occurred
- */
-function detectInversionZones(data) {
-  const ccrDiscountZones = [];
-  const ocrOverheatedZones = [];
-
-  let ccrStart = null;
-  let ocrStart = null;
-
-  data.forEach((d, idx) => {
-    // CCR < RCR detection
-    if (d.ccrRcrSpread !== null && d.ccrRcrSpread < 0) {
-      if (ccrStart === null) ccrStart = idx;
-    } else {
-      if (ccrStart !== null) {
-        ccrDiscountZones.push({ start: ccrStart, end: idx - 1 });
-        ccrStart = null;
-      }
-    }
-
-    // OCR > RCR detection
-    if (d.rcrOcrSpread !== null && d.rcrOcrSpread < 0) {
-      if (ocrStart === null) ocrStart = idx;
-    } else {
-      if (ocrStart !== null) {
-        ocrOverheatedZones.push({ start: ocrStart, end: idx - 1 });
-        ocrStart = null;
-      }
-    }
-  });
-
-  // Close any open zones at the end
-  if (ccrStart !== null) {
-    ccrDiscountZones.push({ start: ccrStart, end: data.length - 1 });
-  }
-  if (ocrStart !== null) {
-    ocrOverheatedZones.push({ start: ocrStart, end: data.length - 1 });
-  }
-
-  return { ccrDiscountZones, ocrOverheatedZones };
-}
 
 /**
  * Build Chart.js annotation boxes for inversion zones

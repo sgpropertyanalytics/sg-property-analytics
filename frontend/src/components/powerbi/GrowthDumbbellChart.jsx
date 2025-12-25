@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useState, useMemo } from 'react';
+import { useAbortableQuery } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
-import { isSaleType, getAggField, AggField } from '../../schemas/apiContract';
+import { isSaleType } from '../../schemas/apiContract';
+import { transformGrowthDumbbellSeries, logFetchDebug } from '../../adapters';
 
 // All districts
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
@@ -86,114 +87,45 @@ const getAreaNames = (district) => {
 export function GrowthDumbbellChart() {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, applyCrossFilter, filters } = usePowerBIFilters();
-  const [rawData, setRawData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [sortConfig, setSortConfig] = useState({ column: 'growth', order: 'desc' });
 
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  const { data, loading, error } = useAbortableQuery(
+    async (signal) => {
+      const params = buildApiParams({
+        group_by: 'quarter,district',
+        metrics: 'median_psf',
+      }, { excludeHighlight: true });
 
-  // Fetch data
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
+      const response = await getAggregate(params, { signal });
+      const rawData = response.data?.data || [];
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const params = buildApiParams({
-          group_by: 'quarter,district',
-          metrics: 'median_psf',
-        }, { excludeHighlight: true });
-
-        const response = await getAggregate(params, { signal });
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        setRawData(response.data?.data || []);
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching dumbbell chart data:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey]);
-
-  // Process data: calculate start, end, and growth for each district
-  const { chartData, startQuarter, endQuarter } = useMemo(() => {
-    if (!rawData || rawData.length === 0) return { chartData: [], startQuarter: '', endQuarter: '' };
-
-    // Group by district
-    const districtData = {};
-    ALL_DISTRICTS.forEach(d => {
-      districtData[d] = [];
-    });
-
-    // Use getAggField for v1/v2 compatibility
-    rawData.forEach(row => {
-      const district = row.district;
-      if (district && districtData[district]) {
-        districtData[district].push({
-          quarter: row.quarter,
-          medianPsf: getAggField(row, AggField.MEDIAN_PSF) || getAggField(row, AggField.AVG_PSF) || 0,
-        });
-      }
-    });
-
-    // Calculate start, end, growth for each district
-    const results = [];
-    let globalStartQuarter = '';
-    let globalEndQuarter = '';
-
-    Object.entries(districtData).forEach(([district, data]) => {
-      if (data.length === 0) return;
-
-      // Sort by quarter
-      data.sort((a, b) => (a.quarter || '').localeCompare(b.quarter || ''));
-
-      // Get first and last valid PSF
-      const validData = data.filter(d => d.medianPsf > 0);
-      if (validData.length < 2) return;
-
-      const first = validData[0];
-      const last = validData[validData.length - 1];
-      const growthPercent = ((last.medianPsf - first.medianPsf) / first.medianPsf) * 100;
-
-      // Track global quarters
-      if (!globalStartQuarter || first.quarter < globalStartQuarter) {
-        globalStartQuarter = first.quarter;
-      }
-      if (!globalEndQuarter || last.quarter > globalEndQuarter) {
-        globalEndQuarter = last.quarter;
-      }
-
-      results.push({
-        district,
-        region: getRegionForDistrict(district),
-        areaNames: getAreaNames(district),
-        startPsf: first.medianPsf,
-        endPsf: last.medianPsf,
-        startQuarter: first.quarter,
-        endQuarter: last.quarter,
-        growthPercent,
+      // Debug logging (dev only)
+      logFetchDebug('GrowthDumbbellChart', {
+        endpoint: '/api/aggregate',
+        timeGrain: 'quarter,district',
+        response: response.data,
+        rowCount: rawData.length,
       });
-    });
 
-    return { chartData: results, startQuarter: globalStartQuarter, endQuarter: globalEndQuarter };
-  }, [rawData]);
+      // Use adapter for transformation
+      return transformGrowthDumbbellSeries(rawData, { districts: ALL_DISTRICTS });
+    },
+    [debouncedFilterKey],
+    { initialData: { chartData: [], startQuarter: '', endQuarter: '' } }
+  );
+
+  // Extract transformed data and add display metadata
+  const { chartData: baseChartData, startQuarter, endQuarter } = data;
+
+  // Add region and areaNames (display-only metadata) to chart data
+  const chartData = useMemo(() => {
+    return baseChartData.map(item => ({
+      ...item,
+      region: getRegionForDistrict(item.district),
+      areaNames: getAreaNames(item.district),
+    }));
+  }, [baseChartData]);
 
   // Sort data based on sortConfig
   const sortedData = useMemo(() => {

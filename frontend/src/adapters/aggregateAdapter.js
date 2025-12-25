@@ -28,6 +28,8 @@ import {
   AggField,
   isSaleType,
   API_CONTRACT_VERSION,
+  SUPPORTED_API_CONTRACT_VERSIONS,
+  API_CONTRACT_VERSIONS,
 } from '../schemas/apiContract';
 
 // =============================================================================
@@ -35,38 +37,54 @@ import {
 // =============================================================================
 
 const isDev = process.env.NODE_ENV === 'development';
+const isTest = process.env.NODE_ENV === 'test';
 
-// Known API contract versions - add new versions here as they're released
-const KNOWN_VERSIONS = ['v1', 'v2'];
+// Known API contract versions - derived from central source of truth
+const KNOWN_VERSIONS = Array.from(SUPPORTED_API_CONTRACT_VERSIONS);
 
 /**
- * Version gate assertion - warns if API returns unknown/missing version.
+ * Version gate assertion - warns or throws if API returns unknown/missing version.
  * Prevents "silent shape drift" by catching contract mismatches early.
+ *
+ * Behavior by environment:
+ * - TEST mode: Throws an error (fails CI if adapter doesn't handle new version)
+ * - DEV mode: Warns in console but continues
+ * - PROD mode: No-op (graceful degradation)
  *
  * @param {Object} response - API response object
  * @param {string} endpoint - Endpoint name for error context
+ * @throws {Error} In test mode when version is unknown or missing
  */
 export const assertKnownVersion = (response, endpoint = 'unknown') => {
-  if (!isDev) return; // Only run in development
+  // Skip all checks in production (graceful degradation)
+  if (!isDev && !isTest) return;
 
   const version = response?.meta?.apiContractVersion || response?.meta?.schemaVersion;
 
   if (!version) {
-    console.warn(
+    const message =
       `[API Version Gate] Missing apiContractVersion at ${endpoint}. ` +
       `Expected one of: ${KNOWN_VERSIONS.join(', ')}. ` +
-      `Sample row keys: ${response?.data?.[0] ? Object.keys(response.data[0]).join(', ') : 'no data'}`
-    );
+      `Sample row keys: ${response?.data?.[0] ? Object.keys(response.data[0]).join(', ') : 'no data'}`;
+
+    if (isTest) {
+      throw new Error(message);
+    }
+    console.warn(message);
     return;
   }
 
   if (!KNOWN_VERSIONS.includes(version)) {
-    console.warn(
+    const message =
       `[API Version Gate] Unknown version "${version}" at ${endpoint}. ` +
       `Known versions: ${KNOWN_VERSIONS.join(', ')}. ` +
       `This may indicate schema drift - update KNOWN_VERSIONS if intentional. ` +
-      `Sample row keys: ${response?.data?.[0] ? Object.keys(response.data[0]).join(', ') : 'no data'}`
-    );
+      `Sample row keys: ${response?.data?.[0] ? Object.keys(response.data[0]).join(', ') : 'no data'}`;
+
+    if (isTest) {
+      throw new Error(message);
+    }
+    console.warn(message);
   }
 };
 
@@ -519,6 +537,334 @@ export const detectInversionZones = (data) => {
 };
 
 // =============================================================================
+// DISTRIBUTION / HISTOGRAM TRANSFORMATION
+// =============================================================================
+
+/**
+ * Format price values for display (e.g., $1.2M, $800K)
+ *
+ * @param {number} value - Price value
+ * @returns {string} Formatted price string
+ */
+export const formatPrice = (value) => {
+  if (value == null) return '-';
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M`;
+  }
+  return `$${(value / 1000).toFixed(0)}K`;
+};
+
+/**
+ * Transform raw histogram data from /api/dashboard?panels=price_histogram
+ *
+ * Handles both legacy (array) and new (object) formats.
+ * Returns normalized structure for chart consumption.
+ *
+ * @param {Object|Array} rawHistogram - Raw price_histogram from API
+ * @returns {Object} Transformed data:
+ *   {
+ *     bins: [{ start, end, label, count }],
+ *     stats: { median, p25, p75, iqr },
+ *     tail: { pct, count },
+ *     totalCount: number
+ *   }
+ */
+export const transformDistributionSeries = (rawHistogram) => {
+  // Handle null/undefined input
+  if (!rawHistogram) {
+    if (isDev) console.warn('[transformDistributionSeries] Null input');
+    return { bins: [], stats: {}, tail: {}, totalCount: 0 };
+  }
+
+  let binsArray = [];
+  let stats = {};
+  let tail = {};
+
+  // Normalize API response format
+  if (Array.isArray(rawHistogram)) {
+    // Legacy format: price_histogram is array of bins directly
+    binsArray = rawHistogram;
+  } else if (typeof rawHistogram === 'object') {
+    // New format: price_histogram has bins, stats, tail
+    binsArray = rawHistogram.bins || [];
+    stats = rawHistogram.stats || {};
+    tail = rawHistogram.tail || {};
+  }
+
+  // Transform bins to chart-ready format with proper numeric coercion
+  const bins = binsArray.map((bin) => {
+    const start = Number(bin.bin_start) || 0;
+    const end = Number(bin.bin_end) || 0;
+    const count = Number(bin.count) || 0;
+
+    return {
+      start,
+      end,
+      label: `${formatPrice(start)}-${formatPrice(end)}`,
+      count,
+    };
+  });
+
+  // Calculate total count from bins
+  const totalCount = bins.reduce((sum, bin) => sum + bin.count, 0);
+
+  // Validate and log if bins are empty but input wasn't
+  if (bins.length === 0 && binsArray.length > 0 && isDev) {
+    console.warn('[transformDistributionSeries] Bins parsed to empty array', {
+      inputLength: binsArray.length,
+      sample: binsArray[0],
+    });
+  }
+
+  return {
+    bins,
+    stats,
+    tail,
+    totalCount,
+  };
+};
+
+/**
+ * Find which bin index a price value falls into.
+ *
+ * Uses standard histogram convention:
+ * - All bins except last: [start, end) - inclusive start, exclusive end
+ * - Last bin: [start, end] - inclusive both ends
+ *
+ * This prevents edge prices from "jumping bins" at boundaries.
+ *
+ * @param {Array} bins - Array of bin objects with start/end
+ * @param {number} price - Price value to find
+ * @returns {number} Bin index, or -1 if not found
+ */
+export const findBinIndex = (bins, price) => {
+  if (!price || !Array.isArray(bins) || bins.length === 0) return -1;
+
+  const lastIndex = bins.length - 1;
+
+  for (let i = 0; i < bins.length; i++) {
+    const bin = bins[i];
+    const isLastBin = i === lastIndex;
+
+    // [start, end) for all bins except last; [start, end] for last bin
+    if (isLastBin) {
+      if (price >= bin.start && price <= bin.end) return i;
+    } else {
+      if (price >= bin.start && price < bin.end) return i;
+    }
+  }
+
+  // If price is beyond the last bin, return the last index
+  if (price > bins[lastIndex].end) {
+    return lastIndex;
+  }
+
+  // If price is below the first bin, return first index
+  if (price < bins[0].start) {
+    return 0;
+  }
+
+  return -1;
+};
+
+// =============================================================================
+// NEW VS RESALE TRANSFORMATION
+// =============================================================================
+
+/**
+ * Transform raw new vs resale data from /api/new-vs-resale endpoint.
+ *
+ * This endpoint returns pre-processed data from the backend.
+ * Adapter normalizes structure and provides defaults for missing fields.
+ *
+ * @param {Object} rawData - Raw response data { chartData, summary }
+ * @returns {Object} Normalized data:
+ *   {
+ *     chartData: [{ period, newLaunchPrice, resalePrice, newLaunchCount, resaleCount, premiumPct }],
+ *     summary: { currentPremium, avgPremium10Y, premiumTrend },
+ *     hasData: boolean
+ *   }
+ */
+export const transformNewVsResaleSeries = (rawData) => {
+  // Handle null/undefined input
+  if (!rawData) {
+    if (isDev) console.warn('[transformNewVsResaleSeries] Null input');
+    return { chartData: [], summary: {}, hasData: false };
+  }
+
+  // Extract and normalize chartData
+  const chartData = Array.isArray(rawData.chartData)
+    ? rawData.chartData.map((row) => ({
+        period: row.period || null,
+        newLaunchPrice: row.newLaunchPrice ?? null,
+        resalePrice: row.resalePrice ?? null,
+        newLaunchCount: Number(row.newLaunchCount) || 0,
+        resaleCount: Number(row.resaleCount) || 0,
+        premiumPct: row.premiumPct ?? null,
+      }))
+    : [];
+
+  // Extract and normalize summary with defaults
+  const rawSummary = rawData.summary || {};
+  const summary = {
+    currentPremium: rawSummary.currentPremium ?? null,
+    avgPremium10Y: rawSummary.avgPremium10Y ?? null,
+    premiumTrend: rawSummary.premiumTrend || null,
+  };
+
+  return {
+    chartData,
+    summary,
+    hasData: chartData.length > 0,
+  };
+};
+
+// =============================================================================
+// GROWTH DUMBBELL TRANSFORMATION
+// =============================================================================
+
+/**
+ * Transform raw aggregate data into growth dumbbell chart format.
+ *
+ * Groups data by district, calculates first/last quarter PSF values,
+ * and computes growth percentage for each district.
+ *
+ * @param {Array} rawData - Raw data from /api/aggregate with quarter,district grouping
+ * @param {Object} options - Configuration options
+ * @param {Array} options.districts - List of valid district codes (e.g., ['D01', 'D02', ...])
+ * @returns {Object} Transformed data:
+ *   {
+ *     chartData: [{ district, startPsf, endPsf, startQuarter, endQuarter, growthPercent }],
+ *     startQuarter: string,  // Global earliest quarter
+ *     endQuarter: string     // Global latest quarter
+ *   }
+ */
+export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
+  const { districts = [] } = options;
+
+  // Handle null/undefined input
+  if (!Array.isArray(rawData)) {
+    if (isDev) console.warn('[transformGrowthDumbbellSeries] Invalid input', rawData);
+    return { chartData: [], startQuarter: '', endQuarter: '' };
+  }
+
+  if (rawData.length === 0) {
+    return { chartData: [], startQuarter: '', endQuarter: '' };
+  }
+
+  // Initialize district groupings
+  const districtData = {};
+  districts.forEach(d => {
+    districtData[d] = [];
+  });
+
+  // Group data by district
+  rawData.forEach(row => {
+    // Support both snake_case (v1) and camelCase (v2) for district
+    const district = row.district;
+    const quarter = row.quarter;
+    const medianPsf = getAggField(row, AggField.MEDIAN_PSF) || getAggField(row, AggField.AVG_PSF) || 0;
+
+    // Only include if district is in our list (or if no list provided)
+    if (districts.length === 0 || districtData[district] !== undefined) {
+      if (!districtData[district]) {
+        districtData[district] = [];
+      }
+      districtData[district].push({
+        quarter,
+        medianPsf,
+      });
+    }
+  });
+
+  // Calculate start, end, growth for each district
+  const chartData = [];
+  let globalStartQuarter = '';
+  let globalEndQuarter = '';
+
+  Object.entries(districtData).forEach(([district, data]) => {
+    if (data.length === 0) return;
+
+    // Sort by quarter chronologically
+    data.sort((a, b) => (a.quarter || '').localeCompare(b.quarter || ''));
+
+    // Get first and last valid PSF (need at least 2 data points)
+    const validData = data.filter(d => d.medianPsf > 0);
+    if (validData.length < 2) return;
+
+    const first = validData[0];
+    const last = validData[validData.length - 1];
+    const growthPercent = ((last.medianPsf - first.medianPsf) / first.medianPsf) * 100;
+
+    // Track global quarters
+    if (!globalStartQuarter || first.quarter < globalStartQuarter) {
+      globalStartQuarter = first.quarter;
+    }
+    if (!globalEndQuarter || last.quarter > globalEndQuarter) {
+      globalEndQuarter = last.quarter;
+    }
+
+    chartData.push({
+      district,
+      startPsf: first.medianPsf,
+      endPsf: last.medianPsf,
+      startQuarter: first.quarter,
+      endQuarter: last.quarter,
+      growthPercent,
+    });
+  });
+
+  return {
+    chartData,
+    startQuarter: globalStartQuarter,
+    endQuarter: globalEndQuarter,
+  };
+};
+
+// =============================================================================
+// TRANSACTIONS TABLE TRANSFORMATION
+// =============================================================================
+
+/**
+ * Transform raw transactions list response.
+ *
+ * This is a light-touch adapter since transactions already use getTxnField()
+ * for field access. Main purpose is to normalize the response structure
+ * and provide stable defaults.
+ *
+ * @param {Object} rawResponse - Raw response from /api/transactions
+ * @returns {Object} Normalized data:
+ *   {
+ *     transactions: Array<Object>,
+ *     totalRecords: number,
+ *     totalPages: number
+ *   }
+ */
+export const transformTransactionsList = (rawResponse) => {
+  // Handle null/undefined input
+  if (!rawResponse) {
+    if (isDev) console.warn('[transformTransactionsList] Null input');
+    return { transactions: [], totalRecords: 0, totalPages: 0 };
+  }
+
+  // Extract transactions with fallback
+  const transactions = Array.isArray(rawResponse.transactions)
+    ? rawResponse.transactions
+    : [];
+
+  // Extract pagination with defaults
+  const pagination = rawResponse.pagination || {};
+  const totalRecords = Number(pagination.total_records) || 0;
+  const totalPages = Number(pagination.total_pages) || 0;
+
+  return {
+    transactions,
+    totalRecords,
+    totalPages,
+  };
+};
+
+// =============================================================================
 // OBSERVABILITY HELPERS
 // =============================================================================
 
@@ -577,11 +923,18 @@ export default {
   transformTimeSeries,
   transformTimeSeriesByRegion,
   transformCompressionSeries,
+  transformDistributionSeries,
+  transformNewVsResaleSeries,
+  transformGrowthDumbbellSeries,
+  transformTransactionsList,
   // Compression analysis
   calculateCompressionScore,
   calculateAverageSpreads,
   detectMarketSignals,
   detectInversionZones,
+  // Distribution helpers
+  formatPrice,
+  findBinIndex,
   // Observability
   logFetchDebug,
   logTransformError,

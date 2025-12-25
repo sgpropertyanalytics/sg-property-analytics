@@ -18,6 +18,16 @@ from constants import (
 analytics_bp = Blueprint('analytics', __name__)
 reader = get_reader()
 
+# Import contract versioning for HTTP header
+from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+
+
+@analytics_bp.after_request
+def add_contract_version_header(response):
+    """Add X-API-Contract-Version header to all analytics responses."""
+    response.headers[API_CONTRACT_HEADER] = CURRENT_API_CONTRACT_VERSION
+    return response
+
 
 # ============================================================================
 # UNIFIED DASHBOARD ENDPOINT (HIGH-PERFORMANCE)

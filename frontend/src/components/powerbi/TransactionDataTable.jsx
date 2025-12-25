@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import { useAbortableQuery } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
 import { BlurredProject, BlurredCurrency, BlurredArea, BlurredPSF } from '../BlurredCell';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { TxnField, getTxnField, isSaleType, getSaleTypeLabel } from '../../schemas/apiContract';
+import { TxnField, getTxnField, isSaleType } from '../../schemas/apiContract';
+import { transformTransactionsList, logFetchDebug } from '../../adapters';
 
 /**
  * Transaction Data Table - Responsive table showing transaction-level details
@@ -17,80 +18,58 @@ import { TxnField, getTxnField, isSaleType, getSaleTypeLabel } from '../../schem
  */
 export function TransactionDataTable({ height = 400 }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey, activeFilterCount, crossFilter, highlight, factFilter } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, activeFilterCount } = usePowerBIFilters();
   const subscriptionContext = useSubscription();
   const isPremium = subscriptionContext?.isPremium ?? true;
 
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 25,
-    totalRecords: 0,
-    totalPages: 0,
-  });
+  // Pagination controls (user-controlled)
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
   const [sortConfig, setSortConfig] = useState({
     column: 'transaction_date',
     order: 'desc',
   });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Prevent stale responses and cancel in-flight requests
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
-
   // Handle manual refresh
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
-  // Fetch data when filters, pagination, or sort changes
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  const { data, loading, error } = useAbortableQuery(
+    async (signal) => {
+      // includeFactFilter: true enables one-way filtering from dimension charts
+      // (e.g., Price Distribution click filters this table but not other dimension charts)
+      const params = buildApiParams({
+        page,
+        limit,
+        sort_by: sortConfig.column,
+        sort_order: sortConfig.order,
+      }, { includeFactFilter: true });
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // includeFactFilter: true enables one-way filtering from dimension charts
-        // (e.g., Price Distribution click filters this table but not other dimension charts)
-        const params = buildApiParams({
-          page: pagination.page,
-          limit: pagination.limit,
-          sort_by: sortConfig.column,
-          sort_order: sortConfig.order,
-        }, { includeFactFilter: true });
-        const response = await getTransactionsList(params, { signal });
+      const response = await getTransactionsList(params, { signal });
 
-        // Ignore stale responses
-        if (isStale(requestId)) return;
+      // Debug logging (dev only)
+      logFetchDebug('TransactionDataTable', {
+        endpoint: '/api/transactions',
+        timeGrain: 'N/A',
+        response: response.data,
+        rowCount: response.data?.transactions?.length || 0,
+      });
 
-        setData(response.data.transactions || []);
-        setPagination(prev => ({
-          ...prev,
-          totalRecords: response.data.pagination?.total_records || 0,
-          totalPages: response.data.pagination?.total_pages || 0,
-        }));
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching transactions:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-        }
-      }
-    };
-    fetchData();
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-    // refreshTrigger allows manual refresh
-  }, [debouncedFilterKey, pagination.page, pagination.limit, sortConfig, refreshTrigger, startRequest, isStale, getSignal, buildApiParams]);
+      // Use adapter for transformation
+      return transformTransactionsList(response.data);
+    },
+    [debouncedFilterKey, page, limit, sortConfig, refreshTrigger],
+    { initialData: { transactions: [], totalRecords: 0, totalPages: 0 } }
+  );
+
+  // Extract transformed data
+  const { transactions, totalRecords, totalPages } = data;
 
   // Reset to page 1 when filters change
   // debouncedFilterKey captures all filter state changes
   useEffect(() => {
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPage(1);
   }, [debouncedFilterKey]);
 
   // Handle sort
@@ -99,13 +78,13 @@ export function TransactionDataTable({ height = 400 }) {
       column,
       order: prev.column === column && prev.order === 'asc' ? 'desc' : 'asc',
     }));
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPage(1);
   };
 
   // Handle page change
   const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= pagination.totalPages) {
-      setPagination(prev => ({ ...prev, page: newPage }));
+    if (newPage >= 1 && newPage <= totalPages) {
+      setPage(newPage);
     }
   };
 
@@ -167,14 +146,14 @@ export function TransactionDataTable({ height = 400 }) {
         <div>
           <h3 className="font-semibold text-[#213448]">Transaction Details</h3>
           <p className="text-xs text-[#547792]">
-            {loading ? 'Loading...' : `${pagination.totalRecords.toLocaleString()} transactions`}
+            {loading ? 'Loading...' : `${totalRecords.toLocaleString()} transactions`}
             {activeFilterCount > 0 && <span className="text-[#547792] font-medium ml-1">({activeFilterCount} filters applied)</span>}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <select
-            value={pagination.limit}
-            onChange={(e) => setPagination(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }))}
+            value={limit}
+            onChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }}
             className="text-xs border border-[#94B4C1] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
           >
             <option value={10}>10 rows</option>
@@ -208,13 +187,13 @@ export function TransactionDataTable({ height = 400 }) {
               <div className="h-3 bg-slate-200 rounded w-1/2"></div>
             </div>
           ))
-        ) : data.length === 0 ? (
+        ) : transactions.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
             No transactions found matching the current filters
           </div>
         ) : (
           <div className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
-            {data.map((txn, idx) => (
+            {transactions.map((txn, idx) => (
               <div key={txn.id || idx} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30">
                 {/* Header: Project + Type Badge */}
                 <div className="flex justify-between items-start gap-2 mb-2">
@@ -293,7 +272,7 @@ export function TransactionDataTable({ height = 400 }) {
             <tbody className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
               {loading ? (
                 // Loading skeleton
-                [...Array(pagination.limit)].map((_, i) => (
+                [...Array(limit)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     {columns.map(col => (
                       <td key={col.key} className="px-3 py-2 border-b border-slate-100">
@@ -302,14 +281,14 @@ export function TransactionDataTable({ height = 400 }) {
                     ))}
                   </tr>
                 ))
-              ) : data.length === 0 ? (
+              ) : transactions.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-3 py-8 text-center text-slate-500">
                     No transactions found matching the current filters
                   </td>
                 </tr>
               ) : (
-                data.map((txn, idx) => (
+                transactions.map((txn, idx) => (
                   <tr
                     key={txn.id || idx}
                     className="hover:bg-slate-50 transition-colors"
@@ -379,9 +358,9 @@ export function TransactionDataTable({ height = 400 }) {
         </div>
         <div className="flex items-center justify-between">
         <div className="text-xs text-[#547792]">
-          {!loading && data.length > 0 && (
+          {!loading && transactions.length > 0 && (
             <>
-              Showing {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.totalRecords)} of {pagination.totalRecords.toLocaleString()}
+              Showing {((page - 1) * limit) + 1} - {Math.min(page * limit, totalRecords)} of {totalRecords.toLocaleString()}
             </>
           )}
         </div>
@@ -389,7 +368,7 @@ export function TransactionDataTable({ height = 400 }) {
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); handlePageChange(1); }}
-            disabled={pagination.page === 1 || loading}
+            disabled={page === 1 || loading}
             className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
             title="First page"
           >
@@ -399,8 +378,8 @@ export function TransactionDataTable({ height = 400 }) {
           </button>
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); handlePageChange(pagination.page - 1); }}
-            disabled={pagination.page === 1 || loading}
+            onClick={(e) => { e.preventDefault(); handlePageChange(page - 1); }}
+            disabled={page === 1 || loading}
             className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Previous page"
           >
@@ -409,12 +388,12 @@ export function TransactionDataTable({ height = 400 }) {
             </svg>
           </button>
           <span className="px-3 py-1 text-sm text-[#213448]">
-            Page {pagination.page} of {pagination.totalPages || 1}
+            Page {page} of {totalPages || 1}
           </span>
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); handlePageChange(pagination.page + 1); }}
-            disabled={pagination.page >= pagination.totalPages || loading}
+            onClick={(e) => { e.preventDefault(); handlePageChange(page + 1); }}
+            disabled={page >= totalPages || loading}
             className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Next page"
           >
@@ -424,8 +403,8 @@ export function TransactionDataTable({ height = 400 }) {
           </button>
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); handlePageChange(pagination.totalPages); }}
-            disabled={pagination.page >= pagination.totalPages || loading}
+            onClick={(e) => { e.preventDefault(); handlePageChange(totalPages); }}
+            disabled={page >= totalPages || loading}
             className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Last page"
           >

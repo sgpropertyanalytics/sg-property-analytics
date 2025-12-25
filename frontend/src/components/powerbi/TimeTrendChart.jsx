@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useRef, useMemo } from 'react';
+import { useAbortableQuery } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -18,7 +18,8 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
-import { isSaleType, getAggField, AggField } from '../../schemas/apiContract';
+import { getPeriod } from '../../schemas/apiContract';
+import { transformTimeSeries, logFetchDebug } from '../../adapters';
 
 ChartJS.register(
   CategoryScale,
@@ -51,118 +52,36 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
-  const [data, setData] = useState([]);
-  const [dataTimeGrain, setDataTimeGrain] = useState(null); // Track which time grain the data is for
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [error, setError] = useState(null);
   const chartRef = useRef(null);
-  const isInitialLoad = useRef(true);
 
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+  // Fetch and transform data using adapter pattern
+  // useAbortableQuery handles: abort controller, stale request protection, loading/error states
+  const { data, loading, error } = useAbortableQuery(
+    async (signal) => {
+      // Build params with excludeHighlight: true so chart shows ALL periods
+      const params = buildApiParams({
+        group_by: `${TIME_GROUP_BY[timeGrouping]},sale_type`,
+        metrics: 'count,total_value'
+      }, { excludeHighlight: true });
 
-  // Fetch data when filters change
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
+      const response = await getAggregate(params, { signal });
+      const rawData = response.data?.data || [];
 
-    const fetchData = async () => {
-      // Only show full loading on initial load, otherwise show subtle updating
-      if (isInitialLoad.current) {
-        setLoading(true);
-      } else {
-        setUpdating(true);
-      }
-      setError(null);
-      try {
-        // Use excludeHighlight: true so time chart shows ALL periods
-        // even when a specific time period is highlighted
-        // Group by time AND sale_type for stacked bar breakdown
-        // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
-        const params = buildApiParams({
-          group_by: `${TIME_GROUP_BY[timeGrouping]},sale_type`,
-          metrics: 'count,total_value'
-        }, { excludeHighlight: true });
-        const response = await getAggregate(params, { signal });
-        const rawData = response.data.data || [];
+      // Debug logging (dev only)
+      logFetchDebug('TimeTrendChart', {
+        endpoint: '/api/aggregate',
+        timeGrain: timeGrouping,
+        response: response.data,
+        rowCount: rawData.length,
+      });
 
-        // Transform data: group by time period with New Sale/Resale breakdown
-        const groupedByTime = {};
-        rawData.forEach(row => {
-          // Safe period accessor with fallback for different time grains
-          const period = row[timeGrouping] ?? row.quarter ?? row.month ?? row.year;
-
-          // Skip rows with undefined/null period to prevent transform errors
-          if (period == null) {
-            console.warn('Skipping row with undefined period:', row);
-            return;
-          }
-
-          if (!groupedByTime[period]) {
-            groupedByTime[period] = {
-              period,
-              newSaleCount: 0,
-              resaleCount: 0,
-              newSaleValue: 0,
-              resaleValue: 0,
-              totalCount: 0,
-              totalValue: 0,
-            };
-          }
-          // Use schema helpers for v1/v2 compatibility
-          const saleType = getAggField(row, AggField.SALE_TYPE);
-          const count = getAggField(row, AggField.COUNT) || 0;
-          const totalValue = getAggField(row, AggField.TOTAL_VALUE) || 0;
-
-          if (isSaleType.newSale(saleType)) {
-            groupedByTime[period].newSaleCount += count;
-            groupedByTime[period].newSaleValue += totalValue;
-          } else {
-            groupedByTime[period].resaleCount += count;
-            groupedByTime[period].resaleValue += totalValue;
-          }
-          groupedByTime[period].totalCount += count;
-          groupedByTime[period].totalValue += totalValue;
-        });
-
-        // Convert to sorted array
-        const sortedData = Object.values(groupedByTime).sort((a, b) => {
-          const aKey = a.period;
-          const bKey = b.period;
-          if (aKey == null) return -1;
-          if (bKey == null) return 1;
-          if (typeof aKey === 'number' && typeof bKey === 'number') {
-            return aKey - bKey;
-          }
-          return String(aKey).localeCompare(String(bKey));
-        });
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        setData(sortedData);
-        setDataTimeGrain(timeGrouping); // Store which time grain this data is for
-        isInitialLoad.current = false;
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        // Ignore errors from stale requests
-        if (isStale(requestId)) return;
-        console.error('Error fetching time trend data:', err);
-        setError(err.message);
-      } finally {
-        // Only clear loading for the current request
-        if (!isStale(requestId)) {
-          setLoading(false);
-          setUpdating(false);
-        }
-      }
-    };
-    fetchData();
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-    // timeGrouping controls the time granularity (year/quarter/month)
-  }, [debouncedFilterKey, timeGrouping, startRequest, isStale]);
+      // Use adapter for transformation (schema-safe, sorted)
+      // getPeriod() handles v1/v2 field normalization automatically
+      return transformTimeSeries(rawData, timeGrouping);
+    },
+    [debouncedFilterKey, timeGrouping],
+    { initialData: [] }
+  );
 
   const handleClick = (event) => {
     const chart = chartRef.current;

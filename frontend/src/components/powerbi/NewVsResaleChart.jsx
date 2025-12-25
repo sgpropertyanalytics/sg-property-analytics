@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useStaleRequestGuard, useDeferredFetch } from '../../hooks';
+import React, { useRef, useMemo } from 'react';
+import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,6 +17,7 @@ import { getNewVsResale } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
+import { transformNewVsResaleSeries, logFetchDebug } from '../../adapters';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -62,15 +63,7 @@ export function NewVsResaleChart({ height = 350 }) {
     dateRange: filters?.dateRange || { start: null, end: null },
   };
 
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [error, setError] = useState(null);
   const chartRef = useRef(null);
-  const isInitialLoad = useRef(true);
-
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Defer fetch until chart is visible (low priority - below the fold)
   const { shouldFetch, containerRef } = useDeferredFetch({
@@ -79,53 +72,35 @@ export function NewVsResaleChart({ height = 350 }) {
     fetchOnMount: true,
   });
 
-  // Fetch data when global filters or local drill level change
-  // Only fetch if shouldFetch is true (chart is visible or just became visible)
-  useEffect(() => {
-    if (!shouldFetch) return;
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  const { data, loading, error } = useAbortableQuery(
+    async (signal) => {
+      // Use buildApiParams to include GLOBAL filters from sidebar
+      // excludeHighlight: true - this is a time-series chart, preserve full timeline
+      // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
+      const params = buildApiParams({
+        timeGrain: TIME_GROUP_BY[timeGrouping],
+      }, { excludeHighlight: true });
 
-    const requestId = startRequest();
-    const signal = getSignal();
+      const response = await getNewVsResale(params, { signal });
 
-    const fetchData = async () => {
-      if (isInitialLoad.current) {
-        setLoading(true);
-      } else {
-        setUpdating(true);
-      }
-      setError(null);
+      // Debug logging (dev only)
+      logFetchDebug('NewVsResaleChart', {
+        endpoint: '/api/new-vs-resale',
+        timeGrain: timeGrouping,
+        response: response.data,
+        rowCount: response.data?.chartData?.length || 0,
+      });
 
-      try {
-        // Use buildApiParams to include GLOBAL filters from sidebar
-        // excludeHighlight: true - this is a time-series chart, preserve full timeline
-        // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
-        const params = buildApiParams({
-          timeGrain: TIME_GROUP_BY[timeGrouping],
-        }, { excludeHighlight: true });
+      // Use adapter for transformation
+      return transformNewVsResaleSeries(response.data);
+    },
+    [debouncedFilterKey, timeGrouping],
+    { initialData: { chartData: [], summary: {}, hasData: false }, enabled: shouldFetch }
+  );
 
-        const response = await getNewVsResale(params, { signal });
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        setData(response.data);
-        isInitialLoad.current = false;
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching new vs resale data:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-          setUpdating(false);
-        }
-      }
-    };
-    fetchData();
-    // shouldFetch triggers when chart becomes visible or filter changes
-  }, [shouldFetch, timeGrouping]);
+  // Extract transformed data
+  const { chartData, summary, hasData } = data;
 
   // Build filter summary for display
   const getFilterSummary = () => {
@@ -161,18 +136,16 @@ export function NewVsResaleChart({ height = 350 }) {
     );
   }
 
+  // Error state - show error message for real errors
   if (error) {
     return (
       <div ref={containerRef} className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ minHeight: height }}>
         <div className="flex items-center justify-center h-full">
-          <div className="text-red-500">Error: {error}</div>
+          <div className="text-red-500">Error: {error.message || error}</div>
         </div>
       </div>
     );
   }
-
-  const chartData = data?.chartData || [];
-  const summary = data?.summary || {};
 
   // Prepare chart data
   const labels = chartData.map(d => d.period);
@@ -347,20 +320,15 @@ export function NewVsResaleChart({ height = 350 }) {
   return (
     <div
       ref={containerRef}
-      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}
+      className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
       style={{ height: cardHeight }}
     >
       {/* Header - shrink-0 */}
       <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-              New Sale vs Young Resale (4-9 yrs)
-            </h3>
-            {updating && (
-              <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin flex-shrink-0" />
-            )}
-          </div>
+          <h3 className="font-semibold text-[#213448] text-sm md:text-base">
+            New Sale vs Young Resale (4-9 yrs)
+          </h3>
           <p className="text-xs text-[#547792] mt-0.5">
             {getFilterSummary()} · by {TIME_LABELS[timeGrouping].toLowerCase()}
             {hasSignificantGaps && (
