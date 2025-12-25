@@ -122,47 +122,11 @@ const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
   return response;
 };
 
-/**
- * Clear all cached data (useful when filters change significantly)
- */
-export const clearApiCache = () => {
-  apiCache.clear();
-};
-
-/**
- * Get cache stats for debugging
- */
-export const getCacheStats = () => ({
-  size: apiCache.size,
-  keys: Array.from(apiCache.keys())
-});
-
 // ===== Analytics API Functions =====
 
 export const getHealth = () => apiClient.get('/health');
 
-export const getPriceTrends = (params = {}) =>
-  apiClient.get(`/price_trends?${buildQueryString(params)}`);
-
-export const getTotalVolume = (params = {}) =>
-  apiClient.get(`/total_volume?${buildQueryString(params)}`);
-
-export const getAvgPsf = (params = {}) =>
-  apiClient.get(`/avg_psf?${buildQueryString(params)}`);
-
 export const getDistricts = () => apiClient.get('/districts');
-
-export const getSaleTypeTrends = (params = {}) =>
-  apiClient.get(`/sale_type_trends?${buildQueryString(params)}`);
-
-export const getPriceTrendsBySaleType = (params = {}) =>
-  apiClient.get(`/price_trends_by_sale_type?${buildQueryString(params)}`);
-
-export const getPriceTrendsByRegion = (params = {}) =>
-  apiClient.get(`/price_trends_by_region?${buildQueryString(params)}`);
-
-export const getPsfTrendsByRegion = (params = {}) =>
-  apiClient.get(`/psf_trends_by_region?${buildQueryString(params)}`);
 
 /**
  * Get New Sale vs Young Resale (4-9 years age) comparison
@@ -177,21 +141,6 @@ export const getPsfTrendsByRegion = (params = {}) =>
  */
 export const getNewVsResale = (params = {}) =>
   apiClient.get(`/new-vs-resale?${buildQueryString(params)}`);
-
-export const getMarketStats = (params = {}) =>
-  apiClient.get(`/market_stats?${buildQueryString(params)}`);
-
-export const getMarketStatsByDistrict = (params = {}) =>
-  apiClient.get(`/market_stats_by_district?${buildQueryString(params)}`);
-
-export const getProjectsByDistrict = (district, params = {}) =>
-  apiClient.get(`/projects_by_district?${buildQueryString({ district, ...params })}`);
-
-export const getPriceProjectsByDistrict = (district, params = {}) =>
-  apiClient.get(`/price_projects_by_district?${buildQueryString({ district, ...params })}`);
-
-export const getComparableValueAnalysis = (params = {}) =>
-  apiClient.get(`/comparable_value_analysis?${buildQueryString(params)}`);
 
 // ===== PowerBI-style Aggregation API Functions =====
 
@@ -260,18 +209,6 @@ export const getDashboard = (params = {}, options = {}) => {
 };
 
 /**
- * Get dashboard cache statistics
- * @returns {Promise<{size: number, maxsize: number, ttl: number}>}
- */
-export const getDashboardCacheStats = () => apiClient.get('/dashboard/cache');
-
-/**
- * Clear dashboard cache
- * @returns {Promise<{status: string}>}
- */
-export const clearDashboardCache = () => apiClient.delete('/dashboard/cache');
-
-/**
  * Flexible aggregation endpoint for dynamic filtering
  * Uses caching for instant drill navigation
  * @param {Object} params - Query parameters
@@ -330,15 +267,6 @@ export const getFilterOptions = () =>
   apiClient.get('/filter-options');
 
 /**
- * Get count of transactions matching current filters.
- * Used for preview mode to show "X transactions match your filters".
- * @param {Object} params - Same filter params as /aggregate
- * @returns {Promise<{count: number}>}
- */
-export const getFilterCount = (params = {}) =>
-  apiClient.get('/filter-count', { params });
-
-/**
  * Floor liquidity heatmap - shows which floor zones resell faster by project
  * Uses Z-score normalization within each project for fair comparison
  * @param {Object} params - Query parameters
@@ -369,24 +297,6 @@ export const getFloorLiquidityHeatmap = (params = {}, options = {}) => {
 // ===== GLS (Government Land Sales) API Functions =====
 
 /**
- * Get upcoming (launched) GLS tenders - SIGNAL data
- * @param {Object} params - Query parameters
- * @param {string} params.market_segment - CCR, RCR, or OCR
- * @param {number} params.limit - Max results (default 50)
- */
-export const getGLSUpcoming = (params = {}) =>
-  apiClient.get(`/gls/upcoming?${buildQueryString(params)}`);
-
-/**
- * Get awarded GLS tenders - FACT data
- * @param {Object} params - Query parameters
- * @param {string} params.market_segment - CCR, RCR, or OCR
- * @param {number} params.limit - Max results (default 50)
- */
-export const getGLSAwarded = (params = {}) =>
-  apiClient.get(`/gls/awarded?${buildQueryString(params)}`);
-
-/**
  * Get all GLS tenders (both launched and awarded)
  * @param {Object} params - Query parameters
  * @param {string} params.market_segment - CCR, RCR, or OCR
@@ -397,28 +307,6 @@ export const getGLSAwarded = (params = {}) =>
  */
 export const getGLSAll = (params = {}) =>
   apiClient.get(`/gls/all?${buildQueryString(params)}`);
-
-/**
- * Get aggregate supply pipeline (upcoming tenders)
- * @param {Object} params - Query parameters
- * @param {string} params.market_segment - CCR, RCR, or OCR
- */
-export const getGLSSupplyPipeline = (params = {}) =>
-  apiClient.get(`/gls/supply-pipeline?${buildQueryString(params)}`);
-
-/**
- * Get aggregate price floor data (awarded tenders)
- * @param {Object} params - Query parameters
- * @param {string} params.market_segment - CCR, RCR, or OCR
- */
-export const getGLSPriceFloor = (params = {}) =>
-  apiClient.get(`/gls/price-floor?${buildQueryString(params)}`);
-
-/**
- * Get GLS statistics summary
- */
-export const getGLSStats = () =>
-  apiClient.get('/gls/stats');
 
 // ===== UPCOMING Launches API Functions =====
 // These endpoints are for projects that have NOT YET LAUNCHED (pre-sale info)
@@ -438,32 +326,6 @@ export const getGLSStats = () =>
  */
 export const getUpcomingLaunchesAll = (params = {}) =>
   apiClient.get(`/upcoming-launches/all?${buildQueryString(params)}`);
-
-// Backward compatibility alias
-export const getNewLaunchesAll = getUpcomingLaunchesAll;
-
-/**
- * Get UPCOMING launches grouped by segment
- * @param {Object} params - Query parameters
- * @param {number} params.launch_year - Filter by launch year (default 2026)
- */
-export const getUpcomingLaunchesBySegment = (params = {}) =>
-  apiClient.get(`/upcoming-launches/by-segment?${buildQueryString(params)}`);
-
-/**
- * Get UPCOMING launches supply pipeline
- * @param {Object} params - Query parameters
- * @param {number} params.launch_year - Filter by launch year (default 2026)
- * @param {string} params.market_segment - CCR, RCR, or OCR
- */
-export const getUpcomingLaunchesSupplyPipeline = (params = {}) =>
-  apiClient.get(`/upcoming-launches/supply-pipeline?${buildQueryString(params)}`);
-
-/**
- * Get UPCOMING launches statistics summary
- */
-export const getUpcomingLaunchesStats = () =>
-  apiClient.get('/upcoming-launches/stats');
 
 // ===== ACTIVE New Sales API Functions =====
 // These endpoints are for projects that have ALREADY LAUNCHED and are selling
@@ -499,26 +361,6 @@ export const getHotProjects = (params = {}) =>
 export const getProjectInventory = (projectName) =>
   apiClient.get(`/projects/${encodeURIComponent(projectName)}/inventory`);
 
-/**
- * Trigger inventory sync for new projects (fetches from URA API)
- * Requires URA_API_ACCESS_KEY to be configured on the server
- * @returns {Promise<{status: string, synced: number, pending: number, errors: Array}>}
- */
-export const syncInventory = () =>
-  apiClient.post('/inventory/sync');
-
-/**
- * Manually add inventory data for a project
- * @param {Object} data - Inventory data
- * @param {string} data.project_name - The project name
- * @param {number} data.total_units - Total units in the development
- * @param {string} data.source_url - Optional URL to source (PropertyGuru/EdgeProp)
- * @param {string} data.verified_by - Optional name of who verified this data
- * @returns {Promise<{status: string, message: string, data: Object}>}
- */
-export const addManualInventory = (data) =>
-  apiClient.post('/inventory/manual', data);
-
 // ===== Deal Checker API Functions =====
 
 /**
@@ -528,25 +370,6 @@ export const addManualInventory = (data) =>
  */
 export const getProjectNames = () =>
   apiClient.get('/projects/names');
-
-/**
- * Get nearby transactions for deal comparison
- * @param {Object} params - Query parameters
- * @param {string} params.project_name - Selected project name (required)
- * @param {number} params.bedroom - Bedroom count 1-5 (required)
- * @param {number} params.price - Buyer's price paid (required)
- * @param {number} params.sqft - Unit size in sqft (optional)
- * @param {number} params.radius_km - Search radius, default 1.0 (optional)
- * @returns {Promise<{
- *   project: {name, district, latitude, longitude},
- *   filters: {bedroom, radius_km, buyer_price},
- *   histogram: {bins: Array, total_count: number},
- *   percentile: {rank, transactions_below, transactions_above, interpretation},
- *   nearby_projects: Array<{project_name, latitude, longitude, distance_km, transaction_count}>
- * }>}
- */
-export const getDealCheckerNearbyTransactions = (params = {}) =>
-  apiClient.get(`/deal-checker/nearby-transactions?${buildQueryString(params)}`);
 
 /**
  * Get multi-scope comparison for deal checker
@@ -575,18 +398,6 @@ export const getDealCheckerMultiScope = (params = {}) =>
   apiClient.get(`/deal-checker/multi-scope?${buildQueryString(params)}`);
 
 // ===== Auth API Functions =====
-
-export const register = (email, password) => {
-  return apiClient.post('/auth/register', { email, password });
-};
-
-export const login = (email, password) => {
-  return apiClient.post('/auth/login', { email, password });
-};
-
-export const getCurrentUser = () => {
-  return apiClient.get('/auth/me');
-};
 
 export const deleteAccount = () => {
   return apiClient.delete('/auth/delete-account');
