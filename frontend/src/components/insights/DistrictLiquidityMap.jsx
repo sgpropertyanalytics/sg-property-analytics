@@ -1195,8 +1195,10 @@ function LiquidityRankingTable({ districtData }) {
                   </td>
 
                   {/* Full Area Name */}
-                  <td className="px-3 py-2 text-[#547792]">
-                    {district.full_name}
+                  <td className="px-3 py-2 text-[#547792] max-w-[200px]">
+                    <span className="block truncate" title={district.full_name}>
+                      {district.full_name}
+                    </span>
                   </td>
 
                   {/* Region Badge */}
