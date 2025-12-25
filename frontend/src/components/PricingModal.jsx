@@ -133,8 +133,7 @@ export function PricingModal({ isOpen, onClose }) {
                 <p className="text-[#213448] text-3xl font-bold mb-1">
                   $75<span className="text-[#547792] text-base font-normal"> / quarter</span>
                 </p>
-                <p className="text-[#547792] text-sm mb-1">Equivalent to $25/mo</p>
-                <p className="text-[#547792] text-xs mb-5">Cancel anytime.</p>
+                <p className="text-[#547792] text-sm mb-5">Equivalent to $25/mo</p>
 
                 {/* Reference to Annual features */}
                 <p className="flex items-start gap-2 text-[#547792] text-sm">
@@ -175,8 +174,7 @@ export function PricingModal({ isOpen, onClose }) {
                   <span className="text-white text-3xl font-bold">$180</span>
                   <span className="text-[#94B4C1] text-base font-normal"> / year</span>
                 </p>
-                <p className="text-[#94B4C1] text-sm mb-1">Equivalent to $15/mo · <span className="text-[#EAE0CF]">Save 40%</span></p>
-                <p className="text-[#547792] text-xs mb-5">Cancel anytime.</p>
+                <p className="text-[#94B4C1] text-sm mb-5">Equivalent to $15/mo · <span className="text-[#EAE0CF]">Save 40%</span></p>
 
                 {/* Features - Full List (Master List) */}
                 <div className="space-y-2.5">
@@ -213,18 +211,6 @@ export function PricingModal({ isOpen, onClose }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               Secure via Stripe
-            </span>
-            <span className="flex items-center gap-1.5">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Cancel anytime
-            </span>
-            <span className="flex items-center gap-1.5">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              7-day money-back
             </span>
           </div>
         </div>
