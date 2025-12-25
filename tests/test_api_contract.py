@@ -1608,3 +1608,169 @@ class TestFrontendDashboardHelpers:
             for import_name in expected_imports:
                 assert import_name in content, \
                     f"{chart_file} should import {import_name}"
+
+
+class TestForbidRawFieldAccess:
+    """
+    GUARDRAIL: Prevent reintroduction of raw DB field names in frontend.
+
+    This test fails if any frontend chart component uses raw field names
+    like `d.median_psf` instead of `getAggField(d, AggField.MEDIAN_PSF)`.
+
+    Phase 1c TODO: Once v1 is removed, this guardrail ensures no one
+    accidentally reintroduces raw field access patterns.
+    """
+
+    # Forbidden patterns: raw field access on data rows that should use schema helpers
+    # These match patterns like `d.median_psf`, `row.avg_psf`, `item.floor_level`
+    # but NOT `params.sale_type` (API param assignment) or string literals
+    # Format: (pattern, description)
+    FORBIDDEN_PATTERNS = [
+        # Match data row access: d.field, row.field, item.field, etc.
+        # Exclude: params., request., filter patterns
+        (r'(?<![a-zA-Z])(?:d|row|item|r|txn|record|entry)\.(median_psf)(?![_a-zA-Z])',
+         'Use getAggField(d, AggField.MEDIAN_PSF)'),
+        (r'(?<![a-zA-Z])(?:d|row|item|r|txn|record|entry)\.(avg_psf)(?![_a-zA-Z])',
+         'Use getAggField(d, AggField.AVG_PSF)'),
+        (r'(?<![a-zA-Z])(?:d|row|item|r|txn|record|entry)\.(floor_level)(?![_a-zA-Z])',
+         'Use getAggField(d, AggField.FLOOR_LEVEL)'),
+        (r'(?<![a-zA-Z])(?:d|row|item|r|txn|record|entry)\.(sale_type)(?![_a-zA-Z])',
+         'Use getAggField(d, AggField.SALE_TYPE) or isSaleType helper'),
+        (r'(?<![a-zA-Z])(?:d|row|item|r|txn|record|entry)\.(bedroom_count)(?![_a-zA-Z])',
+         'Use getAggField(d, AggField.BEDROOM_COUNT)'),
+        (r'(?<![a-zA-Z])(?:d|row|item|r|txn|record|entry)\.(total_value)(?![_a-zA-Z])',
+         'Use getAggField(d, AggField.TOTAL_VALUE)'),
+        (r'(?<![a-zA-Z])(?:d|row|item|r|txn|record|entry)\.(psf_25th)(?![_a-zA-Z])',
+         'Use getAggField(d, AggField.PSF_25TH)'),
+        (r'(?<![a-zA-Z])(?:d|row|item|r|txn|record|entry)\.(psf_75th)(?![_a-zA-Z])',
+         'Use getAggField(d, AggField.PSF_75TH)'),
+        (r'(?<![a-zA-Z])(?:d|row|item|r|txn|record|entry)\.(price_25th)(?![_a-zA-Z])',
+         'Use getAggField(d, AggField.PRICE_25TH)'),
+        (r'(?<![a-zA-Z])(?:d|row|item|r|txn|record|entry)\.(price_75th)(?![_a-zA-Z])',
+         'Use getAggField(d, AggField.PRICE_75TH)'),
+        (r'(?<![a-zA-Z])(?:d|row|item|r|txn|record|entry)\.(median_price)(?![_a-zA-Z])',
+         'Use getAggField(d, AggField.MEDIAN_PRICE)'),
+    ]
+
+    # Files that are ALLOWED to use raw field names (schema definitions, etc.)
+    ALLOWED_FILES = [
+        'apiContract.js',  # Schema definition file
+        'apiContract.test.js',  # Test file for schema
+        # Files using different APIs (not /api/aggregate) - these have their own schemas
+        'HotProjectsTable.jsx',  # Uses getHotProjects API
+        'UpcomingLaunchesTable.jsx',  # Uses getUpcomingLaunches API
+        'TransactionDataTable.jsx',  # Uses getTransactionsList API
+        'TransactionDetailModal.jsx',  # Uses transaction-specific fields
+        'DealCheckerContent.jsx',  # Uses deal-checker specific API
+        'DealCheckerMap.jsx',  # Uses deal-checker specific API
+        'ScopeSummaryCards.jsx',  # Uses scope-specific API
+    ]
+
+    # Directories to scan
+    SCAN_DIRS = [
+        'components/powerbi',
+        'pages',
+        'context',
+    ]
+
+    def test_no_raw_field_access_in_charts(self):
+        """
+        GUARDRAIL: Fail if any chart uses raw field names.
+
+        This prevents regression where someone bypasses schema helpers.
+        """
+        import re
+        import glob
+
+        violations = []
+        frontend_src = os.path.join(
+            os.path.dirname(__file__), '..', 'frontend', 'src'
+        )
+
+        for scan_dir in self.SCAN_DIRS:
+            scan_path = os.path.join(frontend_src, scan_dir)
+            if not os.path.exists(scan_path):
+                continue
+
+            # Find all .js and .jsx files
+            for ext in ['*.js', '*.jsx']:
+                pattern = os.path.join(scan_path, '**', ext)
+                for filepath in glob.glob(pattern, recursive=True):
+                    filename = os.path.basename(filepath)
+
+                    # Skip allowed files
+                    if filename in self.ALLOWED_FILES:
+                        continue
+
+                    with open(filepath, 'r') as f:
+                        content = f.read()
+
+                    # Check each forbidden pattern
+                    for pattern_regex, suggestion in self.FORBIDDEN_PATTERNS:
+                        matches = re.findall(pattern_regex, content)
+                        if matches:
+                            # Find line numbers for better error messages
+                            for i, line in enumerate(content.split('\n'), 1):
+                                if re.search(pattern_regex, line):
+                                    rel_path = os.path.relpath(filepath, frontend_src)
+                                    violations.append(
+                                        f"{rel_path}:{i} - Found raw field access. {suggestion}"
+                                    )
+
+        if violations:
+            violation_msg = "\n".join(violations[:20])  # Limit to first 20
+            if len(violations) > 20:
+                violation_msg += f"\n... and {len(violations) - 20} more violations"
+            pytest.fail(
+                f"GUARDRAIL VIOLATION: Found {len(violations)} raw field access(es).\n"
+                f"Use schema helpers (getAggField, isSaleType) instead.\n\n"
+                f"{violation_msg}"
+            )
+
+    def test_charts_import_schema_helpers(self):
+        """
+        Verify all aggregate-consuming charts import schema helpers.
+
+        Charts that fetch from /api/aggregate MUST import getAggField.
+        """
+        import glob
+
+        # Charts that use getAggregate API and MUST use schema helpers
+        charts_requiring_helpers = [
+            'FloorPremiumTrendChart.jsx',
+            'FloorPremiumByRegionChart.jsx',
+            'FloorLiquidityChart.jsx',
+            'GrowthDumbbellChart.jsx',
+            'MarketMomentumGrid.jsx',
+            'MedianPsfTrendChart.jsx',
+            'PriceCompressionChart.jsx',
+            'ProjectDetailPanel.jsx',
+        ]
+
+        frontend_src = os.path.join(
+            os.path.dirname(__file__), '..', 'frontend', 'src'
+        )
+        powerbi_dir = os.path.join(frontend_src, 'components', 'powerbi')
+
+        missing_imports = []
+
+        for chart_file in charts_requiring_helpers:
+            chart_path = os.path.join(powerbi_dir, chart_file)
+            if not os.path.exists(chart_path):
+                continue
+
+            with open(chart_path, 'r') as f:
+                content = f.read()
+
+            # Must import both getAggField and AggField
+            if 'getAggField' not in content:
+                missing_imports.append(f"{chart_file}: missing getAggField import")
+            if 'AggField' not in content:
+                missing_imports.append(f"{chart_file}: missing AggField import")
+
+        if missing_imports:
+            pytest.fail(
+                f"GUARDRAIL VIOLATION: Charts missing schema helper imports.\n"
+                f"All aggregate-consuming charts must import getAggField and AggField.\n\n"
+                + "\n".join(missing_imports)
+            )
