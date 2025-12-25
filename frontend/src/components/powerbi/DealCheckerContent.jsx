@@ -106,6 +106,12 @@ export default function DealCheckerContent() {
   // Scope selection state
   const [activeScope, setActiveScope] = useState('radius_1km');
 
+  // Sort config for nearby projects table
+  const [projectsSortConfig, setProjectsSortConfig] = useState({
+    column: 'distance_km',
+    order: 'asc',
+  });
+
   // Load project names for dropdown
   useEffect(() => {
     const loadProjects = async () => {

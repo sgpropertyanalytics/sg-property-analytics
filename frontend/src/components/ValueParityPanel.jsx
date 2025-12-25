@@ -83,6 +83,10 @@ export function ValueParityPanel() {
     totalRecords: 0,
     totalPages: 0,
   });
+  const [resaleMarketSortConfig, setResaleMarketSortConfig] = useState({
+    column: 'transaction_date',
+    order: 'desc',
+  });
 
   // Mobile filter panel toggle
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -228,9 +232,17 @@ export function ValueParityPanel() {
     }
   };
 
-  // Handle sort
+  // Handle sort for Young Resale table
   const handleSort = (column) => {
     setSortConfig(prev => ({
+      column,
+      order: prev.column === column && prev.order === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  // Handle sort for Resale Market table
+  const handleResaleMarketSort = (column) => {
+    setResaleMarketSortConfig(prev => ({
       column,
       order: prev.column === column && prev.order === 'asc' ? 'desc' : 'asc',
     }));
@@ -288,16 +300,16 @@ export function ValueParityPanel() {
     return `${years} yrs`;
   };
 
-  // Sort indicator
-  const SortIcon = ({ column }) => {
-    if (sortConfig.column !== column) {
+  // Sort indicator (accepts optional config for different tables)
+  const SortIcon = ({ column, config = sortConfig }) => {
+    if (config.column !== column) {
       return (
         <svg className="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
         </svg>
       );
     }
-    return sortConfig.order === 'asc' ? (
+    return config.order === 'asc' ? (
       <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
       </svg>
@@ -307,6 +319,27 @@ export function ValueParityPanel() {
       </svg>
     );
   };
+
+  // Sort resale market data client-side
+  const sortedResaleMarketData = [...resaleMarketData].sort((a, b) => {
+    const col = resaleMarketSortConfig.column;
+    let aVal = a[col];
+    let bVal = b[col];
+
+    // Handle null/undefined
+    if (aVal === null || aVal === undefined) aVal = resaleMarketSortConfig.order === 'asc' ? Infinity : -Infinity;
+    if (bVal === null || bVal === undefined) bVal = resaleMarketSortConfig.order === 'asc' ? Infinity : -Infinity;
+
+    // String comparison
+    if (typeof aVal === 'string' && typeof bVal === 'string') {
+      return resaleMarketSortConfig.order === 'asc'
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    }
+
+    // Numeric comparison
+    return resaleMarketSortConfig.order === 'asc' ? aVal - bVal : bVal - aVal;
+  });
 
   // Column definitions
   const columns = [
@@ -956,18 +989,82 @@ export function ValueParityPanel() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 sticky top-0">
                     <tr>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b">Date</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b">Project</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b">District</th>
-                      <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 border-b">BR</th>
-                      <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b">Sqft</th>
-                      <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b">Price</th>
-                      <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b">PSF</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b">Remaining Lease</th>
+                      <th
+                        className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleResaleMarketSort('transaction_date')}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Date</span>
+                          <SortIcon column="transaction_date" config={resaleMarketSortConfig} />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleResaleMarketSort('project_name')}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Project</span>
+                          <SortIcon column="project_name" config={resaleMarketSortConfig} />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleResaleMarketSort('district')}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>District</span>
+                          <SortIcon column="district" config={resaleMarketSortConfig} />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-center text-xs font-semibold text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleResaleMarketSort('bedroom_count')}
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <span>BR</span>
+                          <SortIcon column="bedroom_count" config={resaleMarketSortConfig} />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleResaleMarketSort('area_sqft')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>Sqft</span>
+                          <SortIcon column="area_sqft" config={resaleMarketSortConfig} />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleResaleMarketSort('price')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>Price</span>
+                          <SortIcon column="price" config={resaleMarketSortConfig} />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right text-xs font-semibold text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleResaleMarketSort('psf')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>PSF</span>
+                          <SortIcon column="psf" config={resaleMarketSortConfig} />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-left text-xs font-semibold text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleResaleMarketSort('remaining_lease')}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Remaining Lease</span>
+                          <SortIcon column="remaining_lease" config={resaleMarketSortConfig} />
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {resaleMarketData.map((txn, idx) => (
+                    {sortedResaleMarketData.map((txn, idx) => (
                       <tr key={txn.id || idx} className="hover:bg-slate-50 transition-colors">
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                           {formatDate(txn.transaction_date)}

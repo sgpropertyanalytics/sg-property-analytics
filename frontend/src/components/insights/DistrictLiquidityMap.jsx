@@ -246,11 +246,11 @@ function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered }) {
 
 function getScoreBadgeStyleShared(score) {
   if (score === null || score === undefined) return 'bg-gray-100 text-gray-500';
-  if (score >= 80) return 'bg-emerald-500 text-white';        // Excellent
-  if (score >= 60) return 'bg-emerald-300 text-emerald-900';  // Good
-  if (score >= 40) return 'bg-amber-300 text-amber-900';      // Average
-  if (score >= 20) return 'bg-orange-300 text-orange-900';    // Below Average
-  return 'bg-rose-400 text-white';                            // Poor
+  if (score >= 80) return 'bg-emerald-100 text-emerald-700';  // Excellent
+  if (score >= 60) return 'bg-emerald-50 text-emerald-600';   // Good
+  if (score >= 40) return 'bg-amber-50 text-amber-700';       // Average
+  if (score >= 20) return 'bg-orange-50 text-orange-600';     // Below Average
+  return 'bg-rose-50 text-rose-600';                          // Poor
 }
 
 function getScoreLabelShared(score) {
@@ -1003,12 +1003,7 @@ function LiquidityRankingTable({ districtData }) {
             >
               {/* Header: Rank + District + Region + Score */}
               <div className="flex items-center gap-2 mb-2">
-                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                  index === 0 ? 'bg-amber-400 text-white' :
-                  index === 1 ? 'bg-gray-300 text-gray-700' :
-                  index === 2 ? 'bg-amber-600 text-white' :
-                  'bg-[#EAE0CF]/50 text-[#547792]'
-                }`}>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-[#EAE0CF]/50 text-[#547792]">
                   {index + 1}
                 </span>
                 <span className="font-semibold text-[#213448]">{district.district_id}</span>
@@ -1043,14 +1038,12 @@ function LiquidityRankingTable({ districtData }) {
                   <div className="text-[10px] text-[#547792]">Tier</div>
                   <div className="text-[10px] font-semibold text-[#213448]">{m.liquidity_tier || '-'}</div>
                 </div>
-                <div className="bg-rose-50/50 rounded p-1.5">
-                  <div className="text-[10px] text-[#547792]">Fragility</div>
-                  <div className={`text-[10px] font-semibold ${
-                    m.fragility_label === 'Robust' ? 'text-emerald-600' :
-                    m.fragility_label === 'Moderate' ? 'text-amber-600' :
-                    'text-rose-600'
-                  }`}>
-                    {m.fragility_label || '-'}
+                <div className="bg-[#EAE0CF]/30 rounded p-1.5">
+                  <div className="text-[10px] text-[#547792]">Spread</div>
+                  <div className="text-[10px] font-semibold text-[#213448]">
+                    {m.fragility_label === 'Robust' ? 'Wide' :
+                     m.fragility_label === 'Moderate' ? 'Medium' :
+                     m.fragility_label === 'Fragile' ? 'Narrow' : '-'}
                   </div>
                 </div>
               </div>
@@ -1149,8 +1142,8 @@ function LiquidityRankingTable({ districtData }) {
               </th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">
                 <span className="inline-flex items-center">
-                  Fragility
-                  <InfoTooltip text="Market concentration risk level. Robust = spread across many projects. Fragile = dominated by few projects." color="#fb7185" />
+                  Spread
+                  <InfoTooltip text="Transaction spread across projects. Wide = distributed across many projects. Narrow = concentrated in few projects." color="#fb7185" />
                 </span>
               </th>
               <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">
@@ -1179,12 +1172,7 @@ function LiquidityRankingTable({ districtData }) {
                 >
                   {/* Rank */}
                   <td className="px-3 py-2 text-center">
-                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                      index === 0 ? 'bg-amber-400 text-white' :
-                      index === 1 ? 'bg-gray-300 text-gray-700' :
-                      index === 2 ? 'bg-amber-600 text-white' :
-                      'bg-[#EAE0CF]/50 text-[#547792]'
-                    }`}>
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-[#EAE0CF]/50 text-[#547792]">
                       {index + 1}
                     </span>
                   </td>
@@ -1261,10 +1249,12 @@ function LiquidityRankingTable({ districtData }) {
                     </span>
                   </td>
 
-                  {/* Concentration Risks Group - Fragility Badge (Resale-only) */}
+                  {/* Concentration Risks Group - Spread (Resale-only) */}
                   <td className="px-3 py-2 text-center bg-rose-50/40">
-                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${getFragilityBadge(m.fragility_label)}`}>
-                      {m.fragility_label || '-'}
+                    <span className="text-xs text-[#547792]">
+                      {m.fragility_label === 'Robust' ? 'Wide' :
+                       m.fragility_label === 'Moderate' ? 'Medium' :
+                       m.fragility_label === 'Fragile' ? 'Narrow' : '-'}
                     </span>
                   </td>
 
