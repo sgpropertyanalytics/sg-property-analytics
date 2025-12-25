@@ -472,36 +472,42 @@ function RegionSummaryBar({ districtData, meta }) {
   };
 
   return (
-    <div className="grid grid-cols-3 gap-3 px-4 py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30">
       {regionStats.map(stat => (
         <div
           key={stat.region}
-          className={`rounded-lg border p-3 ${regionStyles[stat.region]}`}
+          className={`rounded-lg border p-2 sm:p-3 ${regionStyles[stat.region]}`}
         >
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-semibold text-[#213448] text-sm">
-              {stat.region}
-            </span>
-            {stat.avgZScore !== null && (
-              <span
-                className={`text-xs font-bold ${
-                  stat.avgZScore >= 0 ? 'text-emerald-600' : 'text-amber-600'
-                }`}
-              >
-                Z: {stat.avgZScore.toFixed(1)}
+          {/* Mobile: horizontal layout, Desktop: vertical */}
+          <div className="flex sm:flex-col items-center sm:items-stretch gap-2 sm:gap-0">
+            {/* Region name and Z-score */}
+            <div className="flex items-center justify-between sm:mb-1 min-w-[60px] sm:min-w-0">
+              <span className="font-semibold text-[#213448] text-sm">
+                {stat.region}
               </span>
-            )}
-          </div>
-          <p className="text-[10px] text-[#547792] mb-2">
-            {regionLabels[stat.region].desc}
-          </p>
-          <div className="flex items-baseline justify-between">
-            <span className="text-lg font-bold text-[#213448]">
-              {stat.velocity.toFixed(1)}/mo
-            </span>
-            <span className="text-xs text-[#547792]">
-              {stat.txCount.toLocaleString()} tx
-            </span>
+              {stat.avgZScore !== null && (
+                <span
+                  className={`text-xs font-bold ml-2 sm:ml-0 ${
+                    stat.avgZScore >= 0 ? 'text-emerald-600' : 'text-amber-600'
+                  }`}
+                >
+                  Z: {stat.avgZScore.toFixed(1)}
+                </span>
+              )}
+            </div>
+            {/* Description - hidden on mobile */}
+            <p className="hidden sm:block text-[10px] text-[#547792] mb-2">
+              {regionLabels[stat.region].desc}
+            </p>
+            {/* Stats */}
+            <div className="flex items-baseline gap-2 sm:justify-between flex-1 sm:flex-none">
+              <span className="text-base sm:text-lg font-bold text-[#213448]">
+                {stat.velocity.toFixed(1)}/mo
+              </span>
+              <span className="text-[10px] sm:text-xs text-[#547792]">
+                {stat.txCount.toLocaleString()} tx
+              </span>
+            </div>
           </div>
         </div>
       ))}
@@ -609,27 +615,28 @@ export default function DistrictLiquidityMap() {
   return (
     <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
       {/* Header with filters */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-[#94B4C1]/30">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 sm:gap-3">
           <div>
-            <h2 className="text-lg font-bold text-[#213448]">
+            <h2 className="text-base sm:text-lg font-bold text-[#213448]">
               District Liquidity Map
             </h2>
-            <p className="text-xs text-[#547792]">
-              Transaction velocity by postal district (Z-score normalized)
+            <p className="text-[10px] sm:text-xs text-[#547792]">
+              <span className="hidden sm:inline">Transaction velocity by postal district (Z-score normalized)</span>
+              <span className="sm:hidden">Velocity by district</span>
             </p>
           </div>
 
-          {/* Filter pills */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Filter pills - more compact on mobile */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {/* Bedroom filter */}
-            <div className="flex items-center gap-1 bg-[#EAE0CF]/50 rounded-lg p-1">
+            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
               {BEDROOM_OPTIONS.map(option => (
                 <button
                   key={option.value}
                   onClick={() => setSelectedBed(option.value)}
                   className={`
-                    px-2 py-1 text-xs font-medium rounded-md transition-all
+                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
                     ${selectedBed === option.value
                       ? 'bg-white text-[#213448] shadow-sm'
                       : 'text-[#547792] hover:text-[#213448]'
@@ -642,13 +649,13 @@ export default function DistrictLiquidityMap() {
             </div>
 
             {/* Sale type filter */}
-            <div className="flex items-center gap-1 bg-[#EAE0CF]/50 rounded-lg p-1">
+            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
               {SALE_TYPE_OPTIONS.map(option => (
                 <button
                   key={option.value}
                   onClick={() => setSelectedSaleType(option.value)}
                   className={`
-                    px-2 py-1 text-xs font-medium rounded-md transition-all
+                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
                     ${selectedSaleType === option.value
                       ? 'bg-white text-[#213448] shadow-sm'
                       : 'text-[#547792] hover:text-[#213448]'
@@ -661,13 +668,13 @@ export default function DistrictLiquidityMap() {
             </div>
 
             {/* Period filter */}
-            <div className="flex items-center gap-1 bg-[#EAE0CF]/50 rounded-lg p-1">
+            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
               {PERIOD_OPTIONS.map(option => (
                 <button
                   key={option.value}
                   onClick={() => setSelectedPeriod(option.value)}
                   className={`
-                    px-2 py-1 text-xs font-medium rounded-md transition-all
+                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
                     ${selectedPeriod === option.value
                       ? 'bg-white text-[#213448] shadow-sm'
                       : 'text-[#547792] hover:text-[#213448]'
@@ -806,9 +813,9 @@ export default function DistrictLiquidityMap() {
           )}
         </AnimatePresence>
 
-        {/* Legend - Liquidity Tiers (top-left) */}
-        <div className="absolute top-4 left-4 z-20">
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-[#94B4C1]/50 shadow-md p-2.5 w-[180px]">
+        {/* Legend - Liquidity Tiers (top-left) - smaller on mobile */}
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-[#94B4C1]/50 shadow-md p-2 sm:p-2.5 w-[140px] sm:w-[180px]">
             {/* Header with methodology tooltip */}
             <div className="flex items-center justify-between mb-2">
               <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold">
@@ -839,50 +846,66 @@ export default function DistrictLiquidityMap() {
               </div>
             </div>
 
-            {/* Resale-only badge */}
-            <div className="mb-2 px-1.5 py-0.5 bg-emerald-50 border border-emerald-200 rounded text-[8px] text-emerald-700 text-center">
+            {/* Resale-only badge - hidden on mobile */}
+            <div className="hidden sm:block mb-2 px-1.5 py-0.5 bg-emerald-50 border border-emerald-200 rounded text-[8px] text-emerald-700 text-center">
               Based on resale transactions
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_FILLS.veryHigh }} />
-                <span className="text-[10px] text-[#213448]">Very High (&gt;1.5σ)</span>
+            <div className="space-y-1 sm:space-y-1.5">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: LIQUIDITY_FILLS.veryHigh }} />
+                <span className="text-[9px] sm:text-[10px] text-[#213448]">
+                  <span className="sm:hidden">V.High</span>
+                  <span className="hidden sm:inline">Very High (&gt;1.5σ)</span>
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_FILLS.high }} />
-                <span className="text-[10px] text-[#213448]">High (0.5 to 1.5σ)</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: LIQUIDITY_FILLS.high }} />
+                <span className="text-[9px] sm:text-[10px] text-[#213448]">
+                  <span className="sm:hidden">High</span>
+                  <span className="hidden sm:inline">High (0.5 to 1.5σ)</span>
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_FILLS.neutral }} />
-                <span className="text-[10px] text-[#213448]">Neutral (-0.5 to 0.5σ)</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: LIQUIDITY_FILLS.neutral }} />
+                <span className="text-[9px] sm:text-[10px] text-[#213448]">
+                  <span className="sm:hidden">Neutral</span>
+                  <span className="hidden sm:inline">Neutral (-0.5 to 0.5σ)</span>
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_FILLS.low }} />
-                <span className="text-[10px] text-[#213448]">Low (-1.5 to -0.5σ)</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: LIQUIDITY_FILLS.low }} />
+                <span className="text-[9px] sm:text-[10px] text-[#213448]">
+                  <span className="sm:hidden">Low</span>
+                  <span className="hidden sm:inline">Low (-1.5 to -0.5σ)</span>
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_FILLS.veryLow }} />
-                <span className="text-[10px] text-[#213448]">Very Low (&lt;-1.5σ)</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: LIQUIDITY_FILLS.veryLow }} />
+                <span className="text-[9px] sm:text-[10px] text-[#213448]">
+                  <span className="sm:hidden">V.Low</span>
+                  <span className="hidden sm:inline">Very Low (&lt;-1.5σ)</span>
+                </span>
               </div>
             </div>
 
-            <div className="h-px bg-[#94B4C1]/30 my-2" />
-
-            {/* Stats summary */}
+            {/* Stats summary - hidden on mobile */}
             {meta.total_transactions > 0 && (
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px]">
-                  <span className="text-[#547792]">Total Tx</span>
-                  <span className="font-semibold text-[#213448]">
-                    {meta.total_transactions?.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between text-[10px]">
-                  <span className="text-[#547792]">Avg Velocity</span>
-                  <span className="font-semibold text-[#213448]">
-                    {meta.mean_velocity?.toFixed(1)}/mo
-                  </span>
+              <div className="hidden sm:block">
+                <div className="h-px bg-[#94B4C1]/30 my-2" />
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-[#547792]">Total Tx</span>
+                    <span className="font-semibold text-[#213448]">
+                      {meta.total_transactions?.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-[#547792]">Avg Velocity</span>
+                    <span className="font-semibold text-[#213448]">
+                      {meta.mean_velocity?.toFixed(1)}/mo
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -1039,17 +1062,18 @@ function LiquidityRankingTable({ districtData }) {
   return (
     <div className="border-t border-[#94B4C1]/30">
       {/* Table Header */}
-      <div className="px-4 py-3 bg-[#EAE0CF]/20">
-        <h3 className="text-lg font-bold text-[#213448]">
-          District Volume Liquidity Ranking
+      <div className="px-3 sm:px-4 py-2 sm:py-3 bg-[#EAE0CF]/20">
+        <h3 className="text-base sm:text-lg font-bold text-[#213448]">
+          District Liquidity Ranking
         </h3>
-        <p className="text-xs text-[#547792]">
-          Click column headers to sort • Default: composite liquidity score (highest first)
+        <p className="text-[10px] sm:text-xs text-[#547792]">
+          <span className="hidden sm:inline">Click column headers to sort • Default: composite liquidity score (highest first)</span>
+          <span className="sm:hidden">Sorted by liquidity score</span>
         </p>
       </div>
 
       {/* Mobile/Tablet Card View - shown below lg breakpoint (1024px) */}
-      <div className="lg:hidden p-3 space-y-2 max-h-[400px] overflow-y-auto">
+      <div className="lg:hidden p-2 sm:p-3 space-y-2 max-h-[350px] sm:max-h-[400px] overflow-y-auto">
         {sortedData.map((district, index) => {
           const m = district.liquidity_metrics || {};
           return (
@@ -1384,8 +1408,8 @@ function LiquidityRankingTable({ districtData }) {
       </div>
 
       {/* Table Footer */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
-        Showing {sortedData.length} districts with transaction data
+      <div className="px-3 sm:px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30 text-[10px] sm:text-xs text-[#547792]">
+        {sortedData.length} districts with data
       </div>
     </div>
   );
