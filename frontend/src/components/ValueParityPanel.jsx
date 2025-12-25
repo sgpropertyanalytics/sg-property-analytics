@@ -747,37 +747,18 @@ export function ValueParityPanel() {
           {/* Results Table */}
           <div ref={resaleRef} className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden animate-fade-in">
             {/* Section Header: Young Resale */}
-            <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🏠</span>
-                <div>
-                  <h3 className="font-semibold text-[#213448]">Young Resale (4-9 Years)</h3>
-                  <p className="text-xs text-[#547792]">
-                    Recently TOP resale units ideal for immediate move-in
-                    {!loading && pagination.totalRecords > 0 && (
-                      <span className="ml-1">• <span className="font-semibold text-[#213448]">{pagination.totalRecords.toLocaleString()}</span> found</span>
-                    )}
-                  </p>
-                </div>
+            <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center gap-3">
+              <span className="text-xl">🏠</span>
+              <div>
+                <h3 className="font-semibold text-[#213448]">Young Resale (4-9 Years)</h3>
+                <p className="text-xs text-[#547792]">
+                  Recently TOP resale units ideal for immediate move-in
+                  {!loading && pagination.totalRecords > 0 && (
+                    <span className="ml-1">• <span className="font-semibold text-[#213448]">{pagination.totalRecords.toLocaleString()}</span> found</span>
+                  )}
+                </p>
               </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={pagination.limit}
-                onChange={(e) => {
-                  setPagination(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }));
-                  if (hasSearched) {
-                    setTimeout(() => fetchTransactions(1, null), 0);
-                  }
-                }}
-                className="text-xs border border-[#94B4C1] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
-              >
-                <option value={10}>10 rows</option>
-                <option value={25}>25 rows</option>
-                <option value={50}>50 rows</option>
-                <option value={100}>100 rows</option>
-              </select>
             </div>
-          </div>
 
           {/* Mobile Card View (visible on small screens) */}
           <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: 400 }}>
@@ -810,7 +791,7 @@ export function ValueParityPanel() {
           </div>
 
           {/* Desktop Table View (hidden on small screens) */}
-          <div className="hidden md:block overflow-auto" style={{ maxHeight: 500 }}>
+          <div className="hidden md:block overflow-auto" style={{ maxHeight: 400 }}>
             {error ? (
               <div className="flex items-center justify-center h-40 text-red-500">
                 Error: {error}
@@ -899,67 +880,6 @@ export function ValueParityPanel() {
             )}
           </div>
 
-          {/* Pagination Footer */}
-          {data.length > 0 && (
-            <div className="px-4 py-3 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30 flex items-center justify-between">
-              <div className="text-xs text-[#547792]">
-                {!loading && data.length > 0 && (
-                  <>
-                    Showing {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.totalRecords)} of {pagination.totalRecords.toLocaleString()}
-                  </>
-                )}
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); handlePageChange(1); }}
-                  disabled={pagination.page === 1 || loading}
-                  className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="First page"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); handlePageChange(pagination.page - 1); }}
-                  disabled={pagination.page === 1 || loading}
-                  className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Previous page"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <span className="px-3 py-1 text-sm text-[#213448]">
-                  Page {pagination.page} of {pagination.totalPages || 1}
-                </span>
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); handlePageChange(pagination.page + 1); }}
-                  disabled={pagination.page >= pagination.totalPages || loading}
-                  className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Next page"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); handlePageChange(pagination.totalPages); }}
-                  disabled={pagination.page >= pagination.totalPages || loading}
-                  className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Last page"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
           {/* ===== STEP 4: RESALE MARKET ===== */}
@@ -979,37 +899,21 @@ export function ValueParityPanel() {
 
           {/* Resale Market Section */}
           <div ref={resaleMarketRef} className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🏘️</span>
-                <div>
-                  <h3 className="font-semibold text-[#213448]">Resale Market</h3>
-                  <p className="text-xs text-[#547792]">
-                    All resale transactions regardless of property age
-                    {!resaleMarketLoading && resaleMarketPagination.totalRecords > 0 && (
-                      <span className="ml-1">• <span className="font-semibold text-[#213448]">{resaleMarketPagination.totalRecords.toLocaleString()}</span> found</span>
-                    )}
-                  </p>
-                </div>
+            <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center gap-3">
+              <span className="text-xl">🏘️</span>
+              <div>
+                <h3 className="font-semibold text-[#213448]">Resale Market</h3>
+                <p className="text-xs text-[#547792]">
+                  All resale transactions regardless of property age
+                  {!resaleMarketLoading && resaleMarketPagination.totalRecords > 0 && (
+                    <span className="ml-1">• <span className="font-semibold text-[#213448]">{resaleMarketPagination.totalRecords.toLocaleString()}</span> found</span>
+                  )}
+                </p>
               </div>
-              <select
-                value={resaleMarketPagination.limit}
-                onChange={(e) => {
-                  setResaleMarketPagination(prev => ({ ...prev, limit: parseInt(e.target.value), page: 1 }));
-                  if (hasSearched) {
-                    setTimeout(() => fetchResaleMarket(1), 0);
-                  }
-                }}
-                className="text-xs border border-[#94B4C1] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
-              >
-                <option value={10}>10 rows</option>
-                <option value={25}>25 rows</option>
-                <option value={50}>50 rows</option>
-              </select>
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: 350 }}>
+            <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: 400 }}>
               {resaleMarketLoading ? (
                 [...Array(3)].map((_, i) => (
                   <div key={i} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 animate-pulse">
@@ -1035,7 +939,7 @@ export function ValueParityPanel() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden md:block overflow-auto" style={{ maxHeight: 350 }}>
+            <div className="hidden md:block overflow-auto" style={{ maxHeight: 400 }}>
               {resaleMarketLoading ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="flex items-center gap-2 text-[#547792]">
@@ -1095,36 +999,6 @@ export function ValueParityPanel() {
               )}
             </div>
 
-            {/* Pagination Footer */}
-            {resaleMarketData.length > 0 && (
-              <div className="px-4 py-2 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30 flex items-center justify-between">
-                <div className="text-xs text-[#547792]">
-                  Page {resaleMarketPagination.page} of {resaleMarketPagination.totalPages || 1}
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); handleResaleMarketPageChange(resaleMarketPagination.page - 1); }}
-                    disabled={resaleMarketPagination.page === 1 || resaleMarketLoading}
-                    className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); handleResaleMarketPageChange(resaleMarketPagination.page + 1); }}
-                    disabled={resaleMarketPagination.page >= resaleMarketPagination.totalPages || resaleMarketLoading}
-                    className="p-1.5 rounded border border-[#94B4C1] text-[#547792] hover:bg-[#94B4C1]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </>
       )}
