@@ -171,15 +171,28 @@ export function MarketMomentumGrid() {
         </div>
       </div>
 
-      {/* Footer with data info */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between text-[10px] text-[#94B4C1]">
-            <span>Line: Median PSF • Bars: Transaction Volume</span>
-            <span>{ALL_DISTRICTS.length} districts • Independent Y-axes</span>
+      {/* Footer with explanatory notes */}
+      <div className="px-4 py-3 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
+        <div className="flex flex-col gap-2">
+          {/* Data indicator */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px]">
+            <span className="text-[#547792] font-medium">
+              Data: {filters.saleType === 'Resale' ? 'Resale Only' : filters.saleType === 'New Sale' ? 'New Sale Only' : 'All Transactions (New Sale + Resale)'}
+            </span>
+            <span className="text-[#94B4C1]">{ALL_DISTRICTS.length} districts</span>
           </div>
-          <div className="text-[10px] text-[#94B4C1] italic">
-            Note: D24 (Lim Chu Kang / Tengah) has no condo transactions — area is largely undeveloped with Tengah town still under construction.
+
+          {/* Chart legend */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-[#547792]">
+            <span><strong>Line:</strong> Quarterly Median PSF</span>
+            <span><strong>Bars:</strong> Transaction Volume ($)</span>
+            <span><strong>%:</strong> Total growth from first to last quarter</span>
+          </div>
+
+          {/* Additional notes */}
+          <div className="text-[10px] text-[#94B4C1] space-y-0.5">
+            <p>Each chart has independent Y-axis scaling to highlight local trends. Use sidebar filters to change date range or sale type.</p>
+            <p className="italic">Note: D24 (Lim Chu Kang / Tengah) has no condo transactions — area is largely undeveloped.</p>
           </div>
         </div>
       </div>

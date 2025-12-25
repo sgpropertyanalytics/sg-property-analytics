@@ -435,11 +435,28 @@ export function GrowthDumbbellChart() {
         })}
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
-        <div className="flex items-center justify-between text-[10px] text-[#94B4C1]">
-          <span>Grey dot: {startQuarter} • Colored dot: {endQuarter}</span>
-          <span>{chartData.length} districts</span>
+      {/* Footer with explanatory notes */}
+      <div className="px-4 py-3 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
+        <div className="flex flex-col gap-2">
+          {/* Data indicator */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px]">
+            <span className="text-[#547792] font-medium">
+              Data: {filters.saleType === 'Resale' ? 'Resale Only' : filters.saleType === 'New Sale' ? 'New Sale Only' : 'All Transactions (New Sale + Resale)'}
+            </span>
+            <span className="text-[#94B4C1]">{chartData.length} districts</span>
+          </div>
+
+          {/* Chart legend */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-[#547792]">
+            <span><strong>Grey dot:</strong> {startQuarter} Median PSF</span>
+            <span><strong>Colored dot:</strong> {endQuarter} Median PSF</span>
+            <span><strong>%:</strong> Total price change between quarters</span>
+          </div>
+
+          {/* Additional notes */}
+          <div className="text-[10px] text-[#94B4C1]">
+            <p>Green = price increase, Red = price decrease. Click column headers to sort. Click district to filter dashboard.</p>
+          </div>
         </div>
       </div>
     </div>
