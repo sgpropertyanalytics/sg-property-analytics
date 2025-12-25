@@ -15,6 +15,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
+import { PreviewChartOverlay } from '../ui';
 
 ChartJS.register(
   CategoryScale,
@@ -440,7 +441,9 @@ export function PriceCompressionChart({ height = 380 }) {
       {/* Main Spread Chart */}
       <div className="p-2 md:p-3 lg:p-4" style={{ height: showContext ? height * 0.65 : height }}>
         {data.length > 0 ? (
-          <Line key={timeGrouping} ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
+          <PreviewChartOverlay chartRef={chartRef}>
+            <Line key={timeGrouping} ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
+          </PreviewChartOverlay>
         ) : (
           <div className="flex items-center justify-center h-full text-[#547792]">
             <div className="text-center">

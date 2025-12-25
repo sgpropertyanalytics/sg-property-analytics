@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
 import { BlurredProject, BlurredCurrency, BlurredArea, BlurredPSF } from '../BlurredCell';
+import { useSubscription } from '../../context/SubscriptionContext';
 
 /**
  * Transaction Data Table - Responsive table showing transaction-level details
@@ -14,6 +15,8 @@ import { BlurredProject, BlurredCurrency, BlurredArea, BlurredPSF } from '../Blu
  */
 export function TransactionDataTable({ height = 400 }) {
   const { buildApiParams, activeFilterCount, crossFilter, highlight, factFilter } = usePowerBIFilters();
+  const subscriptionContext = useSubscription();
+  const isPremium = subscriptionContext?.isPremium ?? true;
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -191,7 +194,7 @@ export function TransactionDataTable({ height = 400 }) {
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
               {loading ? (
                 // Loading skeleton
                 [...Array(pagination.limit)].map((_, i) => (

@@ -12,7 +12,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
-import { KeyInsightBox } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay } from '../ui';
 
 ChartJS.register(
   CategoryScale,
@@ -395,7 +395,9 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
 
       {/* Chart */}
       <div className="p-4" style={{ height }}>
-        <Bar key={showFullRange ? 'full' : 'capped'} ref={chartRef} data={chartData} options={options} />
+        <PreviewChartOverlay chartRef={chartRef}>
+          <Bar key={showFullRange ? 'full' : 'capped'} ref={chartRef} data={chartData} options={options} />
+        </PreviewChartOverlay>
       </div>
 
       {/* Footer with context info */}

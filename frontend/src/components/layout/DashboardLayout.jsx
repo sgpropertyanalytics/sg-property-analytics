@@ -212,20 +212,11 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
             </div>
           </header>
 
-          {/* Simple Blur Paywall for Free Users */}
-          {!isPremium && (
-            <>
-              {/* Blur layer - visual blur over content */}
-              <div
-                className="fixed inset-0 z-40 pointer-events-none backdrop-blur-[4px]"
-                aria-hidden="true"
-              />
-
-              {/* Click blocker - blocks chart interactions */}
-              <div className="fixed inset-0 z-[41]" aria-hidden="true" />
-
-              {/* Floating CTA banner - above blockers, keyboard accessible */}
-              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
+          {/* Main Content - Wrapped with ErrorBoundary to prevent blank page crashes */}
+          <main className="flex-1 overflow-auto flex flex-col">
+            {/* Preview Mode CTA - Sticky banner for free users */}
+            {!isPremium && (
+              <div className="sticky top-0 z-50 flex justify-center py-3 bg-gradient-to-b from-[#EAE0CF]/95 to-[#EAE0CF]/0">
                 <button
                   onClick={() => showPaywall({ source: 'preview_banner' })}
                   className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full
@@ -241,15 +232,7 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
                   <span className="text-[#EAE0CF]">Unlock Full Access →</span>
                 </button>
               </div>
-            </>
-          )}
-
-          {/* Main Content - Wrapped with ErrorBoundary to prevent blank page crashes */}
-          {/* inert attribute prevents keyboard focus/interaction when in preview mode */}
-          <main
-            className="flex-1 overflow-auto flex flex-col"
-            {...(!isPremium && { inert: '' })}
-          >
+            )}
             <ErrorBoundary name="Page Content">
               <div className="flex-1">
                 {children}

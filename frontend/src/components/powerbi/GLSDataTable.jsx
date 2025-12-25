@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getGLSAll } from '../../api/client';
+import { useSubscription } from '../../context/SubscriptionContext';
 
 /**
  * GLS Data Table - Shows Government Land Sales tender details
@@ -17,6 +18,8 @@ import { getGLSAll } from '../../api/client';
  * - FACT (awarded): Capital committed, confirmed supply
  */
 export function GLSDataTable({ height = 400 }) {
+  const subscriptionContext = useSubscription();
+  const isPremium = subscriptionContext?.isPremium ?? true;
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -255,7 +258,7 @@ export function GLSDataTable({ height = 400 }) {
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
               {loading ? (
                 // Loading skeleton
                 [...Array(10)].map((_, i) => (

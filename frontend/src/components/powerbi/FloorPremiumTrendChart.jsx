@@ -14,6 +14,7 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
+import { PreviewChartOverlay } from '../ui';
 
 ChartJS.register(
   CategoryScale,
@@ -325,7 +326,9 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
 
       {/* Chart */}
       <div className="flex-1 p-4 min-h-0">
-        <Chart ref={chartRef} type="line" data={chartData} options={options} />
+        <PreviewChartOverlay chartRef={chartRef}>
+          <Chart ref={chartRef} type="line" data={chartData} options={options} />
+        </PreviewChartOverlay>
       </div>
 
       {/* Footer Insights */}

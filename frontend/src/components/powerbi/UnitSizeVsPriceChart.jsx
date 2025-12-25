@@ -11,7 +11,7 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import apiClient from '../../api/client';
 import { formatPrice, getBedroomLabelShort } from '../../constants';
-import { KeyInsightBox } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay } from '../ui';
 
 ChartJS.register(
   LinearScale,
@@ -330,7 +330,9 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
 
       {/* Chart - fills remaining space */}
       <div className="flex-1 p-4 min-h-0">
-        <Scatter ref={chartRef} data={chartData} options={options} />
+        <PreviewChartOverlay chartRef={chartRef}>
+          <Scatter ref={chartRef} data={chartData} options={options} />
+        </PreviewChartOverlay>
       </div>
     </div>
   );

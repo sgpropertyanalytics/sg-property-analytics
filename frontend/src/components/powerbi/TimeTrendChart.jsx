@@ -15,6 +15,7 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
+import { PreviewChartOverlay } from '../ui';
 
 ChartJS.register(
   CategoryScale,
@@ -346,7 +347,9 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         </div>
       </div>
       <div className="p-4" style={{ height }}>
-        <Chart key={timeGrouping} ref={chartRef} type="bar" data={chartData} options={options} />
+        <PreviewChartOverlay chartRef={chartRef}>
+          <Chart key={timeGrouping} ref={chartRef} type="bar" data={chartData} options={options} />
+        </PreviewChartOverlay>
       </div>
     </div>
   );

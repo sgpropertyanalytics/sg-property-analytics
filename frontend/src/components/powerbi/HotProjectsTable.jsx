@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getHotProjects } from '../../api/client';
 import { BlurredProject, BlurredCurrency } from '../BlurredCell';
+import { useSubscription } from '../../context/SubscriptionContext';
 
 /**
  * Active New Sales Table - Shows LAUNCHED projects with sales progress
@@ -29,6 +30,8 @@ export function HotProjectsTable({
   showHeader = true, // Show/hide header
   onDataLoad = null, // Callback with data count after loading
 }) {
+  const subscriptionContext = useSubscription();
+  const isPremium = subscriptionContext?.isPremium ?? true;
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -219,7 +222,7 @@ export function HotProjectsTable({
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
               {loading ? (
                 // Loading skeleton
                 [...Array(10)].map((_, i) => (

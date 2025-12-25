@@ -16,6 +16,7 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
+import { PreviewChartOverlay } from '../ui';
 import {
   FLOOR_LEVEL_LABELS,
   getFloorLevelIndex,
@@ -400,7 +401,9 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
       {/* Chart */}
       <div className="flex-1 p-4 min-h-0">
-        <Chart ref={chartRef} type="bar" data={chartData} options={options} />
+        <PreviewChartOverlay chartRef={chartRef}>
+          <Chart ref={chartRef} type="bar" data={chartData} options={options} />
+        </PreviewChartOverlay>
       </div>
 
       {/* Footer Stats */}

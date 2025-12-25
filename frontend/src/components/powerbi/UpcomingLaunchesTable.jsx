@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getUpcomingLaunchesAll } from '../../api/client';
+import { useSubscription } from '../../context/SubscriptionContext';
 
 /**
  * Upcoming Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
@@ -19,6 +20,8 @@ import { getUpcomingLaunchesAll } from '../../api/client';
  * Data Source: /api/upcoming-launches/* (EdgeProp, PropNex, ERA)
  */
 export function UpcomingLaunchesTable({ height = 400 }) {
+  const subscriptionContext = useSubscription();
+  const isPremium = subscriptionContext?.isPremium ?? true;
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -179,7 +182,7 @@ export function UpcomingLaunchesTable({ height = 400 }) {
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
               {loading ? (
                 // Loading skeleton
                 [...Array(10)].map((_, i) => (

@@ -14,7 +14,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import { getNewVsResale } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
-import { KeyInsightBox } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay } from '../ui';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -373,7 +373,9 @@ export function NewVsResaleChart({ height = 350 }) {
       {/* Chart Container - follows chart-container-contract skill */}
       <div className="p-2 md:p-3 lg:p-4" style={{ height }}>
         {chartData.length > 0 ? (
-          <Line key={timeGrouping} ref={chartRef} data={chartConfig} options={options} />
+          <PreviewChartOverlay chartRef={chartRef}>
+            <Line key={timeGrouping} ref={chartRef} data={chartConfig} options={options} />
+          </PreviewChartOverlay>
         ) : (
           <div className="flex items-center justify-center h-full text-[#547792]">
             <div className="text-center">
