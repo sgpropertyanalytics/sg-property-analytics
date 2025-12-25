@@ -11,4 +11,3 @@ pandas
 numpy
 beautifulsoup4
 requests
-playwright
