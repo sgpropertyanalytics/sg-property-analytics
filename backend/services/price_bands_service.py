@@ -319,12 +319,12 @@ def _compute_monthly_percentiles(
         # 'Unknown' tenure doesn't add a filter
 
     if date_from:
-        conditions.append("transaction_date >= :date_from::date")
-        params["date_from"] = date_from.isoformat()
+        conditions.append("transaction_date >= :date_from")
+        params["date_from"] = date_from  # Pass Python date object directly
 
     if date_to:
-        conditions.append("transaction_date <= :date_to::date")
-        params["date_to"] = date_to.isoformat()
+        conditions.append("transaction_date <= :date_to")
+        params["date_to"] = date_to  # Pass Python date object directly
 
     where_clause = " AND ".join(conditions)
 
