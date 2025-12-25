@@ -283,9 +283,6 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     );
   }
 
-  // Chart area height (explicit, not calculated from container)
-  const chartHeight = height - 120;
-
   return (
     <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden ${updating ? 'opacity-70' : ''}`}>
       {/* Header */}
@@ -331,8 +328,8 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         Stable sample (n = 2,000) balanced across CCR / RCR / OCR. ~2–3% margin of error (95% CI) for macro-level trends.
       </KeyInsightBox>
 
-      {/* Chart - explicit height like other charts */}
-      <div className="p-4" style={{ height: chartHeight }}>
+      {/* Chart */}
+      <div className="p-4" style={{ height }}>
         <PreviewChartOverlay chartRef={chartRef}>
           <Scatter ref={chartRef} data={chartData} options={options} />
         </PreviewChartOverlay>
