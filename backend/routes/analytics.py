@@ -2503,6 +2503,7 @@ def scatter_sample():
     from sqlalchemy import func, text
     from constants import CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS
     from db.sql import exclude_outliers, OUTLIER_FILTER
+    from datetime import datetime
 
     try:
         # Parse sample size
@@ -2512,6 +2513,21 @@ def scatter_sample():
         # - No seed: stable hash (same filters = same sample)
         # - With seed: different sample (used by refresh button)
         seed = request.args.get('seed', '')
+
+        # Parse date params as Python date objects (not strings)
+        # This ensures proper type handling for SQL DATE columns
+        date_from = None
+        date_to = None
+        if request.args.get('date_from'):
+            try:
+                date_from = datetime.strptime(request.args.get('date_from'), "%Y-%m-%d").date()
+            except ValueError:
+                pass
+        if request.args.get('date_to'):
+            try:
+                date_to = datetime.strptime(request.args.get('date_to'), "%Y-%m-%d").date()
+            except ValueError:
+                pass
 
         # Build base query with outlier exclusion
         query = db.session.query(
@@ -2525,11 +2541,11 @@ def scatter_sample():
         )
 
         # Apply filters
-        # Date range
-        if request.args.get('date_from'):
-            query = query.filter(Transaction.transaction_date >= request.args.get('date_from'))
-        if request.args.get('date_to'):
-            query = query.filter(Transaction.transaction_date <= request.args.get('date_to'))
+        # Date range (using parsed date objects)
+        if date_from:
+            query = query.filter(Transaction.transaction_date >= date_from)
+        if date_to:
+            query = query.filter(Transaction.transaction_date <= date_to)
 
         # District filter
         if request.args.get('district'):
@@ -2581,12 +2597,13 @@ def scatter_sample():
         where_conditions = [OUTLIER_FILTER]
         params = {"samples_per_segment": samples_per_segment, "sample_size": sample_size}
 
-        if request.args.get('date_from'):
+        # Use already-parsed Python date objects (not strings)
+        if date_from:
             where_conditions.append("transaction_date >= :date_from")
-            params["date_from"] = request.args.get('date_from')
-        if request.args.get('date_to'):
+            params["date_from"] = date_from
+        if date_to:
             where_conditions.append("transaction_date <= :date_to")
-            params["date_to"] = request.args.get('date_to')
+            params["date_to"] = date_to
         if request.args.get('district'):
             districts = [d.strip() for d in request.args.get('district').split(',') if d.strip()]
             if districts:
