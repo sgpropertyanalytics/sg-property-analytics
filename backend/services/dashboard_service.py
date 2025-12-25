@@ -358,9 +358,13 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
     if tenure:
         tenure_lower = tenure.lower()
         if tenure_lower == 'freehold':
+            # Match freehold tenure, but exclude 999-year leasehold which also has remaining_lease=999
             conditions.append(or_(
                 Transaction.tenure.ilike('%freehold%'),
-                Transaction.remaining_lease == 999
+                and_(
+                    Transaction.remaining_lease == 999,
+                    ~Transaction.tenure.ilike('%999%')
+                )
             ))
         elif tenure_lower in ['99-year', '99']:
             conditions.append(and_(
@@ -368,7 +372,9 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
                 Transaction.remaining_lease > 0
             ))
         elif tenure_lower in ['999-year', '999']:
-            conditions.append(Transaction.remaining_lease == 999)
+            # Match 999-year leasehold by tenure text, not remaining_lease
+            # (remaining_lease=999 would also match Freehold)
+            conditions.append(Transaction.tenure.ilike('%999%'))
 
     # Property age filter (years since lease start / TOP date)
     # NOTE: Freehold properties are EXCLUDED from property age filtering because their
