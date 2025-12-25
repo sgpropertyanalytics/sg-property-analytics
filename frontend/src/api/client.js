@@ -339,7 +339,7 @@ export const getKpiSummary = (params = {}) =>
  * @param {string} params.sort_order - asc or desc (default desc)
  */
 export const getTransactionsList = (params = {}, options = {}) =>
-  apiClient.get(`/transactions/list?${buildQueryString(params)}`, options);
+  apiClient.get(`/transactions/list?${buildQueryString(params)}`, { signal: options.signal });
 
 /**
  * Get available filter options based on current data
