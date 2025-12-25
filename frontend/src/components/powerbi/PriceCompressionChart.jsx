@@ -19,6 +19,7 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
+import { getAggField, AggField } from '../../schemas/apiContract';
 
 ChartJS.register(
   CategoryScale,
@@ -125,10 +126,14 @@ export function PriceCompressionChart({ height = 380 }) {
     rawData.forEach(row => {
       const period = row[timeGrain];
       if (!grouped[period]) grouped[period] = { CCR: null, RCR: null, OCR: null, counts: {} };
-      const region = row.region?.toUpperCase();
-      if (region) {
-        grouped[period][region] = row.median_psf;
-        grouped[period].counts[region] = row.count || 0;
+      // Use getAggField for v1/v2 compatibility
+      const region = getAggField(row, AggField.REGION);
+      const regionUpper = region?.toUpperCase();  // Normalize for object key
+      const medianPsf = getAggField(row, AggField.MEDIAN_PSF);
+      const count = getAggField(row, AggField.COUNT) || 0;
+      if (regionUpper) {
+        grouped[period][regionUpper] = medianPsf;
+        grouped[period].counts[regionUpper] = count;
       }
     });
 

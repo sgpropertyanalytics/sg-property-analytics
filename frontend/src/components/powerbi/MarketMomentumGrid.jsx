@@ -4,7 +4,7 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { DistrictMicroChart } from './DistrictMicroChart';
-import { isSaleType } from '../../schemas/apiContract';
+import { isSaleType, getAggField, AggField } from '../../schemas/apiContract';
 
 // All districts ordered by region: CCR → RCR → OCR
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
@@ -64,10 +64,13 @@ export function MarketMomentumGrid() {
         rawData.forEach(row => {
           const district = row.district;
           if (district && districtData[district]) {
+            // Use getAggField for v1/v2 compatibility
+            const medianPsf = getAggField(row, AggField.MEDIAN_PSF) || getAggField(row, AggField.AVG_PSF) || 0;
+            const totalValue = getAggField(row, AggField.TOTAL_VALUE) || 0;
             districtData[district].push({
               quarter: row.quarter,
-              medianPsf: row.median_psf || row.avg_psf || 0,
-              totalValue: row.total_value || 0,
+              medianPsf,
+              totalValue,
             });
           }
         });

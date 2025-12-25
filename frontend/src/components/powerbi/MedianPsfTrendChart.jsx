@@ -16,6 +16,7 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
+import { getAggField, AggField } from '../../schemas/apiContract';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -94,16 +95,20 @@ export function MedianPsfTrendChart({ height = 300 }) {
               ocrCount: 0,
             };
           }
-          const region = row.region?.toUpperCase();
-          if (region === 'CCR') {
-            groupedByTime[period].CCR = row.median_psf;
-            groupedByTime[period].ccrCount = row.count || 0;
-          } else if (region === 'RCR') {
-            groupedByTime[period].RCR = row.median_psf;
-            groupedByTime[period].rcrCount = row.count || 0;
-          } else if (region === 'OCR') {
-            groupedByTime[period].OCR = row.median_psf;
-            groupedByTime[period].ocrCount = row.count || 0;
+          // Use getAggField for v1/v2 compatibility
+          const region = getAggField(row, AggField.REGION);
+          const regionUpper = region?.toUpperCase();  // Normalize for comparison
+          const medianPsf = getAggField(row, AggField.MEDIAN_PSF);
+          const count = getAggField(row, AggField.COUNT) || 0;
+          if (regionUpper === 'CCR') {
+            groupedByTime[period].CCR = medianPsf;
+            groupedByTime[period].ccrCount = count;
+          } else if (regionUpper === 'RCR') {
+            groupedByTime[period].RCR = medianPsf;
+            groupedByTime[period].rcrCount = count;
+          } else if (regionUpper === 'OCR') {
+            groupedByTime[period].OCR = medianPsf;
+            groupedByTime[period].ocrCount = count;
           }
         });
 

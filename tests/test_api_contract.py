@@ -1519,3 +1519,92 @@ class TestDashboardEndpointContract:
             # Should NOT have snake_case
             assert 'total_value' not in row
             assert 'avg_psf' not in row
+
+
+class TestFrontendDashboardHelpers:
+    """Tests for frontend dashboard schema helpers."""
+
+    def test_frontend_schema_has_dashboard_field_enum(self):
+        """Verify DashboardField enum exists in frontend schema."""
+        schema_path = os.path.join(
+            os.path.dirname(__file__), '..', 'frontend', 'src', 'schemas', 'apiContract.js'
+        )
+        with open(schema_path, 'r') as f:
+            content = f.read()
+
+        assert 'export const DashboardField' in content
+        assert 'AVG_PSF' in content
+        assert 'MEDIAN_PSF' in content
+        assert 'TOTAL_VALUE' in content
+        assert 'TOTAL_COUNT' in content
+        assert 'BEDROOM_COUNT' in content
+        assert 'SALE_TYPE' in content
+
+    def test_frontend_schema_has_getDashboardField_helper(self):
+        """Verify getDashboardField helper exists."""
+        schema_path = os.path.join(
+            os.path.dirname(__file__), '..', 'frontend', 'src', 'schemas', 'apiContract.js'
+        )
+        with open(schema_path, 'r') as f:
+            content = f.read()
+
+        assert 'export const getDashboardField' in content
+        # Check v1 fallback map exists
+        assert 'V1_DASHBOARD_FIELD_MAP' in content
+
+    def test_frontend_schema_has_normalize_panel_helpers(self):
+        """Verify panel normalizer helpers exist."""
+        schema_path = os.path.join(
+            os.path.dirname(__file__), '..', 'frontend', 'src', 'schemas', 'apiContract.js'
+        )
+        with open(schema_path, 'r') as f:
+            content = f.read()
+
+        # Summary panel
+        assert 'export const normalizeSummaryPanel' in content
+        # Time series
+        assert 'export const normalizeTimeSeriesRow' in content
+        # Location
+        assert 'export const normalizeLocationRow' in content
+        # Bedroom mix
+        assert 'export const normalizeBedroomMixRow' in content
+        # Sale type breakdown
+        assert 'export const normalizeSaleTypeRow' in content
+
+    def test_frontend_schema_has_v1_dashboard_field_map(self):
+        """Verify V1_DASHBOARD_FIELD_MAP covers all v1 to v2 mappings."""
+        schema_path = os.path.join(
+            os.path.dirname(__file__), '..', 'frontend', 'src', 'schemas', 'apiContract.js'
+        )
+        with open(schema_path, 'r') as f:
+            content = f.read()
+
+        # All v1 snake_case fields should be in the map
+        expected_v1_fields = [
+            'avg_psf', 'median_psf', 'total_value', 'avg_price',
+            'bedroom', 'sale_type', 'total_count', 'median_price',
+            'date_min', 'date_max', 'psf_range', 'price_range'
+        ]
+        for field in expected_v1_fields:
+            assert f"'{field}'" in content or f'"{field}"' in content, \
+                f"Missing v1 field mapping: {field}"
+
+    def test_frontend_charts_use_getAggField(self):
+        """Verify key charts use getAggField helper for v1/v2 compatibility."""
+        charts_to_check = [
+            ('MedianPsfTrendChart.jsx', ['getAggField', 'AggField']),
+            ('MarketMomentumGrid.jsx', ['getAggField', 'AggField']),
+            ('PriceCompressionChart.jsx', ['getAggField', 'AggField']),
+        ]
+
+        for chart_file, expected_imports in charts_to_check:
+            chart_path = os.path.join(
+                os.path.dirname(__file__), '..', 'frontend', 'src',
+                'components', 'powerbi', chart_file
+            )
+            with open(chart_path, 'r') as f:
+                content = f.read()
+
+            for import_name in expected_imports:
+                assert import_name in content, \
+                    f"{chart_file} should import {import_name}"
