@@ -6,11 +6,31 @@ import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionF
 // All districts
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
 
-// Region colors matching project palette
-const REGION_COLORS = {
-  CCR: '#213448', // Deep Navy
-  RCR: '#547792', // Ocean Blue
-  OCR: '#94B4C1', // Sky Blue
+// Trend-based colors (same as DistrictMicroChart)
+const TREND_COLORS = {
+  strong_up: '#166534',   // Dark green (emerald-800)
+  up: '#16a34a',          // Green (emerald-600)
+  neutral: '#1f2937',     // Dark gray/black
+  down: '#dc2626',        // Red
+  strong_down: '#991b1b', // Dark red
+};
+
+// Get trend color based on growth percentage
+const getTrendColor = (growthPercent) => {
+  if (growthPercent >= 30) return TREND_COLORS.strong_up;
+  if (growthPercent >= 10) return TREND_COLORS.up;
+  if (growthPercent <= -20) return TREND_COLORS.strong_down;
+  if (growthPercent <= -5) return TREND_COLORS.down;
+  return TREND_COLORS.neutral;
+};
+
+// Get bar background color (lighter version)
+const getTrendBarColor = (growthPercent) => {
+  if (growthPercent >= 30) return 'rgba(22, 101, 52, 0.3)';   // strong_up
+  if (growthPercent >= 10) return 'rgba(22, 163, 74, 0.3)';   // up
+  if (growthPercent <= -20) return 'rgba(153, 27, 27, 0.3)';  // strong_down
+  if (growthPercent <= -5) return 'rgba(220, 38, 38, 0.3)';   // down
+  return 'rgba(31, 41, 55, 0.2)';  // neutral
 };
 
 /**
@@ -183,15 +203,28 @@ export function GrowthDumbbellChart() {
               Start vs End price by district • Sorted by growth %
             </p>
           </div>
-          {/* Legend */}
-          <div className="flex items-center gap-4 text-xs">
-            <div className="flex items-center gap-1.5">
+          {/* Legend - Start dot + Trend colors */}
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1">
               <div className="w-2.5 h-2.5 rounded-full bg-[#94B4C1]" />
               <span className="text-[#547792]">Start</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#213448]" />
-              <span className="text-[#547792]">End</span>
+            <span className="text-[#94B4C1]">|</span>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: TREND_COLORS.strong_up }} />
+              <span className="text-[#547792]">≥30%</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: TREND_COLORS.up }} />
+              <span className="text-[#547792]">≥10%</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: TREND_COLORS.neutral }} />
+              <span className="text-[#547792]">Flat</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: TREND_COLORS.down }} />
+              <span className="text-[#547792]">↓</span>
             </div>
           </div>
         </div>
@@ -217,8 +250,15 @@ export function GrowthDumbbellChart() {
           const endPercent = psfToPercent(item.endPsf);
           const leftPercent = Math.min(startPercent, endPercent);
           const rightPercent = Math.max(startPercent, endPercent);
-          const isPositive = item.growthPercent >= 0;
-          const regionColor = REGION_COLORS[item.region] || REGION_COLORS.OCR;
+          const trendColor = getTrendColor(item.growthPercent);
+          const trendBarColor = getTrendBarColor(item.growthPercent);
+
+          // Text color class based on trend
+          const textColorClass = item.growthPercent >= 30 ? 'text-emerald-800'
+            : item.growthPercent >= 10 ? 'text-emerald-600'
+            : item.growthPercent <= -20 ? 'text-red-800'
+            : item.growthPercent <= -5 ? 'text-red-500'
+            : 'text-gray-700';
 
           return (
             <div
@@ -231,10 +271,6 @@ export function GrowthDumbbellChart() {
                 {/* District Label */}
                 <div className="w-20 shrink-0 flex items-center gap-1.5">
                   <span className="text-xs font-semibold text-[#213448]">{item.district}</span>
-                  <span
-                    className="w-1.5 h-1.5 rounded-full shrink-0"
-                    style={{ backgroundColor: regionColor }}
-                  />
                 </div>
 
                 {/* Dumbbell Chart Area */}
@@ -242,13 +278,13 @@ export function GrowthDumbbellChart() {
                   {/* Background track */}
                   <div className="absolute inset-y-2 left-0 right-0 bg-[#EAE0CF]/30 rounded-full" />
 
-                  {/* Connecting bar */}
+                  {/* Connecting bar - colored by trend */}
                   <div
                     className="absolute top-2.5 h-1 rounded-full transition-all"
                     style={{
                       left: `${leftPercent}%`,
                       width: `${rightPercent - leftPercent}%`,
-                      backgroundColor: isPositive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)',
+                      backgroundColor: trendBarColor,
                     }}
                   />
 
@@ -259,25 +295,21 @@ export function GrowthDumbbellChart() {
                     title={`Start: ${formatPrice(item.startPsf)} (${item.startQuarter})`}
                   />
 
-                  {/* End dot (colored by region) */}
+                  {/* End dot (colored by trend) */}
                   <div
                     className="absolute top-1 w-4 h-4 rounded-full border-2 border-white shadow-sm transform -translate-x-1/2 group-hover:scale-110 transition-transform z-10"
                     style={{
                       left: `${endPercent}%`,
-                      backgroundColor: regionColor,
+                      backgroundColor: trendColor,
                     }}
                     title={`End: ${formatPrice(item.endPsf)} (${item.endQuarter})`}
                   />
                 </div>
 
-                {/* Growth Percentage */}
+                {/* Growth Percentage - colored by trend */}
                 <div className="w-16 shrink-0 text-right">
-                  <span
-                    className={`text-xs font-bold ${
-                      isPositive ? 'text-emerald-600' : 'text-red-500'
-                    }`}
-                  >
-                    {isPositive ? '+' : ''}{item.growthPercent.toFixed(0)}%
+                  <span className={`text-xs font-bold ${textColorClass}`}>
+                    {item.growthPercent >= 0 ? '+' : ''}{item.growthPercent.toFixed(0)}%
                   </span>
                 </div>
               </div>
@@ -289,7 +321,7 @@ export function GrowthDumbbellChart() {
       {/* Footer */}
       <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
         <div className="flex items-center justify-between text-[10px] text-[#94B4C1]">
-          <span>Grey dot: First quarter • Colored dot: Latest quarter</span>
+          <span>Grey dot: First quarter • Colored dot: Latest quarter (trend-colored)</span>
           <span>{chartData.length} districts ranked</span>
         </div>
       </div>
