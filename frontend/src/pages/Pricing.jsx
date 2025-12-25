@@ -95,7 +95,7 @@ export default function Pricing() {
 
           {/* Quarterly Card - White (Vertically centered, resting on page) */}
           <div
-            className="flex-1 bg-white rounded-2xl p-8 border border-[#94B4C1]/50 flex flex-col"
+            className="flex-1 bg-white rounded-2xl p-8 border border-[#94B4C1]/50 flex flex-col min-h-[320px]"
             style={{ boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}
           >
             <div className="flex-1 flex flex-col justify-center">
@@ -123,14 +123,14 @@ export default function Pricing() {
             </button>
           </div>
 
-          {/* Annual Card - Deep Navy (Taller, elevated - "Pop-out" effect) */}
+          {/* Annual Card - Deep Navy (Slightly elevated - "Pop-out" effect) */}
           <div
             className="flex-1 bg-[#213448] rounded-2xl relative flex flex-col"
             style={{
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-              padding: '2.5rem 2rem 2rem 2rem',
-              marginTop: '-24px',
-              marginBottom: '-24px',
+              padding: '2rem 2rem 1.5rem 2rem',
+              marginTop: '-16px',
+              marginBottom: '-16px',
             }}
           >
             {/* Save 40% Badge */}
@@ -154,7 +154,7 @@ export default function Pricing() {
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Know if you over- or under-paid relative to recent transactions</span>
+                  <span className="text-[#94B4C1]">Know if you over- or under-paid vs recent transactions</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -166,25 +166,25 @@ export default function Pricing() {
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Get notified when similar units transact</span>
+                  <span className="text-[#94B4C1]">Get alerts when similar units transact</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Validate exit or refinancing timing using live data</span>
+                  <span className="text-[#94B4C1]">Validate exit or refinancing timing with live data</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Spot pricing hotspots with district-level heatmaps</span>
+                  <span className="text-[#94B4C1]">Spot pricing hotspots using district heatmaps</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">See how floor level impacts price in any building</span>
+                  <span className="text-[#94B4C1]">See how floor level impacts price</span>
                 </li>
               </ul>
             </div>

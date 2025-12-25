@@ -84,12 +84,12 @@ export function PricingModal({ isOpen, onClose }) {
 
   // Outcome-focused statements (what users achieve, not features)
   const outcomes = [
-    'Know if you over- or under-paid relative to recent transactions',
+    'Know if you over- or under-paid vs recent transactions',
     'Track resale benchmarks within your project',
-    'Get notified when similar units transact',
-    'Validate exit or refinancing timing using live data',
-    'Spot pricing hotspots with district-level heatmaps',
-    'See how floor level impacts price in any building',
+    'Get alerts when similar units transact',
+    'Validate exit or refinancing timing with live data',
+    'Spot pricing hotspots using district heatmaps',
+    'See how floor level impacts price',
   ];
 
   return (
@@ -128,7 +128,7 @@ export function PricingModal({ isOpen, onClose }) {
 
             {/* LEFT: Quarterly (Vertically centered, resting on page) */}
             <div
-              className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1] flex flex-col"
+              className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1] flex flex-col min-h-[280px]"
               style={{ boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}
             >
               <div className="flex-1 flex flex-col justify-center">
@@ -156,14 +156,14 @@ export function PricingModal({ isOpen, onClose }) {
               </button>
             </div>
 
-            {/* RIGHT: Annual (Taller, elevated with deep shadow - "Pop-out" effect) */}
+            {/* RIGHT: Annual (Slightly elevated with deep shadow - "Pop-out" effect) */}
             <div
               className="flex-1 bg-[#213448] rounded-xl flex flex-col relative"
               style={{
                 boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-                padding: '2rem 1.5rem 1.5rem 1.5rem',
-                marginTop: '-20px',
-                marginBottom: '-20px',
+                padding: '1.5rem',
+                marginTop: '-12px',
+                marginBottom: '-12px',
               }}
             >
               {/* SAVE 40% Badge */}
