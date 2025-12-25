@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { getFilterOptions } from '../api/client';
+import { normalizeFilterOptions } from '../schemas/apiContract';
 
 const PowerBIFilterContext = createContext(null);
 
@@ -113,16 +114,23 @@ export function PowerBIFilterProvider({ children }) {
   }, []);
 
   // ===== Filter Options =====
-  // Available values loaded from API
+  // Available values loaded from API and normalized to {value, label} format
   const [filterOptions, setFilterOptions] = useState({
+    // v2 normalized format: [{value, label}, ...]
     districts: [],
-    regions: { CCR: [], RCR: [], OCR: [] },
+    regions: [],
     bedrooms: [],
     saleTypes: [],
+    tenures: [],
+    marketSegments: [],
+    // Ranges (same structure in v1/v2)
     dateRange: { min: null, max: null },
     psfRange: { min: null, max: null },
     sizeRange: { min: null, max: null },
-    tenures: [],
+    // Legacy compatibility fields
+    districtsRaw: [],          // Raw district codes for existing logic
+    regionsLegacy: null,       // {CCR: [...], RCR: [...], OCR: [...]} for legacy
+    // State
     loading: true,
     error: null,
   });
@@ -133,15 +141,27 @@ export function PowerBIFilterProvider({ children }) {
       try {
         const response = await getFilterOptions();
         const data = response.data;
+
+        // Normalize API response to {value, label} format
+        // Handles both v1 (raw values) and v2 ({value, label}) responses
+        const normalized = normalizeFilterOptions(data);
+
         setFilterOptions({
-          districts: data.districts || [],
-          regions: data.regions || { CCR: [], RCR: [], OCR: [] },
-          bedrooms: data.bedrooms || [],
-          saleTypes: data.sale_types || [],
-          dateRange: data.date_range || { min: null, max: null },
-          psfRange: data.psf_range || { min: null, max: null },
-          sizeRange: data.size_range || { min: null, max: null },
-          tenures: data.tenures || [],
+          // v2 normalized format
+          districts: normalized.districts,
+          regions: normalized.regions,
+          bedrooms: normalized.bedrooms,
+          saleTypes: normalized.saleTypes,
+          tenures: normalized.tenures,
+          marketSegments: normalized.marketSegments,
+          // Ranges
+          dateRange: normalized.dateRange,
+          psfRange: normalized.psfRange,
+          sizeRange: normalized.sizeRange,
+          // Legacy compatibility
+          districtsRaw: normalized.districtsRaw,
+          regionsLegacy: normalized.regionsLegacy,
+          // State
           loading: false,
           error: null,
         });

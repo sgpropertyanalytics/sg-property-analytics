@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { DISTRICT_NAMES } from '../../constants';
+import { SaleType, Tenure, isSaleType, isTenure } from '../../schemas/apiContract';
 
 /**
  * Power BI-style Filter Sidebar
@@ -240,7 +241,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           {/* Districts Multi-select */}
           <FilterGroup label="Districts">
             <MultiSelectDropdown
-              options={filterOptions.districts.map(d => {
+              options={(filterOptions.districtsRaw || []).map(d => {
                 const areaName = DISTRICT_NAMES[d];
                 const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
                 return {
@@ -460,44 +461,68 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           {/* Sale Type Buttons */}
           <FilterGroup label="Sale Type">
             <div className="grid grid-cols-2 gap-2">
-              {[{ value: 'New Sale', label: 'New Sale' }, { value: 'Resale', label: 'Resale' }].map(type => (
-                <button
-                  type="button"
-                  key={type.value}
-                  onClick={(e) => { e.preventDefault(); setSaleType(filters.saleType === type.value ? null : type.value); }}
-                  className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
-                    filters.saleType === type.value
-                      ? 'bg-[#547792] text-white border-[#547792]'
-                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
-                  }`}
-                >
-                  {type.label}
-                </button>
-              ))}
+              {/* Use normalized saleTypes from API, fallback to hardcoded for safety */}
+              {(filterOptions.saleTypes?.length > 0
+                ? filterOptions.saleTypes.filter(t => t.value === SaleType.NEW_SALE || t.value === SaleType.RESALE)
+                : [{ value: SaleType.NEW_SALE, label: 'New Sale' }, { value: SaleType.RESALE, label: 'Resale' }]
+              ).map(type => {
+                // Use isSaleType helpers to check equality (handles both v1 and v2 values)
+                const isSelected = type.value === SaleType.NEW_SALE
+                  ? isSaleType.newSale(filters.saleType)
+                  : isSaleType.resale(filters.saleType);
+
+                return (
+                  <button
+                    type="button"
+                    key={type.value}
+                    onClick={(e) => { e.preventDefault(); setSaleType(isSelected ? null : type.value); }}
+                    className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
+                      isSelected
+                        ? 'bg-[#547792] text-white border-[#547792]'
+                        : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+                    }`}
+                  >
+                    {type.label}
+                  </button>
+                );
+              })}
             </div>
           </FilterGroup>
 
           {/* Tenure Buttons */}
           <FilterGroup label="Tenure">
             <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: '99-year', label: '99yr' },
-                { value: '999-year', label: '999yr' },
-                { value: 'Freehold', label: 'FH' }
-              ].map(type => (
-                <button
-                  type="button"
-                  key={type.value}
-                  onClick={(e) => { e.preventDefault(); setTenure(filters.tenure === type.value ? null : type.value); }}
-                  className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
-                    filters.tenure === type.value
-                      ? 'bg-[#547792] text-white border-[#547792]'
-                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
-                  }`}
-                >
-                  {type.label}
-                </button>
-              ))}
+              {/* Use normalized tenures from API, fallback to hardcoded for safety */}
+              {(filterOptions.tenures?.length > 0
+                ? filterOptions.tenures
+                : [
+                    { value: Tenure.LEASEHOLD_99, label: '99yr' },
+                    { value: Tenure.LEASEHOLD_999, label: '999yr' },
+                    { value: Tenure.FREEHOLD, label: 'FH' }
+                  ]
+              ).map(type => {
+                // Use isTenure helpers to check equality (handles both v1 and v2 values)
+                const isSelected =
+                  type.value === Tenure.LEASEHOLD_99 ? isTenure.leasehold99(filters.tenure) :
+                  type.value === Tenure.LEASEHOLD_999 ? isTenure.leasehold999(filters.tenure) :
+                  type.value === Tenure.FREEHOLD ? isTenure.freehold(filters.tenure) :
+                  filters.tenure === type.value;
+
+                return (
+                  <button
+                    type="button"
+                    key={type.value}
+                    onClick={(e) => { e.preventDefault(); setTenure(isSelected ? null : type.value); }}
+                    className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
+                      isSelected
+                        ? 'bg-[#547792] text-white border-[#547792]'
+                        : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+                    }`}
+                  >
+                    {type.label}
+                  </button>
+                );
+              })}
             </div>
           </FilterGroup>
 

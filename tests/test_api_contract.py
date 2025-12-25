@@ -267,6 +267,87 @@ class TestFrontendSchemaSync:
         assert "TRANSACTION_DATE: 'transactionDate'" in content
         assert "SALE_TYPE: 'saleType'" in content
 
+    def test_frontend_schema_has_isSaleType_helpers(self):
+        """Verify frontend schema has v1/v2 compatibility helpers for sale type."""
+        frontend_schema_path = os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            'frontend',
+            'src',
+            'schemas',
+            'apiContract.js'
+        )
+        with open(frontend_schema_path, 'r') as f:
+            content = f.read()
+
+        # Should have isSaleType helper that handles both v1 and v2
+        assert 'export const isSaleType' in content
+        assert "newSale:" in content
+        assert "resale:" in content
+        # Should check both v1 ('New Sale') and v2 ('new_sale')
+        assert "'New Sale'" in content
+        assert "'new_sale'" in content
+
+    def test_frontend_schema_has_isTenure_helpers(self):
+        """Verify frontend schema has v1/v2 compatibility helpers for tenure."""
+        frontend_schema_path = os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            'frontend',
+            'src',
+            'schemas',
+            'apiContract.js'
+        )
+        with open(frontend_schema_path, 'r') as f:
+            content = f.read()
+
+        # Should have isTenure helper that handles both v1 and v2
+        assert 'export const isTenure' in content
+        assert "freehold:" in content
+        assert "leasehold99:" in content
+        # Should check both v1 ('99-year') and v2 ('99_year')
+        assert "'99-year'" in content
+        assert "'99_year'" in content
+
+    def test_frontend_schema_has_normalizeFilterOptions(self):
+        """Verify frontend schema has normalizeFilterOptions function."""
+        frontend_schema_path = os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            'frontend',
+            'src',
+            'schemas',
+            'apiContract.js'
+        )
+        with open(frontend_schema_path, 'r') as f:
+            content = f.read()
+
+        # Should have normalizeFilterOptions function
+        assert 'export const normalizeFilterOptions' in content
+        # Should handle v1 snake_case fields
+        assert 'sale_types' in content
+        assert 'date_range' in content
+        # Should handle v2 camelCase fields
+        assert 'saleTypes' in content
+        assert 'dateRange' in content
+
+    def test_frontend_schema_has_bedroom_enum(self):
+        """Verify frontend schema has Bedroom enum with FIVE_PLUS."""
+        frontend_schema_path = os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            'frontend',
+            'src',
+            'schemas',
+            'apiContract.js'
+        )
+        with open(frontend_schema_path, 'r') as f:
+            content = f.read()
+
+        # Should have Bedroom enum
+        assert 'export const Bedroom' in content
+        assert "FIVE_PLUS: '5_plus'" in content
+
 
 # Integration tests (require running app)
 class TestTransactionsListEndpointContract:
