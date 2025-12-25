@@ -1359,15 +1359,17 @@ def aggregate():
         filters_applied["bedroom"] = bedrooms
 
     # Segment filter (supports comma-separated values e.g., "CCR,RCR")
+    # OPTIMIZED: Use pre-computed district→segment mapping from constants
+    # instead of N+1 database query
     segment = request.args.get("segment")
     if segment:
+        from constants import get_districts_for_region
         segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
-        all_districts = db.session.query(Transaction.district).distinct().all()
-        segment_districts = [
-            d[0] for d in all_districts
-            if _get_market_segment(d[0]) in segments
-        ]
-        filter_conditions.append(Transaction.district.in_(segment_districts))
+        segment_districts = []
+        for seg in segments:
+            segment_districts.extend(get_districts_for_region(seg))
+        if segment_districts:
+            filter_conditions.append(Transaction.district.in_(segment_districts))
         filters_applied["segment"] = segments
 
     # Sale type filter (case-insensitive to handle data variations)
@@ -1569,8 +1571,12 @@ def aggregate():
     # Apply group by
     if group_columns:
         query = query.group_by(*group_columns)
-        # Order by first group column
-        query = query.order_by(group_columns[0])
+        # Order by count descending for project grouping (most active first),
+        # otherwise order by first group column
+        if 'project' in group_by:
+            query = query.order_by(func.count(Transaction.id).desc())
+        else:
+            query = query.order_by(group_columns[0])
 
     # Execute query
     results = query.all()
