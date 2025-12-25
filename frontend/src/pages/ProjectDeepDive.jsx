@@ -18,12 +18,31 @@ import PriceBandChart from '../components/powerbi/PriceBandChart';
 import UnitPsfInput from '../components/powerbi/UnitPsfInput';
 import { KeyInsightBox } from '../components/ui/KeyInsightBox';
 
+// Random project name generator for loading animation
+const generateRandomProjectName = () => {
+  const prefixes = ['The', 'One', 'Park', 'Sky', 'Marina', 'Royal', 'Grand', 'Vista', 'Parc', 'Haus'];
+  const middles = ['Residences', 'View', 'Heights', 'Loft', 'Towers', 'Suites', 'Edge', 'Crest', 'Haven', 'Oasis'];
+  const locations = ['@ Orchard', '@ Marina', '@ Sentosa', '@ Tampines', '@ Bishan', '@ Bedok', '@ Clementi', '@ Novena'];
+
+  const style = Math.floor(Math.random() * 3);
+  if (style === 0) {
+    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${middles[Math.floor(Math.random() * middles.length)]}`;
+  } else if (style === 1) {
+    return `${prefixes[Math.floor(Math.random() * prefixes.length)]} ${middles[Math.floor(Math.random() * middles.length)]} ${locations[Math.floor(Math.random() * locations.length)]}`;
+  } else {
+    return `${prefixes[Math.floor(Math.random() * prefixes.length)]}${prefixes[Math.floor(Math.random() * prefixes.length)].toLowerCase()}`;
+  }
+};
+
 export function ProjectDeepDiveContent() {
   // Project selection state
   const [selectedProject, setSelectedProject] = useState(null);
   const [projectSearch, setProjectSearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Loading animation state
+  const [loadingProjectName, setLoadingProjectName] = useState(() => generateRandomProjectName());
 
   // Data state
   const [projectOptions, setProjectOptions] = useState([]);
@@ -118,6 +137,15 @@ export function ProjectDeepDiveContent() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Animate loading project name
+  useEffect(() => {
+    if (!projectOptionsLoading) return;
+    const interval = setInterval(() => {
+      setLoadingProjectName(generateRandomProjectName());
+    }, 150);
+    return () => clearInterval(interval);
+  }, [projectOptionsLoading]);
 
   // Filter projects based on search
   const filteredProjects = useMemo(() => {
@@ -234,7 +262,12 @@ export function ProjectDeepDiveContent() {
                 {selectedProject
                   ? `${selectedProject.name} (${selectedProject.district})`
                   : projectOptionsLoading
-                    ? 'Loading projects...'
+                    ? (
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block animate-pulse">{loadingProjectName}</span>
+                        <span className="text-xs">loading...</span>
+                      </span>
+                    )
                     : 'Search for a project...'}
               </span>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
