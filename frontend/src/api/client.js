@@ -94,10 +94,18 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL
  * @param {Function} fetchFn - Function that returns a promise for the API call
  * @param {Object} options - Cache options
  * @param {boolean} options.forceRefresh - Skip cache and fetch fresh
+ * @param {AbortSignal} options.signal - AbortController signal for cancellation
  * @returns {Promise} - Cached or fresh response
  */
 const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
-  const { forceRefresh = false } = options;
+  const { forceRefresh = false, signal } = options;
+
+  // Check if already aborted before making request
+  if (signal?.aborted) {
+    const err = new Error('Request aborted');
+    err.name = 'AbortError';
+    throw err;
+  }
 
   // Check cache first (unless force refresh)
   if (!forceRefresh && apiCache.has(cacheKey)) {
@@ -112,6 +120,13 @@ const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
 
   // Fetch fresh data
   const response = await fetchFn();
+
+  // Don't cache if request was aborted
+  if (signal?.aborted) {
+    const err = new Error('Request aborted');
+    err.name = 'AbortError';
+    throw err;
+  }
 
   // Cache the response
   apiCache.set(cacheKey, {
@@ -139,8 +154,8 @@ export const getDistricts = () => apiClient.get('/districts');
  * @param {string} params.timeGrain - year, quarter, month (visual-local drill)
  * @returns {Promise<{chartData: Array, summary: Object, appliedFilters: Object}>}
  */
-export const getNewVsResale = (params = {}) =>
-  apiClient.get(`/new-vs-resale?${buildQueryString(params)}`);
+export const getNewVsResale = (params = {}, options = {}) =>
+  apiClient.get(`/new-vs-resale?${buildQueryString(params)}`, { signal: options.signal });
 
 // ===== PowerBI-style Aggregation API Functions =====
 
@@ -201,10 +216,11 @@ export const getNewVsResale = (params = {}) =>
 export const getDashboard = (params = {}, options = {}) => {
   const queryString = buildQueryString(params);
   const cacheKey = `dashboard:${queryString}`;
+  const { skipCache, signal } = options;
   return cachedFetch(
     cacheKey,
-    () => apiClient.get(`/dashboard?${queryString}`),
-    { forceRefresh: options.skipCache }
+    () => apiClient.get(`/dashboard?${queryString}`, { signal }),
+    { forceRefresh: skipCache, signal }
   );
 };
 
@@ -225,16 +241,18 @@ export const getDashboard = (params = {}, options = {}) => {
  * @param {number} params.size_min - Minimum sqft
  * @param {number} params.size_max - Maximum sqft
  * @param {string} params.tenure - Freehold, 99-year, 999-year
- * @param {Object} options - Cache options
+ * @param {Object} options - Cache and request options
  * @param {boolean} options.skipCache - Skip cache and fetch fresh
+ * @param {AbortSignal} options.signal - AbortController signal for cancellation
  */
 export const getAggregate = (params = {}, options = {}) => {
   const queryString = buildQueryString(params);
   const cacheKey = `aggregate:${queryString}`;
+  const { skipCache, signal } = options;
   return cachedFetch(
     cacheKey,
-    () => apiClient.get(`/aggregate?${queryString}`),
-    { forceRefresh: options.skipCache }
+    () => apiClient.get(`/aggregate?${queryString}`, { signal }),
+    { forceRefresh: skipCache, signal }
   );
 };
 
@@ -258,7 +276,7 @@ export const getKpiSummary = (params = {}) =>
  * @param {string} params.sort_order - asc or desc (default desc)
  */
 export const getTransactionsList = (params = {}, options = {}) =>
-  apiClient.get(`/transactions/list?${buildQueryString(params)}`, options);
+  apiClient.get(`/transactions/list?${buildQueryString(params)}`, { signal: options.signal });
 
 /**
  * Get available filter options based on current data
@@ -287,10 +305,11 @@ export const getFilterOptions = () =>
 export const getFloorLiquidityHeatmap = (params = {}, options = {}) => {
   const queryString = buildQueryString(params);
   const cacheKey = `floor_liquidity_heatmap:${queryString}`;
+  const { skipCache, signal } = options;
   return cachedFetch(
     cacheKey,
-    () => apiClient.get(`/floor-liquidity-heatmap?${queryString}`),
-    { forceRefresh: options.skipCache }
+    () => apiClient.get(`/floor-liquidity-heatmap?${queryString}`, { signal }),
+    { forceRefresh: skipCache, signal }
   );
 };
 
@@ -305,8 +324,8 @@ export const getFloorLiquidityHeatmap = (params = {}, options = {}) => {
  * @param {string} params.sort - Field to sort by
  * @param {string} params.order - asc or desc
  */
-export const getGLSAll = (params = {}) =>
-  apiClient.get(`/gls/all?${buildQueryString(params)}`);
+export const getGLSAll = (params = {}, options = {}) =>
+  apiClient.get(`/gls/all?${buildQueryString(params)}`, { signal: options.signal });
 
 // ===== UPCOMING Launches API Functions =====
 // These endpoints are for projects that have NOT YET LAUNCHED (pre-sale info)
@@ -324,8 +343,8 @@ export const getGLSAll = (params = {}) =>
  * @param {string} params.sort - Field to sort by
  * @param {string} params.order - asc or desc
  */
-export const getUpcomingLaunchesAll = (params = {}) =>
-  apiClient.get(`/upcoming-launches/all?${buildQueryString(params)}`);
+export const getUpcomingLaunchesAll = (params = {}, options = {}) =>
+  apiClient.get(`/upcoming-launches/all?${buildQueryString(params)}`, { signal: options.signal });
 
 // ===== ACTIVE New Sales API Functions =====
 // These endpoints are for projects that have ALREADY LAUNCHED and are selling
@@ -339,8 +358,8 @@ export const getUpcomingLaunchesAll = (params = {}) =>
  * @param {string} params.market_segment - CCR, RCR, or OCR
  * @param {string} params.district - Comma-separated districts (D01,D02,...)
  */
-export const getHotProjects = (params = {}) =>
-  apiClient.get(`/projects/hot?${buildQueryString(params)}`);
+export const getHotProjects = (params = {}, options = {}) =>
+  apiClient.get(`/projects/hot?${buildQueryString(params)}`, { signal: options.signal });
 
 // ===== Project Inventory API Functions =====
 

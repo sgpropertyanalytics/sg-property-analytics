@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -50,7 +51,8 @@ ChartJS.register(
  */
 export function NewVsResaleChart({ height = 350 }) {
   // Get GLOBAL filters and timeGrouping from context
-  const { buildApiParams, filters, timeGrouping } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, filters, timeGrouping } = usePowerBIFilters();
 
   // Provide safe defaults for filters if context not ready
   const safeFilters = {
@@ -67,8 +69,14 @@ export function NewVsResaleChart({ height = 350 }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Fetch data when global filters or local drill level change
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     const fetchData = async () => {
       if (isInitialLoad.current) {
         setLoading(true);
@@ -85,23 +93,29 @@ export function NewVsResaleChart({ height = 350 }) {
           timeGrain: TIME_GROUP_BY[timeGrouping],
         }, { excludeHighlight: true });
 
-        console.log('[NewVsResale] Fetching with params:', params);
-        const response = await getNewVsResale(params);
-        console.log('[NewVsResale] Response:', response.data);
-        console.log('[NewVsResale] chartData length:', response.data?.chartData?.length);
-        console.log('[NewVsResale] First data point:', response.data?.chartData?.[0]);
+        const response = await getNewVsResale(params, { signal });
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setData(response.data);
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
         console.error('Error fetching new vs resale data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
     fetchData();
-  }, [buildApiParams, timeGrouping, filters]); // Re-fetch when global filters or timeGrouping change
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey, timeGrouping]);
 
   // Build filter summary for display
   const getFilterSummary = () => {
@@ -195,7 +209,7 @@ export function NewVsResaleChart({ height = 350 }) {
     ],
   };
 
-  const options = {
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     interaction: {
       mode: 'index',
@@ -296,7 +310,7 @@ export function NewVsResaleChart({ height = 350 }) {
         },
       },
     },
-  };
+  }), [chartData]);
 
   // Trend indicator icon - using palette colors
   const getTrendIcon = (trend) => {
@@ -378,11 +392,11 @@ export function NewVsResaleChart({ height = 350 }) {
         </KeyInsightBox>
       </div>
 
-      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+      {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
       <ChartSlot>
         {chartData.length > 0 ? (
           <PreviewChartOverlay chartRef={chartRef}>
-            <Line key={timeGrouping} ref={chartRef} data={chartConfig} options={options} />
+            <Line ref={chartRef} data={chartConfig} options={options} />
           </PreviewChartOverlay>
         ) : (
           <div className="flex items-center justify-center h-full text-[#547792]">

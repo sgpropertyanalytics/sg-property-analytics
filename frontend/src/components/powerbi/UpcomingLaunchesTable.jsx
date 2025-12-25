@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import { getUpcomingLaunchesAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
 
@@ -33,31 +34,50 @@ export function UpcomingLaunchesTable({
     column: 'project_name',
     order: 'asc',
   });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
+  // Handle manual refresh
+  const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
   // Fetch data when sort changes
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = {
-        limit: 100,
-        sort: sortConfig.column,
-        order: sortConfig.order,
-      };
-
-      const response = await getUpcomingLaunchesAll(params);
-      setData(response.data.data || []);
-    } catch (err) {
-      console.error('Error fetching upcoming launches data:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [sortConfig]);
-
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = {
+          limit: 100,
+          sort: sortConfig.column,
+          order: sortConfig.order,
+        };
+
+        const response = await getUpcomingLaunchesAll(params, { signal });
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
+        setData(response.data.data || []);
+      } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
+        console.error('Error fetching upcoming launches data:', err);
+        setError(err.message);
+      } finally {
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchData();
-  }, [fetchData]);
+  }, [sortConfig, refreshTrigger, startRequest, isStale, getSignal]);
 
   // Handle sort
   const handleSort = (column) => {
@@ -139,7 +159,7 @@ export function UpcomingLaunchesTable({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={(e) => { e.preventDefault(); fetchData(); }}
+              onClick={(e) => { e.preventDefault(); handleRefresh(); }}
               className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
               title="Refresh data"
               disabled={loading}

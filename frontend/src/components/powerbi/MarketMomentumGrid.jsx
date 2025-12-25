@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
@@ -22,13 +23,20 @@ const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
  * - Mobile: 2 columns × 14 rows
  */
 export function MarketMomentumGrid() {
-  const { buildApiParams, applyCrossFilter, filters } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, applyCrossFilter } = usePowerBIFilters();
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Fetch data for all districts
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -41,8 +49,11 @@ export function MarketMomentumGrid() {
           metrics: 'median_psf,total_value',
         }, { excludeHighlight: true });
 
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
         const rawData = response.data?.data || [];
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
 
         // Group by district, preserving quarter order
         const districtData = {};
@@ -68,15 +79,21 @@ export function MarketMomentumGrid() {
 
         setData(districtData);
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
         console.error('Error fetching market momentum data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
-  }, [buildApiParams, filters]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey]);
 
   // Handle district click - apply cross-filter
   const handleDistrictClick = (district) => {

@@ -97,7 +97,6 @@ export function SubscriptionProvider({ children }) {
       setLoading(true);
       try {
         const response = await apiClient.get('/auth/subscription');
-        console.log('[Subscription] Fetched:', response.data);
         if (response.data) {
           const newSub = {
             tier: response.data.tier || 'free',

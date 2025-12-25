@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -38,7 +39,8 @@ ChartJS.register(
  * This chart answers ONE question: "Where do most transactions happen?"
  */
 export function PriceDistributionChart({ height = 300, numBins = 20 }) {
-  const { buildApiParams, highlight } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, highlight } = usePowerBIFilters();
   const [histogramData, setHistogramData] = useState({ bins: [], stats: {}, tail: {} });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -47,8 +49,14 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Fetch server-side computed histogram
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     const fetchData = async () => {
       if (isInitialLoad.current) {
         setLoading(true);
@@ -68,7 +76,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         }, { excludeLocationDrill: true });
 
         // Skip cache when toggling to ensure fresh data
-        const response = await getDashboard(params, { skipCache: showFullRange });
+        const response = await getDashboard(params, { skipCache: showFullRange, signal });
         const responseData = response.data || {};
         const data = responseData.data || {};
 
@@ -90,20 +98,28 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
           priceHistogram = { bins: [], stats: {}, tail: {} };
         }
 
-        console.log('PriceDistribution response:', { rawHistogram, priceHistogram });
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
 
         setHistogramData(priceHistogram);
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
         console.error('Error fetching price distribution data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
     fetchData();
-  }, [buildApiParams, numBins, highlight, showFullRange]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+    // numBins and showFullRange are local chart options
+  }, [debouncedFilterKey, numBins, showFullRange]);
 
   // Helper to format price labels (e.g., $1.2M, $800K)
   const formatPrice = (value) => {
@@ -197,20 +213,6 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
   const q1BinIndex = findBinIndex(stats?.p25);
   const q3BinIndex = findBinIndex(stats?.p75);
 
-  // Debug logging for annotations
-  console.log('Price Distribution Annotations Debug:', {
-    stats,
-    median: stats?.median,
-    p25: stats?.p25,
-    p75: stats?.p75,
-    medianBinIndex,
-    q1BinIndex,
-    q3BinIndex,
-    bucketsLength: buckets.length,
-    firstBucket: buckets[0],
-    lastBucket: buckets[buckets.length - 1]
-  });
-
   // Determine color gradient based on count using theme colors
   const maxValue = Math.max(...counts, 1);
   const getBarColor = (count, alpha = 0.8) => {
@@ -276,9 +278,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
     };
   }
 
-  console.log('Final annotations object:', annotations);
-
-  const options = {
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     // NO onClick - histogram is for context, not filtering
     plugins: {
@@ -326,7 +326,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         },
       },
     },
-  };
+  }), [buckets, displayCount, annotations]);
 
   // Card layout contract: flex column with fixed total height
   // Header/Note/Footer are shrink-0, chart slot is flex-1 min-h-0
@@ -402,10 +402,10 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         </KeyInsightBox>
       </div>
 
-      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+      {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
       <ChartSlot>
         <PreviewChartOverlay chartRef={chartRef}>
-          <Bar key={showFullRange ? 'full' : 'capped'} ref={chartRef} data={chartData} options={options} />
+          <Bar ref={chartRef} data={chartData} options={options} />
         </PreviewChartOverlay>
       </ChartSlot>
 

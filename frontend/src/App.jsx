@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
@@ -8,11 +9,37 @@ import Pricing from './pages/Pricing';
 import { DashboardLayout } from './components/layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PageHeader } from './components/ui';
-import { MacroOverviewContent } from './pages/MacroOverview';
-import { FloorDispersionContent } from './pages/FloorDispersion';
-import { ProjectDeepDiveContent } from './pages/ProjectDeepDive';
-import { DistrictDeepDiveContent } from './pages/DistrictDeepDive';
-import { ValueParityPanel } from './components/ValueParityPanel';
+
+// ===== Lazy-loaded Dashboard Pages =====
+// These are code-split to reduce initial bundle size.
+// Chart-heavy pages load on demand when user navigates.
+const MacroOverviewContent = lazy(() =>
+  import('./pages/MacroOverview').then(m => ({ default: m.MacroOverviewContent }))
+);
+const FloorDispersionContent = lazy(() =>
+  import('./pages/FloorDispersion').then(m => ({ default: m.FloorDispersionContent }))
+);
+const ProjectDeepDiveContent = lazy(() =>
+  import('./pages/ProjectDeepDive').then(m => ({ default: m.ProjectDeepDiveContent }))
+);
+const DistrictDeepDiveContent = lazy(() =>
+  import('./pages/DistrictDeepDive').then(m => ({ default: m.DistrictDeepDiveContent }))
+);
+const ValueParityPanel = lazy(() =>
+  import('./components/ValueParityPanel').then(m => ({ default: m.ValueParityPanel }))
+);
+
+// Loading fallback for lazy-loaded pages
+function DashboardLoadingFallback() {
+  return (
+    <div className="h-full flex items-center justify-center bg-[#EAE0CF]/30">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm text-[#547792]">Loading dashboard...</span>
+      </div>
+    </div>
+  );
+}
 
 /**
  * App Component with Landing Page and Dashboard Navigation
@@ -54,13 +81,15 @@ function App() {
 
           {/* ===== Dashboard Routes with Double-Sidebar Layout ===== */}
 
-          {/* Market Pulse - Main analytics dashboard (Protected) */}
+          {/* Market Pulse - Main analytics dashboard (Protected, Lazy-loaded) */}
           <Route
             path="/market-pulse"
             element={
               <ProtectedRoute>
                 <DashboardLayout activePage="market-pulse">
-                  <MacroOverviewContent />
+                  <Suspense fallback={<DashboardLoadingFallback />}>
+                    <MacroOverviewContent />
+                  </Suspense>
                 </DashboardLayout>
               </ProtectedRoute>
             }
@@ -69,37 +98,41 @@ function App() {
           {/* Project Analysis - Redirects to Value Parity (content merged) */}
           <Route path="/project-analysis" element={<Navigate to="/value-parity" replace />} />
 
-          {/* Value Parity Tool - No filter sidebar (Protected) */}
+          {/* Value Parity Tool - No filter sidebar (Protected, Lazy-loaded) */}
           <Route
             path="/value-parity"
             element={
               <ProtectedRoute>
                 <DashboardLayout activePage="value-parity">
-                  <div className="h-full overflow-auto">
-                    <div className="p-3 md:p-4 lg:p-6">
-                      {/* Header with Preview Mode badge */}
-                      <PageHeader
-                        title="Value Parity Tool"
-                        subtitle="Find properties within your budget and compare value across districts"
-                      />
-                      {/* Value Parity Panel - existing component */}
-                      <div className="animate-view-enter">
-                        <ValueParityPanel />
+                  <Suspense fallback={<DashboardLoadingFallback />}>
+                    <div className="h-full overflow-auto">
+                      <div className="p-3 md:p-4 lg:p-6">
+                        {/* Header with Preview Mode badge */}
+                        <PageHeader
+                          title="Value Parity Tool"
+                          subtitle="Find properties within your budget and compare value across districts"
+                        />
+                        {/* Value Parity Panel - existing component */}
+                        <div className="animate-view-enter">
+                          <ValueParityPanel />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Suspense>
                 </DashboardLayout>
               </ProtectedRoute>
             }
           />
 
-          {/* Floor Dispersion - Floor level analysis (Protected) */}
+          {/* Floor Dispersion - Floor level analysis (Protected, Lazy-loaded) */}
           <Route
             path="/floor-dispersion"
             element={
               <ProtectedRoute>
                 <DashboardLayout activePage="floor-dispersion">
-                  <FloorDispersionContent />
+                  <Suspense fallback={<DashboardLoadingFallback />}>
+                    <FloorDispersionContent />
+                  </Suspense>
                 </DashboardLayout>
               </ProtectedRoute>
             }
@@ -108,25 +141,29 @@ function App() {
           {/* Legacy route redirect */}
           <Route path="/analytics-view" element={<Navigate to="/floor-dispersion" replace />} />
 
-          {/* District & Project Deep Dive (Protected) */}
+          {/* District & Project Deep Dive (Protected, Lazy-loaded) */}
           <Route
             path="/district-deep-dive"
             element={
               <ProtectedRoute>
                 <DashboardLayout activePage="district-deep-dive">
-                  <DistrictDeepDiveContent />
+                  <Suspense fallback={<DashboardLoadingFallback />}>
+                    <DistrictDeepDiveContent />
+                  </Suspense>
                 </DashboardLayout>
               </ProtectedRoute>
             }
           />
 
-          {/* Project Deep Dive (Protected) */}
+          {/* Project Deep Dive (Protected, Lazy-loaded) */}
           <Route
             path="/project-deep-dive"
             element={
               <ProtectedRoute>
                 <DashboardLayout activePage="project-deep-dive">
-                  <ProjectDeepDiveContent />
+                  <Suspense fallback={<DashboardLoadingFallback />}>
+                    <ProjectDeepDiveContent />
+                  </Suspense>
                 </DashboardLayout>
               </ProtectedRoute>
             }

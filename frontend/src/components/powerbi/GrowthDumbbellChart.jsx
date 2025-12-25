@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
@@ -83,14 +84,21 @@ const getAreaNames = (district) => {
  * with sortable columns.
  */
 export function GrowthDumbbellChart() {
-  const { buildApiParams, applyCrossFilter, filters } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, applyCrossFilter } = usePowerBIFilters();
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortConfig, setSortConfig] = useState({ column: 'growth', order: 'desc' });
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Fetch data
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -101,18 +109,28 @@ export function GrowthDumbbellChart() {
           metrics: 'median_psf',
         }, { excludeHighlight: true });
 
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setRawData(response.data?.data || []);
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
         console.error('Error fetching dumbbell chart data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
-  }, [buildApiParams, filters]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey]);
 
   // Process data: calculate start, end, and growth for each district
   const { chartData, startQuarter, endQuarter } = useMemo(() => {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   LinearScale,
@@ -40,7 +41,8 @@ ChartJS.register(
  * - Tooltips show project details
  */
 export function UnitSizeVsPriceChart({ height = 350 }) {
-  const { buildApiParams, filters, highlight, crossFilter } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const { isPremium, showPaywall } = useSubscription();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +52,9 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   const [refreshSeed, setRefreshSeed] = useState(null); // null = stable sample, string = new sample
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
+
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Handle refresh button click - generates random seed for new sample
   const handleRefresh = () => {
@@ -75,6 +80,9 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
 
   // Fetch scatter data
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     const fetchData = async () => {
       if (isInitialLoad.current) {
         setLoading(true);
@@ -100,23 +108,34 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
 
         // Call the scatter-sample endpoint
         const response = await apiClient.get('/scatter-sample', {
-          params: requestParams
+          params: requestParams,
+          signal
         });
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
 
         setData(response.data.data || []);
         setMeta(response.data.meta || { sample_size: 0, total_count: 0 });
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
         console.error('Error fetching scatter data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
 
     fetchData();
-  }, [buildApiParams, filters, highlight, crossFilter, refreshSeed]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+    // refreshSeed is local control for manual sample refresh
+  }, [debouncedFilterKey, refreshSeed]);
 
   // Transform data for Chart.js - group by bedroom
   const chartData = useMemo(() => {

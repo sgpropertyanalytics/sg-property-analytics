@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -62,14 +63,21 @@ const FLOOR_TIERS = {
  * Y-axis: Median PSF by floor tier group
  */
 export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
-  const { buildApiParams, filters } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Fetch data grouped by year and floor_level
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -85,22 +93,31 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
         if (bedroom) params.bedroom = bedroom;
         if (segment) params.segment = segment;
 
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
         const data = response.data.data || [];
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
 
         // Filter out Unknown floor levels
         const filtered = data.filter(d => d.floor_level && d.floor_level !== 'Unknown');
         setRawData(filtered);
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
         console.error('Error fetching trend data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
-  }, [buildApiParams, filters, bedroom, segment]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey, bedroom, segment]);
 
   // Process data into tier groups by year
   const processedData = useMemo(() => {
@@ -244,7 +261,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
     datasets,
   };
 
-  const options = {
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     interaction: {
       mode: 'index',
@@ -302,7 +319,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
         },
       },
     },
-  };
+  }), []);
 
   // Calculate trend direction
   const getLatestTrend = (data) => {

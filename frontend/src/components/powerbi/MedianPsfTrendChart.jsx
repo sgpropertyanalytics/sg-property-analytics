@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -42,7 +43,8 @@ ChartJS.register(
  */
 export function MedianPsfTrendChart({ height = 300 }) {
   // Use global timeGrouping from context (controlled by toolbar toggle)
-  const { buildApiParams, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
   const [data, setData] = useState({ labels: [], ccr: [], rcr: [], ocr: [] });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -50,8 +52,14 @@ export function MedianPsfTrendChart({ height = 300 }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Fetch data when filters change
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     const fetchData = async () => {
       if (isInitialLoad.current) {
         setLoading(true);
@@ -68,7 +76,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
           metrics: 'median_psf,count'
         }, { excludeHighlight: true });
 
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
         const rawData = response.data.data || [];
 
         // Transform data: group by time period with CCR/RCR/OCR breakdown
@@ -111,6 +119,9 @@ export function MedianPsfTrendChart({ height = 300 }) {
           return String(aKey).localeCompare(String(bKey));
         });
 
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setData({
           labels: sortedData.map(d => d.period ?? ''),
           ccr: sortedData.map(d => d.CCR),
@@ -122,15 +133,21 @@ export function MedianPsfTrendChart({ height = 300 }) {
         });
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
         console.error('Error fetching median PSF trend data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
     fetchData();
-  }, [buildApiParams, timeGrouping]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey, timeGrouping]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;
@@ -254,7 +271,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
     ],
   };
 
-  const options = {
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     interaction: {
       mode: 'index',
@@ -316,7 +333,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
         },
       },
     },
-  };
+  }), [handleClick, data, minPsf, maxPsf, padding]);
 
   // Calculate latest values for summary
   const latestCcr = data.ccr.filter(v => v != null).slice(-1)[0];
@@ -348,10 +365,10 @@ export function MedianPsfTrendChart({ height = 300 }) {
           {latestOcr && <span>OCR: ${latestOcr.toLocaleString()}</span>}
         </div>
       </div>
-      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+      {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
       <ChartSlot>
         <PreviewChartOverlay chartRef={chartRef}>
-          <Line key={timeGrouping} ref={chartRef} data={chartData} options={options} />
+          <Line ref={chartRef} data={chartData} options={options} />
         </PreviewChartOverlay>
       </ChartSlot>
       {/* Footer - fixed height h-11 for consistent alignment */}

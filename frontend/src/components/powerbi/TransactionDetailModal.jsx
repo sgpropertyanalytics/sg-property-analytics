@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
 import { DISTRICT_NAMES, formatPrice, formatPSF } from '../../constants';
@@ -25,9 +26,18 @@ export function TransactionDetailModal({ isOpen, onClose, title, additionalFilte
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Prevent stale responses and cancel in-flight requests
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
+  // Stable key for additionalFilters to prevent unnecessary refetches
+  const additionalFiltersKey = JSON.stringify(additionalFilters);
+
   // Fetch transactions when modal opens or filters change
   useEffect(() => {
     if (!isOpen) return;
+
+    const requestId = startRequest();
+    const signal = getSignal();
 
     const fetchTransactions = async () => {
       setLoading(true);
@@ -40,21 +50,30 @@ export function TransactionDetailModal({ isOpen, onClose, title, additionalFilte
           sort_by: sortBy,
           sort_order: sortOrder,
         });
-        const response = await getTransactionsList(params);
+        const response = await getTransactionsList(params, { signal });
+
+        // Ignore stale responses
+        if (isStale(requestId)) return;
+
         setTransactions(response.data.transactions || []);
         setPagination(prev => ({
           ...prev,
           ...response.data.pagination,
         }));
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
         console.error('Error fetching transactions:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
       }
     };
     fetchTransactions();
-  }, [isOpen, buildApiParams, additionalFilters, pagination.page, sortBy, sortOrder]);
+  }, [isOpen, additionalFiltersKey, pagination.page, pagination.limit, sortBy, sortOrder, startRequest, isStale, getSignal, buildApiParams]);
 
   const handleSort = (column) => {
     if (sortBy === column) {

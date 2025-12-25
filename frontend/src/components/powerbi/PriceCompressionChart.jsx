@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -54,7 +55,8 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  */
 export function PriceCompressionChart({ height = 380 }) {
   // Get GLOBAL filters and timeGrouping from context
-  const { buildApiParams, filters, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
 
   // Data state
@@ -66,8 +68,14 @@ export function PriceCompressionChart({ height = 380 }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Fetch data when filters or drill level change
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     const fetchData = async () => {
       if (isInitialLoad.current) {
         setLoading(true);
@@ -83,21 +91,32 @@ export function PriceCompressionChart({ height = 380 }) {
           metrics: 'median_psf,count'
         }, { excludeHighlight: true });
 
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
         const rawData = response.data.data || [];
         const transformed = transformData(rawData, timeGrouping);
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setData(transformed);
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
         console.error('Error fetching compression data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
     fetchData();
-  }, [buildApiParams, timeGrouping, filters]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+    // timeGrouping controls time granularity (year/quarter/month)
+  }, [debouncedFilterKey, timeGrouping]);
 
   // Transform raw API data into spread-friendly format
   const transformData = (rawData, timeGrain) => {
@@ -447,11 +466,11 @@ export function PriceCompressionChart({ height = 380 }) {
         </div>
       </div>
 
-      {/* Main Spread Chart - flex-1 min-h-0 */}
+      {/* Main Spread Chart - Chart.js handles data updates efficiently without key remount */}
       <ChartSlot>
         {data.length > 0 ? (
           <PreviewChartOverlay chartRef={chartRef}>
-            <Line key={timeGrouping} ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
+            <Line ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
           </PreviewChartOverlay>
         ) : (
           <div className="flex items-center justify-center h-full text-[#547792]">

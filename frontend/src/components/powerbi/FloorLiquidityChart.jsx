@@ -49,7 +49,8 @@ ChartJS.register(
  * - LIQUIDITY CLIFF: Annotated warning where volume collapses
  */
 export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
-  const { buildApiParams, filters } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -97,7 +98,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
     };
 
     fetchData();
-  }, [buildApiParams, filters, bedroom, segment]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey, bedroom, segment]);
 
   // Calculate baseline for premium calculation
   const baselinePSF = useMemo(() => {
@@ -234,8 +236,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
     ],
   };
 
-  // Chart options
-  const options = {
+  // Chart options - memoized to prevent unnecessary re-renders
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     interaction: {
       mode: 'index',
@@ -330,7 +332,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         },
       },
     },
-  };
+  }), [data, premiums, minPSF, maxPSF, maxCount]);
 
   // Summary stats
   const avgPremiumPerTier = premiums.length > 1
