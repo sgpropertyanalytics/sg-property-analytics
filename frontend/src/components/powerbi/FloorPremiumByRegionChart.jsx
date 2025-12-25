@@ -217,7 +217,7 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
 
   const chartData = { labels, datasets };
 
-  const options = {
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     interaction: {
       mode: 'index',
@@ -285,7 +285,7 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
         },
       },
     },
-  };
+  }), [floorLevels, premiumsByRegion]);
 
   // Calculate insights with transaction counts for transparency
   const getMaxPremium = (region) => {

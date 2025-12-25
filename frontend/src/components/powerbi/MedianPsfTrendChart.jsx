@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
@@ -271,7 +271,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
     ],
   };
 
-  const options = {
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     interaction: {
       mode: 'index',
@@ -333,7 +333,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
         },
       },
     },
-  };
+  }), [handleClick, data, minPsf, maxPsf, padding]);
 
   // Calculate latest values for summary
   const latestCcr = data.ccr.filter(v => v != null).slice(-1)[0];

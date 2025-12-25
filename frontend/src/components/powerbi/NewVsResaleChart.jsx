@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
@@ -209,7 +209,7 @@ export function NewVsResaleChart({ height = 350 }) {
     ],
   };
 
-  const options = {
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     interaction: {
       mode: 'index',
@@ -310,7 +310,7 @@ export function NewVsResaleChart({ height = 350 }) {
         },
       },
     },
-  };
+  }), [chartData]);
 
   // Trend indicator icon - using palette colors
   const getTrendIcon = (trend) => {

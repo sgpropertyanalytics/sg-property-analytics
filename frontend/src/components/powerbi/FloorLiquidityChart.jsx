@@ -236,8 +236,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
     ],
   };
 
-  // Chart options
-  const options = {
+  // Chart options - memoized to prevent unnecessary re-renders
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     interaction: {
       mode: 'index',
@@ -332,7 +332,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         },
       },
     },
-  };
+  }), [data, premiums, minPSF, maxPSF, maxCount]);
 
   // Summary stats
   const avgPremiumPerTier = premiums.length > 1

@@ -278,7 +278,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
     };
   }
 
-  const options = {
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     // NO onClick - histogram is for context, not filtering
     plugins: {
@@ -326,7 +326,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         },
       },
     },
-  };
+  }), [buckets, displayCount, annotations]);
 
   // Card layout contract: flex column with fixed total height
   // Header/Note/Footer are shrink-0, chart slot is flex-1 min-h-0

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
@@ -257,7 +257,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
     ],
   };
 
-  const options = {
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     interaction: {
       mode: 'index',
@@ -348,7 +348,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         },
       },
     },
-  };
+  }), [handleClick, data, yAxisMax]);
 
   // Card layout: flex column with fixed height, header shrink-0, chart fills remaining
   const cardHeight = height + 90; // height prop for chart + ~90px for header

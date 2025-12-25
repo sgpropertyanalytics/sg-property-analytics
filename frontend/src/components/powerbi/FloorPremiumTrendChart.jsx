@@ -261,7 +261,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
     datasets,
   };
 
-  const options = {
+  const options = useMemo(() => ({
     ...baseChartJsOptions,
     interaction: {
       mode: 'index',
@@ -319,7 +319,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
         },
       },
     },
-  };
+  }), []);
 
   // Calculate trend direction
   const getLatestTrend = (data) => {
