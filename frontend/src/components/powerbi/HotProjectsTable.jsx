@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import { getHotProjects } from '../../api/client';
 import { BlurredProject, BlurredCurrency } from '../BlurredCell';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -40,42 +41,61 @@ export function HotProjectsTable({
     column: 'first_new_sale',  // Default: sort by latest launch date
     order: 'desc',
   });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
+  // Handle manual refresh
+  const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
   // Fetch data with optional filters
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = { limit: 200 };
-
-      // Apply filters if provided
-      if (filters) {
-        if (filters.priceMin) params.price_min = filters.priceMin;
-        if (filters.priceMax) params.price_max = filters.priceMax;
-        if (filters.bedroom) params.bedroom = filters.bedroom;
-        if (filters.region) params.market_segment = filters.region;
-        if (filters.district) params.district = filters.district;
-      }
-
-      const response = await getHotProjects(params);
-      const projects = response.data.projects || [];
-      setData(projects);
-
-      // Notify parent of data count
-      if (onDataLoad) {
-        onDataLoad(projects.length);
-      }
-    } catch (err) {
-      console.error('Error fetching hot projects:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters, onDataLoad]);
-
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = { limit: 200 };
+
+        // Apply filters if provided
+        if (filters) {
+          if (filters.priceMin) params.price_min = filters.priceMin;
+          if (filters.priceMax) params.price_max = filters.priceMax;
+          if (filters.bedroom) params.bedroom = filters.bedroom;
+          if (filters.region) params.market_segment = filters.region;
+          if (filters.district) params.district = filters.district;
+        }
+
+        const response = await getHotProjects(params, { signal });
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
+        const projects = response.data.projects || [];
+        setData(projects);
+
+        // Notify parent of data count
+        if (onDataLoad) {
+          onDataLoad(projects.length);
+        }
+      } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
+        console.error('Error fetching hot projects:', err);
+        setError(err.message);
+      } finally {
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchData();
-  }, [fetchData]);
+  }, [filters, onDataLoad, refreshTrigger, startRequest, isStale, getSignal]);
 
   // Handle sort
   const handleSort = (column) => {
@@ -194,7 +214,7 @@ export function HotProjectsTable({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={(e) => { e.preventDefault(); fetchData(); }}
+              onClick={(e) => { e.preventDefault(); handleRefresh(); }}
               className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
               title="Refresh data"
               disabled={loading}

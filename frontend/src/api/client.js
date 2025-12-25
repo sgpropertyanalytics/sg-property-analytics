@@ -414,8 +414,8 @@ export const getGLSAwarded = (params = {}) =>
  * @param {string} params.sort - Field to sort by
  * @param {string} params.order - asc or desc
  */
-export const getGLSAll = (params = {}) =>
-  apiClient.get(`/gls/all?${buildQueryString(params)}`);
+export const getGLSAll = (params = {}, options = {}) =>
+  apiClient.get(`/gls/all?${buildQueryString(params)}`, { signal: options.signal });
 
 /**
  * Get aggregate supply pipeline (upcoming tenders)
@@ -455,8 +455,8 @@ export const getGLSStats = () =>
  * @param {string} params.sort - Field to sort by
  * @param {string} params.order - asc or desc
  */
-export const getUpcomingLaunchesAll = (params = {}) =>
-  apiClient.get(`/upcoming-launches/all?${buildQueryString(params)}`);
+export const getUpcomingLaunchesAll = (params = {}, options = {}) =>
+  apiClient.get(`/upcoming-launches/all?${buildQueryString(params)}`, { signal: options.signal });
 
 // Backward compatibility alias
 export const getNewLaunchesAll = getUpcomingLaunchesAll;
@@ -496,8 +496,8 @@ export const getUpcomingLaunchesStats = () =>
  * @param {string} params.market_segment - CCR, RCR, or OCR
  * @param {string} params.district - Comma-separated districts (D01,D02,...)
  */
-export const getHotProjects = (params = {}) =>
-  apiClient.get(`/projects/hot?${buildQueryString(params)}`);
+export const getHotProjects = (params = {}, options = {}) =>
+  apiClient.get(`/projects/hot?${buildQueryString(params)}`, { signal: options.signal });
 
 // ===== Project Inventory API Functions =====
 
