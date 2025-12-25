@@ -82,14 +82,14 @@ export function PricingModal({ isOpen, onClose }) {
     }
   };
 
-  // Mirror Strategy: Identical features on both cards (clean, no sub-text)
-  const features = [
-    'Exact Transaction Prices',
-    'Deal Percentile Ranking',
-    'Floor-Level Pricing Patterns',
-    'New Launch vs Resale Gap',
-    'Market Signals & Distribution',
-    'Upcoming Supply Pipeline',
+  // Outcome-focused statements (what users achieve, not features)
+  const outcomes = [
+    'Know if you over- or under-paid relative to recent transactions',
+    'Track resale benchmarks within your project',
+    'Get notified when similar units transact',
+    'Validate exit or refinancing timing using live data',
+    'Spot pricing hotspots with district-level heatmaps',
+    'See how floor level impacts price in any building',
   ];
 
   return (
@@ -140,7 +140,7 @@ export function PricingModal({ isOpen, onClose }) {
                   <svg className="w-4 h-4 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-[#213448] font-medium">Includes full access to all 6 features listed in Annual.</span>
+                  <span className="text-[#213448] font-medium">Includes everything in Annual.</span>
                 </p>
               </div>
 
@@ -176,14 +176,14 @@ export function PricingModal({ isOpen, onClose }) {
                 </p>
                 <p className="text-[#94B4C1] text-sm mb-5">Equivalent to $15/mo · <span className="text-[#EAE0CF]">Save 40%</span></p>
 
-                {/* Features - Full List (Master List) */}
+                {/* Outcomes - Full List (Master List) */}
                 <div className="space-y-2.5">
-                  {features.map((feature, i) => (
+                  {outcomes.map((outcome, i) => (
                     <p key={i} className="flex items-start gap-2 text-white text-sm">
                       <svg className="w-4 h-4 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {feature}
+                      {outcome}
                     </p>
                   ))}
                 </div>

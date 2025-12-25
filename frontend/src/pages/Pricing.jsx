@@ -108,7 +108,7 @@ export default function Pricing() {
                 <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
-                <span className="text-[#213448] font-medium">Includes full access to all 6 features listed in Annual.</span>
+                <span className="text-[#213448] font-medium">Includes everything in Annual.</span>
               </p>
             </div>
 
@@ -137,43 +137,43 @@ export default function Pricing() {
               </div>
               <p className="text-[#94B4C1] text-sm mb-6">Equivalent to $15/mo · <span className="text-[#EAE0CF]">Save 40%</span></p>
 
-              {/* Full Features List (Master List) */}
+              {/* Outcomes List (Master List) */}
               <ul className="space-y-3">
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Exact Transaction Prices</span>
+                  <span className="text-[#94B4C1]">Know if you over- or under-paid relative to recent transactions</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Deal Percentile Ranking</span>
+                  <span className="text-[#94B4C1]">Track resale benchmarks within your project</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Floor-Level Pricing Patterns</span>
+                  <span className="text-[#94B4C1]">Get notified when similar units transact</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">New Launch vs Resale Gap</span>
+                  <span className="text-[#94B4C1]">Validate exit or refinancing timing using live data</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Market Signals & Distribution</span>
+                  <span className="text-[#94B4C1]">Spot pricing hotspots with district-level heatmaps</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Upcoming Supply Pipeline</span>
+                  <span className="text-[#94B4C1]">See how floor level impacts price in any building</span>
                 </li>
               </ul>
             </div>
