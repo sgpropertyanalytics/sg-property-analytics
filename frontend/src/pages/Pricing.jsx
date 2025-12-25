@@ -80,131 +80,107 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-[#EAE0CF] py-16 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* BIG CARD - Product Definition */}
-        <div className="bg-white rounded-2xl p-8 md:p-10 border border-[#94B4C1] shadow-lg max-w-2xl mx-auto mb-10">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold text-[#213448] mb-3">
-              Stop Guessing. Start Knowing.
-            </h1>
-            <p className="text-[#547792] text-base md:text-lg max-w-lg mx-auto">
-              Unlock exact valuation data to make confident property decisions.
-            </p>
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-[#94B4C1]/30 my-6" />
-
-          {/* Features */}
-          <p className="text-[#213448] font-semibold text-sm mb-5 text-center">
-            All plans include full access to:
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-3xl md:text-4xl font-bold text-[#213448] mb-4">
+            Unlock Full Property Intelligence
+          </h1>
+          <p className="text-[#547792] text-lg max-w-xl mx-auto">
+            Access exact prices, project names, unit sizes, and PSF data to make confident property decisions.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3 max-w-lg mx-auto">
-            <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span className="text-[#547792]">Exact transaction prices</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span className="text-[#547792]">Deal percentile ranking</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span className="text-[#547792]">Floor-level pricing patterns</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span className="text-[#547792]">New launch vs resale gap</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span className="text-[#547792]">Market signals & distribution</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span className="text-[#547792]">Upcoming supply pipeline</span>
-            </div>
-          </div>
         </div>
 
-        {/* Divider Label */}
-        <div className="flex items-center gap-4 max-w-2xl mx-auto mb-8">
-          <div className="flex-1 border-t border-[#94B4C1]/40" />
-          <span className="text-[#547792] text-sm font-medium whitespace-nowrap">
-            How long do you need access?
-          </span>
-          <div className="flex-1 border-t border-[#94B4C1]/40" />
-        </div>
+        {/* Pricing Cards - Side by Side, Annual taller */}
+        <div className="flex flex-col md:flex-row gap-6 items-end max-w-2xl mx-auto">
 
-        {/* Two Sub-Cards - Pricing Options */}
-        <div className="flex flex-col md:flex-row gap-5 items-end max-w-2xl mx-auto">
-
-          {/* LEFT: Quarterly (Compact) */}
-          <div className="flex-1 bg-white rounded-2xl p-6 border border-[#94B4C1] shadow-lg flex flex-col">
-            <h3 className="text-xl font-bold text-[#213448] mb-3">Quarterly</h3>
+          {/* Quarterly Card - White (Shorter - References Annual) */}
+          <div className="flex-1 bg-white rounded-2xl p-8 border-2 border-[#94B4C1]/50 shadow-lg flex flex-col">
+            <h3 className="text-xl font-bold text-[#547792] mb-2">Quarterly</h3>
             <div className="mb-1">
-              <span className="text-4xl font-bold text-[#213448]">$75</span>
-              <span className="text-[#547792] ml-1"> / quarter</span>
+              <span className="text-4xl font-bold text-[#213448]">$25</span>
+              <span className="text-[#547792] ml-1">/mo</span>
             </div>
-            <p className="text-[#547792] text-[13px] mb-1">Equivalent to $25/mo</p>
-            <p className="text-[#547792]/70 text-xs mb-3">Cancel anytime.</p>
-            {/* Intent framing */}
-            <p className="text-[#547792]/60 text-[12px] leading-relaxed mb-6 max-w-[220px]">
-              Short-term access for a specific decision.
+            <p className="text-[#213448] text-sm mb-1">Billed $75 every 3 months</p>
+            <p className="text-[#547792] text-xs mb-6">Cancel anytime.</p>
+
+            {/* Reference to Annual features */}
+            <p className="flex items-start gap-2 text-[#547792] text-sm mb-8">
+              <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span><strong className="text-[#213448]">Includes full access</strong> to all 6 Pro features listed in Annual.</span>
             </p>
 
             <button
               onClick={() => handleSelectPlan('quarterly')}
-              className="w-full py-3 border-2 border-[#547792] text-[#547792] rounded-xl font-semibold hover:bg-[#547792]/10 transition-colors mt-auto"
+              className="w-full py-3 border-2 border-[#547792] text-[#547792] rounded-xl font-medium hover:bg-[#547792]/10 transition-colors mt-auto"
             >
-              Get 3-Month Access
+              Select Quarterly
             </button>
           </div>
 
-          {/* RIGHT: Annual Pro (Elevated - calmer, clearer premium feel) */}
-          <div
-            className="flex-1 bg-[#213448] rounded-2xl relative md:-mt-5 flex flex-col"
-            style={{
-              boxShadow: '0px 10px 32px rgba(33, 52, 72, 0.35)',
-              padding: '2.25rem 1.5rem 1.5rem 1.5rem',
-            }}
-          >
-            {/* Best Value Badge */}
+          {/* Annual Card - Deep Navy (Taller with full features) */}
+          <div className="flex-1 bg-[#213448] rounded-2xl p-8 shadow-2xl relative md:-mt-6 flex flex-col">
+            {/* Save 40% Badge */}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-[#94B4C1] text-[#213448] text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wide whitespace-nowrap shadow-md">
-                Best Value
+              <span className="bg-[#94B4C1] text-[#213448] text-xs font-bold px-4 py-1.5 rounded-full shadow-md">
+                SAVE 40%
               </span>
             </div>
 
-            <h3 className="text-xl font-bold text-[#EAE0CF] mb-3 pt-1">Annual Pro</h3>
+            <h3 className="text-xl font-bold text-[#EAE0CF] mb-2 mt-2">Annual Pro</h3>
             <div className="mb-1">
-              <span className="text-[2.5rem] font-bold text-white">$180</span>
-              <span className="text-[#94B4C1] ml-1"> / year</span>
+              <span className="text-4xl font-bold text-white">$15</span>
+              <span className="text-[#94B4C1] ml-1">/mo</span>
             </div>
-            <p className="text-[#94B4C1] text-[13px] mb-1">Equivalent to $15/mo <span className="text-[#EAE0CF] font-medium">(save 40%)</span></p>
-            <p className="text-[#94B4C1]/70 text-xs mb-3">Cancel anytime.</p>
-            {/* Intent framing */}
-            <p className="text-[#EAE0CF]/60 text-[12px] leading-relaxed mb-6 max-w-[220px]">
-              Long-term access for continuous market insight.
-            </p>
+            <p className="text-[#94B4C1] text-sm mb-1">Billed $180 yearly</p>
+            <p className="text-[#EAE0CF] text-xs mb-6">Same features. Smart savings.</p>
+
+            {/* Full Features List (Master List) */}
+            <ul className="space-y-3 mb-8">
+              <li className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span className="text-[#94B4C1]">Exact Transaction Prices</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span className="text-[#94B4C1]">Deal Percentile Ranking</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span className="text-[#94B4C1]">Floor-Level Pricing Patterns</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span className="text-[#94B4C1]">New Launch vs Resale Gap</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span className="text-[#94B4C1]">Market Signals & Distribution</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span className="text-[#94B4C1]">Upcoming Supply Pipeline</span>
+              </li>
+            </ul>
 
             <button
               onClick={() => handleSelectPlan('annual')}
               className="w-full py-3 bg-[#EAE0CF] text-[#213448] rounded-xl font-bold hover:bg-white transition-colors mt-auto"
             >
-              Unlock 12 Months & Save $120
+              Unlock & Save $120
             </button>
           </div>
         </div>

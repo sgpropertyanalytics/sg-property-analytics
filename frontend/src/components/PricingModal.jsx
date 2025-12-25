@@ -113,104 +113,90 @@ export function PricingModal({ isOpen, onClose }) {
             </svg>
           </button>
 
-          {/* BIG CARD - Product Definition */}
-          <div className="bg-white rounded-xl p-6 md:p-8 border border-[#94B4C1] mb-6">
-            {/* Hero Section - Contextual based on trigger */}
-            <div className="text-center mb-6">
-              <h2 className="text-2xl md:text-3xl font-bold text-[#213448] mb-2">
-                {message.title}
-              </h2>
-              <p className="text-[#547792] text-sm md:text-base">
-                {message.subtitle}
-              </p>
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-[#94B4C1]/30 my-6" />
-
-            {/* Features Grid */}
-            <p className="text-[#213448] font-semibold text-sm mb-4 text-center">
-              All plans include full access to:
+          {/* Hero Section - Contextual based on trigger */}
+          <div className="text-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#213448] mb-2">
+              {message.title}
+            </h2>
+            <p className="text-[#547792] text-sm md:text-base">
+              {message.subtitle}
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5 max-w-lg mx-auto">
-              {features.map((feature, i) => (
-                <p key={i} className="flex items-start gap-2 text-[#547792] text-sm">
+          </div>
+
+          {/* Side-by-Side Cards - Aligned at bottom, Annual taller */}
+          <div className="flex flex-col md:flex-row gap-5 items-end mb-6">
+
+            {/* LEFT: Quarterly (Shorter - References Annual) */}
+            <div className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1] flex flex-col md:mb-0">
+              <div className="flex-1">
+                <h3 className="text-[#213448] font-bold text-xl mb-2">Quarterly</h3>
+                <p className="text-[#213448] text-3xl font-bold mb-1">
+                  $25<span className="text-[#547792] text-base font-normal">/mo</span>
+                </p>
+                <p className="text-[#213448] text-sm mb-1">Billed $75 every 3 months</p>
+                <p className="text-[#547792] text-xs mb-5">Cancel anytime.</p>
+
+                {/* Reference to Annual features */}
+                <p className="flex items-start gap-2 text-[#547792] text-sm">
                   <svg className="w-4 h-4 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  {feature}
+                  <span><strong className="text-[#213448]">Includes full access</strong> to all 6 Pro features listed in Annual.</span>
                 </p>
-              ))}
-            </div>
-          </div>
-
-          {/* Divider Label */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 border-t border-[#94B4C1]/40" />
-            <span className="text-[#547792] text-sm font-medium whitespace-nowrap">
-              How long do you need access?
-            </span>
-            <div className="flex-1 border-t border-[#94B4C1]/40" />
-          </div>
-
-          {/* Two Sub-Cards - Pricing Options */}
-          <div className="flex flex-col md:flex-row gap-4 items-end mb-6">
-
-            {/* LEFT: Quarterly (Compact) */}
-            <div className="flex-1 bg-white rounded-xl p-5 border border-[#94B4C1] flex flex-col">
-              <h3 className="text-[#213448] font-bold text-lg mb-3">Quarterly</h3>
-              <p className="text-[#213448] text-3xl font-bold mb-1">
-                $75<span className="text-[#547792] text-base font-normal"> / quarter</span>
-              </p>
-              <p className="text-[#547792] text-[13px] mb-1">Equivalent to $25/mo</p>
-              <p className="text-[#547792]/70 text-xs mb-3">Cancel anytime.</p>
-              {/* Intent framing */}
-              <p className="text-[#547792]/60 text-[12px] leading-relaxed mb-5 max-w-[200px]">
-                Short-term access for a specific decision.
-              </p>
+              </div>
 
               <button
                 onClick={() => handleSelectPlan('quarterly')}
                 disabled={loading === 'quarterly'}
-                className="w-full border-2 border-[#547792] text-[#547792] px-5 py-3 rounded-lg font-semibold hover:bg-[#547792]/10 transition-colors disabled:opacity-50 mt-auto"
+                className="mt-6 w-full border-2 border-[#547792] text-[#547792] px-5 py-3 rounded-lg font-semibold hover:bg-[#547792]/10 transition-colors disabled:opacity-50"
               >
-                {loading === 'quarterly' ? 'Loading...' : 'Get 3-Month Access'}
+                {loading === 'quarterly' ? 'Loading...' : 'Select Quarterly'}
               </button>
             </div>
 
-            {/* RIGHT: Annual Pro (Elevated - calmer, clearer premium feel) */}
+            {/* RIGHT: Annual Pro (The Winner - taller with full features) */}
             <div
-              className="flex-1 bg-[#213448] rounded-xl flex flex-col relative md:-mt-4"
+              className="flex-1 bg-[#213448] rounded-xl flex flex-col relative md:-mt-6 md:mb-0"
               style={{
-                boxShadow: '0px 10px 32px rgba(33, 52, 72, 0.35)',
-                padding: '2rem 1.25rem 1.25rem 1.25rem',
+                boxShadow: '0px 16px 48px rgba(33, 52, 72, 0.45)',
+                padding: '2rem 1.5rem 1.5rem 1.5rem',
               }}
             >
               {/* SAVE 40% Badge */}
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                 <span className="bg-[#94B4C1] text-[#213448] text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wide whitespace-nowrap">
-                  Best Value
+                  Save 40%
                 </span>
               </div>
 
-              <h3 className="text-[#EAE0CF] font-bold text-lg mb-3 pt-1">Annual Pro</h3>
-              <p className="mb-1">
-                <span className="text-white text-[2rem] font-bold">$180</span>
-                <span className="text-[#94B4C1] text-base font-normal"> / year</span>
-              </p>
-              <p className="text-[#94B4C1] text-[13px] mb-1">Equivalent to $15/mo <span className="text-[#EAE0CF] font-medium">(save 40%)</span></p>
-              <p className="text-[#94B4C1]/70 text-xs mb-3">Cancel anytime.</p>
-              {/* Intent framing */}
-              <p className="text-[#EAE0CF]/60 text-[12px] leading-relaxed mb-5 max-w-[200px]">
-                Long-term access for continuous market insight.
-              </p>
+              <div className="flex-1 pt-1">
+                <h3 className="text-[#EAE0CF] font-bold text-xl mb-2">Annual Pro</h3>
+                <p className="mb-1">
+                  <span className="text-white text-4xl font-bold">$15</span>
+                  <span className="text-[#94B4C1] text-base font-normal">/mo</span>
+                </p>
+                <p className="text-[#94B4C1] text-sm mb-1">Billed $180 yearly</p>
+                <p className="text-[#EAE0CF] text-xs mb-5">Same features. Smart savings.</p>
+
+                {/* Features - Full List (Master List) */}
+                <div className="space-y-2.5">
+                  {features.map((feature, i) => (
+                    <p key={i} className="flex items-start gap-2 text-white text-sm">
+                      <svg className="w-4 h-4 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {feature}
+                    </p>
+                  ))}
+                </div>
+              </div>
 
               <button
                 onClick={() => handleSelectPlan('annual')}
                 disabled={loading === 'annual'}
-                className="w-full bg-[#EAE0CF] text-[#213448] px-5 py-3 rounded-lg font-bold hover:bg-white transition-colors disabled:opacity-50 mt-auto"
+                className="mt-6 w-full bg-[#EAE0CF] text-[#213448] px-5 py-3.5 rounded-lg font-bold hover:bg-white transition-colors disabled:opacity-50"
               >
-                {loading === 'annual' ? 'Loading...' : 'Unlock 12 Months & Save $120'}
+                {loading === 'annual' ? 'Loading...' : 'Unlock & Save $120'}
               </button>
             </div>
           </div>
