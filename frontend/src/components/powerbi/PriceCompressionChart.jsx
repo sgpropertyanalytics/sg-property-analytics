@@ -15,6 +15,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
+import { useSubscription } from '../../context/SubscriptionContext';
 import { PreviewChartOverlay } from '../ui';
 
 ChartJS.register(
@@ -53,6 +54,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 export function PriceCompressionChart({ height = 380 }) {
   // Get GLOBAL filters and timeGrouping from context
   const { buildApiParams, filters, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
+  const { isPremium } = useSubscription();
 
   // Data state
   const [data, setData] = useState([]);
@@ -412,16 +414,17 @@ export function PriceCompressionChart({ height = 380 }) {
         </div>
 
         {/* KPI Row: Compression Score + Market Signals */}
-        <div className="flex flex-wrap items-center gap-3 mt-3">
+        {/* All 3 cards same height (h-[72px]) and blurred for free users */}
+        <div className={`flex flex-wrap items-stretch gap-3 mt-3 ${!isPremium ? 'blur-sm grayscale-[40%]' : ''}`}>
           {/* Compression Score Box */}
-          <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center min-w-[90px]">
+          <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center min-w-[90px] h-[72px] flex flex-col justify-center">
             <div className="text-xl md:text-2xl font-bold text-[#213448]">{compressionScore.score}</div>
             <div className="text-[10px] md:text-xs text-[#547792]">Compression ({compressionScore.label})</div>
             <Sparkline data={sparklineData} width={70} height={16} />
           </div>
 
           {/* Smart Market Signal Cards */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-stretch gap-2">
             <MarketSignalCard
               type="ccr-rcr"
               spread={latestData.ccrRcrSpread}
@@ -694,7 +697,7 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
     if (type === 'ccr-rcr') {
       // CCR < RCR: Prime Discount (opportunity)
       return (
-        <div className="bg-amber-100 border-2 border-amber-400 rounded-lg px-3 py-2 text-center min-w-[140px]">
+        <div className="bg-amber-100 border-2 border-amber-400 rounded-lg px-3 py-2 text-center min-w-[140px] h-[72px] flex flex-col justify-center">
           <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
             Market Anomaly
           </div>
@@ -710,7 +713,7 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
     if (type === 'rcr-ocr') {
       // OCR > RCR: Risk Alert
       return (
-        <div className="bg-red-50 border-2 border-red-500 rounded-lg px-3 py-2 text-center min-w-[140px]">
+        <div className="bg-red-50 border-2 border-red-500 rounded-lg px-3 py-2 text-center min-w-[140px] h-[72px] flex flex-col justify-center">
           <div className="text-[10px] font-bold text-red-800 uppercase tracking-wider">
             Risk Alert
           </div>
@@ -730,7 +733,7 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
   const isBelowAvg = pctVsAvg !== null && pctVsAvg < 0;
 
   return (
-    <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center min-w-[140px]">
+    <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center min-w-[140px] h-[72px] flex flex-col justify-center">
       <div className="text-[10px] text-[#547792] uppercase tracking-wide">
         {labels[type]}
       </div>

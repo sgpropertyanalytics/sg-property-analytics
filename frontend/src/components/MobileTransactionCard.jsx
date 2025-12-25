@@ -18,23 +18,23 @@ export function MobileTransactionCard({ transaction, formatCurrency, formatDate 
         {/* Left: Property info */}
         <div className="min-w-0 flex-1">
           <div className="font-medium text-[#213448] truncate">
-            {txn.project_name || '-'}
+            {txn.project_name || txn.project_name_masked || '-'}
           </div>
           <div className="text-xs text-[#547792] mt-0.5">
             {txn.district || '-'} &bull; {txn.bedroom_count || '-'}BR &bull; {formatDate(txn.transaction_date)}
           </div>
           <div className="text-xs text-[#547792] mt-0.5">
-            {txn.area_sqft?.toLocaleString() || '-'} sqft &bull; {txn.tenure || '-'}
+            {txn.area_sqft?.toLocaleString() || txn.area_sqft_masked || '-'} {txn.area_sqft ? 'sqft' : ''} &bull; {txn.tenure || '-'}
           </div>
         </div>
 
         {/* Right: Price and type */}
         <div className="flex-shrink-0 text-right">
           <div className="font-semibold text-[#213448]">
-            {formatCurrency(txn.price)}
+            {txn.price ? formatCurrency(txn.price) : txn.price_masked || '-'}
           </div>
           <div className="text-xs text-[#547792]">
-            ${txn.psf?.toLocaleString() || '-'} PSF
+            {txn.psf ? `$${txn.psf.toLocaleString()} PSF` : txn.psf_masked || '-'}
           </div>
           <span className={`inline-block mt-1 px-1.5 py-0.5 text-xs rounded ${
             txn.sale_type === 'New Sale'

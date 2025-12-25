@@ -258,9 +258,11 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   // Loading state
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
-        <h3 className="text-sm font-semibold text-[#213448] mb-4">Unit Size vs Price</h3>
-        <div className="flex items-center justify-center" style={{ height: height - 80 }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
+        <div className="p-4 border-b border-[#94B4C1]/30">
+          <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-[#547792]">Loading...</div>
         </div>
       </div>
@@ -270,16 +272,18 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   // Error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4" style={{ height }}>
-        <h3 className="text-sm font-semibold text-[#213448] mb-4">Unit Size vs Price</h3>
-        <div className="flex items-center justify-center" style={{ height: height - 80 }}>
+      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
+        <div className="p-4 border-b border-[#94B4C1]/30">
+          <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-red-500">Error: {error}</div>
         </div>
       </div>
     );
   }
 
-  // Calculate chart height: total height - header (~70px) - KeyInsightBox (~50px)
+  // Chart area height (explicit, not calculated from container)
   const chartHeight = height - 120;
 
   return (

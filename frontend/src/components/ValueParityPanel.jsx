@@ -872,8 +872,8 @@ export function ValueParityPanel() {
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                           {formatDate(txn.transaction_date)}
                         </td>
-                        <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[200px]" title={txn.project_name}>
-                          {txn.project_name || '-'}
+                        <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[200px]" title={txn.project_name || txn.project_name_masked}>
+                          {txn.project_name || txn.project_name_masked || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                           {txn.district || '-'}
@@ -882,13 +882,13 @@ export function ValueParityPanel() {
                           {txn.bedroom_count || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                          {txn.area_sqft?.toLocaleString() || '-'}
+                          {txn.area_sqft?.toLocaleString() || txn.area_sqft_masked || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-800 font-medium text-right">
-                          {formatCurrency(txn.price)}
+                          {txn.price ? formatCurrency(txn.price) : txn.price_masked || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                          {formatCurrency(txn.psf)}
+                          {txn.psf ? formatCurrency(txn.psf) : txn.psf_masked || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100">
                           <span className={`px-1.5 py-0.5 text-xs rounded ${
@@ -1082,8 +1082,8 @@ export function ValueParityPanel() {
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                           {formatDate(txn.transaction_date)}
                         </td>
-                        <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[180px]" title={txn.project_name}>
-                          {txn.project_name || '-'}
+                        <td className="px-3 py-2 border-b border-slate-100 font-medium text-slate-800 truncate max-w-[180px]" title={txn.project_name || txn.project_name_masked}>
+                          {txn.project_name || txn.project_name_masked || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                           {txn.district || '-'}
@@ -1092,13 +1092,13 @@ export function ValueParityPanel() {
                           {txn.bedroom_count || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                          {txn.area_sqft?.toLocaleString() || '-'}
+                          {txn.area_sqft?.toLocaleString() || txn.area_sqft_masked || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-800 font-medium text-right">
-                          {formatCurrency(txn.price)}
+                          {txn.price ? formatCurrency(txn.price) : txn.price_masked || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right">
-                          {formatCurrency(txn.psf)}
+                          {txn.psf ? formatCurrency(txn.psf) : txn.psf_masked || '-'}
                         </td>
                         <td className="px-3 py-2 border-b border-slate-100 text-slate-600">
                           {txn.tenure || '-'}

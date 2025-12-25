@@ -16,6 +16,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
+import { useSubscription } from '../../context/SubscriptionContext';
 
 // =============================================================================
 // CONFIGURATION
@@ -418,6 +419,7 @@ function RegionSummaryBar({ districtData }) {
 // =============================================================================
 
 export default function MarketStrategyMap() {
+  const { isPremium } = useSubscription();
   const [districtData, setDistrictData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -582,6 +584,18 @@ export default function MarketStrategyMap() {
 
       {/* Map container - responsive height based on viewport */}
       <div className="relative h-[50vh] min-h-[400px] md:h-[60vh] md:min-h-[500px] lg:h-[65vh] lg:min-h-[550px]">
+        {/* Blur overlay for free users */}
+        {!isPremium && !loading && (
+          <div
+            className="absolute inset-0 z-20 pointer-events-none"
+            style={{
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+              filter: 'grayscale(40%)',
+              background: 'rgba(255, 255, 255, 0.05)',
+            }}
+          />
+        )}
         {/* Loading overlay */}
         <AnimatePresence>
           {loading && (
@@ -758,7 +772,9 @@ export default function MarketStrategyMap() {
 
       {/* Region summary bar */}
       {!loading && !error && districtData.length > 0 && (
-        <RegionSummaryBar districtData={districtData} />
+        <div className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
+          <RegionSummaryBar districtData={districtData} />
+        </div>
       )}
 
       <style>{`
