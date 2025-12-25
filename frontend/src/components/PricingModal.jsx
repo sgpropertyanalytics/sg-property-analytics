@@ -128,7 +128,7 @@ export function PricingModal({ isOpen, onClose }) {
 
             {/* LEFT: Quarterly (Vertically centered, resting on page) */}
             <div
-              className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1] flex flex-col min-h-[320px]"
+              className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1] flex flex-col min-h-[360px]"
               style={{ boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}
             >
               <div className="flex-1 flex flex-col justify-center">

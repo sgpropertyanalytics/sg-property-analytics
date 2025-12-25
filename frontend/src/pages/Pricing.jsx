@@ -95,7 +95,7 @@ export default function Pricing() {
 
           {/* Quarterly Card - White (Vertically centered, resting on page) */}
           <div
-            className="flex-1 bg-white rounded-2xl p-8 border border-[#94B4C1]/50 flex flex-col min-h-[380px]"
+            className="flex-1 bg-white rounded-2xl p-8 border border-[#94B4C1]/50 flex flex-col min-h-[420px]"
             style={{ boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}
           >
             <div className="flex-1 flex flex-col justify-center">
