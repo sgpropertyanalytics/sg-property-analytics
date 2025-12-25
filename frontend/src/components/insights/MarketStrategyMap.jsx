@@ -255,9 +255,9 @@ function HoverCard({ district, data }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.15 }}
-      className="absolute z-50 pointer-events-none top-[280px] left-4"
+      className="absolute z-50 pointer-events-none top-[180px] sm:top-[280px] left-2 sm:left-4"
     >
-      <div className="bg-white rounded-lg shadow-xl border border-[#94B4C1]/50 p-3 w-[165px]">
+      <div className="bg-white rounded-lg shadow-xl border border-[#94B4C1]/50 p-2 sm:p-3 w-[140px] sm:w-[165px]">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <span className="font-bold text-[#213448] text-sm">
@@ -377,36 +377,42 @@ function RegionSummaryBar({ districtData }) {
   };
 
   return (
-    <div className="grid grid-cols-3 gap-3 px-4 py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30">
       {regionStats.map(stat => (
         <div
           key={stat.region}
-          className={`rounded-lg border p-3 ${regionStyles[stat.region]}`}
+          className={`rounded-lg border p-2 sm:p-3 ${regionStyles[stat.region]}`}
         >
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-semibold text-[#213448] text-sm">
-              {stat.region}
-            </span>
-            {stat.yoyPct !== null && (
-              <span
-                className={`text-xs font-bold ${
-                  stat.yoyPct >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                }`}
-              >
-                {stat.yoyPct >= 0 ? '↑' : '↓'}{Math.abs(stat.yoyPct).toFixed(1)}%
+          {/* Mobile: horizontal layout, Desktop: vertical */}
+          <div className="flex sm:flex-col items-center sm:items-stretch gap-2 sm:gap-0">
+            {/* Region name and YoY */}
+            <div className="flex items-center justify-between sm:mb-1 min-w-[60px] sm:min-w-0">
+              <span className="font-semibold text-[#213448] text-sm">
+                {stat.region}
               </span>
-            )}
-          </div>
-          <p className="text-[10px] text-[#547792] mb-2">
-            {regionLabels[stat.region].desc}
-          </p>
-          <div className="flex items-baseline justify-between">
-            <span className="text-lg font-bold text-[#213448]">
-              {stat.medianPsf ? formatPsf(stat.medianPsf) : '-'}
-            </span>
-            <span className="text-xs text-[#547792]">
-              {stat.txCount.toLocaleString()} tx
-            </span>
+              {stat.yoyPct !== null && (
+                <span
+                  className={`text-xs font-bold ml-2 sm:ml-0 ${
+                    stat.yoyPct >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                  }`}
+                >
+                  {stat.yoyPct >= 0 ? '↑' : '↓'}{Math.abs(stat.yoyPct).toFixed(1)}%
+                </span>
+              )}
+            </div>
+            {/* Description - hidden on mobile */}
+            <p className="hidden sm:block text-[10px] text-[#547792] mb-2">
+              {regionLabels[stat.region].desc}
+            </p>
+            {/* Stats */}
+            <div className="flex items-baseline gap-2 sm:justify-between flex-1 sm:flex-none">
+              <span className="text-base sm:text-lg font-bold text-[#213448]">
+                {stat.medianPsf ? formatPsf(stat.medianPsf) : '-'}
+              </span>
+              <span className="text-[10px] sm:text-xs text-[#547792]">
+                {stat.txCount.toLocaleString()} tx
+              </span>
+            </div>
           </div>
         </div>
       ))}
@@ -509,27 +515,28 @@ export default function MarketStrategyMap() {
   return (
     <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
       {/* Header with filters */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-[#94B4C1]/30">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 sm:gap-3">
           <div>
-            <h2 className="text-lg font-bold text-[#213448]">
+            <h2 className="text-base sm:text-lg font-bold text-[#213448]">
               District Price Overview
             </h2>
-            <p className="text-xs text-[#547792]">
-              Median PSF by postal district
+            <p className="text-[10px] sm:text-xs text-[#547792]">
+              <span className="hidden sm:inline">Median PSF by postal district</span>
+              <span className="sm:hidden">Median PSF by district</span>
             </p>
           </div>
 
-          {/* Filter pills */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Filter pills - more compact on mobile */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {/* Bedroom filter */}
-            <div className="flex items-center gap-1 bg-[#EAE0CF]/50 rounded-lg p-1">
+            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
               {BEDROOM_OPTIONS.map(option => (
                 <button
                   key={option.value}
                   onClick={() => setSelectedBed(option.value)}
                   className={`
-                    px-2 py-1 text-xs font-medium rounded-md transition-all
+                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
                     ${selectedBed === option.value
                       ? 'bg-white text-[#213448] shadow-sm'
                       : 'text-[#547792] hover:text-[#213448]'
@@ -541,33 +548,36 @@ export default function MarketStrategyMap() {
               ))}
             </div>
 
-            {/* Property age filter */}
-            <div className="flex items-center gap-1 bg-[#EAE0CF]/50 rounded-lg p-1">
+            {/* Property age filter - show abbreviated labels on mobile */}
+            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
               {AGE_OPTIONS.map(option => (
                 <button
                   key={option.value}
                   onClick={() => setSelectedAge(option.value)}
                   className={`
-                    px-2 py-1 text-xs font-medium rounded-md transition-all
+                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
                     ${selectedAge === option.value
                       ? 'bg-white text-[#213448] shadow-sm'
                       : 'text-[#547792] hover:text-[#213448]'
                     }
                   `}
                 >
-                  {option.label}
+                  <span className="sm:hidden">
+                    {option.value === 'all' ? 'All' : option.value === 'new' ? 'New' : option.value === 'young' ? '5-10y' : '>10y'}
+                  </span>
+                  <span className="hidden sm:inline">{option.label}</span>
                 </button>
               ))}
             </div>
 
             {/* Period filter */}
-            <div className="flex items-center gap-1 bg-[#EAE0CF]/50 rounded-lg p-1">
+            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
               {PERIOD_OPTIONS.map(option => (
                 <button
                   key={option.value}
                   onClick={() => setSelectedPeriod(option.value)}
                   className={`
-                    px-2 py-1 text-xs font-medium rounded-md transition-all
+                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
                     ${selectedPeriod === option.value
                       ? 'bg-white text-[#213448] shadow-sm'
                       : 'text-[#547792] hover:text-[#213448]'
@@ -708,63 +718,75 @@ export default function MarketStrategyMap() {
           )}
         </AnimatePresence>
 
-        {/* Legend - Market Segments (top-left) */}
-        <div className="absolute top-4 left-4 z-20">
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-[#94B4C1]/50 shadow-md p-2.5 w-[165px]">
-            <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-2">
+        {/* Legend - Market Segments (top-left) - smaller on mobile */}
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-[#94B4C1]/50 shadow-md p-2 sm:p-2.5 w-[130px] sm:w-[165px]">
+            <p className="text-[8px] sm:text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-1.5 sm:mb-2">
               Market Segments
             </p>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(33, 52, 72, 0.50)' }} />
-                <span className="text-[10px] text-[#213448]">CCR (Core Central)</span>
+            <div className="space-y-1 sm:space-y-1.5">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: 'rgba(33, 52, 72, 0.50)' }} />
+                <span className="text-[9px] sm:text-[10px] text-[#213448]">
+                  <span className="sm:hidden">CCR</span>
+                  <span className="hidden sm:inline">CCR (Core Central)</span>
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(84, 119, 146, 0.42)' }} />
-                <span className="text-[10px] text-[#213448]">RCR (Rest of Central)</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: 'rgba(84, 119, 146, 0.42)' }} />
+                <span className="text-[9px] sm:text-[10px] text-[#213448]">
+                  <span className="sm:hidden">RCR</span>
+                  <span className="hidden sm:inline">RCR (Rest of Central)</span>
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: 'rgba(148, 180, 193, 0.35)' }} />
-                <span className="text-[10px] text-[#213448]">OCR (Outside Central)</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: 'rgba(148, 180, 193, 0.35)' }} />
+                <span className="text-[9px] sm:text-[10px] text-[#213448]">
+                  <span className="sm:hidden">OCR</span>
+                  <span className="hidden sm:inline">OCR (Outside Central)</span>
+                </span>
               </div>
             </div>
 
-            <div className="h-px bg-[#94B4C1]/30 my-2" />
+            <div className="h-px bg-[#94B4C1]/30 my-1.5 sm:my-2" />
 
-            <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-2">
+            <p className="text-[8px] sm:text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-1 sm:mb-2">
               Price Tier
             </p>
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded bg-[#213448]" />
-                <span className="text-[10px] text-[#213448]">&gt;$2,200 PSF</span>
+            <div className="space-y-1 sm:space-y-1.5">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-[#213448] shrink-0" />
+                <span className="text-[9px] sm:text-[10px] text-[#213448]">&gt;$2.2K</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded bg-[#547792]" />
-                <span className="text-[10px] text-[#213448]">$1,400-$2,200</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-[#547792] shrink-0" />
+                <span className="text-[9px] sm:text-[10px] text-[#213448]">$1.4-2.2K</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded bg-white border border-[#94B4C1]" />
-                <span className="text-[10px] text-[#213448]">&lt;$1,400 PSF</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-white border border-[#94B4C1] shrink-0" />
+                <span className="text-[9px] sm:text-[10px] text-[#213448]">&lt;$1.4K</span>
               </div>
             </div>
 
-            <div className="h-px bg-[#94B4C1]/30 my-2" />
+            {/* Volume Activity - hidden on mobile for space */}
+            <div className="hidden sm:block">
+              <div className="h-px bg-[#94B4C1]/30 my-2" />
 
-            <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-1.5">
-              Volume Activity
-            </p>
-            {/* Gradient bar from red to yellow - full width */}
-            <div
-              className="h-2.5 rounded-sm"
-              style={{
-                background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15)',
-                width: '100%'
-              }}
-            />
-            <div className="flex justify-between mt-1">
-              <span className="text-[8px] text-[#547792]">High</span>
-              <span className="text-[8px] text-[#547792]">Low</span>
+              <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold mb-1.5">
+                Volume Activity
+              </p>
+              {/* Gradient bar from red to yellow - full width */}
+              <div
+                className="h-2.5 rounded-sm"
+                style={{
+                  background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15)',
+                  width: '100%'
+                }}
+              />
+              <div className="flex justify-between mt-1">
+                <span className="text-[8px] text-[#547792]">High</span>
+                <span className="text-[8px] text-[#547792]">Low</span>
+              </div>
             </div>
           </div>
         </div>
