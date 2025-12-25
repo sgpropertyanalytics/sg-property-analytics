@@ -3038,6 +3038,8 @@ def get_resale_projects():
     start = time.time()
 
     try:
+        from models.database import db
+        from sqlalchemy import text
         from services.new_launch_units import get_units_for_project
 
         # Get all projects from transactions table
@@ -3105,6 +3107,8 @@ def get_project_exit_queue(project_name):
     start = time.time()
 
     try:
+        from models.database import db
+        from sqlalchemy import text
         from services.new_launch_units import get_units_for_project
         from datetime import datetime, timedelta
 
