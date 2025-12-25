@@ -217,47 +217,146 @@ Inter is the primary UI font. For monospace numbers in data displays, use:
 
 ### Data Tables
 
+**MANDATORY: All tables MUST have sortable columns.**
+
+#### Table Sorting Standard (Required for ALL tables)
+
+Every table must include:
+1. **Sort state** - Track current column and order (asc/desc)
+2. **Sort handler** - Toggle sort on column click
+3. **SortIcon component** - Visual indicator showing sort state
+4. **Clickable headers** - With hover states and cursor pointer
+
 ```tsx
-{/* Desktop: Full table */}
+// 1. Sort state (add to component)
+const [sortConfig, setSortConfig] = useState({
+  column: 'default_column',  // Default sort column
+  order: 'desc',             // 'asc' or 'desc'
+});
+
+// 2. Sort handler
+const handleSort = (column) => {
+  setSortConfig(prev => ({
+    column,
+    order: prev.column === column && prev.order === 'desc' ? 'asc' : 'desc',
+  }));
+};
+
+// 3. SortIcon component (include in every table component)
+const SortIcon = ({ column, config = sortConfig }) => {
+  if (config.column !== column) {
+    return (
+      <svg className="w-3 h-3 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+      </svg>
+    );
+  }
+  return config.order === 'asc' ? (
+    <svg className="w-3 h-3 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+    </svg>
+  ) : (
+    <svg className="w-3 h-3 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+};
+
+// 4. Sort data before rendering
+const sortedData = useMemo(() => {
+  return [...data].sort((a, b) => {
+    const col = sortConfig.column;
+    let aVal = a[col];
+    let bVal = b[col];
+
+    // Handle null/undefined
+    if (aVal == null) aVal = sortConfig.order === 'asc' ? Infinity : -Infinity;
+    if (bVal == null) bVal = sortConfig.order === 'asc' ? Infinity : -Infinity;
+
+    // String comparison
+    if (typeof aVal === 'string' && typeof bVal === 'string') {
+      return sortConfig.order === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    }
+
+    // Numeric comparison
+    return sortConfig.order === 'asc' ? aVal - bVal : bVal - aVal;
+  });
+}, [data, sortConfig]);
+```
+
+#### Sortable Column Header Pattern
+
+```tsx
+<th
+  className="px-3 py-2 text-left font-semibold text-[#213448] cursor-pointer hover:bg-slate-100 select-none"
+  onClick={() => handleSort('column_key')}
+>
+  <div className="flex items-center gap-1">
+    <span>Column Label</span>
+    <SortIcon column="column_key" />
+  </div>
+</th>
+
+{/* For right-aligned columns */}
+<th
+  className="px-3 py-2 text-right font-semibold text-[#213448] cursor-pointer hover:bg-slate-100 select-none"
+  onClick={() => handleSort('numeric_column')}
+>
+  <div className="flex items-center justify-end gap-1">
+    <span>Amount</span>
+    <SortIcon column="numeric_column" />
+  </div>
+</th>
+```
+
+#### Complete Table Example
+
+```tsx
+{/* Desktop: Full table with sorting */}
 <div className="hidden md:block overflow-x-auto">
   <table className="w-full table-fixed">
     <thead>
       <tr className="border-b border-[#94B4C1]/50">
-        <th className="
-          text-left text-xs font-semibold
-          uppercase tracking-wide
-          text-[#547792] p-3
-        ">
-          Column
+        <th
+          className="text-left text-xs font-semibold uppercase tracking-wide text-[#547792] p-3 cursor-pointer hover:bg-slate-100 select-none"
+          onClick={() => handleSort('name')}
+        >
+          <div className="flex items-center gap-1">
+            <span>Name</span>
+            <SortIcon column="name" />
+          </div>
+        </th>
+        <th
+          className="text-right text-xs font-semibold uppercase tracking-wide text-[#547792] p-3 cursor-pointer hover:bg-slate-100 select-none"
+          onClick={() => handleSort('value')}
+        >
+          <div className="flex items-center justify-end gap-1">
+            <span>Value</span>
+            <SortIcon column="value" />
+          </div>
         </th>
       </tr>
     </thead>
     <tbody>
-      <tr className="
-        border-b border-[#94B4C1]/30
-        hover:bg-[#EAE0CF]/20
-        active:bg-[#EAE0CF]/30  // Touch feedback
-        transition-colors
-      ">
-        <td className="p-3 text-sm">{value}</td>
-      </tr>
+      {sortedData.map(row => (
+        <tr key={row.id} className="border-b border-[#94B4C1]/30 hover:bg-[#EAE0CF]/20 active:bg-[#EAE0CF]/30 transition-colors">
+          <td className="p-3 text-sm">{row.name}</td>
+          <td className="p-3 text-sm text-right">{row.value}</td>
+        </tr>
+      ))}
     </tbody>
   </table>
 </div>
 
-{/* Mobile: Card view */}
+{/* Mobile: Card view (sorting applies to cards too) */}
 <div className="md:hidden space-y-3">
-  {data.map(row => (
+  {sortedData.map(row => (
     <div
       key={row.id}
-      className="
-        bg-white rounded-lg border border-[#94B4C1]/50 p-4
-        active:bg-[#EAE0CF]/20
-        transition-colors
-      "
+      className="bg-white rounded-lg border border-[#94B4C1]/50 p-4 active:bg-[#EAE0CF]/20 transition-colors"
     >
-      <div className="font-medium text-[#213448]">{row.title}</div>
-      <div className="text-xs text-[#547792] mt-1">{row.details}</div>
+      <div className="font-medium text-[#213448]">{row.name}</div>
+      <div className="text-xs text-[#547792] mt-1">{row.value}</div>
     </div>
   ))}
 </div>

@@ -116,6 +116,28 @@ If X-axis = CATEGORY (district/bedroom/price):
   → Chart filters to highlighted period
 ```
 
+### Card 5: Table Sorting (MANDATORY)
+
+```
+ALL TABLES MUST HAVE SORTABLE COLUMNS
+
+Required implementation:
+1. sortConfig state: { column: 'default', order: 'desc' }
+2. handleSort(column) function to toggle sort
+3. SortIcon component showing sort direction
+4. Clickable headers with hover:bg-slate-100 cursor-pointer
+
+Header pattern:
+<th onClick={() => handleSort('col')} className="cursor-pointer hover:bg-slate-100 select-none">
+  <div className="flex items-center gap-1">
+    <span>Label</span>
+    <SortIcon column="col" />
+  </div>
+</th>
+
+Full pattern: See dashboard-design skill → Data Tables section
+```
+
 ---
 
 # 2. CORE PRINCIPLES

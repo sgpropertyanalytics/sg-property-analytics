@@ -186,6 +186,7 @@ A change is BREAKING if it causes:
 - [ ] All columns visible
 - [ ] Headers aligned with content
 - [ ] Row hover states work
+- [ ] **ALL columns sortable** (clickable headers with SortIcon)
 - [ ] Sorting/pagination functions
 
 ---
@@ -455,3 +456,4 @@ Date: [date]
 | Click handlers | ❌ No | Core functionality |
 | Touch targets | ✅ Yes | Wrapper/button sizing |
 | Animations | ✅ Yes | Wrapper level only |
+| Table sorting | ✅ Required | ALL tables MUST have sortable columns |
