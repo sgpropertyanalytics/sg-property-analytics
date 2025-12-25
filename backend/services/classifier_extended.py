@@ -232,9 +232,9 @@ def classify_floor_level(floor_range: Optional[str]) -> str:
         # Clean and parse the floor number
         low_part = low_part.strip()
 
-        # Handle basement levels
+        # Basement levels are excluded from classification
         if low_part.upper().startswith('B'):
-            return "Low"  # Basement is always Low
+            return "Unknown"  # Basement excluded from floor level tiers
 
         low_floor = int(low_part)
 

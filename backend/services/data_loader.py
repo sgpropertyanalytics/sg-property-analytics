@@ -206,27 +206,11 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
         return pd.DataFrame()
 
     # Create transaction_date (YYYY-MM-DD format)
-    # For the most recent month, use the last day of the month to show it as "latest"
-    # For older months, use the 1st day
-    max_year = int(df['parsed_year'].max())
-    max_month_df = df[df['parsed_year'] == max_year]
-    if not max_month_df.empty:
-        max_month = int(max_month_df['parsed_month'].max())
-
-        # Calculate last day of the most recent month
-        from calendar import monthrange
-        last_day = monthrange(max_year, max_month)[1]
-
-        # Create dates: use last day for most recent month, 1st day for others
-        def get_day(row):
-            if int(row['parsed_year']) == max_year and int(row['parsed_month']) == max_month:
-                return last_day
-            else:
-                return 1
-
-        df['parsed_day'] = df.apply(get_day, axis=1)
-    else:
-        df['parsed_day'] = 1
+    # Issue B9: Use consistent day (15th - middle of month) for ALL months
+    # Previous logic used last day for recent months and 1st for older months,
+    # which created artificial ~30-day gaps in time-series charts.
+    # Using day 15 represents the "average" date within a month when exact day is unknown.
+    df['parsed_day'] = 15
 
     # Create transaction_date as datetime (needed for bedroom classification)
     df['transaction_date_dt'] = pd.to_datetime({
@@ -236,8 +220,10 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
     })
     df['transaction_date'] = df['transaction_date_dt'].dt.strftime('%Y-%m-%d')
 
-    # Create contract_date (MMYY format for compatibility)
-    df['contract_date'] = df['transaction_date'].str[5:7] + df['transaction_date'].str[2:4]
+    # Create contract_date (MMYYYY format - Issue B11: use 4-digit year to avoid century ambiguity)
+    # Old format was MMYY which loses century info (e.g., "1024" could be Oct 2024 or Oct 1924)
+    # New format MMYYYY is unambiguous (e.g., "102024" is clearly October 2024)
+    df['contract_date'] = df['transaction_date'].str[5:7] + df['transaction_date'].str[0:4]
 
     # Drop temporary parsing columns (not original columns)
     df = df.drop(columns=['parsed_year', 'parsed_month', 'parsed_day'], errors='ignore')
@@ -274,17 +260,21 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
         )
 
     # NEW: Parse Nett Price if it exists (handle both column name variants)
+    # Issue B7: Preserve NULL semantics - don't fill missing values with 0
     nett_price_col = 'Nett Price($)' if 'Nett Price($)' in df.columns else 'Nett Price ($)'
     if nett_price_col in df.columns:
-        df['nett_price'] = pd.to_numeric(
+        # Clean the string values but preserve NULLs
+        cleaned_nett = (
             df[nett_price_col]
             .astype(str)
             .str.replace(',', '', regex=False)
             .str.replace('$', '', regex=False)
             .str.strip()
-            .replace(['nan', ''], '0'),
-            errors='coerce'
-        ).fillna(0)
+        )
+        # Convert empty strings and 'nan' to actual NaN, then parse
+        cleaned_nett = cleaned_nett.replace(['nan', '', 'None', 'none', '-'], pd.NA)
+        df['nett_price'] = pd.to_numeric(cleaned_nett, errors='coerce')
+        # Note: We do NOT fillna(0) - NULL means "nett price not provided"
 
     # Clean and parse area (remove commas)
     if 'Area (SQFT)' in df.columns:
@@ -297,7 +287,7 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
             .astype(float)
         )
 
-    # Calculate PSF
+    # Calculate PSF - with safe division to prevent division by zero (Issue B6)
     if 'Unit Price ($ PSF)' in df.columns:
         df['psf'] = (
             df['Unit Price ($ PSF)']
@@ -307,11 +297,19 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
             .str.strip()
             .replace('nan', '')
         )
+        # Only calculate PSF where area_sqft > 0 to prevent division by zero
         psf_mask = (df['psf'] == '') | (df['psf'] == 'nan')
-        df.loc[psf_mask, 'psf'] = (df.loc[psf_mask, 'price'] / df.loc[psf_mask, 'area_sqft']).fillna(0)
-        df['psf'] = df['psf'].astype(float)
+        valid_area_mask = psf_mask & (df['area_sqft'] > 0)
+        df.loc[valid_area_mask, 'psf'] = df.loc[valid_area_mask, 'price'] / df.loc[valid_area_mask, 'area_sqft']
+        # Set PSF to 0 for rows with invalid area (will be filtered out later)
+        df.loc[psf_mask & (df['area_sqft'] <= 0), 'psf'] = 0
+        df['psf'] = pd.to_numeric(df['psf'], errors='coerce').fillna(0)
     else:
-        df['psf'] = (df['price'] / df['area_sqft']).fillna(0)
+        # Safe division: only divide where area_sqft > 0
+        df['psf'] = df.apply(
+            lambda row: row['price'] / row['area_sqft'] if row['area_sqft'] > 0 else 0,
+            axis=1
+        )
 
     # Filter valid prices/areas
     before = len(df)
@@ -331,12 +329,14 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
         diagnostics['rejected']['invalid_price_or_area'] = rejected
 
     # === NEW: Parse Number of Units if it exists (handle both column name variants) ===
+    # Issue B8: Preserve NULL semantics - don't fill missing values with 1
+    # Use nullable Int64 type to preserve NaN while keeping integer semantics
     num_units_col = 'Number of Units' if 'Number of Units' in df.columns else 'No. of Units'
     if num_units_col in df.columns:
-        df['num_units'] = pd.to_numeric(
-            df[num_units_col].astype(str).str.strip().replace(['nan', ''], '0'),
-            errors='coerce'
-        ).fillna(1).astype(int)
+        cleaned_units = df[num_units_col].astype(str).str.strip()
+        cleaned_units = cleaned_units.replace(['nan', '', 'None', 'none', '-'], pd.NA)
+        df['num_units'] = pd.to_numeric(cleaned_units, errors='coerce').astype('Int64')
+        # Note: We do NOT fillna(1) - NULL means "num_units not provided"
 
     # Helper to normalize null-like strings to empty
     def _normalize_null_str(s):
