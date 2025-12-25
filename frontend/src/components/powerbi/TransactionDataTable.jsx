@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
 import { BlurredProject, BlurredCurrency, BlurredArea, BlurredPSF } from '../BlurredCell';
@@ -32,39 +33,58 @@ export function TransactionDataTable({ height = 400 }) {
     column: 'transaction_date',
     order: 'desc',
   });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Prevent stale responses and cancel in-flight requests
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
+  // Handle manual refresh
+  const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
   // Fetch data when filters, pagination, or sort changes
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // includeFactFilter: true enables one-way filtering from dimension charts
-      // (e.g., Price Distribution click filters this table but not other dimension charts)
-      const params = buildApiParams({
-        page: pagination.page,
-        limit: pagination.limit,
-        sort_by: sortConfig.column,
-        sort_order: sortConfig.order,
-      }, { includeFactFilter: true });
-      const response = await getTransactionsList(params);
-      setData(response.data.transactions || []);
-      setPagination(prev => ({
-        ...prev,
-        totalRecords: response.data.pagination?.total_records || 0,
-        totalPages: response.data.pagination?.total_pages || 0,
-      }));
-    } catch (err) {
-      console.error('Error fetching transactions:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey, pagination.page, pagination.limit, sortConfig]);
-
   useEffect(() => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // includeFactFilter: true enables one-way filtering from dimension charts
+        // (e.g., Price Distribution click filters this table but not other dimension charts)
+        const params = buildApiParams({
+          page: pagination.page,
+          limit: pagination.limit,
+          sort_by: sortConfig.column,
+          sort_order: sortConfig.order,
+        }, { includeFactFilter: true });
+        const response = await getTransactionsList(params, { signal });
+
+        // Ignore stale responses
+        if (isStale(requestId)) return;
+
+        setData(response.data.transactions || []);
+        setPagination(prev => ({
+          ...prev,
+          totalRecords: response.data.pagination?.total_records || 0,
+          totalPages: response.data.pagination?.total_pages || 0,
+        }));
+      } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+        if (isStale(requestId)) return;
+        console.error('Error fetching transactions:', err);
+        setError(err.message);
+      } finally {
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
+      }
+    };
     fetchData();
-  }, [fetchData]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+    // refreshTrigger allows manual refresh
+  }, [debouncedFilterKey, pagination.page, pagination.limit, sortConfig, refreshTrigger, startRequest, isStale, getSignal, buildApiParams]);
 
   // Reset to page 1 when filters change
   // debouncedFilterKey captures all filter state changes
@@ -160,7 +180,7 @@ export function TransactionDataTable({ height = 400 }) {
           </select>
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); fetchData(); }}
+            onClick={(e) => { e.preventDefault(); handleRefresh(); }}
             className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
             title="Refresh data"
           >
