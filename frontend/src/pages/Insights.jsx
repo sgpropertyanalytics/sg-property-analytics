@@ -1,20 +1,10 @@
-import { MarketStrategyMap } from '../components/insights';
-import { ErrorBoundary, ChartWatermark } from '../components/ui';
-
 /**
- * Insights Page - Visual Analytics for Singapore Property Market
+ * Project Deep Dive Page - Individual Project Analysis
  *
- * Features:
- * - "Command Center" strategy map with Data Flag markers
- * - Fixed viewport (no pan, zoom only) for dashboard-like experience
- * - PSF values visible at a glance on district markers
- * - Hover tooltips with transactions and YoY trends
- *
- * Future features:
- * - AI-generated market insights
- * - Trend predictions
- * - Investment recommendations
- * - Market alerts and notifications
+ * Coming Soon Features:
+ * - Fundamentals & Pricing: Project details, PSF trends, price history
+ * - Liquidity & Resale Success: Transaction velocity, profit/loss stats
+ * - Floor-Level Optimization: Floor premium analysis
  */
 export function InsightsContent() {
   return (
@@ -23,25 +13,16 @@ export function InsightsContent() {
         {/* Header */}
         <div className="mb-4 md:mb-6">
           <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
-            Insights
+            Project Deep Dive
           </h1>
           <p className="text-[#547792] text-sm mt-1">
-            Visual analytics and market intelligence for Singapore property
+            Comprehensive analysis of individual projects
           </p>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="space-y-6">
-          {/* Strategy Map with Data Flags - Full Width */}
-          <div className="animate-view-enter">
-            <ErrorBoundary name="District Price Map" compact>
-              <ChartWatermark>
-                <MarketStrategyMap />
-              </ChartWatermark>
-            </ErrorBoundary>
-          </div>
-
-          {/* Coming Soon Features */}
+        {/* Main Content */}
+        <div className="space-y-6 animate-fade-in">
+          {/* Coming Soon Card */}
           <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6 md:p-8">
             <div className="flex items-start gap-4">
               {/* Icon */}
@@ -56,47 +37,47 @@ export function InsightsContent() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={1.5}
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                    d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"
                   />
                 </svg>
               </div>
 
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-[#213448] mb-1">
-                  More Analytics Coming Soon
+                  Project Deep Dive Analytics Coming Soon
                 </h2>
                 <p className="text-[#547792] text-sm mb-4">
-                  We&apos;re building more visual analytics tools to help you
-                  understand the Singapore property market.
+                  Comprehensive analysis of individual projects including pricing, liquidity, and floor optimization.
                 </p>
 
                 {/* Feature Preview Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="bg-[#EAE0CF]/30 rounded-lg p-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
                     <div className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-1">
                       Coming
                     </div>
-                    <div className="text-sm text-[#213448]">Price Trends</div>
+                    <div className="text-sm font-medium text-[#213448]">Fundamentals & Pricing</div>
+                    <p className="text-xs text-[#547792] mt-1">
+                      Project details, PSF trends, and price history analysis
+                    </p>
                   </div>
-                  <div className="bg-[#EAE0CF]/30 rounded-lg p-3">
+                  <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
                     <div className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-1">
                       Coming
                     </div>
-                    <div className="text-sm text-[#213448]">AI Insights</div>
+                    <div className="text-sm font-medium text-[#213448]">Liquidity & Resale Success</div>
+                    <p className="text-xs text-[#547792] mt-1">
+                      Transaction velocity and resale profit/loss statistics
+                    </p>
                   </div>
-                  <div className="bg-[#EAE0CF]/30 rounded-lg p-3">
+                  <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
                     <div className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-1">
                       Coming
                     </div>
-                    <div className="text-sm text-[#213448]">
-                      Market Alerts
-                    </div>
-                  </div>
-                  <div className="bg-[#EAE0CF]/30 rounded-lg p-3">
-                    <div className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-1">
-                      Coming
-                    </div>
-                    <div className="text-sm text-[#213448]">Reports</div>
+                    <div className="text-sm font-medium text-[#213448]">Floor-Level Optimization</div>
+                    <p className="text-xs text-[#547792] mt-1">
+                      Floor premium analysis and optimal floor selection
+                    </p>
                   </div>
                 </div>
               </div>

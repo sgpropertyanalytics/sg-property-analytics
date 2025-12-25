@@ -18,8 +18,8 @@ import { AccountSettingsModal } from '../AccountSettingsModal';
  * 1. Market Pulse - Current MacroOverview analytics content
  * 2. Value Parity - Budget search tool (includes New Launches + Resale)
  * 3. Floor Dispersion - Floor level analysis
- * 4. District & Project Deep Dive - Detailed district and project analysis
- * 5. Insights - Placeholder
+ * 4. District Deep Dive - Detailed district analysis (Volume/Liquidity & Price/PSF)
+ * 5. Project Deep Dive - Detailed project analysis (Coming Soon)
  */
 
 export const NAV_ITEMS = [
@@ -56,7 +56,7 @@ export const NAV_ITEMS = [
   {
     id: 'district-deep-dive',
     path: '/district-deep-dive',
-    label: 'District & Project Deep Dive',
+    label: 'District Deep Dive',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
@@ -66,10 +66,10 @@ export const NAV_ITEMS = [
   {
     id: 'insights',
     path: '/insights',
-    label: 'Insights',
+    label: 'Project Deep Dive',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
       </svg>
     ),
   },
