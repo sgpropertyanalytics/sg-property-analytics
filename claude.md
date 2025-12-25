@@ -8,6 +8,7 @@
    - [Power BI Golden Rules](#power-bi-golden-rules)
    - [API Contract & Architecture Rules](#api-contract--architecture-rules-mandatory)
    - [SQL Best Practices](#sql-best-practices-mandatory)
+   - [Contract & Async Safety](#contract--async-safety-mandatory)
 3. [Architecture](#3-architecture)
 4. [Implementation Guides](#4-implementation-guides)
 5. [Styling Guide](#5-styling-guide)
@@ -424,6 +425,41 @@ params = {
 # ❌ WRONG - Mixed styles, string dates, hardcoded enums
 query = f"WHERE psf > {min_psf} AND sale_type = %(sale_type)s"
 params = {"sale_type": "Resale", "date_from": "2024-01-01"}
+```
+
+---
+
+## Contract & Async Safety (MANDATORY)
+
+> **Full documentation**: See [CONTRACT_ASYNC_SAFETY.md](./CONTRACT_ASYNC_SAFETY.md) for complete frontend guardrails reference.
+
+**Key rules (quick reference):**
+
+1. **No Hardcoded Enums**: Use `apiContract.js` helpers (`isSaleType.newSale()`), never raw strings.
+2. **Adapter Pattern**: All API responses pass through adapters before reaching components.
+3. **Async Safety**: Use `useAbortableQuery` or `useStaleRequestGuard` for all data fetching.
+4. **Abort Handling**: `AbortError`/`CanceledError` must be silently ignored (never shown as errors).
+5. **Stale Prevention**: Always check `isStale(requestId)` before `setState`.
+6. **Version Validation**: Adapters must call `assertKnownVersion(response)`.
+
+```javascript
+// ✅ CORRECT - Adapter pattern with abort safety
+import { useAbortableQuery } from '../hooks/useAbortableQuery';
+import { transformTimeSeries } from '../adapters/aggregateAdapter';
+import { isSaleType } from '../schemas/apiContract';
+
+const { data, loading, error } = useAbortableQuery(
+  (signal) => apiClient.get('/api/data', { signal })
+    .then(r => transformTimeSeries(r.data)),
+  [filterKey]
+);
+
+// Using enums safely
+const isNew = isSaleType.newSale(row.saleType);
+
+// ❌ WRONG - Direct API access, hardcoded enums
+const data = response.data.map(...);  // No adapter!
+if (row.sale_type === 'New Sale') { ... }  // Hardcoded string!
 ```
 
 ---
