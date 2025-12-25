@@ -704,17 +704,12 @@ export function ValueParityPanel() {
           </div>
 
           {/* Section Header: Remaining New Launches */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">🏢</span>
-              <div>
-                <h3 className="text-base font-semibold text-[#213448]">Remaining New Launches</h3>
-                <p className="text-xs text-[#547792]">Already launched projects with unsold units within your budget</p>
-              </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xl">🏢</span>
+            <div>
+              <h3 className="text-base font-semibold text-[#213448]">Remaining New Launches</h3>
+              <p className="text-xs text-[#547792]">Already launched projects with unsold units within your budget</p>
             </div>
-            <span className="px-2.5 py-1 bg-[#213448]/10 text-[#213448] text-xs font-medium rounded-full">
-              {hotProjectsCount} {hotProjectsCount === 1 ? 'project' : 'projects'}
-            </span>
           </div>
 
           {/* Hot Projects Table */}
