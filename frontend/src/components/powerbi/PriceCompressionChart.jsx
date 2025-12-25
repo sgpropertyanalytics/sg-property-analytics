@@ -472,17 +472,15 @@ export function PriceCompressionChart({ height = 380 }) {
         </div>
       )}
 
-      {/* Footer - shrink-0 */}
-      <div className="px-3 py-2 md:px-4 md:py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex justify-between items-center shrink-0">
+      {/* Footer - fixed height h-11 for consistent alignment */}
+      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">
         <button
           onClick={() => setShowContext(!showContext)}
-          className="text-xs text-[#547792] hover:text-[#213448] transition-colors"
+          className="shrink-0 hover:text-[#213448] transition-colors"
         >
           {showContext ? '▲ Hide' : '▼ Show'} absolute PSF
         </button>
-        <span className="text-xs text-[#547792]">
-          {data.length} periods | Click to highlight
-        </span>
+        <span className="truncate">{data.length} periods | Click to highlight</span>
       </div>
     </div>
   );

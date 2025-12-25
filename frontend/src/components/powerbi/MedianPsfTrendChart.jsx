@@ -354,9 +354,9 @@ export function MedianPsfTrendChart({ height = 300 }) {
           <Line key={timeGrouping} ref={chartRef} data={chartData} options={options} />
         </PreviewChartOverlay>
       </ChartFrame>
-      {/* Footer - shrink-0 */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] shrink-0">
-        <span>{data.labels.length} periods | Click to highlight time period</span>
+      {/* Footer - fixed height h-11 for consistent alignment */}
+      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center text-xs text-[#547792]">
+        <span className="truncate">{data.labels.length} periods | Click to highlight time period</span>
       </div>
     </div>
   );

@@ -409,21 +409,17 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         </PreviewChartOverlay>
       </ChartFrame>
 
-      {/* Footer - shrink-0 */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] shrink-0">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span>
-            {displayCount.toLocaleString()} transactions
-            {!showFullRange && tail?.pct > 0 && (
-              <span className="ml-1 text-amber-600">
-                • Top {tail.pct}% ({tail.count.toLocaleString()}) above {formatPrice(tail.threshold)} hidden
-              </span>
-            )}
-          </span>
-          <span className="text-[#94B4C1]">
-            {formatPrice(minPrice)} – {formatPrice(maxPrice)} ({buckets.length} bins)
-          </span>
-        </div>
+      {/* Footer - fixed height h-11 for consistent alignment */}
+      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">
+        <span className="truncate">
+          {displayCount.toLocaleString()} transactions
+          {!showFullRange && tail?.pct > 0 && (
+            <span className="ml-1 text-amber-600">• Top {tail.pct}% hidden</span>
+          )}
+        </span>
+        <span className="shrink-0 text-[#94B4C1]">
+          {formatPrice(minPrice)} – {formatPrice(maxPrice)} ({buckets.length} bins)
+        </span>
       </div>
     </div>
   );

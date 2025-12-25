@@ -330,12 +330,10 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         </PreviewChartOverlay>
       </ChartFrame>
 
-      {/* Footer - shrink-0 */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] shrink-0">
-        <div className="flex items-center justify-between">
-          <span>{meta.sample_size.toLocaleString()} of {meta.total_count.toLocaleString()} transactions sampled</span>
-          <span className="text-[#94B4C1]">Click refresh ↻ for new sample</span>
-        </div>
+      {/* Footer - fixed height h-11 for consistent alignment */}
+      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">
+        <span className="truncate">{meta.sample_size.toLocaleString()} of {meta.total_count.toLocaleString()} transactions sampled</span>
+        <span className="shrink-0 text-[#94B4C1]">Click refresh ↻ for new sample</span>
       </div>
     </div>
   );
