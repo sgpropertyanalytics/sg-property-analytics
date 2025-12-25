@@ -210,6 +210,97 @@ const params = { region: localRegion }; // DON'T DO THIS
 
 ---
 
+## API Contract & Architecture Rules (MANDATORY)
+
+> **Key Principle**: DB stores data. API contract defines meaning. Frontend consumes meaning—nothing else.
+
+### 1. Boundary Normalization (MANDATORY)
+
+All naming/enum/value normalization must live in:
+- **Backend**: `backend/schemas/api_contract.py`
+- **Frontend**: `frontend/src/schemas/apiContract.js`
+
+| Do | Don't |
+|----|-------|
+| Call contract methods in routes | Translate enums in routes/services |
+| Use `SaleType.from_db()` | Write `if sale_type == 'New Sale':` |
+
+### 2. Frontend Contract Consumption
+
+Frontend must NEVER:
+- Hardcode DB values (`'Resale'`, `'New Sale'`)
+- Rely on snake_case fields directly
+
+Frontend MUST:
+- Import enums/helpers from `frontend/src/schemas/apiContract.js`
+- Use `SaleType`, `isSaleType`, `getTxnField`, `getAggField`, etc.
+
+```javascript
+// ✅ CORRECT
+import { SaleType, isSaleType, getTxnField } from '../schemas/apiContract';
+const isNew = isSaleType.newSale(row.saleType);
+
+// ❌ WRONG
+if (row.sale_type === 'New Sale') { ... }
+```
+
+### 3. Dual-Mode Migration Rule
+
+**Default API response**: Must remain backward compatible (old + new fields)
+
+**`?schema=v2`**: Must be strict
+- camelCase only
+- Enums only (no DB strings)
+- No partial v2 responses
+
+### 4. Incremental Changes Only
+
+One PR = one concern:
+
+| PR Type | Contains |
+|---------|----------|
+| Schema/contract | Enum additions, field mappings |
+| Frontend migration | Component updates to use contract |
+| Performance | Query optimization, caching |
+
+Do NOT mix business logic changes with contract refactors.
+
+### 5. Route Responsibilities
+
+| Routes MAY | Routes may NOT |
+|------------|----------------|
+| Parse params | Translate enums manually |
+| Call `parse_filter_params()` | Know DB string values |
+| Pass canonical values downstream | Implement if/elif mappings |
+
+### 6. Testing Is Non-Optional
+
+Every migrated endpoint must include:
+
+**Contract tests:**
+- Old + new fields present (default mode)
+- Strict v2 shape when `?schema=v2`
+- Enum validation
+
+**Integration test:**
+- Confirms no data loss (row counts unchanged)
+
+### 7. Performance Work Isolation
+
+Performance optimizations must be:
+- Behavior-preserving
+- In separate PRs
+
+Do NOT combine with schema/contract work.
+
+### 8. Endgame Rule
+
+Dual-mode is temporary:
+- Add TODOs with Phase 1c cleanup plan
+- Legacy fields removed only after frontend migration completes
+
+---
+
 # 3. ARCHITECTURE
 
 ## Data Flow Overview
