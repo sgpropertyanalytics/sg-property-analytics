@@ -228,6 +228,41 @@ Forbidden in Components:
 Full reference: See CONTRACT_ASYNC_SAFETY.md
 ```
 
+### Card 9: Hook Migration Checklist (MANDATORY)
+
+```
+HOOK MIGRATION CHECKLIST (When Refactoring to useAbortableQuery)
+
+Before PR:
+[ ] Delete old useState flags: updating, setUpdating, isLoading, setLoading
+[ ] Search file for leftover references: grep -E "updating|setUpdating|isUpdating"
+[ ] Verify render uses 'loading' from useAbortableQuery (not old flags)
+[ ] Run npm run lint:ci locally (catches undefined variable errors)
+[ ] Run npm run build locally (catches import/export issues)
+
+Common Mistakes:
+❌ Leftover `updating` in className conditionals
+❌ Leftover `{updating && <Spinner />}` in JSX
+❌ Old loading state that conflicts with hook's loading
+
+After Migration:
+  // OLD PATTERN (delete all of this):
+  const [updating, setUpdating] = useState(false);
+  setUpdating(true); ... setUpdating(false);
+  className={`... ${updating ? 'opacity-70' : ''}`}
+
+  // NEW PATTERN (useAbortableQuery handles everything):
+  const { data, loading, error } = useAbortableQuery(...);
+  if (loading) return <Loader />;
+  if (error) return <Error />;
+
+CI Scripts:
+  npm run lint:ci      # Fails on errors (catches undefined 'updating')
+  npm run lint:strict  # Fails on any warning (use when ready)
+  npm run build        # Fails on broken imports
+  npm run typecheck    # Catches type mismatches (optional, noisy)
+```
+
 ---
 
 # 2. CORE PRINCIPLES

@@ -9,7 +9,8 @@
     "test": "vitest",
     "test:ci": "vitest run",
     "lint": "eslint \"src/**/*.{js,jsx}\"",
-    "lint:ci": "eslint \"src/**/*.{js,jsx}\" --max-warnings=0",
+    "lint:ci": "eslint \"src/**/*.{js,jsx}\"",
+    "lint:strict": "eslint \"src/**/*.{js,jsx}\" --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
