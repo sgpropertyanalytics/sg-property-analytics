@@ -53,20 +53,20 @@ export function TimeGranularityToggle({ className = '' }) {
 
   return (
     <div className={`relative flex items-center ${className}`}>
-      {/* Label */}
-      <span className="text-xs text-[#547792] font-medium mr-2 whitespace-nowrap">
+      {/* Label - hidden on very small screens */}
+      <span className="hidden sm:inline text-xs text-[#547792] font-medium mr-2 whitespace-nowrap">
         Group by:
       </span>
 
-      {/* Segmented toggle */}
-      <div className="inline-flex rounded-lg bg-[#94B4C1]/20 p-1">
+      {/* Segmented toggle - more compact on mobile */}
+      <div className="inline-flex rounded-lg bg-[#94B4C1]/20 p-0.5 sm:p-1">
         {options.map(opt => (
           <button
             key={opt.value}
             type="button"
             onClick={() => handleChange(opt.value)}
             className={`
-              px-3 py-1.5 text-xs font-medium rounded-md
+              px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium rounded-md
               transition-all duration-200
               ${timeGrouping === opt.value
                 ? 'bg-[#213448] text-white shadow-sm'
@@ -79,10 +79,10 @@ export function TimeGranularityToggle({ className = '' }) {
         ))}
       </div>
 
-      {/* One-time helper tooltip - auto-dismisses after 5s */}
+      {/* One-time helper tooltip - auto-dismisses after 5s, smaller on mobile */}
       {showHelper && (
         <div
-          className="absolute left-0 top-full mt-2 p-2.5 bg-[#213448] text-white text-xs rounded-lg shadow-lg z-50 w-56"
+          className="absolute left-0 top-full mt-2 p-2 sm:p-2.5 bg-[#213448] text-white text-[10px] sm:text-xs rounded-lg shadow-lg z-50 w-48 sm:w-56"
           style={{ animation: 'fadeIn 0.2s ease-out' }}
         >
           <div className="flex items-start justify-between gap-2">

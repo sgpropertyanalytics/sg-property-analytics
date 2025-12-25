@@ -38,11 +38,11 @@ export function DrillBreadcrumb() {
   };
 
   return (
-    <div className="flex flex-wrap gap-4 mb-4">
+    <div className="flex flex-wrap gap-2 sm:gap-4 mb-3 sm:mb-4">
       {/* Time breadcrumbs */}
       {hasTimeBreadcrumbs && (
-        <div className="flex items-center gap-1 text-sm">
-          <span className="text-slate-500 mr-1">Time:</span>
+        <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm">
+          <span className="text-[#547792] mr-0.5 sm:mr-1">Time:</span>
           <BreadcrumbItem
             label="All"
             isActive={false}
@@ -58,15 +58,15 @@ export function DrillBreadcrumb() {
               />
             </React.Fragment>
           ))}
-          <span className="text-slate-400 text-xs ml-1">
+          <span className="hidden sm:inline text-[#94B4C1] text-xs ml-1">
             ({timeLevelLabels[drillPath.time]})
           </span>
           {breadcrumbs.time.length > 0 && (
             <button
               onClick={() => drillUp('time')}
-              className="ml-2 text-blue-500 hover:text-blue-700 text-xs"
+              className="ml-1 sm:ml-2 text-[#547792] hover:text-[#213448] text-xs"
             >
-              ↑ Up
+              ↑
             </button>
           )}
         </div>
@@ -74,8 +74,8 @@ export function DrillBreadcrumb() {
 
       {/* Location breadcrumbs */}
       {hasLocationBreadcrumbs && (
-        <div className="flex items-center gap-1 text-sm">
-          <span className="text-slate-500 mr-1">Location:</span>
+        <div className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm">
+          <span className="text-[#547792] mr-0.5 sm:mr-1">Loc:</span>
           <BreadcrumbItem
             label="All"
             isActive={false}
@@ -91,15 +91,15 @@ export function DrillBreadcrumb() {
               />
             </React.Fragment>
           ))}
-          <span className="text-slate-400 text-xs ml-1">
+          <span className="hidden sm:inline text-[#94B4C1] text-xs ml-1">
             ({locationLevelLabels[drillPath.location]})
           </span>
           {breadcrumbs.location.length > 0 && (
             <button
               onClick={() => drillUp('location')}
-              className="ml-2 text-blue-500 hover:text-blue-700 text-xs"
+              className="ml-1 sm:ml-2 text-[#547792] hover:text-[#213448] text-xs"
             >
-              ↑ Up
+              ↑
             </button>
           )}
         </div>
@@ -112,10 +112,10 @@ function BreadcrumbItem({ label, isActive, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-0.5 rounded transition-colors ${
+      className={`px-1.5 sm:px-2 py-0.5 rounded transition-colors text-xs sm:text-sm ${
         isActive
-          ? 'bg-blue-100 text-blue-800 font-medium cursor-default'
-          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+          ? 'bg-[#547792]/20 text-[#213448] font-medium cursor-default'
+          : 'text-[#547792] hover:bg-[#EAE0CF]/50 hover:text-[#213448]'
       }`}
       disabled={isActive}
     >
@@ -127,7 +127,7 @@ function BreadcrumbItem({ label, isActive, onClick }) {
 function ChevronIcon() {
   return (
     <svg
-      className="w-4 h-4 text-slate-400"
+      className="w-3 h-3 sm:w-4 sm:h-4 text-[#94B4C1]"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"

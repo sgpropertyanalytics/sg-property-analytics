@@ -3331,3 +3331,93 @@ def kpi_summary():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
+# PRICE BANDS ENDPOINT - Historical Downside Protection
+# ============================================================================
+
+@analytics_bp.route("/projects/<path:project_name>/price-bands", methods=["GET"])
+def get_project_price_bands(project_name):
+    """
+    Get historical price bands (P25/P50/P75) for downside protection analysis.
+
+    Computes percentile bands from resale transactions to help buyers
+    assess price floor and downside risk for a specific project.
+
+    Query params:
+        - window_months: Analysis window in months (default 24, max 60)
+        - unit_psf: Optional user's unit PSF for verdict calculation
+
+    Returns:
+        {
+            "project_name": "The Continuum",
+            "data_source": "project" | "district_proxy" | "segment_proxy",
+            "proxy_label": null | "D15 proxy" | "RCR segment proxy",
+            "bands": [
+                {
+                    "month": "2024-01",
+                    "count": 12,
+                    "p25": 1850, "p50": 1980, "p75": 2150,
+                    "p25_s": 1840, "p50_s": 1970, "p75_s": 2140
+                }
+            ],
+            "latest": {"month": "2024-12", "p25_s": 1920, "p50_s": 2050, "p75_s": 2200},
+            "trend": {
+                "floor_direction": "rising" | "flat" | "weakening",
+                "floor_slope_pct": 2.3,
+                "observation_months": 6
+            },
+            "verdict": {
+                "unit_psf": 2100,
+                "position": "above_median",
+                "position_label": "Above Median",
+                "vs_floor_pct": 7.5,
+                "badge": "protected" | "watch" | "exposed",
+                "badge_label": "Protected",
+                "explanation": "Unit is 7.5% above a rising floor."
+            },
+            "data_quality": {
+                "total_trades": 156,
+                "months_with_data": 18,
+                "is_valid": true,
+                "fallback_reason": null,
+                "window_months": 24,
+                "smoothing": "rolling_median_3"
+            }
+        }
+    """
+    start = time.time()
+    from services.price_bands_service import get_project_price_bands as compute_bands
+
+    try:
+        # Parse query params
+        window_months = request.args.get('window_months', 24, type=int)
+        window_months = min(max(window_months, 6), 60)  # Clamp to 6-60 months
+
+        unit_psf = request.args.get('unit_psf', type=float)
+        if unit_psf is not None:
+            # Validate PSF range
+            if unit_psf < 300 or unit_psf > 10000:
+                return jsonify({
+                    "error": "unit_psf must be between 300 and 10000"
+                }), 400
+
+        # Compute price bands
+        result = compute_bands(
+            project_name=project_name,
+            window_months=window_months,
+            unit_psf=unit_psf
+        )
+
+        elapsed = time.time() - start
+        print(f"GET /api/projects/{project_name}/price-bands completed in {elapsed:.4f}s")
+
+        return jsonify(result)
+
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/projects/{project_name}/price-bands ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500

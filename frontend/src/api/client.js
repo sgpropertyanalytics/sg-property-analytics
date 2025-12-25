@@ -596,5 +596,52 @@ export const createPortalSession = (returnUrl) => {
   return apiClient.post('/payments/portal', { return_url: returnUrl });
 };
 
+// ===== Exit Queue Risk API Functions =====
+
+/**
+ * Get list of projects with resale transactions for dropdown selection
+ * Used for the Exit Queue Risk feature project selector.
+ * @returns {Promise<{projects: Array<{name, district, resale_count, has_total_units, has_top_year}>, count: number}>}
+ */
+export const getResaleProjects = () =>
+  apiClient.get('/projects/resale-projects');
+
+/**
+ * Get exit queue risk metrics for a specific project
+ * Returns maturity, pressure, absorption metrics and risk assessment
+ * @param {string} projectName - The project name
+ * @returns {Promise<{
+ *   project_name: string,
+ *   data_quality: {has_top_year, has_total_units, completeness, sample_window_months, warnings},
+ *   fundamentals: {total_units, top_year, property_age_years, age_source, tenure, district, developer, first_resale_date},
+ *   resale_metrics: {unique_resale_units_total, unique_resale_units_12m, total_resale_transactions, resale_maturity_pct, active_exit_pressure_pct, absorption_speed_days, transactions_per_100_units, resales_last_24m},
+ *   risk_assessment: {maturity_zone, pressure_zone, quadrant, overall_risk, interpretation},
+ *   gating_flags: {is_boutique, is_brand_new, is_ultra_luxury, is_thin_data, unit_type_mixed}
+ * }>}
+ */
+export const getProjectExitQueue = (projectName) =>
+  apiClient.get(`/projects/${encodeURIComponent(projectName)}/exit-queue`);
+
+/**
+ * Get historical price bands (P25/P50/P75) for downside protection analysis
+ * Returns percentile bands, floor trend, and verdict assessment
+ * @param {string} projectName - The project name
+ * @param {Object} params - Query parameters
+ * @param {number} params.window_months - Analysis window (default 24, max 60)
+ * @param {number} params.unit_psf - Optional user's unit PSF for verdict calculation
+ * @returns {Promise<{
+ *   project_name: string,
+ *   data_source: 'project' | 'district_proxy' | 'segment_proxy',
+ *   proxy_label: string | null,
+ *   bands: Array<{month, count, p25, p50, p75, p25_s, p50_s, p75_s}>,
+ *   latest: {month, p25_s, p50_s, p75_s} | null,
+ *   trend: {floor_direction, floor_slope_pct, observation_months},
+ *   verdict: {unit_psf, position, position_label, vs_floor_pct, badge, badge_label, explanation} | null,
+ *   data_quality: {total_trades, months_with_data, is_valid, fallback_reason, window_months, smoothing}
+ * }>}
+ */
+export const getProjectPriceBands = (projectName, params = {}) =>
+  apiClient.get(`/projects/${encodeURIComponent(projectName)}/price-bands?${buildQueryString(params)}`);
+
 export default apiClient;
 
