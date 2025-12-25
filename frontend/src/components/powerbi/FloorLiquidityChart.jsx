@@ -378,7 +378,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
       {/* Premium Pills Row - shrink-0 */}
       <div className="px-6 py-2 border-b border-[#94B4C1]/20 bg-[#213448]/5 shrink-0">
-        <div className="flex items-center gap-2 overflow-x-auto">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold text-[#547792] uppercase tracking-wide shrink-0">Premium vs Low:</span>
           {data.map((d, i) => {
             const premium = premiums[i];
@@ -408,8 +408,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         </PreviewChartOverlay>
       </ChartSlot>
 
-      {/* Footer - fixed height h-11 for consistent alignment */}
-      <div className="shrink-0 h-11 px-6 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-4 text-xs overflow-x-auto">
+      {/* Footer - wraps on mobile for consistent alignment */}
+      <div className="shrink-0 min-h-[44px] px-6 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
         <div className="flex items-center gap-4 shrink-0">
           <div className="flex items-center gap-1.5">
             <span className="text-[#94B4C1]">Total Transactions:</span>

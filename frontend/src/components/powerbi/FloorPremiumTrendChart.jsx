@@ -334,8 +334,8 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
         </PreviewChartOverlay>
       </ChartSlot>
 
-      {/* Footer - fixed height h-11 */}
-      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30 flex items-center gap-3 text-xs overflow-x-auto">
+      {/* Footer - wraps on mobile */}
+      <div className="shrink-0 min-h-[44px] px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         <span className="shrink-0 text-[#547792] font-medium">Recent Trend:</span>
         {upperTrend !== null && (
           <div className="shrink-0 flex items-center gap-1.5">
