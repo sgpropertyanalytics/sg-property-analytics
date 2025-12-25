@@ -94,11 +94,18 @@ def dashboard():
             filters = {}
             options = {}
 
-            # Date filters
+            # Date filters - parse to Python date objects
+            from datetime import datetime
             if request.args.get('date_from'):
-                filters['date_from'] = request.args.get('date_from')
+                try:
+                    filters['date_from'] = datetime.strptime(request.args.get('date_from'), "%Y-%m-%d").date()
+                except ValueError:
+                    pass
             if request.args.get('date_to'):
-                filters['date_to'] = request.args.get('date_to')
+                try:
+                    filters['date_to'] = datetime.strptime(request.args.get('date_to'), "%Y-%m-%d").date()
+                except ValueError:
+                    pass
 
             # District filter
             if request.args.get('district'):
@@ -2080,8 +2087,21 @@ def new_vs_resale():
             bedrooms = None
 
     segment = request.args.get("segment")
-    date_from = request.args.get("date_from")
-    date_to = request.args.get("date_to")
+
+    # Parse date params as Python date objects (not strings)
+    from datetime import datetime
+    date_from = None
+    date_to = None
+    if request.args.get("date_from"):
+        try:
+            date_from = datetime.strptime(request.args.get("date_from"), "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    if request.args.get("date_to"):
+        try:
+            date_to = datetime.strptime(request.args.get("date_to"), "%Y-%m-%d").date()
+        except ValueError:
+            pass
 
     # Parse visual-local parameter (drill level)
     time_grain = request.args.get("timeGrain", "quarter")

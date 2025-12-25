@@ -8,6 +8,7 @@ Defines the stable API interface between backend and frontend.
 """
 
 from typing import Any, Dict, Optional
+from datetime import datetime
 
 API_CONTRACT_VERSION = 'v2'
 
@@ -343,8 +344,8 @@ def parse_filter_params(request_args: dict) -> Dict[str, Any]:
         - segment_db: uppercase region (e.g., 'CCR')
         - districts: list of normalized districts (e.g., ['D01', 'D02'])
         - bedrooms: list of integers (e.g., [2, 3])
-        - date_from: date string (YYYY-MM-DD)
-        - date_to: date string (YYYY-MM-DD)
+        - date_from: Python date object (not string)
+        - date_to: Python date object (not string)
         - psf_min, psf_max: floats
         - size_min, size_max: floats
         - project: string (partial match)
@@ -401,13 +402,19 @@ def parse_filter_params(request_args: dict) -> Dict[str, Any]:
         except ValueError:
             pass
 
-    # Date range
+    # Date range - parse to Python date objects (not strings)
     date_from = request_args.get('date_from')
     date_to = request_args.get('date_to')
     if date_from:
-        params['date_from'] = date_from
+        try:
+            params['date_from'] = datetime.strptime(date_from, "%Y-%m-%d").date()
+        except ValueError:
+            pass  # Invalid format, skip
     if date_to:
-        params['date_to'] = date_to
+        try:
+            params['date_to'] = datetime.strptime(date_to, "%Y-%m-%d").date()
+        except ValueError:
+            pass  # Invalid format, skip
 
     # PSF range
     psf_min = request_args.get('psf_min')
@@ -454,10 +461,15 @@ def parse_filter_params(request_args: dict) -> Dict[str, Any]:
 
 class AggregateFields:
     """Field names for aggregate API responses (camelCase for v2)."""
-    # Dimension fields
+    # Time dimension fields (unified)
+    PERIOD = 'period'               # Unified time bucket (v2 canonical)
+    PERIOD_GRAIN = 'periodGrain'    # Time granularity: 'year', 'quarter', 'month'
+    # Legacy time fields (v1 compatibility)
     MONTH = 'month'
     QUARTER = 'quarter'
     YEAR = 'year'
+
+    # Dimension fields
     DISTRICT = 'district'
     BEDROOM_COUNT = 'bedroomCount'  # v1: bedroom
     SALE_TYPE = 'saleType'          # v1: sale_type
@@ -478,6 +490,10 @@ class AggregateFields:
     PSF_75TH = 'psf75th'            # v1: psf_75th
     PRICE_25TH = 'price25th'        # v1: price_25th
     PRICE_75TH = 'price75th'        # v1: price_75th
+
+
+# Time field keys for normalization
+TIME_BUCKET_FIELDS = ('month', 'quarter', 'year')
 
 
 # Mapping from v1 snake_case to v2 camelCase for aggregate fields
@@ -509,6 +525,7 @@ def serialize_aggregate_row(row: Dict[str, Any], include_deprecated: bool = True
     - floor_level values to lowercase enums (Mid-High → mid_high)
     - region values to lowercase (CCR → ccr)
     - Field names to camelCase (avg_psf → avgPsf)
+    - Time buckets (month, quarter, year) → unified 'period' + 'periodGrain' fields
 
     Args:
         row: Dict from SQL query result
@@ -518,6 +535,20 @@ def serialize_aggregate_row(row: Dict[str, Any], include_deprecated: bool = True
         Transformed dict with v2 schema
     """
     result = {}
+
+    # First pass: detect time bucket field and extract period value
+    period_value = None
+    period_grain = None
+    for time_field in TIME_BUCKET_FIELDS:
+        if time_field in row and row[time_field] is not None:
+            period_value = row[time_field]
+            period_grain = time_field
+            break
+
+    # Add unified period fields if time data exists
+    if period_value is not None:
+        result[AggregateFields.PERIOD] = period_value
+        result[AggregateFields.PERIOD_GRAIN] = period_grain
 
     for key, value in row.items():
         # Transform enum values
@@ -546,8 +577,12 @@ def serialize_aggregate_row(row: Dict[str, Any], include_deprecated: bool = True
             result[v2_key] = value
             if include_deprecated:
                 result[key] = value
+        elif key in TIME_BUCKET_FIELDS:
+            # Keep legacy time fields for backwards compatibility
+            if include_deprecated:
+                result[key] = value
         else:
-            # Pass through unchanged (month, quarter, year, district, project, count)
+            # Pass through unchanged (district, project, count)
             result[key] = value
 
     return result

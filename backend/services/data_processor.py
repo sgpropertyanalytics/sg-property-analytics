@@ -12,8 +12,8 @@ Safe for resource-constrained hosting (Render 512MB).
 import re
 import os
 import pandas as pd
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
+from typing import Optional, Dict, Any, List, Union
+from datetime import datetime, timedelta, date
 from calendar import monthrange
 from services.classifier import get_bedroom_label
 from services.classifier_extended import (
@@ -1610,8 +1610,8 @@ def get_new_vs_resale_comparison(
     districts: Optional[List[str]] = None,
     bedrooms: Optional[List[int]] = None,
     segment: Optional[str] = None,
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
+    date_from: Optional[Union[date, datetime]] = None,
+    date_to: Optional[Union[date, datetime]] = None,
     time_grain: str = "quarter"
 ) -> Dict[str, Any]:
     """
@@ -1627,8 +1627,8 @@ def get_new_vs_resale_comparison(
         districts: List of district codes (e.g., ['D09', 'D10']) - from global sidebar
         bedrooms: List of bedroom counts (e.g., [2, 3, 4]) - from global sidebar
         segment: Market segment ('CCR', 'RCR', 'OCR') - from global sidebar (used if no districts)
-        date_from: Start date 'YYYY-MM-DD' - from global sidebar
-        date_to: End date 'YYYY-MM-DD' - from global sidebar
+        date_from: Start date as Python date object - from global sidebar
+        date_to: End date as Python date object - from global sidebar
         time_grain: Time granularity for drill ("year", "quarter", "month") - visual-local
 
     Returns:
@@ -1657,13 +1657,13 @@ def get_new_vs_resale_comparison(
     where_conditions = ["1=1"]  # Base condition that's always true
     params = {}
 
-    # Apply date filters
+    # Apply date filters - pass Python date objects directly (not strings)
     if date_from:
         where_conditions.append("transaction_date >= :date_from")
         params["date_from"] = date_from
     elif start_date:
         where_conditions.append("transaction_date >= :start_date")
-        params["start_date"] = start_date.strftime("%Y-%m-%d")
+        params["start_date"] = start_date.date() if isinstance(start_date, datetime) else start_date
 
     if date_to:
         where_conditions.append("transaction_date <= :date_to")
