@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect, useState } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -25,11 +25,20 @@ ChartJS.register(
   Tooltip
 );
 
-// Region-based line colors matching project palette
-const REGION_COLORS = {
-  CCR: '#213448', // Deep Navy
-  RCR: '#547792', // Ocean Blue
-  OCR: '#94B4C1', // Sky Blue
+// Region-based header background colors (subtle shades)
+const REGION_HEADER_BG = {
+  CCR: 'bg-[#213448]/10', // Deep Navy tint
+  RCR: 'bg-[#547792]/10', // Ocean Blue tint
+  OCR: 'bg-[#94B4C1]/10', // Sky Blue tint
+};
+
+// Trend-based line colors
+const TREND_COLORS = {
+  strong_up: '#166534',   // Dark green (emerald-800)
+  up: '#16a34a',          // Green (emerald-600)
+  neutral: '#1f2937',     // Dark gray/black
+  down: '#dc2626',        // Red
+  strong_down: '#991b1b', // Dark red
 };
 
 /**
@@ -42,20 +51,21 @@ const REGION_COLORS = {
  */
 export function DistrictMicroChart({ district, data, onClick }) {
   const chartRef = useRef(null);
+  const [gradient, setGradient] = useState(null);
 
-  // Determine region color for line
+  // Determine region for header background
   const region = getRegionForDistrict(district);
-  const lineColor = REGION_COLORS[region] || REGION_COLORS.OCR;
+  const headerBg = REGION_HEADER_BG[region] || REGION_HEADER_BG.OCR;
 
   // Calculate local min/max and growth metrics
-  const { latestPsf, minPsf, maxPsf, paddedMin, paddedMax, growthPercent } = useMemo(() => {
+  const { latestPsf, minPsf, maxPsf, paddedMin, paddedMax, growthPercent, trendColor } = useMemo(() => {
     if (!data || data.length === 0) {
-      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null };
+      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null, trendColor: TREND_COLORS.neutral };
     }
 
     const psfValues = data.map(d => d.medianPsf).filter(v => v > 0);
     if (psfValues.length === 0) {
-      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null };
+      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null, trendColor: TREND_COLORS.neutral };
     }
 
     const min = Math.min(...psfValues);
@@ -68,6 +78,16 @@ export function DistrictMicroChart({ district, data, onClick }) {
     const lastPsf = [...data].reverse().find(d => d.medianPsf > 0)?.medianPsf;
     const growth = firstPsf && lastPsf ? ((lastPsf - firstPsf) / firstPsf) * 100 : null;
 
+    // Determine trend color based on growth percentage
+    let color = TREND_COLORS.neutral;
+    if (growth !== null) {
+      if (growth >= 30) color = TREND_COLORS.strong_up;
+      else if (growth >= 10) color = TREND_COLORS.up;
+      else if (growth <= -20) color = TREND_COLORS.strong_down;
+      else if (growth <= -5) color = TREND_COLORS.down;
+      else color = TREND_COLORS.neutral;
+    }
+
     return {
       latestPsf: lastPsf,
       minPsf: min,
@@ -75,6 +95,7 @@ export function DistrictMicroChart({ district, data, onClick }) {
       paddedMin: Math.max(0, min - padding),
       paddedMax: max + padding,
       growthPercent: growth,
+      trendColor: color,
     };
   }, [data]);
 
@@ -94,11 +115,49 @@ export function DistrictMicroChart({ district, data, onClick }) {
     return `${sign}${value.toFixed(0)}%`;
   };
 
-  // Get short district name (first location)
-  const shortName = useMemo(() => {
+  // Get district area names (show 2-3 areas, respecting space constraints)
+  const areaNames = useMemo(() => {
     const fullName = DISTRICT_NAMES[district] || district;
-    return fullName.split('/')[0].trim();
+    const parts = fullName.split('/').map(s => s.trim());
+
+    // Take first 2-3 areas, but keep total length reasonable
+    let result = parts[0];
+    let count = 1;
+
+    for (let i = 1; i < parts.length && count < 3; i++) {
+      const potential = result + ' / ' + parts[i];
+      // Keep it short enough to fit (roughly 30 chars max for small cards)
+      if (potential.length <= 35) {
+        result = potential;
+        count++;
+      } else {
+        break;
+      }
+    }
+
+    return result;
   }, [district]);
+
+  // Create gradient for line based on trend
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || !data || data.length === 0) return;
+
+    const ctx = chart.ctx;
+    const chartArea = chart.chartArea;
+    if (!chartArea) return;
+
+    // Create horizontal gradient from left to right
+    const gradientLine = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+
+    // Gradient from neutral/lighter to trend color
+    const neutralColor = '#9ca3af'; // gray-400
+    gradientLine.addColorStop(0, neutralColor);
+    gradientLine.addColorStop(0.5, trendColor);
+    gradientLine.addColorStop(1, trendColor);
+
+    setGradient(gradientLine);
+  }, [data, trendColor]);
 
   // Chart data configuration
   const chartData = useMemo(() => {
@@ -122,18 +181,18 @@ export function DistrictMicroChart({ district, data, onClick }) {
           type: 'line',
           label: 'Median PSF',
           data: data.map(d => d.medianPsf),
-          borderColor: lineColor,
+          borderColor: gradient || trendColor, // Use gradient if available, else solid color
           borderWidth: 2,
           pointRadius: 0,
           pointHoverRadius: 3,
-          pointBackgroundColor: lineColor,
+          pointBackgroundColor: trendColor,
           tension: 0.3,
           yAxisID: 'y1',
           order: 1, // Render on top
         },
       ],
     };
-  }, [data, lineColor]);
+  }, [data, trendColor, gradient]);
 
   // Chart options - LOCAL SCALING with padded min/max
   const options = useMemo(() => ({
@@ -187,7 +246,7 @@ export function DistrictMicroChart({ district, data, onClick }) {
   if (!data || data.length === 0) {
     return (
       <div className="h-full flex flex-col bg-white rounded border border-[#94B4C1]/50 overflow-hidden">
-        <div className="px-2 py-1.5 border-b border-[#94B4C1]/30 shrink-0 flex items-center justify-between">
+        <div className={`px-2 py-1.5 border-b border-[#94B4C1]/30 shrink-0 flex items-center justify-between ${headerBg}`}>
           <span className="text-xs font-semibold text-[#213448] truncate">{district}</span>
         </div>
         <div className="flex-1 flex items-center justify-center text-xs text-[#94B4C1]">
@@ -197,20 +256,20 @@ export function DistrictMicroChart({ district, data, onClick }) {
     );
   }
 
-  // Determine growth color
-  const growthColor = growthPercent === null ? 'text-[#94B4C1]'
+  // Determine growth color for text
+  const growthTextColor = growthPercent === null ? 'text-[#94B4C1]'
     : growthPercent >= 0 ? 'text-emerald-600' : 'text-red-500';
 
   return (
     <div className="h-full flex flex-col bg-white rounded border border-[#94B4C1]/50 overflow-hidden hover:border-[#547792] transition-colors">
-      {/* Header with district code and growth KPI */}
-      <div className="px-2 py-1.5 border-b border-[#94B4C1]/30 shrink-0 flex items-center justify-between gap-1">
+      {/* Header with district code and growth KPI - shaded by region */}
+      <div className={`px-2 py-1.5 border-b border-[#94B4C1]/30 shrink-0 flex items-center justify-between gap-1 ${headerBg}`}>
         <span className="text-xs font-semibold text-[#213448] truncate" title={DISTRICT_NAMES[district]}>
           {district}
         </span>
         {/* Prominent Growth KPI */}
         {growthPercent !== null && (
-          <span className={`text-[11px] font-bold ${growthColor} whitespace-nowrap`}>
+          <span className={`text-[11px] font-bold ${growthTextColor} whitespace-nowrap`}>
             {formatGrowth(growthPercent)}
           </span>
         )}
@@ -221,10 +280,10 @@ export function DistrictMicroChart({ district, data, onClick }) {
         <Chart ref={chartRef} type="bar" data={chartData} options={options} />
       </div>
 
-      {/* Footer with current PSF and location */}
-      <div className="px-2 py-0.5 bg-[#EAE0CF]/20 shrink-0 flex items-center justify-between">
-        <span className="text-[9px] text-[#94B4C1] truncate" title={DISTRICT_NAMES[district]}>
-          {shortName}
+      {/* Footer with current PSF and area names */}
+      <div className="px-2 py-0.5 bg-[#EAE0CF]/20 shrink-0 flex items-center justify-between gap-1">
+        <span className="text-[9px] text-[#94B4C1] truncate flex-1" title={DISTRICT_NAMES[district]}>
+          {areaNames}
         </span>
         {latestPsf && (
           <span className="text-[9px] font-medium text-[#547792] whitespace-nowrap">
