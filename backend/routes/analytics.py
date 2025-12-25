@@ -3325,10 +3325,10 @@ def get_project_exit_queue(project_name):
 
         # Check for mixed unit types (check bedroom diversity)
         bedroom_check = db.session.execute(text("""
-            SELECT COUNT(DISTINCT no_of_bedrooms) as bedroom_types
+            SELECT COUNT(DISTINCT bedroom_count) as bedroom_types
             FROM transactions
             WHERE project_name = :project_name
-              AND is_outlier = false
+              AND COALESCE(is_outlier, false) = false
               AND sale_type = 'Resale'
         """), {"project_name": project_name}).fetchone()
 
