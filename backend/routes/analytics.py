@@ -3114,9 +3114,9 @@ def get_project_exit_queue(project_name):
 
         current_year = datetime.now().year
         current_date = datetime.now().date()
-        # Convert to ISO string format for SQL comparison (contract_date is varchar)
-        twelve_months_ago = (current_date - timedelta(days=365)).isoformat()
-        twenty_four_months_ago = (current_date - timedelta(days=730)).isoformat()
+        # Use proper date objects for comparison with transaction_date (DATE type)
+        twelve_months_ago = current_date - timedelta(days=365)
+        twenty_four_months_ago = current_date - timedelta(days=730)
 
         # Get unit data from CSV
         unit_data = get_units_for_project(project_name)
@@ -3125,14 +3125,14 @@ def get_project_exit_queue(project_name):
         tenure = unit_data.get('tenure') if unit_data else None
         developer = unit_data.get('developer') if unit_data else None
 
-        # Get basic transaction stats (with safe date handling for varchar contract_date)
+        # Get basic transaction stats using transaction_date (proper DATE column)
         basic_stats = db.session.execute(text("""
             SELECT
                 district,
-                MIN(CASE WHEN contract_date ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN contract_date END) as first_resale_date,
+                MIN(transaction_date) as first_resale_date,
                 COUNT(*) as total_resale_transactions,
-                COUNT(*) FILTER (WHERE contract_date ~ '^\\d{4}-\\d{2}-\\d{2}$' AND contract_date >= :twelve_months_ago) as resales_12m,
-                COUNT(*) FILTER (WHERE contract_date ~ '^\\d{4}-\\d{2}-\\d{2}$' AND contract_date >= :twenty_four_months_ago) as resales_24m,
+                COUNT(*) FILTER (WHERE transaction_date >= :twelve_months_ago) as resales_12m,
+                COUNT(*) FILTER (WHERE transaction_date >= :twenty_four_months_ago) as resales_24m,
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price / area_sqft) as median_psf
             FROM transactions
             WHERE project_name = :project_name
@@ -3155,14 +3155,8 @@ def get_project_exit_queue(project_name):
             }), 404
 
         district = basic_stats[0]
-        # Parse first_resale_date from string (contract_date is varchar, may be null if no valid dates)
-        first_resale_date_str = basic_stats[1]
-        first_resale_date = None
-        if first_resale_date_str:
-            try:
-                first_resale_date = datetime.strptime(first_resale_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                pass  # Invalid date format, leave as None
+        # transaction_date is a proper DATE column, returns date object directly
+        first_resale_date = basic_stats[1]  # Already a date object or None
         total_resale_transactions = basic_stats[2]
         resales_12m = basic_stats[3]
         resales_24m = basic_stats[4]
@@ -3171,7 +3165,7 @@ def get_project_exit_queue(project_name):
         # Calculate unique units using floor_range + area_sqft approximation
         unique_units_result = db.session.execute(text("""
             SELECT COUNT(DISTINCT (floor_range || '-' || CAST(area_sqft AS VARCHAR))) as unique_units,
-                   COUNT(DISTINCT CASE WHEN contract_date ~ '^\\d{4}-\\d{2}-\\d{2}$' AND contract_date >= :twelve_months_ago
+                   COUNT(DISTINCT CASE WHEN transaction_date >= :twelve_months_ago
                          THEN (floor_range || '-' || CAST(area_sqft AS VARCHAR)) END) as unique_units_12m
             FROM transactions
             WHERE project_name = :project_name
@@ -3192,17 +3186,16 @@ def get_project_exit_queue(project_name):
                 WITH unit_resales AS (
                     SELECT
                         (floor_range || '-' || CAST(area_sqft AS VARCHAR)) as unit_key,
-                        contract_date::date as sale_date,
-                        LAG(contract_date::date) OVER (
+                        transaction_date as sale_date,
+                        LAG(transaction_date) OVER (
                             PARTITION BY (floor_range || '-' || CAST(area_sqft AS VARCHAR))
-                            ORDER BY contract_date
+                            ORDER BY transaction_date
                         ) as prev_date
                     FROM transactions
                     WHERE project_name = :project_name
                       AND is_outlier = false
                       AND sale_type = 'Resale'
-                      AND contract_date ~ '^\\d{4}-\\d{2}-\\d{2}$'
-                      AND contract_date >= :twenty_four_months_ago
+                      AND transaction_date >= :twenty_four_months_ago
                 )
                 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (
                     ORDER BY (sale_date - prev_date)
