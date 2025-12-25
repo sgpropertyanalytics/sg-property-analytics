@@ -20,6 +20,7 @@ import {
   DISTRICT_REGIONS,
   ALL_DISTRICTS,
 } from '../../data/singaporeDistricts';
+import { useStaleRequestGuard } from '../../hooks';
 
 // Color scale for PSF values (using project theme)
 const PSF_COLOR_SCALE = {

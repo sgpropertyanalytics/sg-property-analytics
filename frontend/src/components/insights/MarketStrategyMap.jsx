@@ -435,6 +435,15 @@ export default function MarketStrategyMap() {
   const [selectedPeriod, setSelectedPeriod] = useState('12m');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
+  // Abort/stale request protection
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
+  // Stable filter key for dependency tracking (avoids object reference issues)
+  const filterKey = useMemo(
+    () => `${selectedPeriod}:${selectedBed}:${selectedAge}`,
+    [selectedPeriod, selectedBed, selectedAge]
+  );
+
   const [viewState, setViewState] = useState({
     longitude: MAP_CONFIG.center.longitude,
     latitude: MAP_CONFIG.center.latitude,
@@ -443,26 +452,44 @@ export default function MarketStrategyMap() {
     bearing: 0,
   });
 
-  // Fetch data
+  // Fetch data with abort/stale protection
   const fetchData = useCallback(async () => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     setLoading(true);
     setError(null);
+
     try {
       const response = await apiClient.get('/insights/district-psf', {
         params: { period: selectedPeriod, bed: selectedBed, age: selectedAge },
+        signal,  // Pass abort signal to cancel on filter change
       });
+
+      // Guard: Don't update state if a newer request started
+      if (isStale(requestId)) return;
+
       setDistrictData(response.data.districts || []);
+      setLoading(false);
     } catch (err) {
+      // CRITICAL: Never treat abort/cancel as a real error
+      // This prevents "Failed to load" flash when switching filters rapidly
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return;
+      }
+
+      // Guard: Check stale after error too
+      if (isStale(requestId)) return;
+
       console.error('Failed to fetch district PSF data:', err);
       setError('Failed to load data');
-    } finally {
       setLoading(false);
     }
-  }, [selectedBed, selectedAge, selectedPeriod]);
+  }, [selectedBed, selectedAge, selectedPeriod, startRequest, getSignal, isStale]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create district data lookup
   const districtMap = useMemo(() => {
