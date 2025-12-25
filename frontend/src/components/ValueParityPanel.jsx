@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { getTransactionsList, getFilterOptions } from '../api/client';
 import { DISTRICT_NAMES, isDistrictInRegion } from '../constants';
@@ -8,6 +8,7 @@ import { UpcomingLaunchesTable } from './powerbi/UpcomingLaunchesTable';
 import { MobileTransactionCard } from './MobileTransactionCard';
 import { ResultsSummaryBar } from './ResultsSummaryBar';
 import { SaleType, isSaleType, getTxnField, TxnField } from '../schemas/apiContract';
+import { useStaleRequestGuard } from '../hooks';
 
 /**
  * ValueParityPanel - Budget-based property search tool with Deal Checker
@@ -72,6 +73,9 @@ export function ValueParityPanel() {
   const resaleRef = useRef(null);
   const resaleMarketRef = useRef(null);
 
+  // Abort/stale request protection
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Hot projects count (for section header badge)
   const [hotProjectsCount, setHotProjectsCount] = useState(0);
 
@@ -113,9 +117,14 @@ export function ValueParityPanel() {
   }, []);
 
   // Fetch transactions based on budget and filters
-  const fetchTransactions = useCallback(async (page = 1, priceRange = null) => {
-    setLoading(true);
-    setError(null);
+  // Accepts signal for abort support
+  const fetchTransactions = useCallback(async (page = 1, priceRange = null, options = {}) => {
+    const { signal, requestId, skipLoadingState = false } = options;
+
+    if (!skipLoadingState) {
+      setLoading(true);
+      setError(null);
+    }
     setHasSearched(true);
 
     try {
@@ -155,7 +164,11 @@ export function ValueParityPanel() {
       params.saleType = SaleType.RESALE;  // Use v2 API param
       params.lease_age = '4-9';
 
-      const response = await getTransactionsList(params);
+      const response = await getTransactionsList(params, { signal });
+
+      // Guard: Don't update state if request is stale
+      if (requestId !== undefined && isStale(requestId)) return;
+
       setData(response.data.transactions || []);
       setPagination(prev => ({
         ...prev,
@@ -164,16 +177,32 @@ export function ValueParityPanel() {
         totalPages: response.data.pagination?.total_pages || 0,
       }));
     } catch (err) {
+      // CRITICAL: Never treat abort/cancel as a real error
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return;
+      }
+
+      // Guard: Check stale after error too
+      if (requestId !== undefined && isStale(requestId)) return;
+
       console.error('Error fetching transactions:', err);
       setError(err.message || 'Failed to fetch transactions');
     } finally {
-      setLoading(false);
+      // Only clear loading if not stale
+      if (requestId === undefined || !isStale(requestId)) {
+        if (!skipLoadingState) setLoading(false);
+      }
     }
-  }, [budget, bedroom, region, district, tenure, pagination.limit, sortConfig]);
+  }, [budget, bedroom, region, district, tenure, pagination.limit, sortConfig, isStale]);
 
   // Fetch resale market transactions (Step 4 - all resale, no age filter)
-  const fetchResaleMarket = useCallback(async (page = 1) => {
-    setResaleMarketLoading(true);
+  // Accepts signal for abort support
+  const fetchResaleMarket = useCallback(async (page = 1, options = {}) => {
+    const { signal, requestId, skipLoadingState = false } = options;
+
+    if (!skipLoadingState) {
+      setResaleMarketLoading(true);
+    }
 
     try {
       const params = {
@@ -197,7 +226,11 @@ export function ValueParityPanel() {
       if (tenure) params.tenure = tenure;
       // Note: No leaseAge filter for resale market - shows ALL ages
 
-      const response = await getTransactionsList(params);
+      const response = await getTransactionsList(params, { signal });
+
+      // Guard: Don't update state if request is stale
+      if (requestId !== undefined && isStale(requestId)) return;
+
       setResaleMarketData(response.data.transactions || []);
       setResaleMarketPagination(prev => ({
         ...prev,
@@ -206,30 +239,80 @@ export function ValueParityPanel() {
         totalPages: response.data.pagination?.total_pages || 0,
       }));
     } catch (err) {
+      // CRITICAL: Never treat abort/cancel as a real error
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return;
+      }
+
+      // Guard: Check stale after error too
+      if (requestId !== undefined && isStale(requestId)) return;
+
       console.error('Error fetching resale market:', err);
     } finally {
-      setResaleMarketLoading(false);
+      // Only clear loading if not stale
+      if (requestId === undefined || !isStale(requestId)) {
+        if (!skipLoadingState) setResaleMarketLoading(false);
+      }
     }
-  }, [budget, bedroom, region, district, tenure, resaleMarketPagination.limit]);
+  }, [budget, bedroom, region, district, tenure, resaleMarketPagination.limit, isStale]);
 
-  // Handle search
-  const handleSearch = (e) => {
+  // Handle search with abort/stale protection
+  // Uses Promise.all to batch both API calls under one requestId
+  const handleSearch = async (e) => {
     e.preventDefault();
+
+    const requestId = startRequest();
+    const signal = getSignal();
+
+    // Reset pagination
     setPagination(prev => ({ ...prev, page: 1 }));
     setResaleMarketPagination(prev => ({ ...prev, page: 1 }));
-    fetchTransactions(1, null);
-    fetchResaleMarket(1); // Also fetch resale market data
 
-    // Scroll to results after a brief delay to allow DOM to update
-    setTimeout(() => {
-      newLaunchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+    // Set loading states
+    setLoading(true);
+    setResaleMarketLoading(true);
+    setError(null);
+    setHasSearched(true);
+
+    try {
+      // Fetch both in parallel with shared signal/requestId
+      await Promise.all([
+        fetchTransactions(1, null, { signal, requestId, skipLoadingState: true }),
+        fetchResaleMarket(1, { signal, requestId, skipLoadingState: true }),
+      ]);
+
+      // Guard: Don't update loading if stale
+      if (isStale(requestId)) return;
+
+      setLoading(false);
+      setResaleMarketLoading(false);
+
+      // Scroll to results after a brief delay to allow DOM to update
+      setTimeout(() => {
+        newLaunchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } catch (err) {
+      // CRITICAL: Never treat abort/cancel as a real error
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return;
+      }
+
+      // Guard: Check stale after error
+      if (isStale(requestId)) return;
+
+      console.error('Error during search:', err);
+      setError(err.message || 'Failed to search');
+      setLoading(false);
+      setResaleMarketLoading(false);
+    }
   };
 
-  // Handle resale market page change
+  // Handle resale market page change with abort/stale protection
   const handleResaleMarketPageChange = (newPage) => {
     if (newPage >= 1 && newPage <= resaleMarketPagination.totalPages) {
-      fetchResaleMarket(newPage);
+      const requestId = startRequest();
+      const signal = getSignal();
+      fetchResaleMarket(newPage, { signal, requestId });
     }
   };
 
@@ -249,20 +332,26 @@ export function ValueParityPanel() {
     }));
   };
 
-  // Re-fetch when sort changes (if we have searched)
+  // Re-fetch when sort changes (if we have searched) with abort/stale protection
   useEffect(() => {
     if (hasSearched) {
-      fetchTransactions(1, selectedPriceRange);
+      const requestId = startRequest();
+      const signal = getSignal();
+      // Note: selectedPriceRange was previously undefined - using null
+      fetchTransactions(1, null, { signal, requestId });
     }
     // Note: We intentionally only trigger on sortConfig changes, not on
-    // fetchTransactions/selectedPriceRange changes (which would cause loops)
+    // fetchTransactions changes (which would cause loops)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortConfig]);
 
-  // Handle page change
+  // Handle page change with abort/stale protection
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
-      fetchTransactions(newPage, selectedPriceRange);
+      const requestId = startRequest();
+      const signal = getSignal();
+      // Note: selectedPriceRange was previously undefined - using null
+      fetchTransactions(newPage, null, { signal, requestId });
     }
   };
 

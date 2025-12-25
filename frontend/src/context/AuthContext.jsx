@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import apiClient from '../api/client';
+import { useStaleRequestGuard } from '../hooks';
 
 /**
  * Authentication Context
@@ -34,6 +35,9 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null);
   const [initialized, setInitialized] = useState(false);
 
+  // Abort/stale request protection for API calls
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Initialize auth listener only if Firebase is configured
   useEffect(() => {
     if (!isFirebaseConfigured()) {
@@ -47,6 +51,9 @@ export function AuthProvider({ children }) {
       setLoading(true);
 
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        // Start a new request for each auth state change - cancels any in-flight API calls
+        const requestId = startRequest();
+
         setUser(firebaseUser);
 
         // If user is signed in, ensure we have a valid JWT token
@@ -62,15 +69,31 @@ export function AuthProvider({ children }) {
                 email: firebaseUser.email,
                 displayName: firebaseUser.displayName,
                 photoURL: firebaseUser.photoURL,
+              }, {
+                signal: getSignal(),
               });
+
+              // Guard: Don't update if auth state changed again
+              if (isStale(requestId)) return;
+
               if (response.data.token) {
                 localStorage.setItem('token', response.data.token);
               }
             } catch (err) {
+              // CRITICAL: Never treat abort/cancel as a real error
+              if (err.name === 'CanceledError' || err.name === 'AbortError') {
+                return;
+              }
+              // Guard: Check stale after error
+              if (isStale(requestId)) return;
+
               console.error('[Auth] Backend sync failed on page load:', err);
             }
           }
         }
+
+        // Guard: Don't update loading/initialized if stale
+        if (isStale(requestId)) return;
 
         setLoading(false);
         setInitialized(true);
@@ -82,11 +105,13 @@ export function AuthProvider({ children }) {
       setLoading(false);
       setInitialized(true);
     }
-  }, []);
+  }, [startRequest, isStale, getSignal]);
 
   // Sync Firebase user with backend
   const syncWithBackend = useCallback(async (firebaseUser) => {
     if (!firebaseUser) return null;
+
+    const requestId = startRequest();
 
     try {
       // Get Firebase ID token
@@ -98,7 +123,12 @@ export function AuthProvider({ children }) {
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
+      }, {
+        signal: getSignal(),
       });
+
+      // Guard: Don't update if request is stale
+      if (isStale(requestId)) return null;
 
       // Store JWT for subsequent API calls
       if (response.data.token) {
@@ -107,12 +137,19 @@ export function AuthProvider({ children }) {
 
       return response.data;
     } catch (err) {
+      // CRITICAL: Never treat abort/cancel as a real error
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return null;
+      }
+      // Guard: Check stale after error
+      if (isStale(requestId)) return null;
+
       console.error('Backend sync failed:', err);
       // Don't fail auth - user is still signed in with Firebase
       // Backend sync will retry on next API call
       return null;
     }
-  }, []);
+  }, [startRequest, isStale, getSignal]);
 
   // Sign in with Google
   const signInWithGoogle = useCallback(async () => {

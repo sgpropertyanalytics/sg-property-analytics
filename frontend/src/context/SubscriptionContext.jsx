@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import apiClient from '../api/client';
+import { useStaleRequestGuard } from '../hooks';
 
 /**
  * Subscription Context
@@ -62,6 +63,9 @@ export function SubscriptionProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
 
+  // Abort/stale request protection
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Analytics context for upsell tracking
   // Tracks which field/source triggered the paywall
   const [upsellContext, setUpsellContext] = useState({
@@ -73,6 +77,8 @@ export function SubscriptionProvider({ children }) {
   // Fetch subscription status from backend when user changes
   // Wait for auth to be fully initialized (including JWT token sync)
   useEffect(() => {
+    const requestId = startRequest();
+
     const fetchSubscription = async () => {
       // Don't fetch until auth is fully initialized (token sync complete)
       if (!initialized) {
@@ -80,6 +86,8 @@ export function SubscriptionProvider({ children }) {
       }
 
       if (!isAuthenticated) {
+        // Guard: Don't update state if stale
+        if (isStale(requestId)) return;
         const freeSub = { tier: 'free', subscribed: false, ends_at: null };
         setSubscription(freeSub);
         cacheSubscription(freeSub); // Clear cache on sign out
@@ -90,13 +98,20 @@ export function SubscriptionProvider({ children }) {
       const token = localStorage.getItem('token');
       if (!token) {
         console.warn('[Subscription] No token available, skipping fetch');
+        if (isStale(requestId)) return;
         setSubscription({ tier: 'free', subscribed: false, ends_at: null });
         return;
       }
 
       setLoading(true);
       try {
-        const response = await apiClient.get('/auth/subscription');
+        const response = await apiClient.get('/auth/subscription', {
+          signal: getSignal(),
+        });
+
+        // Guard: Don't update state if stale
+        if (isStale(requestId)) return;
+
         if (response.data) {
           const newSub = {
             tier: response.data.tier || 'free',
@@ -107,18 +122,29 @@ export function SubscriptionProvider({ children }) {
           cacheSubscription(newSub); // Cache for instant load next time
         }
       } catch (err) {
+        // CRITICAL: Never treat abort/cancel as a real error
+        if (err.name === 'CanceledError' || err.name === 'AbortError') {
+          return;
+        }
+
+        // Guard: Check stale after error
+        if (isStale(requestId)) return;
+
         // If endpoint doesn't exist yet or fails, default to free
         console.warn('Failed to fetch subscription status:', err.message);
         const freeSub = { tier: 'free', subscribed: false, ends_at: null };
         setSubscription(freeSub);
         cacheSubscription(freeSub);
       } finally {
-        setLoading(false);
+        // Only clear loading if not stale
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
       }
     };
 
     fetchSubscription();
-  }, [initialized, isAuthenticated, user?.email]);
+  }, [initialized, isAuthenticated, user?.email, startRequest, isStale, getSignal]);
 
   // Derived state: is user a premium subscriber?
   const isPremium = useMemo(() => {
@@ -169,22 +195,43 @@ export function SubscriptionProvider({ children }) {
   const refreshSubscription = useCallback(async () => {
     if (!isAuthenticated) return;
 
+    const requestId = startRequest();
     setLoading(true);
+
     try {
-      const response = await apiClient.get('/auth/subscription');
+      const response = await apiClient.get('/auth/subscription', {
+        signal: getSignal(),
+      });
+
+      // Guard: Don't update state if stale
+      if (isStale(requestId)) return;
+
       if (response.data) {
-        setSubscription({
+        const newSub = {
           tier: response.data.tier || 'free',
           subscribed: response.data.subscribed || false,
           ends_at: response.data.ends_at || null,
-        });
+        };
+        setSubscription(newSub);
+        cacheSubscription(newSub);
       }
     } catch (err) {
+      // CRITICAL: Never treat abort/cancel as a real error
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return;
+      }
+
+      // Guard: Check stale after error
+      if (isStale(requestId)) return;
+
       console.error('Failed to refresh subscription:', err);
     } finally {
-      setLoading(false);
+      // Only clear loading if not stale
+      if (!isStale(requestId)) {
+        setLoading(false);
+      }
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, startRequest, isStale, getSignal]);
 
   const value = {
     // State

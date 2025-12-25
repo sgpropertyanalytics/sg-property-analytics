@@ -20,6 +20,8 @@
 | [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md) | Complete filter system reference |
 | [SQL_BEST_PRACTICES.md](./SQL_BEST_PRACTICES.md) | SQL guardrails and v2 API compliance |
 | [TECHNICAL_ARCHITECTURE.md](./TECHNICAL_ARCHITECTURE.md) | System architecture details |
+| [scripts/audit-async-safety.sh](./frontend/scripts/audit-async-safety.sh) | Async data-fetching audit script |
+| [e2e/rapid-interaction.spec.js](./frontend/e2e/rapid-interaction.spec.js) | Playwright smoke tests for rapid interactions |
 
 ---
 
@@ -165,6 +167,34 @@ SQL CHECKLIST (Before Any Query)
 [ ] Tests cover v1, v2, and edge cases
 
 Full reference: See SQL_BEST_PRACTICES.md
+```
+
+### Card 7: Async Data Fetching (MANDATORY)
+
+```
+ASYNC SAFETY CHECKLIST (For Any API Call)
+
+[ ] Uses useAbortableQuery OR useStaleRequestGuard
+[ ] Signal passed to all API calls: signal: getSignal()
+[ ] Stale check before setState: if (isStale(requestId)) return
+[ ] AbortError/CanceledError ignored (not treated as error)
+[ ] Chart data goes through adapter (transformTimeSeries, etc.)
+[ ] Adapter validates API version: assertKnownVersion(response)
+
+Pattern for simple cases (useAbortableQuery):
+  const { data, loading, error } = useAbortableQuery(
+    (signal) => apiClient.get('/api/data', { signal }),
+    [filterKey]
+  );
+
+Pattern for complex cases (useStaleRequestGuard):
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+  const requestId = startRequest();
+  const signal = getSignal();
+  // ... fetch with signal ...
+  if (isStale(requestId)) return;
+
+Audit: Run `bash scripts/audit-async-safety.sh` to check all files
 ```
 
 ---

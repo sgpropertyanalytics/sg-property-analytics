@@ -17,6 +17,7 @@ import Map, { Source, Layer, Popup } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
+import { useStaleRequestGuard } from '../../hooks';
 
 // Theme colors (Warm Precision palette)
 const COLORS = {
@@ -178,6 +179,15 @@ export default function MarketHeatmap3D() {
   const mapRef = useRef(null);
   const hoveredStateRef = useRef(null);
 
+  // Abort/stale request protection
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
+  // Stable filter key for dependency tracking (avoids object reference issues)
+  const filterKey = useMemo(
+    () => `${selectedPeriod}:${selectedBed}`,
+    [selectedPeriod, selectedBed]
+  );
+
   // Initial view state
   const [viewState, setViewState] = useState({
     longitude: SINGAPORE_CENTER.lng,
@@ -187,29 +197,47 @@ export default function MarketHeatmap3D() {
     bearing: -15,
   });
 
-  // Fetch district PSF data
+  // Fetch district PSF data with abort/stale protection
   const fetchData = useCallback(async () => {
+    const requestId = startRequest();
+    const signal = getSignal();
+
     setLoading(true);
     setError(null);
+
     try {
       const response = await apiClient.get('/insights/district-psf', {
         params: {
           period: selectedPeriod,
           bed: selectedBed,
         },
+        signal,  // Pass abort signal to cancel on filter change
       });
+
+      // Guard: Don't update state if a newer request started
+      if (isStale(requestId)) return;
+
       setDistrictData(response.data.districts || []);
+      setLoading(false);
     } catch (err) {
+      // CRITICAL: Never treat abort/cancel as a real error
+      // This prevents "Failed to load" flash when switching filters rapidly
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return;
+      }
+
+      // Guard: Check stale after error too
+      if (isStale(requestId)) return;
+
       console.error('Failed to fetch district PSF data:', err);
       setError('Failed to load data');
-    } finally {
       setLoading(false);
     }
-  }, [selectedBed, selectedPeriod]);
+  }, [selectedBed, selectedPeriod, startRequest, getSignal, isStale]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create district lookup map
   const districtMap = useMemo(() => {
