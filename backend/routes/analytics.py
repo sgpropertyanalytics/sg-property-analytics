@@ -3010,47 +3010,30 @@ def get_project_price_bands(project_name):
     Query params:
         - window_months: Analysis window in months (default 24, max 60)
         - unit_psf: Optional user's unit PSF for verdict calculation
+        - schema: 'v2' for strict camelCase only, omit for dual-mode (v1 + _v2)
 
-    Returns:
+    Returns (default dual-mode):
+        v1 snake_case fields + _v2 nested object with camelCase fields.
+
+    Returns (?schema=v2):
+        Strict v2 camelCase only, no snake_case fields.
+
+    Example response (v2):
         {
-            "project_name": "The Continuum",
-            "data_source": "project" | "district_proxy" | "segment_proxy",
-            "proxy_label": null | "D15 proxy" | "RCR segment proxy",
-            "bands": [
-                {
-                    "month": "2024-01",
-                    "count": 12,
-                    "p25": 1850, "p50": 1980, "p75": 2150,
-                    "p25_s": 1840, "p50_s": 1970, "p75_s": 2140
-                }
-            ],
-            "latest": {"month": "2024-12", "p25_s": 1920, "p50_s": 2050, "p75_s": 2200},
-            "trend": {
-                "floor_direction": "rising" | "flat" | "weakening",
-                "floor_slope_pct": 2.3,
-                "observation_months": 6
-            },
-            "verdict": {
-                "unit_psf": 2100,
-                "position": "above_median",
-                "position_label": "Above Median",
-                "vs_floor_pct": 7.5,
-                "badge": "protected" | "watch" | "exposed",
-                "badge_label": "Protected",
-                "explanation": "Unit is 7.5% above a rising floor."
-            },
-            "data_quality": {
-                "total_trades": 156,
-                "months_with_data": 18,
-                "is_valid": true,
-                "fallback_reason": null,
-                "window_months": 24,
-                "smoothing": "rolling_median_3"
-            }
+            "projectName": "The Continuum",
+            "dataSource": "project",
+            "proxyLabel": null,
+            "bands": [{"month": "2024-01", "count": 12, "p25": 1850, ...}],
+            "latest": {"month": "2024-12", "p25S": 1920, ...},
+            "trend": {"floorDirection": "rising", "floorSlopePct": 2.3, ...},
+            "verdict": {"unitPsf": 2100, "badge": "protected", ...},
+            "dataQuality": {"totalTrades": 156, ...},
+            "apiContractVersion": "v2"
         }
     """
     start = time.time()
     from services.price_bands_service import get_project_price_bands as compute_bands
+    from schemas.api_contract import serialize_price_bands_dual, serialize_price_bands_v2
 
     try:
         # Parse query params
@@ -3065,6 +3048,10 @@ def get_project_price_bands(project_name):
                     "error": "unit_psf must be between 300 and 10000"
                 }), 400
 
+        # Check schema parameter for v2 strict mode
+        schema_version = request.args.get('schema', '').lower()
+        strict_v2 = schema_version == 'v2'
+
         # Compute price bands
         result = compute_bands(
             project_name=project_name,
@@ -3072,10 +3059,19 @@ def get_project_price_bands(project_name):
             unit_psf=unit_psf
         )
 
+        # Serialize response based on schema mode
+        if strict_v2:
+            # Strict v2: camelCase only, no deprecated fields
+            response = serialize_price_bands_v2(result)
+            response['apiContractVersion'] = 'v2'
+        else:
+            # Default: dual-mode (v1 snake_case + _v2 camelCase nested)
+            response = serialize_price_bands_dual(result, include_deprecated=True)
+
         elapsed = time.time() - start
         print(f"GET /api/projects/{project_name}/price-bands completed in {elapsed:.4f}s")
 
-        return jsonify(result)
+        return jsonify(response)
 
     except Exception as e:
         elapsed = time.time() - start

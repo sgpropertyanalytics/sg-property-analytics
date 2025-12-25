@@ -1233,3 +1233,291 @@ def serialize_exit_queue_dual(result, include_v2: bool = True) -> Dict[str, Any]
         response["_v2"] = serialize_exit_queue_v2(result)
 
     return response
+
+
+# =============================================================================
+# PRICE BANDS ENUMS
+# =============================================================================
+
+class DataSource:
+    """Data source for price bands analysis."""
+    PROJECT = 'project'
+    DISTRICT_PROXY = 'district_proxy'
+    SEGMENT_PROXY = 'segment_proxy'
+    NONE = 'none'
+
+    ALL = [PROJECT, DISTRICT_PROXY, SEGMENT_PROXY, NONE]
+
+
+class FloorDirection:
+    """Floor trend direction values for API responses."""
+    RISING = 'rising'
+    FLAT = 'flat'
+    WEAKENING = 'weakening'
+    UNKNOWN = 'unknown'
+
+    ALL = [RISING, FLAT, WEAKENING, UNKNOWN]
+
+
+class PricePosition:
+    """Unit price position relative to percentile bands."""
+    BELOW_FLOOR = 'below_floor'
+    NEAR_FLOOR = 'near_floor'
+    ABOVE_MEDIAN = 'above_median'
+    PREMIUM_ZONE = 'premium_zone'
+
+    ALL = [BELOW_FLOOR, NEAR_FLOOR, ABOVE_MEDIAN, PREMIUM_ZONE]
+
+
+class VerdictBadge:
+    """Verdict badge values for downside protection assessment."""
+    PROTECTED = 'protected'
+    WATCH = 'watch'
+    EXPOSED = 'exposed'
+
+    ALL = [PROTECTED, WATCH, EXPOSED]
+
+
+# =============================================================================
+# PRICE BANDS FIELD NAMES
+# =============================================================================
+
+class PriceBandsFields:
+    """Field names for price bands API response (camelCase for v2)."""
+    # Top-level
+    PROJECT_NAME = 'projectName'
+    DATA_SOURCE = 'dataSource'
+    PROXY_LABEL = 'proxyLabel'
+    BANDS = 'bands'
+    LATEST = 'latest'
+    TREND = 'trend'
+    VERDICT = 'verdict'
+    DATA_QUALITY = 'dataQuality'
+    ERROR = 'error'
+
+    # Band fields
+    MONTH = 'month'
+    COUNT = 'count'
+    P25 = 'p25'
+    P50 = 'p50'
+    P75 = 'p75'
+    P25_S = 'p25S'  # smoothed
+    P50_S = 'p50S'
+    P75_S = 'p75S'
+
+    # Trend fields
+    FLOOR_DIRECTION = 'floorDirection'
+    FLOOR_SLOPE_PCT = 'floorSlopePct'
+    OBSERVATION_MONTHS = 'observationMonths'
+
+    # Verdict fields
+    UNIT_PSF = 'unitPsf'
+    POSITION = 'position'
+    POSITION_LABEL = 'positionLabel'
+    VS_FLOOR_PCT = 'vsFloorPct'
+    BADGE = 'badge'
+    BADGE_LABEL = 'badgeLabel'
+    EXPLANATION = 'explanation'
+
+    # Data quality fields
+    TOTAL_TRADES = 'totalTrades'
+    MONTHS_WITH_DATA = 'monthsWithData'
+    IS_VALID = 'isValid'
+    FALLBACK_REASON = 'fallbackReason'
+    WINDOW_MONTHS = 'windowMonths'
+    SMOOTHING = 'smoothing'
+
+
+# =============================================================================
+# PRICE BANDS SERIALIZERS
+# =============================================================================
+
+def _serialize_band_v1(band: Dict[str, Any]) -> Dict[str, Any]:
+    """Serialize a single band to v1 schema (snake_case)."""
+    return {
+        'month': band.get('month'),
+        'count': band.get('count'),
+        'p25': band.get('p25'),
+        'p50': band.get('p50'),
+        'p75': band.get('p75'),
+        'p25_s': band.get('p25_s'),
+        'p50_s': band.get('p50_s'),
+        'p75_s': band.get('p75_s'),
+    }
+
+
+def _serialize_band_v2(band: Dict[str, Any]) -> Dict[str, Any]:
+    """Serialize a single band to v2 schema (camelCase)."""
+    return {
+        PriceBandsFields.MONTH: band.get('month'),
+        PriceBandsFields.COUNT: band.get('count'),
+        PriceBandsFields.P25: band.get('p25'),
+        PriceBandsFields.P50: band.get('p50'),
+        PriceBandsFields.P75: band.get('p75'),
+        PriceBandsFields.P25_S: band.get('p25_s'),
+        PriceBandsFields.P50_S: band.get('p50_s'),
+        PriceBandsFields.P75_S: band.get('p75_s'),
+    }
+
+
+def _serialize_latest_v1(latest: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Serialize latest values to v1 schema."""
+    if not latest:
+        return None
+    return {
+        'month': latest.get('month'),
+        'p25_s': latest.get('p25_s'),
+        'p50_s': latest.get('p50_s'),
+        'p75_s': latest.get('p75_s'),
+    }
+
+
+def _serialize_latest_v2(latest: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Serialize latest values to v2 schema."""
+    if not latest:
+        return None
+    return {
+        PriceBandsFields.MONTH: latest.get('month'),
+        PriceBandsFields.P25_S: latest.get('p25_s'),
+        PriceBandsFields.P50_S: latest.get('p50_s'),
+        PriceBandsFields.P75_S: latest.get('p75_s'),
+    }
+
+
+def _serialize_trend_v1(trend: Dict[str, Any]) -> Dict[str, Any]:
+    """Serialize trend to v1 schema."""
+    return {
+        'floor_direction': trend.get('floor_direction'),
+        'floor_slope_pct': trend.get('floor_slope_pct'),
+        'observation_months': trend.get('observation_months'),
+    }
+
+
+def _serialize_trend_v2(trend: Dict[str, Any]) -> Dict[str, Any]:
+    """Serialize trend to v2 schema."""
+    return {
+        PriceBandsFields.FLOOR_DIRECTION: trend.get('floor_direction'),
+        PriceBandsFields.FLOOR_SLOPE_PCT: trend.get('floor_slope_pct'),
+        PriceBandsFields.OBSERVATION_MONTHS: trend.get('observation_months'),
+    }
+
+
+def _serialize_verdict_v1(verdict: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Serialize verdict to v1 schema."""
+    if not verdict:
+        return None
+    return {
+        'unit_psf': verdict.get('unit_psf'),
+        'position': verdict.get('position'),
+        'position_label': verdict.get('position_label'),
+        'vs_floor_pct': verdict.get('vs_floor_pct'),
+        'badge': verdict.get('badge'),
+        'badge_label': verdict.get('badge_label'),
+        'explanation': verdict.get('explanation'),
+    }
+
+
+def _serialize_verdict_v2(verdict: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Serialize verdict to v2 schema."""
+    if not verdict:
+        return None
+    return {
+        PriceBandsFields.UNIT_PSF: verdict.get('unit_psf'),
+        PriceBandsFields.POSITION: verdict.get('position'),
+        PriceBandsFields.POSITION_LABEL: verdict.get('position_label'),
+        PriceBandsFields.VS_FLOOR_PCT: verdict.get('vs_floor_pct'),
+        PriceBandsFields.BADGE: verdict.get('badge'),
+        PriceBandsFields.BADGE_LABEL: verdict.get('badge_label'),
+        PriceBandsFields.EXPLANATION: verdict.get('explanation'),
+    }
+
+
+def _serialize_data_quality_v1(dq: Dict[str, Any]) -> Dict[str, Any]:
+    """Serialize data quality to v1 schema."""
+    return {
+        'total_trades': dq.get('total_trades'),
+        'months_with_data': dq.get('months_with_data'),
+        'is_valid': dq.get('is_valid'),
+        'fallback_reason': dq.get('fallback_reason'),
+        'window_months': dq.get('window_months'),
+        'smoothing': dq.get('smoothing'),
+    }
+
+
+def _serialize_data_quality_v2(dq: Dict[str, Any]) -> Dict[str, Any]:
+    """Serialize data quality to v2 schema."""
+    return {
+        PriceBandsFields.TOTAL_TRADES: dq.get('total_trades'),
+        PriceBandsFields.MONTHS_WITH_DATA: dq.get('months_with_data'),
+        PriceBandsFields.IS_VALID: dq.get('is_valid'),
+        PriceBandsFields.FALLBACK_REASON: dq.get('fallback_reason'),
+        PriceBandsFields.WINDOW_MONTHS: dq.get('window_months'),
+        PriceBandsFields.SMOOTHING: dq.get('smoothing'),
+    }
+
+
+def serialize_price_bands_v1(result: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Serialize price bands result to v1 schema (snake_case keys).
+    This is the current production format for backwards compatibility.
+    """
+    return {
+        'project_name': result.get('project_name'),
+        'data_source': result.get('data_source'),
+        'proxy_label': result.get('proxy_label'),
+        'bands': [_serialize_band_v1(b) for b in result.get('bands', [])],
+        'latest': _serialize_latest_v1(result.get('latest')),
+        'trend': _serialize_trend_v1(result.get('trend', {})),
+        'verdict': _serialize_verdict_v1(result.get('verdict')),
+        'data_quality': _serialize_data_quality_v1(result.get('data_quality', {})),
+        'error': result.get('error'),
+    }
+
+
+def serialize_price_bands_v2(result: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Serialize price bands result to v2 schema (camelCase keys + enum values).
+    """
+    response = {
+        PriceBandsFields.PROJECT_NAME: result.get('project_name'),
+        PriceBandsFields.DATA_SOURCE: result.get('data_source'),
+        PriceBandsFields.PROXY_LABEL: result.get('proxy_label'),
+        PriceBandsFields.BANDS: [_serialize_band_v2(b) for b in result.get('bands', [])],
+        PriceBandsFields.LATEST: _serialize_latest_v2(result.get('latest')),
+        PriceBandsFields.TREND: _serialize_trend_v2(result.get('trend', {})),
+        PriceBandsFields.VERDICT: _serialize_verdict_v2(result.get('verdict')),
+        PriceBandsFields.DATA_QUALITY: _serialize_data_quality_v2(result.get('data_quality', {})),
+    }
+
+    # Only include error if present
+    if result.get('error'):
+        response[PriceBandsFields.ERROR] = result.get('error')
+
+    return response
+
+
+def serialize_price_bands_dual(
+    result: Dict[str, Any],
+    include_deprecated: bool = True
+) -> Dict[str, Any]:
+    """
+    Serialize price bands result with dual-mode support.
+
+    Args:
+        result: Raw result from get_project_price_bands()
+        include_deprecated: If True, include v1 snake_case fields (default True)
+
+    Returns:
+        Dict with v2 camelCase fields, and optionally v1 snake_case fields
+    """
+    if include_deprecated:
+        # Return v1 format with _v2 nested
+        response = serialize_price_bands_v1(result)
+        response['_v2'] = serialize_price_bands_v2(result)
+        response['apiContractVersion'] = API_CONTRACT_VERSION
+        return response
+    else:
+        # Strict v2 only
+        response = serialize_price_bands_v2(result)
+        response['apiContractVersion'] = API_CONTRACT_VERSION
+        return response

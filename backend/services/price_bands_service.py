@@ -8,7 +8,7 @@ proxies when project data is insufficient.
 Key Features:
 - SQL-only aggregation with PostgreSQL PERCENTILE_CONT
 - 3-month rolling median smoothing
-- Automatic fallback hierarchy (project → district+segment+tenure → district → segment)
+- Automatic fallback hierarchy (project -> district+segment+tenure -> district -> segment)
 - Verdict computation (Protected/Watch/Exposed)
 
 Usage:
@@ -22,19 +22,26 @@ Usage:
 """
 
 import logging
-from datetime import date, timedelta
+from datetime import date
 from dateutil.relativedelta import relativedelta
 from typing import Dict, Any, List, Optional, Tuple
-from statistics import median
 
-from sqlalchemy import text, func, and_, or_, extract
-from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from models.database import db
-from models.transaction import Transaction
+from schemas.api_contract import SaleType
 from constants import (
     get_region_for_district, get_districts_for_region,
-    normalize_tenure
+    normalize_tenure, TENURE_TYPE_LABELS_SHORT
+)
+from services.price_bands_compute import (
+    apply_rolling_median_smoothing,
+    get_latest_values,
+    compute_floor_trend,
+    compute_verdict,
+    FloorDirection,
+    TREND_RISING_THRESHOLD,
+    TREND_WEAKENING_THRESHOLD,
 )
 
 logger = logging.getLogger('price_bands')
@@ -48,6 +55,12 @@ MIN_TOTAL_TRADES = 20  # Minimum resale trades in window
 MIN_MONTHS_WITH_DATA = 8  # Minimum months with >= MIN_TRADES_PER_BUCKET
 MIN_TRADES_PER_BUCKET = 3  # Minimum trades per month to compute percentiles
 
+# Relaxed thresholds for fallback (documented rationale):
+# Proxies aggregate more data, so fewer strict requirements.
+# Still need meaningful sample size for reliable percentiles.
+MIN_FALLBACK_TRADES = 10
+MIN_FALLBACK_MONTHS = 4
+
 # PSF guardrails (additional to is_outlier filter)
 PSF_MIN = 300
 PSF_MAX = 10000
@@ -57,8 +70,6 @@ SMOOTHING_WINDOW = 3  # 3-month rolling median
 
 # Trend calculation
 TREND_MONTHS = 6  # Look back 6 months for floor trend
-TREND_RISING_THRESHOLD = 0.015  # +1.5%
-TREND_WEAKENING_THRESHOLD = -0.015  # -1.5%
 
 
 # =============================================================================
@@ -104,11 +115,18 @@ def get_project_price_bands(
 
     # If project data is insufficient, try fallback hierarchy
     if not is_valid:
+        logger.info(
+            f"Project '{project_name}' failed validity: {validity_reason}. "
+            f"Attempting fallback (district={district}, segment={segment}, tenure={tenure})"
+        )
         bands_raw, data_source, proxy_label = _get_fallback_bands(
             district, segment, tenure, date_from, date_to
         )
 
         if not bands_raw:
+            logger.warning(
+                f"All fallback paths failed for project '{project_name}'"
+            )
             return _empty_response(
                 project_name,
                 "Insufficient data for analysis",
@@ -120,20 +138,28 @@ def get_project_price_bands(
                     "window_months": window_months
                 }
             )
+        else:
+            logger.info(
+                f"Fallback successful for '{project_name}': {data_source} -> {proxy_label}"
+            )
 
     # Apply 3-month rolling median smoothing
-    bands = _apply_rolling_median_smoothing(bands_raw, SMOOTHING_WINDOW)
+    bands = apply_rolling_median_smoothing(bands_raw, SMOOTHING_WINDOW)
 
     # Get latest values
-    latest = _get_latest_values(bands)
+    latest = get_latest_values(bands)
 
     # Calculate floor trend
-    trend = _compute_floor_trend(bands, TREND_MONTHS)
+    trend = compute_floor_trend(
+        bands, TREND_MONTHS,
+        rising_threshold=TREND_RISING_THRESHOLD,
+        weakening_threshold=TREND_WEAKENING_THRESHOLD
+    )
 
     # Calculate verdict if unit_psf provided
     verdict = None
     if unit_psf is not None and latest:
-        verdict = _compute_verdict(unit_psf, latest, trend)
+        verdict = compute_verdict(unit_psf, latest, trend)
 
     # Build data quality summary
     total_trades = sum(b.get('count', 0) for b in bands_raw if b.get('count'))
@@ -169,7 +195,7 @@ def _get_project_info(project_name: str) -> Optional[Dict[str, Any]]:
             SELECT district, tenure
             FROM transactions
             WHERE project_name = :project_name
-              AND (is_outlier = false OR is_outlier IS NULL)
+              AND COALESCE(is_outlier, false) = false
             ORDER BY transaction_date DESC
             LIMIT 1
         """),
@@ -238,15 +264,29 @@ def _compute_monthly_percentiles(
 
     Filters by project OR district/segment/tenure for fallback.
     Only includes months with >= MIN_TRADES_PER_BUCKET trades.
+
+    SQL Correctness:
+    - Uses SaleType.API_TO_DB for sale_type normalization
+    - Uses COALESCE(is_outlier, false) = false for outlier exclusion
+    - Uses parameterized queries for all dynamic values
+    - Explicitly casts date comparisons
     """
-    # Build WHERE conditions
-    conditions = [
-        "sale_type = 'Resale'",
-        "(is_outlier = false OR is_outlier IS NULL)",
-        f"psf > {PSF_MIN}",
-        f"psf < {PSF_MAX}"
-    ]
+    # Build WHERE conditions with parameterized values
+    conditions = []
     params = {}
+
+    # Sale type: Use API contract for DB value
+    resale_db_value = SaleType.API_TO_DB.get(SaleType.RESALE, 'Resale')
+    conditions.append("sale_type = :sale_type")
+    params["sale_type"] = resale_db_value
+
+    # Outlier exclusion: Use COALESCE for NULL handling
+    conditions.append("COALESCE(is_outlier, false) = false")
+
+    # PSF guardrails
+    conditions.append("psf > :psf_min AND psf < :psf_max")
+    params["psf_min"] = PSF_MIN
+    params["psf_max"] = PSF_MAX
 
     if project_name:
         conditions.append("project_name = :project_name")
@@ -268,21 +308,23 @@ def _compute_monthly_percentiles(
             params["segment_districts"] = segment_districts
 
     if tenure:
-        # Handle tenure matching (Freehold, 99-year, 999-year)
-        if tenure == 'Freehold':
+        # Normalize tenure first, then match
+        normalized = normalize_tenure(tenure)
+        if normalized == 'Freehold':
             conditions.append("LOWER(tenure) LIKE '%freehold%'")
-        elif tenure == '999-year':
+        elif normalized == '999-year':
             conditions.append("tenure LIKE '%999%'")
-        elif tenure == '99-year':
+        elif normalized == '99-year':
             conditions.append("tenure LIKE '%99%' AND tenure NOT LIKE '%999%'")
+        # 'Unknown' tenure doesn't add a filter
 
     if date_from:
-        conditions.append("transaction_date >= :date_from")
-        params["date_from"] = date_from
+        conditions.append("transaction_date >= :date_from::date")
+        params["date_from"] = date_from.isoformat()
 
     if date_to:
-        conditions.append("transaction_date <= :date_to")
-        params["date_to"] = date_to
+        conditions.append("transaction_date <= :date_to::date")
+        params["date_to"] = date_to.isoformat()
 
     where_clause = " AND ".join(conditions)
 
@@ -297,9 +339,10 @@ def _compute_monthly_percentiles(
         FROM transactions
         WHERE {where_clause}
         GROUP BY TO_CHAR(transaction_date, 'YYYY-MM')
-        HAVING COUNT(*) >= {MIN_TRADES_PER_BUCKET}
+        HAVING COUNT(*) >= :min_trades
         ORDER BY month
     """)
+    params["min_trades"] = MIN_TRADES_PER_BUCKET
 
     result = db.session.execute(query, params).fetchall()
 
@@ -331,14 +374,14 @@ def _get_fallback_bands(
     Try fallback hierarchy when project data is insufficient.
 
     Hierarchy:
-    1. District + Segment + Tenure
-    2. District only
-    3. Segment only
+    1. District + Tenure (same district, same tenure type)
+    2. District only (same district, all tenures)
+    3. Segment only (same region, all districts)
 
     Returns:
         Tuple of (bands, data_source, proxy_label)
     """
-    # Try 1: District + Segment + Tenure (if all available)
+    # Try 1: District + Tenure (if both available and tenure is known)
     if district and tenure and tenure != 'Unknown':
         bands = _compute_monthly_percentiles(
             district=district,
@@ -347,7 +390,7 @@ def _get_fallback_bands(
             date_to=date_to
         )
         if _is_fallback_valid(bands):
-            tenure_short = tenure.replace('-year', 'yr') if '-year' in tenure else tenure
+            tenure_short = TENURE_TYPE_LABELS_SHORT.get(tenure, tenure)
             return bands, "district_proxy", f"{district} {tenure_short} proxy"
 
     # Try 2: District only
@@ -374,229 +417,17 @@ def _get_fallback_bands(
 
 
 def _is_fallback_valid(bands: List[Dict]) -> bool:
-    """Check if fallback bands meet minimum thresholds."""
+    """
+    Check if fallback bands meet minimum thresholds.
+
+    Uses relaxed thresholds compared to project-level because:
+    - Fallback aggregates multiple projects, so individual project sparsity is mitigated
+    - Still requires meaningful sample for reliable percentiles
+    """
     total_trades = sum(b.get('count', 0) for b in bands if b.get('count'))
     months_with_data = len([b for b in bands if b.get('p25') is not None])
 
-    # More relaxed thresholds for fallback
-    return total_trades >= 10 and months_with_data >= 4
-
-
-# =============================================================================
-# SMOOTHING
-# =============================================================================
-
-def _apply_rolling_median_smoothing(
-    bands: List[Dict],
-    window: int = 3
-) -> List[Dict]:
-    """
-    Apply rolling median smoothing to percentile series.
-
-    Adds p25_s, p50_s, p75_s (smoothed values) to each band.
-    Preserves gaps (null values stay null).
-    """
-    if not bands:
-        return bands
-
-    n = len(bands)
-
-    # Extract series
-    p25_vals = [b.get('p25') for b in bands]
-    p50_vals = [b.get('p50') for b in bands]
-    p75_vals = [b.get('p75') for b in bands]
-
-    # Apply rolling median to each series
-    p25_smooth = _rolling_median(p25_vals, window)
-    p50_smooth = _rolling_median(p50_vals, window)
-    p75_smooth = _rolling_median(p75_vals, window)
-
-    # Add smoothed values to bands
-    result = []
-    for i, band in enumerate(bands):
-        smoothed = {**band}
-        smoothed['p25_s'] = round(p25_smooth[i], 0) if p25_smooth[i] is not None else None
-        smoothed['p50_s'] = round(p50_smooth[i], 0) if p50_smooth[i] is not None else None
-        smoothed['p75_s'] = round(p75_smooth[i], 0) if p75_smooth[i] is not None else None
-        result.append(smoothed)
-
-    return result
-
-
-def _rolling_median(values: List[Optional[float]], window: int) -> List[Optional[float]]:
-    """
-    Compute rolling median, handling None values.
-
-    Uses centered window where possible, otherwise asymmetric.
-    """
-    n = len(values)
-    result = []
-    half = window // 2
-
-    for i in range(n):
-        # Collect window values (excluding None)
-        window_vals = []
-        for j in range(max(0, i - half), min(n, i + half + 1)):
-            if values[j] is not None:
-                window_vals.append(values[j])
-
-        if window_vals:
-            result.append(median(window_vals))
-        else:
-            result.append(None)
-
-    return result
-
-
-# =============================================================================
-# LATEST VALUES
-# =============================================================================
-
-def _get_latest_values(bands: List[Dict]) -> Optional[Dict]:
-    """Get the most recent non-null smoothed values."""
-    for band in reversed(bands):
-        if band.get('p25_s') is not None:
-            return {
-                "month": band['month'],
-                "p25_s": band['p25_s'],
-                "p50_s": band['p50_s'],
-                "p75_s": band['p75_s']
-            }
-    return None
-
-
-# =============================================================================
-# TREND CALCULATION
-# =============================================================================
-
-def _compute_floor_trend(
-    bands: List[Dict],
-    lookback_months: int = 6
-) -> Dict[str, Any]:
-    """
-    Compute floor (P25) trend over the last N months.
-
-    Returns direction (rising/flat/weakening) and slope percentage.
-    """
-    if not bands or len(bands) < 2:
-        return {
-            "floor_direction": "unknown",
-            "floor_slope_pct": None,
-            "observation_months": 0
-        }
-
-    # Get P25 values for last N months (using smoothed values)
-    recent_bands = bands[-lookback_months:] if len(bands) >= lookback_months else bands
-    p25_values = [b.get('p25_s') for b in recent_bands if b.get('p25_s') is not None]
-
-    if len(p25_values) < 2:
-        return {
-            "floor_direction": "unknown",
-            "floor_slope_pct": None,
-            "observation_months": len(p25_values)
-        }
-
-    # Calculate slope as percentage change
-    first_val = p25_values[0]
-    last_val = p25_values[-1]
-
-    if first_val == 0:
-        slope_pct = 0
-    else:
-        slope_pct = ((last_val - first_val) / first_val) * 100
-
-    # Classify direction
-    if slope_pct >= TREND_RISING_THRESHOLD * 100:
-        direction = "rising"
-    elif slope_pct <= TREND_WEAKENING_THRESHOLD * 100:
-        direction = "weakening"
-    else:
-        direction = "flat"
-
-    return {
-        "floor_direction": direction,
-        "floor_slope_pct": round(slope_pct, 2),
-        "observation_months": len(p25_values)
-    }
-
-
-# =============================================================================
-# VERDICT COMPUTATION
-# =============================================================================
-
-def _compute_verdict(
-    unit_psf: float,
-    latest: Dict,
-    trend: Dict
-) -> Dict[str, Any]:
-    """
-    Compute verdict badge based on unit position and floor trend.
-
-    Verdict Logic:
-    - Protected (green): unit >= P25 AND floor rising/flat
-    - Watch (yellow): unit near floor (P25-P50) OR floor weakening
-    - Exposed (red): unit < P25 OR (premium zone AND floor weakening)
-    """
-    p25 = latest['p25_s']
-    p50 = latest['p50_s']
-    p75 = latest['p75_s']
-    floor_direction = trend.get('floor_direction', 'unknown')
-
-    # Determine position
-    if unit_psf < p25:
-        position = "below_floor"
-        position_label = "Below Floor"
-        vs_floor_pct = round(((unit_psf - p25) / p25) * 100, 1)
-    elif unit_psf < p50:
-        position = "near_floor"
-        position_label = "Near Floor"
-        vs_floor_pct = round(((unit_psf - p25) / p25) * 100, 1)
-    elif unit_psf < p75:
-        position = "above_median"
-        position_label = "Above Median"
-        vs_floor_pct = round(((unit_psf - p25) / p25) * 100, 1)
-    else:
-        position = "premium_zone"
-        position_label = "Premium Zone"
-        vs_floor_pct = round(((unit_psf - p25) / p25) * 100, 1)
-
-    # Determine badge
-    if position == "below_floor":
-        badge = "exposed"
-        badge_label = "Exposed"
-        explanation = f"Unit PSF is {abs(vs_floor_pct):.1f}% below the historical floor (P25)."
-    elif position == "near_floor":
-        badge = "watch"
-        badge_label = "Watch Zone"
-        if floor_direction == "weakening":
-            explanation = f"Unit is near the floor with a weakening trend. Monitor closely."
-        else:
-            explanation = f"Unit is {vs_floor_pct:.1f}% above floor but in the lower half of the range."
-    elif position == "premium_zone" and floor_direction == "weakening":
-        badge = "watch"
-        badge_label = "Watch Zone"
-        explanation = f"Unit is in premium zone but floor trend is weakening."
-    elif floor_direction == "weakening" and position != "premium_zone":
-        badge = "watch"
-        badge_label = "Watch Zone"
-        explanation = f"Floor trend is weakening. Unit is {vs_floor_pct:.1f}% above floor."
-    else:
-        badge = "protected"
-        badge_label = "Protected"
-        if floor_direction == "rising":
-            explanation = f"Unit is {vs_floor_pct:.1f}% above a rising floor."
-        else:
-            explanation = f"Unit is {vs_floor_pct:.1f}% above a stable floor."
-
-    return {
-        "unit_psf": unit_psf,
-        "position": position,
-        "position_label": position_label,
-        "vs_floor_pct": vs_floor_pct,
-        "badge": badge,
-        "badge_label": badge_label,
-        "explanation": explanation
-    }
+    return total_trades >= MIN_FALLBACK_TRADES and months_with_data >= MIN_FALLBACK_MONTHS
 
 
 # =============================================================================
@@ -616,7 +447,7 @@ def _empty_response(
         "bands": [],
         "latest": None,
         "trend": {
-            "floor_direction": "unknown",
+            "floor_direction": FloorDirection.UNKNOWN,
             "floor_slope_pct": None,
             "observation_months": 0
         },
