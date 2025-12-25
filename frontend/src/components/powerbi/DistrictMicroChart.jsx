@@ -227,13 +227,13 @@ export function DistrictMicroChart({ district, data, onClick }) {
     );
   }
 
-  // Determine growth color for text (lighter on dark backgrounds)
+  // Determine growth color for text - use high contrast colors on dark backgrounds
   const isDarkHeader = region === 'CCR' || region === 'RCR';
   const growthTextColor = growthPercent === null
-    ? (isDarkHeader ? 'text-white/60' : 'text-[#94B4C1]')
+    ? (isDarkHeader ? 'text-white/70' : 'text-[#94B4C1]')
     : growthPercent >= 0
-      ? (isDarkHeader ? 'text-emerald-300' : 'text-emerald-600')
-      : (isDarkHeader ? 'text-red-300' : 'text-red-500');
+      ? (isDarkHeader ? 'text-[#86efac]' : 'text-emerald-600')  // Bright mint green on dark
+      : (isDarkHeader ? 'text-[#fca5a5]' : 'text-red-500');     // Bright coral red on dark
 
   return (
     <div className="h-full flex flex-col bg-white rounded border border-[#94B4C1]/50 overflow-hidden hover:border-[#547792] transition-colors">
@@ -257,7 +257,7 @@ export function DistrictMicroChart({ district, data, onClick }) {
 
       {/* Footer with current PSF and area names */}
       <div className="px-2 py-0.5 bg-[#EAE0CF]/20 shrink-0 flex items-center justify-between gap-1">
-        <span className="text-[9px] text-[#94B4C1] truncate flex-1" title={DISTRICT_NAMES[district]}>
+        <span className="text-[9px] text-[#547792] truncate flex-1" title={DISTRICT_NAMES[district]}>
           {areaNames}
         </span>
         {latestPsf && (

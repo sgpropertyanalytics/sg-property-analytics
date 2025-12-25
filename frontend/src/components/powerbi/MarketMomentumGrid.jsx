@@ -135,7 +135,7 @@ export function MarketMomentumGrid() {
           <div>
             <h3 className="text-sm font-semibold text-[#213448]">Median PSF Trend by District</h3>
             <p className="text-xs text-[#547792] mt-0.5">
-              Quarterly median price per sqft • Click to filter
+              % shows total growth from first to last quarter • Click to filter
             </p>
           </div>
           {/* Region Legend */}
