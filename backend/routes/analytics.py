@@ -3155,7 +3155,9 @@ def get_project_exit_queue(project_name):
             }), 404
 
         district = basic_stats[0]
-        first_resale_date = basic_stats[1]
+        # Parse first_resale_date from string (contract_date is varchar)
+        first_resale_date_str = basic_stats[1]
+        first_resale_date = datetime.strptime(first_resale_date_str, '%Y-%m-%d').date() if first_resale_date_str else None
         total_resale_transactions = basic_stats[2]
         resales_12m = basic_stats[3]
         resales_24m = basic_stats[4]
