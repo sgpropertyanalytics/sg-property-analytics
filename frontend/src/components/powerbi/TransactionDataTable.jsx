@@ -3,6 +3,7 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
 import { BlurredProject, BlurredCurrency, BlurredArea, BlurredPSF } from '../BlurredCell';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { TxnField, getTxnField, isSaleType, getSaleTypeLabel } from '../../schemas/apiContract';
 
 /**
  * Transaction Data Table - Responsive table showing transaction-level details
@@ -122,6 +123,9 @@ export function TransactionDataTable({ height = 400 }) {
   };
 
   // Column definitions
+  // Note: Using snake_case keys for sort_by API compatibility (backend expects snake_case).
+  // Data access uses getTxnField() helper which handles both v1 (snake_case) and v2 (camelCase) responses.
+  // See: frontend/src/schemas/apiContract.js for the API contract schema.
   const columns = [
     { key: 'transaction_date', label: 'Month', sortable: true, width: 'w-20' },
     { key: 'project_name', label: 'Project', sortable: true, width: 'w-48' },
@@ -205,11 +209,11 @@ export function TransactionDataTable({ height = 400 }) {
                     </div>
                   </div>
                   <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
-                    txn.sale_type === 'New Sale'
+                    isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE))
                       ? 'bg-green-100 text-green-700'
                       : 'bg-blue-100 text-blue-700'
                   }`}>
-                    {txn.sale_type === 'New Sale' ? 'New' : 'Resale'}
+                    {isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE)) ? 'New' : 'Resale'}
                   </span>
                 </div>
                 {/* Metrics Row */}
@@ -328,11 +332,11 @@ export function TransactionDataTable({ height = 400 }) {
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100">
                       <span className={`px-1.5 py-0.5 text-xs rounded ${
-                        txn.sale_type === 'New Sale'
+                        isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE))
                           ? 'bg-green-100 text-green-700'
                           : 'bg-blue-100 text-blue-700'
                       }`}>
-                        {txn.sale_type === 'New Sale' ? 'New' : 'Resale'}
+                        {isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE)) ? 'New' : 'Resale'}
                       </span>
                     </td>
                   </tr>

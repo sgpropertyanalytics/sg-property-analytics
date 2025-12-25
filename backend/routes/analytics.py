@@ -1713,10 +1713,17 @@ def transactions_list():
         ]
         query = query.filter(Transaction.district.in_(segment_districts))
 
-    # Sale type filter (case-insensitive)
-    sale_type = request.args.get("sale_type")
-    if sale_type:
-        query = query.filter(func.lower(Transaction.sale_type) == sale_type.lower())
+    # Sale type filter - accepts both v1 (sale_type) and v2 (saleType) formats
+    # Also handles both DB values ('New Sale') and API enums ('new_sale')
+    from schemas.api_contract import SaleType
+    sale_type_param = request.args.get("saleType") or request.args.get("sale_type")
+    if sale_type_param:
+        # Check if it's a v2 API enum and convert to DB value
+        if sale_type_param in SaleType.ALL:
+            sale_type_db = SaleType.to_db(sale_type_param)
+        else:
+            sale_type_db = sale_type_param
+        query = query.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
 
     # Date range filter
     date_from = request.args.get("date_from")
@@ -1840,10 +1847,14 @@ def transactions_list():
     elapsed = time.time() - start
     print(f"GET /api/transactions/list took: {elapsed:.4f} seconds (page {page}, {len(transactions)} records)")
 
+    # Schema version control: v1 (default) includes deprecated fields, v2 is clean
+    schema_version = request.args.get("schema", "v1")
+
     # SECURITY: Use tier-aware serialization
     # Premium users get full data, free/anonymous users get masked teaser data
     from utils.subscription import serialize_transactions
-    serialized = serialize_transactions(transactions)
+    from schemas.api_contract import API_CONTRACT_VERSION
+    serialized = serialize_transactions(transactions, schema_version=schema_version)
 
     return jsonify({
         "transactions": serialized,
@@ -1852,6 +1863,11 @@ def transactions_list():
             "limit": limit,
             "total_records": total_records,
             "total_pages": total_pages
+        },
+        "meta": {
+            "apiContractVersion": API_CONTRACT_VERSION,
+            "schemaVersion": schema_version,
+            "elapsedMs": round(elapsed * 1000, 2)
         }
     })
 
