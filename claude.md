@@ -19,6 +19,7 @@
 |----------|---------|
 | [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md) | Complete filter system reference |
 | [SQL_BEST_PRACTICES.md](./SQL_BEST_PRACTICES.md) | SQL guardrails and v2 API compliance |
+| [CONTRACT_ASYNC_SAFETY.md](./CONTRACT_ASYNC_SAFETY.md) | Frontend contract and async safety rules |
 | [TECHNICAL_ARCHITECTURE.md](./TECHNICAL_ARCHITECTURE.md) | System architecture details |
 | [scripts/audit-async-safety.sh](./frontend/scripts/audit-async-safety.sh) | Async data-fetching audit script |
 | [e2e/rapid-interaction.spec.js](./frontend/e2e/rapid-interaction.spec.js) | Playwright smoke tests for rapid interactions |
@@ -195,6 +196,35 @@ Pattern for complex cases (useStaleRequestGuard):
   if (isStale(requestId)) return;
 
 Audit: Run `bash scripts/audit-async-safety.sh` to check all files
+```
+
+### Card 8: Contract & Adapter Pattern (MANDATORY)
+
+```
+CONTRACT & ADAPTER CHECKLIST (For Any Data Display)
+
+Enum Safety:
+[ ] Enums from schemas/apiContract.js only
+[ ] Uses isSaleType.newSale() not === 'New Sale'
+[ ] No hardcoded enum strings in components
+
+Adapter Pattern:
+[ ] API response passes through adapter
+[ ] Component never accesses response.data directly
+[ ] Adapter normalizes v1/v2/v3 responses
+[ ] Adapter calls assertKnownVersion()
+
+Layer Rule:
+  Database → API → Contract → Adapter → Chart
+
+  If logic leaks across layers → STOP → Add adapter/helper
+
+Forbidden in Components:
+  response.data.map(...)           // Use adapter
+  row.sale_type === 'New Sale'     // Use isSaleType
+  row.quarter ?? row.month         // Adapter handles this
+
+Full reference: See CONTRACT_ASYNC_SAFETY.md
 ```
 
 ---
