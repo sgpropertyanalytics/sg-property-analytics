@@ -59,11 +59,12 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   const isInitialLoad = useRef(true);
 
   // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale } = useStaleRequestGuard();
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Fetch data when filters change
   useEffect(() => {
     const requestId = startRequest();
+    const signal = getSignal();
 
     const fetchData = async () => {
       // Only show full loading on initial load, otherwise show subtle updating
@@ -82,7 +83,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
           group_by: `${TIME_GROUP_BY[timeGrouping]},sale_type`,
           metrics: 'count,total_value'
         }, { excludeHighlight: true });
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
         const rawData = response.data.data || [];
 
         // Transform data: group by time period with New Sale/Resale breakdown
@@ -131,6 +132,8 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         setDataTimeGrain(timeGrouping); // Store which time grain this data is for
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
         // Ignore errors from stale requests
         if (isStale(requestId)) return;
         console.error('Error fetching time trend data:', err);

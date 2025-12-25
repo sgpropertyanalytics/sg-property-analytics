@@ -91,11 +91,12 @@ export function GrowthDumbbellChart() {
   const [sortConfig, setSortConfig] = useState({ column: 'growth', order: 'desc' });
 
   // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale } = useStaleRequestGuard();
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Fetch data
   useEffect(() => {
     const requestId = startRequest();
+    const signal = getSignal();
 
     const fetchData = async () => {
       setLoading(true);
@@ -107,13 +108,15 @@ export function GrowthDumbbellChart() {
           metrics: 'median_psf',
         }, { excludeHighlight: true });
 
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
 
         // Ignore stale responses - a newer request has started
         if (isStale(requestId)) return;
 
         setRawData(response.data?.data || []);
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
         if (isStale(requestId)) return;
         console.error('Error fetching dumbbell chart data:', err);
         setError(err.message);

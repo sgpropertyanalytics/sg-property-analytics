@@ -50,11 +50,12 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
   const isInitialLoad = useRef(true);
 
   // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale } = useStaleRequestGuard();
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Fetch server-side computed histogram
   useEffect(() => {
     const requestId = startRequest();
+    const signal = getSignal();
 
     const fetchData = async () => {
       if (isInitialLoad.current) {
@@ -75,7 +76,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         }, { excludeLocationDrill: true });
 
         // Skip cache when toggling to ensure fresh data
-        const response = await getDashboard(params, { skipCache: showFullRange });
+        const response = await getDashboard(params, { skipCache: showFullRange, signal });
         const responseData = response.data || {};
         const data = responseData.data || {};
 
@@ -105,6 +106,8 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         setHistogramData(priceHistogram);
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
         if (isStale(requestId)) return;
         console.error('Error fetching price distribution data:', err);
         setError(err.message);

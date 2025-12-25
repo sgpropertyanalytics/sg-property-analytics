@@ -70,11 +70,12 @@ export function NewVsResaleChart({ height = 350 }) {
   const isInitialLoad = useRef(true);
 
   // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale } = useStaleRequestGuard();
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Fetch data when global filters or local drill level change
   useEffect(() => {
     const requestId = startRequest();
+    const signal = getSignal();
 
     const fetchData = async () => {
       if (isInitialLoad.current) {
@@ -93,7 +94,7 @@ export function NewVsResaleChart({ height = 350 }) {
         }, { excludeHighlight: true });
 
         console.log('[NewVsResale] Fetching with params:', params);
-        const response = await getNewVsResale(params);
+        const response = await getNewVsResale(params, { signal });
         console.log('[NewVsResale] Response:', response.data);
         console.log('[NewVsResale] chartData length:', response.data?.chartData?.length);
         console.log('[NewVsResale] First data point:', response.data?.chartData?.[0]);
@@ -104,6 +105,8 @@ export function NewVsResaleChart({ height = 350 }) {
         setData(response.data);
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
         if (isStale(requestId)) return;
         console.error('Error fetching new vs resale data:', err);
         setError(err.message);

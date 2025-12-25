@@ -71,11 +71,12 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
   const chartRef = useRef(null);
 
   // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale } = useStaleRequestGuard();
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Fetch data grouped by year and floor_level
   useEffect(() => {
     const requestId = startRequest();
+    const signal = getSignal();
 
     const fetchData = async () => {
       setLoading(true);
@@ -92,7 +93,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
         if (bedroom) params.bedroom = bedroom;
         if (segment) params.segment = segment;
 
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
         const data = response.data.data || [];
 
         // Ignore stale responses - a newer request has started
@@ -102,6 +103,8 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
         const filtered = data.filter(d => d.floor_level && d.floor_level !== 'Unknown');
         setRawData(filtered);
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
         if (isStale(requestId)) return;
         console.error('Error fetching trend data:', err);
         setError(err.message);

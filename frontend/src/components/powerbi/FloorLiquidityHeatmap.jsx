@@ -35,7 +35,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
   const [error, setError] = useState(null);
 
   // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale } = useStaleRequestGuard();
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Collapsible district state
   const [expandedDistricts, setExpandedDistricts] = useState(new Set());
@@ -135,6 +135,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
   // Fetch data
   useEffect(() => {
     const requestId = startRequest();
+    const signal = getSignal();
 
     const fetchData = async () => {
       setLoading(true);
@@ -147,7 +148,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
         if (bedroom) params.bedroom = bedroom;
         if (segment) params.segment = segment;
 
-        const response = await getFloorLiquidityHeatmap(params);
+        const response = await getFloorLiquidityHeatmap(params, { signal });
 
         // Ignore stale responses - a newer request has started
         if (isStale(requestId)) return;
@@ -155,6 +156,8 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
         setData(response.data?.data || { projects: [], floor_zone_order: [] });
         setMeta(response.data?.meta || { exclusions: {} });
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
         if (isStale(requestId)) return;
         console.error('Error fetching heatmap data:', err);
         setError(err.message);

@@ -69,11 +69,12 @@ export function PriceCompressionChart({ height = 380 }) {
   const isInitialLoad = useRef(true);
 
   // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale } = useStaleRequestGuard();
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Fetch data when filters or drill level change
   useEffect(() => {
     const requestId = startRequest();
+    const signal = getSignal();
 
     const fetchData = async () => {
       if (isInitialLoad.current) {
@@ -90,7 +91,7 @@ export function PriceCompressionChart({ height = 380 }) {
           metrics: 'median_psf,count'
         }, { excludeHighlight: true });
 
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
         const rawData = response.data.data || [];
         const transformed = transformData(rawData, timeGrouping);
 
@@ -100,6 +101,8 @@ export function PriceCompressionChart({ height = 380 }) {
         setData(transformed);
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
         if (isStale(requestId)) return;
         console.error('Error fetching compression data:', err);
         setError(err.message);

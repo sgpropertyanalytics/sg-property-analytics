@@ -53,11 +53,12 @@ export function MedianPsfTrendChart({ height = 300 }) {
   const isInitialLoad = useRef(true);
 
   // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale } = useStaleRequestGuard();
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Fetch data when filters change
   useEffect(() => {
     const requestId = startRequest();
+    const signal = getSignal();
 
     const fetchData = async () => {
       if (isInitialLoad.current) {
@@ -75,7 +76,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
           metrics: 'median_psf,count'
         }, { excludeHighlight: true });
 
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
         const rawData = response.data.data || [];
 
         // Transform data: group by time period with CCR/RCR/OCR breakdown
@@ -132,6 +133,8 @@ export function MedianPsfTrendChart({ height = 300 }) {
         });
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
         if (isStale(requestId)) return;
         console.error('Error fetching median PSF trend data:', err);
         setError(err.message);

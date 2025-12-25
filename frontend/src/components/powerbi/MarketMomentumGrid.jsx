@@ -29,11 +29,12 @@ export function MarketMomentumGrid() {
   const [error, setError] = useState(null);
 
   // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale } = useStaleRequestGuard();
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Fetch data for all districts
   useEffect(() => {
     const requestId = startRequest();
+    const signal = getSignal();
 
     const fetchData = async () => {
       setLoading(true);
@@ -47,7 +48,7 @@ export function MarketMomentumGrid() {
           metrics: 'median_psf,total_value',
         }, { excludeHighlight: true });
 
-        const response = await getAggregate(params);
+        const response = await getAggregate(params, { signal });
         const rawData = response.data?.data || [];
 
         // Ignore stale responses - a newer request has started
@@ -77,6 +78,8 @@ export function MarketMomentumGrid() {
 
         setData(districtData);
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
         if (isStale(requestId)) return;
         console.error('Error fetching market momentum data:', err);
         setError(err.message);

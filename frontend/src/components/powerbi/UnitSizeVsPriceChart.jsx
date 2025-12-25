@@ -54,7 +54,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   const isInitialLoad = useRef(true);
 
   // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale } = useStaleRequestGuard();
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Handle refresh button click - generates random seed for new sample
   const handleRefresh = () => {
@@ -81,6 +81,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   // Fetch scatter data
   useEffect(() => {
     const requestId = startRequest();
+    const signal = getSignal();
 
     const fetchData = async () => {
       if (isInitialLoad.current) {
@@ -107,7 +108,8 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
 
         // Call the scatter-sample endpoint
         const response = await apiClient.get('/scatter-sample', {
-          params: requestParams
+          params: requestParams,
+          signal
         });
 
         // Ignore stale responses - a newer request has started
@@ -117,6 +119,8 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         setMeta(response.data.meta || { sample_size: 0, total_count: 0 });
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore abort errors - expected when request is cancelled
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
         if (isStale(requestId)) return;
         console.error('Error fetching scatter data:', err);
         setError(err.message);
