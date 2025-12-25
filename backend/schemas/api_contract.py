@@ -733,3 +733,273 @@ def serialize_filter_options(
         })
 
     return result
+
+
+# =============================================================================
+# DASHBOARD PANEL SERIALIZATION
+# =============================================================================
+
+class DashboardFields:
+    """Field names for dashboard API response (camelCase for v2)."""
+    # Time series / aggregate fields
+    PERIOD = 'period'
+    COUNT = 'count'
+    AVG_PSF = 'avgPsf'              # v1: avg_psf
+    MEDIAN_PSF = 'medianPsf'        # v1: median_psf
+    TOTAL_VALUE = 'totalValue'      # v1: total_value
+    AVG_PRICE = 'avgPrice'          # v1: avg_price
+
+    # Location fields
+    LOCATION = 'location'
+
+    # Bedroom mix fields
+    BEDROOM_COUNT = 'bedroomCount'  # v1: bedroom
+    SALE_TYPE = 'saleType'          # v1: sale_type
+
+    # Summary fields
+    TOTAL_COUNT = 'totalCount'      # v1: total_count
+    MEDIAN_PRICE = 'medianPrice'    # v1: median_price
+    DATE_MIN = 'dateMin'            # v1: date_min
+    DATE_MAX = 'dateMax'            # v1: date_max
+    PSF_RANGE = 'psfRange'          # v1: psf_range
+    PRICE_RANGE = 'priceRange'      # v1: price_range
+
+
+def serialize_time_series_panel(data: list, include_deprecated: bool = True) -> list:
+    """Serialize time_series panel data to v2 schema.
+
+    v1 format: { period, count, avg_psf, median_psf, total_value, avg_price }
+    v2 format: { period, count, avgPsf, medianPsf, totalValue, avgPrice }
+    """
+    result = []
+    for row in data:
+        v2_row = {
+            DashboardFields.PERIOD: row.get('period'),
+            DashboardFields.COUNT: row.get('count'),
+            DashboardFields.AVG_PSF: row.get('avg_psf'),
+            DashboardFields.MEDIAN_PSF: row.get('median_psf'),
+            DashboardFields.TOTAL_VALUE: row.get('total_value'),
+            DashboardFields.AVG_PRICE: row.get('avg_price'),
+        }
+        if include_deprecated:
+            v2_row.update({
+                'avg_psf': row.get('avg_psf'),
+                'median_psf': row.get('median_psf'),
+                'total_value': row.get('total_value'),
+                'avg_price': row.get('avg_price'),
+            })
+        result.append(v2_row)
+    return result
+
+
+def serialize_volume_by_location_panel(data: list, include_deprecated: bool = True) -> list:
+    """Serialize volume_by_location panel data to v2 schema.
+
+    v1 format: { location, count, total_value, avg_psf }
+    v2 format: { location, count, totalValue, avgPsf }
+    """
+    result = []
+    for row in data:
+        v2_row = {
+            DashboardFields.LOCATION: row.get('location'),
+            DashboardFields.COUNT: row.get('count'),
+            DashboardFields.TOTAL_VALUE: row.get('total_value'),
+            DashboardFields.AVG_PSF: row.get('avg_psf'),
+        }
+        if include_deprecated:
+            v2_row.update({
+                'total_value': row.get('total_value'),
+                'avg_psf': row.get('avg_psf'),
+            })
+        result.append(v2_row)
+    return result
+
+
+def serialize_price_histogram_panel(data: dict, include_deprecated: bool = True) -> dict:
+    """Serialize price_histogram panel data to v2 schema.
+
+    Histogram structure is complex - keep bins as-is, transform stats fields.
+    """
+    if not data or 'error' in data:
+        return data
+
+    result = {
+        'bins': data.get('bins', []),
+        'percentiles': data.get('percentiles', {}),
+    }
+
+    # Transform stats if present
+    stats = data.get('stats', {})
+    if stats:
+        result['stats'] = {
+            DashboardFields.AVG_PSF: stats.get('avg_psf'),
+            DashboardFields.COUNT: stats.get('count'),
+        }
+        if include_deprecated:
+            result['stats']['avg_psf'] = stats.get('avg_psf')
+            result['stats']['count'] = stats.get('count')
+
+    # Pass through other fields
+    for key in ['range', 'effective_range', 'excluded_tail_count']:
+        if key in data:
+            result[key] = data[key]
+
+    return result
+
+
+def serialize_bedroom_mix_panel(data: list, include_deprecated: bool = True) -> list:
+    """Serialize bedroom_mix panel data to v2 schema.
+
+    v1 format: { period, bedroom, sale_type, count }
+    v2 format: { period, bedroomCount, saleType, count }
+
+    sale_type is transformed to lowercase enum (New Sale → new_sale)
+    """
+    result = []
+    for row in data:
+        sale_type_v2 = SaleType.from_db(row.get('sale_type'))
+        v2_row = {
+            DashboardFields.PERIOD: row.get('period'),
+            DashboardFields.BEDROOM_COUNT: row.get('bedroom'),
+            DashboardFields.SALE_TYPE: sale_type_v2,
+            DashboardFields.COUNT: row.get('count'),
+        }
+        if include_deprecated:
+            v2_row.update({
+                'bedroom': row.get('bedroom'),
+                'sale_type': row.get('sale_type'),  # Original DB value
+            })
+        result.append(v2_row)
+    return result
+
+
+def serialize_sale_type_breakdown_panel(data: list, include_deprecated: bool = True) -> list:
+    """Serialize sale_type_breakdown panel data to v2 schema.
+
+    v1 format: { period, sale_type, count, total_value }
+    v2 format: { period, saleType, count, totalValue }
+
+    sale_type is transformed to lowercase enum (New Sale → new_sale)
+    """
+    result = []
+    for row in data:
+        sale_type_v2 = SaleType.from_db(row.get('sale_type'))
+        v2_row = {
+            DashboardFields.PERIOD: row.get('period'),
+            DashboardFields.SALE_TYPE: sale_type_v2,
+            DashboardFields.COUNT: row.get('count'),
+            DashboardFields.TOTAL_VALUE: row.get('total_value'),
+        }
+        if include_deprecated:
+            v2_row.update({
+                'sale_type': row.get('sale_type'),  # Original DB value
+                'total_value': row.get('total_value'),
+            })
+        result.append(v2_row)
+    return result
+
+
+def serialize_summary_panel(data: dict, include_deprecated: bool = True) -> dict:
+    """Serialize summary panel data to v2 schema.
+
+    v1 format: { total_count, avg_psf, median_psf, avg_price, median_price,
+                 total_value, date_min, date_max, psf_range, price_range }
+    v2 format: { totalCount, avgPsf, medianPsf, avgPrice, medianPrice,
+                 totalValue, dateMin, dateMax, psfRange, priceRange }
+    """
+    if not data or 'error' in data:
+        return data
+
+    result = {
+        DashboardFields.TOTAL_COUNT: data.get('total_count', 0),
+        DashboardFields.AVG_PSF: data.get('avg_psf'),
+        DashboardFields.MEDIAN_PSF: data.get('median_psf'),
+        DashboardFields.AVG_PRICE: data.get('avg_price'),
+        DashboardFields.MEDIAN_PRICE: data.get('median_price'),
+        DashboardFields.TOTAL_VALUE: data.get('total_value', 0),
+        DashboardFields.DATE_MIN: data.get('date_min'),
+        DashboardFields.DATE_MAX: data.get('date_max'),
+        DashboardFields.PSF_RANGE: data.get('psf_range'),
+        DashboardFields.PRICE_RANGE: data.get('price_range'),
+    }
+
+    if include_deprecated:
+        result.update({
+            'total_count': data.get('total_count', 0),
+            'avg_psf': data.get('avg_psf'),
+            'median_psf': data.get('median_psf'),
+            'avg_price': data.get('avg_price'),
+            'median_price': data.get('median_price'),
+            'total_value': data.get('total_value', 0),
+            'date_min': data.get('date_min'),
+            'date_max': data.get('date_max'),
+            'psf_range': data.get('psf_range'),
+            'price_range': data.get('price_range'),
+        })
+
+    return result
+
+
+# Panel serializer registry
+_DASHBOARD_PANEL_SERIALIZERS = {
+    'time_series': serialize_time_series_panel,
+    'volume_by_location': serialize_volume_by_location_panel,
+    'price_histogram': serialize_price_histogram_panel,
+    'bedroom_mix': serialize_bedroom_mix_panel,
+    'sale_type_breakdown': serialize_sale_type_breakdown_panel,
+    'summary': serialize_summary_panel,
+}
+
+
+def serialize_dashboard_panel(panel_name: str, data: Any, include_deprecated: bool = True) -> Any:
+    """Serialize a single dashboard panel to v2 schema.
+
+    Args:
+        panel_name: Name of the panel (e.g., 'time_series', 'summary')
+        data: Raw panel data from dashboard service
+        include_deprecated: If True, include v1 snake_case fields
+
+    Returns:
+        Serialized panel data
+    """
+    serializer = _DASHBOARD_PANEL_SERIALIZERS.get(panel_name)
+    if serializer:
+        return serializer(data, include_deprecated=include_deprecated)
+    # Unknown panel - return as-is
+    return data
+
+
+def serialize_dashboard_response(
+    data: Dict[str, Any],
+    meta: Dict[str, Any],
+    include_deprecated: bool = True
+) -> Dict[str, Any]:
+    """Serialize full dashboard response to v2 schema.
+
+    Args:
+        data: Dict of panel_name → panel_data
+        meta: Metadata dict from dashboard service
+        include_deprecated: If True, include v1 snake_case fields
+
+    Returns:
+        Complete response dict with serialized panels and meta
+    """
+    serialized_data = {}
+    for panel_name, panel_data in data.items():
+        if panel_data is None or (isinstance(panel_data, dict) and 'error' in panel_data):
+            serialized_data[panel_name] = panel_data
+        else:
+            serialized_data[panel_name] = serialize_dashboard_panel(
+                panel_name, panel_data, include_deprecated=include_deprecated
+            )
+
+    # Add API contract version to meta
+    meta_v2 = {
+        **meta,
+        'apiContractVersion': API_CONTRACT_VERSION,
+    }
+
+    return {
+        'data': serialized_data,
+        'meta': meta_v2,
+    }

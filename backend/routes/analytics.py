@@ -73,10 +73,15 @@ def dashboard():
       GET /api/dashboard?segment=CCR&panels=time_series,summary
     """
     from services.dashboard_service import get_dashboard_data, ValidationError, get_cache_stats
+    from schemas.api_contract import serialize_dashboard_response
 
     start = time.time()
 
     try:
+        # Check if client requests v2 schema
+        schema_version = request.args.get('schema', 'v1')
+        include_deprecated = (schema_version != 'v2')
+
         # Parse parameters from GET query string or POST JSON body
         if request.method == 'POST' and request.is_json:
             body = request.get_json()
@@ -110,9 +115,15 @@ def dashboard():
                 segments = [s.strip().upper() for s in request.args.get('segment').split(',') if s.strip()]
                 filters['segments'] = segments
 
-            # Sale type filter
-            if request.args.get('sale_type'):
-                filters['sale_type'] = request.args.get('sale_type')
+            # Sale type filter (v2: saleType, v1: sale_type)
+            sale_type = request.args.get('saleType') or request.args.get('sale_type')
+            if sale_type:
+                # Convert v2 enum to DB value if needed
+                from schemas.api_contract import SaleType
+                if sale_type in SaleType.ALL:
+                    filters['sale_type'] = SaleType.to_db(sale_type)
+                else:
+                    filters['sale_type'] = sale_type
 
             # PSF range
             if request.args.get('psf_min'):
@@ -171,7 +182,7 @@ def dashboard():
         )
 
         # SECURITY: Mask project names in volume_by_location for free users
-        # when location_grain=project
+        # when location_grain=project (apply before serialization)
         from utils.subscription import is_premium_user
         if not is_premium_user() and options.get('location_grain') == 'project':
             if 'volume_by_location' in result.get('data', {}):
@@ -181,10 +192,17 @@ def dashboard():
                 # Add flag so frontend knows data is masked
                 result['meta']['data_masked'] = True
 
+        # Serialize to v2 schema (with backwards compat for v1)
+        serialized = serialize_dashboard_response(
+            data=result.get('data', {}),
+            meta=result.get('meta', {}),
+            include_deprecated=include_deprecated
+        )
+
         elapsed = time.time() - start
         print(f"GET /api/dashboard took: {elapsed:.4f} seconds (cache_hit: {result['meta'].get('cache_hit', False)})")
 
-        return jsonify(result)
+        return jsonify(serialized)
 
     except ValidationError as e:
         elapsed = time.time() - start

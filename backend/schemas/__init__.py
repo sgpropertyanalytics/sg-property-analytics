@@ -9,11 +9,14 @@ from .api_contract import (
     TransactionFields,
     AggregateFields,
     FilterOptionsFields,
+    DashboardFields,
     serialize_transaction,
     serialize_transaction_teaser,
     serialize_aggregate_row,
     serialize_aggregate_response,
     serialize_filter_options,
+    serialize_dashboard_panel,
+    serialize_dashboard_response,
     parse_filter_params,
 )
 
@@ -27,10 +30,13 @@ __all__ = [
     'TransactionFields',
     'AggregateFields',
     'FilterOptionsFields',
+    'DashboardFields',
     'serialize_transaction',
     'serialize_transaction_teaser',
     'serialize_aggregate_row',
     'serialize_aggregate_response',
     'serialize_filter_options',
+    'serialize_dashboard_panel',
+    'serialize_dashboard_response',
     'parse_filter_params',
 ]

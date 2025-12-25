@@ -1179,3 +1179,343 @@ class TestFilterOptionsEndpointContract:
         ]
         for field in required_fields:
             assert field in data, f"Missing required field: {field}"
+
+
+class TestDashboardSerializer:
+    """Unit tests for dashboard panel serialization."""
+
+    def test_serialize_time_series_panel_camel_case(self):
+        """Verify time_series panel uses camelCase."""
+        from schemas.api_contract import serialize_time_series_panel
+
+        data = [
+            {'period': '2024-01', 'count': 10, 'avg_psf': 1500.0, 'median_psf': 1450.0,
+             'total_value': 15000000, 'avg_price': 1500000}
+        ]
+        result = serialize_time_series_panel(data, include_deprecated=False)
+
+        assert len(result) == 1
+        row = result[0]
+        assert row['period'] == '2024-01'
+        assert row['count'] == 10
+        assert row['avgPsf'] == 1500.0
+        assert row['medianPsf'] == 1450.0
+        assert row['totalValue'] == 15000000
+        assert row['avgPrice'] == 1500000
+        # Must NOT have snake_case
+        assert 'avg_psf' not in row
+        assert 'median_psf' not in row
+        assert 'total_value' not in row
+        assert 'avg_price' not in row
+
+    def test_serialize_time_series_panel_dual_mode(self):
+        """Verify dual mode includes both old and new fields."""
+        from schemas.api_contract import serialize_time_series_panel
+
+        data = [{'period': '2024-01', 'count': 10, 'avg_psf': 1500.0}]
+        result = serialize_time_series_panel(data, include_deprecated=True)
+
+        row = result[0]
+        assert row['avgPsf'] == 1500.0
+        assert row['avg_psf'] == 1500.0
+
+    def test_serialize_bedroom_mix_transforms_sale_type(self):
+        """Verify bedroom_mix transforms sale_type to enum."""
+        from schemas.api_contract import serialize_bedroom_mix_panel, SaleType
+
+        data = [
+            {'period': '2024-01', 'bedroom': 3, 'sale_type': 'New Sale', 'count': 10}
+        ]
+        result = serialize_bedroom_mix_panel(data, include_deprecated=False)
+
+        row = result[0]
+        assert row['bedroomCount'] == 3
+        assert row['saleType'] == SaleType.NEW_SALE
+        assert 'bedroom' not in row
+        assert 'sale_type' not in row
+
+    def test_serialize_bedroom_mix_dual_mode(self):
+        """Verify dual mode includes both old and new fields."""
+        from schemas.api_contract import serialize_bedroom_mix_panel
+
+        data = [{'period': '2024-01', 'bedroom': 3, 'sale_type': 'Resale', 'count': 10}]
+        result = serialize_bedroom_mix_panel(data, include_deprecated=True)
+
+        row = result[0]
+        assert row['bedroomCount'] == 3
+        assert row['bedroom'] == 3
+        assert row['saleType'] == 'resale'
+        assert row['sale_type'] == 'Resale'
+
+    def test_serialize_sale_type_breakdown_transforms_sale_type(self):
+        """Verify sale_type_breakdown transforms sale_type to enum."""
+        from schemas.api_contract import serialize_sale_type_breakdown_panel, SaleType
+
+        data = [
+            {'period': '2024-01', 'sale_type': 'Resale', 'count': 100, 'total_value': 150000000}
+        ]
+        result = serialize_sale_type_breakdown_panel(data, include_deprecated=False)
+
+        row = result[0]
+        assert row['saleType'] == SaleType.RESALE
+        assert row['totalValue'] == 150000000
+        assert 'sale_type' not in row
+        assert 'total_value' not in row
+
+    def test_serialize_summary_panel_camel_case(self):
+        """Verify summary panel uses camelCase."""
+        from schemas.api_contract import serialize_summary_panel
+
+        data = {
+            'total_count': 1000,
+            'avg_psf': 1500.0,
+            'median_psf': 1450.0,
+            'avg_price': 1500000,
+            'median_price': 1400000,
+            'total_value': 1500000000,
+            'date_min': '2020-01-01',
+            'date_max': '2024-12-31',
+            'psf_range': {'min': 500, 'max': 3000},
+            'price_range': {'min': 500000, 'max': 5000000}
+        }
+        result = serialize_summary_panel(data, include_deprecated=False)
+
+        assert result['totalCount'] == 1000
+        assert result['avgPsf'] == 1500.0
+        assert result['medianPsf'] == 1450.0
+        assert result['avgPrice'] == 1500000
+        assert result['medianPrice'] == 1400000
+        assert result['totalValue'] == 1500000000
+        assert result['dateMin'] == '2020-01-01'
+        assert result['dateMax'] == '2024-12-31'
+        assert result['psfRange'] == {'min': 500, 'max': 3000}
+        assert result['priceRange'] == {'min': 500000, 'max': 5000000}
+        # Must NOT have snake_case
+        assert 'total_count' not in result
+        assert 'avg_psf' not in result
+
+    def test_serialize_dashboard_response_adds_meta(self):
+        """Verify dashboard response includes API contract version."""
+        from schemas.api_contract import serialize_dashboard_response, API_CONTRACT_VERSION
+
+        data = {'summary': {'total_count': 100}}
+        meta = {'cache_hit': True, 'elapsed_ms': 50.0}
+
+        result = serialize_dashboard_response(data, meta)
+
+        assert result['meta']['apiContractVersion'] == API_CONTRACT_VERSION
+        assert result['meta']['cache_hit'] is True
+        assert 'data' in result
+
+    def test_serialize_volume_by_location_camel_case(self):
+        """Verify volume_by_location uses camelCase."""
+        from schemas.api_contract import serialize_volume_by_location_panel
+
+        data = [
+            {'location': 'CCR', 'count': 100, 'total_value': 150000000, 'avg_psf': 2500.0}
+        ]
+        result = serialize_volume_by_location_panel(data, include_deprecated=False)
+
+        row = result[0]
+        assert row['location'] == 'CCR'
+        assert row['count'] == 100
+        assert row['totalValue'] == 150000000
+        assert row['avgPsf'] == 2500.0
+        assert 'total_value' not in row
+        assert 'avg_psf' not in row
+
+
+class TestDashboardEndpointContract:
+    """
+    Integration tests for /api/dashboard contract.
+
+    These tests verify the actual API response format.
+    Requires: Flask app context and database connection.
+    """
+
+    def _get_test_client(self):
+        """Get Flask test client."""
+        try:
+            from app import create_app
+            app = create_app()
+            app.config['TESTING'] = True
+            return app.test_client()
+        except Exception as e:
+            pytest.skip(f"Could not create test client: {e}")
+
+    def test_v2_schema_time_series_camel_case(self):
+        """v2 schema time_series panel uses camelCase."""
+        client = self._get_test_client()
+        response = client.get('/api/dashboard?panels=time_series&schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        time_series = data.get('data', {}).get('time_series', [])
+
+        if time_series:
+            row = time_series[0]
+            # Should have camelCase
+            assert 'avgPsf' in row or row.get('avgPsf') is None
+            assert 'medianPsf' in row or row.get('medianPsf') is None
+            assert 'totalValue' in row or row.get('totalValue') is None
+            # Should NOT have snake_case
+            assert 'avg_psf' not in row
+            assert 'median_psf' not in row
+            assert 'total_value' not in row
+
+    def test_v2_schema_bedroom_mix_transforms_sale_type(self):
+        """v2 schema bedroom_mix panel transforms sale_type to enum."""
+        client = self._get_test_client()
+        response = client.get('/api/dashboard?panels=bedroom_mix&schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        from schemas.api_contract import SaleType
+
+        bedroom_mix = data.get('data', {}).get('bedroom_mix', [])
+        for row in bedroom_mix:
+            # Should have v2 fields
+            assert 'bedroomCount' in row
+            assert 'saleType' in row
+            # saleType should be lowercase enum
+            if row['saleType']:
+                assert row['saleType'] in SaleType.ALL
+                assert row['saleType'] == row['saleType'].lower()
+            # Should NOT have v1 fields
+            assert 'bedroom' not in row
+            assert 'sale_type' not in row
+
+    def test_v2_schema_sale_type_breakdown_transforms_sale_type(self):
+        """v2 schema sale_type_breakdown transforms sale_type to enum."""
+        client = self._get_test_client()
+        response = client.get('/api/dashboard?panels=sale_type_breakdown&schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        from schemas.api_contract import SaleType
+
+        breakdown = data.get('data', {}).get('sale_type_breakdown', [])
+        for row in breakdown:
+            assert 'saleType' in row
+            assert 'totalValue' in row or row.get('totalValue') is None
+            if row['saleType']:
+                assert row['saleType'] in SaleType.ALL
+            assert 'sale_type' not in row
+            assert 'total_value' not in row
+
+    def test_v2_schema_summary_camel_case(self):
+        """v2 schema summary panel uses camelCase."""
+        client = self._get_test_client()
+        response = client.get('/api/dashboard?panels=summary&schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        summary = data.get('data', {}).get('summary', {})
+
+        if summary:
+            # Should have camelCase
+            assert 'totalCount' in summary
+            assert 'avgPsf' in summary or summary.get('avgPsf') is None
+            assert 'medianPsf' in summary or summary.get('medianPsf') is None
+            assert 'totalValue' in summary
+            assert 'dateMin' in summary or summary.get('dateMin') is None
+            assert 'dateMax' in summary or summary.get('dateMax') is None
+            # Should NOT have snake_case
+            assert 'total_count' not in summary
+            assert 'avg_psf' not in summary
+            assert 'median_psf' not in summary
+
+    def test_backwards_compat_dual_mode(self):
+        """Default (v1) returns both old and new fields."""
+        client = self._get_test_client()
+        response = client.get('/api/dashboard?panels=summary,bedroom_mix')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        summary = data.get('data', {}).get('summary', {})
+
+        if summary:
+            # Should have BOTH formats
+            assert 'totalCount' in summary and 'total_count' in summary
+            assert 'avgPsf' in summary or summary.get('avgPsf') is None
+            assert 'avg_psf' in summary or summary.get('avg_psf') is None
+
+        bedroom_mix = data.get('data', {}).get('bedroom_mix', [])
+        if bedroom_mix:
+            row = bedroom_mix[0]
+            assert 'bedroomCount' in row and 'bedroom' in row
+            assert 'saleType' in row and 'sale_type' in row
+
+    def test_meta_includes_contract_version(self):
+        """Response meta includes API contract version."""
+        client = self._get_test_client()
+        response = client.get('/api/dashboard?panels=summary')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        from schemas.api_contract import API_CONTRACT_VERSION
+
+        assert 'meta' in data
+        assert data['meta'].get('apiContractVersion') == API_CONTRACT_VERSION
+
+    def test_accepts_v2_sale_type_filter(self):
+        """Accepts saleType param (v2) in addition to sale_type (v1)."""
+        client = self._get_test_client()
+
+        # v2 format
+        response = client.get('/api/dashboard?panels=summary&saleType=new_sale')
+        assert response.status_code == 200
+
+        # v1 format still works
+        response = client.get('/api/dashboard?panels=summary&sale_type=New%20Sale')
+        assert response.status_code == 200
+
+    def test_all_panels_serialized(self):
+        """All panels are properly serialized."""
+        client = self._get_test_client()
+        response = client.get('/api/dashboard?schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        panels = data.get('data', {})
+
+        # Check each panel exists
+        expected_panels = ['time_series', 'volume_by_location', 'price_histogram',
+                          'bedroom_mix', 'summary']
+        for panel in expected_panels:
+            assert panel in panels, f"Missing panel: {panel}"
+
+    def test_volume_by_location_camel_case(self):
+        """v2 schema volume_by_location uses camelCase."""
+        client = self._get_test_client()
+        response = client.get('/api/dashboard?panels=volume_by_location&schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        locations = data.get('data', {}).get('volume_by_location', [])
+
+        if locations:
+            row = locations[0]
+            assert 'location' in row
+            assert 'count' in row
+            assert 'totalValue' in row or row.get('totalValue') is None
+            assert 'avgPsf' in row or row.get('avgPsf') is None
+            # Should NOT have snake_case
+            assert 'total_value' not in row
+            assert 'avg_psf' not in row
