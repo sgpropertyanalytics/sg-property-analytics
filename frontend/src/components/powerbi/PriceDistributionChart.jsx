@@ -328,10 +328,17 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
     },
   };
 
+  // Card layout contract: flex column with fixed total height
+  // Header/Note/Footer are shrink-0, chart slot is flex-1 min-h-0
+  const cardHeight = height + 190; // height prop for chart + ~190px for header(with stats)/note/footer
+
   return (
-    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}>
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
+    <div
+      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}
+      style={{ height: cardHeight }}
+    >
+      {/* Header - shrink-0 */}
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
@@ -383,25 +390,30 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         </div>
       </div>
 
-      {/* How to Interpret - Static explanations for each stat */}
-      <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-          <div><span className="font-semibold text-[#213448]">Median</span> — The typical transaction price.</div>
-          <div><span className="font-semibold text-[#213448]">Q1–Q3</span> — Where the middle 50% of homes sell.</div>
-          <div><span className="font-semibold text-[#213448]">IQR</span> — How wide prices vary within the market.</div>
-          <div><span className="font-semibold text-[#213448]">Mode</span> — The most common price range.</div>
-        </div>
-      </KeyInsightBox>
-
-      {/* Chart */}
-      <div className="p-4" style={{ height }}>
-        <PreviewChartOverlay chartRef={chartRef}>
-          <Bar key={showFullRange ? 'full' : 'capped'} ref={chartRef} data={chartData} options={options} />
-        </PreviewChartOverlay>
+      {/* How to Interpret - shrink-0 */}
+      <div className="shrink-0">
+        <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+            <div><span className="font-semibold text-[#213448]">Median</span> — The typical transaction price.</div>
+            <div><span className="font-semibold text-[#213448]">Q1–Q3</span> — Where the middle 50% of homes sell.</div>
+            <div><span className="font-semibold text-[#213448]">IQR</span> — How wide prices vary within the market.</div>
+            <div><span className="font-semibold text-[#213448]">Mode</span> — The most common price range.</div>
+          </div>
+        </KeyInsightBox>
       </div>
 
-      {/* Footer with context info */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
+      {/* Chart slot - flex-1 min-h-0 so it takes remaining height */}
+      <div className="flex-1 min-h-0 px-4 pb-3">
+        {/* Inner wrapper - h-full w-full relative so Chart.js can fill */}
+        <div className="h-full w-full relative">
+          <PreviewChartOverlay chartRef={chartRef}>
+            <Bar key={showFullRange ? 'full' : 'capped'} ref={chartRef} data={chartData} options={options} />
+          </PreviewChartOverlay>
+        </div>
+      </div>
+
+      {/* Footer - shrink-0 */}
+      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] shrink-0">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span>
             {displayCount.toLocaleString()} transactions

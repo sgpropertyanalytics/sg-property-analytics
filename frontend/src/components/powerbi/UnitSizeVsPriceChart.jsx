@@ -283,10 +283,17 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     );
   }
 
+  // Card layout contract: flex column with fixed total height
+  // Header/Note/Footer are shrink-0, chart slot is flex-1 min-h-0
+  const cardHeight = height + 140; // height prop for chart + ~140px for header/note/footer
+
   return (
-    <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden ${updating ? 'opacity-70' : ''}`}>
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
+    <div
+      className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col ${updating ? 'opacity-70' : ''}`}
+      style={{ height: cardHeight }}
+    >
+      {/* Header - shrink-0 */}
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-[#213448]">Unit Size vs Price</h3>
@@ -309,20 +316,25 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         </p>
       </div>
 
-      {/* Sampling Note - KeyInsightBox style */}
-      <KeyInsightBox variant="info" compact title="Sampling Note">
-        Stable sample (n = 2,000) balanced across CCR / RCR / OCR. ~2–3% margin of error (95% CI) for macro-level trends.
-      </KeyInsightBox>
-
-      {/* Chart */}
-      <div className="p-4" style={{ height }}>
-        <PreviewChartOverlay chartRef={chartRef}>
-          <Scatter ref={chartRef} data={chartData} options={options} />
-        </PreviewChartOverlay>
+      {/* Sampling Note - shrink-0 */}
+      <div className="shrink-0">
+        <KeyInsightBox variant="info" compact title="Sampling Note">
+          Stable sample (n = 2,000) balanced across CCR / RCR / OCR. ~2–3% margin of error (95% CI) for macro-level trends.
+        </KeyInsightBox>
       </div>
 
-      {/* Footer - sample info (matches PriceDistribution footer) */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
+      {/* Chart slot - flex-1 min-h-0 so it takes remaining height */}
+      <div className="flex-1 min-h-0 px-4 pb-3">
+        {/* Inner wrapper - h-full w-full relative so Chart.js can fill */}
+        <div className="h-full w-full relative">
+          <PreviewChartOverlay chartRef={chartRef}>
+            <Scatter ref={chartRef} data={chartData} options={options} />
+          </PreviewChartOverlay>
+        </div>
+      </div>
+
+      {/* Footer - shrink-0 */}
+      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792] shrink-0">
         <div className="flex items-center justify-between">
           <span>{meta.sample_size.toLocaleString()} of {meta.total_count.toLocaleString()} transactions sampled</span>
           <span className="text-[#94B4C1]">Click refresh ↻ for new sample</span>
