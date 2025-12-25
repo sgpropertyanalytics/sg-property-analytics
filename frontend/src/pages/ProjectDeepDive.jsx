@@ -10,7 +10,7 @@
  * - Gating warnings for special cases
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { getResaleProjects, getProjectExitQueue, getProjectPriceBands } from '../api/client';
+import { getProjectNames, getProjectExitQueue, getProjectPriceBands } from '../api/client';
 import ExitRiskDashboard from '../components/powerbi/ExitRiskDashboard';
 import ProjectFundamentalsPanel from '../components/powerbi/ProjectFundamentalsPanel';
 import ResaleMetricsCards from '../components/powerbi/ResaleMetricsCards';
@@ -43,7 +43,7 @@ export function ProjectDeepDiveContent() {
     const fetchProjects = async () => {
       setProjectOptionsLoading(true);
       try {
-        const response = await getResaleProjects();
+        const response = await getProjectNames();
         setProjectOptions(response.data.projects || []);
       } catch (err) {
         console.error('Failed to load project options:', err);
@@ -286,13 +286,7 @@ export function ProjectDeepDiveContent() {
                         <span className="truncate">{p.name}</span>
                         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                           <span className="text-xs text-[#94B4C1]">{p.district}</span>
-                          <span className="text-xs text-[#94B4C1]">{p.transaction_count || p.resale_count} txns</span>
-                          {p.resale_count > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded">{p.resale_count} resales</span>
-                          )}
-                          {!p.has_total_units && (
-                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">partial</span>
-                          )}
+                          <span className="text-[10px] px-1.5 py-0.5 bg-[#EAE0CF] text-[#547792] rounded">{p.market_segment}</span>
                         </div>
                       </button>
                     ))
