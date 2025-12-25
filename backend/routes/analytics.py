@@ -3114,8 +3114,9 @@ def get_project_exit_queue(project_name):
 
         current_year = datetime.now().year
         current_date = datetime.now().date()
-        twelve_months_ago = current_date - timedelta(days=365)
-        twenty_four_months_ago = current_date - timedelta(days=730)
+        # Convert to ISO string format for SQL comparison (contract_date is varchar)
+        twelve_months_ago = (current_date - timedelta(days=365)).isoformat()
+        twenty_four_months_ago = (current_date - timedelta(days=730)).isoformat()
 
         # Get unit data from CSV
         unit_data = get_units_for_project(project_name)
