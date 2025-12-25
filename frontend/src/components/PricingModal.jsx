@@ -84,7 +84,7 @@ export function PricingModal({ isOpen, onClose }) {
 
   // Outcome-focused statements (what users achieve, not features)
   const outcomes = [
-    'Check whether you over or under paid relatively',
+    'Check whether you over/under paid relatively',
     'Track resale benchmarks within your project',
     'Get alerts when similar units transact',
     'Validate exit plans with market timing cycles',
@@ -128,7 +128,7 @@ export function PricingModal({ isOpen, onClose }) {
 
             {/* LEFT: Quarterly (Vertically centered, resting on page) */}
             <div
-              className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1] flex flex-col min-h-[280px]"
+              className="flex-1 bg-white rounded-xl p-6 border border-[#94B4C1] flex flex-col min-h-[320px]"
               style={{ boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}
             >
               <div className="flex-1 flex flex-col justify-center">
@@ -156,14 +156,12 @@ export function PricingModal({ isOpen, onClose }) {
               </button>
             </div>
 
-            {/* RIGHT: Annual (Subtly elevated with soft shadow) */}
+            {/* RIGHT: Annual (Subtly elevated with soft shadow - ~5-10% taller) */}
             <div
               className="flex-1 bg-[#213448] rounded-xl flex flex-col relative"
               style={{
-                boxShadow: '0 20px 40px -12px rgba(0,0,0,0.2)',
+                boxShadow: '0 16px 32px -8px rgba(0,0,0,0.18)',
                 padding: '1.5rem',
-                marginTop: '-6px',
-                marginBottom: '-6px',
               }}
             >
               {/* SAVE 40% Badge */}

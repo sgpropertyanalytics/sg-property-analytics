@@ -95,7 +95,7 @@ export default function Pricing() {
 
           {/* Quarterly Card - White (Vertically centered, resting on page) */}
           <div
-            className="flex-1 bg-white rounded-2xl p-8 border border-[#94B4C1]/50 flex flex-col min-h-[320px]"
+            className="flex-1 bg-white rounded-2xl p-8 border border-[#94B4C1]/50 flex flex-col min-h-[380px]"
             style={{ boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}
           >
             <div className="flex-1 flex flex-col justify-center">
@@ -123,14 +123,12 @@ export default function Pricing() {
             </button>
           </div>
 
-          {/* Annual Card - Deep Navy (Subtly elevated with soft shadow) */}
+          {/* Annual Card - Deep Navy (Subtly elevated - ~5-10% taller) */}
           <div
             className="flex-1 bg-[#213448] rounded-2xl relative flex flex-col"
             style={{
-              boxShadow: '0 20px 40px -12px rgba(0,0,0,0.2)',
+              boxShadow: '0 16px 32px -8px rgba(0,0,0,0.18)',
               padding: '2rem',
-              marginTop: '-8px',
-              marginBottom: '-8px',
             }}
           >
             {/* Save 40% Badge */}
@@ -154,7 +152,7 @@ export default function Pricing() {
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Check whether you over or under paid relatively</span>
+                  <span className="text-[#94B4C1]">Check whether you over/under paid relatively</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
