@@ -90,18 +90,21 @@ export default function Pricing() {
           </p>
         </div>
 
-        {/* Pricing Cards - Side by Side, Same height */}
-        <div className="flex flex-col md:flex-row gap-6 items-stretch max-w-2xl mx-auto">
+        {/* Pricing Cards - Annual elevated with pop-out effect, Quarterly centered */}
+        <div className="flex flex-col md:flex-row gap-6 md:items-center max-w-2xl mx-auto">
 
-          {/* Quarterly Card - White (References Annual) */}
-          <div className="flex-1 bg-white rounded-2xl p-8 border-2 border-[#94B4C1]/50 shadow-lg flex flex-col">
-            <div className="flex-1">
+          {/* Quarterly Card - White (Vertically centered, resting on page) */}
+          <div
+            className="flex-1 bg-white rounded-2xl p-8 border border-[#94B4C1]/50 flex flex-col"
+            style={{ boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}
+          >
+            <div className="flex-1 flex flex-col justify-center">
               <h3 className="text-xl font-bold text-[#547792] mb-2">Quarterly</h3>
               <div className="mb-1">
-                <span className="text-4xl font-bold text-[#213448]">$75</span>
-                <span className="text-[#547792] ml-1"> / quarter</span>
+                <span className="text-4xl font-bold text-[#213448]">$25</span>
+                <span className="text-[#547792] ml-1">/mo</span>
               </div>
-              <p className="text-[#547792] text-sm mb-6">Equivalent to $25/mo</p>
+              <p className="text-[#547792] text-sm mb-6">Billed $75 every 3 months</p>
 
               {/* Reference to Annual features */}
               <p className="flex items-start gap-2 text-sm">
@@ -120,8 +123,16 @@ export default function Pricing() {
             </button>
           </div>
 
-          {/* Annual Card - Deep Navy (Full features list) */}
-          <div className="flex-1 bg-[#213448] rounded-2xl p-8 shadow-2xl relative flex flex-col">
+          {/* Annual Card - Deep Navy (Taller, elevated - "Pop-out" effect) */}
+          <div
+            className="flex-1 bg-[#213448] rounded-2xl relative flex flex-col"
+            style={{
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              padding: '2.5rem 2rem 2rem 2rem',
+              marginTop: '-24px',
+              marginBottom: '-24px',
+            }}
+          >
             {/* Save 40% Badge */}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
               <span className="bg-[#94B4C1] text-[#213448] text-xs font-bold px-4 py-1.5 rounded-full shadow-md">
@@ -132,10 +143,10 @@ export default function Pricing() {
             <div className="flex-1 pt-2">
               <h3 className="text-xl font-bold text-[#EAE0CF] mb-2">Annual</h3>
               <div className="mb-1">
-                <span className="text-4xl font-bold text-white">$180</span>
-                <span className="text-[#94B4C1] ml-1"> / year</span>
+                <span className="text-4xl font-bold text-white">$15</span>
+                <span className="text-[#94B4C1] ml-1">/mo</span>
               </div>
-              <p className="text-[#94B4C1] text-sm mb-6">Equivalent to $15/mo · <span className="text-[#EAE0CF]">Save 40%</span></p>
+              <p className="text-[#94B4C1] text-sm mb-6">Billed $180 yearly · <span className="text-[#EAE0CF]">Save 40%</span></p>
 
               {/* Outcomes List (Master List) */}
               <ul className="space-y-3">
@@ -180,7 +191,7 @@ export default function Pricing() {
 
             <button
               onClick={() => handleSelectPlan('annual')}
-              className="w-full py-3 bg-[#EAE0CF] text-[#213448] rounded-xl font-bold hover:bg-white transition-colors mt-6"
+              className="w-full py-3.5 bg-[#EAE0CF] text-[#213448] rounded-xl font-bold hover:bg-white transition-colors mt-6"
             >
               Unlock & Save $120
             </button>
