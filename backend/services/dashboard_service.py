@@ -53,8 +53,9 @@ QUERY_TIMEOUT_SECONDS = 10
 MAX_LOCATION_RESULTS = 50
 
 # Cache configuration
-CACHE_TTL_SECONDS = 300  # 5 minutes
-CACHE_MAX_SIZE = 500
+# Extended TTL for better performance under load (data changes infrequently)
+CACHE_TTL_SECONDS = 600  # 10 minutes (was 5)
+CACHE_MAX_SIZE = 1000    # Increased capacity (was 500)
 
 # District to region mapping - import from centralized constants (SINGLE SOURCE OF TRUTH)
 from constants import (
