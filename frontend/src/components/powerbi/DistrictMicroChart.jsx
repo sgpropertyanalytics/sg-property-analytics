@@ -47,11 +47,35 @@ export function DistrictMicroChart({ district, data, onClick }) {
   const region = getRegionForDistrict(district);
   const lineColor = REGION_COLORS[region] || REGION_COLORS.OCR;
 
-  // Get the most recent median PSF for annotation
-  const latestPsf = useMemo(() => {
-    if (!data || data.length === 0) return null;
-    const last = data[data.length - 1];
-    return last?.medianPsf;
+  // Calculate local min/max and growth metrics
+  const { latestPsf, minPsf, maxPsf, paddedMin, paddedMax, growthPercent } = useMemo(() => {
+    if (!data || data.length === 0) {
+      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null };
+    }
+
+    const psfValues = data.map(d => d.medianPsf).filter(v => v > 0);
+    if (psfValues.length === 0) {
+      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null };
+    }
+
+    const min = Math.min(...psfValues);
+    const max = Math.max(...psfValues);
+    const range = max - min;
+    const padding = range * 0.1; // 10% padding on each side
+
+    // Get first and last valid PSF for growth calculation
+    const firstPsf = data.find(d => d.medianPsf > 0)?.medianPsf;
+    const lastPsf = [...data].reverse().find(d => d.medianPsf > 0)?.medianPsf;
+    const growth = firstPsf && lastPsf ? ((lastPsf - firstPsf) / firstPsf) * 100 : null;
+
+    return {
+      latestPsf: lastPsf,
+      minPsf: min,
+      maxPsf: max,
+      paddedMin: Math.max(0, min - padding),
+      paddedMax: max + padding,
+      growthPercent: growth,
+    };
   }, [data]);
 
   // Format price for display
@@ -61,6 +85,13 @@ export function DistrictMicroChart({ district, data, onClick }) {
       return `$${(value / 1000).toFixed(1)}K`;
     }
     return `$${Math.round(value)}`;
+  };
+
+  // Format growth percentage
+  const formatGrowth = (value) => {
+    if (value === null || value === undefined) return null;
+    const sign = value >= 0 ? '+' : '';
+    return `${sign}${value.toFixed(0)}%`;
   };
 
   // Get short district name (first location)
@@ -104,7 +135,7 @@ export function DistrictMicroChart({ district, data, onClick }) {
     };
   }, [data, lineColor]);
 
-  // Chart options - independent Y-axes, minimal UI
+  // Chart options - LOCAL SCALING with padded min/max
   const options = useMemo(() => ({
     ...BASE_CHART_OPTIONS,
     plugins: {
@@ -134,7 +165,9 @@ export function DistrictMicroChart({ district, data, onClick }) {
       y1: {
         display: false,
         position: 'right',
-        // Independent scaling - each chart uses its own min/max
+        // LOCAL SCALING: Zoom Y-axis to fit this district's specific range
+        min: paddedMin,
+        max: paddedMax,
       },
     },
     onClick: () => {
@@ -148,7 +181,7 @@ export function DistrictMicroChart({ district, data, onClick }) {
         canvas.style.cursor = elements.length > 0 ? 'pointer' : 'default';
       }
     },
-  }), [district, onClick]);
+  }), [district, onClick, paddedMin, paddedMax]);
 
   // Handle empty data state
   if (!data || data.length === 0) {
@@ -164,16 +197,21 @@ export function DistrictMicroChart({ district, data, onClick }) {
     );
   }
 
+  // Determine growth color
+  const growthColor = growthPercent === null ? 'text-[#94B4C1]'
+    : growthPercent >= 0 ? 'text-emerald-600' : 'text-red-500';
+
   return (
     <div className="h-full flex flex-col bg-white rounded border border-[#94B4C1]/50 overflow-hidden hover:border-[#547792] transition-colors">
-      {/* Header with district code and current PSF */}
+      {/* Header with district code and growth KPI */}
       <div className="px-2 py-1.5 border-b border-[#94B4C1]/30 shrink-0 flex items-center justify-between gap-1">
         <span className="text-xs font-semibold text-[#213448] truncate" title={DISTRICT_NAMES[district]}>
           {district}
         </span>
-        {latestPsf && (
-          <span className="text-[10px] font-medium text-[#547792] whitespace-nowrap">
-            {formatPrice(latestPsf)}
+        {/* Prominent Growth KPI */}
+        {growthPercent !== null && (
+          <span className={`text-[11px] font-bold ${growthColor} whitespace-nowrap`}>
+            {formatGrowth(growthPercent)}
           </span>
         )}
       </div>
@@ -183,11 +221,16 @@ export function DistrictMicroChart({ district, data, onClick }) {
         <Chart ref={chartRef} type="bar" data={chartData} options={options} />
       </div>
 
-      {/* Subtle location hint */}
-      <div className="px-2 py-0.5 bg-[#EAE0CF]/20 shrink-0">
-        <span className="text-[9px] text-[#94B4C1] truncate block" title={DISTRICT_NAMES[district]}>
+      {/* Footer with current PSF and location */}
+      <div className="px-2 py-0.5 bg-[#EAE0CF]/20 shrink-0 flex items-center justify-between">
+        <span className="text-[9px] text-[#94B4C1] truncate" title={DISTRICT_NAMES[district]}>
           {shortName}
         </span>
+        {latestPsf && (
+          <span className="text-[9px] font-medium text-[#547792] whitespace-nowrap">
+            {formatPrice(latestPsf)}
+          </span>
+        )}
       </div>
     </div>
   );
