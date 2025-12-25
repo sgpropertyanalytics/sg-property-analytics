@@ -521,9 +521,13 @@ def district_liquidity():
     start = time.time()
 
     # Parse query params
+    from schemas.api_contract import SaleType
+
     period = request.args.get("period", "12m")
     bed_filter = request.args.get("bed", "all")
-    sale_type_filter = request.args.get("sale_type", "all")
+    # Accept both v2 (saleType) and v1 (sale_type) params, normalize via SaleType.to_db()
+    sale_type_param = request.args.get("saleType") or request.args.get("sale_type", "all")
+    sale_type_filter = SaleType.to_db(sale_type_param) if sale_type_param != "all" else "all"
 
     # Calculate date range and months count
     today = datetime.now().date()

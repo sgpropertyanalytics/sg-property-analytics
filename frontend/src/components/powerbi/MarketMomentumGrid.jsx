@@ -3,6 +3,7 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { DistrictMicroChart } from './DistrictMicroChart';
+import { isSaleType } from '../../schemas/apiContract';
 
 // All districts ordered by region: CCR → RCR → OCR
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
@@ -178,7 +179,7 @@ export function MarketMomentumGrid() {
           {/* Data indicator */}
           <div className="flex flex-wrap items-center gap-x-3 md:gap-x-4 gap-y-1 text-[10px]">
             <span className="text-[#547792] font-medium">
-              {filters.saleType === 'Resale' ? 'Resale Only' : filters.saleType === 'New Sale' ? 'New Sale Only' : 'All Transactions'}
+              {isSaleType.resale(filters.saleType) ? 'Resale Only' : isSaleType.newSale(filters.saleType) ? 'New Sale Only' : 'All Transactions'}
             </span>
             <span className="text-[#94B4C1]">{ALL_DISTRICTS.length} districts</span>
           </div>

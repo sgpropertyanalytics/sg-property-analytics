@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
+import { isSaleType } from '../../schemas/apiContract';
 
 // All districts
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
@@ -469,7 +470,7 @@ export function GrowthDumbbellChart() {
           {/* Data indicator */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px]">
             <span className="text-[#547792] font-medium">
-              Data: {filters.saleType === 'Resale' ? 'Resale Only' : filters.saleType === 'New Sale' ? 'New Sale Only' : 'All Transactions (New Sale + Resale)'}
+              Data: {isSaleType.resale(filters.saleType) ? 'Resale Only' : isSaleType.newSale(filters.saleType) ? 'New Sale Only' : 'All Transactions (New Sale + Resale)'}
             </span>
             <span className="text-[#94B4C1]">{chartData.length} districts</span>
           </div>

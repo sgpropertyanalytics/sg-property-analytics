@@ -17,6 +17,7 @@ import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { SaleType } from '../../schemas/apiContract';
 
 // =============================================================================
 // CONFIGURATION
@@ -82,8 +83,8 @@ const BEDROOM_OPTIONS = [
 
 const SALE_TYPE_OPTIONS = [
   { value: 'all', label: 'All' },
-  { value: 'New Sale', label: 'New' },
-  { value: 'Resale', label: 'Resale' },
+  { value: SaleType.NEW_SALE, label: 'New' },
+  { value: SaleType.RESALE, label: 'Resale' },
 ];
 
 const PERIOD_OPTIONS = [
@@ -547,7 +548,7 @@ export default function DistrictLiquidityMap() {
         params: {
           period: selectedPeriod,
           bed: selectedBed,
-          sale_type: selectedSaleType,
+          saleType: selectedSaleType,  // v2 API param
         },
       });
       setDistrictData(response.data.districts || []);
