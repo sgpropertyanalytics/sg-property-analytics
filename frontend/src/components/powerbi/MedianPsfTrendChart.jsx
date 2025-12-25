@@ -13,7 +13,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { PreviewChartOverlay, ChartFrame } from '../ui';
+import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 
 // Time level labels for display
@@ -349,11 +349,11 @@ export function MedianPsfTrendChart({ height = 300 }) {
         </div>
       </div>
       {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
-      <ChartFrame className="px-4 pb-3">
+      <ChartSlot>
         <PreviewChartOverlay chartRef={chartRef}>
           <Line key={timeGrouping} ref={chartRef} data={chartData} options={options} />
         </PreviewChartOverlay>
-      </ChartFrame>
+      </ChartSlot>
       {/* Footer - fixed height h-11 for consistent alignment */}
       <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center text-xs text-[#547792]">
         <span className="truncate">{data.labels.length} periods | Click to highlight time period</span>

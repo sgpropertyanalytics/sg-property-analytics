@@ -15,7 +15,7 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { PreviewChartOverlay, ChartFrame } from '../ui';
+import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 
 ChartJS.register(
@@ -354,11 +354,11 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
         </div>
       </div>
       {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
-      <ChartFrame className="px-4 pb-3">
+      <ChartSlot>
         <PreviewChartOverlay chartRef={chartRef}>
           <Chart key={timeGrouping} ref={chartRef} type="bar" data={chartData} options={options} />
         </PreviewChartOverlay>
-      </ChartFrame>
+      </ChartSlot>
     </div>
   );
 }

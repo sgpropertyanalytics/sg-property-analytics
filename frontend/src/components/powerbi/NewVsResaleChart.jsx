@@ -14,7 +14,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import { getNewVsResale } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
-import { KeyInsightBox, PreviewChartOverlay, ChartFrame } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 
 // Time level labels for display
@@ -379,7 +379,7 @@ export function NewVsResaleChart({ height = 350 }) {
       </div>
 
       {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
-      <ChartFrame className="px-2 md:px-3 lg:px-4 pb-3">
+      <ChartSlot>
         {chartData.length > 0 ? (
           <PreviewChartOverlay chartRef={chartRef}>
             <Line key={timeGrouping} ref={chartRef} data={chartConfig} options={options} />
@@ -394,7 +394,7 @@ export function NewVsResaleChart({ height = 350 }) {
             </div>
           </div>
         )}
-      </ChartFrame>
+      </ChartSlot>
     </div>
   );
 }

@@ -12,7 +12,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
-import { KeyInsightBox, PreviewChartOverlay, ChartFrame } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 
 ChartJS.register(
@@ -403,11 +403,11 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
       </div>
 
       {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
-      <ChartFrame className="px-4 pb-3">
+      <ChartSlot>
         <PreviewChartOverlay chartRef={chartRef}>
           <Bar key={showFullRange ? 'full' : 'capped'} ref={chartRef} data={chartData} options={options} />
         </PreviewChartOverlay>
-      </ChartFrame>
+      </ChartSlot>
 
       {/* Footer - fixed height h-11 for consistent alignment */}
       <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">

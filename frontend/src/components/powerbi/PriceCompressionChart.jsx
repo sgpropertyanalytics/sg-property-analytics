@@ -16,7 +16,7 @@ import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { PreviewChartOverlay, ChartFrame } from '../ui';
+import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 
 ChartJS.register(
@@ -448,7 +448,7 @@ export function PriceCompressionChart({ height = 380 }) {
       </div>
 
       {/* Main Spread Chart - flex-1 min-h-0 */}
-      <ChartFrame className="px-2 md:px-3 lg:px-4 pb-3">
+      <ChartSlot>
         {data.length > 0 ? (
           <PreviewChartOverlay chartRef={chartRef}>
             <Line key={timeGrouping} ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
@@ -460,7 +460,7 @@ export function PriceCompressionChart({ height = 380 }) {
             </div>
           </div>
         )}
-      </ChartFrame>
+      </ChartSlot>
 
       {/* Context Panel (Collapsible) - shrink-0 with fixed height */}
       {showContext && data.length > 0 && (

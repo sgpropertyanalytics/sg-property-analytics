@@ -16,7 +16,7 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { PreviewChartOverlay, ChartFrame } from '../ui';
+import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   FLOOR_LEVEL_LABELS,
@@ -402,14 +402,14 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
       </div>
 
       {/* Chart slot - flex-1 min-h-0 overflow-hidden */}
-      <ChartFrame className="px-4 pb-3">
+      <ChartSlot>
         <PreviewChartOverlay chartRef={chartRef}>
           <Chart ref={chartRef} type="bar" data={chartData} options={options} />
         </PreviewChartOverlay>
-      </ChartFrame>
+      </ChartSlot>
 
-      {/* Footer - fixed height h-12 */}
-      <div className="shrink-0 h-12 px-6 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-4 text-xs overflow-x-auto">
+      {/* Footer - fixed height h-11 for consistent alignment */}
+      <div className="shrink-0 h-11 px-6 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-4 text-xs overflow-x-auto">
         <div className="flex items-center gap-4 shrink-0">
           <div className="flex items-center gap-1.5">
             <span className="text-[#94B4C1]">Total Transactions:</span>

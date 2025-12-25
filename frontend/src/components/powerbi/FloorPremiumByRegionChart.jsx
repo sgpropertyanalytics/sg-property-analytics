@@ -13,7 +13,7 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { PreviewChartOverlay, ChartFrame } from '../ui';
+import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   FLOOR_LEVELS,
@@ -317,11 +317,11 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
       </div>
 
       {/* Chart slot - flex-1 min-h-0 overflow-hidden */}
-      <ChartFrame className="px-4 pb-3">
+      <ChartSlot>
         <PreviewChartOverlay chartRef={chartRef}>
           <Chart ref={chartRef} type="line" data={chartData} options={options} />
         </PreviewChartOverlay>
-      </ChartFrame>
+      </ChartSlot>
 
       {/* Footer - fixed height h-11 */}
       <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30 flex items-center gap-3 text-xs overflow-x-auto">

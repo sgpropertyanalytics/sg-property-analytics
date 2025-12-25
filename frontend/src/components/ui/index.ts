@@ -31,3 +31,4 @@ export { PreviewChartOverlay } from './PreviewChartOverlay';
 // Layout components
 export { PageHeader } from './PageHeader';
 export { ChartFrame } from './ChartFrame';
+export { ChartSlot } from './ChartSlot';
