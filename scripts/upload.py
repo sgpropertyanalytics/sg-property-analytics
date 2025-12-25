@@ -276,28 +276,42 @@ def _safe_str(value, default='') -> str:
     return s
 
 
-def _safe_float(value, default=0.0) -> float:
-    """Safely convert a value to float, handling NaN/None."""
+def _safe_float(value, default=0.0, warn_on_coerce=False, field_name=None) -> float:
+    """Safely convert a value to float, handling NaN/None.
+
+    Issue B15: Added optional warning for silent type coercion.
+    """
     if pd.isna(value) or value is None:
         return default
     try:
         return float(value)
     except (ValueError, TypeError):
+        if warn_on_coerce and field_name:
+            print(f"  ⚠️  Could not convert {field_name}='{value}' to float, using default={default}")
         return default
 
 
-def _safe_int(value, default=None):
-    """Safely convert a value to int, handling NaN/None."""
+def _safe_int(value, default=None, warn_on_coerce=False, field_name=None):
+    """Safely convert a value to int, handling NaN/None.
+
+    Issue B15: Added optional warning for silent type coercion.
+    """
     if pd.isna(value) or value is None:
         return default
     try:
         return int(float(value))
     except (ValueError, TypeError):
+        if warn_on_coerce and field_name:
+            print(f"  ⚠️  Could not convert {field_name}='{value}' to int, using default={default}")
         return default
 
 
 def _parse_lease_info(tenure_str: str, current_year: int):
-    """Parse lease start year and remaining lease from tenure string."""
+    """Parse lease start year and remaining lease from tenure string.
+
+    Issue B14: Handle different lease durations (99, 999, etc.) instead of
+    assuming all leases are 99 years.
+    """
     if not tenure_str or tenure_str == 'nan':
         return None, None
 
@@ -309,12 +323,20 @@ def _parse_lease_info(tenure_str: str, current_year: int):
     lease_start_year = None
     remaining_lease = None
 
+    # B14: Detect lease duration from tenure string (e.g., "999 years", "99 years")
+    lease_duration = 99  # Default to 99 years
+    duration_match = re.search(r"(\d+)\s*(?:year|yr)s?", tenure_str.lower())
+    if duration_match:
+        detected_duration = int(duration_match.group(1))
+        if detected_duration in [99, 999, 103, 110]:  # Common lease durations in Singapore
+            lease_duration = detected_duration
+
     match = re.search(r"(?:from|commencing)\s+(\d{4})", tenure_str.lower())
     if match:
         try:
             year = int(match.group(1))
             lease_start_year = year
-            remaining_lease = 99 - (current_year - year)
+            remaining_lease = lease_duration - (current_year - year)
             if remaining_lease < 0:
                 remaining_lease = 0
         except ValueError:
@@ -326,7 +348,7 @@ def _parse_lease_info(tenure_str: str, current_year: int):
             try:
                 year = int(fallback.group(1))
                 lease_start_year = year
-                remaining_lease = 99 - (current_year - year)
+                remaining_lease = lease_duration - (current_year - year)
                 if remaining_lease < 0:
                     remaining_lease = 0
             except ValueError:

@@ -307,6 +307,8 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
         conditions.append(Transaction.district.in_(normalized))
 
     # Segment (market region) - convert to districts, supports multiple segments
+    # Issue B16: Both 'segments' (plural, preferred) and 'segment' (singular) are supported
+    # for API compatibility. Frontend uses 'segments', some legacy code uses 'segment'.
     segments = filters.get('segments', [])
     if not segments:
         # Backwards compatibility: check for single 'segment' key
