@@ -918,18 +918,76 @@ export default function DistrictLiquidityMap() {
 // =============================================================================
 
 function LiquidityRankingTable({ districtData }) {
-  // Sort by liquidity_score descending (primary), then velocity (secondary)
+  // Sort config state
+  const [sortConfig, setSortConfig] = useState({
+    column: 'liquidity_score',
+    order: 'desc',
+  });
+
+  // Handle sort
+  const handleSort = (column) => {
+    setSortConfig(prev => ({
+      column,
+      order: prev.column === column && prev.order === 'desc' ? 'asc' : 'desc',
+    }));
+  };
+
+  // Sort indicator component
+  const SortIcon = ({ column }) => {
+    if (sortConfig.column !== column) {
+      return (
+        <svg className="w-3 h-3 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return sortConfig.order === 'asc' ? (
+      <svg className="w-3 h-3 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-3 h-3 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  };
+
+  // Sort data based on current sort config
   const sortedData = useMemo(() => {
-    return [...districtData]
-      .filter(d => d.has_data)
-      .sort((a, b) => {
-        const scoreA = a.liquidity_metrics?.liquidity_score ?? -1;
-        const scoreB = b.liquidity_metrics?.liquidity_score ?? -1;
-        if (scoreB !== scoreA) return scoreB - scoreA;
-        // Tiebreaker: velocity
-        return (b.liquidity_metrics?.monthly_velocity || 0) - (a.liquidity_metrics?.monthly_velocity || 0);
-      });
-  }, [districtData]);
+    const filtered = [...districtData].filter(d => d.has_data);
+
+    return filtered.sort((a, b) => {
+      const col = sortConfig.column;
+      let aVal, bVal;
+
+      // Handle nested metrics fields
+      if (['liquidity_score', 'monthly_velocity', 'z_score', 'tx_count', 'project_count',
+           'new_sale_pct', 'resale_pct', 'concentration_gini', 'top_project_share'].includes(col)) {
+        aVal = a.liquidity_metrics?.[col];
+        bVal = b.liquidity_metrics?.[col];
+      } else if (col === 'liquidity_tier' || col === 'fragility_label') {
+        aVal = a.liquidity_metrics?.[col] || '';
+        bVal = b.liquidity_metrics?.[col] || '';
+      } else {
+        aVal = a[col];
+        bVal = b[col];
+      }
+
+      // Handle null/undefined
+      if (aVal === null || aVal === undefined) aVal = sortConfig.order === 'asc' ? Infinity : -Infinity;
+      if (bVal === null || bVal === undefined) bVal = sortConfig.order === 'asc' ? Infinity : -Infinity;
+
+      // String comparison
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return sortConfig.order === 'asc'
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+
+      // Numeric comparison
+      return sortConfig.order === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+  }, [districtData, sortConfig]);
 
   // Use shared score styling helpers
   const getScoreBadgeStyle = getScoreBadgeStyleShared;
@@ -986,7 +1044,7 @@ function LiquidityRankingTable({ districtData }) {
           District Volume Liquidity Ranking
         </h3>
         <p className="text-xs text-[#547792]">
-          Sorted by composite liquidity score (highest first)
+          Click column headers to sort • Default: composite liquidity score (highest first)
         </p>
       </div>
 
@@ -1063,17 +1121,9 @@ function LiquidityRankingTable({ districtData }) {
       <div className="hidden md:block overflow-x-auto max-w-full">
         <table className="w-full text-xs min-w-[1000px]">
           <thead>
-            {/* Group Header Row - Score + Exit Safety + Concentration */}
+            {/* Group Header Row - Exit Safety + Concentration */}
             <tr className="bg-[#EAE0CF]/20">
-              <th colSpan={2} className="border-b border-[#94B4C1]/20"></th>
-              <th
-                colSpan={1}
-                className="px-3 py-1.5 text-center text-[10px] font-bold text-sky-700 uppercase tracking-wider bg-sky-100/70"
-                title="Composite liquidity score (0-100) combining exit safety and market health"
-              >
-                Liquidity
-              </th>
-              <th colSpan={6} className="border-b border-[#94B4C1]/20"></th>
+              <th colSpan={9} className="border-b border-[#94B4C1]/20"></th>
               <th
                 colSpan={3}
                 className="px-3 py-1.5 text-center text-[10px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-100/70"
@@ -1094,67 +1144,139 @@ function LiquidityRankingTable({ districtData }) {
             {/* Column Header Row */}
             <tr className="bg-[#EAE0CF]/30 border-b border-[#94B4C1]/30">
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap">Rank</th>
-              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-sky-50/50">
-                <span className="inline-flex items-center">
+              <th
+                className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                onClick={() => handleSort('liquidity_score')}
+              >
+                <span className="inline-flex items-center justify-center gap-1">
                   Score
+                  <SortIcon column="liquidity_score" />
                   <InfoTooltip text="Composite liquidity score (0-100). Exit Safety (60%): velocity, breadth, concentration. Market Health (40%): volume, diversity, stability, organic demand." color="#0ea5e9" />
                 </span>
               </th>
-              <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap">District</th>
-              <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap min-w-[200px]">Area</th>
-              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Region</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">
-                <span className="inline-flex items-center">
+              <th
+                className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                onClick={() => handleSort('district_id')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  District
+                  <SortIcon column="district_id" />
+                </span>
+              </th>
+              <th
+                className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap min-w-[200px] cursor-pointer hover:bg-slate-100 select-none"
+                onClick={() => handleSort('full_name')}
+              >
+                <span className="inline-flex items-center gap-1">
+                  Area
+                  <SortIcon column="full_name" />
+                </span>
+              </th>
+              <th
+                className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                onClick={() => handleSort('region')}
+              >
+                <span className="inline-flex items-center justify-center gap-1">
+                  Region
+                  <SortIcon column="region" />
+                </span>
+              </th>
+              <th
+                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                onClick={() => handleSort('project_count')}
+              >
+                <span className="inline-flex items-center justify-end gap-1">
                   Projects
+                  <SortIcon column="project_count" />
                   <InfoTooltip text="Number of distinct condo projects with transactions in this period. Higher = more market breadth." />
                 </span>
               </th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">
-                <span className="inline-flex items-center">
+              <th
+                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                onClick={() => handleSort('new_sale_pct')}
+              >
+                <span className="inline-flex items-center justify-end gap-1">
                   New %
+                  <SortIcon column="new_sale_pct" />
                   <InfoTooltip text="Percentage of transactions that are new launches (developer sales). High % = supply-driven market." />
                 </span>
               </th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">
-                <span className="inline-flex items-center">
+              <th
+                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                onClick={() => handleSort('resale_pct')}
+              >
+                <span className="inline-flex items-center justify-end gap-1">
                   Resale %
+                  <SortIcon column="resale_pct" />
                   <InfoTooltip text="Percentage of transactions that are resales (secondary market). High % = organic demand." />
                 </span>
               </th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap">
-                <span className="inline-flex items-center">
+              <th
+                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                onClick={() => handleSort('tx_count')}
+              >
+                <span className="inline-flex items-center justify-end gap-1">
                   Transactions
+                  <SortIcon column="tx_count" />
                   <InfoTooltip text="Total number of unit transactions across all projects in this district." />
                 </span>
               </th>
-              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">Tier</th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">
-                <span className="inline-flex items-center">
+              <th
+                className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 select-none"
+                onClick={() => handleSort('liquidity_tier')}
+              >
+                <span className="inline-flex items-center justify-center gap-1">
+                  Tier
+                  <SortIcon column="liquidity_tier" />
+                </span>
+              </th>
+              <th
+                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 select-none"
+                onClick={() => handleSort('monthly_velocity')}
+              >
+                <span className="inline-flex items-center justify-end gap-1">
                   Velocity/mo
+                  <SortIcon column="monthly_velocity" />
                   <InfoTooltip text="Average resale transactions per month. Higher velocity = easier to exit. Based on resale only." color="#34d399" />
                 </span>
               </th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50">
-                <span className="inline-flex items-center">
+              <th
+                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 select-none"
+                onClick={() => handleSort('z_score')}
+              >
+                <span className="inline-flex items-center justify-end gap-1">
                   Z-Score
+                  <SortIcon column="z_score" />
                   <InfoTooltip text="Standard deviations from mean resale velocity. Positive = above average liquidity, Negative = below average." color="#34d399" />
                 </span>
               </th>
-              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">
-                <span className="inline-flex items-center">
+              <th
+                className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 select-none"
+                onClick={() => handleSort('fragility_label')}
+              >
+                <span className="inline-flex items-center justify-center gap-1">
                   Spread
+                  <SortIcon column="fragility_label" />
                   <InfoTooltip text="Transaction spread across projects. Wide = distributed across many projects. Narrow = concentrated in few projects." color="#fb7185" />
                 </span>
               </th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">
-                <span className="inline-flex items-center">
+              <th
+                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 select-none"
+                onClick={() => handleSort('concentration_gini')}
+              >
+                <span className="inline-flex items-center justify-end gap-1">
                   Gini
+                  <SortIcon column="concentration_gini" />
                   <InfoTooltip text="Gini coefficient (0-1). Lower = transactions evenly spread. Higher = concentrated in few projects. Based on resale only." color="#fb7185" />
                 </span>
               </th>
-              <th className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50">
-                <span className="inline-flex items-center">
+              <th
+                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 select-none"
+                onClick={() => handleSort('top_project_share')}
+              >
+                <span className="inline-flex items-center justify-end gap-1">
                   Top Share
+                  <SortIcon column="top_project_share" />
                   <InfoTooltip text="Percentage of resale transactions from the single most active project. High % = reliance on one project." color="#fb7185" />
                 </span>
               </th>
@@ -1177,8 +1299,8 @@ function LiquidityRankingTable({ districtData }) {
                     </span>
                   </td>
 
-                  {/* Liquidity Score - NEW PRIMARY COLUMN */}
-                  <td className="px-3 py-2 text-center bg-sky-50/40">
+                  {/* Liquidity Score */}
+                  <td className="px-3 py-2 text-center">
                     <div className="flex flex-col items-center gap-0.5">
                       <span className={`inline-flex items-center justify-center w-10 h-6 rounded-md text-sm font-bold ${getScoreBadgeStyle(m.liquidity_score)}`}>
                         {m.liquidity_score !== null && m.liquidity_score !== undefined ? m.liquidity_score.toFixed(0) : '-'}

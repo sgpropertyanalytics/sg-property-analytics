@@ -243,6 +243,57 @@ export default function DealCheckerContent() {
     return calculateVolumeThresholds(nearbyProjects);
   }, [nearbyProjects]);
 
+  // Handle sort for nearby projects table
+  const handleProjectsSort = (column) => {
+    setProjectsSortConfig(prev => ({
+      column,
+      order: prev.column === column && prev.order === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  // Sort nearby projects data
+  const sortedNearbyProjects = useMemo(() => {
+    return [...nearbyProjects].sort((a, b) => {
+      const col = projectsSortConfig.column;
+      let aVal = a[col];
+      let bVal = b[col];
+
+      // Handle null/undefined
+      if (aVal === null || aVal === undefined) aVal = projectsSortConfig.order === 'asc' ? Infinity : -Infinity;
+      if (bVal === null || bVal === undefined) bVal = projectsSortConfig.order === 'asc' ? Infinity : -Infinity;
+
+      // String comparison
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return projectsSortConfig.order === 'asc'
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+
+      // Numeric comparison
+      return projectsSortConfig.order === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+  }, [nearbyProjects, projectsSortConfig]);
+
+  // Sort indicator component
+  const SortIcon = ({ column }) => {
+    if (projectsSortConfig.column !== column) {
+      return (
+        <svg className="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return projectsSortConfig.order === 'asc' ? (
+      <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  };
+
   // Get selected project info for display
   const selectedProjectInfo = projectOptions.find(p => p.name === projectName);
 
@@ -495,10 +546,10 @@ export default function DealCheckerContent() {
               </div>
               {/* Mobile Card View */}
               <div className="md:hidden p-3 space-y-2 overflow-y-auto" style={{ maxHeight: 350 }}>
-                {nearbyProjects.length === 0 ? (
+                {sortedNearbyProjects.length === 0 ? (
                   <div className="text-center py-6 text-slate-500">No nearby projects found</div>
                 ) : (
-                  nearbyProjects.map((p) => {
+                  sortedNearbyProjects.map((p) => {
                     const isUserProject = p.project_name === result.project.name;
                     const isWithin1km = p.distance_km <= 1.0;
                     const volumeColor = getVolumeColor(p.transaction_count, volumeThresholds);
@@ -539,15 +590,55 @@ export default function DealCheckerContent() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 sticky top-0">
                     <tr>
-                      <th className="px-3 py-2 text-left font-medium text-slate-600 border-b">Project</th>
-                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Dist</th>
-                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Transactions</th>
-                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Median Price</th>
-                      <th className="px-3 py-2 text-right font-medium text-slate-600 border-b">Sqft</th>
+                      <th
+                        className="px-3 py-2 text-left font-medium text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleProjectsSort('project_name')}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>Project</span>
+                          <SortIcon column="project_name" />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right font-medium text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleProjectsSort('distance_km')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>Dist</span>
+                          <SortIcon column="distance_km" />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right font-medium text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleProjectsSort('transaction_count')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>Transactions</span>
+                          <SortIcon column="transaction_count" />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right font-medium text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleProjectsSort('median_price')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>Median Price</span>
+                          <SortIcon column="median_price" />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right font-medium text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleProjectsSort('median_sqft')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>Sqft</span>
+                          <SortIcon column="median_sqft" />
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {nearbyProjects.map((p) => {
+                    {sortedNearbyProjects.map((p) => {
                       const isUserProject = p.project_name === result.project.name;
                       const isWithin1km = p.distance_km <= 1.0;
                       const volumeColor = getVolumeColor(p.transaction_count, volumeThresholds);
@@ -581,7 +672,7 @@ export default function DealCheckerContent() {
                         </tr>
                       );
                     })}
-                    {nearbyProjects.length === 0 && (
+                    {sortedNearbyProjects.length === 0 && (
                       <tr>
                         <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
                           No nearby projects found
