@@ -46,8 +46,34 @@ export function AuthProvider({ children }) {
       const auth = getFirebaseAuth();
       setLoading(true);
 
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setUser(user);
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        setUser(firebaseUser);
+
+        // If user is signed in, ensure we have a valid JWT token
+        // This handles page refresh when Firebase session exists but JWT might be missing/expired
+        if (firebaseUser) {
+          const existingToken = localStorage.getItem('token');
+          if (!existingToken) {
+            // No token - sync with backend to get one
+            console.log('[Auth] No JWT token found, syncing with backend...');
+            try {
+              const idToken = await firebaseUser.getIdToken();
+              const response = await apiClient.post('/auth/firebase-sync', {
+                idToken,
+                email: firebaseUser.email,
+                displayName: firebaseUser.displayName,
+                photoURL: firebaseUser.photoURL,
+              });
+              if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                console.log('[Auth] JWT token stored successfully');
+              }
+            } catch (err) {
+              console.error('[Auth] Backend sync failed on page load:', err);
+            }
+          }
+        }
+
         setLoading(false);
         setInitialized(true);
       });

@@ -27,7 +27,7 @@ export function useSubscription() {
 }
 
 export function SubscriptionProvider({ children }) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, initialized } = useAuth();
   const [subscription, setSubscription] = useState({
     tier: 'free',
     subscribed: false,
@@ -45,9 +45,23 @@ export function SubscriptionProvider({ children }) {
   });
 
   // Fetch subscription status from backend when user changes
+  // Wait for auth to be fully initialized (including JWT token sync)
   useEffect(() => {
     const fetchSubscription = async () => {
+      // Don't fetch until auth is fully initialized (token sync complete)
+      if (!initialized) {
+        return;
+      }
+
       if (!isAuthenticated) {
+        setSubscription({ tier: 'free', subscribed: false, ends_at: null });
+        return;
+      }
+
+      // Ensure we have a token before fetching
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('[Subscription] No token available, skipping fetch');
         setSubscription({ tier: 'free', subscribed: false, ends_at: null });
         return;
       }
@@ -55,6 +69,7 @@ export function SubscriptionProvider({ children }) {
       setLoading(true);
       try {
         const response = await apiClient.get('/auth/subscription');
+        console.log('[Subscription] Fetched:', response.data);
         if (response.data) {
           setSubscription({
             tier: response.data.tier || 'free',
@@ -72,7 +87,7 @@ export function SubscriptionProvider({ children }) {
     };
 
     fetchSubscription();
-  }, [isAuthenticated, user?.email]);
+  }, [initialized, isAuthenticated, user?.email]);
 
   // Derived state: is user a premium subscriber?
   const isPremium = useMemo(() => {
