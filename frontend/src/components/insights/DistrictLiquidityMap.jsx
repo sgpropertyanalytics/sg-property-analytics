@@ -1048,8 +1048,8 @@ function LiquidityRankingTable({ districtData }) {
         </p>
       </div>
 
-      {/* Mobile Card View */}
-      <div className="md:hidden p-3 space-y-2 max-h-[400px] overflow-y-auto">
+      {/* Mobile/Tablet Card View - shown below lg breakpoint (1024px) */}
+      <div className="lg:hidden p-3 space-y-2 max-h-[400px] overflow-y-auto">
         {sortedData.map((district, index) => {
           const m = district.liquidity_metrics || {};
           return (
@@ -1118,12 +1118,12 @@ function LiquidityRankingTable({ districtData }) {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto max-w-full">
-        <table className="w-full text-xs min-w-[1000px]">
+      <div className="hidden lg:block overflow-x-auto max-w-full">
+        <table className="w-full text-xs">
           <thead>
             {/* Group Header Row - Exit Safety + Concentration */}
             <tr className="bg-[#EAE0CF]/20">
-              <th colSpan={9} className="border-b border-[#94B4C1]/20"></th>
+              <th colSpan={8} className="border-b border-[#94B4C1]/20"></th>
               <th
                 colSpan={3}
                 className="px-3 py-1.5 text-center text-[10px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-100/70"
@@ -1161,15 +1161,6 @@ function LiquidityRankingTable({ districtData }) {
                 <span className="inline-flex items-center gap-1">
                   District
                   <SortIcon column="district_id" />
-                </span>
-              </th>
-              <th
-                className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap min-w-[200px] cursor-pointer hover:bg-slate-100 select-none"
-                onClick={() => handleSort('full_name')}
-              >
-                <span className="inline-flex items-center gap-1">
-                  Area
-                  <SortIcon column="full_name" />
                 </span>
               </th>
               <th
@@ -1311,16 +1302,10 @@ function LiquidityRankingTable({ districtData }) {
                     </div>
                   </td>
 
-                  {/* District ID */}
-                  <td className="px-3 py-2 font-semibold text-[#213448]">
-                    {district.district_id}
-                  </td>
-
-                  {/* Full Area Name */}
-                  <td className="px-3 py-2 text-[#547792] max-w-[200px]">
-                    <span className="block truncate" title={district.full_name}>
-                      {district.full_name}
-                    </span>
+                  {/* District (ID + Area Name combined) */}
+                  <td className="px-3 py-2 text-[#213448]" title={`${district.district_id} - ${district.full_name}`}>
+                    <span className="font-semibold">{district.district_id}</span>
+                    <span className="text-[#547792] ml-1">- {district.full_name}</span>
                   </td>
 
                   {/* Region Badge */}
