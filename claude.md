@@ -368,11 +368,16 @@ backend/
 │   ├── analytics.py          # Public API endpoints
 │   ├── auth.py               # JWT authentication
 │   └── ads.py                # Ad serving
+├── schemas/
+│   └── api_contract.py       # v2 API schema: enums, field names, serializers
 └── services/
     ├── dashboard_service.py  # Dashboard panel queries (SQL aggregation)
     ├── data_validation.py    # Data cleaning (outliers, duplicates, invalid)
     ├── data_computation.py   # Pre-compute stats to precomputed_stats table
-    └── analytics_reader.py   # Read pre-computed stats
+    ├── analytics_reader.py   # Read pre-computed stats
+    ├── price_bands_service.py    # Downside protection analysis (SQL + fallback)
+    ├── price_bands_compute.py    # Pure computation functions (testable)
+    └── exit_queue_service.py     # Exit queue risk analysis
 ```
 
 ### Frontend (`/frontend/src`)
@@ -880,6 +885,32 @@ upper_bound = Q3 + 5.0 * IQR
 | `/api/transactions` | Paginated transaction list | `page`, `per_page`, filters |
 | `/api/filter-options` | Available filter values | None |
 | `/api/metadata` | Dataset stats | None |
+| `/api/projects/<name>/price-bands` | Downside protection analysis | `window_months`, `unit_psf`, `schema` |
+| `/api/projects/<name>/exit-queue` | Exit queue risk analysis | `schema` |
+
+### Price Bands Endpoint Details
+
+**Purpose**: Historical price floor analysis for downside protection assessment.
+
+**Query Parameters**:
+- `window_months`: Analysis window (default 24, range 6-60)
+- `unit_psf`: User's unit PSF for verdict calculation (optional)
+- `schema`: `v2` for strict camelCase, omit for dual-mode
+
+**Response Schema**:
+- Default: v1 snake_case + `_v2` nested camelCase object
+- `?schema=v2`: Strict camelCase only
+
+**Key Response Fields**:
+| Field | Description |
+|-------|-------------|
+| `bands` | Monthly P25/P50/P75 with smoothed values |
+| `latest` | Most recent smoothed percentiles |
+| `trend` | Floor direction (rising/flat/weakening) and slope |
+| `verdict` | Badge (protected/watch/exposed) if `unit_psf` provided |
+| `dataQuality` | Validity flags, trade counts, fallback info |
+
+**Fallback Hierarchy**: Project → District+Tenure → District → Segment
 
 ## F. Interaction Behavior Reference
 
