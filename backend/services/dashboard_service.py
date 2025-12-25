@@ -453,6 +453,7 @@ def query_time_series(filters: Dict[str, Any], options: Dict[str, Any]) -> List[
         period_expr.label('period'),
         func.count(Transaction.id).label('count'),
         func.avg(Transaction.psf).label('avg_psf'),
+        func.percentile_cont(0.5).within_group(Transaction.psf).label('median_psf'),
         func.sum(Transaction.price).label('total_value'),
         func.avg(Transaction.price).label('avg_price')
     )
@@ -469,7 +470,7 @@ def query_time_series(filters: Dict[str, Any], options: Dict[str, Any]) -> List[
             'period': format_fn(r),
             'count': r.count,
             'avg_psf': round(r.avg_psf, 2) if r.avg_psf else None,
-            'median_psf': round(r.avg_psf, 2) if r.avg_psf else None,  # Use avg as median approximation
+            'median_psf': round(r.median_psf, 2) if r.median_psf else None,
             'total_value': round(r.total_value, 0) if r.total_value else 0,
             'avg_price': round(r.avg_price, 0) if r.avg_price else None
         }
@@ -869,7 +870,9 @@ def query_summary(filters: Dict[str, Any], options: Dict[str, Any]) -> Dict:
     query = db.session.query(
         func.count(Transaction.id).label('total_count'),
         func.avg(Transaction.psf).label('avg_psf'),
+        func.percentile_cont(0.5).within_group(Transaction.psf).label('median_psf'),
         func.avg(Transaction.price).label('avg_price'),
+        func.percentile_cont(0.5).within_group(Transaction.price).label('median_price'),
         func.sum(Transaction.price).label('total_value'),
         func.min(Transaction.transaction_date).label('date_min'),
         func.max(Transaction.transaction_date).label('date_max'),
@@ -887,9 +890,9 @@ def query_summary(filters: Dict[str, Any], options: Dict[str, Any]) -> Dict:
     return {
         'total_count': r.total_count or 0,
         'avg_psf': round(r.avg_psf, 2) if r.avg_psf else None,
-        'median_psf': round(r.avg_psf, 2) if r.avg_psf else None,  # Approximation
+        'median_psf': round(r.median_psf, 2) if r.median_psf else None,
         'avg_price': round(r.avg_price, 0) if r.avg_price else None,
-        'median_price': round(r.avg_price, 0) if r.avg_price else None,  # Approximation
+        'median_price': round(r.median_price, 0) if r.median_price else None,
         'total_value': round(r.total_value, 0) if r.total_value else 0,
         'date_min': r.date_min.isoformat() if r.date_min else None,
         'date_max': r.date_max.isoformat() if r.date_max else None,
