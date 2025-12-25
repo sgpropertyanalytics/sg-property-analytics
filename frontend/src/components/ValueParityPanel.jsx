@@ -679,7 +679,7 @@ export function ValueParityPanel() {
                 <p className="text-xs text-[#547792]">Projects expected to launch soon - not yet available for sale</p>
               </div>
             </div>
-            <UpcomingLaunchesTable height={300} />
+            <UpcomingLaunchesTable height={300} showHeader={false} compact={true} />
           </div>
         </div>
       )}

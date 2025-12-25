@@ -19,7 +19,11 @@ import { useSubscription } from '../../context/SubscriptionContext';
  *
  * Data Source: /api/upcoming-launches/* (EdgeProp, PropNex, ERA)
  */
-export function UpcomingLaunchesTable({ height = 400 }) {
+export function UpcomingLaunchesTable({
+  height = 400,
+  compact = false,   // Compact mode for embedding (no border)
+  showHeader = true, // Show/hide header
+}) {
   const subscriptionContext = useSubscription();
   const isPremium = subscriptionContext?.isPremium ?? true;
   const [data, setData] = useState([]);
@@ -122,7 +126,32 @@ export function UpcomingLaunchesTable({ height = 400 }) {
   ];
 
   return (
-    <div id="upcoming-launches-table">
+    <div id="upcoming-launches-table" className={`bg-white ${compact ? '' : 'rounded-lg border border-[#94B4C1]/50'} overflow-hidden`}>
+      {/* Header - conditionally shown */}
+      {showHeader && (
+        <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-[#213448]">Upcoming Launches</h3>
+            <p className="text-xs text-[#547792]">
+              {loading ? 'Loading...' : `${data.length} pre-launch projects`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); fetchData(); }}
+              className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
+              title="Refresh data"
+              disabled={loading}
+            >
+              <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Card View */}
       <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: height }}>
         {error ? (
