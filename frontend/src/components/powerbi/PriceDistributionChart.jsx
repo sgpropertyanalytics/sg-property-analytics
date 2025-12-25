@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -48,8 +49,13 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale } = useStaleRequestGuard();
+
   // Fetch server-side computed histogram
   useEffect(() => {
+    const requestId = startRequest();
+
     const fetchData = async () => {
       if (isInitialLoad.current) {
         setLoading(true);
@@ -93,14 +99,20 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
 
         console.log('PriceDistribution response:', { rawHistogram, priceHistogram });
 
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setHistogramData(priceHistogram);
         isInitialLoad.current = false;
       } catch (err) {
+        if (isStale(requestId)) return;
         console.error('Error fetching price distribution data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
     fetchData();

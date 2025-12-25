@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
@@ -89,8 +90,13 @@ export function GrowthDumbbellChart() {
   const [error, setError] = useState(null);
   const [sortConfig, setSortConfig] = useState({ column: 'growth', order: 'desc' });
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale } = useStaleRequestGuard();
+
   // Fetch data
   useEffect(() => {
+    const requestId = startRequest();
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -102,12 +108,19 @@ export function GrowthDumbbellChart() {
         }, { excludeHighlight: true });
 
         const response = await getAggregate(params);
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setRawData(response.data?.data || []);
       } catch (err) {
+        if (isStale(requestId)) return;
         console.error('Error fetching dumbbell chart data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
       }
     };
 

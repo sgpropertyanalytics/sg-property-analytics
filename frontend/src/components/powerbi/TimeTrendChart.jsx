@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -57,8 +58,13 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale } = useStaleRequestGuard();
+
   // Fetch data when filters change
   useEffect(() => {
+    const requestId = startRequest();
+
     const fetchData = async () => {
       // Only show full loading on initial load, otherwise show subtle updating
       if (isInitialLoad.current) {
@@ -118,21 +124,29 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
           return String(aKey).localeCompare(String(bKey));
         });
 
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setData(sortedData);
         setDataTimeGrain(timeGrouping); // Store which time grain this data is for
         isInitialLoad.current = false;
       } catch (err) {
+        // Ignore errors from stale requests
+        if (isStale(requestId)) return;
         console.error('Error fetching time trend data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        // Only clear loading for the current request
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
     fetchData();
     // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
     // timeGrouping controls the time granularity (year/quarter/month)
-  }, [debouncedFilterKey, timeGrouping]);
+  }, [debouncedFilterKey, timeGrouping, startRequest, isStale]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;

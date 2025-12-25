@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
@@ -27,8 +28,13 @@ export function MarketMomentumGrid() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale } = useStaleRequestGuard();
+
   // Fetch data for all districts
   useEffect(() => {
+    const requestId = startRequest();
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -43,6 +49,9 @@ export function MarketMomentumGrid() {
 
         const response = await getAggregate(params);
         const rawData = response.data?.data || [];
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
 
         // Group by district, preserving quarter order
         const districtData = {};
@@ -68,10 +77,13 @@ export function MarketMomentumGrid() {
 
         setData(districtData);
       } catch (err) {
+        if (isStale(requestId)) return;
         console.error('Error fetching market momentum data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
       }
     };
 

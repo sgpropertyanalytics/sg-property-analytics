@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getFloorLiquidityHeatmap } from '../../api/client';
 import {
@@ -32,6 +33,9 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
   const [meta, setMeta] = useState({ exclusions: {} });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale } = useStaleRequestGuard();
 
   // Collapsible district state
   const [expandedDistricts, setExpandedDistricts] = useState(new Set());
@@ -130,6 +134,8 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
 
   // Fetch data
   useEffect(() => {
+    const requestId = startRequest();
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -142,13 +148,20 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
         if (segment) params.segment = segment;
 
         const response = await getFloorLiquidityHeatmap(params);
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setData(response.data?.data || { projects: [], floor_zone_order: [] });
         setMeta(response.data?.meta || { exclusions: {} });
       } catch (err) {
+        if (isStale(requestId)) return;
         console.error('Error fetching heatmap data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
       }
     };
 

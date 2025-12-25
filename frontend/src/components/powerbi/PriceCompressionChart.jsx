@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -67,8 +68,13 @@ export function PriceCompressionChart({ height = 380 }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale } = useStaleRequestGuard();
+
   // Fetch data when filters or drill level change
   useEffect(() => {
+    const requestId = startRequest();
+
     const fetchData = async () => {
       if (isInitialLoad.current) {
         setLoading(true);
@@ -87,14 +93,21 @@ export function PriceCompressionChart({ height = 380 }) {
         const response = await getAggregate(params);
         const rawData = response.data.data || [];
         const transformed = transformData(rawData, timeGrouping);
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setData(transformed);
         isInitialLoad.current = false;
       } catch (err) {
+        if (isStale(requestId)) return;
         console.error('Error fetching compression data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
     fetchData();

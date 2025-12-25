@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -69,8 +70,13 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
   const [error, setError] = useState(null);
   const chartRef = useRef(null);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale } = useStaleRequestGuard();
+
   // Fetch data grouped by year and floor_level
   useEffect(() => {
+    const requestId = startRequest();
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -89,14 +95,20 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
         const response = await getAggregate(params);
         const data = response.data.data || [];
 
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         // Filter out Unknown floor levels
         const filtered = data.filter(d => d.floor_level && d.floor_level !== 'Unknown');
         setRawData(filtered);
       } catch (err) {
+        if (isStale(requestId)) return;
         console.error('Error fetching trend data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+        }
       }
     };
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   LinearScale,
@@ -52,6 +53,9 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale } = useStaleRequestGuard();
+
   // Handle refresh button click - generates random seed for new sample
   const handleRefresh = () => {
     setRefreshSeed(Math.random().toString(36).substring(2, 10));
@@ -76,6 +80,8 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
 
   // Fetch scatter data
   useEffect(() => {
+    const requestId = startRequest();
+
     const fetchData = async () => {
       if (isInitialLoad.current) {
         setLoading(true);
@@ -104,15 +110,21 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
           params: requestParams
         });
 
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setData(response.data.data || []);
         setMeta(response.data.meta || { sample_size: 0, total_count: 0 });
         isInitialLoad.current = false;
       } catch (err) {
+        if (isStale(requestId)) return;
         console.error('Error fetching scatter data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
 

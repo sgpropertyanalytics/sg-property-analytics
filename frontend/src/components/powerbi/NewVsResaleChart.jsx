@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -68,8 +69,13 @@ export function NewVsResaleChart({ height = 350 }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale } = useStaleRequestGuard();
+
   // Fetch data when global filters or local drill level change
   useEffect(() => {
+    const requestId = startRequest();
+
     const fetchData = async () => {
       if (isInitialLoad.current) {
         setLoading(true);
@@ -91,14 +97,21 @@ export function NewVsResaleChart({ height = 350 }) {
         console.log('[NewVsResale] Response:', response.data);
         console.log('[NewVsResale] chartData length:', response.data?.chartData?.length);
         console.log('[NewVsResale] First data point:', response.data?.chartData?.[0]);
+
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setData(response.data);
         isInitialLoad.current = false;
       } catch (err) {
+        if (isStale(requestId)) return;
         console.error('Error fetching new vs resale data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
     fetchData();

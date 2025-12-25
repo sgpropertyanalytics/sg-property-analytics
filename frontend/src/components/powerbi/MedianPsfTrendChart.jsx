@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useStaleRequestGuard } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -51,8 +52,13 @@ export function MedianPsfTrendChart({ height = 300 }) {
   const chartRef = useRef(null);
   const isInitialLoad = useRef(true);
 
+  // Prevent stale responses from overwriting fresh data
+  const { startRequest, isStale } = useStaleRequestGuard();
+
   // Fetch data when filters change
   useEffect(() => {
+    const requestId = startRequest();
+
     const fetchData = async () => {
       if (isInitialLoad.current) {
         setLoading(true);
@@ -112,6 +118,9 @@ export function MedianPsfTrendChart({ height = 300 }) {
           return String(aKey).localeCompare(String(bKey));
         });
 
+        // Ignore stale responses - a newer request has started
+        if (isStale(requestId)) return;
+
         setData({
           labels: sortedData.map(d => d.period ?? ''),
           ccr: sortedData.map(d => d.CCR),
@@ -123,11 +132,14 @@ export function MedianPsfTrendChart({ height = 300 }) {
         });
         isInitialLoad.current = false;
       } catch (err) {
+        if (isStale(requestId)) return;
         console.error('Error fetching median PSF trend data:', err);
         setError(err.message);
       } finally {
-        setLoading(false);
-        setUpdating(false);
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setUpdating(false);
+        }
       }
     };
     fetchData();
