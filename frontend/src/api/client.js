@@ -30,6 +30,50 @@ const getApiBase = () => {
 
 const API_BASE = getApiBase();
 
+// ===== Concurrent Request Limiter =====
+// Limits the number of simultaneous API requests to prevent server overload
+// When charts refetch after filter change, this spreads out the load
+const MAX_CONCURRENT_REQUESTS = 4;
+let activeRequests = 0;
+const requestQueue = [];
+
+const processQueue = () => {
+  while (requestQueue.length > 0 && activeRequests < MAX_CONCURRENT_REQUESTS) {
+    const { execute, resolve, reject } = requestQueue.shift();
+    activeRequests++;
+    execute()
+      .then(resolve)
+      .catch(reject)
+      .finally(() => {
+        activeRequests--;
+        processQueue();
+      });
+  }
+};
+
+/**
+ * Queue a request to limit concurrent API calls
+ * High priority requests bypass the queue
+ */
+const queueRequest = (executeFn, priority = 'normal') => {
+  return new Promise((resolve, reject) => {
+    if (priority === 'high' || activeRequests < MAX_CONCURRENT_REQUESTS) {
+      // Execute immediately if high priority or under limit
+      activeRequests++;
+      executeFn()
+        .then(resolve)
+        .catch(reject)
+        .finally(() => {
+          activeRequests--;
+          processQueue();
+        });
+    } else {
+      // Add to queue
+      requestQueue.push({ execute: executeFn, resolve, reject });
+    }
+  });
+};
+
 // Create axios instance
 const apiClient = axios.create({
   baseURL: API_BASE,
@@ -90,15 +134,17 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL
 
 /**
  * Get cached response or fetch fresh data
+ * Uses request queue to limit concurrent API calls during cascade refetches
  * @param {string} cacheKey - Unique key for this request
  * @param {Function} fetchFn - Function that returns a promise for the API call
  * @param {Object} options - Cache options
  * @param {boolean} options.forceRefresh - Skip cache and fetch fresh
  * @param {AbortSignal} options.signal - AbortController signal for cancellation
+ * @param {string} options.priority - 'high' bypasses queue, 'normal' queues when busy
  * @returns {Promise} - Cached or fresh response
  */
 const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
-  const { forceRefresh = false, signal } = options;
+  const { forceRefresh = false, signal, priority = 'normal' } = options;
 
   // Check if already aborted before making request
   if (signal?.aborted) {
@@ -111,15 +157,15 @@ const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
   if (!forceRefresh && apiCache.has(cacheKey)) {
     const cached = apiCache.get(cacheKey);
     if (Date.now() - cached.timestamp < CACHE_TTL) {
-      // Return cached data immediately
+      // Return cached data immediately (no queue needed)
       return cached.data;
     }
     // Cache expired, remove it
     apiCache.delete(cacheKey);
   }
 
-  // Fetch fresh data
-  const response = await fetchFn();
+  // Queue the fetch to limit concurrent requests
+  const response = await queueRequest(fetchFn, priority);
 
   // Don't cache if request was aborted
   if (signal?.aborted) {
