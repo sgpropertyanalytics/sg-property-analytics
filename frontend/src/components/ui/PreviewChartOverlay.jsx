@@ -77,7 +77,7 @@ export function PreviewChartOverlay({ chartRef, children }) {
   }
 
   return (
-    <div className="relative">
+    <div className="relative h-full w-full">
       {children}
 
       {/* Selective blur overlay - only covers plot area */}
