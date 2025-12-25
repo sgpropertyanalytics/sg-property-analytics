@@ -241,6 +241,28 @@ function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered }) {
 }
 
 // =============================================================================
+// SCORE STYLING HELPERS (shared by HoverCard and LiquidityRankingTable)
+// =============================================================================
+
+function getScoreBadgeStyleShared(score) {
+  if (score === null || score === undefined) return 'bg-gray-100 text-gray-500';
+  if (score >= 80) return 'bg-emerald-500 text-white';        // Excellent
+  if (score >= 60) return 'bg-emerald-300 text-emerald-900';  // Good
+  if (score >= 40) return 'bg-amber-300 text-amber-900';      // Average
+  if (score >= 20) return 'bg-orange-300 text-orange-900';    // Below Average
+  return 'bg-rose-400 text-white';                            // Poor
+}
+
+function getScoreLabelShared(score) {
+  if (score === null || score === undefined) return '-';
+  if (score >= 80) return 'Excellent';
+  if (score >= 60) return 'Good';
+  if (score >= 40) return 'Average';
+  if (score >= 20) return 'Below Avg';
+  return 'Poor';
+}
+
+// =============================================================================
 // HOVER CARD COMPONENT
 // =============================================================================
 
@@ -264,17 +286,24 @@ function HoverCard({ district, data }) {
           <span className="font-bold text-[#213448] text-sm">
             {district.district}
           </span>
-          {metrics.liquidity_tier && (
-            <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${getTierBadgeStyle(metrics.liquidity_tier)}`}>
-              {metrics.liquidity_tier}
+          {/* Liquidity Score Badge */}
+          <div className="flex items-center gap-1">
+            <span className={`px-2 py-0.5 rounded text-sm font-bold ${getScoreBadgeStyleShared(metrics.liquidity_score)}`}>
+              {metrics.liquidity_score?.toFixed(0) || '-'}
             </span>
-          )}
+          </div>
         </div>
 
         {/* District name */}
         <p className="text-xs text-[#547792] mb-2 leading-tight">
           {district.name}
         </p>
+
+        {/* Score tier label */}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] text-[#547792]">Liquidity Score</span>
+          <span className="text-[10px] font-semibold text-[#213448]">{getScoreLabelShared(metrics.liquidity_score)}</span>
+        </div>
 
         <div className="h-px bg-[#94B4C1]/30 mb-2" />
 
@@ -889,12 +918,22 @@ export default function DistrictLiquidityMap() {
 // =============================================================================
 
 function LiquidityRankingTable({ districtData }) {
-  // Sort by monthly velocity descending (highest liquidity first)
+  // Sort by liquidity_score descending (primary), then velocity (secondary)
   const sortedData = useMemo(() => {
     return [...districtData]
       .filter(d => d.has_data)
-      .sort((a, b) => (b.liquidity_metrics?.monthly_velocity || 0) - (a.liquidity_metrics?.monthly_velocity || 0));
+      .sort((a, b) => {
+        const scoreA = a.liquidity_metrics?.liquidity_score ?? -1;
+        const scoreB = b.liquidity_metrics?.liquidity_score ?? -1;
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        // Tiebreaker: velocity
+        return (b.liquidity_metrics?.monthly_velocity || 0) - (a.liquidity_metrics?.monthly_velocity || 0);
+      });
   }, [districtData]);
+
+  // Use shared score styling helpers
+  const getScoreBadgeStyle = getScoreBadgeStyleShared;
+  const getScoreLabel = getScoreLabelShared;
 
   const getRegionBadge = (region) => {
     switch (region) {
@@ -947,7 +986,7 @@ function LiquidityRankingTable({ districtData }) {
           District Volume Liquidity Ranking
         </h3>
         <p className="text-xs text-[#547792]">
-          Sorted by monthly transaction velocity (highest liquidity first)
+          Sorted by composite liquidity score (highest first)
         </p>
       </div>
 
@@ -962,7 +1001,7 @@ function LiquidityRankingTable({ districtData }) {
                 index < 3 ? 'ring-1 ring-[#EAE0CF]' : ''
               }`}
             >
-              {/* Header: Rank + District + Region */}
+              {/* Header: Rank + District + Region + Score */}
               <div className="flex items-center gap-2 mb-2">
                 <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
                   index === 0 ? 'bg-amber-400 text-white' :
@@ -976,9 +1015,13 @@ function LiquidityRankingTable({ districtData }) {
                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${getRegionBadge(district.region)}`}>
                   {district.region}
                 </span>
-                <span className={`ml-auto px-1.5 py-0.5 rounded text-[10px] font-semibold ${getTierBadge(m.liquidity_tier)}`}>
-                  {m.liquidity_tier || '-'}
-                </span>
+                {/* Liquidity Score Badge */}
+                <div className="ml-auto flex items-center gap-1">
+                  <span className={`px-2 py-0.5 rounded text-sm font-bold ${getScoreBadgeStyle(m.liquidity_score)}`}>
+                    {m.liquidity_score?.toFixed(0) || '-'}
+                  </span>
+                  <span className="text-[8px] text-[#547792]">{getScoreLabel(m.liquidity_score)}</span>
+                </div>
               </div>
 
               {/* Area name */}
@@ -986,15 +1029,19 @@ function LiquidityRankingTable({ districtData }) {
                 {district.full_name}
               </div>
 
-              {/* Key Metrics Grid */}
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="bg-emerald-50/50 rounded p-1.5">
+              {/* Key Metrics Grid - 4 columns with Score first */}
+              <div className="grid grid-cols-4 gap-1.5 text-center">
+                <div className="bg-sky-50/50 rounded p-1.5">
                   <div className="text-[10px] text-[#547792]">Velocity</div>
                   <div className="text-sm font-bold text-[#213448]">{m.monthly_velocity?.toFixed(1) || '0'}</div>
                 </div>
                 <div className="bg-[#EAE0CF]/30 rounded p-1.5">
                   <div className="text-[10px] text-[#547792]">Tx</div>
                   <div className="text-sm font-semibold text-[#213448]">{m.tx_count?.toLocaleString() || '0'}</div>
+                </div>
+                <div className="bg-emerald-50/50 rounded p-1.5">
+                  <div className="text-[10px] text-[#547792]">Tier</div>
+                  <div className="text-[10px] font-semibold text-[#213448]">{m.liquidity_tier || '-'}</div>
                 </div>
                 <div className="bg-rose-50/50 rounded p-1.5">
                   <div className="text-[10px] text-[#547792]">Fragility</div>
@@ -1023,9 +1070,17 @@ function LiquidityRankingTable({ districtData }) {
       <div className="hidden md:block overflow-x-auto max-w-full">
         <table className="w-full text-xs min-w-[1000px]">
           <thead>
-            {/* Group Header Row - Exit Safety + Concentration (Resale-only) */}
+            {/* Group Header Row - Score + Exit Safety + Concentration */}
             <tr className="bg-[#EAE0CF]/20">
-              <th colSpan={8} className="border-b border-[#94B4C1]/20"></th>
+              <th colSpan={2} className="border-b border-[#94B4C1]/20"></th>
+              <th
+                colSpan={1}
+                className="px-3 py-1.5 text-center text-[10px] font-bold text-sky-700 uppercase tracking-wider bg-sky-100/70"
+                title="Composite liquidity score (0-100) combining exit safety and market health"
+              >
+                Liquidity
+              </th>
+              <th colSpan={6} className="border-b border-[#94B4C1]/20"></th>
               <th
                 colSpan={3}
                 className="px-3 py-1.5 text-center text-[10px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-100/70"
@@ -1046,6 +1101,12 @@ function LiquidityRankingTable({ districtData }) {
             {/* Column Header Row */}
             <tr className="bg-[#EAE0CF]/30 border-b border-[#94B4C1]/30">
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap">Rank</th>
+              <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-sky-50/50">
+                <span className="inline-flex items-center">
+                  Score
+                  <InfoTooltip text="Composite liquidity score (0-100). Exit Safety (60%): velocity, breadth, concentration. Market Health (40%): volume, diversity, stability, organic demand." color="#0ea5e9" />
+                </span>
+              </th>
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap">District</th>
               <th className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap min-w-[200px]">Area</th>
               <th className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap">Region</th>
@@ -1126,6 +1187,18 @@ function LiquidityRankingTable({ districtData }) {
                     }`}>
                       {index + 1}
                     </span>
+                  </td>
+
+                  {/* Liquidity Score - NEW PRIMARY COLUMN */}
+                  <td className="px-3 py-2 text-center bg-sky-50/40">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className={`inline-flex items-center justify-center w-10 h-6 rounded-md text-sm font-bold ${getScoreBadgeStyle(m.liquidity_score)}`}>
+                        {m.liquidity_score !== null && m.liquidity_score !== undefined ? m.liquidity_score.toFixed(0) : '-'}
+                      </span>
+                      <span className="text-[8px] text-[#547792]">
+                        {getScoreLabel(m.liquidity_score)}
+                      </span>
+                    </div>
                   </td>
 
                   {/* District ID */}

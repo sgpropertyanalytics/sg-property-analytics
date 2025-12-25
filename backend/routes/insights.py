@@ -655,6 +655,22 @@ def district_liquidity():
         resale_velocity_results = resale_velocity_query.all()
         resale_velocity_data = {row.district: row.resale_tx_count for row in resale_velocity_results}
 
+        # =================================================================
+        # PRICE STABILITY METRICS (Resale-only: PSF Coefficient of Variation)
+        # Lower CV = more consistent pricing = healthier market
+        # =================================================================
+        psf_cv_query = db.session.query(
+            Transaction.district,
+            (func.stddev(Transaction.psf) / func.nullif(func.avg(Transaction.psf), 0)).label("psf_cv")
+        ).filter(
+            and_(*resale_filter_conditions)
+        ).group_by(
+            Transaction.district
+        )
+
+        psf_cv_results = psf_cv_query.all()
+        psf_cv_by_district = {row.district: float(row.psf_cv) if row.psf_cv else None for row in psf_cv_results}
+
         # Query project-level resale transaction counts for concentration calculation
         project_query = db.session.query(
             Transaction.district,
@@ -762,6 +778,78 @@ def district_liquidity():
             else:
                 return "Very Low"
 
+        # =================================================================
+        # COMPOSITE LIQUIDITY SCORE (0-100)
+        # Combines exit safety (60%) and market health (40%)
+        # =================================================================
+        def percentile_score(value, all_values):
+            """Convert raw value to 0-100 percentile rank."""
+            if value is None or not all_values:
+                return 50  # Neutral if no data
+            valid_values = [v for v in all_values if v is not None]
+            if not valid_values:
+                return 50
+            sorted_vals = sorted(valid_values)
+            rank = sum(1 for v in sorted_vals if v < value)
+            return (rank / len(sorted_vals)) * 100
+
+        def calculate_liquidity_score(
+            monthly_velocity, resale_project_count, concentration_gini,
+            tx_count, project_count, psf_cv, resale_pct,
+            all_velocities, all_resale_counts, all_tx_counts, all_project_counts
+        ):
+            """
+            Calculate composite liquidity score (0-100).
+
+            Components:
+            - Exit Safety (60%): velocity (35%), breadth (15%), concentration (10%)
+            - Market Health (40%): volume (18%), diversity (9%), stability (8%), organic (5%)
+            """
+            # EXIT SAFETY (60%)
+            velocity_score = percentile_score(monthly_velocity, all_velocities) * 0.35
+            breadth_score = percentile_score(resale_project_count, all_resale_counts) * 0.15
+            # Gini: 0 = evenly spread (good), 1 = concentrated (bad)
+            gini = concentration_gini if concentration_gini is not None else 0.5
+            concentration_score = (1 - gini) * 100 * 0.10
+
+            exit_safety = velocity_score + breadth_score + concentration_score
+
+            # MARKET HEALTH (40%)
+            volume_score = percentile_score(tx_count, all_tx_counts) * 0.18
+            diversity_score = percentile_score(project_count, all_project_counts) * 0.09
+            # PSF CV: lower is better, cap at 0.5
+            cv = min(psf_cv, 0.5) if psf_cv is not None else 0.25
+            stability_score = (1 - cv * 2) * 100 * 0.08
+            # Organic demand: higher resale % is better
+            organic_score = (resale_pct or 0) * 0.05
+
+            market_health = volume_score + diversity_score + stability_score + organic_score
+
+            # FINAL SCORE (clamped to 0-100)
+            score = exit_safety + market_health
+            return round(max(0, min(100, score)), 1)
+
+        def get_score_tier(score):
+            """Convert numeric score to tier label."""
+            if score is None:
+                return None
+            if score >= 80:
+                return "Excellent"
+            elif score >= 60:
+                return "Good"
+            elif score >= 40:
+                return "Average"
+            elif score >= 20:
+                return "Below Average"
+            else:
+                return "Poor"
+
+        # Collect all values for percentile-based normalization
+        all_velocities = list(resale_velocities.values())
+        all_resale_counts = [c["project_count"] for c in concentration_by_district.values()]
+        all_tx_counts = [row.tx_count for row in results if row.tx_count]
+        all_project_counts = [row.project_count for row in results if row.project_count]
+
         # Build response with all 28 districts
         all_districts = [f"D{str(i).zfill(2)}" for i in range(1, 29)]
         districts_response = []
@@ -817,6 +905,25 @@ def district_liquidity():
                     "top_project_share": 0
                 })
 
+                # Get PSF coefficient of variation (price stability)
+                psf_cv = psf_cv_by_district.get(district_id)
+
+                # Calculate composite liquidity score
+                liquidity_score = calculate_liquidity_score(
+                    monthly_velocity=monthly_velocity,
+                    resale_project_count=concentration["project_count"],
+                    concentration_gini=concentration["gini"],
+                    tx_count=tx_count,
+                    project_count=project_count,
+                    psf_cv=psf_cv,
+                    resale_pct=resale_pct,
+                    all_velocities=all_velocities,
+                    all_resale_counts=all_resale_counts,
+                    all_tx_counts=all_tx_counts,
+                    all_project_counts=all_project_counts
+                )
+                score_tier = get_score_tier(liquidity_score)
+
                 districts_response.append({
                     "district_id": district_id,
                     "name": short_name,
@@ -824,6 +931,9 @@ def district_liquidity():
                     "region": region,
                     "has_data": True,
                     "liquidity_metrics": {
+                        # Composite Score
+                        "liquidity_score": liquidity_score,
+                        "score_tier": score_tier,
                         # Market Structure (Combined)
                         "tx_count": tx_count,
                         "new_sale_count": new_sale_count,
@@ -839,7 +949,9 @@ def district_liquidity():
                         "concentration_gini": concentration["gini"],
                         "fragility_label": concentration["fragility"],
                         "resale_project_count": concentration["project_count"],  # Projects with resale
-                        "top_project_share": concentration["top_project_share"]
+                        "top_project_share": concentration["top_project_share"],
+                        # Price Stability (Resale-only)
+                        "psf_cv": round(psf_cv, 3) if psf_cv else None
                     },
                     "bedroom_breakdown": bedroom_by_district.get(district_id, {})
                 })
@@ -852,6 +964,9 @@ def district_liquidity():
                     "region": region,
                     "has_data": False,
                     "liquidity_metrics": {
+                        # Composite Score
+                        "liquidity_score": None,
+                        "score_tier": None,
                         # Market Structure (Combined)
                         "tx_count": 0,
                         "new_sale_count": 0,
@@ -867,7 +982,9 @@ def district_liquidity():
                         "concentration_gini": None,
                         "fragility_label": None,
                         "resale_project_count": 0,
-                        "top_project_share": 0
+                        "top_project_share": 0,
+                        # Price Stability (Resale-only)
+                        "psf_cv": None
                     },
                     "bedroom_breakdown": {}
                 })
@@ -889,7 +1006,9 @@ def district_liquidity():
                 "mean_velocity": round(mean_velocity, 2),
                 "stddev_velocity": round(stddev_velocity, 2),
                 "methodology_notes": {
-                    "exit_safety_metrics": "Velocity, Z-Score, Tier, Rank calculated on RESALE only (organic demand signal)",
+                    "liquidity_score": "Composite 0-100 score: Exit Safety (60%) + Market Health (40%)",
+                    "exit_safety_metrics": "Velocity (35%), Breadth (15%), Concentration (10%) - RESALE only",
+                    "market_health_metrics": "Volume (18%), Diversity (9%), Stability (8%), Organic (5%)",
                     "concentration_metrics": "Gini, Fragility, Top Share calculated on RESALE only (avoids developer release distortion)",
                     "market_structure_metrics": "Transactions, Projects, New%/Resale% include all sale types (total activity)"
                 },
