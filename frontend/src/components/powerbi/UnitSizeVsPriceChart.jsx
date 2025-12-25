@@ -286,41 +286,27 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   return (
     <div className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden ${updating ? 'opacity-70' : ''}`}>
       {/* Header */}
-      <div className="p-4 border-b border-[#94B4C1]/30">
+      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-[#213448]">Unit Size vs Price</h3>
-            <p className="text-xs text-[#547792] mt-0.5">
-              What you get for your budget
-            </p>
-          </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[#94B4C1]">
-              {meta.sample_size.toLocaleString()} of {meta.total_count.toLocaleString()}
-            </span>
-            {/* Refresh button */}
-            <button
-              onClick={handleRefresh}
-              disabled={updating}
-              className="p-1 rounded hover:bg-[#EAE0CF]/50 text-[#547792] hover:text-[#213448] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Refresh sample"
-            >
-              <svg
-                className={`w-3.5 h-3.5 ${updating ? 'animate-spin' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-            </button>
+            <h3 className="font-semibold text-[#213448]">Unit Size vs Price</h3>
+            {updating && (
+              <div className="w-3 h-3 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
+            )}
           </div>
+          {/* Refresh button */}
+          <button
+            onClick={handleRefresh}
+            disabled={updating}
+            className="text-xs px-2.5 py-1 rounded-full border bg-white text-[#547792] border-[#94B4C1] hover:bg-[#EAE0CF]/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh sample"
+          >
+            ↻ Refresh
+          </button>
         </div>
+        <p className="text-xs text-[#547792] mt-1">
+          What you get for your budget
+        </p>
       </div>
 
       {/* Sampling Note - KeyInsightBox style */}
@@ -333,6 +319,14 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         <PreviewChartOverlay chartRef={chartRef}>
           <Scatter ref={chartRef} data={chartData} options={options} />
         </PreviewChartOverlay>
+      </div>
+
+      {/* Footer - sample info (matches PriceDistribution footer) */}
+      <div className="px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
+        <div className="flex items-center justify-between">
+          <span>{meta.sample_size.toLocaleString()} of {meta.total_count.toLocaleString()} transactions sampled</span>
+          <span className="text-[#94B4C1]">Click refresh ↻ for new sample</span>
+        </div>
       </div>
     </div>
   );
