@@ -37,36 +37,38 @@ export function PreviewChartOverlay({ chartRef, children }) {
       return;
     }
 
-    const chart = chartRef?.current;
-    if (!chart) return;
+    // Poll for chart availability and updates
+    // This is safer than mutating chart.options
+    let intervalId;
+    let timeoutId;
 
-    // Initial update after a brief delay to ensure chart is rendered
-    const initialTimeout = setTimeout(updateBounds, 100);
+    const checkAndUpdate = () => {
+      const chart = chartRef?.current;
+      if (chart && chart.chartArea) {
+        updateBounds();
+      }
+    };
 
-    // Update on resize using ResizeObserver
+    // Initial delay to let chart render
+    timeoutId = setTimeout(() => {
+      checkAndUpdate();
+      // Then poll periodically for chart updates (filter changes, etc.)
+      intervalId = setInterval(checkAndUpdate, 500);
+    }, 200);
+
+    // Also use ResizeObserver for resize updates
     let resizeObserver;
-    if (chart.canvas) {
+    const chart = chartRef?.current;
+    if (chart?.canvas) {
       resizeObserver = new ResizeObserver(() => {
-        // Debounce resize updates
-        requestAnimationFrame(updateBounds);
+        requestAnimationFrame(checkAndUpdate);
       });
       resizeObserver.observe(chart.canvas);
     }
 
-    // Also listen for chart updates (filter changes cause re-renders)
-    const animationEndHandler = () => updateBounds();
-    chart.options = chart.options || {};
-    const originalOnComplete = chart.options.animation?.onComplete;
-    chart.options.animation = {
-      ...chart.options.animation,
-      onComplete: (animation) => {
-        originalOnComplete?.(animation);
-        animationEndHandler();
-      },
-    };
-
     return () => {
-      clearTimeout(initialTimeout);
+      clearTimeout(timeoutId);
+      clearInterval(intervalId);
       resizeObserver?.disconnect();
     };
   }, [isPremium, chartRef, updateBounds]);
