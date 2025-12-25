@@ -1889,11 +1889,19 @@ def filter_options():
     """
     Get available filter options based on current data.
     Returns unique values for each filterable dimension.
+
+    Query params:
+      - schema: 'v1' (default) returns both old and new fields, 'v2' returns only camelCase + enums
     """
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func, distinct
     from services.data_processor import _get_market_segment
+    from schemas.api_contract import serialize_filter_options
+
+    # Schema version: v1 (dual-mode) or v2 (strict)
+    schema_version = request.args.get('schema', 'v1')
+    include_deprecated = (schema_version != 'v2')
 
     try:
         # Base filter to exclude outliers
@@ -1931,26 +1939,32 @@ def filter_options():
             if region in regions:
                 regions[region].append(d)
 
-        return jsonify({
-            "districts": districts,
-            "regions": regions,
-            "bedrooms": bedrooms,
-            "sale_types": sale_types,
-            "projects": projects[:100],  # Limit project list
-            "date_range": {
-                "min": min_date.isoformat() if min_date else None,
-                "max": max_date.isoformat() if max_date else None
-            },
-            "psf_range": {
-                "min": psf_stats[0] if psf_stats else None,
-                "max": psf_stats[1] if psf_stats else None
-            },
-            "size_range": {
-                "min": size_stats[0] if size_stats else None,
-                "max": size_stats[1] if size_stats else None
-            },
-            "tenures": tenures
-        })
+        # Use serializer to transform response
+        date_range = {
+            "min": min_date.isoformat() if min_date else None,
+            "max": max_date.isoformat() if max_date else None
+        }
+        psf_range = {
+            "min": psf_stats[0] if psf_stats else None,
+            "max": psf_stats[1] if psf_stats else None
+        }
+        size_range = {
+            "min": size_stats[0] if size_stats else None,
+            "max": size_stats[1] if size_stats else None
+        }
+
+        return jsonify(serialize_filter_options(
+            districts=districts,
+            regions=regions,
+            bedrooms=bedrooms,
+            sale_types=sale_types,
+            projects=projects[:100],  # Limit project list
+            date_range=date_range,
+            psf_range=psf_range,
+            size_range=size_range,
+            tenures=tenures,
+            include_deprecated=include_deprecated
+        ))
     except Exception as e:
         print(f"GET /api/filter-options ERROR: {e}")
         return jsonify({"error": str(e)}), 500

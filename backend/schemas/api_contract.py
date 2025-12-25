@@ -583,3 +583,153 @@ def serialize_aggregate_response(
         'data': serialized_data,
         'meta': meta_v2,
     }
+
+
+# =============================================================================
+# FILTER OPTIONS SERIALIZATION
+# =============================================================================
+
+class FilterOptionsFields:
+    """Field names for filter-options API response (camelCase for v2)."""
+    DISTRICTS = 'districts'
+    REGIONS = 'regions'
+    BEDROOMS = 'bedrooms'
+    SALE_TYPES = 'saleTypes'          # v1: sale_types
+    PROJECTS = 'projects'
+    DATE_RANGE = 'dateRange'          # v1: date_range
+    PSF_RANGE = 'psfRange'            # v1: psf_range
+    SIZE_RANGE = 'sizeRange'          # v1: size_range
+    TENURES = 'tenures'
+    MARKET_SEGMENTS = 'marketSegments'
+
+
+class Bedroom:
+    """Bedroom enum values for API responses."""
+    ONE = 1
+    TWO = 2
+    THREE = 3
+    FOUR = 4
+    FIVE_PLUS = '5_plus'
+
+    @classmethod
+    def from_db(cls, db_value: Optional[int]) -> Any:
+        """Convert DB bedroom count to API value."""
+        if db_value is None:
+            return None
+        if db_value >= 5:
+            return cls.FIVE_PLUS
+        return db_value
+
+    @classmethod
+    def get_label(cls, value: Any) -> str:
+        """Get display label for bedroom value."""
+        if value == cls.FIVE_PLUS:
+            return '5+'
+        return str(value)
+
+
+def _make_option(value: Any, label: str) -> Dict[str, Any]:
+    """Create a {value, label} option object."""
+    return {'value': value, 'label': label}
+
+
+def serialize_filter_options(
+    districts: list,
+    regions: dict,
+    bedrooms: list,
+    sale_types: list,
+    projects: list,
+    date_range: dict,
+    psf_range: dict,
+    size_range: dict,
+    tenures: list,
+    include_deprecated: bool = True
+) -> Dict[str, Any]:
+    """Serialize filter options to API v2 schema.
+
+    v2 Response Shape:
+    Each option is returned as { value, label } where:
+    - value = stable enum/identifier (used by logic)
+    - label = UI display text only
+
+    Args:
+        districts: List of district codes
+        regions: Dict of region → districts mapping
+        bedrooms: List of bedroom counts (integers)
+        sale_types: List of DB sale type values
+        projects: List of project names
+        date_range: Dict with min/max dates
+        psf_range: Dict with min/max PSF
+        size_range: Dict with min/max size
+        tenures: List of DB tenure values
+        include_deprecated: If True, include old snake_case fields
+
+    Returns:
+        Serialized filter options dict with {value, label} objects
+    """
+    # === Build v2 options as {value, label} objects ===
+
+    # Sale types: DB value → {value: enum, label: display}
+    sale_types_v2 = []
+    for st in sale_types:
+        if st:
+            enum_val = SaleType.from_db(st)
+            sale_types_v2.append(_make_option(enum_val, st))  # label = original DB value
+
+    # Tenures: DB value → {value: enum, label: display}
+    tenures_v2 = []
+    for t in tenures:
+        if t:
+            enum_val = Tenure.from_db(t)
+            tenures_v2.append(_make_option(enum_val, t))  # label = original DB value (e.g., "99-year")
+
+    # Regions: uppercase → {value: lowercase, label: uppercase}
+    regions_v2 = []
+    for region_key in ['CCR', 'RCR', 'OCR']:
+        if region_key in regions:
+            regions_v2.append(_make_option(region_key.lower(), region_key))
+
+    # Districts: {value: code, label: code}
+    districts_v2 = [_make_option(d, d) for d in districts if d]
+
+    # Bedrooms: int → {value: int or '5_plus', label: '1', '2', ... '5+'}
+    bedrooms_v2 = []
+    for br in bedrooms:
+        if br is not None:
+            enum_val = Bedroom.from_db(br)
+            label = Bedroom.get_label(enum_val)
+            bedrooms_v2.append(_make_option(enum_val, label))
+
+    # Market segments (same as regions for now)
+    market_segments_v2 = regions_v2.copy()
+
+    # Build v2 response
+    result = {
+        FilterOptionsFields.SALE_TYPES: sale_types_v2,
+        FilterOptionsFields.TENURES: tenures_v2,
+        FilterOptionsFields.REGIONS: regions_v2,
+        FilterOptionsFields.DISTRICTS: districts_v2,
+        FilterOptionsFields.BEDROOMS: bedrooms_v2,
+        FilterOptionsFields.MARKET_SEGMENTS: market_segments_v2,
+        FilterOptionsFields.PROJECTS: projects,
+        FilterOptionsFields.DATE_RANGE: date_range,
+        FilterOptionsFields.PSF_RANGE: psf_range,
+        FilterOptionsFields.SIZE_RANGE: size_range,
+        'apiContractVersion': API_CONTRACT_VERSION,
+    }
+
+    if include_deprecated:
+        # DEPRECATED: v1 snake_case fields with raw values (for backwards compat)
+        # TODO: Remove in Phase 1c after frontend migration complete
+        result.update({
+            'sale_types': sale_types,          # Raw DB values ['New Sale', 'Resale']
+            'tenures': tenures,                # Raw DB values ['Freehold', '99-year']
+            'districts': districts,            # Raw list ['D01', 'D02', ...]
+            'bedrooms': bedrooms,              # Raw integers [1, 2, 3, 4, 5]
+            'regions_legacy': regions,         # Original dict format {CCR: [...], RCR: [...]}
+            'date_range': date_range,
+            'psf_range': psf_range,
+            'size_range': size_range,
+        })
+
+    return result

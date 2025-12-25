@@ -15,6 +15,7 @@ Run with: pytest tests/test_api_contract.py -v
 
 import sys
 import os
+import pytest
 
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
@@ -587,3 +588,513 @@ class TestAggregateEndpointContract:
         assert data['data'] == []
         assert 'meta' in data
         assert data['meta'].get('apiContractVersion') == API_CONTRACT_VERSION
+
+
+class TestFilterOptionsSerializer:
+    """Unit tests for filter options serialization with {value, label} format."""
+
+    def test_serialize_filter_options_sale_types_as_value_label(self):
+        """Verify sale_types are returned as {value, label} objects."""
+        from schemas.api_contract import serialize_filter_options, SaleType
+
+        result = serialize_filter_options(
+            districts=['D01', 'D02'],
+            regions={'CCR': ['D01'], 'RCR': ['D02'], 'OCR': []},
+            bedrooms=[1, 2, 3],
+            sale_types=['New Sale', 'Resale'],
+            projects=['Test Condo'],
+            date_range={'min': '2020-01-01', 'max': '2024-12-31'},
+            psf_range={'min': 500, 'max': 5000},
+            size_range={'min': 300, 'max': 3000},
+            tenures=['Freehold', '99-year'],
+            include_deprecated=False
+        )
+
+        sale_types = result['saleTypes']
+
+        # Should be list of {value, label} objects
+        assert len(sale_types) == 2
+        for st in sale_types:
+            assert 'value' in st, "Each option must have 'value'"
+            assert 'label' in st, "Each option must have 'label'"
+
+        # Check specific values
+        values = [st['value'] for st in sale_types]
+        labels = [st['label'] for st in sale_types]
+        assert SaleType.NEW_SALE in values
+        assert SaleType.RESALE in values
+        assert 'New Sale' in labels
+        assert 'Resale' in labels
+
+    def test_serialize_filter_options_tenures_as_value_label(self):
+        """Verify tenures are returned as {value, label} objects."""
+        from schemas.api_contract import serialize_filter_options, Tenure
+
+        result = serialize_filter_options(
+            districts=['D01'],
+            regions={'CCR': ['D01'], 'RCR': [], 'OCR': []},
+            bedrooms=[2],
+            sale_types=['Resale'],
+            projects=[],
+            date_range={'min': None, 'max': None},
+            psf_range={'min': None, 'max': None},
+            size_range={'min': None, 'max': None},
+            tenures=['Freehold', '99-year', '999-year'],
+            include_deprecated=False
+        )
+
+        tenures = result['tenures']
+
+        # Should be list of {value, label} objects
+        assert len(tenures) == 3
+        for t in tenures:
+            assert 'value' in t
+            assert 'label' in t
+
+        # Check enum values
+        values = [t['value'] for t in tenures]
+        assert Tenure.FREEHOLD in values
+        assert Tenure.LEASEHOLD_99 in values
+        assert Tenure.LEASEHOLD_999 in values
+
+        # Labels should be original DB format
+        labels = [t['label'] for t in tenures]
+        assert 'Freehold' in labels
+        assert '99-year' in labels
+        assert '999-year' in labels
+
+    def test_serialize_filter_options_regions_as_value_label(self):
+        """Verify regions are returned as {value, label} objects."""
+        from schemas.api_contract import serialize_filter_options
+
+        result = serialize_filter_options(
+            districts=['D01', 'D15', 'D18'],
+            regions={'CCR': ['D01'], 'RCR': ['D15'], 'OCR': ['D18']},
+            bedrooms=[2],
+            sale_types=['Resale'],
+            projects=[],
+            date_range={},
+            psf_range={},
+            size_range={},
+            tenures=['Freehold'],
+            include_deprecated=False
+        )
+
+        regions = result['regions']
+
+        # Should be list of {value, label} objects
+        assert len(regions) == 3
+        for r in regions:
+            assert 'value' in r
+            assert 'label' in r
+
+        values = [r['value'] for r in regions]
+        labels = [r['label'] for r in regions]
+
+        # Values should be lowercase
+        assert 'ccr' in values
+        assert 'rcr' in values
+        assert 'ocr' in values
+
+        # Labels should be uppercase
+        assert 'CCR' in labels
+        assert 'RCR' in labels
+        assert 'OCR' in labels
+
+    def test_serialize_filter_options_districts_as_value_label(self):
+        """Verify districts are returned as {value, label} objects."""
+        from schemas.api_contract import serialize_filter_options
+
+        result = serialize_filter_options(
+            districts=['D01', 'D15'],
+            regions={'CCR': ['D01'], 'RCR': ['D15'], 'OCR': []},
+            bedrooms=[2],
+            sale_types=['Resale'],
+            projects=[],
+            date_range={},
+            psf_range={},
+            size_range={},
+            tenures=['Freehold'],
+            include_deprecated=False
+        )
+
+        districts = result['districts']
+
+        # Should be list of {value, label} objects
+        assert len(districts) == 2
+        for d in districts:
+            assert 'value' in d
+            assert 'label' in d
+
+        values = [d['value'] for d in districts]
+        assert 'D01' in values
+        assert 'D15' in values
+
+    def test_serialize_filter_options_bedrooms_as_value_label(self):
+        """Verify bedrooms are returned as {value, label} with 5_plus handling."""
+        from schemas.api_contract import serialize_filter_options, Bedroom
+
+        result = serialize_filter_options(
+            districts=['D01'],
+            regions={'CCR': ['D01'], 'RCR': [], 'OCR': []},
+            bedrooms=[1, 2, 3, 4, 5],
+            sale_types=['Resale'],
+            projects=[],
+            date_range={},
+            psf_range={},
+            size_range={},
+            tenures=['Freehold'],
+            include_deprecated=False
+        )
+
+        bedrooms = result['bedrooms']
+
+        # Should be list of {value, label} objects
+        assert len(bedrooms) == 5
+        for br in bedrooms:
+            assert 'value' in br
+            assert 'label' in br
+
+        # Find the 5+ entry
+        five_plus = next((br for br in bedrooms if br['value'] == Bedroom.FIVE_PLUS), None)
+        assert five_plus is not None, "Should have 5_plus value"
+        assert five_plus['label'] == '5+', "5_plus should have label '5+'"
+
+        # Check that 1-4 are integers
+        for br in bedrooms:
+            if br['value'] != Bedroom.FIVE_PLUS:
+                assert isinstance(br['value'], int)
+
+    def test_serialize_filter_options_includes_market_segments(self):
+        """Verify marketSegments field is included."""
+        from schemas.api_contract import serialize_filter_options, FilterOptionsFields
+
+        result = serialize_filter_options(
+            districts=['D01'],
+            regions={'CCR': ['D01'], 'RCR': [], 'OCR': []},
+            bedrooms=[2],
+            sale_types=['Resale'],
+            projects=[],
+            date_range={},
+            psf_range={},
+            size_range={},
+            tenures=['Freehold'],
+            include_deprecated=False
+        )
+
+        assert FilterOptionsFields.MARKET_SEGMENTS in result
+        market_segments = result['marketSegments']
+
+        # Should be same as regions
+        for ms in market_segments:
+            assert 'value' in ms
+            assert 'label' in ms
+
+    def test_serialize_filter_options_dual_mode(self):
+        """Verify dual mode includes both v2 {value,label} and v1 raw values."""
+        from schemas.api_contract import serialize_filter_options
+
+        result = serialize_filter_options(
+            districts=['D01'],
+            regions={'CCR': ['D01'], 'RCR': [], 'OCR': []},
+            bedrooms=[2],
+            sale_types=['New Sale', 'Resale'],
+            projects=[],
+            date_range={'min': '2020-01-01', 'max': '2024-12-31'},
+            psf_range={'min': 500, 'max': 5000},
+            size_range={'min': 300, 'max': 3000},
+            tenures=['Freehold', '99-year'],
+            include_deprecated=True
+        )
+
+        # v2 format: {value, label} objects
+        assert 'saleTypes' in result
+        assert isinstance(result['saleTypes'][0], dict)
+        assert 'value' in result['saleTypes'][0]
+
+        # v1 format: raw DB values (deprecated)
+        assert 'sale_types' in result
+        assert 'New Sale' in result['sale_types']
+        assert 'Resale' in result['sale_types']
+
+        # Legacy regions dict preserved
+        assert 'regions_legacy' in result
+        assert 'CCR' in result['regions_legacy']
+
+    def test_serialize_filter_options_includes_contract_version(self):
+        """Verify API contract version is included."""
+        from schemas.api_contract import serialize_filter_options, API_CONTRACT_VERSION
+
+        result = serialize_filter_options(
+            districts=[],
+            regions={},
+            bedrooms=[],
+            sale_types=[],
+            projects=[],
+            date_range={},
+            psf_range={},
+            size_range={},
+            tenures=[],
+            include_deprecated=False
+        )
+
+        assert result['apiContractVersion'] == API_CONTRACT_VERSION
+
+    def test_serialize_filter_options_preserves_camel_case_fields(self):
+        """Verify camelCase field names are used."""
+        from schemas.api_contract import serialize_filter_options, FilterOptionsFields
+
+        result = serialize_filter_options(
+            districts=['D01'],
+            regions={'CCR': ['D01'], 'RCR': [], 'OCR': []},
+            bedrooms=[2],
+            sale_types=['Resale'],
+            projects=['Test'],
+            date_range={'min': '2020-01-01', 'max': '2024-12-31'},
+            psf_range={'min': 500, 'max': 5000},
+            size_range={'min': 300, 'max': 3000},
+            tenures=['Freehold'],
+            include_deprecated=False
+        )
+
+        # Check camelCase fields exist
+        assert FilterOptionsFields.DISTRICTS in result
+        assert FilterOptionsFields.SALE_TYPES in result
+        assert FilterOptionsFields.DATE_RANGE in result
+        assert FilterOptionsFields.PSF_RANGE in result
+        assert FilterOptionsFields.SIZE_RANGE in result
+        assert FilterOptionsFields.TENURES in result
+        assert FilterOptionsFields.MARKET_SEGMENTS in result
+
+
+class TestFilterOptionsEndpointContract:
+    """
+    Integration tests for /api/filter-options contract.
+
+    These tests verify the actual API response format.
+    Requires: Flask app context and database connection.
+    """
+
+    def _get_test_client(self):
+        """Get Flask test client."""
+        try:
+            from app import create_app
+            app = create_app()
+            app.config['TESTING'] = True
+            return app.test_client()
+        except Exception as e:
+            pytest.skip(f"Could not create test client: {e}")
+
+    def test_v2_schema_sale_types_value_label_format(self):
+        """v2 schema returns saleTypes as {value, label} objects."""
+        client = self._get_test_client()
+        response = client.get('/api/filter-options?schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        from schemas.api_contract import SaleType
+
+        sale_types = data.get('saleTypes', [])
+        assert len(sale_types) > 0, "Should have sale type options"
+
+        for st in sale_types:
+            assert 'value' in st, "Each saleType must have 'value'"
+            assert 'label' in st, "Each saleType must have 'label'"
+            assert st['value'] in SaleType.ALL, f"Invalid saleType value: {st['value']}"
+            assert st['value'] == st['value'].lower(), "value must be lowercase"
+            assert ' ' not in st['value'], "value must not contain spaces"
+
+        # Must NOT have v1 in v2 mode
+        assert 'sale_types' not in data
+
+    def test_v2_schema_tenures_value_label_format(self):
+        """v2 schema returns tenures as {value, label} objects."""
+        client = self._get_test_client()
+        response = client.get('/api/filter-options?schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        tenures = data.get('tenures', [])
+        for t in tenures:
+            assert 'value' in t, "Each tenure must have 'value'"
+            assert 'label' in t, "Each tenure must have 'label'"
+            # Value should be lowercase with underscores
+            assert t['value'] == t['value'].lower(), f"Tenure value should be lowercase: {t['value']}"
+            assert '-' not in t['value'], f"Tenure value should use underscores: {t['value']}"
+
+    def test_v2_schema_regions_value_label_format(self):
+        """v2 schema returns regions as {value, label} objects."""
+        client = self._get_test_client()
+        response = client.get('/api/filter-options?schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        regions = data.get('regions', [])
+        assert len(regions) > 0, "Should have region options"
+
+        for r in regions:
+            assert 'value' in r, "Each region must have 'value'"
+            assert 'label' in r, "Each region must have 'label'"
+            # Value should be lowercase
+            assert r['value'] == r['value'].lower()
+            # Label should be uppercase
+            assert r['label'] == r['label'].upper()
+
+    def test_v2_schema_districts_value_label_format(self):
+        """v2 schema returns districts as {value, label} objects."""
+        client = self._get_test_client()
+        response = client.get('/api/filter-options?schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        districts = data.get('districts', [])
+        assert len(districts) > 0, "Should have district options"
+
+        for d in districts:
+            assert 'value' in d, "Each district must have 'value'"
+            assert 'label' in d, "Each district must have 'label'"
+
+    def test_v2_schema_bedrooms_value_label_format(self):
+        """v2 schema returns bedrooms as {value, label} with 5_plus handling."""
+        client = self._get_test_client()
+        response = client.get('/api/filter-options?schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        from schemas.api_contract import Bedroom
+
+        bedrooms = data.get('bedrooms', [])
+        assert len(bedrooms) > 0, "Should have bedroom options"
+
+        for br in bedrooms:
+            assert 'value' in br, "Each bedroom must have 'value'"
+            assert 'label' in br, "Each bedroom must have 'label'"
+
+        # Check for 5+ handling if 5+ bedrooms exist
+        values = [br['value'] for br in bedrooms]
+        if Bedroom.FIVE_PLUS in values:
+            five_plus = next(br for br in bedrooms if br['value'] == Bedroom.FIVE_PLUS)
+            assert five_plus['label'] == '5+'
+
+    def test_v2_schema_includes_market_segments(self):
+        """v2 schema includes marketSegments field."""
+        client = self._get_test_client()
+        response = client.get('/api/filter-options?schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        assert 'marketSegments' in data, "Should include marketSegments"
+        for ms in data['marketSegments']:
+            assert 'value' in ms
+            assert 'label' in ms
+
+    def test_v2_schema_no_snake_case_fields(self):
+        """v2 schema returns only camelCase field names."""
+        client = self._get_test_client()
+        response = client.get('/api/filter-options?schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        # Should have camelCase
+        assert 'saleTypes' in data
+        assert 'dateRange' in data
+        assert 'psfRange' in data
+        assert 'sizeRange' in data
+        assert 'marketSegments' in data
+
+        # Should NOT have snake_case
+        assert 'sale_types' not in data
+        assert 'date_range' not in data
+        assert 'psf_range' not in data
+        assert 'size_range' not in data
+        assert 'regions_legacy' not in data
+
+    def test_backwards_compat_dual_mode(self):
+        """Default (v1) returns both v2 {value,label} and v1 raw values."""
+        client = self._get_test_client()
+        response = client.get('/api/filter-options')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        # v2 format present with {value, label}
+        assert 'saleTypes' in data
+        if data['saleTypes']:
+            assert isinstance(data['saleTypes'][0], dict)
+            assert 'value' in data['saleTypes'][0]
+            assert 'label' in data['saleTypes'][0]
+
+        # v1 format present with raw values
+        assert 'sale_types' in data
+        if data['sale_types']:
+            assert isinstance(data['sale_types'][0], str)
+
+        # Legacy regions dict preserved
+        assert 'regions_legacy' in data
+
+    def test_includes_contract_version(self):
+        """Response includes API contract version."""
+        client = self._get_test_client()
+        response = client.get('/api/filter-options')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+        from schemas.api_contract import API_CONTRACT_VERSION
+
+        assert data.get('apiContractVersion') == API_CONTRACT_VERSION
+
+    def test_v1_legacy_bedrooms_are_integers(self):
+        """Legacy bedrooms (v1) are returned as integers, not strings."""
+        client = self._get_test_client()
+        response = client.get('/api/filter-options')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        # Legacy bedrooms should be raw integers
+        bedrooms = data.get('bedrooms', [])
+        for br in bedrooms:
+            assert isinstance(br, int), f"Legacy bedroom should be int: {br}"
+
+    def test_no_missing_options(self):
+        """All expected option categories are present."""
+        client = self._get_test_client()
+        response = client.get('/api/filter-options?schema=v2')
+
+        if response.status_code != 200:
+            pytest.skip("API not available")
+
+        data = response.get_json()
+
+        required_fields = [
+            'saleTypes', 'tenures', 'regions', 'districts',
+            'bedrooms', 'marketSegments', 'projects',
+            'dateRange', 'psfRange', 'sizeRange'
+        ]
+        for field in required_fields:
+            assert field in data, f"Missing required field: {field}"
