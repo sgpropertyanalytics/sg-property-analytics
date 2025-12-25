@@ -225,52 +225,58 @@ def remove_duplicates_sql() -> int:
     - transaction_date
     - price
     - area_sqft
-    - floor_range (if column exists - added for more accurate deduplication)
+    - floor_range (always included with COALESCE to handle NULLs)
 
     Keeps the first occurrence (lowest ID) of each duplicate set.
+
+    IMPORTANT: floor_range MUST be included in deduplication key to avoid
+    incorrectly removing legitimate transactions on different floors with
+    the same project, date, price, and area. (Issue B3 in audit)
 
     Returns:
         Count of duplicates removed
     """
     before_count = db.session.query(Transaction).count()
 
-    # Check if floor_range column exists (for backward compatibility)
-    try:
-        from sqlalchemy import inspect
-        inspector = inspect(db.engine)
-        columns = [col['name'] for col in inspector.get_columns('transactions')]
-        has_floor_range = 'floor_range' in columns
-    except:
-        has_floor_range = False
+    # Always try to use floor_range with COALESCE (handles NULLs properly)
+    # Only fall back to simpler query if column doesn't exist in old schemas
+    sql_with_floor = text("""
+        DELETE FROM transactions
+        WHERE id NOT IN (
+            SELECT MIN(id)
+            FROM transactions
+            GROUP BY project_name, transaction_date, price, area_sqft,
+                     COALESCE(floor_range, '')
+        )
+    """)
 
-    # Use floor_range in deduplication if available for more accurate matching
-    if has_floor_range:
-        sql = text("""
-            DELETE FROM transactions
-            WHERE id NOT IN (
-                SELECT MIN(id)
-                FROM transactions
-                GROUP BY project_name, transaction_date, price, area_sqft,
-                         COALESCE(floor_range, '')
-            )
-        """)
-    else:
-        sql = text("""
-            DELETE FROM transactions
-            WHERE id NOT IN (
-                SELECT MIN(id)
-                FROM transactions
-                GROUP BY project_name, transaction_date, price, area_sqft
-            )
-        """)
+    sql_without_floor = text("""
+        DELETE FROM transactions
+        WHERE id NOT IN (
+            SELECT MIN(id)
+            FROM transactions
+            GROUP BY project_name, transaction_date, price, area_sqft
+        )
+    """)
 
     try:
-        db.session.execute(sql)
+        # First, try with floor_range (preferred - more accurate deduplication)
+        db.session.execute(sql_with_floor)
         db.session.commit()
         after_count = db.session.query(Transaction).count()
         return before_count - after_count
     except Exception as e:
+        # If floor_range column doesn't exist, fall back to simpler query
         db.session.rollback()
+        if 'floor_range' in str(e).lower() or 'column' in str(e).lower():
+            try:
+                db.session.execute(sql_without_floor)
+                db.session.commit()
+                after_count = db.session.query(Transaction).count()
+                return before_count - after_count
+            except Exception as e2:
+                db.session.rollback()
+                raise e2
         raise e
 
 
