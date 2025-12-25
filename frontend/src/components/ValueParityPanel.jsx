@@ -714,6 +714,7 @@ export function ValueParityPanel() {
               height={300}
               showHeader={false}
               compact={true}
+              excludeSoldOut={true}
               filters={{
                 priceMin: budget - 100000,
                 priceMax: budget + 100000,

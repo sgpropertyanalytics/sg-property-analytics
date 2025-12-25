@@ -29,6 +29,7 @@ export function HotProjectsTable({
   compact = false, // Compact mode for embedding
   showHeader = true, // Show/hide header
   onDataLoad = null, // Callback with data count after loading
+  excludeSoldOut = false, // When true, exclude projects with 0 unsold units
 }) {
   const subscriptionContext = useSubscription();
   const isPremium = subscriptionContext?.isPremium ?? true;
@@ -84,17 +85,27 @@ export function HotProjectsTable({
     }));
   };
 
-  // Sort data
-  const sortedData = [...data].sort((a, b) => {
-    const aVal = a[sortConfig.column] ?? -Infinity;
-    const bVal = b[sortConfig.column] ?? -Infinity;
-    if (typeof aVal === 'string') {
-      return sortConfig.order === 'desc'
-        ? bVal.localeCompare(aVal)
-        : aVal.localeCompare(bVal);
-    }
-    return sortConfig.order === 'desc' ? bVal - aVal : aVal - bVal;
-  });
+  // Filter and sort data
+  const sortedData = [...data]
+    // Filter out sold-out projects if excludeSoldOut is true
+    .filter(project => {
+      if (!excludeSoldOut) return true;
+      // Keep projects that have unsold inventory > 0
+      // Also keep projects where unsold_inventory is null/undefined (unknown inventory)
+      return project.unsold_inventory === null ||
+             project.unsold_inventory === undefined ||
+             project.unsold_inventory > 0;
+    })
+    .sort((a, b) => {
+      const aVal = a[sortConfig.column] ?? -Infinity;
+      const bVal = b[sortConfig.column] ?? -Infinity;
+      if (typeof aVal === 'string') {
+        return sortConfig.order === 'desc'
+          ? bVal.localeCompare(aVal)
+          : aVal.localeCompare(bVal);
+      }
+      return sortConfig.order === 'desc' ? bVal - aVal : aVal - bVal;
+    });
 
   // Color coding for % sold (BUYER-CENTRIC: indicates inventory availability)
   // Green = high availability (good for buyers), Red = low availability (act fast)
