@@ -177,9 +177,14 @@ export function MarketMomentumGrid() {
 
       {/* Footer with data info */}
       <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
-        <div className="flex items-center justify-between text-[10px] text-[#94B4C1]">
-          <span>Line: Median PSF • Bars: Total Transaction Value</span>
-          <span>{ALL_DISTRICTS.length} districts • Independent Y-axes</span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between text-[10px] text-[#94B4C1]">
+            <span>Line: Median PSF • Bars: Total Transaction Value</span>
+            <span>{ALL_DISTRICTS.length} districts • Independent Y-axes</span>
+          </div>
+          <div className="text-[10px] text-[#94B4C1] italic">
+            Note: D24 (Lim Chu Kang / Tengah) has no condo transactions — area is largely undeveloped with Tengah town still under construction.
+          </div>
         </div>
       </div>
     </div>
