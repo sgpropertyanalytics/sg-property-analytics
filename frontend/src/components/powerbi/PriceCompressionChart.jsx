@@ -54,7 +54,8 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  */
 export function PriceCompressionChart({ height = 380 }) {
   // Get GLOBAL filters and timeGrouping from context
-  const { buildApiParams, filters, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
 
   // Data state
@@ -97,7 +98,9 @@ export function PriceCompressionChart({ height = 380 }) {
       }
     };
     fetchData();
-  }, [buildApiParams, timeGrouping, filters]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+    // timeGrouping controls time granularity (year/quarter/month)
+  }, [debouncedFilterKey, timeGrouping]);
 
   // Transform raw API data into spread-friendly format
   const transformData = (rawData, timeGrain) => {
@@ -447,11 +450,11 @@ export function PriceCompressionChart({ height = 380 }) {
         </div>
       </div>
 
-      {/* Main Spread Chart - flex-1 min-h-0 */}
+      {/* Main Spread Chart - Chart.js handles data updates efficiently without key remount */}
       <ChartSlot>
         {data.length > 0 ? (
           <PreviewChartOverlay chartRef={chartRef}>
-            <Line key={timeGrouping} ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
+            <Line ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
           </PreviewChartOverlay>
         ) : (
           <div className="flex items-center justify-center h-full text-[#547792]">

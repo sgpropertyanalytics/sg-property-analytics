@@ -40,7 +40,8 @@ ChartJS.register(
  * - Tooltips show project details
  */
 export function UnitSizeVsPriceChart({ height = 350 }) {
-  const { buildApiParams, filters, highlight, crossFilter } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const { isPremium, showPaywall } = useSubscription();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -116,7 +117,9 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     };
 
     fetchData();
-  }, [buildApiParams, filters, highlight, crossFilter, refreshSeed]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+    // refreshSeed is local control for manual sample refresh
+  }, [debouncedFilterKey, refreshSeed]);
 
   // Transform data for Chart.js - group by bedroom
   const chartData = useMemo(() => {

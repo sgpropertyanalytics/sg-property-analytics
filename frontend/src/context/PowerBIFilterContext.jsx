@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { getFilterOptions } from '../api/client';
 
 const PowerBIFilterContext = createContext(null);
@@ -600,6 +600,65 @@ export function PowerBIFilterProvider({ children }) {
     return combined;
   }, [filters, crossFilter, highlight, breadcrumbs, drillPath]);
 
+  // ===== Stable Filter Key for Chart Dependencies =====
+  // This is a PRIMITIVE STRING that changes only when filters actually change.
+  // Charts should use this (plus their local options) as useEffect dependency
+  // instead of buildApiParams, which has unstable identity.
+  //
+  // Pattern: Charts call buildApiParams() to get params, but depend on filterKey for refetch trigger.
+  const filterKey = useMemo(() => {
+    return JSON.stringify({
+      // Core filters from activeFilters
+      dateRange: activeFilters.dateRange,
+      districts: activeFilters.districts,
+      bedroomTypes: activeFilters.bedroomTypes,
+      segments: activeFilters.segments,
+      saleType: activeFilters.saleType,
+      psfRange: activeFilters.psfRange,
+      sizeRange: activeFilters.sizeRange,
+      tenure: activeFilters.tenure,
+      propertyAge: activeFilters.propertyAge,
+      project: activeFilters.project,
+      // Highlight state (for time series)
+      highlight: highlight.value ? { dim: highlight.dimension, val: highlight.value } : null,
+      // Fact filter (for transaction table)
+      factFilter: factFilter.priceRange,
+    });
+  }, [activeFilters, highlight.dimension, highlight.value, factFilter.priceRange]);
+
+  // ===== Debounced Filter Key =====
+  // Delays effect triggers by 200ms when users click multiple filters in quick succession.
+  // This prevents firing 8+ API calls per click during active filter adjustment.
+  // Charts should use debouncedFilterKey (not filterKey) in useEffect dependencies.
+  const [debouncedFilterKey, setDebouncedFilterKey] = useState(filterKey);
+  const debounceTimeoutRef = useRef(null);
+  const isFirstFilterRender = useRef(true);
+
+  useEffect(() => {
+    // Skip debouncing on first render to ensure immediate initial load
+    if (isFirstFilterRender.current) {
+      isFirstFilterRender.current = false;
+      setDebouncedFilterKey(filterKey);
+      return;
+    }
+
+    // Clear existing timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    // Set debounced update after 200ms
+    debounceTimeoutRef.current = setTimeout(() => {
+      setDebouncedFilterKey(filterKey);
+    }, 200);
+
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [filterKey]);
+
   // ===== Build API query params from active filters =====
   // Options:
   //   excludeHighlight: true - excludes time highlight filter (for time chart to show all periods)
@@ -735,6 +794,8 @@ export function PowerBIFilterProvider({ children }) {
     filterOptions,
     activeFilters,
     activeFilterCount,
+    filterKey,         // Stable primitive for chart useEffect dependencies (avoids cascade refetch)
+    debouncedFilterKey, // Debounced (200ms) version - use this for fetch effects to prevent rapid-fire requests
     selectedProject,   // Drill-through only - does NOT affect global charts
 
     // Time Grouping (View Context - NOT a filter)

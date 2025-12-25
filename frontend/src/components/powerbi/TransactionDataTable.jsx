@@ -14,7 +14,8 @@ import { useSubscription } from '../../context/SubscriptionContext';
  * - Shows key transaction fields
  */
 export function TransactionDataTable({ height = 400 }) {
-  const { buildApiParams, activeFilterCount, crossFilter, highlight, factFilter } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, activeFilterCount, crossFilter, highlight, factFilter } = usePowerBIFilters();
   const subscriptionContext = useSubscription();
   const isPremium = subscriptionContext?.isPremium ?? true;
 
@@ -58,16 +59,18 @@ export function TransactionDataTable({ height = 400 }) {
     } finally {
       setLoading(false);
     }
-  }, [buildApiParams, pagination.page, pagination.limit, sortConfig, highlight]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey, pagination.page, pagination.limit, sortConfig]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Reset to page 1 when filters change (including factFilter from dimension chart clicks)
+  // Reset to page 1 when filters change
+  // debouncedFilterKey captures all filter state changes
   useEffect(() => {
     setPagination(prev => ({ ...prev, page: 1 }));
-  }, [activeFilterCount, crossFilter.value, highlight.value, factFilter]);
+  }, [debouncedFilterKey]);
 
   // Handle sort
   const handleSort = (column) => {

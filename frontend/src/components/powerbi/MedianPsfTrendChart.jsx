@@ -42,7 +42,8 @@ ChartJS.register(
  */
 export function MedianPsfTrendChart({ height = 300 }) {
   // Use global timeGrouping from context (controlled by toolbar toggle)
-  const { buildApiParams, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
   const [data, setData] = useState({ labels: [], ccr: [], rcr: [], ocr: [] });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -130,7 +131,8 @@ export function MedianPsfTrendChart({ height = 300 }) {
       }
     };
     fetchData();
-  }, [buildApiParams, timeGrouping]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey, timeGrouping]);
 
   const handleClick = (event) => {
     const chart = chartRef.current;
@@ -348,10 +350,10 @@ export function MedianPsfTrendChart({ height = 300 }) {
           {latestOcr && <span>OCR: ${latestOcr.toLocaleString()}</span>}
         </div>
       </div>
-      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+      {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
       <ChartSlot>
         <PreviewChartOverlay chartRef={chartRef}>
-          <Line key={timeGrouping} ref={chartRef} data={chartData} options={options} />
+          <Line ref={chartRef} data={chartData} options={options} />
         </PreviewChartOverlay>
       </ChartSlot>
       {/* Footer - fixed height h-11 for consistent alignment */}

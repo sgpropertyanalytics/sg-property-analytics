@@ -50,7 +50,8 @@ ChartJS.register(
  */
 export function NewVsResaleChart({ height = 350 }) {
   // Get GLOBAL filters and timeGrouping from context
-  const { buildApiParams, filters, timeGrouping } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, filters, timeGrouping } = usePowerBIFilters();
 
   // Provide safe defaults for filters if context not ready
   const safeFilters = {
@@ -101,7 +102,8 @@ export function NewVsResaleChart({ height = 350 }) {
       }
     };
     fetchData();
-  }, [buildApiParams, timeGrouping, filters]); // Re-fetch when global filters or timeGrouping change
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey, timeGrouping]);
 
   // Build filter summary for display
   const getFilterSummary = () => {
@@ -378,11 +380,11 @@ export function NewVsResaleChart({ height = 350 }) {
         </KeyInsightBox>
       </div>
 
-      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+      {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
       <ChartSlot>
         {chartData.length > 0 ? (
           <PreviewChartOverlay chartRef={chartRef}>
-            <Line key={timeGrouping} ref={chartRef} data={chartConfig} options={options} />
+            <Line ref={chartRef} data={chartConfig} options={options} />
           </PreviewChartOverlay>
         ) : (
           <div className="flex items-center justify-center h-full text-[#547792]">

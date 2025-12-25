@@ -38,7 +38,8 @@ ChartJS.register(
  * This chart answers ONE question: "Where do most transactions happen?"
  */
 export function PriceDistributionChart({ height = 300, numBins = 20 }) {
-  const { buildApiParams, highlight } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, highlight } = usePowerBIFilters();
   const [histogramData, setHistogramData] = useState({ bins: [], stats: {}, tail: {} });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -103,7 +104,9 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
       }
     };
     fetchData();
-  }, [buildApiParams, numBins, highlight, showFullRange]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+    // numBins and showFullRange are local chart options
+  }, [debouncedFilterKey, numBins, showFullRange]);
 
   // Helper to format price labels (e.g., $1.2M, $800K)
   const formatPrice = (value) => {
@@ -402,10 +405,10 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         </KeyInsightBox>
       </div>
 
-      {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
+      {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
       <ChartSlot>
         <PreviewChartOverlay chartRef={chartRef}>
-          <Bar key={showFullRange ? 'full' : 'capped'} ref={chartRef} data={chartData} options={options} />
+          <Bar ref={chartRef} data={chartData} options={options} />
         </PreviewChartOverlay>
       </ChartSlot>
 
