@@ -17,6 +17,10 @@ from sqlalchemy import text
 from models.database import db
 from models.transaction import Transaction
 
+# IQR multiplier for outlier detection - MUST match scripts/upload.py
+# Relaxed from standard 1.5x to 5.0x to include luxury condos
+IQR_MULTIPLIER = 5.0
+
 
 def calculate_iqr_bounds(column: str = 'price') -> Tuple[float, float, Dict[str, float]]:
     """
@@ -46,8 +50,8 @@ def calculate_iqr_bounds(column: str = 'price') -> Tuple[float, float, Dict[str,
     q1, q3 = float(result[0]), float(result[1])
 
     iqr = q3 - q1
-    lower_bound = q1 - 1.5 * iqr
-    upper_bound = q3 + 1.5 * iqr
+    lower_bound = q1 - IQR_MULTIPLIER * iqr
+    upper_bound = q3 + IQR_MULTIPLIER * iqr
 
     stats = {
         'q1': q1,
