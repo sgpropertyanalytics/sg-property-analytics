@@ -218,7 +218,7 @@ export function DistrictMicroChart({ district, data, onClick }) {
     return (
       <div className="h-full flex flex-col bg-white rounded border border-[#94B4C1]/50 overflow-hidden">
         <div className={`px-2 py-1.5 border-b border-[#94B4C1]/30 shrink-0 flex items-center justify-between ${headerBg}`}>
-          <span className="text-xs font-semibold text-[#213448] truncate">{district}</span>
+          <span className={`text-xs font-semibold truncate ${headerText}`}>{district}</span>
         </div>
         <div className="flex-1 flex items-center justify-center text-xs text-[#94B4C1]">
           No data
@@ -227,15 +227,19 @@ export function DistrictMicroChart({ district, data, onClick }) {
     );
   }
 
-  // Determine growth color for text
-  const growthTextColor = growthPercent === null ? 'text-[#94B4C1]'
-    : growthPercent >= 0 ? 'text-emerald-600' : 'text-red-500';
+  // Determine growth color for text (lighter on dark backgrounds)
+  const isDarkHeader = region === 'CCR' || region === 'RCR';
+  const growthTextColor = growthPercent === null
+    ? (isDarkHeader ? 'text-white/60' : 'text-[#94B4C1]')
+    : growthPercent >= 0
+      ? (isDarkHeader ? 'text-emerald-300' : 'text-emerald-600')
+      : (isDarkHeader ? 'text-red-300' : 'text-red-500');
 
   return (
     <div className="h-full flex flex-col bg-white rounded border border-[#94B4C1]/50 overflow-hidden hover:border-[#547792] transition-colors">
       {/* Header with district code and growth KPI - shaded by region */}
       <div className={`px-2 py-1.5 border-b border-[#94B4C1]/30 shrink-0 flex items-center justify-between gap-1 ${headerBg}`}>
-        <span className="text-xs font-semibold text-[#213448] truncate" title={DISTRICT_NAMES[district]}>
+        <span className={`text-xs font-semibold truncate ${headerText}`} title={DISTRICT_NAMES[district]}>
           {district}
         </span>
         {/* Prominent Growth KPI */}
