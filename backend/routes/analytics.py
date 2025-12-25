@@ -3430,25 +3430,24 @@ def get_project_price_bands(project_name):
 @analytics_bp.route("/projects/resale-projects", methods=["GET"])
 def get_resale_projects():
     """
-    Get list of projects with resale transactions for dropdown.
-    Returns project name, district, resale count, and data availability flags.
+    Get list of all projects from transactions table for dropdown.
+    Returns project name, district, transaction counts, and data availability flags.
     """
     start = time.time()
 
     try:
         from services.new_launch_units import get_units_for_project
 
-        # Get all projects with resale transactions
+        # Get all projects from transactions table
         result = db.session.execute(text("""
             SELECT
                 project_name,
                 district,
-                COUNT(*) as resale_count
+                COUNT(*) as transaction_count,
+                COUNT(CASE WHEN sale_type = 'RESALE' THEN 1 END) as resale_count
             FROM transactions
             WHERE is_outlier = false
-              AND sale_type = 'RESALE'
             GROUP BY project_name, district
-            HAVING COUNT(*) >= 1
             ORDER BY project_name
         """)).fetchall()
 
@@ -3456,7 +3455,8 @@ def get_resale_projects():
         for row in result:
             project_name = row[0]
             district = row[1]
-            resale_count = row[2]
+            transaction_count = row[2]
+            resale_count = row[3]
 
             # Check if we have unit data for this project
             unit_data = get_units_for_project(project_name)
@@ -3466,6 +3466,7 @@ def get_resale_projects():
             projects.append({
                 "name": project_name,
                 "district": district,
+                "transaction_count": transaction_count,
                 "resale_count": resale_count,
                 "has_total_units": has_total_units,
                 "has_top_year": has_top_year

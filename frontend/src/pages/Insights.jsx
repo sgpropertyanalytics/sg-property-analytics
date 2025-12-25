@@ -1,18 +1,21 @@
 /**
- * Project Deep Dive Page - Exit Queue Risk Analysis
+ * Project Deep Dive Page - Comprehensive Project Analysis
  *
  * Features:
  * - Searchable project dropdown for projects with resale transactions
  * - Property fundamentals (age, units, tenure)
+ * - Historical Downside Protection (P25/P50/P75 price bands)
  * - Exit queue risk assessment (maturity, pressure, risk badge)
  * - Resale activity metrics
  * - Gating warnings for special cases
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { getResaleProjects, getProjectExitQueue } from '../api/client';
+import { getResaleProjects, getProjectExitQueue, getProjectPriceBands } from '../api/client';
 import ExitRiskDashboard from '../components/powerbi/ExitRiskDashboard';
 import ProjectFundamentalsPanel from '../components/powerbi/ProjectFundamentalsPanel';
 import ResaleMetricsCards from '../components/powerbi/ResaleMetricsCards';
+import PriceBandChart from '../components/powerbi/PriceBandChart';
+import UnitPsfInput from '../components/powerbi/UnitPsfInput';
 import { KeyInsightBox } from '../components/ui/KeyInsightBox';
 
 export function InsightsContent() {
@@ -28,6 +31,12 @@ export function InsightsContent() {
   const [exitQueueData, setExitQueueData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Price bands state
+  const [priceBandsData, setPriceBandsData] = useState(null);
+  const [priceBandsLoading, setPriceBandsLoading] = useState(false);
+  const [priceBandsError, setPriceBandsError] = useState(null);
+  const [unitPsf, setUnitPsf] = useState(null);
 
   // Load project options on mount
   useEffect(() => {
@@ -70,6 +79,35 @@ export function InsightsContent() {
     fetchExitQueue();
   }, [selectedProject]);
 
+  // Load price bands data when project or unitPsf changes
+  useEffect(() => {
+    if (!selectedProject) {
+      setPriceBandsData(null);
+      setPriceBandsError(null);
+      return;
+    }
+
+    const fetchPriceBands = async () => {
+      setPriceBandsLoading(true);
+      setPriceBandsError(null);
+      try {
+        const params = {};
+        if (unitPsf) {
+          params.unit_psf = unitPsf;
+        }
+        const response = await getProjectPriceBands(selectedProject.name, params);
+        setPriceBandsData(response.data);
+      } catch (err) {
+        console.error('Failed to load price bands:', err);
+        setPriceBandsError(err.response?.data?.error || 'Failed to load price bands');
+        setPriceBandsData(null);
+      } finally {
+        setPriceBandsLoading(false);
+      }
+    };
+    fetchPriceBands();
+  }, [selectedProject, unitPsf]);
+
   // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -102,6 +140,9 @@ export function InsightsContent() {
     setSelectedProject(null);
     setExitQueueData(null);
     setError(null);
+    setPriceBandsData(null);
+    setPriceBandsError(null);
+    setUnitPsf(null);
   };
 
   // Render gating warnings
@@ -194,7 +235,7 @@ export function InsightsContent() {
                   ? `${selectedProject.name} (${selectedProject.district})`
                   : projectOptionsLoading
                     ? 'Loading projects...'
-                    : 'Search for a project with resale data...'}
+                    : 'Search for a project...'}
               </span>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                 {selectedProject && (
@@ -245,7 +286,10 @@ export function InsightsContent() {
                         <span className="truncate">{p.name}</span>
                         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                           <span className="text-xs text-[#94B4C1]">{p.district}</span>
-                          <span className="text-xs text-[#94B4C1]">{p.resale_count} resales</span>
+                          <span className="text-xs text-[#94B4C1]">{p.transaction_count || p.resale_count} txns</span>
+                          {p.resale_count > 0 && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded">{p.resale_count} resales</span>
+                          )}
                           {!p.has_total_units && (
                             <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">partial</span>
                           )}
@@ -266,7 +310,7 @@ export function InsightsContent() {
           {/* Project count info */}
           {!projectOptionsLoading && projectOptions.length > 0 && (
             <p className="text-xs text-[#94B4C1] mt-2">
-              {projectOptions.length.toLocaleString()} projects with resale transactions
+              {projectOptions.length.toLocaleString()} projects available
             </p>
           )}
         </div>
@@ -335,6 +379,44 @@ export function InsightsContent() {
               developer={exitQueueData.fundamentals?.developer}
               firstResaleDate={exitQueueData.fundamentals?.first_resale_date}
             />
+
+            {/* Historical Downside Protection - Price Bands */}
+            <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
+              <div className="mb-4">
+                <h2 className="text-base font-semibold text-[#213448] mb-1">
+                  Downside Protection Analysis
+                </h2>
+                <p className="text-sm text-[#547792]">
+                  See where your unit PSF sits relative to historical price floors
+                </p>
+              </div>
+
+              {/* Unit PSF Input */}
+              <div className="mb-4 max-w-xs">
+                <UnitPsfInput
+                  value={unitPsf}
+                  onChange={setUnitPsf}
+                  label="Your Unit PSF"
+                  placeholder="e.g., 2500"
+                />
+              </div>
+
+              {/* Price Band Chart */}
+              <PriceBandChart
+                bands={priceBandsData?.bands || []}
+                latest={priceBandsData?.latest}
+                trend={priceBandsData?.trend}
+                verdict={priceBandsData?.verdict}
+                unitPsf={unitPsf}
+                dataSource={priceBandsData?.data_source}
+                proxyLabel={priceBandsData?.proxy_label}
+                dataQuality={priceBandsData?.data_quality}
+                loading={priceBandsLoading}
+                error={priceBandsError}
+                projectName={selectedProject?.name}
+                height={450}
+              />
+            </div>
 
             {/* Exit Risk Dashboard (only if resale data exists) */}
             {exitQueueData.resale_metrics && (
