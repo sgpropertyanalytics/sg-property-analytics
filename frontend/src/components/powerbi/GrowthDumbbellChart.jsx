@@ -82,7 +82,8 @@ const getAreaNames = (district) => {
  * with sortable columns.
  */
 export function GrowthDumbbellChart() {
-  const { buildApiParams, applyCrossFilter, filters } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, applyCrossFilter } = usePowerBIFilters();
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -111,7 +112,8 @@ export function GrowthDumbbellChart() {
     };
 
     fetchData();
-  }, [buildApiParams, filters]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey]);
 
   // Process data: calculate start, end, and growth for each district
   const { chartData, startQuarter, endQuarter } = useMemo(() => {

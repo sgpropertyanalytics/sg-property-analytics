@@ -62,7 +62,8 @@ const FLOOR_TIERS = {
  * Y-axis: Median PSF by floor tier group
  */
 export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
-  const { buildApiParams, filters } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -100,7 +101,8 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
     };
 
     fetchData();
-  }, [buildApiParams, filters, bedroom, segment]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey, bedroom, segment]);
 
   // Process data into tier groups by year
   const processedData = useMemo(() => {

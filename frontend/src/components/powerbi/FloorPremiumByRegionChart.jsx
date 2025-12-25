@@ -62,7 +62,8 @@ const REGION_CONFIG = {
  * Lines: CCR (dark), RCR (medium), OCR (light)
  */
 export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
-  const { buildApiParams, filters } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const [regionData, setRegionData] = useState({ CCR: [], RCR: [], OCR: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -108,7 +109,8 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
     };
 
     fetchAllRegions();
-  }, [buildApiParams, filters, bedroom]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey, bedroom]);
 
   // Calculate premiums for each region
   const premiumsByRegion = useMemo(() => {

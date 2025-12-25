@@ -21,7 +21,8 @@ import {
  * Cell color: Liquidity Score (Z-score of velocity within project)
  */
 export function FloorLiquidityHeatmap({ bedroom, segment }) {
-  const { buildApiParams, filters } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
 
   // Local state for window toggle
   const [windowMonths, setWindowMonths] = useState(12);
@@ -152,7 +153,8 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
     };
 
     fetchData();
-  }, [buildApiParams, filters, windowMonths, bedroom, segment]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey, windowMonths, bedroom, segment]);
 
   // Floor zones to display
   const floorZones = data.floor_zone_order?.length > 0

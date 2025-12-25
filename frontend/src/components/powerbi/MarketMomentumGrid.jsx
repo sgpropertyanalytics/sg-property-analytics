@@ -21,7 +21,8 @@ const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
  * - Mobile: 2 columns × 14 rows
  */
 export function MarketMomentumGrid() {
-  const { buildApiParams, applyCrossFilter, filters } = usePowerBIFilters();
+  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
+  const { buildApiParams, debouncedFilterKey, applyCrossFilter } = usePowerBIFilters();
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -75,7 +76,8 @@ export function MarketMomentumGrid() {
     };
 
     fetchData();
-  }, [buildApiParams, filters]);
+    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
+  }, [debouncedFilterKey]);
 
   // Handle district click - apply cross-filter
   const handleDistrictClick = (district) => {
