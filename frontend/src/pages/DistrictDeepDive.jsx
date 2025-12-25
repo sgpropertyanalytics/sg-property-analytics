@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DistrictLiquidityMap } from '../components/insights';
 import { ChartWatermark } from '../components/ui';
+import { MarketMomentumGrid } from '../components/powerbi';
 
 /**
  * District & Project Deep Dive Page
@@ -107,6 +108,11 @@ function DistrictOverviewContent() {
       {/* District Liquidity Map */}
       <ChartWatermark>
         <DistrictLiquidityMap />
+      </ChartWatermark>
+
+      {/* Market Momentum Grid - Historical price growth by district */}
+      <ChartWatermark>
+        <MarketMomentumGrid />
       </ChartWatermark>
 
       {/* Coming Soon Features */}
