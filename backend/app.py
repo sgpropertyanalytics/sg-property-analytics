@@ -273,10 +273,6 @@ def create_app():
     from routes.payments import payments_bp
     app.register_blueprint(payments_bp, url_prefix='/api/payments')
 
-    # Ad serving routes
-    from routes.ads import ads_bp
-    app.register_blueprint(ads_bp, url_prefix='/api/ads')
-
     # GLS (Government Land Sales) routes
     from routes.gls import gls_bp
     app.register_blueprint(gls_bp, url_prefix='/api/gls')

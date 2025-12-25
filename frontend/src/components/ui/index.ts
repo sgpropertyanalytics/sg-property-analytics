@@ -24,11 +24,8 @@ export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
 
 // Premium gating
 export { ChartWatermark } from './ChartWatermark';
-export { BlurredDashboard } from './BlurredDashboard';
-export { PreviewModeBar } from './PreviewModeBar';
 export { PreviewChartOverlay } from './PreviewChartOverlay';
 
 // Layout components
 export { PageHeader } from './PageHeader';
-export { ChartFrame } from './ChartFrame';
 export { ChartSlot } from './ChartSlot';
