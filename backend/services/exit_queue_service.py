@@ -443,7 +443,7 @@ def get_exit_queue_analysis(
     # Get unit data from CSV
     unit_data_raw = get_units_for_project(project_name)
     unit_data = UnitData(
-        total_units=unit_data_raw.get('units') if unit_data_raw else None,
+        total_units=unit_data_raw.get('total_units') if unit_data_raw else None,
         top_year=unit_data_raw.get('top') if unit_data_raw else None,
         tenure=unit_data_raw.get('tenure') if unit_data_raw else None,
         developer=unit_data_raw.get('developer') if unit_data_raw else None
