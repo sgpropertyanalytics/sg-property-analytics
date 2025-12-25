@@ -670,19 +670,17 @@ export function ValueParityPanel() {
             </div>
           </div>
 
-          {/* Section Header: Upcoming New Launches */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          {/* Upcoming Launches Table with internal header */}
+          <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center gap-3">
               <span className="text-xl">🏗️</span>
               <div>
-                <h3 className="text-base font-semibold text-[#213448]">Upcoming New Launches</h3>
+                <h3 className="font-semibold text-[#213448]">Upcoming New Launches</h3>
                 <p className="text-xs text-[#547792]">Projects expected to launch soon - not yet available for sale</p>
               </div>
             </div>
+            <UpcomingLaunchesTable height={300} />
           </div>
-
-          {/* Upcoming Launches Table */}
-          <UpcomingLaunchesTable height={300} />
         </div>
       )}
 
@@ -703,17 +701,15 @@ export function ValueParityPanel() {
             </div>
           </div>
 
-          {/* Section Header: Remaining New Launches */}
-          <div className="flex items-center gap-3">
-            <span className="text-xl">🏢</span>
-            <div>
-              <h3 className="text-base font-semibold text-[#213448]">Remaining New Launches</h3>
-              <p className="text-xs text-[#547792]">Already launched projects with unsold units within your budget</p>
-            </div>
-          </div>
-
-          {/* Hot Projects Table */}
+          {/* Hot Projects Table with internal header */}
           <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center gap-3">
+              <span className="text-xl">🏢</span>
+              <div>
+                <h3 className="font-semibold text-[#213448]">Remaining New Launches</h3>
+                <p className="text-xs text-[#547792]">Already launched projects with unsold units within your budget</p>
+              </div>
+            </div>
             <HotProjectsTable
               height={300}
               showHeader={false}
@@ -757,11 +753,9 @@ export function ValueParityPanel() {
                 <div>
                   <h3 className="font-semibold text-[#213448]">Young Resale (4-9 Years)</h3>
                   <p className="text-xs text-[#547792]">
-                    {loading ? 'Loading...' : (
-                      <>
-                        <span className="font-semibold text-[#213448]">{pagination.totalRecords.toLocaleString()}</span>
-                        {' '}transactions within your budget
-                      </>
+                    Recently TOP resale units ideal for immediate move-in
+                    {!loading && pagination.totalRecords > 0 && (
+                      <span className="ml-1">• <span className="font-semibold text-[#213448]">{pagination.totalRecords.toLocaleString()}</span> found</span>
                     )}
                   </p>
                 </div>
@@ -991,11 +985,9 @@ export function ValueParityPanel() {
                 <div>
                   <h3 className="font-semibold text-[#213448]">Resale Market</h3>
                   <p className="text-xs text-[#547792]">
-                    {resaleMarketLoading ? 'Loading...' : (
-                      <>
-                        <span className="font-semibold text-[#213448]">{resaleMarketPagination.totalRecords.toLocaleString()}</span>
-                        {' '}resale transactions (all ages)
-                      </>
+                    All resale transactions regardless of property age
+                    {!resaleMarketLoading && resaleMarketPagination.totalRecords > 0 && (
+                      <span className="ml-1">• <span className="font-semibold text-[#213448]">{resaleMarketPagination.totalRecords.toLocaleString()}</span> found</span>
                     )}
                   </p>
                 </div>
