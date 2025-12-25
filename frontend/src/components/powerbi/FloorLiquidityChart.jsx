@@ -16,7 +16,8 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { PreviewChartOverlay } from '../ui';
+import { PreviewChartOverlay, ChartFrame } from '../ui';
+import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   FLOOR_LEVEL_LABELS,
   getFloorLevelIndex,
@@ -114,9 +115,12 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   }, [data, baselinePSF]);
 
 
+  // Card height - hero chart uses full height prop
+  const cardHeight = height + 180; // Extra space for header/legend/premium pills/footer
+
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="flex items-center gap-3">
             <div className="w-5 h-5 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
@@ -129,7 +133,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -139,7 +143,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-[#547792]">No floor level data available for current filters</div>
         </div>
@@ -232,8 +236,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
   // Chart options
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
+    ...baseChartJsOptions,
     interaction: {
       mode: 'index',
       intersect: false,
@@ -337,8 +340,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   const mostLiquidTier = data[counts.indexOf(Math.max(...counts))]?.floor_level;
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`} style={{ minHeight: height }}>
-      {/* Header */}
+    <div className={`bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`} style={{ height: cardHeight }}>
+      {/* Header - shrink-0 */}
       <div className="px-6 py-4 border-b border-[#94B4C1]/30 shrink-0">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -355,7 +358,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         </div>
       </div>
 
-      {/* Simple Legend */}
+      {/* Simple Legend - shrink-0 */}
       <div className="px-6 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20 shrink-0">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
           <div className="flex items-center gap-2">
@@ -373,7 +376,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         </div>
       </div>
 
-      {/* Premium Pills Row */}
+      {/* Premium Pills Row - shrink-0 */}
       <div className="px-6 py-2 border-b border-[#94B4C1]/20 bg-[#213448]/5 shrink-0">
         <div className="flex items-center gap-2 overflow-x-auto">
           <span className="text-xs font-semibold text-[#547792] uppercase tracking-wide shrink-0">Premium vs Low:</span>
@@ -398,37 +401,32 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         </div>
       </div>
 
-
-      {/* Chart */}
-      <div className="flex-1 p-4 min-h-0">
+      {/* Chart slot - flex-1 min-h-0 overflow-hidden */}
+      <ChartFrame className="px-4 pb-3">
         <PreviewChartOverlay chartRef={chartRef}>
           <Chart ref={chartRef} type="bar" data={chartData} options={options} />
         </PreviewChartOverlay>
-      </div>
+      </ChartFrame>
 
-      {/* Footer Stats */}
-      <div className="px-6 py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 shrink-0">
-        <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[#94B4C1]">Total Transactions:</span>
-              <span className="text-[#213448] font-bold">{totalTransactions.toLocaleString()}</span>
-            </div>
-            <div className="flex items-center gap-1.5 border-l border-[#94B4C1]/30 pl-4">
-              <span className="text-[#94B4C1]">Premium Gradient:</span>
-              <span className={`font-bold ${avgPremiumPerTier >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {avgPremiumPerTier >= 0 ? '+' : ''}{avgPremiumPerTier.toFixed(1)}%/tier
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[#94B4C1]">Most Active:</span>
-              <span className="text-[#213448] font-bold">{mostLiquidTier}</span>
-            </div>
+      {/* Footer - fixed height h-12 */}
+      <div className="shrink-0 h-12 px-6 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-4 text-xs overflow-x-auto">
+        <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#94B4C1]">Total Transactions:</span>
+            <span className="text-[#213448] font-bold">{totalTransactions.toLocaleString()}</span>
           </div>
-          <div className="flex items-center gap-2 text-[#94B4C1]">
-            <span>Hover for details</span>
+          <div className="flex items-center gap-1.5 border-l border-[#94B4C1]/30 pl-4">
+            <span className="text-[#94B4C1]">Premium Gradient:</span>
+            <span className={`font-bold ${avgPremiumPerTier >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {avgPremiumPerTier >= 0 ? '+' : ''}{avgPremiumPerTier.toFixed(1)}%/tier
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#94B4C1]">Most Active:</span>
+            <span className="text-[#213448] font-bold">{mostLiquidTier}</span>
           </div>
         </div>
+        <span className="shrink-0 text-[#94B4C1]">Hover for details</span>
       </div>
     </div>
   );

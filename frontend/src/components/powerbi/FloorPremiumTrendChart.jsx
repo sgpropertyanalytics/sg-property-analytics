@@ -14,7 +14,8 @@ import {
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
-import { PreviewChartOverlay } from '../ui';
+import { PreviewChartOverlay, ChartFrame } from '../ui';
+import { baseChartJsOptions } from '../../constants/chartOptions';
 
 ChartJS.register(
   CategoryScale,
@@ -159,9 +160,12 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
     return { years, premiums };
   }, [processedData]);
 
+  // Card height for consistent alignment with FloorPremiumByRegionChart
+  const cardHeight = height + 80;
+
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="flex items-center gap-3">
             <div className="w-5 h-5 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
@@ -174,7 +178,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -186,7 +190,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
 
   if (years.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 flex flex-col" style={{ minHeight: height }}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-[#547792]">No trend data available</div>
         </div>
@@ -241,8 +245,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
   };
 
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
+    ...baseChartJsOptions,
     interaction: {
       mode: 'index',
       intersect: false,
@@ -315,8 +318,8 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
   const midTrend = getLatestTrend(premiums.Mid);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ minHeight: height }}>
-      {/* Header */}
+    <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
+      {/* Header - shrink-0 */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
         <h3 className="font-semibold text-[#213448]">Floor Premium Trend</h3>
         <p className="text-xs text-[#547792] mt-0.5">
@@ -324,35 +327,33 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
         </p>
       </div>
 
-      {/* Chart */}
-      <div className="flex-1 p-4 min-h-0">
+      {/* Chart slot - flex-1 min-h-0 overflow-hidden */}
+      <ChartFrame className="px-4 pb-3">
         <PreviewChartOverlay chartRef={chartRef}>
           <Chart ref={chartRef} type="line" data={chartData} options={options} />
         </PreviewChartOverlay>
-      </div>
+      </ChartFrame>
 
-      {/* Footer Insights */}
-      <div className="px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30 shrink-0">
-        <div className="flex flex-wrap items-center gap-4 text-xs">
-          <span className="text-[#547792] font-medium">Recent Trend:</span>
-          {upperTrend !== null && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FLOOR_TIERS.Upper.color }} />
-              <span className="text-[#213448]">
-                Upper {upperTrend >= 0 ? '↑' : '↓'} {Math.abs(upperTrend).toFixed(1)}pp
-              </span>
-            </div>
-          )}
-          {midTrend !== null && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FLOOR_TIERS.Mid.color }} />
-              <span className="text-[#213448]">
-                Mid {midTrend >= 0 ? '↑' : '↓'} {Math.abs(midTrend).toFixed(1)}pp
-              </span>
-            </div>
-          )}
-          <span className="text-[#547792] ml-auto">vs Lower floor baseline</span>
-        </div>
+      {/* Footer - fixed height h-11 */}
+      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30 flex items-center gap-3 text-xs overflow-x-auto">
+        <span className="shrink-0 text-[#547792] font-medium">Recent Trend:</span>
+        {upperTrend !== null && (
+          <div className="shrink-0 flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FLOOR_TIERS.Upper.color }} />
+            <span className="text-[#213448]">
+              Upper {upperTrend >= 0 ? '↑' : '↓'} {Math.abs(upperTrend).toFixed(1)}pp
+            </span>
+          </div>
+        )}
+        {midTrend !== null && (
+          <div className="shrink-0 flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FLOOR_TIERS.Mid.color }} />
+            <span className="text-[#213448]">
+              Mid {midTrend >= 0 ? '↑' : '↓'} {Math.abs(midTrend).toFixed(1)}pp
+            </span>
+          </div>
+        )}
+        <span className="shrink-0 text-[#547792] ml-auto">vs Lower floor baseline</span>
       </div>
     </div>
   );
