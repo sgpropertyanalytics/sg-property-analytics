@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useStaleRequestGuard, useDeferredFetch } from '../../hooks';
 import { getUpcomingLaunchesAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
 
@@ -39,11 +39,26 @@ export function UpcomingLaunchesTable({
   // Prevent stale responses from overwriting fresh data
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
+  // Create a stable key for deferred fetch (changes when sort/refresh changes)
+  const deferKey = useMemo(
+    () => `upcoming-${sortConfig.column}-${sortConfig.order}-${refreshTrigger}`,
+    [sortConfig, refreshTrigger]
+  );
+
+  // Defer fetch until table is visible (low priority - below the fold)
+  const { shouldFetch, containerRef } = useDeferredFetch({
+    filterKey: deferKey,
+    priority: 'low',
+    fetchOnMount: true,
+  });
+
   // Handle manual refresh
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
-  // Fetch data when sort changes
+  // Fetch data when sort changes (only if visible)
   useEffect(() => {
+    if (!shouldFetch) return;
+
     const requestId = startRequest();
     const signal = getSignal();
 
@@ -77,7 +92,7 @@ export function UpcomingLaunchesTable({
     };
 
     fetchData();
-  }, [sortConfig, refreshTrigger, startRequest, isStale, getSignal]);
+  }, [shouldFetch]);
 
   // Handle sort
   const handleSort = (column) => {
@@ -146,7 +161,7 @@ export function UpcomingLaunchesTable({
   ];
 
   return (
-    <div id="upcoming-launches-table" className={`bg-white ${compact ? '' : 'rounded-lg border border-[#94B4C1]/50'} overflow-hidden`}>
+    <div ref={containerRef} id="upcoming-launches-table" className={`bg-white ${compact ? '' : 'rounded-lg border border-[#94B4C1]/50'} overflow-hidden`}>
       {/* Header - conditionally shown */}
       {showHeader && (
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import { useStaleRequestGuard, useDeferredFetch } from '../../hooks';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -72,8 +72,18 @@ export function PriceCompressionChart({ height = 380 }) {
   // Prevent stale responses from overwriting fresh data
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
+  // Defer fetch until chart is visible (low priority - below the fold)
+  const { shouldFetch, containerRef } = useDeferredFetch({
+    filterKey: debouncedFilterKey,
+    priority: 'low',
+    fetchOnMount: true,
+  });
+
   // Fetch data when filters or drill level change
+  // Only fetch if shouldFetch is true (chart is visible or just became visible)
   useEffect(() => {
+    if (!shouldFetch) return;
+
     const requestId = startRequest();
     const signal = getSignal();
 
@@ -115,9 +125,8 @@ export function PriceCompressionChart({ height = 380 }) {
       }
     };
     fetchData();
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-    // timeGrouping controls time granularity (year/quarter/month)
-  }, [debouncedFilterKey, timeGrouping]);
+    // shouldFetch triggers when chart becomes visible or filter changes
+  }, [shouldFetch, timeGrouping]);
 
   // Transform raw API data into spread-friendly format
   const transformData = (rawData, timeGrain) => {
@@ -210,7 +219,7 @@ export function PriceCompressionChart({ height = 380 }) {
   // Loading state
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
+      <div ref={containerRef} className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
@@ -224,7 +233,7 @@ export function PriceCompressionChart({ height = 380 }) {
   // Error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
+      <div ref={containerRef} className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col" style={{ minHeight: height }}>
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -422,6 +431,7 @@ export function PriceCompressionChart({ height = 380 }) {
 
   return (
     <div
+      ref={containerRef}
       className={`bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`}
       style={{ height: cardHeight }}
     >

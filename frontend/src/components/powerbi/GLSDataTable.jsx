@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useStaleRequestGuard, useDeferredFetch } from '../../hooks';
 import { getGLSAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
 
@@ -35,11 +35,26 @@ export function GLSDataTable({ height = 400 }) {
   // Prevent stale responses from overwriting fresh data
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
+  // Create a stable key for deferred fetch (changes when filter/sort/refresh changes)
+  const deferKey = useMemo(
+    () => `gls-${filter}-${segmentFilter}-${sortConfig.column}-${sortConfig.order}-${refreshTrigger}`,
+    [filter, segmentFilter, sortConfig, refreshTrigger]
+  );
+
+  // Defer fetch until table is visible (low priority - below the fold)
+  const { shouldFetch, containerRef } = useDeferredFetch({
+    filterKey: deferKey,
+    priority: 'low',
+    fetchOnMount: true,
+  });
+
   // Handle manual refresh
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
-  // Fetch data when filters change
+  // Fetch data when filters change (only if visible)
   useEffect(() => {
+    if (!shouldFetch) return;
+
     const requestId = startRequest();
     const signal = getSignal();
 
@@ -81,7 +96,7 @@ export function GLSDataTable({ height = 400 }) {
     };
 
     fetchData();
-  }, [filter, segmentFilter, sortConfig, refreshTrigger, startRequest, isStale, getSignal]);
+  }, [shouldFetch]);
 
   // Handle sort
   const handleSort = (column) => {
@@ -178,7 +193,7 @@ export function GLSDataTable({ height = 400 }) {
   const awardedCount = data.filter(t => t.status === 'awarded').length;
 
   return (
-    <div id="gls-data-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div ref={containerRef} id="gls-data-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between mb-2">
