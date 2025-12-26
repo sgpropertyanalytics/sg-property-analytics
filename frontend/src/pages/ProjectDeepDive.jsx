@@ -146,7 +146,12 @@ export function ProjectDeepDiveContent() {
         setPriceGrowthData(response.data);
       } catch (err) {
         console.error('Failed to load price growth:', err);
-        setPriceGrowthError(err.response?.data?.error || 'Failed to load price growth');
+        // Handle 404 (endpoint not deployed) vs other errors
+        if (err.response?.status === 404) {
+          setPriceGrowthError('Price growth data coming soon');
+        } else {
+          setPriceGrowthError(err.response?.data?.error || 'Failed to load price growth data');
+        }
         setPriceGrowthData(null);
       } finally {
         setPriceGrowthLoading(false);
