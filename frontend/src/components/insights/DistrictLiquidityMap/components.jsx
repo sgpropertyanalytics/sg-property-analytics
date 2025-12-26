@@ -540,7 +540,7 @@ export function LiquidityRankingTable({ districtData }) {
               <div className="grid grid-cols-4 gap-1.5 text-center">
                 <div className="bg-sky-50/50 rounded p-1.5">
                   <div className="text-[10px] text-[#547792]">Velocity</div>
-                  <div className="text-sm font-bold text-[#213448]">
+                  <div className="text-sm font-semibold text-[#213448]">
                     {m.monthly_velocity?.toFixed(1) || '0'}
                   </div>
                 </div>
@@ -566,7 +566,7 @@ export function LiquidityRankingTable({ districtData }) {
                 </div>
                 <div className="bg-[#EAE0CF]/30 rounded p-1.5">
                   <div className="text-[10px] text-[#547792]">Spread</div>
-                  <div className="text-[10px] font-semibold text-[#213448]">
+                  <div className="text-[10px] text-[#547792]">
                     {getSpreadLabel(m.fragility_label)}
                   </div>
                 </div>
@@ -857,7 +857,7 @@ export function LiquidityRankingTable({ districtData }) {
                   </td>
 
                   {/* Exit Safety Group - Monthly Velocity (Resale-only) */}
-                  <td className="px-3 py-2 text-right font-bold text-[#213448] bg-emerald-50/40">
+                  <td className="px-3 py-2 text-right font-semibold text-[#213448] bg-emerald-50/40">
                     {m.monthly_velocity?.toFixed(1) || '0'}
                   </td>
 
@@ -877,10 +877,8 @@ export function LiquidityRankingTable({ districtData }) {
                   </td>
 
                   {/* Concentration Risks Group - Spread (Resale-only) */}
-                  <td className="px-3 py-2 text-center bg-rose-50/40">
-                    <span className="text-xs text-[#547792]">
-                      {getSpreadLabel(m.fragility_label)}
-                    </span>
+                  <td className="px-3 py-2 text-center text-[#547792] bg-rose-50/40">
+                    {getSpreadLabel(m.fragility_label)}
                   </td>
 
                   {/* Concentration Risks Group - Gini Index (Resale-only) */}
