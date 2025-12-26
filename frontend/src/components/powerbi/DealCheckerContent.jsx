@@ -23,11 +23,11 @@ const K_PROJECT_THRESHOLD = 15;
 const getAgeBucket = (age, isFreehold = false) => {
   if (isFreehold) return 'FH';
   if (age === null || age === undefined) return '-';
-  if (age <= 3) return 'New';
-  if (age <= 8) return '4-8y';
-  if (age <= 15) return '9-15y';
-  if (age <= 25) return '16-25y';
-  return '25y+';
+  if (age <= 3) return 'Just TOP';
+  if (age <= 8) return 'Recently TOP';
+  if (age <= 15) return 'Young Resale';
+  if (age <= 25) return 'Mature Resale';
+  return 'Old Resale';
 };
 
 // Format price for display
