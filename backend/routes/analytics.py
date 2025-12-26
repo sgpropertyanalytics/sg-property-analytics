@@ -1705,6 +1705,7 @@ def aggregate_summary():
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func, text
+    from services.dashboard_service import _dashboard_cache
     from utils.subscription import (
         get_granularity_level,
         check_k_anonymity,
