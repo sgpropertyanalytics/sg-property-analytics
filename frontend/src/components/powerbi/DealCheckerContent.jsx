@@ -545,14 +545,14 @@ export default function DealCheckerContent() {
             <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-[#94B4C1]/30">
               <h3 className="text-base sm:text-lg font-bold text-[#213448]">Nearby Projects Map</h3>
               <p className="text-[10px] sm:text-xs text-[#547792]">
-                {result.meta?.projects_in_1km || 0} projects within 1km, {(result.meta?.projects_in_2km || 0) - (result.meta?.projects_in_1km || 0)} in 1-2km ring
+                {bedroom}BR transactions • Only projects with {K_PROJECT_THRESHOLD}+ observations shown
               </p>
             </div>
             <div className="relative h-[50vh] min-h-[400px] md:h-[55vh] md:min-h-[450px]">
               <DealCheckerMap
                 centerProject={result.project}
-                projects1km={result.map_data?.projects_1km || []}
-                projects2km={result.map_data?.projects_2km || []}
+                projects1km={(result.map_data?.projects_1km || []).filter(p => (p.transaction_count || 0) >= K_PROJECT_THRESHOLD)}
+                projects2km={(result.map_data?.projects_2km || []).filter(p => (p.transaction_count || 0) >= K_PROJECT_THRESHOLD)}
               />
             </div>
           </div>
