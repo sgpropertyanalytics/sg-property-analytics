@@ -16,8 +16,6 @@ import apiClient from '../../api/client';
 import {
   DISTRICT_PATHS,
   DISTRICT_CENTROIDS,
-  DISTRICT_SHORT_NAMES,
-  DISTRICT_REGIONS,
   ALL_DISTRICTS,
 } from '../../data/singaporeDistricts';
 import { useStaleRequestGuard } from '../../hooks';

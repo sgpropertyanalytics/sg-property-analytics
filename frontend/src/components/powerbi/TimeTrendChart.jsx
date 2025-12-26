@@ -19,7 +19,7 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
-import { getPeriod } from '../../schemas/apiContract';
+// getPeriod available for future use from apiContract if needed
 import { transformTimeSeries, logFetchDebug } from '../../adapters';
 
 ChartJS.register(
@@ -49,7 +49,7 @@ ChartJS.register(
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
-export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) {
+export function TimeTrendChart({ onCrossFilter: _onCrossFilter, onDrillThrough: _onDrillThrough, height = 300 }) {
   // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();

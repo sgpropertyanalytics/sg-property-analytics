@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { DISTRICT_NAMES } from '../../constants';
 import { SaleType, Tenure, isSaleType, isTenure } from '../../schemas/apiContract';
@@ -9,7 +9,7 @@ import { SaleType, Tenure, isSaleType, isTenure } from '../../schemas/apiContrac
  * Contains dropdown/multi-select filters for all dimensions.
  * Defaults all filters to 'All' (no restriction).
  */
-export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
+export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle }) {
   const {
     filters,
     filterOptions,
@@ -17,8 +17,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     activeFilterCount,
     setDateRange,
     setDistricts,
-    toggleDistrict,
-    setBedroomTypes,
+    toggleDistrict: _toggleDistrict,
+    setBedroomTypes: _setBedroomTypes,
     toggleBedroomType,
     toggleSegment,
     setSaleType,

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useStaleRequestGuard } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
-import { DISTRICT_NAMES, formatPrice, formatPSF } from '../../constants';
+import { DISTRICT_NAMES } from '../../constants';
 import { BlurredProject, BlurredCurrency, BlurredArea, BlurredPSF } from '../BlurredCell';
 import { isSaleType, getTxnField, TxnField } from '../../schemas/apiContract';
 

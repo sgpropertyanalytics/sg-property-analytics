@@ -1,7 +1,6 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import axios from 'axios';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getTransactionsList, getFilterOptions } from '../api/client';
-import { DISTRICT_NAMES, isDistrictInRegion, SALE_TYPE_OPTIONS, TENURE_OPTIONS } from '../constants';
+import { isDistrictInRegion, SALE_TYPE_OPTIONS, TENURE_OPTIONS } from '../constants';
 import DealCheckerContent from './powerbi/DealCheckerContent';
 import { HotProjectsTable } from './powerbi/HotProjectsTable';
 import { UpcomingLaunchesTable } from './powerbi/UpcomingLaunchesTable';
