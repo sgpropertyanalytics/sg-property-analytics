@@ -1168,6 +1168,7 @@ def aggregate():
       - size_max: maximum sqft
       - tenure: Freehold, 99-year, 999-year
       - project: project name filter (partial match)
+      - limit: max rows to return (1-10000, useful for project grouping)
       - skip_cache: if 'true', bypass cache
 
     IMPORTANT - Segment vs Region:
@@ -1482,6 +1483,16 @@ def aggregate():
             query = query.order_by(func.count(Transaction.id).desc())
         else:
             query = query.order_by(group_columns[0])
+
+    # Apply limit if specified (useful for project grouping which can return 5000+ rows)
+    limit_param = request.args.get('limit')
+    if limit_param:
+        try:
+            limit_val = int(limit_param)
+            if 0 < limit_val <= 10000:  # Cap at 10k for safety
+                query = query.limit(limit_val)
+        except ValueError:
+            pass  # Ignore invalid limit values
 
     # Execute query
     results = query.all()
@@ -2515,6 +2526,7 @@ def budget_heatmap():
         segment: Market segment (CCR/RCR/OCR)
         district: District code (D01-D28)
         tenure: Tenure type (Freehold/99-year/999-year)
+        months_lookback: Time window in months (default 24, range 6-60)
         schema: v2 for camelCase response
 
     Returns:
@@ -2541,11 +2553,16 @@ def budget_heatmap():
         segment = request.args.get('segment')
         district = request.args.get('district')
         tenure = request.args.get('tenure')
+        months_lookback = request.args.get('months_lookback', 24, type=int)
         skip_cache = request.args.get('skip_cache', 'false').lower() == 'true'
 
         # Validate tolerance
         if tolerance < 10000 or tolerance > 500000:
             tolerance = 100000  # Default to 100K if out of range
+
+        # Validate months_lookback (6-60 months)
+        if months_lookback < 6 or months_lookback > 60:
+            months_lookback = 24  # Default to 24 if out of range
 
         # Get data
         result = get_market_activity_heatmap(
@@ -2555,6 +2572,7 @@ def budget_heatmap():
             segment=segment,
             district=district,
             tenure=tenure,
+            months_lookback=months_lookback,
             skip_cache=skip_cache
         )
 

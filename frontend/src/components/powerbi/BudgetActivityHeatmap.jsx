@@ -1,7 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { getBudgetHeatmap } from '../../api/client';
-import { getBedroomLabelShort, formatPrice } from '../../constants';
+import { getBedroomLabelShort } from '../../constants';
+
+// Time window options in months
+const TIME_WINDOW_OPTIONS = [
+  { value: 12, label: '12 months' },
+  { value: 24, label: '24 months' },
+  { value: 36, label: '36 months' },
+  { value: 48, label: '48 months' },
+  { value: 60, label: '60 months' },
+];
 
 /**
  * Color scale for heatmap intensity based on percentage
@@ -71,6 +80,9 @@ export function BudgetActivityHeatmap({
   district = null,
   tenure = null,
 }) {
+  // Time window state (default 24 months)
+  const [timeWindow, setTimeWindow] = useState(24);
+
   // Build API params
   const apiParams = useMemo(() => ({
     budget,
@@ -79,7 +91,8 @@ export function BudgetActivityHeatmap({
     segment: region || undefined,
     district: district || undefined,
     tenure: tenure || undefined,
-  }), [budget, bedroom, region, district, tenure]);
+    months_lookback: timeWindow,
+  }), [budget, bedroom, region, district, tenure, timeWindow]);
 
   // Fetch data with abort handling
   const { data, loading, error } = useAbortableQuery(
@@ -134,16 +147,52 @@ export function BudgetActivityHeatmap({
     );
   }
 
+  // Show warning for long time windows (48+ months)
+  const showMarketShiftWarning = timeWindow >= 48;
+
   return (
     <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-        <h4 className="font-semibold text-[#213448]">
-          Bedroom Mix by Property Age
-        </h4>
-        <p className="text-xs text-[#547792] mt-0.5">
-          Share of transactions in each age group (within your budget)
-        </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h4 className="font-semibold text-[#213448]">
+              Bedroom Mix by Property Age
+            </h4>
+            <p className="text-xs text-[#547792] mt-0.5">
+              Share of transactions in each age group (within your budget, last {timeWindow} months)
+            </p>
+          </div>
+
+          {/* Time window dropdown */}
+          <div className="flex items-center gap-2 shrink-0">
+            <label htmlFor="time-window" className="text-xs text-[#547792]">
+              Window:
+            </label>
+            <select
+              id="time-window"
+              value={timeWindow}
+              onChange={(e) => setTimeWindow(Number(e.target.value))}
+              className="text-xs border border-[#94B4C1]/50 rounded px-2 py-1 bg-white text-[#213448] focus:outline-none focus:ring-1 focus:ring-[#547792]"
+            >
+              {TIME_WINDOW_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Market shift warning for long time windows */}
+        {showMarketShiftWarning && (
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Older transactions may reflect earlier price levels.</span>
+          </div>
+        )}
       </div>
 
       {/* Heatmap Table */}
