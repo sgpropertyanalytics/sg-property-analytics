@@ -840,100 +840,22 @@ def price_projects_by_district():
 
 
 @analytics_bp.route("/comparable_value_analysis", methods=["GET"])
-def comparable_value_analysis():
+def comparable_value_analysis_deprecated():
     """
-    Comparable Value Analysis (Buy Box) endpoint.
-    Query params:
-      - target_price: center of price band
-      - band: +/- band around target (default 100000)
-      - bedroom: comma-separated bedroom counts (default 2,3,4)
-      - district: optional comma-separated list of districts
+    DEPRECATED: Comparable Value Analysis endpoint removed for URA compliance.
+
+    This endpoint previously returned up to 100 individual transaction records,
+    which violates URA data usage rules prohibiting raw data redistribution.
+
+    Use /aggregate-summary with appropriate filters for compliant market insights.
     """
-    from models.transaction import Transaction
-    from models.database import db
-    
-    try:
-        target_price = float(request.args.get("target_price", "2500000"))
-    except ValueError:
-        target_price = 2500000.0
-    
-    try:
-        band = float(request.args.get("band", "100000"))
-    except ValueError:
-        band = 100000.0
-    
-    bedroom_param = request.args.get("bedroom", "2,3,4")
-    try:
-        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
-    except ValueError:
-        return jsonify({"error": "Invalid bedroom parameter"}), 400
-    
-    districts_param = request.args.get("district", "").strip()  # Singular form, comma-separated
-    districts = None
-    if districts_param:
-        districts = [d.strip() for d in districts_param.split(",") if d.strip()]
-        normalized = []
-        for d in districts:
-            d = str(d).strip().upper()
-            if not d.startswith("D"):
-                d = f"D{d.zfill(2)}"
-            normalized.append(d)
-        districts = normalized
-
-    min_lease_param = request.args.get("min_lease")
-    min_lease = None
-    if min_lease_param:
-        try:
-            min_lease = int(min_lease_param)
-        except ValueError:
-            min_lease = None
-    
-    sale_type = request.args.get("sale_type")  # "New Launch" or "Resale"
-    
-    try:
-        # Use active_query() to exclude outliers
-        query = Transaction.active_query().filter(
-            Transaction.price >= (target_price - band),
-            Transaction.price <= (target_price + band),
-            Transaction.bedroom_count.in_(bedroom_types)
-        )
-        
-        if districts:
-            query = query.filter(Transaction.district.in_(districts))
-        
-        if min_lease:
-            query = query.filter(Transaction.remaining_lease >= min_lease)
-        
-        if sale_type:
-            query = query.filter(func.lower(Transaction.sale_type) == sale_type.lower())
-
-        transactions = query.limit(100).all()
-
-        # Calculate summary stats from RAW data (before serialization)
-        # Summary stats are aggregates and can be shown to all users
-        if transactions:
-            prices = [t.price for t in transactions]
-            psfs = [t.psf for t in transactions]
-            summary = {
-                'count': len(transactions),
-                'price_median': sorted(prices)[len(prices)//2] if prices else None,
-                'psf_median': sorted(psfs)[len(psfs)//2] if psfs else None
-            }
-        else:
-            summary = {'count': 0, 'price_median': None, 'psf_median': None}
-
-        # SECURITY: Use tier-aware serialization for individual points
-        from utils.subscription import serialize_transactions
-        points = serialize_transactions(transactions)
-
-        return jsonify({
-            'points': points,
-            'competitors': [],  # Can be computed if needed
-            'summary': summary
-        })
-    except Exception as e:
-        print(f"GET /api/comparable_value_analysis ERROR: {e}")
-        return jsonify({"error": str(e)}), 500
+    import logging
+    logging.warning(f"Deprecated /comparable_value_analysis called from {request.remote_addr}")
+    return jsonify({
+        "error": "This endpoint has been deprecated for compliance",
+        "message": "Use aggregate endpoints for market insights. Transaction-level data is no longer available.",
+        "alternatives": ["/aggregate-summary", "/dashboard?panels=summary"]
+    }), 410
 
 
 @analytics_bp.route("/districts", methods=["GET"])
@@ -2555,312 +2477,23 @@ def get_project_inventory(project_name):
 
 
 @analytics_bp.route("/scatter-sample", methods=["GET"])
-def scatter_sample():
+def scatter_sample_deprecated():
     """
-    Get a stable, stratified sample of transactions for scatter plot visualization.
+    DEPRECATED: Scatter sample endpoint removed for URA compliance.
 
-    Returns sampled points for Unit Size vs Price chart (memory-safe).
+    This endpoint previously returned up to 5,000 individual transaction points,
+    which violates URA data usage rules prohibiting raw data redistribution.
 
-    Sampling Methodology:
-    =====================
-    1. STRATIFIED by market segment (CCR/RCR/OCR): Ensures all 3 segments are
-       represented equally, preventing high-volume OCR from drowning out CCR.
-       Each segment gets up to (sample_size / 3) points (~667 each for n=2000).
-
-    2. STABLE hash-based selection: Uses md5(id) for deterministic sampling.
-       Same filters always return the same data points (no "flickering").
-
-    3. REFRESH capability: Optional seed parameter generates different samples
-       while maintaining stratification.
-
-    Why 2,000 samples?
-    ==================
-    - Statistical confidence: For a population of ~100K transactions, n=2000 gives
-      margin of error ~2.2% at 95% confidence (formula: 1.96 * sqrt(0.5*0.5/n))
-    - Visual clarity: More points cause overplotting; 2000 balances coverage vs clarity
-    - Performance: Keeps response time <200ms and payload <100KB
-    - Per-segment: ~667 points per segment (2000/3) ensures CCR visible alongside OCR
-
-    Query params:
-      Filters (same as other endpoints):
-        - date_from, date_to: date range
-        - district: comma-separated districts
-        - bedroom: comma-separated bedroom counts
-        - segment: CCR, RCR, OCR
-        - sale_type: 'New Sale' or 'Resale'
-        - psf_min, psf_max: PSF range
-        - size_min, size_max: sqft range
-
-      Options:
-        - sample_size: max points to return (default: 2000, max: 5000)
-        - seed: random string to generate different sample (used by refresh)
-
-    Returns:
-      {
-        "data": [
-          {"price": 1500000, "area_sqft": 850, "bedroom": 2, "district": "D15"},
-          ...
-        ],
-        "meta": {
-          "sample_size": 2000,
-          "total_count": 45000,
-          "samples_per_segment": 667,
-          "sampling_method": "stratified_by_segment",
-          "elapsed_ms": 123.4
-        }
-      }
+    Future replacement: /scatter-aggregate will provide binned percentile data
+    for scatter visualizations without exposing individual records.
     """
-    start = time.time()
-
-    from models.transaction import Transaction
-    from models.database import db
-    from sqlalchemy import func, text
-    from constants import CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS
-    from db.sql import exclude_outliers, OUTLIER_FILTER
-    from datetime import datetime
-
-    try:
-        # Parse sample size
-        sample_size = min(int(request.args.get('sample_size', 2000)), 5000)
-
-        # Parse optional seed for refresh functionality
-        # - No seed: stable hash (same filters = same sample)
-        # - With seed: different sample (used by refresh button)
-        seed = request.args.get('seed', '')
-
-        # Parse date params as Python date objects (not strings)
-        # This ensures proper type handling for SQL DATE columns
-        date_from = None
-        date_to = None
-        if request.args.get('date_from'):
-            try:
-                date_from = datetime.strptime(request.args.get('date_from'), "%Y-%m-%d").date()
-            except ValueError:
-                pass
-        if request.args.get('date_to'):
-            try:
-                date_to = datetime.strptime(request.args.get('date_to'), "%Y-%m-%d").date()
-            except ValueError:
-                pass
-
-        # Build base query with outlier exclusion
-        query = db.session.query(
-            Transaction.id,  # Need ID for stable hashing
-            Transaction.price,
-            Transaction.area_sqft,
-            Transaction.bedroom_count,
-            Transaction.district
-        ).filter(
-            exclude_outliers(Transaction)
-        )
-
-        # Apply filters
-        # Date range (using parsed date objects)
-        if date_from:
-            query = query.filter(Transaction.transaction_date >= date_from)
-        if date_to:
-            query = query.filter(Transaction.transaction_date <= date_to)
-
-        # District filter
-        if request.args.get('district'):
-            districts = [d.strip() for d in request.args.get('district').split(',') if d.strip()]
-            if districts:
-                query = query.filter(Transaction.district.in_(districts))
-
-        # Segment filter (CCR/RCR/OCR)
-        if request.args.get('segment'):
-            segment = request.args.get('segment').upper()
-            if segment == 'CCR':
-                query = query.filter(Transaction.district.in_(CCR_DISTRICTS))
-            elif segment == 'RCR':
-                query = query.filter(Transaction.district.in_(RCR_DISTRICTS))
-            elif segment == 'OCR':
-                query = query.filter(Transaction.district.in_(OCR_DISTRICTS))
-
-        # Bedroom filter
-        if request.args.get('bedroom'):
-            bedrooms = [int(b.strip()) for b in request.args.get('bedroom').split(',') if b.strip()]
-            if bedrooms:
-                query = query.filter(Transaction.bedroom_count.in_(bedrooms))
-
-        # Sale type filter
-        if request.args.get('sale_type'):
-            query = query.filter(Transaction.sale_type == request.args.get('sale_type'))
-
-        # PSF range
-        if request.args.get('psf_min'):
-            query = query.filter(Transaction.psf >= float(request.args.get('psf_min')))
-        if request.args.get('psf_max'):
-            query = query.filter(Transaction.psf <= float(request.args.get('psf_max')))
-
-        # Size range
-        if request.args.get('size_min'):
-            query = query.filter(Transaction.area_sqft >= float(request.args.get('size_min')))
-        if request.args.get('size_max'):
-            query = query.filter(Transaction.area_sqft <= float(request.args.get('size_max')))
-
-        # Get total count first (for meta)
-        total_count = query.count()
-
-        # Calculate samples per segment (CCR/RCR/OCR = 3 segments)
-        # Use ceiling division to ensure we reach sample_size (e.g., 2000/3 = 667, 667*3 = 2001, capped by LIMIT)
-        import math
-        samples_per_segment = max(1, math.ceil(sample_size / 3))
-
-        # Build WHERE clause conditions from filters
-        where_conditions = [OUTLIER_FILTER]
-        params = {"samples_per_segment": samples_per_segment, "sample_size": sample_size}
-
-        # Use already-parsed Python date objects (not strings)
-        if date_from:
-            where_conditions.append("transaction_date >= :date_from")
-            params["date_from"] = date_from
-        if date_to:
-            where_conditions.append("transaction_date <= :date_to")
-            params["date_to"] = date_to
-        if request.args.get('district'):
-            districts = [d.strip() for d in request.args.get('district').split(',') if d.strip()]
-            if districts:
-                district_placeholders = ", ".join([f":district_{i}" for i in range(len(districts))])
-                where_conditions.append(f"district IN ({district_placeholders})")
-                for i, d in enumerate(districts):
-                    params[f"district_{i}"] = d
-        if request.args.get('segment'):
-            segment = request.args.get('segment').upper()
-            if segment == 'CCR':
-                where_conditions.append("district IN :ccr_districts")
-                params["ccr_districts"] = tuple(CCR_DISTRICTS)
-            elif segment == 'RCR':
-                where_conditions.append("district IN :rcr_districts")
-                params["rcr_districts"] = tuple(RCR_DISTRICTS)
-            elif segment == 'OCR':
-                where_conditions.append("district IN :ocr_districts")
-                params["ocr_districts"] = tuple(OCR_DISTRICTS)
-        if request.args.get('bedroom'):
-            bedrooms = [int(b.strip()) for b in request.args.get('bedroom').split(',') if b.strip()]
-            if bedrooms:
-                bedroom_placeholders = ", ".join([f":bedroom_{i}" for i in range(len(bedrooms))])
-                where_conditions.append(f"bedroom_count IN ({bedroom_placeholders})")
-                for i, b in enumerate(bedrooms):
-                    params[f"bedroom_{i}"] = b
-        if request.args.get('sale_type'):
-            where_conditions.append("sale_type = :sale_type")
-            params["sale_type"] = request.args.get('sale_type')
-        if request.args.get('psf_min'):
-            where_conditions.append("psf >= :psf_min")
-            params["psf_min"] = float(request.args.get('psf_min'))
-        if request.args.get('psf_max'):
-            where_conditions.append("psf <= :psf_max")
-            params["psf_max"] = float(request.args.get('psf_max'))
-        if request.args.get('size_min'):
-            where_conditions.append("area_sqft >= :size_min")
-            params["size_min"] = float(request.args.get('size_min'))
-        if request.args.get('size_max'):
-            where_conditions.append("area_sqft <= :size_max")
-            params["size_max"] = float(request.args.get('size_max'))
-
-        where_clause = " AND ".join(where_conditions)
-
-        # Build segment district lists for SQL
-        ccr_list = ",".join([f"'{d}'" for d in CCR_DISTRICTS])
-        rcr_list = ",".join([f"'{d}'" for d in RCR_DISTRICTS])
-        ocr_list = ",".join([f"'{d}'" for d in OCR_DISTRICTS])
-
-        # Fast sampling using random() with LIMIT
-        # For refresh (with seed): pure random, very fast
-        # For stable (no seed): use md5(id) for deterministic results
-        if seed:
-            # Fast random sampling - no sorting needed, just pick random rows
-            sql = text(f"""
-                (SELECT price, area_sqft, bedroom_count, district
-                 FROM transactions TABLESAMPLE BERNOULLI(10)
-                 WHERE {where_clause} AND district IN ({ccr_list})
-                 LIMIT :samples_per_segment)
-                UNION ALL
-                (SELECT price, area_sqft, bedroom_count, district
-                 FROM transactions TABLESAMPLE BERNOULLI(10)
-                 WHERE {where_clause} AND district IN ({rcr_list})
-                 LIMIT :samples_per_segment)
-                UNION ALL
-                (SELECT price, area_sqft, bedroom_count, district
-                 FROM transactions TABLESAMPLE BERNOULLI(10)
-                 WHERE {where_clause} AND district IN ({ocr_list})
-                 LIMIT :samples_per_segment)
-            """)
-        else:
-            # Stable sampling using md5(id) - slower but deterministic
-            sql = text(f"""
-                (SELECT price, area_sqft, bedroom_count, district
-                 FROM transactions
-                 WHERE {where_clause} AND district IN ({ccr_list})
-                 ORDER BY md5(id::TEXT)
-                 LIMIT :samples_per_segment)
-                UNION ALL
-                (SELECT price, area_sqft, bedroom_count, district
-                 FROM transactions
-                 WHERE {where_clause} AND district IN ({rcr_list})
-                 ORDER BY md5(id::TEXT)
-                 LIMIT :samples_per_segment)
-                UNION ALL
-                (SELECT price, area_sqft, bedroom_count, district
-                 FROM transactions
-                 WHERE {where_clause} AND district IN ({ocr_list})
-                 ORDER BY md5(id::TEXT)
-                 LIMIT :samples_per_segment)
-            """)
-
-        result = db.session.execute(sql, params)
-        sampled = result.fetchall()
-
-        # SECURITY: Check subscription tier for scatter data precision
-        # Premium: exact values | Free: rounded values (preserves pattern, reduces precision)
-        from utils.subscription import is_premium_user
-        is_premium = is_premium_user()
-
-        # Format response with tier-aware precision
-        if is_premium:
-            data = [
-                {
-                    "price": row.price,
-                    "area_sqft": row.area_sqft,
-                    "bedroom": row.bedroom_count,
-                    "district": row.district
-                }
-                for row in sampled
-            ]
-        else:
-            # Free users: round price to nearest $50K, area to nearest 25 sqft
-            # Preserves market pattern visualization without revealing exact values
-            data = [
-                {
-                    "price": round(row.price / 50000) * 50000 if row.price else None,
-                    "area_sqft": round(row.area_sqft / 25) * 25 if row.area_sqft else None,
-                    "bedroom": row.bedroom_count,
-                    "district": row.district
-                }
-                for row in sampled
-            ]
-
-        elapsed = time.time() - start
-        print(f"GET /api/scatter-sample returned {len(data)} points (stratified by segment) in {elapsed:.4f}s")
-
-        return jsonify({
-            "data": data,
-            "meta": {
-                "sample_size": len(data),
-                "total_count": total_count,
-                "samples_per_segment": samples_per_segment,
-                "sampling_method": "stratified_by_segment",
-                "elapsed_ms": round(elapsed * 1000, 2)
-            }
-        })
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/scatter-sample ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+    import logging
+    logging.warning(f"Deprecated /scatter-sample called from {request.remote_addr}")
+    return jsonify({
+        "error": "This endpoint has been deprecated for compliance",
+        "message": "Transaction-level scatter data is no longer available. Use aggregate visualizations instead.",
+        "alternatives": ["/aggregate-summary", "/dashboard?panels=price_histogram"]
+    }), 410
 
 
 # ============================================================================

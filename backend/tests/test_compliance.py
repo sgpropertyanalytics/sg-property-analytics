@@ -397,6 +397,26 @@ class TestDeprecatedEndpoints:
         assert 'error' in data
         assert 'deprecated' in data['error'].lower()
 
+    def test_comparable_value_analysis_returns_410(self, client):
+        """GET /api/comparable_value_analysis should return 410."""
+        response = client.get('/api/comparable_value_analysis')
+        assert response.status_code == 410
+        data = response.get_json()
+        assert 'error' in data
+        assert 'deprecated' in data['error'].lower()
+        # Verify alternatives are suggested
+        assert 'alternatives' in data
+
+    def test_scatter_sample_returns_410(self, client):
+        """GET /api/scatter-sample should return 410."""
+        response = client.get('/api/scatter-sample')
+        assert response.status_code == 410
+        data = response.get_json()
+        assert 'error' in data
+        assert 'deprecated' in data['error'].lower()
+        # Verify alternatives are suggested
+        assert 'alternatives' in data
+
 
 class TestAggregateSummaryCompliance:
     """Test aggregate-summary endpoint for compliance."""
