@@ -6,18 +6,12 @@ import React from 'react';
  * Used in ValueParityPanel to show:
  * - Budget-based message with range
  * - New Launches count
- * - Young Resale count
- * - Resale Market count
  */
 export function ResultsSummaryBar({
   budget = 0,
   loading = false,
   hotProjectsCount = 0,
-  youngResaleCount = 0,
-  resaleMarketCount = 0,
   onJumpToNewLaunches,
-  onJumpToYoungResale,
-  onJumpToResaleMarket,
 }) {
   // Format budget for display
   const formatBudget = (value) => {
@@ -43,45 +37,17 @@ export function ResultsSummaryBar({
         Based on your target price of <span className="font-semibold text-white">{formatBudget(budget)}</span> <span className="text-white/70">(+/- $100K)</span>:
       </p>
 
-      {/* Stats row - responsive grid on mobile, flex on desktop */}
-      <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-4">
+      {/* Stats row */}
+      <div className="flex items-center gap-4">
         {/* New Launches */}
         <button
           onClick={onJumpToNewLaunches}
           disabled={loading}
-          className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1.5 hover:bg-white/10 active:bg-white/20 rounded px-1 py-1 transition-colors disabled:opacity-70"
+          className="flex items-center gap-1.5 hover:bg-white/10 active:bg-white/20 rounded px-2 py-1 transition-colors disabled:opacity-70"
         >
-          <span className="text-base sm:text-lg">🏗️</span>
-          <span className="text-[10px] sm:text-xs text-white/70 leading-tight">New</span>
-          {loading ? <LoadingSpinner /> : <span className="text-sm sm:text-base font-bold">{hotProjectsCount}</span>}
-        </button>
-
-        {/* Divider - hidden on mobile */}
-        <div className="hidden sm:block border-l border-white/30 h-5" />
-
-        {/* Young Resale */}
-        <button
-          onClick={onJumpToYoungResale}
-          disabled={loading}
-          className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1.5 hover:bg-white/10 active:bg-white/20 rounded px-1 py-1 transition-colors disabled:opacity-70"
-        >
-          <span className="text-base sm:text-lg">🏠</span>
-          <span className="text-[10px] sm:text-xs text-white/70 leading-tight">Young</span>
-          {loading ? <LoadingSpinner /> : <span className="text-sm sm:text-base font-bold">{youngResaleCount.toLocaleString()}</span>}
-        </button>
-
-        {/* Divider - hidden on mobile */}
-        <div className="hidden sm:block border-l border-white/30 h-5" />
-
-        {/* Resale Market */}
-        <button
-          onClick={onJumpToResaleMarket}
-          disabled={loading}
-          className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1.5 hover:bg-white/10 active:bg-white/20 rounded px-1 py-1 transition-colors disabled:opacity-70"
-        >
-          <span className="text-base sm:text-lg">🏘️</span>
-          <span className="text-[10px] sm:text-xs text-white/70 leading-tight">Resale</span>
-          {loading ? <LoadingSpinner /> : <span className="text-sm sm:text-base font-bold">{resaleMarketCount.toLocaleString()}</span>}
+          <span className="text-lg">🏗️</span>
+          <span className="text-xs text-white/70">New Launches:</span>
+          {loading ? <LoadingSpinner /> : <span className="text-base font-bold">{hotProjectsCount}</span>}
         </button>
       </div>
     </div>

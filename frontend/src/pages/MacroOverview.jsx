@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
-import { useSubscription } from '../context/SubscriptionContext';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { MedianPsfTrendChart } from '../components/powerbi/MedianPsfTrendChart';
 import { UnitSizeVsPriceChart } from '../components/powerbi/UnitSizeVsPriceChart';
@@ -10,7 +9,6 @@ import { PriceCompressionChart } from '../components/powerbi/PriceCompressionCha
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TimeGranularityToggle } from '../components/powerbi/TimeGranularityToggle';
-import { TransactionDataTable } from '../components/powerbi/TransactionDataTable';
 import { GLSDataTable } from '../components/powerbi/GLSDataTable';
 import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
@@ -20,7 +18,6 @@ import { useData } from '../context/DataContext';
 import { KPICard, ErrorBoundary, ChartWatermark } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
-import { Lock } from 'lucide-react';
 
 /**
  * Macro Overview Page - Power BI-style Dashboard (Market Pulse)
@@ -42,7 +39,6 @@ import { Lock } from 'lucide-react';
  */
 export function MacroOverviewContent() {
   const { apiMetadata } = useData();
-  const { isPremium, showPaywall } = useSubscription();
   const {
     filters,
     crossFilter,
@@ -60,7 +56,6 @@ export function MacroOverviewContent() {
   const trendChartHeight = useChartHeight(280, MOBILE_CAPS.compact);      // 280px desktop, max 260px mobile
   const standardChartHeight = useChartHeight(350, MOBILE_CAPS.standard);  // 350px desktop, max 300px mobile
   const compressionHeight = useChartHeight(380, MOBILE_CAPS.tall);        // 380px desktop, max 320px mobile
-  const tableHeight = useChartHeight(400, MOBILE_CAPS.tall);              // 400px desktop, max 320px mobile
 
   // Summary KPIs - Deal detection metrics with trend indicators
   // Uses single optimized API call for fast loading
@@ -365,43 +360,6 @@ export function MacroOverviewContent() {
                 </ErrorBoundary>
               </div>
 
-              {/* Transaction Data Table - Hidden for free users */}
-              <div className="mb-4 md:mb-6">
-                <ErrorBoundary name="Transaction Table" compact>
-                  {isPremium ? (
-                    <TransactionDataTable height={tableHeight} />
-                  ) : (
-                    /* Locked Transaction Table CTA for free users */
-                    <div
-                      className="bg-white rounded-lg border border-[#94B4C1]/50 p-8 md:p-12 text-center"
-                      style={{ minHeight: tableHeight }}
-                    >
-                      <div className="max-w-md mx-auto">
-                        <div className="w-16 h-16 bg-[#213448] rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Lock className="w-8 h-8 text-[#EAE0CF]" />
-                        </div>
-                        <h3 className="text-xl font-bold text-[#213448] mb-2">
-                          Transaction Details
-                        </h3>
-                        <p className="text-[#547792] mb-6">
-                          See exactly what your neighbors paid. Unlock unit numbers,
-                          exact prices, and detailed transaction records.
-                        </p>
-                        <button
-                          onClick={() => showPaywall({ source: 'transaction-table' })}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-[#213448] text-white rounded-lg font-semibold hover:bg-[#547792] transition-colors"
-                        >
-                          <Lock className="w-4 h-4" />
-                          Unlock Unit-Level Precision
-                        </button>
-                        <p className="text-xs text-[#94B4C1] mt-4">
-                          Preview mode shows aggregated data only
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </ErrorBoundary>
-              </div>
           </div>
         </div>
       </div>
