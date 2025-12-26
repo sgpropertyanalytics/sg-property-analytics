@@ -279,7 +279,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
   const midTrend = getLatestTrend(premiums.Mid);
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={years.length === 0}>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={years.length === 0} skeleton="line" height={350}>
       <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
         {/* Header - shrink-0 */}
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">

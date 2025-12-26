@@ -267,7 +267,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
   const cardHeight = height + 90; // height prop for chart + ~90px for header
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0}>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="bar" height={height + 80}>
       <div
         className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}

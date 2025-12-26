@@ -263,7 +263,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
   const cardHeight = height + 120; // height prop for chart + ~120px for header/footer
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!rawData || rawData.length === 0}>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!rawData || rawData.length === 0} skeleton="line" height={350}>
       <div
         className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}

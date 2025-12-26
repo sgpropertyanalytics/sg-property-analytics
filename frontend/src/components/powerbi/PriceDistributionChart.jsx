@@ -226,7 +226,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
   const cardHeight = height + 190; // height prop for chart + ~190px for header(with stats)/note/footer
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!bins || bins.length === 0}>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!bins || bins.length === 0} skeleton="bar" height={350}>
       <div
         className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}

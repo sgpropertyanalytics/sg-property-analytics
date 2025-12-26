@@ -291,7 +291,7 @@ export function NewVsResaleChart({ height = 350 }) {
   const cardHeight = height + 180; // height prop for chart + ~180px for header/KeyInsightBox
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!hasData}>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!hasData} skeleton="bar" height={350}>
       <div
         ref={containerRef}
         className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"

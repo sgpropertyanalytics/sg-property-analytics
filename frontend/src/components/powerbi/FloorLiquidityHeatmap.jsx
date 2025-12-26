@@ -176,7 +176,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
   };
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={data.projects.length === 0}>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={data.projects.length === 0} skeleton="grid" height={400}>
     <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
       {/* Header */}
       <div className="px-6 py-4 border-b border-[#94B4C1]/30">

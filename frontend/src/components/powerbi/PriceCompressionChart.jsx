@@ -326,7 +326,7 @@ export function PriceCompressionChart({ height = 380 }) {
   const cardHeight = height + 200 + (showContext ? height * 0.25 : 0);
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0}>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={350}>
       <div
         ref={containerRef}
         className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"

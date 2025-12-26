@@ -215,3 +215,56 @@ input[type="range"].slider-thumb::-moz-range-progress {
   animation-play-state: paused;
 }
 
+/* ====== Chart Skeleton Shimmer Effects ====== */
+
+/* Shimmer animation keyframes */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Base shimmer effect */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #EAE0CF 0%,
+    #f5f0e8 25%,
+    #EAE0CF 50%,
+    #f5f0e8 75%,
+    #EAE0CF 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Chart skeleton container */
+.chart-skeleton {
+  background-color: #fafaf8;
+  position: relative;
+  overflow: hidden;
+}
+
+/* SVG circle shimmer for map markers */
+.chart-skeleton svg circle.skeleton-shimmer {
+  fill: #EAE0CF;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Pulse animation for variety */
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+

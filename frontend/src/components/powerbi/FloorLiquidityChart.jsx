@@ -308,7 +308,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   const mostLiquidTier = data[counts.indexOf(maxCount)]?.floor_level;
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0}>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="bar" height={350}>
       <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
         {/* Header - shrink-0 */}
         <div className="px-6 py-4 border-b border-[#94B4C1]/30 shrink-0">
