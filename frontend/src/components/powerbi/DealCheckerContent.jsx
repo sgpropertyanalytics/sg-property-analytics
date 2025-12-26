@@ -15,8 +15,8 @@ import DealCheckerMap from './DealCheckerMap';
 import ScopeSummaryCards from './ScopeSummaryCards';
 import { SuppressedValue } from '../SuppressedValue';
 
-// K-anonymity threshold for project-level data
-const K_PROJECT_THRESHOLD = 15;
+// K-anonymity threshold for project-level aggregates (lower for medians)
+const K_PROJECT_THRESHOLD = 3;
 
 // Format price for display
 const formatPrice = (value) => {
@@ -583,6 +583,7 @@ export default function DealCheckerContent() {
                     const isUserProject = p.project_name === result.project.name;
                     const isWithin1km = p.distance_km <= 1.0;
                     const volumeColor = getVolumeColor(p.transaction_count, volumeThresholds);
+                    const isSuppressed = (p.transaction_count || 0) < K_PROJECT_THRESHOLD;
 
                     return (
                       <div
@@ -604,22 +605,42 @@ export default function DealCheckerContent() {
                             </div>
                           </div>
                         </div>
+                        {/* Row 1: Obs & Sqft */}
                         <div className="flex justify-between mt-2 text-xs text-[#547792]">
                           <span>{(p.transaction_count || 0).toLocaleString()} obs</span>
                           <span>
                             <SuppressedValue
-                              value={p.median_price}
-                              suppressed={(p.transaction_count || 0) < K_PROJECT_THRESHOLD}
+                              value={p.median_sqft}
+                              suppressed={isSuppressed}
+                              kRequired={K_PROJECT_THRESHOLD}
+                              formatter={(v) => `${v.toLocaleString()} sqft`}
+                            />
+                          </span>
+                        </div>
+                        {/* Row 2: P25 / Median / P75 */}
+                        <div className="flex justify-between mt-1 text-xs">
+                          <span className="text-[#94B4C1]">
+                            P25: <SuppressedValue
+                              value={p.p25_price}
+                              suppressed={isSuppressed}
                               kRequired={K_PROJECT_THRESHOLD}
                               formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
                             />
                           </span>
-                          <span>
+                          <span className="font-medium text-[#213448]">
                             <SuppressedValue
-                              value={p.median_sqft}
-                              suppressed={(p.transaction_count || 0) < K_PROJECT_THRESHOLD}
+                              value={p.median_price}
+                              suppressed={isSuppressed}
                               kRequired={K_PROJECT_THRESHOLD}
-                              formatter={(v) => `${v.toLocaleString()} sqft`}
+                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
+                            />
+                          </span>
+                          <span className="text-[#94B4C1]">
+                            P75: <SuppressedValue
+                              value={p.p75_price}
+                              suppressed={isSuppressed}
+                              kRequired={K_PROJECT_THRESHOLD}
+                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
                             />
                           </span>
                         </div>
@@ -657,17 +678,8 @@ export default function DealCheckerContent() {
                         onClick={() => handleProjectsSort('transaction_count')}
                       >
                         <div className="flex items-center justify-end gap-1">
-                          <span>Observations</span>
+                          <span>Obs</span>
                           <SortIcon column="transaction_count" />
-                        </div>
-                      </th>
-                      <th
-                        className="px-3 py-2 text-right font-medium text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
-                        onClick={() => handleProjectsSort('median_price')}
-                      >
-                        <div className="flex items-center justify-end gap-1">
-                          <span>Median Price</span>
-                          <SortIcon column="median_price" />
                         </div>
                       </th>
                       <th
@@ -679,6 +691,33 @@ export default function DealCheckerContent() {
                           <SortIcon column="median_sqft" />
                         </div>
                       </th>
+                      <th
+                        className="px-3 py-2 text-right font-medium text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleProjectsSort('p25_price')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>P25</span>
+                          <SortIcon column="p25_price" />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right font-medium text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleProjectsSort('median_price')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>Median</span>
+                          <SortIcon column="median_price" />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right font-medium text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleProjectsSort('p75_price')}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>P75</span>
+                          <SortIcon column="p75_price" />
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -686,6 +725,7 @@ export default function DealCheckerContent() {
                       const isUserProject = p.project_name === result.project.name;
                       const isWithin1km = p.distance_km <= 1.0;
                       const volumeColor = getVolumeColor(p.transaction_count, volumeThresholds);
+                      const isSuppressed = (p.transaction_count || 0) < K_PROJECT_THRESHOLD;
                       return (
                         <tr
                           key={p.project_name}
@@ -707,20 +747,36 @@ export default function DealCheckerContent() {
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 font-medium">
                             {(p.transaction_count || 0).toLocaleString()}
                           </td>
+                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600">
+                            <SuppressedValue
+                              value={p.median_sqft}
+                              suppressed={isSuppressed}
+                              kRequired={K_PROJECT_THRESHOLD}
+                              formatter={(v) => v.toLocaleString()}
+                            />
+                          </td>
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
                             <SuppressedValue
-                              value={p.median_price}
-                              suppressed={(p.transaction_count || 0) < K_PROJECT_THRESHOLD}
+                              value={p.p25_price}
+                              suppressed={isSuppressed}
                               kRequired={K_PROJECT_THRESHOLD}
                               formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
                             />
                           </td>
-                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600">
+                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
                             <SuppressedValue
-                              value={p.median_sqft}
-                              suppressed={(p.transaction_count || 0) < K_PROJECT_THRESHOLD}
+                              value={p.median_price}
+                              suppressed={isSuppressed}
                               kRequired={K_PROJECT_THRESHOLD}
-                              formatter={(v) => v.toLocaleString()}
+                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
+                            />
+                          </td>
+                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
+                            <SuppressedValue
+                              value={p.p75_price}
+                              suppressed={isSuppressed}
+                              kRequired={K_PROJECT_THRESHOLD}
+                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
                             />
                           </td>
                         </tr>
@@ -728,7 +784,7 @@ export default function DealCheckerContent() {
                     })}
                     {sortedNearbyProjects.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
+                        <td colSpan={7} className="px-3 py-6 text-center text-slate-500">
                           No nearby projects found
                         </td>
                       </tr>
