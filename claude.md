@@ -244,3 +244,162 @@ Use: getRegionForDistrict('D07') → 'CCR'
 | `/data-standards` | Any classification/label |
 | `/dashboard-guardrails` | Any chart modification |
 | `/api-endpoint-guardrails` | Creating new endpoints |
+
+---
+
+# 8. ENGINEERING PRINCIPLES
+
+_Practical coding doctrine: clarity over cleverness, safe refactors, reusable blocks, stable contracts._
+
+## Core Philosophy
+```
+This is a decision-intelligence product. Optimize for:
+- Clarity over cleverness
+- Safe refactors & predictable behavior
+- Reusable building blocks
+- Stable UI & data contracts
+- Security/compliance (no premium data leakage)
+
+If a change makes code harder to read, delete, or leaks data → reject it.
+```
+
+## Principle 1: One Chart = One Question
+Every chart answers **one** user decision question. State it explicitly:
+```js
+// Question: "How does price decay with age for 2BR in CCR?"
+```
+If a chart tries to answer 2-3 questions → split into separate charts or add a toggle.
+
+## Principle 2: Pure Chart + Container Split
+Build charts in 2 layers:
+```
+PriceDecayChart.tsx       ← Pure: props in → render out (no fetching)
+PriceDecayChartContainer.tsx  ← Wiring: reads filters, calls hooks, passes props
+```
+**Why:** Keeps pages thin, charts portable, logic testable.
+
+## Principle 3: UI Components Don't Fetch
+```
+✅ useXyzData() handles fetching, caching, normalization
+✅ <XyzChart data={...} /> purely renders
+
+❌ fetch() inside chart components
+❌ inline data orchestration in UI
+```
+
+## Principle 4: Feature Folder Structure
+```
+src/features/<feature-name>/
+  components/    ← Pure UI
+  hooks/         ← Data fetching
+  api/           ← API calls
+  utils/         ← Helpers
+  constants.ts   ← Local constants
+  index.ts       ← Public exports
+```
+- Feature-specific → keep in feature folder
+- Used across features → promote to `src/lib/`
+
+## Principle 5: DRY Without Over-Abstraction
+```
+1 use  → keep local
+2 uses → consider extracting
+3 uses → extract (required)
+```
+Prefer extracting **logic** (hooks/utils) before extracting "mega components."
+
+## Principle 6: Composition Over Abstraction
+Build from small parts:
+```
+ChartShell → Legend → Tooltip → ChartCanvas → MetricPill → EmptyState
+```
+**Avoid:** "do-everything" base components, inheritance patterns, magic factories.
+
+## Principle 7: Write for Deletion
+Good code is easy to delete. Design so:
+- Removing a feature folder deletes the feature cleanly
+- Dependencies are explicit
+- Side effects are localized
+- Minimal global coupling
+
+**Smell:** If deleting something breaks unrelated features.
+
+## Principle 8: Security — Never Leak Premium Data
+```
+✅ Backend returns masked/aggregated values for free users
+✅ Frontend renders only what it receives
+❌ Render real numbers then blur with CSS (DevTools bypass!)
+```
+Treat this as a **security rule**, not a UX choice.
+
+## Principle 9: Naming Conventions
+```
+Hooks:        useThing
+Containers:   ThingContainer
+Pure visuals: ThingChart, ThingTable, ThingPanel
+Transformers: buildThingSeries, normalizeThing, toThingViewModel
+Constants:    THING_DEFAULTS, THING_THRESHOLDS
+```
+**Explicit names > short names.**
+
+## Principle 10: ESLint Disables — Scoped & Explained
+```js
+// ✅ Allowed
+// eslint-disable-next-line react-hooks/exhaustive-deps
+// Reason: stable callback excluded to prevent re-fetch loop
+
+// ❌ Not allowed
+/* eslint-disable */
+```
+Every suppression must have a justification comment.
+
+## Pre-Commit Checklist
+Before you commit, ask:
+```
+[ ] Can I explain what this file does in one sentence?
+[ ] Did I use existing sources of truth (not create new ones)?
+[ ] Did I duplicate logic or formatting?
+[ ] Does the chart handle loading/empty/error/success?
+[ ] Can this be deleted without breaking unrelated features?
+[ ] Did I leak premium data into the DOM?
+[ ] Are ESLint disables scoped and justified?
+```
+If "no" to any → fix before merging.
+
+## New Chart PR Requirements
+```
+[ ] Clear question it answers (Principle 1)
+[ ] Pure chart + container split (Principle 2)
+[ ] Uses adapters & canonical shapes (Card 7)
+[ ] Handles all 4 states (Card 6)
+[ ] Uses centralized formatting/labels
+[ ] No premium leakage (Principle 8)
+[ ] Uses constants (REGIONS, BEDROOM_ORDER)
+```
+
+## Reference Feature Structure
+```
+src/features/market-trends/price-decay/
+  components/
+    PriceDecayChart.tsx           # Pure render
+    PriceDecayChartContainer.tsx  # Wiring
+  hooks/
+    usePriceDecay.ts              # Data fetching
+  api/
+    priceDecayApi.ts              # API calls
+  utils/
+    buildSeries.ts                # Transformations
+  constants.ts                    # Local constants
+  index.ts                        # Public exports
+
+src/lib/
+  apiContract.ts                  # Shared contract
+  adapters/                       # v1/v2/v3 adapters
+  format/                         # money, number, date
+  labels/                         # UI text
+  constants/                      # App-wide constants
+```
+
+---
+
+**Final Principle:** We are building a product that survives iteration. Optimize for stable contracts, reusable primitives, clean feature boundaries, safe refactors, and clear decision-oriented visuals.
