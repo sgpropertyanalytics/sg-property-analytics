@@ -18,6 +18,7 @@ import PriceBandChart from '../components/powerbi/PriceBandChart';
 import PriceGrowthChart from '../components/powerbi/PriceGrowthChart';
 import UnitPsfInput from '../components/powerbi/UnitPsfInput';
 import { KeyInsightBox } from '../components/ui/KeyInsightBox';
+import { FloorLiquidityHeatmap } from '../components/powerbi/FloorLiquidityHeatmap';
 
 // Random project name generator for loading animation
 const generateRandomProjectName = () => {
@@ -495,6 +496,12 @@ export function ProjectDeepDiveContent() {
                   transactionsPer100Units={exitQueueData.resale_metrics?.transactions_per_100_units}
                   resalesLast24m={exitQueueData.resale_metrics?.resales_last_24m}
                   totalUnits={exitQueueData.fundamentals?.total_units}
+                />
+
+                {/* Floor Liquidity - Which Floors Resell Faster (district-scoped) */}
+                <FloorLiquidityHeatmap
+                  district={selectedProject?.district}
+                  highlightProject={selectedProject?.name}
                 />
               </>
             )}

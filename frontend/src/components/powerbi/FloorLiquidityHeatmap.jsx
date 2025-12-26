@@ -22,7 +22,7 @@ import {
  * Y-axis: Project Names (alphabetical)
  * Cell color: Liquidity Score (Z-score of velocity within project)
  */
-export function FloorLiquidityHeatmap({ bedroom, segment }) {
+export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightProject }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
 
@@ -44,6 +44,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
       });
       if (bedroom) params.bedroom = bedroom;
       if (segment) params.segment = segment;
+      if (district) params.district = district;
 
       const response = await getFloorLiquidityHeatmap(params, { signal });
 
@@ -52,7 +53,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
         meta: response.data?.meta || { exclusions: {} }
       };
     },
-    [debouncedFilterKey, windowMonths, bedroom, segment],
+    [debouncedFilterKey, windowMonths, bedroom, segment, district],
     { initialData: { data: { projects: [], floor_zone_order: [] }, meta: { exclusions: {} } } }
   );
 
