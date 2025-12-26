@@ -377,30 +377,35 @@ export const isValidTenure = (tenure) => {
 
 /**
  * Property age band definitions
- * Age bands use >= min and < max boundaries
  *
- * | Band         | Age Range | Boundary Logic        |
- * |--------------|-----------|----------------------|
- * | new_sale     | 0-4 yrs   | age < 4              |
- * | recently_top | 4-8 yrs   | age >= 4 AND age < 8 |
- * | young_resale | 8-15 yrs  | age >= 8 AND age < 15|
- * | resale       | 15-25 yrs | age >= 15 AND age < 25|
- * | old_resale   | 25+ yrs   | age >= 25            |
+ * CLASSIFICATION LOGIC:
+ * 1. New Sale = sale_type from URA (NOT age-based)
+ * 2. Freehold = tenure from URA (explicitly labeled)
+ * 3. Age bands (for resale only):
+ *
+ * | Band         | Age Range | Boundary Logic         |
+ * |--------------|-----------|------------------------|
+ * | new_sale     | N/A       | sale_type == 'New Sale'|
+ * | recently_top | 0-8 yrs   | age < 8 (resale)       |
+ * | young_resale | 8-15 yrs  | age >= 8 AND age < 15  |
+ * | resale       | 15-25 yrs | age >= 15 AND age < 25 |
+ * | old_resale   | 25+ yrs   | age >= 25              |
+ * | freehold     | N/A       | tenure == 'Freehold'   |
  */
 export const PROPERTY_AGE_BANDS = [
-  { key: 'new_sale', label: 'New Sale', minAge: 0, maxAge: 4 },
-  { key: 'recently_top', label: 'Recently TOP', minAge: 4, maxAge: 8 },
-  { key: 'young_resale', label: 'Young Resale', minAge: 8, maxAge: 15 },
-  { key: 'resale', label: 'Resale', minAge: 15, maxAge: 25 },
-  { key: 'old_resale', label: 'Old Resale', minAge: 25, maxAge: null },
+  { key: 'new_sale', label: 'New Sale', minAge: null, maxAge: null, source: 'sale_type' },
+  { key: 'recently_top', label: 'Recently TOP', minAge: 0, maxAge: 8, source: 'age' },
+  { key: 'young_resale', label: 'Young Resale', minAge: 8, maxAge: 15, source: 'age' },
+  { key: 'resale', label: 'Resale', minAge: 15, maxAge: 25, source: 'age' },
+  { key: 'old_resale', label: 'Old Resale', minAge: 25, maxAge: null, source: 'age' },
 ];
 
 /**
  * Age band labels with year ranges (for display in legends/headers)
  */
 export const AGE_BAND_LABELS_FULL = {
-  new_sale: 'New Sale (0-4 yrs)',
-  recently_top: 'Recently TOP (4-8 yrs)',
+  new_sale: 'New Sale',
+  recently_top: 'Recently TOP (0-8 yrs)',
   young_resale: 'Young Resale (8-15 yrs)',
   resale: 'Resale (15-25 yrs)',
   old_resale: 'Old Resale (25+ yrs)',
@@ -416,21 +421,29 @@ export const AGE_BAND_LABELS_SHORT = {
   young_resale: 'Young Resale',
   resale: 'Resale',
   old_resale: 'Old Resale',
-  freehold: 'FH',
+  freehold: 'Freehold',
 };
 
 /**
- * Get age band key from property age
- * Matches backend SQL logic: age >= min AND age < max
+ * Get age band key from property characteristics
+ *
+ * Priority:
+ * 1. isNewSale (from URA sale_type) → 'new_sale'
+ * 2. isFreehold (from URA tenure) → 'freehold'
+ * 3. Age-based bands for resale leasehold
  *
  * @param {number|null} age - Property age in years
- * @param {boolean} isFreehold - Whether property is freehold (no reliable TOP date)
- * @returns {string} Age band key
+ * @param {boolean} isFreehold - Freehold tenure (from URA)
+ * @param {boolean} isNewSale - New Sale transaction type (from URA)
+ * @returns {string|null} Age band key
  */
-export const getAgeBandKey = (age, isFreehold = false) => {
+export const getAgeBandKey = (age, isFreehold = false, isNewSale = false) => {
+  // Primary: transaction type from URA
+  if (isNewSale) return 'new_sale';
+  // Freehold: tenure from URA
   if (isFreehold) return 'freehold';
+  // Age-based bands for resale leasehold
   if (age === null || age === undefined) return null;
-  if (age < 4) return 'new_sale';
   if (age < 8) return 'recently_top';
   if (age < 15) return 'young_resale';
   if (age < 25) return 'resale';
@@ -441,24 +454,27 @@ export const getAgeBandKey = (age, isFreehold = false) => {
  * Get age band label for display
  *
  * @param {number|null} age - Property age in years
- * @param {boolean} isFreehold - Whether property is freehold
- * @param {boolean} short - Use short label (default: true)
+ * @param {Object} options - Classification options
+ * @param {boolean} options.isFreehold - Freehold tenure (from URA)
+ * @param {boolean} options.isNewSale - New Sale transaction type (from URA)
+ * @param {boolean} options.short - Use short label (default: true)
  * @returns {string} Display label
  */
-export const getAgeBandLabel = (age, isFreehold = false, short = true) => {
-  const key = getAgeBandKey(age, isFreehold);
+export const getAgeBandLabel = (age, options = {}) => {
+  const { isFreehold = false, isNewSale = false, short = true } = options;
+  const key = getAgeBandKey(age, isFreehold, isNewSale);
   if (!key) return '-';
   return short ? AGE_BAND_LABELS_SHORT[key] : AGE_BAND_LABELS_FULL[key];
 };
 
 /**
- * Get tooltip text for age band (useful for FH explanation)
+ * Get tooltip text for age band
  *
  * @param {string} bandKey - Age band key
  * @returns {string|null} Tooltip text or null
  */
 export const getAgeBandTooltip = (bandKey) => {
-  if (bandKey === 'freehold') return 'Freehold (age not available)';
+  // No tooltip needed - all bands are clearly labeled from URA data
   return null;
 };
 

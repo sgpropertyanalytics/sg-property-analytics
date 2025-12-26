@@ -19,7 +19,7 @@ import { SuppressedValue } from '../SuppressedValue';
 const K_PROJECT_THRESHOLD = 15;
 
 // Age band helpers - imported from centralized constants (SINGLE SOURCE OF TRUTH)
-import { getAgeBandLabel, getAgeBandKey, getAgeBandTooltip } from '../../constants';
+import { getAgeBandLabel } from '../../constants';
 
 // Format price for display
 const formatPrice = (value) => {
@@ -621,8 +621,8 @@ export default function DealCheckerContent() {
                         {/* Row 1: BR, Age, Obs */}
                         <div className="flex items-center gap-3 mt-2 text-xs text-[#547792]">
                           <span>{p.bedroom || '-'}BR</span>
-                          <span title={getAgeBandTooltip(getAgeBandKey(p.median_age, p.is_freehold))}>
-                            Age: {getAgeBandLabel(p.median_age, p.is_freehold)}
+                          <span>
+                            Age: {getAgeBandLabel(p.median_age, { isFreehold: p.is_freehold })}
                           </span>
                           <span>{(p.transaction_count || 0).toLocaleString()} obs</span>
                         </div>
@@ -775,11 +775,8 @@ export default function DealCheckerContent() {
                           <td className="px-3 py-2 border-b border-slate-100 text-center text-slate-600">
                             {p.bedroom || '-'}
                           </td>
-                          <td
-                            className="px-3 py-2 border-b border-slate-100 text-center text-slate-600"
-                            title={getAgeBandTooltip(getAgeBandKey(p.median_age, p.is_freehold))}
-                          >
-                            {getAgeBandLabel(p.median_age, p.is_freehold)}
+                          <td className="px-3 py-2 border-b border-slate-100 text-center text-slate-600">
+                            {getAgeBandLabel(p.median_age, { isFreehold: p.is_freehold })}
                           </td>
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 font-medium">
                             {(p.transaction_count || 0).toLocaleString()}
