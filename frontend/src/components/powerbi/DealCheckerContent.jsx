@@ -15,8 +15,8 @@ import DealCheckerMap from './DealCheckerMap';
 import ScopeSummaryCards from './ScopeSummaryCards';
 import { SuppressedValue } from '../SuppressedValue';
 
-// K-anonymity threshold for project-level aggregates (lower for medians)
-const K_PROJECT_THRESHOLD = 3;
+// K-anonymity threshold for project-level data (min 15 for privacy)
+const K_PROJECT_THRESHOLD = 15;
 
 // Format price for display
 const formatPrice = (value) => {
@@ -86,6 +86,15 @@ function getVolumeColor(txCount, thresholds) {
   if (txCount >= thresholds.p70) return VOLUME_COLORS.warm;
   if (txCount >= thresholds.p40) return VOLUME_COLORS.mild;
   return VOLUME_COLORS.cool;
+}
+
+// Get volume tier label for a project (for K-anonymity: show label instead of prices when Obs < K)
+function getVolumeLabel(txCount, thresholds) {
+  if (!txCount || txCount === 0) return null;
+  if (txCount >= thresholds.p90) return { label: 'High', style: 'bg-red-100 text-red-700' };
+  if (txCount >= thresholds.p70) return { label: 'Med-High', style: 'bg-orange-100 text-orange-700' };
+  if (txCount >= thresholds.p40) return { label: 'Medium', style: 'bg-yellow-100 text-yellow-700' };
+  return { label: 'Low', style: 'bg-slate-100 text-slate-600' };
 }
 
 // Random project name generator for loading animation
@@ -584,6 +593,7 @@ export default function DealCheckerContent() {
                     const isWithin1km = p.distance_km <= 1.0;
                     const volumeColor = getVolumeColor(p.transaction_count, volumeThresholds);
                     const isSuppressed = (p.transaction_count || 0) < K_PROJECT_THRESHOLD;
+                    const volumeLabel = getVolumeLabel(p.transaction_count, volumeThresholds);
 
                     return (
                       <div
@@ -605,45 +615,33 @@ export default function DealCheckerContent() {
                             </div>
                           </div>
                         </div>
-                        {/* Row 1: Obs & Sqft */}
-                        <div className="flex justify-between mt-2 text-xs text-[#547792]">
+                        {/* Row 1: Obs & Volume/Sqft */}
+                        <div className="flex justify-between items-center mt-2 text-xs text-[#547792]">
                           <span>{(p.transaction_count || 0).toLocaleString()} obs</span>
-                          <span>
-                            <SuppressedValue
-                              value={p.median_sqft}
-                              suppressed={isSuppressed}
-                              kRequired={K_PROJECT_THRESHOLD}
-                              formatter={(v) => `${v.toLocaleString()} sqft`}
-                            />
-                          </span>
+                          {isSuppressed ? (
+                            volumeLabel && (
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${volumeLabel.style}`}>
+                                {volumeLabel.label} volume
+                              </span>
+                            )
+                          ) : (
+                            <span>{p.median_sqft?.toLocaleString() || '-'} sqft</span>
+                          )}
                         </div>
-                        {/* Row 2: P25 / Median / P75 */}
-                        <div className="flex justify-between mt-1 text-xs">
-                          <span className="text-[#94B4C1]">
-                            P25: <SuppressedValue
-                              value={p.p25_price}
-                              suppressed={isSuppressed}
-                              kRequired={K_PROJECT_THRESHOLD}
-                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
-                            />
-                          </span>
-                          <span className="font-medium text-[#213448]">
-                            <SuppressedValue
-                              value={p.median_price}
-                              suppressed={isSuppressed}
-                              kRequired={K_PROJECT_THRESHOLD}
-                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
-                            />
-                          </span>
-                          <span className="text-[#94B4C1]">
-                            P75: <SuppressedValue
-                              value={p.p75_price}
-                              suppressed={isSuppressed}
-                              kRequired={K_PROJECT_THRESHOLD}
-                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
-                            />
-                          </span>
-                        </div>
+                        {/* Row 2: P25 / Median / P75 - only show if Obs >= K */}
+                        {!isSuppressed && (
+                          <div className="flex justify-between mt-1 text-xs">
+                            <span className="text-[#94B4C1]">
+                              P25: ${p.p25_price ? (p.p25_price / 1000000).toFixed(2) : '-'}M
+                            </span>
+                            <span className="font-medium text-[#213448]">
+                              ${p.median_price ? (p.median_price / 1000000).toFixed(2) : '-'}M
+                            </span>
+                            <span className="text-[#94B4C1]">
+                              P75: ${p.p75_price ? (p.p75_price / 1000000).toFixed(2) : '-'}M
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -726,6 +724,7 @@ export default function DealCheckerContent() {
                       const isWithin1km = p.distance_km <= 1.0;
                       const volumeColor = getVolumeColor(p.transaction_count, volumeThresholds);
                       const isSuppressed = (p.transaction_count || 0) < K_PROJECT_THRESHOLD;
+                      const volumeLabel = getVolumeLabel(p.transaction_count, volumeThresholds);
                       return (
                         <tr
                           key={p.project_name}
@@ -747,38 +746,32 @@ export default function DealCheckerContent() {
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 font-medium">
                             {(p.transaction_count || 0).toLocaleString()}
                           </td>
-                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600">
-                            <SuppressedValue
-                              value={p.median_sqft}
-                              suppressed={isSuppressed}
-                              kRequired={K_PROJECT_THRESHOLD}
-                              formatter={(v) => v.toLocaleString()}
-                            />
-                          </td>
-                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
-                            <SuppressedValue
-                              value={p.p25_price}
-                              suppressed={isSuppressed}
-                              kRequired={K_PROJECT_THRESHOLD}
-                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
-                            />
-                          </td>
-                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
-                            <SuppressedValue
-                              value={p.median_price}
-                              suppressed={isSuppressed}
-                              kRequired={K_PROJECT_THRESHOLD}
-                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
-                            />
-                          </td>
-                          <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
-                            <SuppressedValue
-                              value={p.p75_price}
-                              suppressed={isSuppressed}
-                              kRequired={K_PROJECT_THRESHOLD}
-                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
-                            />
-                          </td>
+                          {isSuppressed ? (
+                            /* When Obs < K: show volume label spanning price columns */
+                            <td colSpan={4} className="px-3 py-2 border-b border-slate-100 text-center">
+                              {volumeLabel && (
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${volumeLabel.style}`}>
+                                  {volumeLabel.label} volume
+                                </span>
+                              )}
+                            </td>
+                          ) : (
+                            /* When Obs >= K: show all price data */
+                            <>
+                              <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600">
+                                {p.median_sqft?.toLocaleString() || '-'}
+                              </td>
+                              <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
+                                ${p.p25_price ? (p.p25_price / 1000000).toFixed(2) : '-'}M
+                              </td>
+                              <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap font-medium">
+                                ${p.median_price ? (p.median_price / 1000000).toFixed(2) : '-'}M
+                              </td>
+                              <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
+                                ${p.p75_price ? (p.p75_price / 1000000).toFixed(2) : '-'}M
+                              </td>
+                            </>
+                          )}
                         </tr>
                       );
                     })}
