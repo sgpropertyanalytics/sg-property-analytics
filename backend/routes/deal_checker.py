@@ -492,9 +492,8 @@ def get_multi_scope_comparison():
     # Use raw SQL for age calculation
     # Age = current_year - lease_start_year (for leasehold only)
     # Freehold properties: return NULL (we don't have reliable TOP year data)
-    bedroom_filter = "bedroom_count >= 5" if bedroom >= 5 else f"bedroom_count = {bedroom}"
-
-    age_query = text(f"""
+    # SQL Guardrails: Use :param style for all parameters (no f-string interpolation)
+    age_query = text("""
         SELECT
             project_name,
             COUNT(*) as count,
@@ -508,13 +507,21 @@ def get_multi_scope_comparison():
         FROM transactions
         WHERE COALESCE(is_outlier, false) = false
           AND project_name = ANY(:project_names)
-          AND {bedroom_filter}
+          AND (
+              (bedroom_count >= 5 AND :bedroom_is_5plus = true)
+              OR (bedroom_count = :bedroom AND :bedroom_is_5plus = false)
+          )
         GROUP BY project_name
     """)
 
     tx_stats = db.session.execute(
         age_query,
-        {"current_year": current_year, "project_names": projects_2km}
+        {
+            "current_year": current_year,
+            "project_names": projects_2km,
+            "bedroom": bedroom,
+            "bedroom_is_5plus": bedroom >= 5
+        }
     ).fetchall()
 
     tx_stats_map = {
