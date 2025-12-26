@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { getFilterOptions } from '../api/client';
 import { normalizeFilterOptions } from '../schemas/apiContract';
 
@@ -38,7 +39,8 @@ export function PowerBIFilterProvider({ children }) {
     psfRange: { min: null, max: null },      // null = no restriction
     sizeRange: { min: null, max: null },     // null = no restriction
     tenure: null,                            // null = all, 'Freehold' | '99-year' | '999-year'
-    propertyAge: { min: null, max: null },   // null = no restriction, property age in years
+    propertyAge: { min: null, max: null },   // null = no restriction, property age in years (legacy)
+    propertyAgeBucket: null,                 // null = all, PropertyAgeBucket enum value
     project: null,                           // null = all, project name filter
   });
 
@@ -113,6 +115,33 @@ export function PowerBIFilterProvider({ children }) {
     }
   }, []);
 
+  // ===== Route Change Reset =====
+  // Reset drill state and highlight when navigating between pages
+  // This prevents stale state from causing render errors on navigation
+  const location = useLocation();
+  const previousPathnameRef = useRef(location.pathname);
+
+  useEffect(() => {
+    // Only reset on actual route changes, not on first mount
+    if (previousPathnameRef.current !== location.pathname) {
+      previousPathnameRef.current = location.pathname;
+
+      // Reset drill state to defaults
+      setDrillPath({ time: 'month', location: 'region' });
+      setBreadcrumbs({ time: [], location: [] });
+
+      // Clear highlight and cross-filter
+      setHighlight({ source: null, dimension: null, value: null });
+      setCrossFilter({ source: null, dimension: null, value: null });
+      setFactFilter({ priceRange: { min: null, max: null } });
+
+      // Clear selected project
+      setSelectedProjectState({ name: null, district: null });
+
+      // Keep sidebar filters (districts, dateRange, etc.) - user expects them to persist
+    }
+  }, [location.pathname]);
+
   // ===== Filter Options =====
   // Available values loaded from API and normalized to {value, label} format
   const [filterOptions, setFilterOptions] = useState({
@@ -123,6 +152,7 @@ export function PowerBIFilterProvider({ children }) {
     saleTypes: [],
     tenures: [],
     marketSegments: [],
+    propertyAgeBuckets: [],
     // Ranges (same structure in v1/v2)
     dateRange: { min: null, max: null },
     psfRange: { min: null, max: null },
@@ -154,6 +184,7 @@ export function PowerBIFilterProvider({ children }) {
           saleTypes: normalized.saleTypes,
           tenures: normalized.tenures,
           marketSegments: normalized.marketSegments,
+          propertyAgeBuckets: normalized.propertyAgeBuckets || [],
           // Ranges
           dateRange: normalized.dateRange,
           psfRange: normalized.psfRange,
@@ -275,6 +306,10 @@ export function PowerBIFilterProvider({ children }) {
     }));
   }, []);
 
+  const setPropertyAgeBucket = useCallback((bucket) => {
+    setFilters(prev => ({ ...prev, propertyAgeBucket: bucket }));
+  }, []);
+
   const setProject = useCallback((project) => {
     setFilters(prev => ({ ...prev, project }));
   }, []);
@@ -290,6 +325,7 @@ export function PowerBIFilterProvider({ children }) {
       sizeRange: { min: null, max: null },
       tenure: null,
       propertyAge: { min: null, max: null },
+      propertyAgeBucket: null,
       project: null,
     });
     setCrossFilter({ source: null, dimension: null, value: null });
@@ -638,6 +674,7 @@ export function PowerBIFilterProvider({ children }) {
       sizeRange: activeFilters.sizeRange,
       tenure: activeFilters.tenure,
       propertyAge: activeFilters.propertyAge,
+      propertyAgeBucket: activeFilters.propertyAgeBucket,
       project: activeFilters.project,
       // Highlight state (for time series)
       highlight: highlight.value ? { dim: highlight.dimension, val: highlight.value } : null,
@@ -781,6 +818,9 @@ export function PowerBIFilterProvider({ children }) {
     if (activeFilters.project) {
       params.project = activeFilters.project;
     }
+    if (activeFilters.propertyAgeBucket) {
+      params.propertyAgeBucket = activeFilters.propertyAgeBucket;
+    }
 
     return params;
   }, [activeFilters, filters, highlight, factFilter]);
@@ -797,6 +837,7 @@ export function PowerBIFilterProvider({ children }) {
     if (filters.sizeRange.min !== null || filters.sizeRange.max !== null) count++;
     if (filters.tenure) count++;
     if (filters.propertyAge.min !== null || filters.propertyAge.max !== null) count++;
+    if (filters.propertyAgeBucket) count++;
     if (filters.project) count++;
     if (crossFilter.value) count++;
     if (highlight.value) count++;  // Include time highlight in active filter count
@@ -836,6 +877,7 @@ export function PowerBIFilterProvider({ children }) {
     setSizeRange,
     setTenure,
     setPropertyAge,
+    setPropertyAgeBucket,
     setProject,
     resetFilters,
 

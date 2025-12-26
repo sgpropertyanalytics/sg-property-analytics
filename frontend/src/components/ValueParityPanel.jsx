@@ -104,7 +104,7 @@ export function ValueParityPanel() {
   };
 
   // Filter districts by selected region - use centralized constants (SINGLE SOURCE OF TRUTH)
-  const filteredDistricts = filterOptions.districts.filter(d => {
+  const filteredDistricts = (filterOptions.districts || []).filter(d => {
     if (!region) return true;
     return isDistrictInRegion(d, region);
   });

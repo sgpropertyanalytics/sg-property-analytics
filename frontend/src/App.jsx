@@ -11,22 +11,38 @@ import { DashboardLayout } from './components/layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PageHeader } from './components/ui';
 
+// ===== Lazy Loading with Retry =====
+// Wraps lazy imports to handle chunk loading failures gracefully.
+// If a chunk fails to load (network error, cache miss, 404), reloads the page.
+function lazyWithRetry(componentImport) {
+  return lazy(() =>
+    componentImport().catch((error) => {
+      console.error('Chunk load failed, reloading page...', error);
+      // Force full page reload on chunk failure
+      // This ensures fresh chunks are fetched from server
+      window.location.reload();
+      // Return empty component to prevent further errors while reloading
+      return { default: () => null };
+    })
+  );
+}
+
 // ===== Lazy-loaded Dashboard Pages =====
 // These are code-split to reduce initial bundle size.
 // Chart-heavy pages load on demand when user navigates.
-const MacroOverviewContent = lazy(() =>
+const MacroOverviewContent = lazyWithRetry(() =>
   import('./pages/MacroOverview').then(m => ({ default: m.MacroOverviewContent }))
 );
-const FloorDispersionContent = lazy(() =>
+const FloorDispersionContent = lazyWithRetry(() =>
   import('./pages/FloorDispersion').then(m => ({ default: m.FloorDispersionContent }))
 );
-const ProjectDeepDiveContent = lazy(() =>
+const ProjectDeepDiveContent = lazyWithRetry(() =>
   import('./pages/ProjectDeepDive').then(m => ({ default: m.ProjectDeepDiveContent }))
 );
-const DistrictDeepDiveContent = lazy(() =>
+const DistrictDeepDiveContent = lazyWithRetry(() =>
   import('./pages/DistrictDeepDive').then(m => ({ default: m.DistrictDeepDiveContent }))
 );
-const ValueParityPanel = lazy(() =>
+const ValueParityPanel = lazyWithRetry(() =>
   import('./components/ValueParityPanel').then(m => ({ default: m.ValueParityPanel }))
 );
 

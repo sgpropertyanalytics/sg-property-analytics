@@ -33,8 +33,18 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error details for debugging
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Log detailed error information for debugging
+    console.error('=== ErrorBoundary caught an error ===');
+    console.error('Component:', this.props.name || 'Unknown');
+    console.error('Error:', error?.message || error);
+    console.error('Error name:', error?.name);
+    if (error?.stack) {
+      console.error('Stack trace:', error.stack);
+    }
+    if (errorInfo?.componentStack) {
+      console.error('Component stack:', errorInfo.componentStack);
+    }
+    console.error('=== End of error details ===');
     this.setState({ errorInfo });
 
     // Optional: Report to error tracking service
