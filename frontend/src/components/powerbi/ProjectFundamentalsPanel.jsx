@@ -30,15 +30,15 @@ function StatCard({ label, value, subtext, isUnavailable = false }) {
 }
 
 // Skeleton loader
-function ProjectFundamentalsSkeleton() {
+function ProjectFundamentalsSkeleton({ compact = false }) {
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6 animate-pulse">
-      <div className="h-4 bg-[#94B4C1]/30 rounded w-1/3 mb-4" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 animate-pulse h-full">
+      <div className="h-4 bg-[#94B4C1]/30 rounded w-1/2 mb-4" />
+      <div className={`grid gap-3 ${compact ? 'grid-cols-2' : 'grid-cols-2 lg:grid-cols-4'}`}>
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-[#94B4C1]/20 rounded-lg p-4">
+          <div key={i} className="bg-[#94B4C1]/20 rounded-lg p-3 md:p-4">
             <div className="h-3 bg-[#94B4C1]/30 rounded w-1/2 mb-2" />
-            <div className="h-6 bg-[#94B4C1]/30 rounded w-3/4" />
+            <div className="h-5 md:h-6 bg-[#94B4C1]/30 rounded w-3/4" />
           </div>
         ))}
       </div>
@@ -56,9 +56,10 @@ export default function ProjectFundamentalsPanel({
   developer,
   firstResaleDate,
   loading = false,
+  compact = false, // When true, uses 2-col grid (for 50/50 split layout)
 }) {
   if (loading) {
-    return <ProjectFundamentalsSkeleton />;
+    return <ProjectFundamentalsSkeleton compact={compact} />;
   }
 
   // Format property age display
@@ -119,14 +120,14 @@ export default function ProjectFundamentalsPanel({
   const tenureData = formatTenure();
 
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6">
+    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-full flex flex-col">
       {/* Header */}
-      <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-4">
+      <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-3 md:mb-4">
         Property Fundamentals
       </h3>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Grid - 2-col always in compact mode, responsive otherwise */}
+      <div className={`grid gap-3 flex-1 ${compact ? 'grid-cols-2' : 'grid-cols-2 lg:grid-cols-4'}`}>
         <StatCard
           label="Property Age"
           value={ageData.value}
@@ -155,7 +156,7 @@ export default function ProjectFundamentalsPanel({
 
       {/* Developer info if available */}
       {developer && (
-        <div className="mt-4 text-xs text-[#547792]">
+        <div className="mt-3 md:mt-4 text-xs text-[#547792]">
           <span className="font-medium">Developer:</span> {developer}
         </div>
       )}

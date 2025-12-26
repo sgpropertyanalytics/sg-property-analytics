@@ -446,9 +446,12 @@ export function ProjectDeepDiveContent() {
         {/* Loading State */}
         {loading && (
           <div className="space-y-6 animate-fade-in">
-            <ProjectFundamentalsPanel loading={true} />
+            {/* 50/50 Split Skeleton */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <ProjectFundamentalsPanel loading={true} compact />
+              <ResaleMetricsCards loading={true} compact />
+            </div>
             <ExitRiskDashboard loading={true} />
-            <ResaleMetricsCards loading={true} />
           </div>
         )}
 
@@ -464,17 +467,48 @@ export function ProjectDeepDiveContent() {
               </div>
             )}
 
-            {/* Property Fundamentals */}
-            <ProjectFundamentalsPanel
-              totalUnits={exitQueueData.fundamentals?.total_units}
-              topYear={exitQueueData.fundamentals?.top_year}
-              propertyAgeYears={exitQueueData.fundamentals?.property_age_years}
-              ageSource={exitQueueData.fundamentals?.age_source}
-              tenure={exitQueueData.fundamentals?.tenure}
-              district={exitQueueData.fundamentals?.district}
-              developer={exitQueueData.fundamentals?.developer}
-              firstResaleDate={exitQueueData.fundamentals?.first_resale_date}
-            />
+            {/* Property Fundamentals + Resale Metrics - 50/50 Split */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              {/* Left: Property Fundamentals */}
+              <ProjectFundamentalsPanel
+                totalUnits={exitQueueData.fundamentals?.total_units}
+                topYear={exitQueueData.fundamentals?.top_year}
+                propertyAgeYears={exitQueueData.fundamentals?.property_age_years}
+                ageSource={exitQueueData.fundamentals?.age_source}
+                tenure={exitQueueData.fundamentals?.tenure}
+                district={exitQueueData.fundamentals?.district}
+                developer={exitQueueData.fundamentals?.developer}
+                firstResaleDate={exitQueueData.fundamentals?.first_resale_date}
+                compact
+              />
+
+              {/* Right: Resale Activity Metrics (only if resale data exists) */}
+              {exitQueueData.resale_metrics ? (
+                <ResaleMetricsCards
+                  uniqueResaleUnitsTotal={exitQueueData.resale_metrics?.unique_resale_units_total}
+                  uniqueResaleUnits12m={exitQueueData.resale_metrics?.unique_resale_units_12m}
+                  totalResaleTransactions={exitQueueData.resale_metrics?.total_resale_transactions}
+                  resaleMaturityPct={exitQueueData.resale_metrics?.resale_maturity_pct}
+                  activeExitPressurePct={exitQueueData.resale_metrics?.active_exit_pressure_pct}
+                  absorptionSpeedDays={exitQueueData.resale_metrics?.absorption_speed_days}
+                  transactionsPer100Units={exitQueueData.resale_metrics?.transactions_per_100_units}
+                  resalesLast24m={exitQueueData.resale_metrics?.resales_last_24m}
+                  totalUnits={exitQueueData.fundamentals?.total_units}
+                  compact
+                />
+              ) : (
+                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6 flex flex-col">
+                  <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-4">
+                    Resale Activity Metrics
+                  </h3>
+                  <div className="flex-1 flex items-center justify-center">
+                    <p className="text-sm text-[#94B4C1] text-center">
+                      No resale data available yet
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Historical Downside Protection - Price Bands */}
             <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
@@ -524,19 +558,6 @@ export function ProjectDeepDiveContent() {
                   pressureZone={exitQueueData.risk_assessment?.pressure_zone}
                   overallRisk={exitQueueData.risk_assessment?.overall_risk}
                   interpretation={exitQueueData.risk_assessment?.interpretation}
-                />
-
-                {/* Resale Metrics Cards */}
-                <ResaleMetricsCards
-                  uniqueResaleUnitsTotal={exitQueueData.resale_metrics?.unique_resale_units_total}
-                  uniqueResaleUnits12m={exitQueueData.resale_metrics?.unique_resale_units_12m}
-                  totalResaleTransactions={exitQueueData.resale_metrics?.total_resale_transactions}
-                  resaleMaturityPct={exitQueueData.resale_metrics?.resale_maturity_pct}
-                  activeExitPressurePct={exitQueueData.resale_metrics?.active_exit_pressure_pct}
-                  absorptionSpeedDays={exitQueueData.resale_metrics?.absorption_speed_days}
-                  transactionsPer100Units={exitQueueData.resale_metrics?.transactions_per_100_units}
-                  resalesLast24m={exitQueueData.resale_metrics?.resales_last_24m}
-                  totalUnits={exitQueueData.fundamentals?.total_units}
                 />
 
                 {/* Floor Liquidity - Which Floors Resell Faster (district-scoped) */}
