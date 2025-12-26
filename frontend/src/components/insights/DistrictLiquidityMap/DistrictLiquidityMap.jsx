@@ -110,6 +110,7 @@ export default function DistrictLiquidityMap() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create district data lookup

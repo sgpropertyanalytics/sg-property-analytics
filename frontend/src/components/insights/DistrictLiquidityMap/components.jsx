@@ -7,7 +7,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../../constants';
-import { LIQUIDITY_FILLS } from './constants';
 import {
   getScoreBadgeStyle,
   getScoreLabel,
@@ -288,7 +287,7 @@ export function HoverCard({ district, data }) {
 // REGION SUMMARY BAR
 // =============================================================================
 
-export function RegionSummaryBar({ districtData, meta }) {
+export function RegionSummaryBar({ districtData, meta: _meta }) {
   const regionStats = useMemo(() => {
     const regions = ['CCR', 'RCR', 'OCR'];
     const regionDistricts = {

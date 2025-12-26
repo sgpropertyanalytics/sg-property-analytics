@@ -23,7 +23,7 @@ export function SuppressedValue({
   value,
   suppressed = false,
   kRequired = 15,
-  observationCount,
+  observationCount: _observationCount,
   formatter = (v) => v,
   className = '',
   showTooltip = true,

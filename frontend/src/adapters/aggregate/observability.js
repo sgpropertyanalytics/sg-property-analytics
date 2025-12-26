@@ -21,6 +21,7 @@ import { isDev } from './validation';
 export const logFetchDebug = (chartName, { endpoint, timeGrain, response, rowCount }) => {
   if (!isDev) return;
 
+  /* eslint-disable no-console */
   console.group(`[${chartName}] Data Fetch`);
   console.log('Endpoint:', endpoint);
   console.log('Time Grain:', timeGrain);
@@ -32,6 +33,7 @@ export const logFetchDebug = (chartName, { endpoint, timeGrain, response, rowCou
     console.log('First Row Keys:', Object.keys(response.data[0]));
   }
   console.groupEnd();
+  /* eslint-enable no-console */
 };
 
 /**

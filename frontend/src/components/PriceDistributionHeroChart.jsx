@@ -520,6 +520,7 @@ export function PriceDistributionHeroChart({
         }
       },
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [bins, totalCount, buyerPrice, onBinClick]);
 
   // Loading state

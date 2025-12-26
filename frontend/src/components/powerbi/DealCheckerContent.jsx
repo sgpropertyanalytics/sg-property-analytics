@@ -13,23 +13,12 @@ import { getProjectNames, getDealCheckerMultiScope } from '../../api/client';
 import { PriceDistributionHeroChart } from '../PriceDistributionHeroChart';
 import DealCheckerMap from './DealCheckerMap';
 import ScopeSummaryCards from './ScopeSummaryCards';
-import { SuppressedValue } from '../SuppressedValue';
 
 // K-anonymity threshold for project-level data (min 15 for privacy)
 const K_PROJECT_THRESHOLD = 15;
 
 // Age band helpers - imported from centralized constants (SINGLE SOURCE OF TRUTH)
 import { getAgeBandLabel } from '../../constants';
-
-// Format price for display
-const formatPrice = (value) => {
-  if (value === null || value === undefined) return '-';
-  if (value >= 1000000) {
-    const millions = value / 1000000;
-    return `$${millions.toFixed(2)}M`;
-  }
-  return `$${(value / 1000).toFixed(0)}K`;
-};
 
 // Format number with commas
 const formatNumber = (value) => {

@@ -117,6 +117,7 @@ export default function MarketHeatmap() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create a map for quick district lookup

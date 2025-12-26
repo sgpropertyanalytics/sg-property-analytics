@@ -9,7 +9,7 @@
  * - Responsive design matching dashboard aesthetic
  */
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -33,14 +33,6 @@ const MAP_CONFIG = {
 
 // Light basemap (no labels - cleaner with only our district markers)
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
-
-// Theme colors (from design system)
-const COLORS = {
-  deepNavy: '#213448',
-  oceanBlue: '#547792',
-  skyBlue: '#94B4C1',
-  sand: '#EAE0CF',
-};
 
 // Region fill colors (strong shading for clear market segment separation)
 const REGION_FILLS = {
@@ -466,6 +458,7 @@ export default function MarketStrategyMap() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create district data lookup

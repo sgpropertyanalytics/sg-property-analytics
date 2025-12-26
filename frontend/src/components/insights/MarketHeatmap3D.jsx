@@ -224,6 +224,7 @@ export default function MarketHeatmap3D() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create district lookup map
@@ -257,7 +258,7 @@ export default function MarketHeatmap3D() {
         };
       }),
     };
-  }, [districtData, districtMap]);
+  }, [districtMap]);
 
   // 3D extrusion layer - "Floating Plateau" style
   const extrusionLayer = useMemo(
