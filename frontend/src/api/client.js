@@ -317,17 +317,6 @@ export const getKpiSummary = (params = {}) =>
   apiClient.get(`/kpi-summary?${buildQueryString(params)}`);
 
 /**
- * Paginated transaction list for drill-through
- * @param {Object} params - Same filters as aggregate, plus pagination
- * @param {number} params.page - Page number (default 1)
- * @param {number} params.limit - Records per page (default 50, max 200)
- * @param {string} params.sort_by - Column to sort (default transaction_date)
- * @param {string} params.sort_order - asc or desc (default desc)
- */
-export const getTransactionsList = (params = {}, options = {}) =>
-  apiClient.get(`/transactions/list?${buildQueryString(params)}`, { signal: options.signal });
-
-/**
  * Get available filter options based on current data
  */
 export const getFilterOptions = () =>
@@ -522,14 +511,6 @@ export const createPortalSession = (returnUrl) => {
 };
 
 // ===== Exit Queue Risk API Functions =====
-
-/**
- * Get list of projects with resale transactions for dropdown selection
- * Used for the Exit Queue Risk feature project selector.
- * @returns {Promise<{projects: Array<{name, district, resale_count, has_total_units, has_top_year}>, count: number}>}
- */
-export const getResaleProjects = () =>
-  apiClient.get('/projects/resale-projects');
 
 /**
  * Get exit queue risk metrics for a specific project
