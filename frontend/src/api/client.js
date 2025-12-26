@@ -75,8 +75,11 @@ const queueRequest = (executeFn, priority = 'normal') => {
 };
 
 // Create axios instance
+// Timeout: 30s for initial cold-start requests (Render free tier spins down after 15 min idle)
+// Most requests complete in <2s once server is warm
 const apiClient = axios.create({
   baseURL: API_BASE,
+  timeout: 30000, // 30 seconds - generous for cold starts
   headers: {
     'Content-Type': 'application/json',
   },

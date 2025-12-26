@@ -2,6 +2,40 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useStaleRequestGuard } from './useStaleRequestGuard';
 
 /**
+ * Check if an error is a network/timeout error that should be retried.
+ * Does NOT retry: abort errors, 4xx client errors, or non-network errors.
+ */
+const isRetryableError = (err) => {
+  // Never retry abort errors - they're intentional
+  if (err?.name === 'CanceledError' || err?.name === 'AbortError') {
+    return false;
+  }
+
+  // Retry on network errors (no response from server)
+  if (err?.code === 'ECONNABORTED' || err?.code === 'ERR_NETWORK') {
+    return true;
+  }
+
+  // Retry on timeout
+  if (err?.message?.includes('timeout')) {
+    return true;
+  }
+
+  // Retry on 5xx server errors
+  if (err?.response?.status >= 500) {
+    return true;
+  }
+
+  // Don't retry on 4xx client errors
+  if (err?.response?.status >= 400 && err?.response?.status < 500) {
+    return false;
+  }
+
+  // Default: retry network-like errors
+  return !err?.response;
+};
+
+/**
  * useAbortableQuery - Safe async data fetching with abort and stale protection
  *
  * This hook enforces the institutional-grade async pattern:
@@ -10,6 +44,7 @@ import { useStaleRequestGuard } from './useStaleRequestGuard';
  * - CanceledError/AbortError never treated as real errors
  * - No state updates after unmount
  * - Loading/error/data state management
+ * - Automatic retry on network failures (cold start resilience)
  *
  * RULE: "No component may call fetch or axios directly.
  *        All async data loading must go through useAbortableQuery or useStaleRequestGuard."
@@ -34,6 +69,7 @@ import { useStaleRequestGuard } from './useStaleRequestGuard';
  *     initialData: [],         // Initial data before first fetch
  *     onSuccess: (data) => {}, // Callback on success
  *     onError: (err) => {},    // Callback on error (excludes abort)
+ *     retries: 1,              // Number of retries on network failure (default: 1)
  *   }
  * );
  * ```
@@ -49,6 +85,7 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
     initialData = null,
     onSuccess,
     onError,
+    retries = 1, // Default: 1 retry for cold start resilience
   } = options;
 
   const [data, setData] = useState(initialData);
@@ -78,40 +115,69 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
     setLoading(true);
     setError(null);
 
-    try {
-      const result = await queryFn(signal);
+    // Retry loop for network failures (cold start resilience)
+    let lastError = null;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        // Small delay before retry (not on first attempt)
+        if (attempt > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
 
-      // Guard 1: Check if request is stale (newer request started)
-      if (isStale(requestId)) return;
+        // Check if aborted during delay
+        if (signal?.aborted) {
+          return;
+        }
 
-      // Guard 2: Check if component is still mounted
-      if (!mountedRef.current) return;
+        const result = await queryFn(signal);
 
-      setData(result);
-      setLoading(false);
+        // Guard 1: Check if request is stale (newer request started)
+        if (isStale(requestId)) return;
 
-      if (onSuccess) {
-        onSuccess(result);
+        // Guard 2: Check if component is still mounted
+        if (!mountedRef.current) return;
+
+        setData(result);
+        setLoading(false);
+
+        if (onSuccess) {
+          onSuccess(result);
+        }
+        return; // Success - exit retry loop
+      } catch (err) {
+        lastError = err;
+
+        // CRITICAL: Never treat abort/cancel as a real error
+        // This prevents "Failed to load" flash when switching tabs rapidly
+        if (err.name === 'CanceledError' || err.name === 'AbortError') {
+          return;
+        }
+
+        // Guard: Check stale after error too
+        if (isStale(requestId)) return;
+        if (!mountedRef.current) return;
+
+        // If this is a retryable error and we have retries left, continue
+        if (isRetryableError(err) && attempt < retries) {
+          console.warn(`[useAbortableQuery] Retry ${attempt + 1}/${retries} after network error:`, err.message);
+          continue;
+        }
+
+        // No more retries - set error state
+        break;
       }
-    } catch (err) {
-      // CRITICAL: Never treat abort/cancel as a real error
-      // This prevents "Failed to load" flash when switching tabs rapidly
-      if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        return;
-      }
+    }
 
-      // Guard: Check stale after error too
-      if (isStale(requestId)) return;
-      if (!mountedRef.current) return;
-
-      setError(err);
+    // All retries exhausted or non-retryable error
+    if (lastError && !isStale(requestId) && mountedRef.current) {
+      setError(lastError);
       setLoading(false);
 
       if (onError) {
-        onError(err);
+        onError(lastError);
       }
     }
-  }, [queryFn, enabled, startRequest, getSignal, isStale, onSuccess, onError]);
+  }, [queryFn, enabled, startRequest, getSignal, isStale, onSuccess, onError, retries]);
 
   // Execute query when dependencies change
   useEffect(() => {
