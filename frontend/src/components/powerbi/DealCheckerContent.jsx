@@ -564,7 +564,7 @@ export default function DealCheckerContent() {
                   <div>
                     <h3 className="font-semibold text-[#213448]">Projects Within 2km</h3>
                     <p className="text-xs text-[#547792]">
-                      Sorted by distance from {result.project.name} • {bedroom}BR median values
+                      {bedroom}BR transactions • Only projects with {K_PROJECT_THRESHOLD}+ observations shown
                     </p>
                   </div>
                   {/* Volume gradient legend */}
