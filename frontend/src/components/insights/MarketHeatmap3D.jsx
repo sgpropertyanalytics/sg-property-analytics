@@ -18,7 +18,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 import { useStaleRequestGuard } from '../../hooks';
-import { getRegionBadgeClass } from '../../constants';
+import { getRegionBadgeClass, BEDROOM_FILTER_OPTIONS } from '../../constants';
 
 // Theme colors (Warm Precision palette)
 const COLORS = {
@@ -141,15 +141,8 @@ function formatYoY(value) {
   return { text: `${arrow} ${Math.abs(value).toFixed(1)}%`, colorClass };
 }
 
-// Bedroom filter options
-const BEDROOM_OPTIONS = [
-  { value: 'all', label: 'All', fullLabel: 'All Types' },
-  { value: '1', label: '1BR', fullLabel: '1-Bedroom' },
-  { value: '2', label: '2BR', fullLabel: '2-Bedroom' },
-  { value: '3', label: '3BR', fullLabel: '3-Bedroom' },
-  { value: '4', label: '4BR', fullLabel: '4-Bedroom' },
-  { value: '5', label: '5BR+', fullLabel: '5-Bedroom+' },
-];
+// Use centralized bedroom filter options
+const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
 
 // Period filter options
 const PERIOD_OPTIONS = [

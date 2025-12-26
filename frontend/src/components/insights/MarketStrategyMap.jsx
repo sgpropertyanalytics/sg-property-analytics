@@ -15,7 +15,7 @@ import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
-import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass } from '../../constants';
+import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../hooks';
 
@@ -56,15 +56,8 @@ const VOLUME_GLOW = {
   mild: 'drop-shadow(0 0 8px rgba(250, 204, 21, 0.55))',   // Yellow - 20-30%
 };
 
-// Filter options
-const BEDROOM_OPTIONS = [
-  { value: 'all', label: 'All' },
-  { value: '1', label: '1BR' },
-  { value: '2', label: '2BR' },
-  { value: '3', label: '3BR' },
-  { value: '4', label: '4BR' },
-  { value: '5', label: '5BR+' },
-];
+// Use centralized bedroom filter options
+const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
 
 const AGE_OPTIONS = [
   { value: 'all', label: 'All' },

@@ -178,6 +178,35 @@ export const getBedroomLabelFull = (bedroom) => {
 };
 
 /**
+ * Bedroom filter options for dropdowns/selectors.
+ * Centralized to avoid duplication across components.
+ *
+ * Uses 'all' as the default value for "all bedrooms".
+ * Each option has: value, label (short), fullLabel (full).
+ */
+export const BEDROOM_FILTER_OPTIONS = [
+  { value: 'all', label: 'All', fullLabel: 'All Types' },
+  { value: '1', label: '1BR', fullLabel: '1-Bedroom' },
+  { value: '2', label: '2BR', fullLabel: '2-Bedroom' },
+  { value: '3', label: '3BR', fullLabel: '3-Bedroom' },
+  { value: '4', label: '4BR', fullLabel: '4-Bedroom' },
+  { value: '5', label: '5BR+', fullLabel: '5-Bedroom+' },
+];
+
+/**
+ * Bedroom filter options with empty string for "all" (alternative format).
+ * Used by components that expect '' instead of 'all' for the default.
+ */
+export const BEDROOM_FILTER_OPTIONS_EMPTY = [
+  { value: '', label: 'All Bedrooms', fullLabel: 'All Bedrooms' },
+  { value: '1', label: '1 BR', fullLabel: '1-Bedroom' },
+  { value: '2', label: '2 BR', fullLabel: '2-Bedroom' },
+  { value: '3', label: '3 BR', fullLabel: '3-Bedroom' },
+  { value: '4', label: '4 BR', fullLabel: '4-Bedroom' },
+  { value: '5', label: '5+ BR', fullLabel: '5-Bedroom+' },
+];
+
+/**
  * Format a price value for display
  * @param {number} value - The price value
  * @returns {string} Formatted price string (e.g., "$2.41M", "$500K")

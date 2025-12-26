@@ -15,7 +15,7 @@ import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
-import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
+import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, BEDROOM_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { SaleType } from '../../schemas/apiContract';
 import { useStaleRequestGuard } from '../../hooks';
@@ -72,15 +72,8 @@ const LIQUIDITY_FILLS = {
   noData: 'rgba(200, 200, 200, 0.15)',  // Gray - no data
 };
 
-// Filter options
-const BEDROOM_OPTIONS = [
-  { value: 'all', label: 'All' },
-  { value: '1', label: '1BR' },
-  { value: '2', label: '2BR' },
-  { value: '3', label: '3BR' },
-  { value: '4', label: '4BR' },
-  { value: '5', label: '5BR+' },
-];
+// Use centralized bedroom filter options
+const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
 
 const SALE_TYPE_OPTIONS = [
   { value: 'all', label: 'All' },

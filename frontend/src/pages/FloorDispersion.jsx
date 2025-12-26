@@ -6,6 +6,7 @@ import FloorLiquidityHeatmap from '../components/powerbi/FloorLiquidityHeatmap';
 import { ErrorBoundary, ChartWatermark } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
+import { BEDROOM_FILTER_OPTIONS_EMPTY } from '../constants';
 
 /**
  * Floor Dispersion Page - Floor Level Analysis
@@ -16,15 +17,8 @@ import { useChartHeight, MOBILE_CAPS } from '../hooks';
  * - Inline filters for bedroom and market segment
  */
 
-// Bedroom options
-const BEDROOM_OPTIONS = [
-  { value: '', label: 'All Bedrooms' },
-  { value: '1', label: '1 BR' },
-  { value: '2', label: '2 BR' },
-  { value: '3', label: '3 BR' },
-  { value: '4', label: '4 BR' },
-  { value: '5', label: '5+ BR' },
-];
+// Use centralized bedroom options (with empty string for 'all')
+const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS_EMPTY;
 
 // Market segment options
 const SEGMENT_OPTIONS = [

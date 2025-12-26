@@ -16,12 +16,10 @@ import apiClient from '../../api/client';
 import {
   DISTRICT_PATHS,
   DISTRICT_CENTROIDS,
-  DISTRICT_SHORT_NAMES,
-  DISTRICT_REGIONS,
   ALL_DISTRICTS,
 } from '../../data/singaporeDistricts';
 import { useStaleRequestGuard } from '../../hooks';
-import { getRegionBadgeClass } from '../../constants';
+import { getRegionBadgeClass, BEDROOM_FILTER_OPTIONS } from '../../constants';
 
 // Color scale for PSF values (using project theme)
 const PSF_COLOR_SCALE = {
@@ -57,15 +55,8 @@ function formatYoY(value) {
   return { text: `${arrow} ${Math.abs(value).toFixed(1)}%`, color };
 }
 
-// Bedroom filter options
-const BEDROOM_OPTIONS = [
-  { value: 'all', label: 'All' },
-  { value: '1', label: '1BR' },
-  { value: '2', label: '2BR' },
-  { value: '3', label: '3BR' },
-  { value: '4', label: '4BR' },
-  { value: '5', label: '5BR+' },
-];
+// Use centralized bedroom filter options
+const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
 
 // Period filter options
 const PERIOD_OPTIONS = [
