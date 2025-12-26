@@ -489,9 +489,9 @@ def get_multi_scope_comparison():
     from sqlalchemy import text
     current_year = date.today().year
 
-    # Use raw SQL for complex age calculation with COALESCE fallback
-    # Age = current_year - lease_start_year (for leasehold)
-    # Age = current_year - MIN(transaction_year) (for freehold, as fallback)
+    # Use raw SQL for age calculation
+    # Age = current_year - lease_start_year (for leasehold only)
+    # Freehold properties: return NULL (we don't have reliable TOP year data)
     bedroom_filter = "bedroom_count >= 5" if bedroom >= 5 else f"bedroom_count = {bedroom}"
 
     age_query = text(f"""
@@ -502,11 +502,9 @@ def get_multi_scope_comparison():
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price) as median_price,
             PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) as p75_price,
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY area_sqft) as median_sqft,
-            COALESCE(
-                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY :current_year - lease_start_year)
-                    FILTER (WHERE lease_start_year IS NOT NULL),
-                :current_year - MIN(EXTRACT(YEAR FROM transaction_date))
-            ) as median_age
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY :current_year - lease_start_year)
+                FILTER (WHERE lease_start_year IS NOT NULL) as median_age,
+            BOOL_AND(lease_start_year IS NULL) as is_freehold
         FROM transactions
         WHERE COALESCE(is_outlier, false) = false
           AND project_name = ANY(:project_names)
@@ -526,7 +524,8 @@ def get_multi_scope_comparison():
             'median_price': round(t.median_price) if t.median_price else None,
             'p75_price': round(t.p75_price) if t.p75_price else None,
             'median_sqft': round(t.median_sqft) if t.median_sqft else None,
-            'median_age': round(t.median_age) if t.median_age is not None else None  # Handle age=0
+            'median_age': round(t.median_age) if t.median_age is not None else None,  # Handle age=0
+            'is_freehold': t.is_freehold
         }
         for t in tx_stats
     }
@@ -536,7 +535,7 @@ def get_multi_scope_comparison():
     projects_in_2km_only = []  # Projects between 1-2km
 
     for p in all_nearby:
-        stats = tx_stats_map.get(p['project_name'], {'count': 0, 'p25_price': None, 'median_price': None, 'p75_price': None, 'median_sqft': None, 'median_age': None})
+        stats = tx_stats_map.get(p['project_name'], {'count': 0, 'p25_price': None, 'median_price': None, 'p75_price': None, 'median_sqft': None, 'median_age': None, 'is_freehold': None})
         p_data = {
             'project_name': p['project_name'],
             'latitude': p['latitude'],
@@ -549,6 +548,7 @@ def get_multi_scope_comparison():
             'p75_price': stats['p75_price'],
             'median_sqft': stats['median_sqft'],
             'median_age': stats['median_age'],
+            'is_freehold': stats['is_freehold'],
             'bedroom': bedroom
         }
 
