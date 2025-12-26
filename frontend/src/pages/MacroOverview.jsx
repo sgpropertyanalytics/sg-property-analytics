@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { MedianPsfTrendChart } from '../components/powerbi/MedianPsfTrendChart';
-import { PriceByAgeRegionChart } from '../components/powerbi/PriceByAgeRegionChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { PriceCompressionChart } from '../components/powerbi/PriceCompressionChart';
@@ -309,13 +308,6 @@ export function MacroOverviewContent() {
                     <MedianPsfTrendChart height={trendChartHeight} />
                   </ErrorBoundary>
                 </div>
-
-                {/* Price by Age & Region - Horizontal grouped bar chart (Watermarked for free users) */}
-                <ErrorBoundary name="Price by Age & Region" compact>
-                  <ChartWatermark>
-                    <PriceByAgeRegionChart height={standardChartHeight} />
-                  </ChartWatermark>
-                </ErrorBoundary>
 
                 {/* Price Distribution - Histogram (Watermarked for free users) */}
                 <ErrorBoundary name="Price Distribution" compact>

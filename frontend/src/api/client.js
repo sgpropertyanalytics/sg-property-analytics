@@ -380,31 +380,6 @@ export const getPsfByPriceBand = (params = {}, options = {}) =>
   apiClient.get(`/psf-by-price-band?${buildQueryString(params)}`, { signal: options.signal });
 
 /**
- * Price by Age Region - grouped percentile data for lifecycle analysis
- *
- * Returns P25/P50/P75 total price values grouped by age bucket, region, and bedroom.
- * Used for the Horizontal Grouped Bar Chart visualization.
- * K-anonymity (K=15) is applied - cells with fewer observations are suppressed.
- *
- * @param {Object} params - Query parameters
- * @param {string} [params.date_from] - Start date (YYYY-MM-DD), defaults to 2 years ago
- * @param {string} [params.date_to] - End date (YYYY-MM-DD), defaults to today
- * @param {string} [params.district] - Comma-separated districts (D01,D02,...)
- * @param {string} [params.region] - CCR, RCR, OCR (alias: segment)
- * @param {string} [params.sale_type] - 'New Sale' or 'Resale'
- * @param {string} [params.tenure] - Tenure type
- * @param {string} [params.schema] - 'v2' for strict camelCase
- * @param {Object} [options] - Request options
- * @param {AbortSignal} [options.signal] - AbortController signal
- * @returns {Promise<{
- *   data: Array<{ageBucket, ageBucketLabel, region, bedroom, p25, p50, p75, observationCount, suppressed}>,
- *   meta: {kAnonymity, dateRange, totalObservations, filters}
- * }>}
- */
-export const getPriceByAgeRegion = (params = {}, options = {}) =>
-  apiClient.get(`/price-by-age-region?${buildQueryString(params)}`, { signal: options.signal });
-
-/**
  * Floor liquidity heatmap - shows which floor zones resell faster by project
  * Uses Z-score normalization within each project for fair comparison
  * @param {Object} params - Query parameters
