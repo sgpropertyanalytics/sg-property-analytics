@@ -3,6 +3,7 @@
 ## Table of Contents
 
 1. [Quick Start](#1-quick-start)
+   - [Quick Reference Cards](#quick-reference-cards) (13 cards for common tasks)
 2. [Core Principles](#2-core-principles)
    - [Problem-Solving Rules](#problem-solving-rules-mandatory)
    - [Power BI Golden Rules](#power-bi-golden-rules)
@@ -11,33 +12,37 @@
    - [Contract & Async Safety](#contract--async-safety-mandatory)
 3. [Architecture](#3-architecture)
 4. [Implementation Guides](#4-implementation-guides)
+   - [Master Guide: Creating a New Feature](#master-guide-creating-a-new-feature-mandatory) ⭐
+   - [Guide: Adding a New Filter](#guide-adding-a-new-filter)
+   - [Guide: Adding a New API Endpoint](#guide-adding-a-new-api-endpoint)
+   - [Guide: Drill Button Implementation](#guide-drill-button-implementation)
 5. [Styling Guide](#5-styling-guide)
 6. [Reference Appendix](#6-reference-appendix)
 
 ## Related Documentation
 
-All documentation has been consolidated into `/docs`:
+### Extended Docs (`/docs` folder)
 
 | Document | Purpose |
 |----------|---------|
-| [docs/README.md](./docs/README.md) | Overview, quick links |
+| [docs/backend.md](./docs/backend.md) | SQL rules, API services, parameter handling |
+| [docs/frontend.md](./docs/frontend.md) | Filter system, async safety, adapters |
 | [docs/architecture.md](./docs/architecture.md) | System design, data flow |
-| [docs/backend.md](./docs/backend.md) | APIs, SQL rules, services |
-| [docs/frontend.md](./docs/frontend.md) | UI, charts, adapters, async safety |
 | [docs/data-model.md](./docs/data-model.md) | Metrics, bands, formulas |
 | [docs/access-control.md](./docs/access-control.md) | Tiers, paywall, compliance |
-| [docs/decisions.md](./docs/decisions.md) | Design decisions, roadmap |
 | [docs/glossary.md](./docs/glossary.md) | Terms, acronyms |
 
-**Claude Guardrail Skills** (auto-activate before relevant changes):
+### Claude Guardrail Skills (auto-activate before relevant changes)
 
-| Skill | Trigger |
-|-------|---------|
-| `sql-guardrails` | Any SQL query or backend service |
-| `contract-async-guardrails` | Any frontend data fetching |
-| `api-endpoint-guardrails` | Creating new API endpoints |
-| `data-standards` | Any data classification, filter, or label |
-| `dashboard-guardrails` | Modifying dashboard charts |
+| Skill | Trigger | Location |
+|-------|---------|----------|
+| `sql-guardrails` | SQL queries, backend services | `.claude/skills/sql-guardrails/` |
+| `contract-async-guardrails` | Frontend data fetching | `.claude/skills/contract-async-guardrails/` |
+| `api-endpoint-guardrails` | Creating new API endpoints | `.claude/skills/api-endpoint-guardrails/` |
+| `data-standards` | Data classification, filters, labels | `.claude/skills/data-standards/` |
+| `dashboard-guardrails` | Modifying dashboard charts | `.claude/skills/dashboard-guardrails/` |
+| `dashboard-design` | UI styling, components | `.claude/skills/dashboard-design/` |
+| `dashboard-layout` | Responsive layouts | `.claude/skills/dashboard-layout/` |
 
 ---
 
@@ -111,27 +116,21 @@ CROSS-FILTER = Dashboard-wide (all charts update)
 Time click    → Cross-filter (updates all)
 Location click → Cross-filter (updates all)
 Drill up/down → Local only (one chart)
-```
 
-### Card 3.1: Drill Implementation Rule (MANDATORY)
-
-```
-EACH CHART MUST HAVE ITS OWN LOCAL DRILL STATE
+DRILL IMPLEMENTATION (MANDATORY):
+Each chart MUST have its own LOCAL drill state.
 
 ❌ WRONG - Global drill (charts share state):
   <DrillButtons hierarchyType="time" />
-  → Multiple charts change together when drilling
 
 ✅ CORRECT - Local drill (each chart independent):
   const [localDrillLevel, setLocalDrillLevel] = useState('year');
   <DrillButtons
     localLevel={localDrillLevel}
     localLevels={LOCAL_TIME_LEVELS}
-    localLevelLabels={LOCAL_TIME_LABELS}
     onLocalDrillUp={handleLocalDrillUp}
     onLocalDrillDown={handleLocalDrillDown}
   />
-  → Only this chart changes when drilling
 ```
 
 ### Card 4: Time-Series Chart Rule
@@ -182,7 +181,7 @@ SQL CHECKLIST (Before Any Query)
 [ ] v2 endpoint returns camelCase
 [ ] Tests cover v1, v2, and edge cases
 
-Full reference: See SQL_BEST_PRACTICES.md
+Full reference: See docs/backend.md or /sql-guardrails skill
 ```
 
 ### Card 7: Async Data Fetching (MANDATORY)
@@ -239,7 +238,7 @@ Forbidden in Components:
   row.sale_type === 'New Sale'     // Use isSaleType
   row.quarter ?? row.month         // Adapter handles this
 
-Full reference: See CONTRACT_ASYNC_SAFETY.md
+Full reference: See docs/frontend.md or /contract-async-guardrails skill
 ```
 
 ### Card 9: Hook Migration Checklist (MANDATORY)
@@ -445,7 +444,7 @@ When diagnosing or fixing any issue, Claude MUST follow these rules:
 
 ## Power BI Golden Rules
 
-> **Full documentation**: See [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md) for complete filter system reference.
+> **Full documentation**: See [docs/frontend.md](./docs/frontend.md) for complete filter system reference.
 
 **Key principles (quick reference):**
 
@@ -559,7 +558,7 @@ Dual-mode is temporary:
 
 ## SQL Best Practices (MANDATORY)
 
-> **Full documentation**: See [SQL_BEST_PRACTICES.md](./SQL_BEST_PRACTICES.md) for complete SQL guardrails reference.
+> **Full documentation**: See [docs/backend.md](./docs/backend.md) for complete SQL guardrails reference.
 
 **Key rules (quick reference):**
 
@@ -597,7 +596,7 @@ params = {"sale_type": "Resale", "date_from": "2024-01-01"}
 
 ## Contract & Async Safety (MANDATORY)
 
-> **Full documentation**: See [CONTRACT_ASYNC_SAFETY.md](./CONTRACT_ASYNC_SAFETY.md) for complete frontend guardrails reference.
+> **Full documentation**: See [docs/frontend.md](./docs/frontend.md) for complete frontend guardrails reference.
 
 **Key rules (quick reference):**
 
@@ -666,7 +665,7 @@ if (row.sale_type === 'New Sale') { ... }  // Hardcoded string!
 
 ## Frontend State Management
 
-> **Full filter state documentation**: See [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md#3-filter-types--hierarchy)
+> **Full filter state documentation**: See [docs/frontend.md](./docs/frontend.md) and Card 2-4 above
 
 ```
 PowerBIFilterContext.jsx
@@ -735,7 +734,7 @@ frontend/src/
 
 # 4. IMPLEMENTATION GUIDES
 
-> **Complete implementation patterns**: See [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md#5-implementation-patterns) for full details.
+> **Complete implementation patterns**: See Master Guide below and [docs/frontend.md](./docs/frontend.md) for full details.
 
 ## Master Guide: Creating a New Feature (MANDATORY)
 
@@ -932,91 +931,6 @@ def get_my_data(
     }
 
     return db.session.execute(query, params).fetchall()
-```
-
----
-
-## Guide: Adding a New Chart
-
-### Step 1: Create the Component
-
-```jsx
-// frontend/src/components/powerbi/MyNewChart.jsx
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
-import { useState, useEffect } from 'react';
-import apiClient from '../../api/client';
-
-export default function MyNewChart() {
-  const { buildApiParams, filters, highlight } = usePowerBIFilters();
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // CRITICAL: Always use buildApiParams for global filter compliance
-        const params = buildApiParams({
-          group_by: 'your_grouping',
-          metrics: 'count,median_psf'
-        });
-
-        const response = await apiClient.get('/api/aggregate', { params });
-        setData(response.data);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [buildApiParams, filters, highlight]); // Include highlight if chart should respond
-
-  return (/* your chart JSX */);
-}
-```
-
-### Step 2: Determine Chart Type
-
-| Question | If YES | If NO |
-|----------|--------|-------|
-| Is X-axis TIME? | `excludeHighlight: true` | Default behavior |
-| Should clicks filter other charts? | Add cross-filter handler | Local state only |
-| Is this a Fact table? | `includeFactFilter: true` | Default behavior |
-
-### Step 3: For Time-Series Charts
-
-```jsx
-// Time-series charts preserve full timeline when highlight is active
-const params = buildApiParams(
-  { group_by: 'month' },
-  { excludeHighlight: true }  // ← ADD THIS
-);
-
-// Remove highlight from useEffect dependencies
-useEffect(() => {
-  fetchData();
-}, [buildApiParams, filters]); // ← NO highlight
-```
-
-### Step 4: For Cross-Filtering Charts
-
-```jsx
-const { applyCrossFilter } = usePowerBIFilters();
-
-const handleBarClick = (clickedValue) => {
-  applyCrossFilter('location', 'district', clickedValue);
-};
-```
-
-### Step 5: Add to Dashboard
-
-```jsx
-// pages/MacroOverview.jsx
-import MyNewChart from '../components/powerbi/MyNewChart';
-
-// Add to layout grid
-<div className="col-span-6">
-  <MyNewChart />
-</div>
 ```
 
 ---
@@ -1358,17 +1272,23 @@ region = get_region_for_district(district)
 
 ## B. Bedroom Classification
 
-| Count | Category |
-|-------|----------|
-| 1 | 1-Bedroom |
-| 2 | 2-Bedroom |
-| 3 | 3-Bedroom |
-| 4 | 4-Bedroom |
-| 5+ | 5+ Bedroom / Penthouse |
+> **Full details**: See [Card 13: Bedroom Classification (Three-Tier)](#card-13-bedroom-classification-three-tier)
+
+| Count | Label | Tier 1 (New ≥Jun'23) | Tier 2 (New <Jun'23) | Tier 3 (Resale) |
+|-------|-------|---------------------|---------------------|-----------------|
+| 1 | 1BR | <580 sqft | <600 sqft | <600 sqft |
+| 2 | 2BR | <780 sqft | <850 sqft | <950 sqft |
+| 3 | 3BR | <1150 sqft | <1200 sqft | <1350 sqft |
+| 4 | 4BR | <1450 sqft | <1500 sqft | <1650 sqft |
+| 5+ | 5BR+ | ≥1450 sqft | ≥1500 sqft | ≥1650 sqft |
+
+**Single Source of Truth**:
+- Frontend: `frontend/src/constants/index.js` → `classifyBedroomThreeTier()`
+- Backend: `backend/services/classifier.py` → `classify_bedroom_three_tier()`
 
 ## C. Component Architecture Matrix
 
-> **Full matrix with interaction details**: See [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md#4-component-behavior-matrix)
+> **Full matrix with interaction details**: See [docs/frontend.md](./docs/frontend.md)
 
 | Component | Type | Cross-Filters? | Notes |
 |-----------|------|----------------|-------|
@@ -1442,7 +1362,7 @@ upper_bound = Q3 + 5.0 * IQR
 
 ## F. Interaction Behavior Reference
 
-> **Full interaction patterns**: See [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md#4-component-behavior-matrix)
+> **Full interaction patterns**: See [docs/frontend.md](./docs/frontend.md)
 
 | User Action | Scope |
 |-------------|-------|
