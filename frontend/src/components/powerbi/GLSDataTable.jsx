@@ -124,12 +124,6 @@ export function GLSDataTable({ height = 400 }) {
     return `$${Math.round(value).toLocaleString()}`;
   };
 
-  // Format large numbers (millions)
-  const formatMillions = (value) => {
-    if (value === null || value === undefined) return '-';
-    return `$${(value / 1000000).toFixed(1)}M`;
-  };
-
   // Segment-specific multipliers for implied launch PSF
   // Based on margin-based feasibility model: Selling PSF = Land PSF / (1 - margin)
   // CCR has lower multiplier (higher land cost proportion)

@@ -34,13 +34,6 @@ const MAP_CONFIG = {
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 
-const COLORS = {
-  deepNavy: '#213448',
-  oceanBlue: '#547792',
-  skyBlue: '#94B4C1',
-  sand: '#EAE0CF',
-};
-
 // Info tooltip component with proper hover behavior
 function InfoTooltip({ text, color = '#94B4C1' }) {
   return (
@@ -142,23 +135,6 @@ function getLiquidityFill(zScore) {
   if (zScore >= -0.5) return LIQUIDITY_FILLS.neutral;
   if (zScore >= -1.5) return LIQUIDITY_FILLS.low;
   return LIQUIDITY_FILLS.veryLow;
-}
-
-function getTierBadgeStyle(tier) {
-  switch (tier) {
-    case 'Very High':
-      return 'bg-[#213448] text-white';
-    case 'High':
-      return 'bg-[#547792] text-white';
-    case 'Neutral':
-      return 'bg-[#94B4C1] text-[#213448]';
-    case 'Low':
-      return 'bg-[#EAE0CF] text-[#547792]';
-    case 'Very Low':
-      return 'bg-[#EAE0CF] text-[#94B4C1]';
-    default:
-      return 'bg-gray-200 text-gray-500';
-  }
 }
 
 // =============================================================================
@@ -423,7 +399,7 @@ function HoverCard({ district, data }) {
 // REGION SUMMARY BAR COMPONENT
 // =============================================================================
 
-function RegionSummaryBar({ districtData, meta }) {
+function RegionSummaryBar({ districtData, meta: _meta }) {
   const regionStats = useMemo(() => {
     const regions = ['CCR', 'RCR', 'OCR'];
     const regionDistricts = {
@@ -1055,19 +1031,6 @@ function LiquidityRankingTable({ districtData }) {
         return 'bg-[#94B4C1] text-[#213448]';
       default:
         return 'bg-gray-200 text-gray-600';
-    }
-  };
-
-  const getFragilityBadge = (fragility) => {
-    switch (fragility) {
-      case 'Robust':
-        return 'bg-emerald-100 text-emerald-700';
-      case 'Moderate':
-        return 'bg-amber-100 text-amber-700';
-      case 'Fragile':
-        return 'bg-rose-100 text-rose-700';
-      default:
-        return 'bg-gray-100 text-gray-500';
     }
   };
 

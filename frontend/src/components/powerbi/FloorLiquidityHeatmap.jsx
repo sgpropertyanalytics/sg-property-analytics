@@ -73,7 +73,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
 
       // Calculate velocities and Z-scores for district
       const velocities = [];
-      for (const [zone, totals] of Object.entries(zoneTotals)) {
+      for (const [_zone, totals] of Object.entries(zoneTotals)) {
         totals.velocity = totals.count / windowMonths;
         velocities.push(totals.velocity);
       }
@@ -84,7 +84,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
         const variance = velocities.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / velocities.length;
         const std = Math.sqrt(variance);
 
-        for (const [zone, totals] of Object.entries(zoneTotals)) {
+        for (const [_zone, totals] of Object.entries(zoneTotals)) {
           if (std > 0) {
             totals.z_score = (totals.velocity - mean) / std;
           } else {

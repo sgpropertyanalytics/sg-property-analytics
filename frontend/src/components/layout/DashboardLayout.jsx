@@ -42,7 +42,7 @@ const PAGE_CONFIG = {
 
 export function DashboardLayout({ children, activePage: propActivePage }) {
   const location = useLocation();
-  const { showPricingModal, hidePaywall, isPremium, showPaywall } = useSubscription();
+  const { showPricingModal, hidePaywall } = useSubscription();
 
   // Determine active page from URL or prop
   const getActivePageFromPath = (pathname) => {

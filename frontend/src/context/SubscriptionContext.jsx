@@ -41,7 +41,7 @@ const getCachedSubscription = () => {
         return parsed;
       }
     }
-  } catch (e) {
+  } catch {
     // Ignore parse errors
   }
   return { tier: 'free', subscribed: false, ends_at: null };
@@ -51,7 +51,7 @@ const getCachedSubscription = () => {
 const cacheSubscription = (sub) => {
   try {
     localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(sub));
-  } catch (e) {
+  } catch {
     // Ignore storage errors
   }
 };

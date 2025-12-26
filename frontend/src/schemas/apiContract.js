@@ -512,26 +512,6 @@ const isValueLabelFormat = (item) =>
   item && typeof item === 'object' && 'value' in item && 'label' in item;
 
 /**
- * Normalize a single option to {value, label} format.
- * Handles both v1 (raw value) and v2 ({value, label}) formats.
- *
- * @param {any} item - Raw value or {value, label} object
- * @param {Function} valueTransform - Optional transform for value
- * @param {Function} labelTransform - Optional transform for label
- * @returns {{value: any, label: string}}
- */
-const normalizeOption = (item, valueTransform = null, labelTransform = null) => {
-  if (isValueLabelFormat(item)) {
-    // Already v2 format
-    return item;
-  }
-  // v1 format: raw value, create {value, label}
-  const value = valueTransform ? valueTransform(item) : item;
-  const label = labelTransform ? labelTransform(item) : String(item);
-  return { value, label };
-};
-
-/**
  * Normalize sale types to {value, label} format.
  * v1: ['New Sale', 'Resale'] → v2 format with enums
  * v2: [{value: 'new_sale', label: 'New Sale'}] → pass through

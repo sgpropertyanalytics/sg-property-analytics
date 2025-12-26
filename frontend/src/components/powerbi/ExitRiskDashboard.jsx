@@ -147,8 +147,8 @@ function ExitRiskDashboardSkeleton() {
 export default function ExitRiskDashboard({
   maturityPct,
   pressurePct,
-  maturityZone,
-  pressureZone,
+  maturityZone: _maturityZone,
+  pressureZone: _pressureZone,
   overallRisk,
   interpretation,
   loading = false,

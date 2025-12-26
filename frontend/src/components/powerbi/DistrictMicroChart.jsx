@@ -60,7 +60,7 @@ export function DistrictMicroChart({ district, data, onClick }) {
   const lineColor = '#1f2937'; // Dark gray/black
 
   // Calculate local min/max and growth metrics
-  const { latestPsf, minPsf, maxPsf, paddedMin, paddedMax, growthPercent } = useMemo(() => {
+  const { latestPsf, minPsf: _minPsf, maxPsf: _maxPsf, paddedMin, paddedMax, growthPercent } = useMemo(() => {
     if (!data || data.length === 0) {
       return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null };
     }

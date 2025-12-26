@@ -715,46 +715,4 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
   );
 }
 
-function RangeSlider({ min, max, value, onChange, step = 1 }) {
-  const [localMin, localMax] = value;
-
-  const handleMinChange = (e) => {
-    const newMin = e.target.value ? parseFloat(e.target.value) : null;
-    onChange(newMin, localMax);
-  };
-
-  const handleMaxChange = (e) => {
-    const newMax = e.target.value ? parseFloat(e.target.value) : null;
-    onChange(localMin, newMax);
-  };
-
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <input
-          type="number"
-          value={localMin ?? ''}
-          onChange={handleMinChange}
-          placeholder="Min"
-          min={min}
-          max={max}
-          step={step}
-          className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <span className="text-slate-400 self-center">-</span>
-        <input
-          type="number"
-          value={localMax ?? ''}
-          onChange={handleMaxChange}
-          placeholder="Max"
-          min={min}
-          max={max}
-          step={step}
-          className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-    </div>
-  );
-}
-
 export default PowerBIFilterSidebar;

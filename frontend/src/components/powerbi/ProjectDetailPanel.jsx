@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -73,7 +73,7 @@ function ProjectDetailPanelInner({
   selectedProject,
   clearSelectedProject,
   filters,
-  highlight,
+  highlight: _highlight,
   trendData,
   setTrendData,
   priceData,

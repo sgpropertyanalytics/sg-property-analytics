@@ -61,7 +61,7 @@ export function PriceBandChart({
   trend,
   verdict,
   unitPsf,
-  dataSource = 'project',
+  dataSource: _dataSource = 'project',
   proxyLabel,
   dataQuality,
   loading = false,
@@ -185,7 +185,7 @@ export function PriceBandChart({
             padding: 15,
             font: { size: 11 },
             color: COLORS.oceanBlue,
-            filter: (item) => {
+            filter: (_item) => {
               // Show all three legends
               return true;
             },

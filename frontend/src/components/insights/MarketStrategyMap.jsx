@@ -34,14 +34,6 @@ const MAP_CONFIG = {
 // Light basemap (no labels - cleaner with only our district markers)
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 
-// Theme colors (from design system)
-const COLORS = {
-  deepNavy: '#213448',
-  oceanBlue: '#547792',
-  skyBlue: '#94B4C1',
-  sand: '#EAE0CF',
-};
-
 // Region fill colors (strong shading for clear market segment separation)
 const REGION_FILLS = {
   CCR: 'rgba(33, 52, 72, 0.40)',   // Deep Navy - Premium/Core Central

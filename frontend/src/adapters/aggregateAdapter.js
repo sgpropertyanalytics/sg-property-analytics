@@ -23,13 +23,10 @@
 import {
   getPeriod,
   getPeriodGrain,
-  hasValidPeriod,
   getAggField,
   AggField,
   isSaleType,
-  API_CONTRACT_VERSION,
   SUPPORTED_API_CONTRACT_VERSIONS,
-  API_CONTRACT_VERSIONS,
 } from '../schemas/apiContract';
 
 // =============================================================================
@@ -875,6 +872,7 @@ export const transformTransactionsList = (rawResponse) => {
  * @param {string} chartName - Name of the chart
  * @param {Object} options - Debug options
  */
+/* eslint-disable no-console -- intentional dev-only debug logging (gated by isDev check) */
 export const logFetchDebug = (chartName, { endpoint, timeGrain, response, rowCount }) => {
   if (!isDev) return;
 
@@ -890,6 +888,7 @@ export const logFetchDebug = (chartName, { endpoint, timeGrain, response, rowCou
   }
   console.groupEnd();
 };
+/* eslint-enable no-console */
 
 /**
  * Log transform error with context.

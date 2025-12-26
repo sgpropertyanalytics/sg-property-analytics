@@ -67,7 +67,6 @@ export function ValueParityPanel() {
   });
 
   // Refs for scrolling to sections
-  const resultsRef = useRef(null);
   const newLaunchesRef = useRef(null);
   const resaleRef = useRef(null);
   const resaleMarketRef = useRef(null);
@@ -306,15 +305,6 @@ export function ValueParityPanel() {
     }
   };
 
-  // Handle resale market page change with abort/stale protection
-  const handleResaleMarketPageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= resaleMarketPagination.totalPages) {
-      const requestId = startRequest();
-      const signal = getSignal();
-      fetchResaleMarket(newPage, { signal, requestId });
-    }
-  };
-
   // Handle sort for Young Resale table
   const handleSort = (column) => {
     setSortConfig(prev => ({
@@ -344,16 +334,6 @@ export function ValueParityPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortConfig]);
 
-  // Handle page change with abort/stale protection
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= pagination.totalPages) {
-      const requestId = startRequest();
-      const signal = getSignal();
-      // Note: selectedPriceRange was previously undefined - using null
-      fetchTransactions(newPage, null, { signal, requestId });
-    }
-  };
-
   // Format budget for display
   const formatBudgetDisplay = (value) => {
     if (value >= 1000000) {
@@ -362,9 +342,6 @@ export function ValueParityPanel() {
     }
     return `$${(value / 1000).toFixed(0)}K`;
   };
-
-  // Calculate slider percentage for visual position
-  const sliderPercent = ((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
 
   // Format date - show only month and year
   const formatDate = (dateStr) => {

@@ -14,16 +14,6 @@ import { PriceDistributionHeroChart } from '../PriceDistributionHeroChart';
 import DealCheckerMap from './DealCheckerMap';
 import ScopeSummaryCards from './ScopeSummaryCards';
 
-// Format price for display
-const formatPrice = (value) => {
-  if (value === null || value === undefined) return '-';
-  if (value >= 1000000) {
-    const millions = value / 1000000;
-    return `$${millions.toFixed(2)}M`;
-  }
-  return `$${(value / 1000).toFixed(0)}K`;
-};
-
 // Format number with commas
 const formatNumber = (value) => {
   if (value === null || value === undefined) return '';

@@ -35,7 +35,7 @@ function lazyWithRetry(importFn, componentName = 'Component') {
         console.warn(`[${componentName}] Chunk load failed, attempting reload...`);
 
         // Try to reload from server (bypass cache)
-        return new Promise((resolve, reject) => {
+        return new Promise((_resolve, _reject) => {
           // Small delay before reload to avoid rapid loops
           setTimeout(() => {
             // Force reload the page to get fresh chunks

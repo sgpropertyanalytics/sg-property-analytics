@@ -241,7 +241,7 @@ export function NewVsResaleChart({ height = 350 }) {
             size: 10,
           },
           // Show fewer labels on mobile
-          callback: function(value, index, ticks) {
+          callback: function(value, index, _ticks) {
             // Show every label on desktop, every 2nd on tablet, every 3rd on mobile
             if (typeof window !== 'undefined') {
               if (window.innerWidth < 640 && index % 3 !== 0) return '';

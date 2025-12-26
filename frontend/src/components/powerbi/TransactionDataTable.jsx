@@ -99,12 +99,6 @@ export function TransactionDataTable({ height = 400 }) {
     });
   };
 
-  // Format currency
-  const formatCurrency = (value) => {
-    if (value === null || value === undefined) return '-';
-    return `$${value.toLocaleString()}`;
-  };
-
   // Sort indicator
   const SortIcon = ({ column }) => {
     if (sortConfig.column !== column) {
