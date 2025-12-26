@@ -547,7 +547,7 @@ export function LiquidityRankingTable({ districtData }) {
                 <div className="bg-[#EAE0CF]/30 rounded p-1.5">
                   <div className="text-[10px] text-[#547792] mb-1">Tx</div>
                   <div className="flex items-center gap-1">
-                    <div className="flex-1 h-3 bg-[#EAE0CF]/50 rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 bg-[#EAE0CF]/50 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-[#547792] rounded-full"
                         style={{ width: `${((m.tx_count || 0) / maxTxCount) * 100}%` }}
@@ -834,7 +834,7 @@ export function LiquidityRankingTable({ districtData }) {
                   <td className="px-3 py-2 text-[#213448]">
                     <div className="flex items-center gap-2">
                       {/* Proportional volume bar */}
-                      <div className="flex-1 h-5 bg-[#EAE0CF]/40 rounded-full overflow-hidden">
+                      <div className="flex-1 h-3.5 bg-[#EAE0CF]/40 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-[#547792] rounded-full"
                           style={{ width: `${((m.tx_count || 0) / maxTxCount) * 100}%` }}
