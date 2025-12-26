@@ -1,14 +1,14 @@
 # Singapore Property Analytics Dashboard
 
-A **Power BI-style analytics dashboard** for Singapore private condo transactions. Visualize price trends, transaction volumes, and market comparisons across districts and regions.
+Analytics platform for Singapore private residential transactions.
 
-## What It Does
+## Features
 
-- **Market Overview**: Track median PSF, transaction counts, and price trends over time
+- **Market Overview**: Track median PSF, transaction counts, and price trends
 - **Regional Analysis**: Compare CCR, RCR, OCR market segments
-- **Drill-Down**: Year → Quarter → Month granularity with Power BI-style drill buttons
+- **Drill-Down**: Year → Quarter → Month granularity
 - **Cross-Filtering**: Click charts to filter data across the dashboard
-- **New vs Resale**: Compare new launch prices against resale units
+- **New vs Resale**: Compare new launch vs resale prices
 
 ## Quick Start
 
@@ -17,24 +17,8 @@ A **Power BI-style analytics dashboard** for Singapore private condo transaction
 ```bash
 cd backend
 pip install -r requirements.txt
-# Set up PostgreSQL (required - SQLite NOT supported)
 export DATABASE_URL=postgresql://dev:dev@localhost:5432/sg_property
-python app.py
-```
-
-Runs on `http://localhost:5000`. **PostgreSQL is required** (SQLite is not supported).
-
-#### Local PostgreSQL Setup (Docker)
-
-```bash
-docker run -d --name sg-property-db -p 5432:5432 \
-    -e POSTGRES_DB=sg_property -e POSTGRES_USER=dev -e POSTGRES_PASSWORD=dev \
-    postgres:15
-```
-
-Then add to your `.env`:
-```
-DATABASE_URL=postgresql://dev:dev@localhost:5432/sg_property
+flask run --port 5001
 ```
 
 ### Frontend
@@ -45,40 +29,45 @@ npm install
 npm run dev
 ```
 
-Opens at `http://localhost:3000`. Set `VITE_API_URL` in `.env` for production:
+### Local PostgreSQL (Docker)
 
 ```bash
-VITE_API_URL=https://your-backend.onrender.com/api
+docker run -d --name sg-property-db -p 5432:5432 \
+    -e POSTGRES_DB=sg_property -e POSTGRES_USER=dev -e POSTGRES_PASSWORD=dev \
+    postgres:15
 ```
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 18 + Vite + Tailwind CSS + Chart.js |
-| Backend | Flask + SQLAlchemy |
-| Database | PostgreSQL (all environments) |
-| Hosting | Render (512MB memory optimized) |
+| Frontend | React 18, Vite, Tailwind CSS, Chart.js |
+| Backend | Flask, SQLAlchemy, Python 3.10+ |
+| Database | PostgreSQL |
+| Auth | Firebase (Google OAuth) |
+| Hosting | Render |
 
-## Architecture
+## Documentation
 
-See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for:
-- System design and data flow
-- Power BI filter patterns (global slicers, cross-filtering, drill)
-- API endpoint documentation
-- Database schema
-- Memory optimization strategies
+See [`/docs`](./docs/README.md) for complete documentation:
 
-## Key API Endpoints
+| Document | Description |
+|----------|-------------|
+| [Overview](./docs/README.md) | Quick links, project structure |
+| [Architecture](./docs/architecture.md) | System design, data flow |
+| [Backend](./docs/backend.md) | APIs, SQL rules, services |
+| [Frontend](./docs/frontend.md) | UI, charts, adapters |
+| [Data Model](./docs/data-model.md) | Metrics, bands, formulas |
+| [Access Control](./docs/access-control.md) | Tiers, paywall, compliance |
+| [Decisions](./docs/decisions.md) | Design decisions, roadmap |
+| [Glossary](./docs/glossary.md) | Terms, acronyms |
 
-| Endpoint | Purpose |
-|----------|---------|
-| `GET /api/dashboard` | Unified chart data (time series, volume, histogram) |
-| `GET /api/new-vs-resale` | New launch vs resale comparison |
-| `GET /api/transactions/list` | Paginated transaction records |
-| `GET /api/filter-options` | Available filter values |
+### Operational Guides
 
-All endpoints accept global filters: `district`, `bedroom`, `segment`, `date_from`, `date_to`.
+| Document | Description |
+|----------|-------------|
+| [Deployment](./docs/DEPLOYMENT.md) | Database migrations, Render setup |
+| [Data Upload](./docs/DATA_UPLOAD_GUIDE.md) | CSV upload pipeline |
 
 ## Project Structure
 
@@ -86,10 +75,20 @@ All endpoints accept global filters: `district`, `bedroom`, `segment`, `date_fro
 sg-property-analyzer/
 ├── backend/           # Flask API
 ├── frontend/          # React + Vite app
-├── scripts/           # ETL scripts (upload.py)
-├── ARCHITECTURE.md    # System design docs
-└── claude.md          # Development guide
+├── scripts/           # Upload, migration scripts
+├── rawdata/           # CSV data files
+├── docs/              # Documentation
+└── claude.md          # AI development guide
 ```
+
+## API Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/aggregate` | Flexible aggregation |
+| `GET /api/dashboard` | Multi-panel dashboard data |
+| `GET /api/transactions/list` | Paginated transactions |
+| `GET /api/deal-checker/multi-scope` | Value analysis |
 
 ## License
 
