@@ -377,25 +377,29 @@ export const isValidTenure = (tenure) => {
 
 /**
  * Property age band definitions
- * - new_sale: Based on sale_type, not property age
- * - Age bands use >= min and < max boundaries
- * - just_top: Special band for 0-3 year old properties (not in heatmap API)
+ * Age bands use >= min and < max boundaries
+ *
+ * | Band         | Age Range | Boundary Logic        |
+ * |--------------|-----------|----------------------|
+ * | new_sale     | 0-4 yrs   | age < 4              |
+ * | recently_top | 4-8 yrs   | age >= 4 AND age < 8 |
+ * | young_resale | 8-15 yrs  | age >= 8 AND age < 15|
+ * | resale       | 15-25 yrs | age >= 15 AND age < 25|
+ * | old_resale   | 25+ yrs   | age >= 25            |
  */
 export const PROPERTY_AGE_BANDS = [
-  { key: 'new_sale', label: 'New Sale', isNewSale: true, minAge: null, maxAge: null },
-  { key: 'just_top', label: 'Just TOP', isNewSale: false, minAge: 0, maxAge: 4 },
-  { key: 'recently_top', label: 'Recently TOP', isNewSale: false, minAge: 4, maxAge: 8 },
-  { key: 'young_resale', label: 'Young Resale', isNewSale: false, minAge: 8, maxAge: 15 },
-  { key: 'resale', label: 'Resale', isNewSale: false, minAge: 15, maxAge: 25 },
-  { key: 'old_resale', label: 'Old Resale', isNewSale: false, minAge: 25, maxAge: null },
+  { key: 'new_sale', label: 'New Sale', minAge: 0, maxAge: 4 },
+  { key: 'recently_top', label: 'Recently TOP', minAge: 4, maxAge: 8 },
+  { key: 'young_resale', label: 'Young Resale', minAge: 8, maxAge: 15 },
+  { key: 'resale', label: 'Resale', minAge: 15, maxAge: 25 },
+  { key: 'old_resale', label: 'Old Resale', minAge: 25, maxAge: null },
 ];
 
 /**
  * Age band labels with year ranges (for display in legends/headers)
  */
 export const AGE_BAND_LABELS_FULL = {
-  new_sale: 'New Sale',
-  just_top: 'Just TOP (0-3 yrs)',
+  new_sale: 'New Sale (0-4 yrs)',
   recently_top: 'Recently TOP (4-8 yrs)',
   young_resale: 'Young Resale (8-15 yrs)',
   resale: 'Resale (15-25 yrs)',
@@ -407,8 +411,7 @@ export const AGE_BAND_LABELS_FULL = {
  * Age band short labels (for compact displays like table cells)
  */
 export const AGE_BAND_LABELS_SHORT = {
-  new_sale: 'New',
-  just_top: 'Just TOP',
+  new_sale: 'New Sale',
   recently_top: 'Recently TOP',
   young_resale: 'Young Resale',
   resale: 'Resale',
@@ -427,7 +430,7 @@ export const AGE_BAND_LABELS_SHORT = {
 export const getAgeBandKey = (age, isFreehold = false) => {
   if (isFreehold) return 'freehold';
   if (age === null || age === undefined) return null;
-  if (age < 4) return 'just_top';
+  if (age < 4) return 'new_sale';
   if (age < 8) return 'recently_top';
   if (age < 15) return 'young_resale';
   if (age < 25) return 'resale';
