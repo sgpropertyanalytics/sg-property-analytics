@@ -1240,6 +1240,13 @@ def query_psf_by_price_band(
         psf,
         bedroom_count,
         price,
+        district,
+        -- Property age: years since lease started (null for freehold)
+        CASE
+          WHEN lease_start_year IS NOT NULL AND lease_start_year > 0
+          THEN EXTRACT(YEAR FROM transaction_date) - lease_start_year
+          ELSE NULL
+        END AS property_age,
         CASE
           WHEN price < 1000000 THEN '$0.5M-1M'
           WHEN price < 1500000 THEN '$1M-1.5M'
@@ -1267,7 +1274,13 @@ def query_psf_by_price_band(
       COUNT(*) AS observation_count,
       PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY psf) AS p25,
       PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY psf) AS p50,
-      PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY psf) AS p75
+      PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY psf) AS p75,
+      -- Average property age (excluding nulls/freehold)
+      ROUND(AVG(property_age)::numeric, 1) AS avg_age,
+      -- Region breakdown by district mapping
+      SUM(CASE WHEN district IN ('D01', 'D02', 'D06', 'D07', 'D09', 'D10', 'D11') THEN 1 ELSE 0 END) AS ccr_count,
+      SUM(CASE WHEN district IN ('D03', 'D04', 'D05', 'D08', 'D12', 'D13', 'D14', 'D15', 'D20') THEN 1 ELSE 0 END) AS rcr_count,
+      SUM(CASE WHEN district IN ('D16', 'D17', 'D18', 'D19', 'D21', 'D22', 'D23', 'D24', 'D25', 'D26', 'D27', 'D28') THEN 1 ELSE 0 END) AS ocr_count
     FROM price_banded
     GROUP BY price_band, bedroom_group
     ORDER BY
@@ -1298,6 +1311,10 @@ def query_psf_by_price_band(
             'p25': float(row.p25) if row.p25 is not None else None,
             'p50': float(row.p50) if row.p50 is not None else None,
             'p75': float(row.p75) if row.p75 is not None else None,
+            'avg_age': float(row.avg_age) if row.avg_age is not None else None,
+            'ccr_count': int(row.ccr_count) if row.ccr_count is not None else 0,
+            'rcr_count': int(row.rcr_count) if row.rcr_count is not None else 0,
+            'ocr_count': int(row.ocr_count) if row.ocr_count is not None else 0,
         })
 
     return rows

@@ -1004,31 +1004,45 @@ def serialize_volume_by_location_panel(data: list, include_deprecated: bool = Tr
 def serialize_price_histogram_panel(data: dict, include_deprecated: bool = True) -> dict:
     """Serialize price_histogram panel data to v2 schema.
 
-    Histogram structure is complex - keep bins as-is, transform stats fields.
+    Histogram structure:
+    - bins: list of {bin, bin_start, bin_end, count}
+    - stats: {total_count, p5, p25, median, p75, p95, min, max, iqr}
+    - tail: {count, threshold, pct}
     """
     if not data or 'error' in data:
         return data
 
     result = {
         'bins': data.get('bins', []),
-        'percentiles': data.get('percentiles', {}),
     }
 
-    # Transform stats if present
+    # Pass through stats with both v1 snake_case and v2 camelCase
     stats = data.get('stats', {})
     if stats:
         result['stats'] = {
-            DashboardFields.AVG_PSF: stats.get('avg_psf'),
-            DashboardFields.COUNT: stats.get('count'),
+            # v2 camelCase fields
+            'totalCount': stats.get('total_count'),
+            'median': stats.get('median'),
+            'p5': stats.get('p5'),
+            'p25': stats.get('p25'),
+            'p75': stats.get('p75'),
+            'p95': stats.get('p95'),
+            'min': stats.get('min'),
+            'max': stats.get('max'),
+            'iqr': stats.get('iqr'),
         }
         if include_deprecated:
-            result['stats']['avg_psf'] = stats.get('avg_psf')
-            result['stats']['count'] = stats.get('count')
+            # v1 snake_case for backward compatibility
+            result['stats']['total_count'] = stats.get('total_count')
 
-    # Pass through other fields
-    for key in ['range', 'effective_range', 'excluded_tail_count']:
-        if key in data:
-            result[key] = data[key]
+    # Pass through tail info (for "N% hidden" message)
+    tail = data.get('tail', {})
+    if tail:
+        result['tail'] = {
+            'count': tail.get('count'),
+            'threshold': tail.get('threshold'),
+            'pct': tail.get('pct'),
+        }
 
     return result
 
@@ -1795,30 +1809,35 @@ def apply_psf_by_price_band_k_anonymity(rows: list) -> list:
         bedroom = row.get('bedroom_group')
         band_min, band_max = _get_price_band_bounds(price_band)
 
+        # Common fields for both suppressed and non-suppressed
+        base_row = {
+            'priceBand': price_band,
+            'priceBandMin': band_min,
+            'priceBandMax': band_max,
+            'bedroom': _bedroom_label(bedroom),
+            'bedroomCount': bedroom,
+            'observationCount': obs_count,
+            # Age and region breakdown (always include, even for suppressed)
+            'avgAge': row.get('avg_age'),
+            'ccrCount': row.get('ccr_count', 0),
+            'rcrCount': row.get('rcr_count', 0),
+            'ocrCount': row.get('ocr_count', 0),
+        }
+
         if obs_count < PSF_BY_PRICE_BAND_K_THRESHOLD:
             result.append({
-                'priceBand': price_band,
-                'priceBandMin': band_min,
-                'priceBandMax': band_max,
-                'bedroom': _bedroom_label(bedroom),
-                'bedroomCount': bedroom,
+                **base_row,
                 'p25': None,
                 'p50': None,
                 'p75': None,
-                'observationCount': obs_count,
                 'suppressed': True
             })
         else:
             result.append({
-                'priceBand': price_band,
-                'priceBandMin': band_min,
-                'priceBandMax': band_max,
-                'bedroom': _bedroom_label(bedroom),
-                'bedroomCount': bedroom,
+                **base_row,
                 'p25': round(row['p25'], 0) if row.get('p25') is not None else None,
                 'p50': round(row['p50'], 0) if row.get('p50') is not None else None,
                 'p75': round(row['p75'], 0) if row.get('p75') is not None else None,
-                'observationCount': obs_count,
                 'suppressed': False
             })
     return result
@@ -1840,6 +1859,11 @@ def serialize_psf_by_price_band_row(
         PsfByPriceBandFields.P75: row['p75'],
         PsfByPriceBandFields.OBSERVATION_COUNT: row['observationCount'],
         PsfByPriceBandFields.SUPPRESSED: row['suppressed'],
+        # New fields: age and region breakdown
+        'avgAge': row.get('avgAge'),
+        'ccrCount': row.get('ccrCount', 0),
+        'rcrCount': row.get('rcrCount', 0),
+        'ocrCount': row.get('ocrCount', 0),
     }
 
     if include_deprecated:
@@ -1850,6 +1874,10 @@ def serialize_psf_by_price_band_row(
             'price_band_max': row.get('priceBandMax'),
             'bedroom_count': row['bedroomCount'],
             'observation_count': row['observationCount'],
+            'avg_age': row.get('avgAge'),
+            'ccr_count': row.get('ccrCount', 0),
+            'rcr_count': row.get('rcrCount', 0),
+            'ocr_count': row.get('ocrCount', 0),
         })
 
     return v2_row
