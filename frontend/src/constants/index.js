@@ -564,18 +564,6 @@ export const SALE_TYPE_FILTER_OPTIONS = [
 ];
 
 /**
- * Property age filter options for dropdowns.
- * Used by MarketStrategyMap and similar components.
- * Values match backend /insights/district-psf API expectations.
- */
-export const AGE_FILTER_OPTIONS = [
-  { value: 'all', label: 'All', fullLabel: 'All Ages' },
-  { value: 'new', label: 'New/TOP', fullLabel: 'New/TOP (0-5 yrs)' },
-  { value: 'young', label: 'Young Resale', fullLabel: 'Young Resale (5-10 yrs)' },
-  { value: 'resale', label: 'Resale', fullLabel: 'Resale (>10 yrs)' },
-];
-
-/**
  * Legacy: DB string values (for backward compatibility during migration)
  * @deprecated Use SALE_TYPE_VALUES with enum values instead
  */

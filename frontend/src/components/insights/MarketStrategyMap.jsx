@@ -15,7 +15,7 @@ import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
-import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS, AGE_FILTER_OPTIONS } from '../../constants';
+import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS, SALE_TYPE_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../hooks';
 
@@ -51,7 +51,7 @@ const VOLUME_GLOW = {
 // Use centralized filter options
 const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
 const PERIOD_OPTIONS = PERIOD_FILTER_OPTIONS;
-const AGE_OPTIONS = AGE_FILTER_OPTIONS;
+const SALE_TYPE_OPTIONS = SALE_TYPE_FILTER_OPTIONS;
 
 // Manual marker offsets for crowded central districts
 const MARKER_OFFSETS = {
@@ -394,7 +394,7 @@ export default function MarketStrategyMap() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
-  const [selectedAge, setSelectedAge] = useState('all');
+  const [selectedSaleType, setSelectedSaleType] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('12m');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
@@ -403,8 +403,8 @@ export default function MarketStrategyMap() {
 
   // Stable filter key for dependency tracking (avoids object reference issues)
   const filterKey = useMemo(
-    () => `${selectedPeriod}:${selectedBed}:${selectedAge}`,
-    [selectedPeriod, selectedBed, selectedAge]
+    () => `${selectedPeriod}:${selectedBed}:${selectedSaleType}`,
+    [selectedPeriod, selectedBed, selectedSaleType]
   );
 
   const [viewState, setViewState] = useState({
@@ -425,7 +425,7 @@ export default function MarketStrategyMap() {
 
     try {
       const response = await apiClient.get('/insights/district-psf', {
-        params: { period: selectedPeriod, bed: selectedBed, age: selectedAge },
+        params: { period: selectedPeriod, bed: selectedBed, sale_type: selectedSaleType },
         signal,  // Pass abort signal to cancel on filter change
       });
 
@@ -448,7 +448,7 @@ export default function MarketStrategyMap() {
       setError('Failed to load data');
       setLoading(false);
     }
-  }, [selectedBed, selectedAge, selectedPeriod, startRequest, getSignal, isStale]);
+  }, [selectedBed, selectedSaleType, selectedPeriod, startRequest, getSignal, isStale]);
 
   useEffect(() => {
     fetchData();
@@ -540,24 +540,21 @@ export default function MarketStrategyMap() {
               ))}
             </div>
 
-            {/* Property age filter - show abbreviated labels on mobile */}
+            {/* Sale type filter */}
             <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
-              {AGE_OPTIONS.map(option => (
+              {SALE_TYPE_OPTIONS.map(option => (
                 <button
                   key={option.value}
-                  onClick={() => setSelectedAge(option.value)}
+                  onClick={() => setSelectedSaleType(option.value)}
                   className={`
                     px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
-                    ${selectedAge === option.value
+                    ${selectedSaleType === option.value
                       ? 'bg-white text-[#213448] shadow-sm'
                       : 'text-[#547792] hover:text-[#213448]'
                     }
                   `}
                 >
-                  <span className="sm:hidden">
-                    {option.value === 'all' ? 'All' : option.value === 'new' ? 'New' : option.value === 'young' ? '5-10y' : '>10y'}
-                  </span>
-                  <span className="hidden sm:inline">{option.label}</span>
+                  {option.label}
                 </button>
               ))}
             </div>
