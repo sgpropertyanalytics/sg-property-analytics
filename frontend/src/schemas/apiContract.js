@@ -376,6 +376,35 @@ export const getPropertyAgeBucketLabel = (val, short = false) => {
   return labels[val] || val;
 };
 
+/**
+ * Premium trend enum values (for New vs Resale comparison).
+ * Indicates direction of premium gap between new launches and resales.
+ */
+export const PremiumTrend = {
+  WIDENING: 'widening',
+  NARROWING: 'narrowing',
+  STABLE: 'stable',
+};
+
+/**
+ * Display labels for premium trends.
+ */
+export const PremiumTrendLabels = {
+  [PremiumTrend.WIDENING]: 'Gap widening',
+  [PremiumTrend.NARROWING]: 'Gap narrowing',
+  [PremiumTrend.STABLE]: 'Stable',
+};
+
+/**
+ * Helpers to check premium trend values.
+ */
+export const isPremiumTrend = {
+  widening: (val) => val === PremiumTrend.WIDENING,
+  narrowing: (val) => val === PremiumTrend.NARROWING,
+  stable: (val) => val === PremiumTrend.STABLE,
+};
+
+
 // =============================================================================
 // RESPONSE FIELD NAMES (camelCase for v2)
 // =============================================================================

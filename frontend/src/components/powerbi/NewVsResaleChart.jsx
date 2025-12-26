@@ -18,8 +18,8 @@ import { getNewVsResale } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
-import { transformNewVsResaleSeries, logFetchDebug } from '../../adapters';
-import { SaleType, SaleTypeLabels } from '../../schemas/apiContract';
+import { transformNewVsResaleSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
+import { SaleType, SaleTypeLabels, PremiumTrend, PremiumTrendLabels, isPremiumTrend, PropertyAgeBucket, PropertyAgeBucketLabels } from '../../schemas/apiContract';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -37,14 +37,14 @@ ChartJS.register(
 );
 
 /**
- * New Sale vs Recent TOP/Young Resale (4-9 years age) Comparison Chart
+ * New Sale vs Recently TOP (4-8 years age) Comparison Chart
  *
  * Dual-line time series showing:
- * - Line A (solid, blue): New Sale median total price
- * - Line B (dashed, green): Young Resale (4-9 years old) median total price
+ * - Line A (solid, navy): New Sale median total price
+ * - Line B (dashed, blue): Recently TOP (4-8 years old) median total price
  *
- * Young Resale definition:
- * - Property age (transaction year - lease start year) between 4 and 9 years
+ * Recently TOP definition:
+ * - Property age (transaction year - lease start year) between 4 and 8 years
  * - Project must have at least one resale transaction (excludes delayed construction)
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
@@ -56,14 +56,6 @@ export function NewVsResaleChart({ height = 350 }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, filters, timeGrouping } = usePowerBIFilters();
-
-  // Provide safe defaults for filters if context not ready
-  const safeFilters = {
-    districts: filters?.districts || [],
-    bedroomTypes: filters?.bedroomTypes || [],
-    segment: filters?.segment || null,
-    dateRange: filters?.dateRange || { start: null, end: null },
-  };
 
   const chartRef = useRef(null);
 
@@ -85,6 +77,9 @@ export function NewVsResaleChart({ height = 350 }) {
       }, { excludeHighlight: true });
 
       const response = await getNewVsResale(params, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response, '/api/new-vs-resale');
 
       // Debug logging (dev only)
       logFetchDebug('NewVsResaleChart', {
@@ -108,19 +103,19 @@ export function NewVsResaleChart({ height = 350 }) {
   const getFilterSummary = () => {
     const parts = [];
     // Show date range if a sidebar date filter is applied
-    if (safeFilters.dateRange.start || safeFilters.dateRange.end) {
-      const start = safeFilters.dateRange.start ? safeFilters.dateRange.start.slice(0, 7) : '...';
-      const end = safeFilters.dateRange.end ? safeFilters.dateRange.end.slice(0, 7) : '...';
+    if (filters?.dateRange?.start || filters?.dateRange?.end) {
+      const start = filters.dateRange.start ? filters.dateRange.start.slice(0, 7) : '...';
+      const end = filters.dateRange.end ? filters.dateRange.end.slice(0, 7) : '...';
       parts.push(`${start} to ${end}`);
     }
-    if (safeFilters.districts.length > 0) {
-      parts.push(safeFilters.districts.length === 1 ? safeFilters.districts[0] : `${safeFilters.districts.length} districts`);
+    if (filters?.districts?.length > 0) {
+      parts.push(filters.districts.length === 1 ? filters.districts[0] : `${filters.districts.length} districts`);
     }
-    if (safeFilters.segment) {
-      parts.push(safeFilters.segment);
+    if (filters?.segment) {
+      parts.push(filters.segment);
     }
-    if (safeFilters.bedroomTypes.length > 0 && safeFilters.bedroomTypes.length < 5) {
-      parts.push(`${safeFilters.bedroomTypes.join(',')}BR`);
+    if (filters?.bedroomTypes?.length > 0 && filters.bedroomTypes.length < 5) {
+      parts.push(`${filters.bedroomTypes.join(',')}BR`);
     }
     return parts.length > 0 ? parts.join(' · ') : 'All data';
   };
@@ -153,7 +148,7 @@ export function NewVsResaleChart({ height = 350 }) {
         spanGaps: true, // Connect line through null/missing data points
       },
       {
-        label: 'Young Resale (4-9 yrs)',
+        label: PropertyAgeBucketLabels[PropertyAgeBucket.RECENTLY_TOP],
         data: resalePrice,
         borderColor: '#547792',  // Ocean Blue - secondary palette color
         backgroundColor: 'rgba(84, 119, 146, 0.1)',
@@ -220,7 +215,7 @@ export function NewVsResaleChart({ height = 350 }) {
                 lines.push('(No new sale data)');
               }
               if (dataPoint.resalePrice === null) {
-                lines.push('(No young resale 4-9yr data)');
+                lines.push('(No recently TOP 4-8yr data)');
               }
 
               return lines;
@@ -275,14 +270,14 @@ export function NewVsResaleChart({ height = 350 }) {
 
   // Trend indicator icon - using palette colors
   const getTrendIcon = (trend) => {
-    if (trend === 'widening') {
+    if (isPremiumTrend.widening(trend)) {
       return (
         <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
         </svg>
       );
     }
-    if (trend === 'narrowing') {
+    if (isPremiumTrend.narrowing(trend)) {
       return (
         <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
@@ -306,7 +301,7 @@ export function NewVsResaleChart({ height = 350 }) {
       <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="min-w-0">
           <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-            New Sale vs Young Resale (4-9 yrs)
+            New Sale vs Recently TOP (4-8 yrs)
           </h3>
           <p className="text-xs text-[#547792] mt-0.5">
             {getFilterSummary()} · by {TIME_LABELS[timeGrouping].toLowerCase()}
@@ -331,13 +326,13 @@ export function NewVsResaleChart({ height = 350 }) {
               Period Avg: {summary.avgPremium10Y > 0 ? '+' : ''}{summary.avgPremium10Y}%
             </span>
           )}
-          {summary.premiumTrend && summary.premiumTrend !== 'stable' && (
+          {summary.premiumTrend && !isPremiumTrend.stable(summary.premiumTrend) && (
             <span className={`px-3 py-1.5 rounded-full text-xs md:text-sm ${
-              summary.premiumTrend === 'widening'
+              isPremiumTrend.widening(summary.premiumTrend)
                 ? 'bg-[#213448]/10 text-[#213448]'
                 : 'bg-[#94B4C1]/30 text-[#547792]'
             }`}>
-              {summary.premiumTrend === 'widening' ? 'Gap widening' : 'Gap narrowing'}
+              {PremiumTrendLabels[summary.premiumTrend] || summary.premiumTrend}
             </span>
           )}
         </div>
@@ -346,7 +341,7 @@ export function NewVsResaleChart({ height = 350 }) {
       {/* How to Interpret - shrink-0 */}
       <div className="shrink-0">
         <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-          Tracks the price gap between new launches and recently TOP / young resale units (&lt; 10 years in age) to highlight pricing discrepancies and relative value.
+          Tracks the price gap between new launches and recently TOP units (4-8 years old) to highlight pricing discrepancies and relative value.
         </KeyInsightBox>
       </div>
 
