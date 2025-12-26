@@ -17,6 +17,8 @@ from .subscription import (
     get_granularity_level,
     auto_widen_for_k_anonymity,
     build_k_anonymity_meta,
+    build_suppressed_row,
+    suppress_if_needed,
 )
 from .rate_limiter import (
     init_limiter,
@@ -41,6 +43,8 @@ __all__ = [
     'get_granularity_level',
     'auto_widen_for_k_anonymity',
     'build_k_anonymity_meta',
+    'build_suppressed_row',
+    'suppress_if_needed',
     'init_limiter',
     'get_limiter',
     'get_rate_limit_key',

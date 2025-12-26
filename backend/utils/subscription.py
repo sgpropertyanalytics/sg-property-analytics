@@ -410,6 +410,77 @@ def build_k_anonymity_meta(passed: bool, fallback_level: str, count: int) -> dic
     }
 
 
+def build_suppressed_row(level: str, count: int, identifiers: dict = None) -> dict:
+    """
+    Build a suppressed row response when count < K_required.
+
+    MANDATORY: Use this for any row where observation count is below
+    the K-anonymity threshold for that level.
+
+    Args:
+        level: Granularity level ('project', 'district', 'segment', 'market')
+        count: Actual observation count
+        identifiers: Dict of non-sensitive identifiers to preserve
+                    (e.g., {"project": "The Sail", "district": "D01"})
+
+    Returns:
+        dict with suppressed=True and null sensitive fields
+    """
+    k_required = get_k_threshold(level) if level != "unit" else 15
+
+    result = {
+        "suppressed": True,
+        "kRequired": k_required,
+        "observationCount": count,
+        "reason": f"Insufficient sample size (minimum {k_required} observations required)",
+        # Sensitive fields - always null when suppressed
+        "medianPrice": None,
+        "medianPsf": None,
+        "psfRange": None,
+        "priceRange": None,
+        "sqft": None,
+    }
+
+    # Preserve non-sensitive identifiers for spatial/discovery context
+    if identifiers:
+        result.update(identifiers)
+
+    return result
+
+
+def suppress_if_needed(row: dict, count: int, level: str = "project") -> dict:
+    """
+    Check if a row needs suppression and apply it if so.
+
+    Use this to post-process aggregated rows before returning.
+
+    Args:
+        row: Original row dict with aggregated values
+        count: Observation count for this row
+        level: Granularity level
+
+    Returns:
+        Original row if K passes, suppressed row if not
+    """
+    passes, _ = check_k_anonymity(count, level=level)
+
+    if passes:
+        # Add suppressed=False for frontend consistency
+        row["suppressed"] = False
+        row["observationCount"] = count
+        return row
+
+    # Extract non-sensitive identifiers to preserve
+    identifiers = {}
+    safe_keys = {"project", "projectName", "district", "segment", "region",
+                 "bedroom", "bedroomCount", "tenure", "name", "distance"}
+    for key in safe_keys:
+        if key in row:
+            identifiers[key] = row[key]
+
+    return build_suppressed_row(level, count, identifiers)
+
+
 def enforce_filter_granularity(filters, is_premium=None):
     """
     Limit filter granularity for free users to prevent re-identification.
