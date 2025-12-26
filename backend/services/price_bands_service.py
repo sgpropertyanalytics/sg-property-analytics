@@ -277,7 +277,7 @@ def _compute_monthly_percentiles(
     params = {}
 
     # Sale type: Use API contract for DB value
-    resale_db_value = SaleType.API_TO_DB.get(SaleType.RESALE, 'Resale')
+    resale_db_value = SaleType.to_db(SaleType.RESALE)
     conditions.append("sale_type = :sale_type")
     params["sale_type"] = resale_db_value
 
