@@ -323,92 +323,123 @@ export function ProjectDeepDiveContent() {
           </p>
         </div>
 
-        {/* Project Selector */}
-        <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 mb-6">
-          <label className="block text-sm font-medium text-[#213448] mb-2">
-            Select a Project
-          </label>
-          <div className="relative" ref={dropdownRef}>
-            <button
-              type="button"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              disabled={projectOptionsLoading}
-              className="w-full px-3 py-2.5 text-sm border border-[#94B4C1]/50 rounded-lg text-left bg-[#EAE0CF]/20 focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent flex items-center justify-between"
-            >
-              <span className={selectedProject ? 'text-[#213448] truncate font-medium' : 'text-[#94B4C1]'}>
-                {selectedProject
-                  ? `${selectedProject.name} (${selectedProject.district})`
-                  : projectOptionsLoading
-                    ? <span className="truncate">{loadingText}</span>
-                    : 'Search for a project...'}
-              </span>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                {selectedProject && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); handleClearSelection(); }}
-                    className="p-1 hover:bg-[#94B4C1]/30 rounded"
-                  >
-                    <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-                <svg className={`w-4 h-4 text-[#547792] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </button>
+        {/* Project Selector + Downside Protection Input - 50/50 Split */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6">
+          {/* Left: Project Selector */}
+          <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
+            <label className="block text-sm font-medium text-[#213448] mb-2">
+              Select a Project
+            </label>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                disabled={projectOptionsLoading}
+                className="w-full px-3 py-2.5 text-sm border border-[#94B4C1]/50 rounded-lg text-left bg-[#EAE0CF]/20 focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent flex items-center justify-between"
+              >
+                <span className={selectedProject ? 'text-[#213448] truncate font-medium' : 'text-[#94B4C1]'}>
+                  {selectedProject
+                    ? `${selectedProject.name} (${selectedProject.district})`
+                    : projectOptionsLoading
+                      ? <span className="truncate">{loadingText}</span>
+                      : 'Search for a project...'}
+                </span>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                  {selectedProject && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleClearSelection(); }}
+                      className="p-1 hover:bg-[#94B4C1]/30 rounded"
+                    >
+                      <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                  <svg className={`w-4 h-4 text-[#547792] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </button>
 
-            {/* Dropdown Panel */}
-            {isDropdownOpen && (
-              <div className="absolute z-50 w-full mt-1 bg-white border border-[#94B4C1]/50 rounded-lg shadow-lg max-h-80 overflow-hidden">
-                <div className="p-2 border-b border-[#94B4C1]/30">
-                  <input
-                    type="text"
-                    placeholder="Type to search..."
-                    value={projectSearch}
-                    onChange={(e) => setProjectSearch(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
-                    autoFocus
-                  />
+              {/* Dropdown Panel */}
+              {isDropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-[#94B4C1]/50 rounded-lg shadow-lg max-h-80 overflow-hidden">
+                  <div className="p-2 border-b border-[#94B4C1]/30">
+                    <input
+                      type="text"
+                      placeholder="Type to search..."
+                      value={projectSearch}
+                      onChange={(e) => setProjectSearch(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-60 overflow-y-auto">
+                    {filteredProjects.length === 0 ? (
+                      <div className="px-3 py-4 text-sm text-[#94B4C1] text-center">
+                        {projectOptionsLoading ? 'Loading...' : 'No projects found'}
+                      </div>
+                    ) : (
+                      filteredProjects.slice(0, 100).map(p => (
+                        <button
+                          key={p.name}
+                          type="button"
+                          onClick={() => handleProjectSelect(p)}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-[#EAE0CF]/50 flex justify-between items-center ${
+                            selectedProject?.name === p.name ? 'bg-[#EAE0CF]/30 text-[#213448] font-medium' : 'text-[#547792]'
+                          }`}
+                        >
+                          <span className="truncate">{p.name}</span>
+                          <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
+                        </button>
+                      ))
+                    )}
+                    {filteredProjects.length > 100 && (
+                      <div className="px-3 py-2 text-xs text-[#94B4C1] text-center border-t border-[#94B4C1]/30">
+                        +{filteredProjects.length - 100} more projects
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="max-h-60 overflow-y-auto">
-                  {filteredProjects.length === 0 ? (
-                    <div className="px-3 py-4 text-sm text-[#94B4C1] text-center">
-                      {projectOptionsLoading ? 'Loading...' : 'No projects found'}
-                    </div>
-                  ) : (
-                    filteredProjects.slice(0, 100).map(p => (
-                      <button
-                        key={p.name}
-                        type="button"
-                        onClick={() => handleProjectSelect(p)}
-                        className={`w-full px-3 py-2 text-left text-sm hover:bg-[#EAE0CF]/50 flex justify-between items-center ${
-                          selectedProject?.name === p.name ? 'bg-[#EAE0CF]/30 text-[#213448] font-medium' : 'text-[#547792]'
-                        }`}
-                      >
-                        <span className="truncate">{p.name}</span>
-                        <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
-                      </button>
-                    ))
-                  )}
-                  {filteredProjects.length > 100 && (
-                    <div className="px-3 py-2 text-xs text-[#94B4C1] text-center border-t border-[#94B4C1]/30">
-                      +{filteredProjects.length - 100} more projects
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
+            </div>
+
+            {/* Project count info */}
+            {!projectOptionsLoading && projectOptions.length > 0 && (
+              <p className="text-xs text-[#94B4C1] mt-2">
+                {projectOptions.length.toLocaleString()} projects available
+              </p>
             )}
           </div>
 
-          {/* Project count info */}
-          {!projectOptionsLoading && projectOptions.length > 0 && (
-            <p className="text-xs text-[#94B4C1] mt-2">
-              {projectOptions.length.toLocaleString()} projects available
-            </p>
-          )}
+          {/* Right: Downside Protection Input */}
+          <div className="bg-[#EAE0CF]/30 rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold text-[#213448] mb-1">
+                Downside Protection Analysis
+              </h2>
+              <p className="text-xs text-[#547792]">
+                See where your unit PSF sits relative to historical price floors
+              </p>
+            </div>
+
+            {/* Unit PSF Input */}
+            <UnitPsfInput
+              value={unitPsf}
+              onChange={setUnitPsf}
+              label="Your Unit PSF"
+              placeholder="e.g., 2500"
+              disabled={!selectedProject}
+            />
+
+            {/* Helper when no project selected */}
+            {!selectedProject && (
+              <p className="text-xs text-[#94B4C1] mt-2 italic">
+                Select a project first to analyze downside protection
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Error State */}
@@ -510,29 +541,8 @@ export function ProjectDeepDiveContent() {
               )}
             </div>
 
-            {/* Historical Downside Protection - Price Bands */}
-            <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
-              <div className="mb-4">
-                <h2 className="text-base font-semibold text-[#213448] mb-1">
-                  Downside Protection Analysis
-                </h2>
-                <p className="text-sm text-[#547792]">
-                  See where your unit PSF sits relative to historical price floors
-                </p>
-              </div>
-
-              {/* Unit PSF Input */}
-              <div className="mb-4 max-w-xs">
-                <UnitPsfInput
-                  value={unitPsf}
-                  onChange={setUnitPsf}
-                  label="Your Unit PSF"
-                  placeholder="e.g., 2500"
-                />
-              </div>
-
-              {/* Price Band Chart */}
-              <PriceBandChart
+            {/* Historical Price Bands Chart */}
+            <PriceBandChart
                 bands={priceBandsData?.bands || []}
                 latest={priceBandsData?.latest}
                 trend={priceBandsData?.trend}
@@ -546,7 +556,6 @@ export function ProjectDeepDiveContent() {
                 projectName={selectedProject?.name}
                 height={450}
               />
-            </div>
 
             {/* Exit Risk Dashboard (only if resale data exists) */}
             {exitQueueData.resale_metrics && (
