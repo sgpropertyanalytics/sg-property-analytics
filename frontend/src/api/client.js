@@ -471,8 +471,8 @@ export const getProjectInventory = (projectName) =>
  * Only returns geocoded projects
  * @returns {Promise<{projects: Array<{name, district, market_segment}>, count: number}>}
  */
-export const getProjectNames = () =>
-  apiClient.get('/projects/names');
+export const getProjectNames = (options = {}) =>
+  apiClient.get('/projects/names', options);
 
 /**
  * Get multi-scope comparison for deal checker
@@ -525,8 +525,8 @@ export const createPortalSession = (returnUrl) => {
  *   gating_flags: {is_boutique, is_brand_new, is_ultra_luxury, is_thin_data, unit_type_mixed}
  * }>}
  */
-export const getProjectExitQueue = (projectName) =>
-  apiClient.get(`/projects/${encodeURIComponent(projectName)}/exit-queue`);
+export const getProjectExitQueue = (projectName, options = {}) =>
+  apiClient.get(`/projects/${encodeURIComponent(projectName)}/exit-queue`, options);
 
 /**
  * Get historical price bands (P25/P50/P75) for downside protection analysis
@@ -546,8 +546,8 @@ export const getProjectExitQueue = (projectName) =>
  *   data_quality: {total_trades, months_with_data, is_valid, fallback_reason, window_months, smoothing}
  * }>}
  */
-export const getProjectPriceBands = (projectName, params = {}) =>
-  apiClient.get(`/projects/${encodeURIComponent(projectName)}/price-bands?${buildQueryString(params)}`);
+export const getProjectPriceBands = (projectName, params = {}, options = {}) =>
+  apiClient.get(`/projects/${encodeURIComponent(projectName)}/price-bands?${buildQueryString(params)}`, options);
 
 /**
  * Get transaction-level price growth data for a project
@@ -561,8 +561,8 @@ export const getProjectPriceBands = (projectName, params = {}) =>
  * @param {number} params.bedroom - Filter by bedroom count
  * @returns {Promise<{data: Array, pagination: Object, filters_applied: Object}>}
  */
-export const getProjectPriceGrowth = (projectName, params = {}) =>
-  apiClient.get(`/transactions/price-growth?project=${encodeURIComponent(projectName)}&per_page=500${params.bedroom ? `&bedroom=${params.bedroom}` : ''}`);
+export const getProjectPriceGrowth = (projectName, options = {}) =>
+  apiClient.get(`/transactions/price-growth?project=${encodeURIComponent(projectName)}&per_page=500`, options);
 
 export default apiClient;
 

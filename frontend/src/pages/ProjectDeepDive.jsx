@@ -102,21 +102,39 @@ export function ProjectDeepDiveContent() {
   const [priceGrowthLoading, setPriceGrowthLoading] = useState(false);
   const [priceGrowthError, setPriceGrowthError] = useState(null);
 
-  // Load project options on mount
+  // Load project options on mount and validate stored project
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchProjects = async () => {
       setProjectOptionsLoading(true);
       try {
-        const response = await getProjectNames();
-        setProjectOptions(response.data.projects || []);
+        const response = await getProjectNames({ signal: controller.signal });
+        const projects = response.data.projects || [];
+        setProjectOptions(projects);
+
+        // Validate stored project exists in the list
+        if (selectedProject) {
+          const exists = projects.some(p => p.name === selectedProject.name);
+          if (!exists) {
+            console.warn('Stored project no longer exists, clearing selection');
+            setSelectedProject(null);
+            localStorage.removeItem(STORAGE_KEY_PROJECT);
+          }
+        }
       } catch (err) {
+        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
         console.error('Failed to load project options:', err);
         setProjectOptions([]);
       } finally {
-        setProjectOptionsLoading(false);
+        if (!controller.signal.aborted) {
+          setProjectOptionsLoading(false);
+        }
       }
     };
     fetchProjects();
+
+    return () => controller.abort();
   }, []);
 
   // Load exit queue data when project is selected
@@ -126,21 +144,30 @@ export function ProjectDeepDiveContent() {
       return;
     }
 
+    const controller = new AbortController();
+
     const fetchExitQueue = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await getProjectExitQueue(selectedProject.name);
-        setExitQueueData(response.data);
+        const response = await getProjectExitQueue(selectedProject.name, { signal: controller.signal });
+        if (!controller.signal.aborted) {
+          setExitQueueData(response.data);
+        }
       } catch (err) {
+        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
         console.error('Failed to load exit queue data:', err);
         setError(err.response?.data?.error || 'Failed to load project data');
         setExitQueueData(null);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
     fetchExitQueue();
+
+    return () => controller.abort();
   }, [selectedProject]);
 
   // Load price bands data when project or unitPsf changes
@@ -151,6 +178,8 @@ export function ProjectDeepDiveContent() {
       return;
     }
 
+    const controller = new AbortController();
+
     const fetchPriceBands = async () => {
       setPriceBandsLoading(true);
       setPriceBandsError(null);
@@ -159,17 +188,24 @@ export function ProjectDeepDiveContent() {
         if (unitPsf) {
           params.unit_psf = unitPsf;
         }
-        const response = await getProjectPriceBands(selectedProject.name, params);
-        setPriceBandsData(response.data);
+        const response = await getProjectPriceBands(selectedProject.name, params, { signal: controller.signal });
+        if (!controller.signal.aborted) {
+          setPriceBandsData(response.data);
+        }
       } catch (err) {
+        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
         console.error('Failed to load price bands:', err);
         setPriceBandsError(err.response?.data?.error || 'Failed to load price bands');
         setPriceBandsData(null);
       } finally {
-        setPriceBandsLoading(false);
+        if (!controller.signal.aborted) {
+          setPriceBandsLoading(false);
+        }
       }
     };
     fetchPriceBands();
+
+    return () => controller.abort();
   }, [selectedProject, unitPsf]);
 
   // Load price growth data when project is selected
@@ -180,14 +216,18 @@ export function ProjectDeepDiveContent() {
       return;
     }
 
+    const controller = new AbortController();
+
     const fetchPriceGrowth = async () => {
       setPriceGrowthLoading(true);
       setPriceGrowthError(null);
       try {
-        const response = await getProjectPriceGrowth(selectedProject.name);
-        setPriceGrowthData(response.data);
+        const response = await getProjectPriceGrowth(selectedProject.name, { signal: controller.signal });
+        if (!controller.signal.aborted) {
+          setPriceGrowthData(response.data);
+        }
       } catch (err) {
-        console.error('Failed to load price growth:', err);
+        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
         // Handle 404 (endpoint not deployed) vs other errors
         if (err.response?.status === 404) {
           setPriceGrowthError('Price growth data coming soon');
@@ -196,10 +236,14 @@ export function ProjectDeepDiveContent() {
         }
         setPriceGrowthData(null);
       } finally {
-        setPriceGrowthLoading(false);
+        if (!controller.signal.aborted) {
+          setPriceGrowthLoading(false);
+        }
       }
     };
     fetchPriceGrowth();
+
+    return () => controller.abort();
   }, [selectedProject]);
 
   // Handle click outside to close dropdown
