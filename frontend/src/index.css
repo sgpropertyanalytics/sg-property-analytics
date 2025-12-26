@@ -227,7 +227,7 @@ input[type="range"].slider-thumb::-moz-range-progress {
   }
 }
 
-/* Base shimmer effect */
+/* Base shimmer effect - slow, smooth animation (3.5s) */
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
@@ -238,7 +238,7 @@ input[type="range"].slider-thumb::-moz-range-progress {
     #EAE0CF 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 2s ease-in-out infinite;
+  animation: shimmer 3.5s ease-in-out infinite;
 }
 
 /* Chart skeleton container */
@@ -251,7 +251,7 @@ input[type="range"].slider-thumb::-moz-range-progress {
 /* SVG circle shimmer for map markers */
 .chart-skeleton svg circle.skeleton-shimmer {
   fill: #EAE0CF;
-  animation: shimmer 2s ease-in-out infinite;
+  animation: shimmer 3.5s ease-in-out infinite;
 }
 
 /* Pulse animation for variety */
