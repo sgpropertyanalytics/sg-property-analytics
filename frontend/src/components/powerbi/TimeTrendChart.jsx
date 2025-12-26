@@ -19,7 +19,7 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
-import { getPeriod } from '../../schemas/apiContract';
+import { getPeriod, SaleType, SaleTypeLabels } from '../../schemas/apiContract';
 import { transformTimeSeries, logFetchDebug } from '../../adapters';
 
 ChartJS.register(
@@ -130,7 +130,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
     datasets: [
       {
         type: 'bar',
-        label: 'New Sale',
+        label: SaleTypeLabels[SaleType.NEW_SALE],
         data: newSaleCounts,
         backgroundColor: newSaleCounts.map((_, i) => `rgba(33, 52, 72, ${getBarOpacity(i)})`),  // Deep Navy #213448
         borderColor: 'rgba(33, 52, 72, 1)',
@@ -141,7 +141,7 @@ export function TimeTrendChart({ onCrossFilter, onDrillThrough, height = 300 }) 
       },
       {
         type: 'bar',
-        label: 'Resale',
+        label: SaleTypeLabels[SaleType.RESALE],
         data: resaleCounts,
         backgroundColor: resaleCounts.map((_, i) => `rgba(84, 119, 146, ${getBarOpacity(i)})`),  // Ocean Blue #547792
         borderColor: 'rgba(84, 119, 146, 1)',

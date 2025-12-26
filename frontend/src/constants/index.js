@@ -369,6 +369,17 @@ export const SALE_TYPE_OPTIONS = SALE_TYPE_VALUES.map(v => ({
 }));
 
 /**
+ * Sale type filter options for dropdowns with "All" option.
+ * Uses enum values for API compatibility.
+ * Only includes New Sale and Resale (Sub Sale is rare and often excluded from filters).
+ */
+export const SALE_TYPE_FILTER_OPTIONS = [
+  { value: 'all', label: 'All', fullLabel: 'All Sale Types' },
+  { value: SaleType.NEW_SALE, label: 'New', fullLabel: 'New Sale' },
+  { value: SaleType.RESALE, label: 'Resale', fullLabel: 'Resale' },
+];
+
+/**
  * Legacy: DB string values (for backward compatibility during migration)
  * @deprecated Use SALE_TYPE_VALUES with enum values instead
  */

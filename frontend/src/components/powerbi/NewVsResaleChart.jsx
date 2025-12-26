@@ -19,6 +19,7 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import { transformNewVsResaleSeries, logFetchDebug } from '../../adapters';
+import { SaleType, SaleTypeLabels } from '../../schemas/apiContract';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -138,7 +139,7 @@ export function NewVsResaleChart({ height = 350 }) {
     labels,
     datasets: [
       {
-        label: 'New Sale',
+        label: SaleTypeLabels[SaleType.NEW_SALE],
         data: newLaunchPrice,
         borderColor: '#213448',  // Deep Navy - primary palette color
         backgroundColor: 'rgba(33, 52, 72, 0.1)',
