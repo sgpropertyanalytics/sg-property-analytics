@@ -630,7 +630,9 @@ export default function DealCheckerContent() {
                         {/* Row 1: BR, Age, Obs */}
                         <div className="flex items-center gap-3 mt-2 text-xs text-[#547792]">
                           <span>{p.bedroom || '-'}BR</span>
-                          <span>Age: {getAgeBucket(p.median_age, p.is_freehold)}</span>
+                          <span title={p.is_freehold ? 'Freehold (age not available)' : undefined}>
+                            Age: {getAgeBucket(p.median_age, p.is_freehold)}
+                          </span>
                           <span>{(p.transaction_count || 0).toLocaleString()} obs</span>
                         </div>
                         {/* Row 2: Sqft or Volume label */}
@@ -782,7 +784,10 @@ export default function DealCheckerContent() {
                           <td className="px-3 py-2 border-b border-slate-100 text-center text-slate-600">
                             {p.bedroom || '-'}
                           </td>
-                          <td className="px-3 py-2 border-b border-slate-100 text-center text-slate-600">
+                          <td
+                            className="px-3 py-2 border-b border-slate-100 text-center text-slate-600"
+                            title={p.is_freehold ? 'Freehold (age not available)' : undefined}
+                          >
                             {getAgeBucket(p.median_age, p.is_freehold)}
                           </td>
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 font-medium">

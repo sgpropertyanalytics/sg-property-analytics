@@ -1098,6 +1098,177 @@ export const toPsfByPriceBandChartData = (transformedData, bedroomColors = {}) =
 };
 
 // =============================================================================
+// PRICE BY AGE REGION TRANSFORMATION
+// =============================================================================
+
+/**
+ * Transform raw price by age region data for the horizontal grouped bar chart.
+ *
+ * The backend returns data grouped by age bucket, region, and bedroom.
+ * This adapter:
+ * - Validates response structure and API version
+ * - Groups data by (ageBucket x region) for Y-axis categories
+ * - Handles suppressed cells (K-anonymity)
+ *
+ * @param {Object} rawResponse - Raw API response from /api/price-by-age-region
+ * @returns {Object} Transformed data:
+ *   {
+ *     byCategory: Map<categoryKey, Map<bedroom, { p25, p50, p75, suppressed }>>,
+ *     categories: string[],  // Ordered Y-axis labels: "Recently TOP - CCR", etc.
+ *     bedrooms: string[],    // Ordered list of bedrooms with data
+ *     meta: Object,          // API metadata
+ *     hasData: boolean
+ *   }
+ */
+export const transformPriceByAgeRegion = (rawResponse) => {
+  if (!rawResponse) {
+    if (isDev) console.warn('[transformPriceByAgeRegion] Null input');
+    return { byCategory: new Map(), categories: [], bedrooms: [], meta: {}, hasData: false };
+  }
+
+  const data = rawResponse.data;
+  const meta = rawResponse.meta || {};
+
+  // Version gate check
+  if (isDev || isTest) {
+    assertKnownVersion(rawResponse, 'price-by-age-region');
+  }
+
+  if (!Array.isArray(data)) {
+    if (isDev) console.warn('[transformPriceByAgeRegion] Invalid response - data is not an array');
+    return { byCategory: new Map(), categories: [], bedrooms: [], meta, hasData: false };
+  }
+
+  // Define display order
+  const AGE_BUCKET_ORDER = ['recently_top', 'young_resale', 'resale', 'mature_resale'];
+  const REGION_ORDER = ['CCR', 'RCR', 'OCR'];
+  const BEDROOM_ORDER = ['1BR', '2BR', '3BR', '4BR', '5BR+'];
+
+  // Age bucket labels for display
+  const AGE_LABELS = {
+    'recently_top': 'Recently TOP',
+    'young_resale': 'Young Resale',
+    'resale': 'Resale',
+    'mature_resale': 'Mature Resale',
+  };
+
+  // Build category key and group data
+  const byCategory = new Map();
+  const observedCategories = new Set();
+  const observedBedrooms = new Set();
+
+  data.forEach((row) => {
+    const ageBucket = row.ageBucket || row.age_bucket;
+    const region = row.region;
+    const bedroom = row.bedroom;
+
+    if (!ageBucket || !region || !bedroom) return;
+
+    const categoryKey = `${AGE_LABELS[ageBucket] || ageBucket} - ${region}`;
+    observedCategories.add(categoryKey);
+    observedBedrooms.add(bedroom);
+
+    if (!byCategory.has(categoryKey)) {
+      byCategory.set(categoryKey, new Map());
+    }
+
+    byCategory.get(categoryKey).set(bedroom, {
+      p25: row.p25,
+      p50: row.p50,
+      p75: row.p75,
+      observationCount: row.observationCount ?? row.observation_count ?? 0,
+      suppressed: row.suppressed ?? false,
+      ageBucket,
+      region,
+    });
+  });
+
+  // Sort categories: Age bucket order, then region order
+  const categories = [];
+  AGE_BUCKET_ORDER.forEach((bucket) => {
+    REGION_ORDER.forEach((region) => {
+      const key = `${AGE_LABELS[bucket] || bucket} - ${region}`;
+      if (observedCategories.has(key)) {
+        categories.push(key);
+      }
+    });
+  });
+
+  const bedrooms = BEDROOM_ORDER.filter((br) => observedBedrooms.has(br));
+
+  return {
+    byCategory,
+    categories,
+    bedrooms,
+    meta,
+    hasData: data.length > 0,
+  };
+};
+
+/**
+ * Convert transformed price by age region data to Chart.js horizontal bar format.
+ *
+ * Creates floating bar datasets where each bar represents P25-P75 range.
+ *
+ * @param {Object} transformedData - Output from transformPriceByAgeRegion
+ * @param {Object} bedroomColors - Map of bedroom type to { bg, border } colors
+ * @returns {Object} Chart.js compatible data for horizontal bars
+ */
+export const toPriceByAgeRegionChartData = (transformedData, bedroomColors = {}) => {
+  if (!transformedData?.hasData) {
+    return { labels: [], datasets: [] };
+  }
+
+  const { byCategory, categories, bedrooms } = transformedData;
+
+  // Create one dataset per bedroom type
+  const datasets = bedrooms.map((bedroom) => {
+    const colors = bedroomColors[bedroom] || {
+      bg: 'rgba(128, 128, 128, 0.7)',
+      border: 'rgba(128, 128, 128, 1)',
+    };
+
+    // Build data array: one entry per category
+    // For horizontal floating bars, data is [low, high] for each bar
+    const data = categories.map((category) => {
+      const bedroomData = byCategory.get(category)?.get(bedroom);
+
+      if (!bedroomData || bedroomData.suppressed || bedroomData.p25 == null || bedroomData.p75 == null) {
+        return null;
+      }
+
+      return [bedroomData.p25, bedroomData.p75];
+    });
+
+    // Build median markers for P50
+    const p50Values = categories.map((category) => {
+      const bedroomData = byCategory.get(category)?.get(bedroom);
+      if (!bedroomData || bedroomData.suppressed || bedroomData.p50 == null) {
+        return null;
+      }
+      return bedroomData.p50;
+    });
+
+    return {
+      label: bedroom,
+      data,
+      p50Values,
+      backgroundColor: colors.bg,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 2,
+      barPercentage: 0.8,
+      categoryPercentage: 0.9,
+    };
+  });
+
+  return {
+    labels: categories,
+    datasets,
+  };
+};
+
+// =============================================================================
 // EXPORTS
 // =============================================================================
 
@@ -1120,6 +1291,8 @@ export default {
   transformTransactionsList,
   transformPsfByPriceBand,
   toPsfByPriceBandChartData,
+  transformPriceByAgeRegion,
+  toPriceByAgeRegionChartData,
   // Compression analysis
   calculateCompressionScore,
   calculateAverageSpreads,
