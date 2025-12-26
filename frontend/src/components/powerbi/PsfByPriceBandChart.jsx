@@ -16,6 +16,7 @@ import { transformPsfByPriceBand, toPsfByPriceBandChartData } from '../../adapte
 import { QueryState } from '../common/QueryState';
 import { ChartSlot } from '../ui/ChartSlot';
 import { baseChartJsOptions } from '../../constants/chartOptions';
+import { BEDROOM_ORDER } from '../../constants';
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -31,8 +32,6 @@ const BEDROOM_COLORS = {
   '4BR': { bg: 'rgba(17, 43, 60, 0.85)', border: '#112b3c' },     // Navy
   '5BR+': { bg: 'rgba(155, 187, 89, 0.85)', border: '#9bbb59' },  // Green
 };
-
-const BEDROOM_ORDER = ['1BR', '2BR', '3BR', '4BR', '5BR+'];
 
 /**
  * Custom plugin to draw P50 median line markers on floating bars

@@ -7,6 +7,7 @@
  */
 
 import { assertKnownVersion, isDev, isTest } from './validation';
+import { BEDROOM_ORDER } from '../../constants';
 
 // Define price band order for consistent display
 const PRICE_BAND_ORDER = [
@@ -20,9 +21,6 @@ const PRICE_BAND_ORDER = [
   '$4M-5M',
   '$5M+',
 ];
-
-// Define bedroom order
-const BEDROOM_ORDER = ['1BR', '2BR', '3BR', '4BR', '5BR+'];
 
 /**
  * Transform raw PSF by price band data for the grouped floating bar chart.

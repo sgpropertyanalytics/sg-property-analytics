@@ -137,6 +137,30 @@ export const DISTRICT_NAMES = {
   'D28': 'Seletar / Yio Chu Kang',
 };
 
+// =============================================================================
+// REGION CONSTANTS - SINGLE SOURCE OF TRUTH
+// =============================================================================
+
+/**
+ * Market segment regions in standard order
+ */
+export const REGIONS = ['CCR', 'RCR', 'OCR'];
+
+// =============================================================================
+// BEDROOM CLASSIFICATION - SINGLE SOURCE OF TRUTH
+// Mirrors backend/services/classifier.py
+// =============================================================================
+
+/**
+ * Bedroom order for display/sorting (short labels)
+ */
+export const BEDROOM_ORDER = ['1BR', '2BR', '3BR', '4BR', '5BR+'];
+
+/**
+ * Bedroom order as numeric values
+ */
+export const BEDROOM_ORDER_NUMERIC = [1, 2, 3, 4, 5];
+
 // Bedroom labels for display
 export const BEDROOM_LABELS = {
   '1b': '1-Bedroom',
@@ -153,6 +177,164 @@ export const BEDROOM_LABELS_SHORT = {
   3: '3BR',
   4: '4BR',
   5: '5BR+',
+};
+
+// =============================================================================
+// BEDROOM AREA THRESHOLDS (Three-Tier Classification)
+//
+// Background: URA data doesn't include bedroom count. We estimate based on
+// unit area (sqft) with different thresholds for different market segments:
+//
+// - Tier 1: New Sale Post-Harmonization (>= June 2023) - Ultra Compact
+//   After AC ledge removal rules, developers build more compact units
+//
+// - Tier 2: New Sale Pre-Harmonization (< June 2023) - Modern Compact
+//   Modern units but with AC ledges still counted in floor area
+//
+// - Tier 3: Resale (Any Date) - Legacy Sizes
+//   Older properties with larger typical unit sizes
+// =============================================================================
+
+/**
+ * Harmonization date when AC ledge rules changed (affects unit sizes)
+ * June 1, 2023 - BCA directive on excluding AC ledge from GFA
+ */
+export const HARMONIZATION_DATE = new Date('2023-06-01');
+
+/**
+ * Tier 1: New Sale Post-Harmonization (>= June 2023) - Ultra Compact
+ * Format: bedroom_count -> max_sqft (units below this are classified as this bedroom count)
+ */
+export const BEDROOM_THRESHOLDS_TIER1 = {
+  1: 580,   // 1-Bedroom: < 580 sqft
+  2: 780,   // 2-Bedroom: 580 - 780 sqft
+  3: 1150,  // 3-Bedroom: 780 - 1150 sqft
+  4: 1450,  // 4-Bedroom: 1150 - 1450 sqft
+  5: Infinity,  // 5-Bedroom+: >= 1450 sqft
+};
+
+/**
+ * Tier 2: New Sale Pre-Harmonization (< June 2023) - Modern Compact
+ */
+export const BEDROOM_THRESHOLDS_TIER2 = {
+  1: 600,   // 1-Bedroom: < 600 sqft
+  2: 850,   // 2-Bedroom: 600 - 850 sqft
+  3: 1200,  // 3-Bedroom: 850 - 1200 sqft
+  4: 1500,  // 4-Bedroom: 1200 - 1500 sqft
+  5: Infinity,  // 5-Bedroom+: >= 1500 sqft
+};
+
+/**
+ * Tier 3: Resale (Any Date) - Legacy Sizes
+ */
+export const BEDROOM_THRESHOLDS_TIER3 = {
+  1: 600,   // 1-Bedroom: < 600 sqft
+  2: 950,   // 2-Bedroom: 600 - 950 sqft
+  3: 1350,  // 3-Bedroom: 950 - 1350 sqft
+  4: 1650,  // 4-Bedroom: 1350 - 1650 sqft
+  5: Infinity,  // 5-Bedroom+: >= 1650 sqft
+};
+
+/**
+ * Simple fallback thresholds (when sale_type/date unavailable)
+ */
+export const BEDROOM_THRESHOLDS_SIMPLE = {
+  1: 580,   // 1-Bedroom: < 580 sqft
+  2: 800,   // 2-Bedroom: 580 - 800 sqft
+  3: 1200,  // 3-Bedroom: 800 - 1200 sqft
+  4: 1500,  // 4-Bedroom: 1200 - 1500 sqft
+  5: Infinity,  // 5-Bedroom+: >= 1500 sqft
+};
+
+/**
+ * Internal helper: classify bedroom count using given thresholds
+ * @param {number} areaSqft - Unit area in square feet
+ * @param {Object} thresholds - Threshold mapping
+ * @returns {number} Bedroom count (1-5)
+ */
+const classifyWithThresholds = (areaSqft, thresholds) => {
+  if (areaSqft < thresholds[1]) return 1;
+  if (areaSqft < thresholds[2]) return 2;
+  if (areaSqft < thresholds[3]) return 3;
+  if (areaSqft < thresholds[4]) return 4;
+  return 5;
+};
+
+/**
+ * Simple bedroom classification based on unit area only.
+ * Fallback classifier when sale_type and transaction_date unavailable.
+ *
+ * @param {number} areaSqft - Unit area in square feet
+ * @returns {number} Estimated bedroom count (1-5)
+ */
+export const classifyBedroom = (areaSqft) => {
+  return classifyWithThresholds(areaSqft, BEDROOM_THRESHOLDS_SIMPLE);
+};
+
+/**
+ * Three-tier bedroom classification based on sale type and date.
+ *
+ * This is the primary classifier that accounts for:
+ * - Post-harmonization new sales (smaller unit sizes after June 2023)
+ * - Pre-harmonization new sales (modern but with AC ledges)
+ * - Resale units (legacy larger sizes)
+ *
+ * @param {number} areaSqft - Unit area in square feet
+ * @param {string|null} saleType - 'New Sale' or 'Resale' (defaults to Resale if null)
+ * @param {Date|string|null} transactionDate - Transaction date
+ * @returns {number} Estimated bedroom count (1-5)
+ */
+export const classifyBedroomThreeTier = (areaSqft, saleType = null, transactionDate = null) => {
+  const saleTypeStr = (saleType || '').toString().trim() || 'Resale';
+
+  // Parse transaction date
+  let saleDate = null;
+  if (transactionDate) {
+    saleDate = transactionDate instanceof Date
+      ? transactionDate
+      : new Date(transactionDate);
+    if (isNaN(saleDate.getTime())) saleDate = null;
+  }
+
+  // Determine which tier to use
+  if (saleTypeStr === 'New Sale' && saleDate !== null) {
+    if (saleDate >= HARMONIZATION_DATE) {
+      // Tier 1: Post-Harmonization New Sale
+      return classifyWithThresholds(areaSqft, BEDROOM_THRESHOLDS_TIER1);
+    } else {
+      // Tier 2: Pre-Harmonization New Sale
+      return classifyWithThresholds(areaSqft, BEDROOM_THRESHOLDS_TIER2);
+    }
+  }
+  // Tier 3: Resale (or unknown)
+  return classifyWithThresholds(areaSqft, BEDROOM_THRESHOLDS_TIER3);
+};
+
+/**
+ * Get classification tier name (for debugging/display)
+ *
+ * @param {string|null} saleType - 'New Sale' or 'Resale'
+ * @param {Date|string|null} transactionDate - Transaction date
+ * @returns {string} Tier name
+ */
+export const getBedroomClassificationTier = (saleType, transactionDate) => {
+  const saleTypeStr = (saleType || '').toString().trim() || 'Resale';
+
+  let saleDate = null;
+  if (transactionDate) {
+    saleDate = transactionDate instanceof Date
+      ? transactionDate
+      : new Date(transactionDate);
+    if (isNaN(saleDate.getTime())) saleDate = null;
+  }
+
+  if (saleTypeStr === 'New Sale' && saleDate !== null) {
+    if (saleDate >= HARMONIZATION_DATE) {
+      return 'Tier 1: New Sale Post-Harmonization (Ultra Compact)';
+    }
+    return 'Tier 2: New Sale Pre-Harmonization (Modern Compact)';
+  }
+  return 'Tier 3: Resale (Legacy Sizes)';
 };
 
 /**
