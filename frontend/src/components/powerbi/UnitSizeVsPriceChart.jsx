@@ -63,7 +63,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     async (signal) => {
       const params = buildApiParams({
         group_by: 'project,bedroom',
-        metrics: 'count,avg_psf,avg_size',
+        metrics: 'count,avg_price,avg_size',
         limit: 500,  // Top 500 by transaction count (ordered by count DESC)
       });
 
@@ -90,14 +90,14 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
       // Get bedroom count, cap at 5 for "5+ BR"
       const br = Math.min(d.bedroom || d.bedroomCount || 3, 5);
       const avgSize = d.avg_size || d.avgSize;
-      const avgPsf = d.avg_psf || d.avgPsf;
+      const avgPrice = d.avg_price || d.avgPrice;
 
       // Skip if missing required data
-      if (!avgSize || !avgPsf) return;
+      if (!avgSize || !avgPrice) return;
 
       byBedroom[br].push({
-        x: avgSize,
-        y: avgPsf,
+        x: avgPrice,      // X-axis: Transaction price
+        y: avgSize,       // Y-axis: Unit size (sqft)
         project: d.project,
         bedroom: br,
         count: d.count,
@@ -130,7 +130,27 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
           position: 'bottom',
           title: {
             display: true,
-            text: 'Avg Unit Size (sqft)',
+            text: 'Transaction Price ($)',
+            color: '#547792',
+            font: { size: 12 },
+          },
+          grid: { color: 'rgba(148, 180, 193, 0.2)' },
+          ticks: {
+            color: '#547792',
+            callback: (value) => {
+              if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+              if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+              return `$${value}`;
+            },
+          },
+          min: 0,
+        },
+        y: {
+          type: 'linear',
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Unit Size (sqft)',
             color: '#547792',
             font: { size: 12 },
           },
@@ -140,21 +160,6 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
             callback: (value) => value.toLocaleString(),
           },
           min: 0,
-        },
-        y: {
-          type: 'linear',
-          position: 'left',
-          title: {
-            display: true,
-            text: 'Avg PSF ($)',
-            color: '#547792',
-            font: { size: 12 },
-          },
-          grid: { color: 'rgba(148, 180, 193, 0.2)' },
-          ticks: {
-            color: '#547792',
-            callback: (value) => `$${value.toLocaleString()}`,
-          },
         },
       },
       plugins: {
@@ -183,10 +188,13 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
             },
             label: (ctx) => {
               const { bedroom, x, y, count } = ctx.raw;
+              const priceFormatted = x >= 1000000
+                ? `$${(x / 1000000).toFixed(2)}M`
+                : `$${Math.round(x).toLocaleString()}`;
               return [
                 `${BEDROOM_LABELS[bedroom]}`,
-                `Avg Size: ${Math.round(x).toLocaleString()} sqft`,
-                `Avg PSF: $${Math.round(y).toLocaleString()}`,
+                `Avg Price: ${priceFormatted}`,
+                `Avg Size: ${Math.round(y).toLocaleString()} sqft`,
                 `Observations: ${count}`,
               ];
             },
@@ -220,7 +228,7 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
         {/* Header */}
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
           <h3 className="font-semibold text-[#213448]">
-            Unit Size vs PSF by Bedroom
+            Unit Size vs Price by Bedroom
           </h3>
           <p className="text-xs text-[#547792] mt-1">
             Each point represents a project × bedroom aggregate
