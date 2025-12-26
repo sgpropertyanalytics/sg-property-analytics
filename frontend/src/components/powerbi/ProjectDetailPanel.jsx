@@ -16,6 +16,10 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate, getProjectInventory, getDashboard } from '../../api/client';
 import { DISTRICT_NAMES } from '../../constants';
 import { getAggField, AggField } from '../../schemas/apiContract';
+import { SuppressedValue } from '../SuppressedValue';
+
+// K-anonymity threshold for project-level data
+const K_PROJECT_THRESHOLD = 15;
 
 ChartJS.register(
   CategoryScale,
@@ -240,7 +244,7 @@ function ProjectDetailPanelInner({
         yAxisID: 'y',
       },
       {
-        label: 'Transaction Count',
+        label: 'Observations',
         data: trendData.map(d => getAggField(d, AggField.COUNT) || 0),
         borderColor: 'rgba(33, 52, 72, 0.8)',
         backgroundColor: 'rgba(33, 52, 72, 0.1)',
@@ -297,7 +301,7 @@ function ProjectDetailPanelInner({
         type: 'linear',
         display: true,
         position: 'right',
-        title: { display: true, text: 'Transactions' },
+        title: { display: true, text: 'Observations' },
         grid: { drawOnChartArea: false },
       },
     },
@@ -401,7 +405,7 @@ function ProjectDetailPanelInner({
     labels: histogramBuckets.map(b => b.label),
     datasets: [
       {
-        label: 'Transaction Count',
+        label: 'Observation Count',
         data: histogramCounts,
         backgroundColor: histogramCounts.map(c => getHistogramBarColor(c)),
         borderColor: histogramCounts.map(c => getHistogramBarColor(c, 1)),
@@ -424,7 +428,7 @@ function ProjectDetailPanelInner({
           label: (context) => {
             const count = context.parsed.y;
             const pct = histogramTotal > 0 ? ((count / histogramTotal) * 100).toFixed(1) : 0;
-            return [`Transactions: ${count.toLocaleString()}`, `Share: ${pct}%`];
+            return [`Observations: ${count.toLocaleString()}`, `Share: ${pct}%`];
           },
         },
       },
@@ -440,7 +444,7 @@ function ProjectDetailPanelInner({
       },
       y: {
         beginAtZero: true,
-        title: { display: true, text: 'Transaction Count' },
+        title: { display: true, text: 'Observation Count' },
         ticks: {
           callback: (value) => value.toLocaleString(),
         },
@@ -554,7 +558,7 @@ function ProjectDetailPanelInner({
                       <p className="text-xs text-[#547792] mt-1">Secondary market</p>
                     </div>
                     <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
-                      <p className="text-sm text-[#547792]">Total Transactions</p>
+                      <p className="text-sm text-[#547792]">Total Observations</p>
                       <p className="text-2xl font-semibold text-[#213448]">
                         {(salesByType.newSale + salesByType.resale).toLocaleString()}
                       </p>
@@ -623,22 +627,24 @@ function ProjectDetailPanelInner({
                         <tbody>
                           {priceData.map((d) => {
                             const bedroom = getAggField(d, AggField.BEDROOM_COUNT);
-                            const count = getAggField(d, AggField.COUNT);
+                            const count = getAggField(d, AggField.COUNT) || 0;
                             const price25th = getAggField(d, AggField.PRICE_25TH);
                             const medianPrice = getAggField(d, AggField.MEDIAN_PRICE);
                             const price75th = getAggField(d, AggField.PRICE_75TH);
+                            const isSuppressed = count < K_PROJECT_THRESHOLD;
+                            const formatPrice = (v) => v ? `$${(v / 1000000).toFixed(2)}M` : '-';
                             return (
-                              <tr key={bedroom} className="border-b border-[#94B4C1]/20 hover:bg-[#EAE0CF]/20">
+                              <tr key={bedroom} className={`border-b border-[#94B4C1]/20 ${isSuppressed ? 'opacity-60' : 'hover:bg-[#EAE0CF]/20'}`}>
                                 <td className="py-1.5 pr-2 font-medium text-[#213448]">{bedroom >= 5 ? '5BR+' : `${bedroom}BR`}</td>
-                                <td className="py-1.5 px-1 text-right text-[#547792]">{count?.toLocaleString()}</td>
+                                <td className="py-1.5 px-1 text-right text-[#547792]">{count.toLocaleString()}</td>
                                 <td className="py-1.5 px-1 text-right text-[#547792]">
-                                  {price25th ? `$${(price25th / 1000000).toFixed(2)}M` : '-'}
+                                  <SuppressedValue value={price25th} suppressed={isSuppressed} kRequired={K_PROJECT_THRESHOLD} formatter={formatPrice} />
                                 </td>
                                 <td className="py-1.5 px-1 text-right font-medium text-[#213448]">
-                                  {medianPrice ? `$${(medianPrice / 1000000).toFixed(2)}M` : '-'}
+                                  <SuppressedValue value={medianPrice} suppressed={isSuppressed} kRequired={K_PROJECT_THRESHOLD} formatter={formatPrice} />
                                 </td>
                                 <td className="py-1.5 pl-1 text-right text-[#547792]">
-                                  {price75th ? `$${(price75th / 1000000).toFixed(2)}M` : '-'}
+                                  <SuppressedValue value={price75th} suppressed={isSuppressed} kRequired={K_PROJECT_THRESHOLD} formatter={formatPrice} />
                                 </td>
                               </tr>
                             );
@@ -674,7 +680,7 @@ function ProjectDetailPanelInner({
                 </div>
                 {histogramTotal > 0 && (
                   <p className="text-xs text-[#547792] mt-2 text-center">
-                    Total: {histogramTotal.toLocaleString()} transactions
+                    Total: {histogramTotal.toLocaleString()} observations
                   </p>
                 )}
               </div>

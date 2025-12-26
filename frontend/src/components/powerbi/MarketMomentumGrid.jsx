@@ -177,7 +177,7 @@ export function MarketMomentumGrid() {
           {/* Data indicator */}
           <div className="flex flex-wrap items-center gap-x-3 md:gap-x-4 gap-y-1 text-[10px]">
             <span className="text-[#547792] font-medium">
-              {isSaleType.resale(filters.saleType) ? 'Resale Only' : isSaleType.newSale(filters.saleType) ? 'New Sale Only' : 'All Transactions'}
+              {isSaleType.resale(filters.saleType) ? 'Resale Only' : isSaleType.newSale(filters.saleType) ? 'New Sale Only' : 'All Sale Types'}
             </span>
             <span className="text-[#94B4C1]">{ALL_DISTRICTS.length} districts</span>
           </div>

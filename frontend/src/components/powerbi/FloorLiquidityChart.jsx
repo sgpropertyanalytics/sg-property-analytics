@@ -170,7 +170,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
               `P75: $${Math.round(psf75).toLocaleString()}`,
               `Spread: $${Math.round(bandWidth).toLocaleString()}`,
               '',
-              `Transactions: ${count.toLocaleString()}`,
+              `Observations: ${count.toLocaleString()}`,
             ];
           },
         },
@@ -379,7 +379,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
       <div className="shrink-0 min-h-[44px] px-6 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
         <div className="flex items-center gap-4 shrink-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-[#94B4C1]">Total Transactions:</span>
+            <span className="text-[#94B4C1]">Total Observations:</span>
             <span className="text-[#213448] font-bold">{totalTransactions.toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-1.5 border-l border-[#94B4C1]/30 pl-4">

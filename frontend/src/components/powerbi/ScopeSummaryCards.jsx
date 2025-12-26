@@ -2,7 +2,7 @@
  * ScopeSummaryCards - Three-card comparison display for Deal Checker
  *
  * Shows percentile and key stats for three comparison scopes:
- * - Same Project: Transactions in the exact same project
+ * - Same Project: Observations in the exact same project
  * - Within 1km: Nearby projects within 1km radius
  * - Within 2km: Broader area within 2km radius
  */
@@ -165,7 +165,7 @@ export default function ScopeSummaryCards({
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>{bedroom}BR Transactions:</span>
+                    <span>{bedroom}BR Observations:</span>
                     <span className="font-medium text-[#213448]">
                       {scope.transaction_count?.toLocaleString() || 0}
                     </span>

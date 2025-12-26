@@ -3,6 +3,7 @@ import { useAbortableQuery } from '../../hooks';
 import { getHotProjects } from '../../api/client';
 import { BlurredProject, BlurredCurrency } from '../BlurredCell';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { SuppressedValue, ObservationCount, COMPLIANT_LABELS } from '../SuppressedValue';
 
 /**
  * Active New Sales Table - Shows LAUNCHED projects with sales progress
@@ -273,12 +274,17 @@ export function HotProjectsTable({
                     {project.market_segment || '-'}
                   </span>
                   <div className="text-xs text-[#213448] font-medium mt-1">
-                    <BlurredCurrency
+                    <SuppressedValue
                       value={project.median_psf}
-                      masked={project.median_psf_masked}
-                      field="PSF"
-                      source="hot-projects"
-                    /> PSF
+                      suppressed={project.suppressed || (project.units_sold || 0) < 15}
+                      kRequired={15}
+                      formatter={(v) => (
+                        <>
+                          <BlurredCurrency value={v} masked={project.median_psf_masked} field="PSF" source="hot-projects" />
+                          {' PSF'}
+                        </>
+                      )}
+                    />
                   </div>
                 </div>
               </div>
@@ -428,23 +434,37 @@ export function HotProjectsTable({
                       )}
                     </td>
 
-                    {/* Median Price */}
+                    {/* Median Price - K-anonymity suppressed if units_sold < 15 */}
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
-                      <BlurredCurrency
+                      <SuppressedValue
                         value={project.median_price}
-                        masked={project.median_price_masked}
-                        field="median price"
-                        source="hot-projects"
+                        suppressed={project.suppressed || (project.units_sold || 0) < 15}
+                        kRequired={15}
+                        formatter={(v) => (
+                          <BlurredCurrency
+                            value={v}
+                            masked={project.median_price_masked}
+                            field="median price"
+                            source="hot-projects"
+                          />
+                        )}
                       />
                     </td>
 
-                    {/* Median PSF */}
+                    {/* Median PSF - K-anonymity suppressed if units_sold < 15 */}
                     <td className="px-3 py-2 border-b border-slate-100 text-slate-600 text-right text-sm">
-                      <BlurredCurrency
+                      <SuppressedValue
                         value={project.median_psf}
-                        masked={project.median_psf_masked}
-                        field="median PSF"
-                        source="hot-projects"
+                        suppressed={project.suppressed || (project.units_sold || 0) < 15}
+                        kRequired={15}
+                        formatter={(v) => (
+                          <BlurredCurrency
+                            value={v}
+                            masked={project.median_psf_masked}
+                            field="median PSF"
+                            source="hot-projects"
+                          />
+                        )}
                       />
                     </td>
                   </tr>

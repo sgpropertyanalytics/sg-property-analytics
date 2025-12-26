@@ -187,7 +187,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
           label: (context) => {
             const count = context.parsed.y;
             const pct = displayCount > 0 ? ((count / displayCount) * 100).toFixed(1) : 0;
-            return [`Transactions: ${count.toLocaleString()}`, `Share: ${pct}%`];
+            return [`Observations: ${count.toLocaleString()}`, `Share: ${pct}%`];
           },
         },
       },
@@ -212,7 +212,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         beginAtZero: true,
         title: {
           display: true,
-          text: 'Transaction Count',
+          text: 'Observation Count',
         },
         ticks: {
           callback: (value) => value.toLocaleString(),

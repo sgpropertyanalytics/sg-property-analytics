@@ -415,7 +415,7 @@ export function PriceDistributionHeroChart({
     return {
       labels,
       datasets: [{
-        label: 'Transactions',
+        label: 'Observations',
         data: counts,
         backgroundColor: backgroundColors,
         borderColor: borderColors,
@@ -457,7 +457,7 @@ export function PriceDistributionHeroChart({
               ? ((count / totalCount) * 100).toFixed(1)
               : 0;
             const lines = [
-              `Transactions: ${count.toLocaleString()}`,
+              `Observations: ${count.toLocaleString()}`,
               `Share: ${pct}%`
             ];
             if (onBinClick) {
@@ -512,7 +512,7 @@ export function PriceDistributionHeroChart({
         },
         title: {
           display: true,
-          text: 'Transactions',
+          text: 'Observations',
           color: '#547792',
           font: {
             size: 11,

@@ -296,7 +296,7 @@ function HoverCard({ district, data }) {
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-xs text-[#547792]">Transactions</span>
+            <span className="text-xs text-[#547792]">Observations</span>
             <span className="font-semibold text-[#213448] text-xs">
               {data.tx_count?.toLocaleString() || 0}
             </span>

@@ -546,7 +546,7 @@ export default function MarketHeatmap3D() {
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#547792]">Transactions</span>
+                      <span className="text-[#547792]">Observations</span>
                       <span className="font-medium text-white font-mono">
                         {popupInfo.district.tx_count?.toLocaleString() || 0}
                       </span>

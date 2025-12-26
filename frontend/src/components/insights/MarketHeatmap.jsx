@@ -378,7 +378,7 @@ export default function MarketHeatmap() {
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-[#547792]">Transactions</span>
+                          <span className="text-[#547792]">Observations</span>
                           <span className="font-medium text-[#213448] font-mono">
                             {hoveredDistrictData.tx_count?.toLocaleString() ||
                               0}

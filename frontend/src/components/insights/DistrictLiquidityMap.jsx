@@ -319,7 +319,7 @@ function HoverCard({ district, data }) {
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-xs text-[#547792]">Transactions</span>
+            <span className="text-xs text-[#547792]">Observations</span>
             <span className="font-semibold text-[#213448] text-xs">
               {metrics.tx_count?.toLocaleString() || 0}
             </span>
@@ -1260,9 +1260,9 @@ function LiquidityRankingTable({ districtData }) {
                 onClick={() => handleSort('tx_count')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
-                  Transactions
+                  Observations
                   <SortIcon column="tx_count" />
-                  <InfoTooltip text="Total number of unit transactions across all projects in this district." />
+                  <InfoTooltip text="Total number of observations across all projects in this district." />
                 </span>
               </th>
               <th

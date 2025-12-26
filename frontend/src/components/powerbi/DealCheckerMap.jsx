@@ -288,7 +288,7 @@ export default function DealCheckerMap({
               <p>Distance: {(popupInfo.distance_km * 1000).toFixed(0)}m</p>
               {popupInfo.transaction_count > 0 && (
                 <>
-                  <p>Transactions: {popupInfo.transaction_count}</p>
+                  <p>Observations: {popupInfo.transaction_count}</p>
                   {popupInfo.median_price && (
                     <p>Median Price: ${(popupInfo.median_price / 1000000).toFixed(2)}M</p>
                   )}

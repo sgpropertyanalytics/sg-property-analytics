@@ -13,6 +13,10 @@ import { getProjectNames, getDealCheckerMultiScope } from '../../api/client';
 import { PriceDistributionHeroChart } from '../PriceDistributionHeroChart';
 import DealCheckerMap from './DealCheckerMap';
 import ScopeSummaryCards from './ScopeSummaryCards';
+import { SuppressedValue } from '../SuppressedValue';
+
+// K-anonymity threshold for project-level data
+const K_PROJECT_THRESHOLD = 15;
 
 // Format price for display
 const formatPrice = (value) => {
@@ -600,9 +604,23 @@ export default function DealCheckerContent() {
                           </div>
                         </div>
                         <div className="flex justify-between mt-2 text-xs text-[#547792]">
-                          <span>{p.transaction_count || 0} txns</span>
-                          <span>{p.median_price ? `$${(p.median_price / 1000000).toFixed(2)}M` : '-'}</span>
-                          <span>{p.median_sqft ? `${p.median_sqft.toLocaleString()} sqft` : '-'}</span>
+                          <span>{(p.transaction_count || 0).toLocaleString()} obs</span>
+                          <span>
+                            <SuppressedValue
+                              value={p.median_price}
+                              suppressed={(p.transaction_count || 0) < K_PROJECT_THRESHOLD}
+                              kRequired={K_PROJECT_THRESHOLD}
+                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
+                            />
+                          </span>
+                          <span>
+                            <SuppressedValue
+                              value={p.median_sqft}
+                              suppressed={(p.transaction_count || 0) < K_PROJECT_THRESHOLD}
+                              kRequired={K_PROJECT_THRESHOLD}
+                              formatter={(v) => `${v.toLocaleString()} sqft`}
+                            />
+                          </span>
                         </div>
                       </div>
                     );
@@ -638,7 +656,7 @@ export default function DealCheckerContent() {
                         onClick={() => handleProjectsSort('transaction_count')}
                       >
                         <div className="flex items-center justify-end gap-1">
-                          <span>Transactions</span>
+                          <span>Observations</span>
                           <SortIcon column="transaction_count" />
                         </div>
                       </th>
@@ -686,13 +704,23 @@ export default function DealCheckerContent() {
                             {p.distance_km === 0 ? '-' : `${(p.distance_km * 1000).toFixed(0)}m`}
                           </td>
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 font-medium">
-                            {p.transaction_count || 0}
+                            {(p.transaction_count || 0).toLocaleString()}
                           </td>
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
-                            {p.median_price ? `$${(p.median_price / 1000000).toFixed(2)}M` : '-'}
+                            <SuppressedValue
+                              value={p.median_price}
+                              suppressed={(p.transaction_count || 0) < K_PROJECT_THRESHOLD}
+                              kRequired={K_PROJECT_THRESHOLD}
+                              formatter={(v) => `$${(v / 1000000).toFixed(2)}M`}
+                            />
                           </td>
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600">
-                            {p.median_sqft ? p.median_sqft.toLocaleString() : '-'}
+                            <SuppressedValue
+                              value={p.median_sqft}
+                              suppressed={(p.transaction_count || 0) < K_PROJECT_THRESHOLD}
+                              kRequired={K_PROJECT_THRESHOLD}
+                              formatter={(v) => v.toLocaleString()}
+                            />
                           </td>
                         </tr>
                       );
