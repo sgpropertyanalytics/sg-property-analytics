@@ -110,41 +110,21 @@ DISTRICT_NAMES = {
 
 
 # =============================================================================
-# BEDROOM CLASSIFICATION
+# BEDROOM CLASSIFICATION - See services/classifier.py for implementation
 # =============================================================================
-
-def classify_bedroom(area_sqft: float) -> int:
-    """
-    Simple bedroom classification based on unit size.
-
-    NOTE: For accurate classification that accounts for sale type and date,
-    use services.classifier.classify_bedroom_three_tier() instead.
-
-    Args:
-        area_sqft: Unit area in square feet
-
-    Returns:
-        Bedroom count (1-5)
-    """
-    if area_sqft < 580:
-        return 1
-    elif area_sqft < 800:
-        return 2
-    elif area_sqft < 1200:
-        return 3
-    elif area_sqft < 1500:
-        return 4
-    else:
-        return 5
-
-
-BEDROOM_LABELS = {
-    1: '1-Bedroom',
-    2: '2-Bedroom',
-    3: '3-Bedroom',
-    4: '4-Bedroom',
-    5: '5+ Bedroom / Penthouse',
-}
+#
+# SINGLE SOURCE OF TRUTH: services/classifier.py
+#
+# Available functions:
+#   - classify_bedroom(area_sqft) - Simple fallback classifier
+#   - classify_bedroom_three_tier(area_sqft, sale_type, date) - Full 3-tier logic
+#   - get_bedroom_label(bedroom_count) - Get display label
+#
+# Three-tier thresholds account for:
+#   - Tier 1: New Sale Post-Harmonization (>= June 2023) - Ultra Compact
+#   - Tier 2: New Sale Pre-Harmonization (< June 2023) - Modern Compact
+#   - Tier 3: Resale (Any Date) - Legacy Sizes
+#
 
 
 # =============================================================================
