@@ -336,7 +336,37 @@ Filter Params (API):
 Full reference: See .claude/skills/data-standards/SKILL.md
 ```
 
-### Card 12: Bedroom Classification (Three-Tier)
+### Card 12: Creating New Features (MANDATORY)
+
+```
+NEW FEATURE CHECKLIST
+
+Phase 0 - Activate Skills:
+[ ] /dashboard-guardrails, /data-standards, /sql-guardrails
+[ ] /contract-async-guardrails, /api-endpoint-guardrails
+
+Phase 1 - File Structure:
+[ ] Component in components/powerbi/ (or split if >300 lines)
+[ ] Adapter in adapters/ (if new transform needed)
+[ ] Service in services/ (if new backend logic)
+
+Phase 2 - Code Pattern:
+[ ] Import constants (REGIONS, BEDROOM_ORDER, etc.)
+[ ] Import helpers (isSaleType, classifyBedroomThreeTier)
+[ ] Use useAbortableQuery with signal
+[ ] Pass response through adapter
+[ ] Use buildApiParams() for ALL API calls
+
+Phase 3 - Pre-Commit:
+[ ] No hardcoded strings (regions, bedrooms, sale types)
+[ ] Time-series → excludeHighlight: true
+[ ] Drill → LOCAL state (not hierarchyType prop)
+[ ] Test at 375px, 768px, 1440px
+
+Full guide: See Section 4 - Master Guide: Creating a New Feature
+```
+
+### Card 13: Bedroom Classification (Three-Tier)
 
 ```
 BEDROOM CLASSIFICATION USES THREE TIERS!
@@ -706,6 +736,205 @@ frontend/src/
 # 4. IMPLEMENTATION GUIDES
 
 > **Complete implementation patterns**: See [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md#5-implementation-patterns) for full details.
+
+## Master Guide: Creating a New Feature (MANDATORY)
+
+**BEFORE writing any code, complete this checklist:**
+
+### Phase 0: Pre-Flight Checks
+
+```
+REQUIRED SKILLS TO ACTIVATE:
+[ ] /dashboard-guardrails - Before touching any dashboard code
+[ ] /data-standards      - Before any data classification/labels
+[ ] /sql-guardrails      - Before any SQL queries
+[ ] /contract-async-guardrails - Before any frontend data fetching
+[ ] /api-endpoint-guardrails   - Before creating new endpoints
+
+DECISION TREE:
+[ ] Need data? → Use /api/aggregate (don't create endpoint)
+[ ] New metric? → Extend /aggregate
+[ ] Project-scoped? → OK to create dedicated endpoint
+```
+
+### Phase 1: File Structure & Placement
+
+```
+NEW CHART COMPONENT:
+frontend/src/components/powerbi/MyNewChart.jsx  (main component)
+
+IF COMPLEX (>300 lines), SPLIT INTO:
+frontend/src/components/powerbi/MyNewChart/
+├── constants.js        # Colors, labels, thresholds
+├── utils.js            # Helper functions
+├── components.jsx      # Sub-components (tooltip, legend, etc.)
+├── MyNewChart.jsx      # Main orchestrator
+└── index.js            # Re-exports
+
+NEW ADAPTER (if needed):
+frontend/src/adapters/myNewAdapter.js
+
+NEW BACKEND SERVICE (if needed):
+backend/services/my_new_service.py
+```
+
+### Phase 2: Code Structure Template
+
+```jsx
+// frontend/src/components/powerbi/MyNewChart.jsx
+// ============================================
+
+// ============ IMPORTS ============
+import { useState, useEffect, useMemo } from 'react';
+import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
+import { useAbortableQuery } from '../../hooks/useAbortableQuery';
+import { transformTimeSeries } from '../../adapters/aggregateAdapter';
+import apiClient from '../../api/client';
+
+// CONSTANTS - Always import from centralized sources
+import {
+  REGIONS,
+  BEDROOM_ORDER,
+  classifyBedroomThreeTier,
+  getRegionForDistrict,
+} from '../../constants';
+import { isSaleType, SaleType } from '../../schemas/apiContract';
+
+// ============ COMPONENT ============
+export default function MyNewChart() {
+  // 1. FILTER CONTEXT
+  const { buildApiParams, filters, highlight, applyCrossFilter } = usePowerBIFilters();
+
+  // 2. LOCAL STATE (drill level, selections)
+  const [localDrillLevel, setLocalDrillLevel] = useState('year');
+
+  // 3. FILTER KEY (for cache/refetch)
+  const filterKey = useMemo(() =>
+    JSON.stringify({ ...filters, highlight, localDrillLevel }),
+    [filters, highlight, localDrillLevel]
+  );
+
+  // 4. DATA FETCHING (using useAbortableQuery)
+  const { data, loading, error } = useAbortableQuery(
+    async (signal) => {
+      const params = buildApiParams({
+        group_by: `${localDrillLevel},sale_type`,
+        metrics: 'count,median_psf'
+      }, {
+        excludeHighlight: true  // ← If X-axis is TIME
+      });
+
+      const response = await apiClient.get('/api/aggregate', {
+        params,
+        signal  // ← CRITICAL for abort
+      });
+
+      // 5. ADAPTER TRANSFORM
+      return transformTimeSeries(response.data);
+    },
+    [filterKey]  // ← Dependencies
+  );
+
+  // 6. DERIVED DATA (useMemo for expensive transforms)
+  const chartData = useMemo(() => {
+    if (!data?.length) return [];
+    // Use constants for classification
+    return data.map(row => ({
+      ...row,
+      region: getRegionForDistrict(row.district),
+      isNewSale: isSaleType.newSale(row.saleType),  // ← Use helpers
+    }));
+  }, [data]);
+
+  // 7. EVENT HANDLERS
+  const handleBarClick = (value) => {
+    applyCrossFilter('location', 'district', value);
+  };
+
+  // 8. RENDER STATES
+  if (loading) return <div className="animate-pulse h-64 bg-[#EAE0CF]/30 rounded" />;
+  if (error) return <div className="text-red-500">Error loading chart</div>;
+  if (!chartData.length) return <div className="text-[#547792]">No data</div>;
+
+  // 9. RENDER CHART
+  return (
+    <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-4">
+      {/* Chart content */}
+    </div>
+  );
+}
+```
+
+### Phase 3: Pre-Commit Checklist
+
+```
+CODE STRUCTURE:
+[ ] Imports from centralized constants (never hardcoded)
+[ ] Uses useAbortableQuery or useStaleRequestGuard
+[ ] API calls include signal for abort
+[ ] Response passes through adapter
+[ ] Uses isSaleType/isTenure helpers (not === 'New Sale')
+[ ] Uses classifyBedroomThreeTier for bedroom classification
+[ ] Uses REGIONS, BEDROOM_ORDER from constants
+
+FILTER COMPLIANCE:
+[ ] Uses buildApiParams() for ALL API calls
+[ ] If time-series: uses excludeHighlight: true
+[ ] If fact table: uses includeFactFilter: true
+[ ] If drill-capable: uses LOCAL drill state (not global)
+
+STYLING:
+[ ] Uses color palette (#213448, #547792, #94B4C1, #EAE0CF)
+[ ] Touch targets ≥ 44px on mobile
+[ ] Responsive wrapper (not inline chart props)
+
+TESTING:
+[ ] No console errors
+[ ] Works at 375px, 768px, 1440px
+[ ] Filters apply correctly
+[ ] Cross-filter works (if applicable)
+```
+
+### Phase 4: Backend (If New Endpoint Needed)
+
+```python
+# backend/services/my_new_service.py
+# ====================================
+
+from datetime import date
+from sqlalchemy import text
+from models.database import db
+from schemas.api_contract import SaleType  # ← Use contract enums
+from constants import get_region_for_district  # ← Use constants
+
+def get_my_data(
+    district: str = None,
+    date_from: date = None,  # ← Python date, not string
+    sale_type: str = None,
+):
+    """
+    Docstring explaining purpose.
+    """
+    query = text("""
+        SELECT district, COUNT(*) as count, percentile_cont(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
+        FROM transactions
+        WHERE COALESCE(is_outlier, false) = false  -- ← MANDATORY
+          AND (:district IS NULL OR district = :district)
+          AND (:date_from IS NULL OR transaction_date >= :date_from)
+          AND (:sale_type IS NULL OR sale_type = :sale_type)
+        GROUP BY district
+    """)
+
+    params = {
+        "district": district,
+        "date_from": date_from,  # ← date object, not string
+        "sale_type": SaleType.to_db(sale_type) if sale_type else None,
+    }
+
+    return db.session.execute(query, params).fetchall()
+```
+
+---
 
 ## Guide: Adding a New Chart
 
