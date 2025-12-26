@@ -347,6 +347,7 @@ export const FloorDirection = {
   RISING: 'rising',
   WEAKENING: 'weakening',
   FLAT: 'flat',
+  UNKNOWN: 'unknown',
 };
 
 /**
@@ -365,6 +366,7 @@ export const isFloorDirection = {
   rising: (val) => val === FloorDirection.RISING,
   weakening: (val) => val === FloorDirection.WEAKENING,
   flat: (val) => val === FloorDirection.FLAT,
+  unknown: (val) => val === FloorDirection.UNKNOWN,
 };
 
 // =============================================================================

@@ -368,7 +368,7 @@ export function PriceBandChart({
         </div>
 
         {/* Floor trend indicator */}
-        {trend && trend.floor_direction !== 'unknown' && (
+        {trend && !isFloorDirection.unknown(trend.floor_direction) && (
           <div className="flex items-center gap-2 mt-2">
             <span className="text-xs text-[#547792]">Floor trend:</span>
             <span className={`
