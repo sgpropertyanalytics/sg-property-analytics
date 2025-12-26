@@ -336,6 +336,38 @@ export const isPremiumTrend = {
 };
 
 // =============================================================================
+// FLOOR DIRECTION (Price Band Trend)
+// =============================================================================
+
+/**
+ * Floor direction enum values (for price band/floor analysis).
+ * Indicates direction of price floor movement over time.
+ */
+export const FloorDirection = {
+  RISING: 'rising',
+  WEAKENING: 'weakening',
+  FLAT: 'flat',
+};
+
+/**
+ * Display labels for floor direction.
+ */
+export const FloorDirectionLabels = {
+  [FloorDirection.RISING]: '↑ Rising',
+  [FloorDirection.WEAKENING]: '↓ Weakening',
+  [FloorDirection.FLAT]: '→ Stable',
+};
+
+/**
+ * Helpers to check floor direction values.
+ */
+export const isFloorDirection = {
+  rising: (val) => val === FloorDirection.RISING,
+  weakening: (val) => val === FloorDirection.WEAKENING,
+  flat: (val) => val === FloorDirection.FLAT,
+};
+
+// =============================================================================
 // BEDROOM
 // =============================================================================
 

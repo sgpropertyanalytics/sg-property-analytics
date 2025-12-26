@@ -67,6 +67,10 @@ export {
   PremiumTrend,
   PremiumTrendLabels,
   isPremiumTrend,
+  // Floor Direction
+  FloorDirection,
+  FloorDirectionLabels,
+  isFloorDirection,
   // Bedroom
   Bedroom,
 } from './enums';

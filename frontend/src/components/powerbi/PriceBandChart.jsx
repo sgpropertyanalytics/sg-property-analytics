@@ -28,6 +28,7 @@ import {
 } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import { Line } from 'react-chartjs-2';
+import { isFloorDirection, FloorDirectionLabels } from '../../schemas/apiContract';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import { VerdictBadge, VerdictBadgeLarge } from './VerdictBadge';
@@ -372,16 +373,14 @@ export function PriceBandChart({
             <span className="text-xs text-[#547792]">Floor trend:</span>
             <span className={`
               text-xs font-medium px-2 py-0.5 rounded
-              ${trend.floor_direction === 'rising'
+              ${isFloorDirection.rising(trend.floor_direction)
                 ? 'bg-emerald-100 text-emerald-700'
-                : trend.floor_direction === 'weakening'
+                : isFloorDirection.weakening(trend.floor_direction)
                 ? 'bg-red-100 text-red-700'
                 : 'bg-gray-100 text-gray-600'
               }
             `}>
-              {trend.floor_direction === 'rising' && '↑ Rising'}
-              {trend.floor_direction === 'weakening' && '↓ Weakening'}
-              {trend.floor_direction === 'flat' && '→ Stable'}
+              {FloorDirectionLabels[trend.floor_direction] || trend.floor_direction}
               {trend.floor_slope_pct !== null && (
                 <span className="ml-1 opacity-75">
                   ({trend.floor_slope_pct >= 0 ? '+' : ''}{trend.floor_slope_pct.toFixed(1)}%)
