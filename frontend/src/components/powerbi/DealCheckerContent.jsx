@@ -258,11 +258,14 @@ export default function DealCheckerContent() {
   };
 
   // Get all nearby projects for the table (combine 1km and 2km)
+  // Filter out projects with 0 transactions
   const nearbyProjects = useMemo(() => {
     if (!result?.map_data) return [];
     const projects_1km = result.map_data.projects_1km || [];
     const projects_2km = result.map_data.projects_2km || [];
-    return [...projects_1km, ...projects_2km];
+    const allProjects = [...projects_1km, ...projects_2km];
+    // Remove projects with 0 observations
+    return allProjects.filter(p => (p.transaction_count || 0) > 0);
   }, [result?.map_data]);
 
   // Calculate volume thresholds for gradient coloring
@@ -528,27 +531,25 @@ export default function DealCheckerContent() {
             }}
           />
 
-          {/* Map and Nearby Projects Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Map */}
-            <div className="bg-white rounded-lg border border-[#94B4C1]/50">
-              <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-                <h3 className="font-semibold text-[#213448]">Nearby Projects</h3>
-                <p className="text-xs text-[#547792]">
-                  {result.meta?.projects_in_1km || 0} within 1km, {(result.meta?.projects_in_2km || 0) - (result.meta?.projects_in_1km || 0)} in 1-2km ring
-                </p>
-              </div>
-              <div style={{ height: 350 }}>
-                <DealCheckerMap
-                  centerProject={result.project}
-                  projects1km={result.map_data?.projects_1km || []}
-                  projects2km={result.map_data?.projects_2km || []}
-                />
-              </div>
+          {/* Map - Full Width (similar to District Deep Dive) */}
+          <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+            <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-[#94B4C1]/30">
+              <h3 className="text-base sm:text-lg font-bold text-[#213448]">Nearby Projects Map</h3>
+              <p className="text-[10px] sm:text-xs text-[#547792]">
+                {result.meta?.projects_in_1km || 0} projects within 1km, {(result.meta?.projects_in_2km || 0) - (result.meta?.projects_in_1km || 0)} in 1-2km ring
+              </p>
             </div>
+            <div className="relative h-[50vh] min-h-[400px] md:h-[55vh] md:min-h-[450px]">
+              <DealCheckerMap
+                centerProject={result.project}
+                projects1km={result.map_data?.projects_1km || []}
+                projects2km={result.map_data?.projects_2km || []}
+              />
+            </div>
+          </div>
 
-            {/* Nearby Projects Table */}
-            <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+          {/* Nearby Projects Table - Full Width Below Map */}
+          <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-[#94B4C1]/30">
                 <div className="flex items-center justify-between">
                   <div>
@@ -736,7 +737,6 @@ export default function DealCheckerContent() {
                 </table>
               </div>
             </div>
-          </div>
         </>
       )}
 
