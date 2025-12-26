@@ -468,9 +468,10 @@ describe('Empty dataset handling', () => {
 
 describe('formatPrice', () => {
   test('formats millions correctly', () => {
-    expect(formatPrice(1000000)).toBe('$1.0M');
-    expect(formatPrice(1500000)).toBe('$1.5M');
-    expect(formatPrice(2345678)).toBe('$2.3M');
+    // 2 decimals for millions (user requested for price precision)
+    expect(formatPrice(1000000)).toBe('$1.00M');
+    expect(formatPrice(1500000)).toBe('$1.50M');
+    expect(formatPrice(2345678)).toBe('$2.35M');
   });
 
   test('formats thousands correctly', () => {
@@ -561,7 +562,8 @@ describe('transformDistributionSeries', () => {
     const result = transformDistributionSeries(data);
 
     expect(result.bins[0].label).toBe('$500K-$600K');
-    expect(result.bins[1].label).toBe('$1.5M-$2.0M');
+    // 2 decimals for millions (user requested for price precision)
+    expect(result.bins[1].label).toBe('$1.50M-$2.00M');
   });
 
   test('handles missing count gracefully', () => {
