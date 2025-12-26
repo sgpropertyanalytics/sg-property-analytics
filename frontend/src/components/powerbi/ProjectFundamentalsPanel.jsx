@@ -8,6 +8,8 @@
  * - District/Tenure
  */
 
+import { TenureLabels, Tenure } from '../../schemas/apiContract';
+
 // Single stat card component
 function StatCard({ label, value, subtext, isUnavailable = false }) {
   return (
@@ -100,8 +102,9 @@ export default function ProjectFundamentalsPanel({
       return { value: district || 'N/A', subtext: 'District', isUnavailable: !district };
     }
     // Extract key info from tenure string (e.g., "99 yrs lease commencing from 2022")
-    if (tenure.includes('Freehold')) {
-      return { value: 'Freehold', subtext: district || '' };
+    const freeholdLabel = TenureLabels[Tenure.FREEHOLD];
+    if (tenure.includes(freeholdLabel)) {
+      return { value: freeholdLabel, subtext: district || '' };
     }
     const match = tenure.match(/(\d+)\s*yrs?\s*lease/i);
     if (match) {
