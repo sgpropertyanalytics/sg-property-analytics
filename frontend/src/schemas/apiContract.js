@@ -232,8 +232,8 @@ export const FloorLevelLabels = {
  * This is "lease age" (years since lease commencement), NOT building age.
  *
  * IMPORTANT:
- * - Freehold properties are excluded from age-based filtering
  * - new_sale is a market state (0 resale transactions), not age-based
+ * - freehold is tenure-based (no lease), not age-based
  * - Age boundaries use exclusive upper bounds: [min, max)
  */
 export const PropertyAgeBucket = {
@@ -242,6 +242,7 @@ export const PropertyAgeBucket = {
   YOUNG_RESALE: 'young_resale',
   RESALE: 'resale',
   MATURE_RESALE: 'mature_resale',
+  FREEHOLD: 'freehold',
 };
 
 /**
@@ -253,6 +254,7 @@ export const PropertyAgeBucketLabels = {
   [PropertyAgeBucket.YOUNG_RESALE]: 'Young Resale (8-15 years)',
   [PropertyAgeBucket.RESALE]: 'Resale (15-25 years)',
   [PropertyAgeBucket.MATURE_RESALE]: 'Mature Resale (25+ years)',
+  [PropertyAgeBucket.FREEHOLD]: 'Freehold',
 };
 
 /**
@@ -264,6 +266,7 @@ export const PropertyAgeBucketLabelsShort = {
   [PropertyAgeBucket.YOUNG_RESALE]: '8-15yr',
   [PropertyAgeBucket.RESALE]: '15-25yr',
   [PropertyAgeBucket.MATURE_RESALE]: '25yr+',
+  [PropertyAgeBucket.FREEHOLD]: 'FH',
 };
 
 /**
@@ -275,8 +278,9 @@ export const isPropertyAgeBucket = {
   youngResale: (val) => val === PropertyAgeBucket.YOUNG_RESALE,
   resale: (val) => val === PropertyAgeBucket.RESALE,
   matureResale: (val) => val === PropertyAgeBucket.MATURE_RESALE,
+  freehold: (val) => val === PropertyAgeBucket.FREEHOLD,
   // Utility helpers
-  isAgeBased: (val) => val !== PropertyAgeBucket.NEW_SALE,
+  isAgeBased: (val) => ![PropertyAgeBucket.NEW_SALE, PropertyAgeBucket.FREEHOLD].includes(val),
   isYoung: (val) => [PropertyAgeBucket.RECENTLY_TOP, PropertyAgeBucket.YOUNG_RESALE].includes(val),
   isMature: (val) => [PropertyAgeBucket.RESALE, PropertyAgeBucket.MATURE_RESALE].includes(val),
 };

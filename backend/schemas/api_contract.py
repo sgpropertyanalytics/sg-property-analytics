@@ -59,6 +59,7 @@ CONTRACT_SCHEMA_HASHES = {
     'price_bands': 'pb:v3:bands|latest|trend|verdict|dataQuality',
     'exit_queue': 'eq:v3:fundamentals|resaleMetrics|riskAssessment|gatingFlags',
     'psf_by_price_band': 'psfpb:v3:priceBand|bedroom|p25|p50|p75|observationCount|suppressed',
+    'price_by_age_region': 'pbar:v3:ageBucket|region|bedroom|p25|p50|p75|observationCount|suppressed',
 }
 
 
@@ -202,7 +203,6 @@ class PropertyAgeBucket:
     This is "lease age" (years since lease commencement), NOT building age.
 
     IMPORTANT:
-    - Freehold properties are EXCLUDED from age-based filters
     - Age boundaries use exclusive upper bounds: [min, max)
 
     Buckets:
@@ -211,14 +211,16 @@ class PropertyAgeBucket:
     - young_resale: 8-15 years since lease start
     - resale: 15-25 years since lease start
     - mature_resale: 25+ years since lease start
+    - freehold: Freehold properties (no lease)
     """
     NEW_SALE = 'new_sale'
     RECENTLY_TOP = 'recently_top'
     YOUNG_RESALE = 'young_resale'
     RESALE = 'resale'
     MATURE_RESALE = 'mature_resale'
+    FREEHOLD = 'freehold'
 
-    ALL = [NEW_SALE, RECENTLY_TOP, YOUNG_RESALE, RESALE, MATURE_RESALE]
+    ALL = [NEW_SALE, RECENTLY_TOP, YOUNG_RESALE, RESALE, MATURE_RESALE, FREEHOLD]
 
     LABELS = {
         NEW_SALE: 'New Sale (No Resales Yet)',
@@ -226,6 +228,7 @@ class PropertyAgeBucket:
         YOUNG_RESALE: 'Young Resale (8-15 years)',
         RESALE: 'Resale (15-25 years)',
         MATURE_RESALE: 'Mature Resale (25+ years)',
+        FREEHOLD: 'Freehold',
     }
 
     LABELS_SHORT = {
@@ -234,6 +237,7 @@ class PropertyAgeBucket:
         YOUNG_RESALE: '8-15yr',
         RESALE: '15-25yr',
         MATURE_RESALE: '25yr+',
+        FREEHOLD: 'FH',
     }
 
     # Age boundaries: (min_inclusive, max_exclusive)
@@ -1912,6 +1916,148 @@ def serialize_psf_by_price_band(
         },
         'apiContractVersion': API_CONTRACT_VERSION,
         'contractHash': get_schema_hash('psf_by_price_band'),
+    }
+
+    if meta:
+        response_meta.update(meta)
+
+    return {
+        'data': serialized,
+        'meta': response_meta,
+    }
+
+
+# =============================================================================
+# PRICE BY AGE REGION SERIALIZATION
+# =============================================================================
+
+class PriceByAgeRegionFields:
+    """API response field names for price by age region data."""
+    AGE_BUCKET = 'ageBucket'
+    AGE_BUCKET_LABEL = 'ageBucketLabel'
+    REGION = 'region'
+    BEDROOM = 'bedroom'
+    BEDROOM_COUNT = 'bedroomCount'
+    P25 = 'p25'
+    P50 = 'p50'
+    P75 = 'p75'
+    OBSERVATION_COUNT = 'observationCount'
+    SUPPRESSED = 'suppressed'
+
+
+# K-anonymity threshold for price by age region (same as PSF by price band)
+PRICE_BY_AGE_REGION_K_THRESHOLD = 15
+
+
+def apply_price_by_age_region_k_anonymity(rows: list) -> list:
+    """
+    Apply K-anonymity to price by age region data.
+
+    Suppresses cells with fewer than K observations by setting
+    p25, p50, p75 to None and suppressed to True.
+
+    Args:
+        rows: List of dicts from SQL query with keys:
+              age_bucket, region, bedroom_group, observation_count, p25, p50, p75
+
+    Returns:
+        List of dicts with K-anonymity applied and camelCase field names
+    """
+    result = []
+    for row in rows:
+        obs_count = row.get('observation_count', 0)
+        age_bucket = row.get('age_bucket')
+        region = row.get('region')
+        bedroom = row.get('bedroom_group')
+
+        # Common fields for both suppressed and non-suppressed
+        base_row = {
+            'ageBucket': age_bucket,
+            'ageBucketLabel': PropertyAgeBucket.get_label(age_bucket, short=True),
+            'region': region,
+            'bedroom': _bedroom_label(bedroom),
+            'bedroomCount': bedroom,
+            'observationCount': obs_count,
+        }
+
+        if obs_count < PRICE_BY_AGE_REGION_K_THRESHOLD:
+            result.append({
+                **base_row,
+                'p25': None,
+                'p50': None,
+                'p75': None,
+                'suppressed': True
+            })
+        else:
+            result.append({
+                **base_row,
+                'p25': round(row['p25'], 0) if row.get('p25') is not None else None,
+                'p50': round(row['p50'], 0) if row.get('p50') is not None else None,
+                'p75': round(row['p75'], 0) if row.get('p75') is not None else None,
+                'suppressed': False
+            })
+    return result
+
+
+def serialize_price_by_age_region_row(
+    row: Dict[str, Any],
+    include_deprecated: bool = True
+) -> Dict[str, Any]:
+    """Serialize a single price by age region row to API v2 schema."""
+    v2_row = {
+        PriceByAgeRegionFields.AGE_BUCKET: row['ageBucket'],
+        PriceByAgeRegionFields.AGE_BUCKET_LABEL: row['ageBucketLabel'],
+        PriceByAgeRegionFields.REGION: row['region'],
+        PriceByAgeRegionFields.BEDROOM: row['bedroom'],
+        PriceByAgeRegionFields.BEDROOM_COUNT: row['bedroomCount'],
+        PriceByAgeRegionFields.P25: row['p25'],
+        PriceByAgeRegionFields.P50: row['p50'],
+        PriceByAgeRegionFields.P75: row['p75'],
+        PriceByAgeRegionFields.OBSERVATION_COUNT: row['observationCount'],
+        PriceByAgeRegionFields.SUPPRESSED: row['suppressed'],
+    }
+
+    if include_deprecated:
+        # v1 snake_case fields for backwards compatibility
+        v2_row.update({
+            'age_bucket': row['ageBucket'],
+            'age_bucket_label': row['ageBucketLabel'],
+            'bedroom_count': row['bedroomCount'],
+            'observation_count': row['observationCount'],
+        })
+
+    return v2_row
+
+
+def serialize_price_by_age_region(
+    data: list,
+    meta: Optional[Dict[str, Any]] = None,
+    include_deprecated: bool = True
+) -> Dict[str, Any]:
+    """
+    Serialize price by age region response with v2 support.
+
+    Args:
+        data: List of dicts (after K-anonymity applied)
+        meta: Optional metadata dict
+        include_deprecated: If True, include v1 snake_case fields
+
+    Returns:
+        Complete response dict with serialized data and meta
+    """
+    serialized = [
+        serialize_price_by_age_region_row(row, include_deprecated=include_deprecated)
+        for row in data
+    ]
+
+    response_meta = {
+        'kAnonymity': {
+            'threshold': PRICE_BY_AGE_REGION_K_THRESHOLD,
+            'level': 'age_bucket_region_bedroom',
+            'message': 'Data aggregated to protect privacy. Groups with fewer than 15 observations are suppressed.'
+        },
+        'apiContractVersion': API_CONTRACT_VERSION,
+        'contractHash': get_schema_hash('price_by_age_region'),
     }
 
     if meta:

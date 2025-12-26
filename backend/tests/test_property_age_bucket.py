@@ -22,7 +22,7 @@ class TestPropertyAgeBucketEnum:
 
         expected = [
             'new_sale', 'recently_top',
-            'young_resale', 'resale', 'mature_resale'
+            'young_resale', 'resale', 'mature_resale', 'freehold'
         ]
         assert set(PropertyAgeBucket.ALL) == set(expected)
 

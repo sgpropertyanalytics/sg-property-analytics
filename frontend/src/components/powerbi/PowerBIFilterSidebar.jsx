@@ -453,7 +453,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           onToggle={() => toggleSection('propertyDetails')}
           activeCount={filters.propertyAgeBucket ? 1 : 0}
         >
-          {/* Property Age Bucket Buttons - Two rows */}
+          {/* Property Age Bucket Buttons - Two rows of 3 */}
           <div className="grid grid-cols-3 gap-1.5 mb-1.5">
             {/* First row: New, 4-8yr, 8-15yr */}
             {(filterOptions.propertyAgeBuckets?.length > 0
@@ -483,13 +483,14 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
               );
             })}
           </div>
-          <div className="grid grid-cols-2 gap-1.5">
-            {/* Second row: 15-25yr, 25yr+ */}
+          <div className="grid grid-cols-3 gap-1.5">
+            {/* Second row: 15-25yr, 25yr+, FH */}
             {(filterOptions.propertyAgeBuckets?.length > 0
-              ? filterOptions.propertyAgeBuckets.slice(3, 5)
+              ? filterOptions.propertyAgeBuckets.slice(3, 6)
               : [
                   { value: PropertyAgeBucket.RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.RESALE, true) },
                   { value: PropertyAgeBucket.MATURE_RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.MATURE_RESALE, true) },
+                  { value: PropertyAgeBucket.FREEHOLD, label: getPropertyAgeBucketLabel(PropertyAgeBucket.FREEHOLD, true) },
                 ]
             ).map(bucket => {
               const isSelected = filters.propertyAgeBucket === bucket.value;
@@ -511,9 +512,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
               );
             })}
           </div>
-          <p className="text-[10px] text-slate-500 mt-1.5 italic">
-            Based on lease commencement year.
-          </p>
         </FilterSection>
       </div>
 
