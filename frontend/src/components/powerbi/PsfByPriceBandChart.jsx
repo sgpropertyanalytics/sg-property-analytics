@@ -117,6 +117,89 @@ const verticalSeparatorPlugin = {
 };
 
 /**
+ * Region colors for CCR/RCR/OCR shading
+ */
+const REGION_COLORS = {
+  CCR: 'rgba(33, 52, 72, 0.85)',    // Deep Navy
+  RCR: 'rgba(84, 119, 146, 0.85)',  // Ocean Blue
+  OCR: 'rgba(148, 180, 193, 0.85)', // Sky Blue
+};
+
+/**
+ * Custom plugin to draw region indicator stripe at bottom of each bar
+ * Shows dominant region with a thin colored stripe
+ */
+const regionIndicatorPlugin = {
+  id: 'regionIndicator',
+  afterDatasetsDraw(chart, args, options) {
+    const { ctx, scales } = chart;
+    const yScale = scales.y;
+
+    if (!options?.transformedData) return;
+
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      const meta = chart.getDatasetMeta(datasetIndex);
+      if (!meta.visible) return;
+
+      meta.data.forEach((bar, index) => {
+        if (!bar || !dataset.data[index]) return;
+
+        const priceBand = chart.data.labels[index];
+        const bedroom = dataset.label;
+        const bedroomData = options.transformedData?.byPriceBand?.get(priceBand)?.get(bedroom);
+
+        if (!bedroomData) return;
+
+        const ccrCount = bedroomData.ccrCount || 0;
+        const rcrCount = bedroomData.rcrCount || 0;
+        const ocrCount = bedroomData.ocrCount || 0;
+        const total = ccrCount + rcrCount + ocrCount;
+
+        if (total === 0) return;
+
+        // Draw a thin stripe at the bottom of the bar showing region mix
+        const barWidth = bar.width;
+        const barX = bar.x;
+        const [p25] = dataset.data[index];
+        const barBottom = yScale.getPixelForValue(p25);
+        const stripeHeight = 4;
+
+        // Calculate widths for each region
+        const ccrWidth = (ccrCount / total) * barWidth;
+        const rcrWidth = (rcrCount / total) * barWidth;
+        const ocrWidth = (ocrCount / total) * barWidth;
+
+        let currentX = barX - barWidth / 2;
+
+        ctx.save();
+
+        // Draw CCR portion
+        if (ccrWidth > 0) {
+          ctx.fillStyle = REGION_COLORS.CCR;
+          ctx.fillRect(currentX, barBottom - stripeHeight, ccrWidth, stripeHeight);
+          currentX += ccrWidth;
+        }
+
+        // Draw RCR portion
+        if (rcrWidth > 0) {
+          ctx.fillStyle = REGION_COLORS.RCR;
+          ctx.fillRect(currentX, barBottom - stripeHeight, rcrWidth, stripeHeight);
+          currentX += rcrWidth;
+        }
+
+        // Draw OCR portion
+        if (ocrWidth > 0) {
+          ctx.fillStyle = REGION_COLORS.OCR;
+          ctx.fillRect(currentX, barBottom - stripeHeight, ocrWidth, stripeHeight);
+        }
+
+        ctx.restore();
+      });
+    });
+  },
+};
+
+/**
  * Calculate best value zone - lowest median PSF with tight IQR (low volatility)
  */
 const findBestValueZone = (transformedData) => {
@@ -135,6 +218,16 @@ const findBestValueZone = (transformedData) => {
       const iqr = data.p75 - data.p25;
       const iqrPercent = (iqr / data.p50) * 100; // IQR as percentage of median
 
+      // Calculate dominant region
+      const ccrCount = data.ccrCount || 0;
+      const rcrCount = data.rcrCount || 0;
+      const ocrCount = data.ocrCount || 0;
+      const total = ccrCount + rcrCount + ocrCount;
+      const dominantRegion = total > 0 ? (
+        ccrCount >= rcrCount && ccrCount >= ocrCount ? 'CCR' :
+        rcrCount >= ocrCount ? 'RCR' : 'OCR'
+      ) : null;
+
       candidates.push({
         priceBand,
         bedroom,
@@ -142,6 +235,8 @@ const findBestValueZone = (transformedData) => {
         iqr,
         iqrPercent,
         observationCount: data.observationCount,
+        avgAge: data.avgAge,
+        dominantRegion,
         // Lower score = better value (low median + low volatility)
         // Normalize: p50 score + iqr penalty
         score: data.p50 + (iqrPercent * 10), // Weight volatility
@@ -362,6 +457,11 @@ export function PsfByPriceBandChart({ height = 350 }) {
               const iqr = p75 - p25;
               const iqrPercent = ((iqr / p50) * 100).toFixed(1);
 
+              // Get observation count and other data from transformed data
+              const priceBand = chartData.labels[ctx.dataIndex];
+              const bedroom = ctx.dataset.label;
+              const bedroomData = transformedData?.byPriceBand?.get(priceBand)?.get(bedroom);
+
               const lines = [
                 `P75: $${Math.round(p75).toLocaleString()} PSF`,
                 `P50: $${Math.round(p50).toLocaleString()} PSF (median)`,
@@ -369,10 +469,29 @@ export function PsfByPriceBandChart({ height = 350 }) {
                 `Spread: ${iqrPercent}% (${iqr < 300 ? 'tight' : iqr < 500 ? 'moderate' : 'wide'})`,
               ];
 
-              // Get observation count from transformed data
-              const priceBand = chartData.labels[ctx.dataIndex];
-              const bedroom = ctx.dataset.label;
-              const bedroomData = transformedData?.byPriceBand?.get(priceBand)?.get(bedroom);
+              // Add average property age if available
+              if (bedroomData?.avgAge != null) {
+                const ageLabel = bedroomData.avgAge < 5 ? 'New' :
+                                 bedroomData.avgAge < 10 ? 'Young' :
+                                 bedroomData.avgAge < 20 ? 'Mature' : 'Older';
+                lines.push(`Avg Age: ${bedroomData.avgAge.toFixed(0)} yrs (${ageLabel})`);
+              }
+
+              // Add region breakdown
+              const ccrCount = bedroomData?.ccrCount || 0;
+              const rcrCount = bedroomData?.rcrCount || 0;
+              const ocrCount = bedroomData?.ocrCount || 0;
+              const total = ccrCount + rcrCount + ocrCount;
+              if (total > 0) {
+                const ccrPct = Math.round((ccrCount / total) * 100);
+                const rcrPct = Math.round((rcrCount / total) * 100);
+                const ocrPct = Math.round((ocrCount / total) * 100);
+                // Show dominant region
+                const dominant = ccrPct >= rcrPct && ccrPct >= ocrPct ? 'CCR' :
+                                 rcrPct >= ocrPct ? 'RCR' : 'OCR';
+                lines.push(`Region: ${ccrPct}% CCR | ${rcrPct}% RCR | ${ocrPct}% OCR`);
+              }
+
               if (bedroomData?.observationCount) {
                 lines.push(`Based on ${bedroomData.observationCount} observations`);
               }
@@ -482,14 +601,25 @@ export function PsfByPriceBandChart({ height = 350 }) {
               </span>{' '}
               <span className="text-[#213448] font-medium">{bestValue.best.bedroom}</span> at{' '}
               <span className="text-[#213448] font-medium">{bestValue.best.priceBand}</span>
-              {' '}&mdash; ${Math.round(bestValue.best.p50).toLocaleString()} PSF median with{' '}
-              {bestValue.best.iqrPercent < 15 ? 'tight' : bestValue.best.iqrPercent < 25 ? 'moderate' : 'wide'} spread
-              ({bestValue.best.iqrPercent.toFixed(0)}% IQR)
+              {' '}&mdash; ${Math.round(bestValue.best.p50).toLocaleString()} PSF median
+              {bestValue.best.avgAge != null && (
+                <span className="text-[#547792]">
+                  {' '}| Avg {Math.round(bestValue.best.avgAge)}yr old
+                </span>
+              )}
+              {bestValue.best.dominantRegion && (
+                <span className="text-[#547792]">
+                  {' '}| Mostly {bestValue.best.dominantRegion}
+                </span>
+              )}
+              <span className="text-[#94B4C1]">
+                {' '}({bestValue.best.iqrPercent < 15 ? 'tight' : bestValue.best.iqrPercent < 25 ? 'moderate' : 'wide'} spread)
+              </span>
             </p>
           ) : (
             <p className="text-xs text-[#547792] leading-relaxed">
               <span className="font-medium text-[#213448]">How to read:</span>{' '}
-              Each bar shows P25-P75 range. White line = median (P50). Taller bars = higher variance.
+              Each bar shows P25-P75 range. White line = median (P50). Colored stripe = region mix.
             </p>
           )}
         </div>
@@ -499,10 +629,33 @@ export function PsfByPriceBandChart({ height = 350 }) {
           <Bar
             ref={chartRef}
             data={chartData}
-            options={options}
-            plugins={[medianLinePlugin, verticalSeparatorPlugin]}
+            options={{
+              ...options,
+              plugins: {
+                ...options.plugins,
+                regionIndicator: { transformedData },
+              },
+            }}
+            plugins={[medianLinePlugin, verticalSeparatorPlugin, regionIndicatorPlugin]}
           />
         </ChartSlot>
+
+        {/* Region Legend */}
+        <div className="px-4 py-1.5 bg-[#EAE0CF]/10 border-t border-[#94B4C1]/20 shrink-0 flex items-center justify-center gap-4 text-[10px] text-[#547792]">
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-2 rounded-sm" style={{ backgroundColor: REGION_COLORS.CCR }} />
+            CCR
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-2 rounded-sm" style={{ backgroundColor: REGION_COLORS.RCR }} />
+            RCR
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-2 rounded-sm" style={{ backgroundColor: REGION_COLORS.OCR }} />
+            OCR
+          </span>
+          <span className="text-[#94B4C1] ml-2">← Bar bottom shows region mix</span>
+        </div>
 
         {/* Footer */}
         <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">

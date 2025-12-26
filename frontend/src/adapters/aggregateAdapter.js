@@ -996,7 +996,7 @@ export const transformPsfByPriceBand = (rawResponse) => {
       byPriceBand.set(priceBand, new Map());
     }
 
-    // Store bedroom data
+    // Store bedroom data with age and region breakdown
     byPriceBand.get(priceBand).set(bedroom, {
       p25,
       p50,
@@ -1006,6 +1006,11 @@ export const transformPsfByPriceBand = (rawResponse) => {
       suppressed,
       priceBandMin: row.priceBandMin ?? row.price_band_min,
       priceBandMax: row.priceBandMax ?? row.price_band_max,
+      // New fields: average property age and region breakdown
+      avgAge: row.avgAge ?? row.avg_age ?? null,
+      ccrCount: row.ccrCount ?? row.ccr_count ?? 0,
+      rcrCount: row.rcrCount ?? row.rcr_count ?? 0,
+      ocrCount: row.ocrCount ?? row.ocr_count ?? 0,
     });
   });
 
