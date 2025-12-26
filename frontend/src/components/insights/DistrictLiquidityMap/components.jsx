@@ -534,7 +534,7 @@ export function LiquidityRankingTable({ districtData }) {
               </div>
 
               {/* Area name */}
-              <div className="text-xs text-[#547792] mb-2 truncate">{district.full_name}</div>
+              <div className="text-xs text-[#213448] mb-2 truncate">{district.full_name}</div>
 
               {/* Key Metrics Grid - 4 columns with Score first */}
               <div className="grid grid-cols-4 gap-1.5 text-center">
@@ -566,14 +566,14 @@ export function LiquidityRankingTable({ districtData }) {
                 </div>
                 <div className="bg-[#EAE0CF]/30 rounded p-1.5">
                   <div className="text-[10px] text-[#547792]">Spread</div>
-                  <div className="text-[10px] text-[#547792]">
+                  <div className="text-[10px] text-[#213448]">
                     {getSpreadLabel(m.fragility_label)}
                   </div>
                 </div>
               </div>
 
               {/* Secondary row: Z-score, New/Resale % */}
-              <div className="flex justify-between mt-2 text-[10px] text-[#547792]">
+              <div className="flex justify-between mt-2 text-[10px] text-[#213448]">
                 <span>
                   Z:{' '}
                   <span
@@ -805,7 +805,7 @@ export function LiquidityRankingTable({ districtData }) {
                     title={`${district.district_id} - ${district.full_name}`}
                   >
                     <span className="font-semibold">{district.district_id}</span>
-                    <span className="text-[#547792] ml-1">- {district.full_name}</span>
+                    <span className="ml-1">- {district.full_name}</span>
                   </td>
 
                   {/* Region Badge */}
@@ -818,15 +818,15 @@ export function LiquidityRankingTable({ districtData }) {
                   </td>
 
                   {/* Project Count (Market Structure - Combined) */}
-                  <td className="px-3 py-2 text-right text-[#547792]">{m.project_count || 0}</td>
+                  <td className="px-3 py-2 text-right text-[#213448]">{m.project_count || 0}</td>
 
                   {/* New Sale % (Market Structure - Combined) */}
-                  <td className="px-3 py-2 text-right text-[#547792]">
+                  <td className="px-3 py-2 text-right text-[#213448]">
                     {m.new_sale_pct?.toFixed(0) || '0'}%
                   </td>
 
                   {/* Resale % (Market Structure - Combined) */}
-                  <td className="px-3 py-2 text-right text-[#547792]">
+                  <td className="px-3 py-2 text-right text-[#213448]">
                     {m.resale_pct?.toFixed(0) || '0'}%
                   </td>
 
@@ -869,7 +869,7 @@ export function LiquidityRankingTable({ districtData }) {
                           ? 'text-emerald-600'
                           : (m.z_score || 0) <= -0.5
                             ? 'text-rose-600'
-                            : 'text-[#547792]'
+                            : 'text-[#213448]'
                       }`}
                     >
                       {m.z_score?.toFixed(2) || '-'}
@@ -877,17 +877,17 @@ export function LiquidityRankingTable({ districtData }) {
                   </td>
 
                   {/* Concentration Risks Group - Spread (Resale-only) */}
-                  <td className="px-3 py-2 text-center text-[#547792] bg-rose-50/40">
+                  <td className="px-3 py-2 text-center text-[#213448] bg-rose-50/40">
                     {getSpreadLabel(m.fragility_label)}
                   </td>
 
                   {/* Concentration Risks Group - Gini Index (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-[#547792] bg-rose-50/40">
+                  <td className="px-3 py-2 text-right text-[#213448] bg-rose-50/40">
                     {m.concentration_gini?.toFixed(2) || '-'}
                   </td>
 
                   {/* Concentration Risks Group - Top Project Share (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-[#547792] bg-rose-50/40">
+                  <td className="px-3 py-2 text-right text-[#213448] bg-rose-50/40">
                     {m.top_project_share?.toFixed(0) || '0'}%
                   </td>
                 </tr>
