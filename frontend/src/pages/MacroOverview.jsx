@@ -14,7 +14,7 @@ import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getKpiSummary } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
-import { KPICard, ErrorBoundary, ChartWatermark } from '../components/ui';
+import { ErrorBoundary, ChartWatermark } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 

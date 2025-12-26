@@ -121,7 +121,6 @@ export function HotProjectsTable({
   };
 
   // Calculate min/max for color scaling (reserved for future use)
-  // eslint-disable-next-line no-unused-vars
   const _priceRange = React.useMemo(() => {
     const prices = data.filter(p => p.median_price).map(p => p.median_price);
     const psfs = data.filter(p => p.median_psf).map(p => p.median_psf);
@@ -134,7 +133,6 @@ export function HotProjectsTable({
   }, [data]);
 
   // Color scale using theme colors: highest = #213448, lowest = #EAE0CF (reserved for future use)
-  // eslint-disable-next-line no-unused-vars
   const _getValueColor = (value, min, max) => {
     if (value === null || value === undefined) return { bg: '#f1f5f9', text: '#64748b' };
     const ratio = (value - min) / (max - min || 1);

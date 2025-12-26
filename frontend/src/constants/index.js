@@ -752,7 +752,7 @@ export const getAgeBandLabel = (age, options = {}) => {
  * @param {string} bandKey - Age band key
  * @returns {string|null} Tooltip text or null
  */
-export const getAgeBandTooltip = (bandKey) => {
+export const getAgeBandTooltip = (_bandKey) => {
   // No tooltip needed - all bands are clearly labeled from URA data
   return null;
 };

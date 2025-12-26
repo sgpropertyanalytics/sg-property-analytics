@@ -17,7 +17,7 @@ import apiClient from '../api/client';
  */
 export default function Pricing() {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user: _user, isAuthenticated } = useAuth();
   const { isPremium, subscription } = useSubscription();
 
   const handleSelectPlan = async (planId) => {

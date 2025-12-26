@@ -8,7 +8,7 @@ import React from 'react';
  *
  * The platform now provides aggregated project-level insights instead.
  */
-export function TransactionDetailModal({ isOpen, onClose, title, additionalFilters = {} }) {
+export function TransactionDetailModal({ isOpen, onClose, title: _title, additionalFilters: _additionalFilters = {} }) {
   if (!isOpen) return null;
 
   return (

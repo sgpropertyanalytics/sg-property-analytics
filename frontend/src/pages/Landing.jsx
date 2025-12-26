@@ -8,7 +8,6 @@ import {
   Map,
   ShieldCheck,
   LineChart,
-  TrendingUp
 } from 'lucide-react';
 import YouVsMarketVisual from '../components/landing/YouVsMarketVisual';
 

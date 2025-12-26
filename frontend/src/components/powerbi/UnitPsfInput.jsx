@@ -37,6 +37,7 @@ export function UnitPsfInput({
   }, [value]);
 
   // Debounced onChange
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce wrapper correctly captures onChange
   const debouncedOnChange = useCallback(
     debounce((val) => {
       if (onChange) {

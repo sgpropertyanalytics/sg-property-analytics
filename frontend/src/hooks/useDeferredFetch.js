@@ -1,5 +1,12 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 
+// Priority-based stagger delays (defined outside hook to avoid recreating on every render)
+const PRIORITY_DELAYS = {
+  high: 0,
+  medium: 50,
+  low: 150,
+};
+
 /**
  * useDeferredFetch - Defers API fetches for off-screen charts to reduce cascade load
  *
@@ -52,13 +59,6 @@ export function useDeferredFetch({
   const lastFilterKeyRef = useRef(filterKey);
   const isFirstMountRef = useRef(true);
   const deferTimeoutRef = useRef(null);
-
-  // Priority-based stagger delays
-  const PRIORITY_DELAYS = {
-    high: 0,
-    medium: 50,
-    low: 150,
-  };
 
   // Set up IntersectionObserver for visibility detection
   useEffect(() => {
