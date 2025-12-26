@@ -153,7 +153,7 @@ export default function DealCheckerMap({
       style={{ width: '100%', height: '100%' }}
       mapStyle={MAP_STYLE}
       attributionControl={false}
-      minZoom={11}
+      minZoom={12.5}
       maxZoom={15.5}
       maxBounds={[[103.55, 1.22], [104.15, 1.50]]}
     >
