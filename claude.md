@@ -36,6 +36,7 @@ All documentation has been consolidated into `/docs`:
 | `sql-guardrails` | Any SQL query or backend service |
 | `contract-async-guardrails` | Any frontend data fetching |
 | `api-endpoint-guardrails` | Creating new API endpoints |
+| `data-standards` | Any data classification, filter, or label |
 | `dashboard-guardrails` | Modifying dashboard charts |
 
 ---
@@ -303,6 +304,35 @@ ALLOWED dedicated endpoints:
   /filter-options     → Metadata only
 
 Full reference: See .claude/skills/api-endpoint-guardrails/SKILL.md
+```
+
+### Card 11: Data Standards (MANDATORY)
+
+```
+ALL CLASSIFICATIONS MUST USE CENTRALIZED CONSTANTS!
+
+Sources of Truth:
+  Backend:  backend/constants.py, backend/schemas/api_contract.py
+  Frontend: frontend/src/constants/index.js, src/schemas/apiContract.js
+
+Classification Standards:
+  Region:     CCR, RCR, OCR (use getRegionForDistrict())
+  Bedroom:    1BR, 2BR, 3BR, 4BR, 5BR+ (use getBedroomLabelShort())
+  Floor:      Low, Mid-Low, Mid, Mid-High, High, Luxury (use FLOOR_LEVELS)
+  Sale Type:  use isSaleType.newSale(), isSaleType.resale()
+  Tenure:     use isTenure.freehold(), TenureLabelsShort
+  Age Band:   use getAgeBandKey(), AGE_BAND_LABELS_SHORT
+
+FORBIDDEN (hardcoded strings):
+  const regions = ['CCR', 'RCR', 'OCR']  → import from constants
+  if (sale_type === 'New Sale')          → use isSaleType.newSale()
+  const label = '2BR'                    → use getBedroomLabelShort(2)
+
+Filter Params (API):
+  district, bedroom, segment, sale_type (singular, snake_case)
+  NOT: districts, bedrooms, region, saleType
+
+Full reference: See .claude/skills/data-standards/SKILL.md
 ```
 
 ---
