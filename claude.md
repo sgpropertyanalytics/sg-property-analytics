@@ -16,15 +16,18 @@
 
 ## Related Documentation
 
+All documentation has been consolidated into `/docs`:
+
 | Document | Purpose |
 |----------|---------|
-| [POWER_BI_PATTERNS.md](./POWER_BI_PATTERNS.md) | Complete filter system reference |
-| [SQL_BEST_PRACTICES.md](./SQL_BEST_PRACTICES.md) | SQL guardrails and v2 API compliance |
-| [CONTRACT_ASYNC_SAFETY.md](./CONTRACT_ASYNC_SAFETY.md) | Frontend contract and async safety rules |
-| [TECHNICAL_ARCHITECTURE.md](./TECHNICAL_ARCHITECTURE.md) | System architecture details |
-| [LEGAL_COMPLIANCE.md](./LEGAL_COMPLIANCE.md) | Data usage, IP, and URA compliance rules |
-| [scripts/audit-async-safety.sh](./frontend/scripts/audit-async-safety.sh) | Async data-fetching audit script |
-| [e2e/rapid-interaction.spec.js](./frontend/e2e/rapid-interaction.spec.js) | Playwright smoke tests for rapid interactions |
+| [docs/README.md](./docs/README.md) | Overview, quick links |
+| [docs/architecture.md](./docs/architecture.md) | System design, data flow |
+| [docs/backend.md](./docs/backend.md) | APIs, SQL rules, services |
+| [docs/frontend.md](./docs/frontend.md) | UI, charts, adapters, async safety |
+| [docs/data-model.md](./docs/data-model.md) | Metrics, bands, formulas |
+| [docs/access-control.md](./docs/access-control.md) | Tiers, paywall, compliance |
+| [docs/decisions.md](./docs/decisions.md) | Design decisions, roadmap |
+| [docs/glossary.md](./docs/glossary.md) | Terms, acronyms |
 
 ---
 
