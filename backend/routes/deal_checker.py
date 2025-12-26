@@ -484,22 +484,40 @@ def get_multi_scope_comparison():
 
     # Get transaction stats per project for map display and table
     # Includes count, median price, p25/p75 prices, median sqft, and median property age
+    # For age: use lease_start_year if available, else estimate from earliest transaction year
     from datetime import date
+    from sqlalchemy import text
     current_year = date.today().year
 
-    tx_stats = db.session.query(
-        Transaction.project_name,
-        func.count(Transaction.id).label('count'),
-        func.percentile_cont(0.25).within_group(Transaction.price).label('p25_price'),
-        func.percentile_cont(0.5).within_group(Transaction.price).label('median_price'),
-        func.percentile_cont(0.75).within_group(Transaction.price).label('p75_price'),
-        func.percentile_cont(0.5).within_group(Transaction.area_sqft).label('median_sqft'),
-        func.percentile_cont(0.5).within_group(current_year - Transaction.lease_start_year).label('median_age')
-    ).filter(
-        exclude_outliers(Transaction),
-        Transaction.project_name.in_(projects_2km),
-        get_bedroom_filter(bedroom)
-    ).group_by(Transaction.project_name).all()
+    # Use raw SQL for complex age calculation with COALESCE fallback
+    # Age = current_year - lease_start_year (for leasehold)
+    # Age = current_year - MIN(transaction_year) (for freehold, as fallback)
+    bedroom_filter = "bedroom_count >= 5" if bedroom >= 5 else f"bedroom_count = {bedroom}"
+
+    age_query = text(f"""
+        SELECT
+            project_name,
+            COUNT(*) as count,
+            PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) as p25_price,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price) as median_price,
+            PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) as p75_price,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY area_sqft) as median_sqft,
+            COALESCE(
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY :current_year - lease_start_year)
+                    FILTER (WHERE lease_start_year IS NOT NULL),
+                :current_year - MIN(EXTRACT(YEAR FROM transaction_date))
+            ) as median_age
+        FROM transactions
+        WHERE COALESCE(is_outlier, false) = false
+          AND project_name = ANY(:project_names)
+          AND {bedroom_filter}
+        GROUP BY project_name
+    """)
+
+    tx_stats = db.session.execute(
+        age_query,
+        {"current_year": current_year, "project_names": projects_2km}
+    ).fetchall()
 
     tx_stats_map = {
         t.project_name: {
@@ -508,7 +526,7 @@ def get_multi_scope_comparison():
             'median_price': round(t.median_price) if t.median_price else None,
             'p75_price': round(t.p75_price) if t.p75_price else None,
             'median_sqft': round(t.median_sqft) if t.median_sqft else None,
-            'median_age': round(t.median_age) if t.median_age else None
+            'median_age': round(t.median_age) if t.median_age is not None else None  # Handle age=0
         }
         for t in tx_stats
     }
