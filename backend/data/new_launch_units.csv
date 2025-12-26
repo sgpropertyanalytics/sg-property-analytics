@@ -1,128 +1,1021 @@
 project_name,total_units,developer,tenure,top,district,source
+# 1 SUITES,112,,,,,EdgeProp
+10 EVELYN,56,,,,,EdgeProp
+15 HOLLAND HILL,57,,,,,EdgeProp
+19 NASSIM,101,,,,,EdgeProp
 1953,58,Oxley Amethyst,Freehold,,D08,EdgeProp
+26 NEWTON,180,,,,,EdgeProp
 35 GILSTEAD,70,TEE Land & TG Development,Freehold,,D11,EdgeProp
+368 THOMSON,157,,,,,EdgeProp
+38 I SUITES,120,,,,,EdgeProp
+76 SHENTON,202,,,,,EdgeProp
+77 @ EAST COAST,41,,,,,EdgeProp
+8 @ MOUNT SOPHIA,313,,,,,EdgeProp
+8 SAINT THOMAS,250,,,,,EdgeProp
 8@BT,158,Bukit Sembawang Estates,99 yrs lease commencing from 2023,2028,D21,EdgeProp
+8@WOODLEIGH,330,,,,,EdgeProp
+A TREASURE TROVE,882,,,,,EdgeProp
+AALTO,196,,,,,EdgeProp
+AFFINITY AT SERANGOON,1052,,,,,EdgeProp
+AIRSTREAM,70,,,,,EdgeProp
+ALEX RESIDENCES,429,,,,,EdgeProp
+ALEXIS,293,,,,,EdgeProp
+ALTEZ,280,,,,,EdgeProp
+AMARYLLIS VILLE,311,,,,,EdgeProp
 AMBER HOUSE,105,Far East Organization,Freehold,2029,D15,EdgeProp
+AMBER PARK,592,,,,,EdgeProp
+AMBER RESIDENCES,114,,,,,EdgeProp
+AMBER SKYE,109,,,,,EdgeProp
 AMO RESIDENCE,372,UOL Group & SingLand,99 yrs lease commencing from 2021,2025,D20,EdgeProp
+AQUARIUS BY THE PARK,720,,,,,EdgeProp
+ARCHIPELAGO,577,,,,,EdgeProp
 ARDOR RESIDENCE,35,Nanshan Group,Freehold,,D15,EdgeProp
 ARINA EAST RESIDENCES,107,ZACD Group,Freehold,,D15,EdgeProp
 ARTISAN 8,34,Apex Asia,Freehold,,D20,EdgeProp
+ARTRA,400,,,,,EdgeProp
+ASCENTIA SKY,373,,,,,EdgeProp
+ASPEN HEIGHTS,606,,,,,EdgeProp
+ASTON MANSIONS,159,,,,,EdgeProp
+ASTORIA PARK,354,,,,,EdgeProp
 ATLASSIA,31,K16 Development,Freehold,,D15,EdgeProp
 AUREA,188,Far East Organization & Perennial Holdings,99 yrs lease commencing from 2024,2029,D07,EdgeProp
+AVENUE SOUTH RESIDENCE,1074,,,,,EdgeProp
+AVILA GARDENS,347,,,,,EdgeProp
+AZALEA PARK CONDOMINIUM,316,,,,,EdgeProp
 BAGNALL HAUS,113,Roxy-Pacific Holdings,Freehold,,D16,EdgeProp
+BALLOTA PARK CONDOMINIUM,365,,,,,EdgeProp
+BARTLEY RESIDENCES,702,,,,,EdgeProp
+BARTLEY RIDGE,868,,,,,EdgeProp
 BARTLEY VUE,115,Wee Hur Holdings,99 yrs lease commencing from 2020,2024,D19,EdgeProp
+BAYSHORE PARK,1083,,,,,EdgeProp
+BAYWATER,232,,,,,EdgeProp
 BAYWIND RESIDENCES,24,ABR Holdings & LWH Holdings,Freehold,,D15,EdgeProp
+BEACON HEIGHTS,212,,,,,EdgeProp
+BEDOK COURT,280,,,,,EdgeProp
+BEDOK RESIDENCES,583,,,,,EdgeProp
+BELLE VUE RESIDENCES,176,,,,,EdgeProp
+BELMOND GREEN,211,,,,,EdgeProp
+BISHAN 8,200,,,,,EdgeProp
+BISHAN PARK CONDOMINIUM,320,,,,,EdgeProp
+BISHAN POINT,164,,,,,EdgeProp
+BLISS@KOVAN,140,,,,,EdgeProp
 BLOOMSBURY RESIDENCES,358,Qingjian Realty & Forsea Holdings,99 yrs lease commencing from 2024,2028,D05,EdgeProp
 BLOSSOMS BY THE PARK,275,EL Development,99 yrs lease commencing from 2022,2027,D05,EdgeProp
+BLUE HORIZON,616,,,,,EdgeProp
+BOATHOUSE RESIDENCES,493,,,,,EdgeProp
+BOTANIQUE AT BARTLEY,797,,,,,EdgeProp
+BOTANNIA,493,,,,,EdgeProp
+BOULEVARD 88,154,,,,,EdgeProp
+BRADDELL VIEW,918,,,,,EdgeProp
+BULLION PARK,472,,,,,EdgeProp
 CAIRNHILL 16,39,Tiong Seng Holdings & Ocean Sky,Freehold,,D09,EdgeProp
+CAIRNHILL CREST,248,,,,,EdgeProp
+CAIRNHILL NINE,268,,,,,EdgeProp
 CANBERRA CRESCENT RESIDENCES,376,Kheng Leong & Low Keng Huat,99 yrs lease commencing from 2024,,D27,EdgeProp
+CANBERRA RESIDENCES,320,,,,,EdgeProp
 CANNINGHILL PIERS,696,CDL & CapitaLand Development,99 yrs lease commencing from 2021,2026,D06,EdgeProp
+CAPE ROYALE,302,,,,,EdgeProp
+CARABELLE,338,,,,,EdgeProp
+CARDIFF RESIDENCE,163,,,,,EdgeProp
+CARIBBEAN AT KEPPEL BAY,969,,,,,EdgeProp
+CARISSA PARK CONDOMINIUM,528,,,,,EdgeProp
+CASA AL MARE,49,,,,,EdgeProp
+CASA CAMBIO,198,,,,,EdgeProp
+CASA MERAH,556,,,,,EdgeProp
+CASABLANCA,478,,,,,EdgeProp
+CASAFINA,224,,,,,EdgeProp
+CASHEW HEIGHTS CONDOMINIUM,596,,,,,EdgeProp
+CASPIAN,712,,,,,EdgeProp
+CASTLE GREEN,664,,,,,EdgeProp
+CASUARINA COVE,160,,,,,EdgeProp
+CAVENAGH GARDENS,172,,,,,EdgeProp
+CAVENDISH PARK,254,,,,,EdgeProp
+CENTRAL GREEN CONDOMINIUM,412,,,,,EdgeProp
+CENTRAL GROVE,262,,,,,EdgeProp
+CENTRO RESIDENCES,329,,,,,EdgeProp
+CHANGI COURT,297,,,,,EdgeProp
+CHANGI GREEN,256,,,,,EdgeProp
+CHANGI RISE CONDOMINIUM,598,,,,,EdgeProp
+CHILTERN PARK,500,,,,,EdgeProp
 CHUAN PARK,916,Kingsford Development,99 yrs lease commencing from 2024,2028,D19,EdgeProp
+CITY GATE,311,,,,,EdgeProp
+CITY SQUARE RESIDENCES,910,,,,,EdgeProp
+CITYLIGHTS,600,,,,,EdgeProp
+CITYSCAPE @FARRER PARK,250,,,,,EdgeProp
+CLAVON,640,,,,,EdgeProp
 CLAYDENCE,28,Hong How & Marrion Capital,Freehold,,D15,EdgeProp
+CLEMENTI PARK,487,,,,,EdgeProp
+CLEMENTIWOODS CONDOMINIUM,240,,,,,EdgeProp
+CLOVER BY THE PARK,616,,,,,EdgeProp
+COASTLINE RESIDENCES,144,,,,,EdgeProp
+COCO PALMS,944,,,,,EdgeProp
+COMMONWEALTH TOWERS,845,,,,,EdgeProp
+COMPASS HEIGHTS,536,,,,,EdgeProp
+CONCOURSE SKYLINE,360,,,,,EdgeProp
+CORALS AT KEPPEL BAY,366,,,,,EdgeProp
+COSTA DEL SOL,906,,,,,EdgeProp
+COSTA RHU,737,,,,,EdgeProp
+COTE D'AZUR,612,,,,,EdgeProp
+COUNTRY PARK CONDOMINIUM,160,,,,,EdgeProp
+CRADELS,125,,,,,EdgeProp
+CUBE 8,177,,,,,EdgeProp
+CUSCADEN RESERVE,192,,,,,EdgeProp
+CUSCADEN RESIDENCES,150,,,,,EdgeProp
+CYAN,278,,,,,EdgeProp
+D'LEEDON,1715,,,,,EdgeProp
+D'LOTUS,83,,,,,EdgeProp
+D'NEST,912,,,,,EdgeProp
+DAHLIA PARK CONDOMINIUM,299,,,,,EdgeProp
+DAINTREE RESIDENCE,327,,,,,EdgeProp
 DAIRY FARM RESIDENCES,460,United Engineers,99 yrs lease commencing from 2018,,D23,EdgeProp
+DAKOTA RESIDENCES,348,,,,,EdgeProp
 DALVEY HAUS,17,KOP Properties & Low Keng Huat,Freehold,,D10,EdgeProp
+DOMAIN 21,141,,,,,EdgeProp
+DOUBLE BAY RESIDENCES,646,,,,,EdgeProp
+DOVER PARKVIEW,686,,,,,EdgeProp
+DRAYCOTT EIGHT,136,,,,,EdgeProp
+DUCHESS CREST,251,,,,,EdgeProp
+DUCHESS RESIDENCES,120,,,,,EdgeProp
+DUNMAN VIEW,148,,,,,EdgeProp
+DUO RESIDENCES,660,,,,,EdgeProp
+E MAISON,130,,,,,EdgeProp
+EAST MEADOWS,482,,,,,EdgeProp
+EASTERN LAGOON,307,,,,,EdgeProp
+EASTPOINT GREEN,646,,,,,EdgeProp
+ECHELON,508,,,,,EdgeProp
+ECO,748,,,,,EdgeProp
+ECO SANCTUARY,483,,,,,EdgeProp
+EDELWEISS PARK CONDOMINIUM,517,,,,,EdgeProp
+EIGHT COURTYARDS,654,,,,,EdgeProp
+EIGHT RIVERSUITES,862,,,,,EdgeProp
+ELIAS GREEN,419,,,,,EdgeProp
 ELTA,501,MCL Land & CSC Land Group,99 yrs lease commencing from 2024,2028,D05,EdgeProp
 EMERALD OF KATONG,846,Sim Lian Group,99 yrs lease commencing from 2023,2028,D15,EdgeProp
+EMERALD PARK,280,,,,,EdgeProp
 ENCHANTÉ,25,Victory Land Group,Freehold,,D11,EdgeProp
+ESPADA,232,,,,,EdgeProp
+ESTELLA GARDENS,350,,,,,EdgeProp
+EUHABITAT,748,,,,,EdgeProp
+EUPHONY GARDENS,304,,,,,EdgeProp
+EVERGREEN PARK,394,,,,,EdgeProp
+FABER CREST,360,,,,,EdgeProp
 FABER RESIDENCE,399,GuocoLand & Hong Leong & TID,99 yrs lease commencing from 2025,,D05,EdgeProp
+FAR HORIZON GARDENS,270,,,,,EdgeProp
+FERNWOOD TOWERS,243,,,,,EdgeProp
+FERRARIA PARK CONDOMINIUM,472,,,,,EdgeProp
+FLAMINGO VALLEY,393,,,,,EdgeProp
+FLO RESIDENCE,530,,,,,EdgeProp
+FLORAVIEW,90,,,,,EdgeProp
+FLORIDIAN,336,,,,,EdgeProp
+FONTAINE PARRY,125,,,,,EdgeProp
+FORESQUE RESIDENCES,496,,,,,EdgeProp
+FOREST HILLS CONDOMINIUM,128,,,,,EdgeProp
+FOREST WOODS,519,TID Pte Ltd,99 yrs,,D19,Manual
+FORETT@BUKIT TIMAH,633,Qingjian Perennial,Freehold,,D21,Manual
+FOURTH AVENUE RESIDENCES,476,,,,,EdgeProp
+GARDENVISTA,318,,,,,EdgeProp
+GEM RESIDENCES,578,,,,,EdgeProp
+GLENDALE PARK,448,,,,,EdgeProp
+GLENTREES,176,,,,,EdgeProp
+GOODWOOD RESIDENCE,210,,,,,EdgeProp
 GRAND DUNMAN,1008,SingHaiyi Group & CSC Land,99 yrs lease commencing from 2022,2028,D15,EdgeProp
+GRANDE VISTA,292,,,,,EdgeProp
+GRANDEUR 8,579,,,,,EdgeProp
+GRANDEUR PARK RESIDENCES,720,,,,,EdgeProp
 GRANGE 1866,60,Grange 1866 Pte Ltd,Freehold,,D10,EdgeProp
+GUILIN VIEW,655,,,,,EdgeProp
+GUILLEMARD EDGE,275,,,,,EdgeProp
+GUILLEMARD SUITES,146,,,,,EdgeProp
+H2O RESIDENCES,521,,,,,EdgeProp
+HAIG 162,99,,,,,EdgeProp
+HAIG COURT,360,,,,,EdgeProp
 HAUS ON HANDY,188,CDL,99 yrs lease commencing from 2018,,D09,EdgeProp
-HILLHAVEN,341,Far East Organization & Sekisui House,99 yrs lease commencing from 2023,2027,D23,EdgeProp
+HAZEL PARK CONDOMINIUM,696,,,,,EdgeProp
+HEDGES PARK CONDOMINIUM,501,,,,,EdgeProp
+HELIOS RESIDENCES,140,,,,,EdgeProp
+HERITAGE VIEW,618,,,,,EdgeProp
+HIGH OAK CONDOMINIUM,192,,,,,EdgeProp
+HIGH PARK RESIDENCES,1390,,,,,EdgeProp
+HIGHGATE,324,,,,,EdgeProp
+HIGHLINE RESIDENCES,500,,,,,EdgeProp
 HILL HOUSE,72,Macly Group & Roxy Pacific & LWH Holdings,999 yrs lease commencing from 1841,2026,D09,EdgeProp
+HILLBROOKS,299,,,,,EdgeProp
+HILLCREST ARCADIA,272,,,,,EdgeProp
+HILLHAVEN,341,Far East Organization & Sekisui House,99 yrs lease commencing from 2023,2027,D23,EdgeProp
+HILLINGTON GREEN,480,,,,,EdgeProp
+HILLION RESIDENCES,546,,,,,EdgeProp
 HILLOCK GREEN,474,Soilbuild Group & UED Alpha,99 yrs lease commencing from 2022,2028,D26,EdgeProp
+HILLSTA,416,,,,,EdgeProp
+HILLTOP GROVE,192,,,,,EdgeProp
+HILLTOPS,241,,,,,EdgeProp
+HILLVIEW GREEN,400,,,,,EdgeProp
+HILLVIEW HEIGHTS,360,,,,,EdgeProp
+HILLVIEW REGENCY,572,,,,,EdgeProp
+HILLVISTA,127,,,,,EdgeProp
+HORIZON TOWERS,211,,,,,EdgeProp
+HUME PARK II,324,,,,,EdgeProp
+HUNDRED TREES,396,,,,,EdgeProp
 HYLL ON HOLLAND,319,Far East Consortium,Freehold,2025,D10,EdgeProp
+ICON,646,,,,,EdgeProp
 INFINI AT EAST COAST,36,Global Dragon/GDL Land,Freehold,2022,D15,EdgeProp
-J@63,14,Distinct Homes Development,Freehold,2023,D15,EdgeProp
-JANSEN HOUSE,22,Mequity GS Pte Ltd,999 yrs lease commencing from 1876,2026,D19,EdgeProp
+INTERNATIONAL PLAZA,210,,,,,EdgeProp
+IRWELL HILL RESIDENCES,540,,,,,EdgeProp
+IVORY HEIGHTS,654,,,,,EdgeProp
+J GATEWAY,738,,,,,EdgeProp
 J'DEN,368,CapitaLand Development,99 yrs lease commencing from 2023,2028,D22,EdgeProp
+J@63,14,Distinct Homes Development,Freehold,2023,D15,EdgeProp
+JADE RESIDENCES,171,,,,,EdgeProp
+JADESCAPE,1206,,,,,EdgeProp
+JANSEN HOUSE,22,Mequity GS Pte Ltd,999 yrs lease commencing from 1876,2026,D19,EdgeProp
+JARDIN,140,,,,,EdgeProp
 JERVOIS MANSION,130,Kimen Realty & Roxy-Pacific,Freehold,,D10,EdgeProp
+JERVOIS TREASURES,36,,,,,EdgeProp
+JEWEL @ BUANGKOK,616,,,,,EdgeProp
+JUI RESIDENCES,117,,,,,EdgeProp
+JUNIPER HILL,115,,,,,EdgeProp
+K SUITES,19,EG Properties,Freehold,,D15,EdgeProp
+KALLANG RIVERSIDE,212,,,,,EdgeProp
+KANDIS RESIDENCE,130,,,,,EdgeProp
 KASSIA,276,Hong Leong Holdings & CDL & TID,Freehold,,D17,EdgeProp
+KATONG REGENCY,244,,,,,EdgeProp
+KENSINGTON SQUARE,141,,,,,EdgeProp
+KENT RIDGE HILL RESIDENCES,548,,,,,EdgeProp
+KERRISDALE,481,,,,,EdgeProp
+KEW GREEN,111,,,,,EdgeProp
 KI RESIDENCES AT BROOKVALE,660,Hoi Hup Realty & Sunway Developments,999 yrs lease commencing from 1885,,D21,EdgeProp
+KINGSFORD . HILLVIEW PEAK,512,,,,,EdgeProp
+KINGSFORD WATERBAY,1165,,,,,EdgeProp
 KLIMT CAIRNHILL,138,Low Keng Huat,Freehold,2027,D09,EdgeProp
 KOON SENG HOUSE,17,Macly Group,Freehold,,D15,EdgeProp
+KOPAR AT NEWTON,378,,,,,EdgeProp
+KOVAN GRANDEUR,74,,,,,EdgeProp
 KOVAN JEWEL,34,Soon Lian Realty,Freehold,,D19,EdgeProp
-K SUITES,19,EG Properties,Freehold,,D15,EdgeProp
+KOVAN MELODY,778,,,,,EdgeProp
+KOVAN REGENCY,393,,,,,EdgeProp
+KOVAN RESIDENCES,521,,,,,EdgeProp
+L'VIV,147,,,,,EdgeProp
+LA FIESTA,810,,,,,EdgeProp
+LAGOON VIEW,480,,,,,EdgeProp
+LAGUNA PARK,516,,,,,EdgeProp
+LAKE GRANDE,710,,,,,EdgeProp
+LAKEHOLMZ,369,,,,,EdgeProp
+LAKEPOINT CONDOMINIUM,304,,,,,EdgeProp
+LAKEVIEW ESTATE,240,,,,,EdgeProp
+LAKEVILLE,696,,,,,EdgeProp
 LAVENDER RESIDENCE,17,FLJ Property,Freehold,2024,D12,EdgeProp
+LE QUEST,516,,,,,EdgeProp
 LEEDON GREEN,638,MCL Land & Yanlord Land,Freehold,2023,D10,EdgeProp
+LEEDON RESIDENCE,381,,,,,EdgeProp
 LENTOR CENTRAL RESIDENCES,477,Hong Leong Holdings & GuocoLand & TID,99 yrs lease commencing from 2023,2028,D26,EdgeProp
 LENTOR HILLS RESIDENCES,598,Hong Leong Holdings & GuocoLand,99 yrs lease commencing from 2022,2027,D26,EdgeProp
-LENTORIA,267,TID (Hong Leong Holdings & Mitsui Fudosan),99 yrs lease commencing from 2022,2028,D26,EdgeProp
 LENTOR MANSION,533,GuocoLand & Hong Leong Holdings,99 yrs lease commencing from 2023,2028,D26,EdgeProp
 LENTOR MODERN,605,GuocoLand,99 yrs lease commencing from 2021,2026,D26,EdgeProp
+LENTORIA,267,TID (Hong Leong Holdings & Mitsui Fudosan),99 yrs lease commencing from 2022,2028,D26,EdgeProp
 LIV @ MB,298,Bukit Sembawang Estates,99 yrs lease commencing from 2021,2026,D15,EdgeProp
+LIVIA,724,,,,,EdgeProp
+LOFT @ NATHAN,121,,,,,EdgeProp
+LOYANG VALLEY,362,,,,,EdgeProp
+LUMIERE,168,,,,,EdgeProp
 LYNDENWOODS,343,CapitaLand Development,99 yrs lease commencing from 2025,,D05,EdgeProp
+M SUITES,16,FG Resource Pte Ltd,Freehold,2024,D14,EdgeProp
+MANDARIN GARDENS,1006,,,,,EdgeProp
+MARGARET VILLE,309,,,,,EdgeProp
+MARINA BAY RESIDENCES,428,,,,,EdgeProp
+MARINA BAY SUITES,221,,,,,EdgeProp
+MARINA COLLECTION,124,,,,,EdgeProp
+MARINA ONE RESIDENCES,1042,,,,,EdgeProp
+MARTIN MODERN,450,,,,,EdgeProp
+MARTIN NO 38,88,,,,,EdgeProp
+MARTIN PLACE RESIDENCES,302,,,,,EdgeProp
+MAYFAIR GARDENS,215,,,,,EdgeProp
+MAYFAIR MODERN,171,,,,,EdgeProp
+MAYSPRINGS,636,,,,,EdgeProp
+MEADOWS @ PEIRCE,479,,,,,EdgeProp
+MELVILLE PARK,1232,,,,,EdgeProp
+MERAPRIME,213,,,,,EdgeProp
 MEYER BLUE,226,UOL Group & Singapore Land,Freehold,2027,D15,EdgeProp
 MEYER MANSION,200,GuocoLand,Freehold,,D15,EdgeProp
+MI CASA,457,,,,,EdgeProp
 MIDTOWN BAY,219,GuocoLand,99 yrs lease commencing from 2018,,D07,EdgeProp
 MIDTOWN MODERN,558,GuocoLand & Hong Leong Holdings,99 yrs lease commencing from 2019,2024,D07,EdgeProp
+MIDTOWN RESIDENCES,160,,,,,EdgeProp
+MIDWOOD,564,,,,,EdgeProp
+MIRAGE TOWER,248,,,,,EdgeProp
+MODENA,230,,,,,EdgeProp
+MONT BOTANIK RESIDENCE,108,,,,,EdgeProp
+MONTEBLEU,151,,,,,EdgeProp
+MONTEREY PARK CONDOMINIUM,280,,,,,EdgeProp
 MOOI RESIDENCES,24,Wenul HL,Freehold,,D10,EdgeProp
 MORI,137,Roxy-Pacific Holdings,Freehold,,D14,EdgeProp
-M SUITES,16,FG Resource Pte Ltd,Freehold,2024,D14,EdgeProp
+MY MANHATTAN,301,,,,,EdgeProp
+MYRA,85,,,,,EdgeProp
+NATURA@HILLVIEW,193,,,,,EdgeProp
 NAVA GROVE,552,MCL Land & Sinarmas Land,99 yrs lease commencing from 2024,2028,D21,EdgeProp
+NEPTUNE COURT,751,,,,,EdgeProp
 NEU AT NOVENA,87,Roxy-Pacific & Macly Group & LWH,Freehold,,D11,EdgeProp
+NEWEST,136,,,,,EdgeProp
+NIN RESIDENCE,219,,,,,EdgeProp
+NINE RESIDENCES,186,,,,,EdgeProp
+NINETEEN SHELFORD ROAD,256,,,,,EdgeProp
 NORMANTON PARK,1862,Kingsford Development,99 yrs lease commencing from 2019,2023,D05,EdgeProp
+NORTH PARK RESIDENCES,920,,,,,EdgeProp
+NORTHVALE,762,,,,,EdgeProp
+NORTHWOOD,140,,,,,EdgeProp
 NORWOOD GRAND,348,CDL,99 yrs lease commencing from 2023,,D25,EdgeProp
+NOTTINGHILL SUITES,124,,,,,EdgeProp
+NOUVEL 18,156,,,,,EdgeProp
+NOVA 88,88,,,,,EdgeProp
+NV RESIDENCES,642,,,,,EdgeProp
+NYON,92,,,,,EdgeProp
+OASIS @ ELIAS,388,,,,,EdgeProp
+OCEAN PARK,298,,,,,EdgeProp
+OLEANDER TOWERS,318,,,,,EdgeProp
+ONE AMBER,562,,,,,EdgeProp
 ONE BERNAM,351,MCC Land & HY Realty,99 yrs lease commencing from 2019,,D02,EdgeProp
+ONE DRAYCOTT,64,,,,,EdgeProp
+ONE DUSUN RESIDENCES,154,,,,,EdgeProp
+ONE HOLLAND VILLAGE RESIDENCES,296,,,,,EdgeProp
+ONE JERVOIS,275,,,,,EdgeProp
 ONE MARINA GARDENS,937,Kingsford & MCC Singapore,99 yrs lease commencing from 2023,2028,D01,EdgeProp
+ONE MEYER,66,,,,,EdgeProp
 ONE PEARL BANK,774,CapitaLand,99 yrs lease commencing from 2019,2024,D03,EdgeProp
+ONE SHENTON,341,,,,,EdgeProp
+ONE-NORTH EDEN,165,,,,,EdgeProp
+ONE-NORTH RESIDENCES,405,,,,,EdgeProp
+OPTIMA @ TANAH MERAH,297,,,,,EdgeProp
 ORCHARD SOPHIA,78,DB2Land,Freehold,2027,D09,EdgeProp
+ORCHID PARK CONDOMINIUM,615,,,,,EdgeProp
+OUE TWIN PEAKS,462,,,,,EdgeProp
+PALM GARDENS,694,,,,,EdgeProp
+PALM GROVE CONDOMINIUM,111,,,,,EdgeProp
+PALM ISLES,429,,,,,EdgeProp
+PANDAN VALLEY,605,,,,,EdgeProp
+PARC BOTANNIA,735,,,,,EdgeProp
+PARC CENTROS,618,,,,,EdgeProp
+PARC CLEMATIS,1468,,,,,EdgeProp
+PARC ELEGANCE,157,,,,,EdgeProp
+PARC EMILY,295,,,,,EdgeProp
+PARC ESTA,1399,,,,,EdgeProp
+PARC IMPERIAL,138,,,,,EdgeProp
+PARC KOMO,276,,,,,EdgeProp
+PARC OASIS,950,,,,,EdgeProp
+PARC OLYMPIA,486,,,,,EdgeProp
+PARC PALAIS,517,,,,,EdgeProp
+PARC RIVIERA,752,,,,,EdgeProp
+PARC ROSEWOOD,689,,,,,EdgeProp
+PARC SOPHIA,152,,,,,EdgeProp
+PARC VERA,452,,,,,EdgeProp
+PARC VISTA,638,,,,,EdgeProp
+PARK COLONIAL,805,,,,,EdgeProp
+PARK EAST,211,,,,,EdgeProp
+PARK INFINIA AT WEE NAM,486,,,,,EdgeProp
+PARK NATURA,192,,,,,EdgeProp
 PARK NOVA,54,Shun Tak Holdings,Freehold,,D10,EdgeProp
+PARK PLACE RESIDENCES AT PLQ,429,,,,,EdgeProp
 PARKTOWN RESIDENCE,1193,UOL Group & CapitaLand & Singapore Land,99 yrs lease commencing from 2023,2028,D18,EdgeProp
+PARKVIEW APARTMENTS,532,,,,,EdgeProp
 PARKWOOD RESIDENCES,18,Oxley Holdings,99 yrs lease commencing from 2018,,D19,EdgeProp
 PARQ BELLA,20,Kims Land,Freehold,,D15,EdgeProp
+PARVIS,248,,,,,EdgeProp
 PASIR RIS 8,487,Allgreen Properties & Kerry Properties,99 yrs lease commencing from 2021,2024,D18,EdgeProp
+PAVILION 11,180,,,,,EdgeProp
 PEAK RESIDENCE,90,Tuan Sing Holdings,Freehold,,D11,EdgeProp
+PEBBLE BAY,510,,,,,EdgeProp
 PENRITH,462,Allgreen Properties,99 yrs lease commencing from 2024,,D03,EdgeProp
 PENROSE,566,CDL & Hong Leong Holdings,99 yrs lease commencing from 2019,,D14,EdgeProp
+PEOPLE'S PARK COMPLEX,288,,,,,EdgeProp
 PERFECT TEN,230,CK Asset Holdings,Freehold,,D10,EdgeProp
+PETIT JERVOIS,55,,,,,EdgeProp
 PHOENIX RESIDENCES,74,OKP Holdings,99 yrs lease commencing from 2019,,D23,EdgeProp
 PICCADILLY GRAND,407,CDL & MCL Land,99 yrs lease commencing from 2021,2026,D08,EdgeProp
+PINE GROVE,660,,,,,EdgeProp
 PINETREE HILL,520,UOL Group & SingLand,99 yrs lease commencing from 2022,2027,D21,EdgeProp
+POLLEN & BLEU,106,,,,,EdgeProp
+PRESTIGE HEIGHTS,154,,,,,EdgeProp
+PRINCIPAL GARDEN,663,,,,,EdgeProp
 PROMENADE PEAK,596,Allgreen Properties,99 yrs lease commencing from 2024,,D03,EdgeProp
 PULLMAN RESIDENCES NEWTON,340,EL Development,Freehold,,D11,EdgeProp
+Q BAY RESIDENCES,630,,,,,EdgeProp
+QUEENS,722,,,,,EdgeProp
+QUEENS PEAK,736,,,,,EdgeProp
+QUESTA @ DUNMAN,122,,,,,EdgeProp
+RAFFLESIA CONDOMINIUM,230,,,,,EdgeProp
+REFLECTIONS AT KEPPEL BAY,1129,,,,,EdgeProp
+REGENCY PARK,292,,,,,EdgeProp
+REGENT GROVE,553,,,,,EdgeProp
+REGENT HEIGHTS,645,,,,,EdgeProp
+REGENT PARK,276,,,,,EdgeProp
+REGENT RESIDENCES,180,,,,,EdgeProp
+REGENTVILLE,580,,,,,EdgeProp
+RESIDENCES @ EVELYN,208,,,,,EdgeProp
+RIDGEWOOD,463,,,,,EdgeProp
+RIO VISTA,716,,,,,EdgeProp
+RIPPLE BAY,679,,,,,EdgeProp
+RIS GRANDEUR,453,,,,,EdgeProp
 RIVER GREEN,524,Wing Tai Holdings,99 yrs lease commencing from 2024,2028,D09,EdgeProp
+RIVER ISLES,610,,,,,EdgeProp
+RIVER PLACE,509,,,,,EdgeProp
+RIVERBANK @ FERNVALE,555,,,,,EdgeProp
+RIVERBAY,147,,,,,EdgeProp
+RIVEREDGE,135,,,,,EdgeProp
+RIVERFRONT RESIDENCES,1472,,,,,EdgeProp
+RIVERGATE,545,,,,,EdgeProp
+RIVERSAILS,920,,,,,EdgeProp
+RIVERSOUND RESIDENCE,590,,,,,EdgeProp
+RIVERTREES RESIDENCES,495,,,,,EdgeProp
+RIVERVALE CREST,490,,,,,EdgeProp
+RIVIERE,455,,,,,EdgeProp
+ROBERTSON 100,186,,,,,EdgeProp
+ROCHELLE AT NEWTON,129,,,,,EdgeProp
+ROSEWOOD,437,,,,,EdgeProp
+ROSEWOOD SUITES,200,,,,,EdgeProp
 ROYAL HALLMARK,32,H Homes Pte Ltd,Freehold,2025,D15,EdgeProp
+ROYALGREEN,285,,,,,EdgeProp
+RV ALTITUDE,140,,,,,EdgeProp
+RV RESIDENCES,248,,,,,EdgeProp
+RYMDEN 77,31,,,,,EdgeProp
+SANCTUARY GREEN,522,,,,,EdgeProp
 SANCTUARY@NEWTON,38,ASK Development,Freehold,,D11,EdgeProp
+SANT RITZ,214,,,,,EdgeProp
+SAVANNAH CONDOPARK,648,,,,,EdgeProp
 SCENECA RESIDENCE,268,MCC Singapore & Gamuda Berhad,99 yrs lease commencing from 2021,2027,D16,EdgeProp
+SCOTTS SQUARE,338,,,,,EdgeProp
+SEA ESTA,376,,,,,EdgeProp
+SEAHILL,478,,,,,EdgeProp
+SEASCAPE,151,,,,,EdgeProp
+SEASIDE RESIDENCES,841,,,,,EdgeProp
+SEASONS PARK,390,,,,,EdgeProp
+SEASONS VIEW,224,,,,,EdgeProp
+SEASTRAND,473,,,,,EdgeProp
+SELETAR PARK RESIDENCE,276,,,,,EdgeProp
+SELETAR SPRINGS CONDOMINIUM,364,,,,,EdgeProp
+SELETARIS,328,,,,,EdgeProp
 SENGKANG GRAND RESIDENCES,680,CapitaLand & CDL,99 yrs lease commencing from 2018,2024,D19,EdgeProp
-SKYE AT HOLLAND,666,UOL Group & CapitaLand,99 yrs lease commencing from 2024,,D10,EdgeProp
+SENNETT RESIDENCE,332,,,,,EdgeProp
+SERENITY PARK,179,,,,,EdgeProp
+SEVENTY SAINT PATRICK'S,186,,,,,EdgeProp
+SHERWOOD CONDOMINIUM,116,,,,,EdgeProp
+SHERWOOD TOWER,269,,,,,EdgeProp
+SIGLAP V,114,,,,,EdgeProp
+SIGNATURE PARK,928,,,,,EdgeProp
+SILVERSEA,383,,,,,EdgeProp
+SIMS URBAN OASIS,1024,,,,,EdgeProp
+SIMSVILLE,522,,,,,EdgeProp
+SKIES MILTONIA,420,,,,,EdgeProp
 SKY EDEN@BEDOK,158,Chempaka Development,99 yrs lease commencing from 2022,2026,D16,EdgeProp
+SKY EVERTON,262,,,,,EdgeProp
+SKY GREEN,176,,,,,EdgeProp
+SKY HABITAT,509,,,,,EdgeProp
+SKY VUE,694,,,,,EdgeProp
+SKY@ELEVEN,273,,,,,EdgeProp
+SKYE AT HOLLAND,666,UOL Group & CapitaLand,99 yrs lease commencing from 2024,,D10,EdgeProp
+SKYLINE RESIDENCES,283,,,,,EdgeProp
+SKYSUITES17,115,,,,,EdgeProp
+SKYSUITES@ANSON,360,,,,,EdgeProp
+SLOANE RESIDENCES,52,,,,,EdgeProp
+SOLEIL @ SINARAN,417,,,,,EdgeProp
+SOMMERVILLE PARK,453,,,,,EdgeProp
+SOPHIA HILLS,493,,,,,EdgeProp
+SOPHIA RESIDENCE,272,,,,,EdgeProp
 SORA,440,Chip Eng Seng & SingHaiyi,99 yrs lease commencing from 2023,2028,D22,EdgeProp
+SOUTHAVEN I,157,,,,,EdgeProp
+SOUTHAVEN II,293,,,,,EdgeProp
+SOUTHBANK,197,,,,,EdgeProp
+SPACE @ KOVAN,140,,,,,EdgeProp
+SPOTTISWOODE 18,251,,,,,EdgeProp
+SPOTTISWOODE PARK,340,,,,,EdgeProp
+SPOTTISWOODE RESIDENCES,351,,,,,EdgeProp
+SPOTTISWOODE SUITES,183,,,,,EdgeProp
+SPRING GROVE,325,,,,,EdgeProp
+SPRINGDALE CONDOMINIUM,480,,,,,EdgeProp
 SPRINGLEAF RESIDENCE,941,GuocoLand & Hong Leong Holdings,99 yrs lease commencing from 2024,2028,D26,EdgeProp
+ST REGIS RESIDENCES SINGAPORE,173,,,,,EdgeProp
+ST THOMAS SUITES,176,,,,,EdgeProp
+STARLIGHT SUITES,105,,,,,EdgeProp
+STARS OF KOVAN,395,,,,,EdgeProp
+STARVILLE,250,,,,,EdgeProp
+STIRLING RESIDENCES,1259,,,,,EdgeProp
 STRAITS AT JOO CHIAT,16,Roxy-Pacific Holdings,Freehold,,D15,EdgeProp
+STRATFORD COURT,268,,,,,EdgeProp
+STRATUM,380,,,,,EdgeProp
+STURDEE RESIDENCES,305,,,,,EdgeProp
+SUITES @ EASTCOAST,116,,,,,EdgeProp
+SUITES @ PAYA LEBAR,99,,,,,EdgeProp
+SUMMERHILL,406,,,,,EdgeProp
+SUNGLADE,475,,,,,EdgeProp
+SUNHAVEN,295,,,,,EdgeProp
+SUNRISE GARDENS,252,,,,,EdgeProp
+SYMPHONY HEIGHTS,449,,,,,EdgeProp
+SYMPHONY SUITES,660,,,,,EdgeProp
+TANAMERA CREST,288,,,,,EdgeProp
+TANGLIN PARK,274,,,,,EdgeProp
+TANGLIN REGENCY,210,,,,,EdgeProp
+TANGLIN VIEW,384,,,,,EdgeProp
+TANJONG RIA CONDOMINIUM,168,,,,,EdgeProp
 TEMBUSU GRAND,638,CDL & MCL Land,99 yrs lease commencing from 2022,2027,D15,EdgeProp
 TERRA HILL,270,Hoi Hup Realty & Sunway Developments,Freehold,2028,D05,EdgeProp
+TERRASSE,414,,,,,EdgeProp
+TERRENE AT BUKIT TIMAH,172,,,,,EdgeProp
+TEXTILE CENTRE,132,,,,,EdgeProp
+THE ALPS RESIDENCES,626,,,,,EdgeProp
+THE ANCHORAGE,775,,,,,EdgeProp
+THE ANTARES,265,,,,,EdgeProp
+THE ARCADIA,164,,,,,EdgeProp
 THE ARCADY AT BOON KENG,172,KSH Holdings & SLB & Ho Lee Group,Freehold,2027,D12,EdgeProp
 THE ARDEN,105,CNQC Realty,99 yrs lease commencing from 2023,2025,D23,EdgeProp
+THE ARTE,336,,,,,EdgeProp
 THE ATELIER,120,Bukit Sembawang,Freehold,,D09,EdgeProp
 THE AVENIR,376,GuocoLand & Hong Leong Holdings,Freehold,,D09,EdgeProp
+THE BAYSHORE,1038,,,,,EdgeProp
+THE BELVEDERE,167,,,,,EdgeProp
+THE BENCOOLEN,182,,,,,EdgeProp
+THE BERTH BY THE COVE,200,,,,,EdgeProp
+THE BLOSSOMVALE,220,,,,,EdgeProp
 THE BOTANY AT DAIRY FARM,386,Sim Lian Development,99 yrs lease commencing from 2022,2028,D23,EdgeProp
+THE CALROSE,421,,,,,EdgeProp
+THE CASCADIA,536,,,,,EdgeProp
+THE CENTRIS,610,,,,,EdgeProp
+THE CLEARWATER,420,,,,,EdgeProp
+THE CLEMENT CANOPY,505,,,,,EdgeProp
+THE CLIFT,312,,,,,EdgeProp
+THE COAST AT SENTOSA COVE,249,,,,,EdgeProp
 THE COLLECTIVE AT ONE SOPHIA,367,SingHaiyi & Chip Eng Seng,99 yrs lease commencing from 2023,,D09,EdgeProp
 THE COMMODORE,219,JBE Holdings,99 yrs lease commencing from 2020,2025,D27,EdgeProp
 THE CONTINUUM,816,Hoi Hup Realty & Sunway Developments,Freehold,2027,D15,EdgeProp
+THE CREEK @ BUKIT,260,,,,,EdgeProp
+THE CREST,469,,,,,EdgeProp
+THE DAIRY FARM,477,,,,,EdgeProp
+THE ESTA,400,,,,,EdgeProp
+THE ESTUARY,608,,,,,EdgeProp
+THE FLORENCE RESIDENCES,1410,,,,,EdgeProp
+THE FORESTA @ MOUNT FABER,141,,,,,EdgeProp
+THE GALE,329,,,,,EdgeProp
+THE GARDEN RESIDENCES,613,,,,,EdgeProp
+THE GARDENS AT BISHAN,756,,,,,EdgeProp
+THE GAZANIA,250,,,,,EdgeProp
+THE GLADES,726,,,,,EdgeProp
+THE GLYNDEBOURNE,150,,,,,EdgeProp
+THE GREENWICH,319,,,,,EdgeProp
 THE HILL @ONE-NORTH,142,Kingsford Development,99 years lease commencing from 2022,,D05,EdgeProp
+THE HILLFORD,281,,,,,EdgeProp
+THE HILLIER,528,,,,,EdgeProp
 THE HILLSHORE,59,FRX Capital & Tong Eng Group,Freehold,,D05,EdgeProp
+THE HYDE,117,,,,,EdgeProp
+THE IMPERIAL,187,,,,,EdgeProp
+THE INFINITI,315,,,,,EdgeProp
+THE INFLORA,396,,,,,EdgeProp
+THE INTERLACE,1040,,,,,EdgeProp
+THE INTERWEAVE,169,,,,,EdgeProp
+THE IVERIA,51,,,,,EdgeProp
+THE JADE,280,,,,,EdgeProp
+THE JOVELL,428,,,,,EdgeProp
+THE LAKEFRONT RESIDENCES,629,,,,,EdgeProp
 THE LAKEGARDEN RESIDENCES,306,Wing Tai Holdings,99 yrs lease commencing from 2023,2027,D22,EdgeProp
+THE LAKESHORE,848,,,,,EdgeProp
+THE LANAI,214,,,,,EdgeProp
 THE LANDMARK,396,ZACD Group & SSLE & MCC Singapore,99 yrs lease commencing from 2020,2025,D03,EdgeProp
+THE LAURELS,229,,,,,EdgeProp
+THE LEVELZ,126,,,,,EdgeProp
 THE LILIUM,80,SingHaiyi Group,Freehold,,D19,EdgeProp
+THE LINE @ TANJONG RHU,130,,,,,EdgeProp
+THE LINEAR,221,,,,,EdgeProp
 THE LINQ @ BEAUTY WORLD,120,BBR Holdings,Freehold,2025,D21,EdgeProp
+THE LUXURIE,622,,,,,EdgeProp
+THE M,522,,,,,EdgeProp
+THE MADEIRA,456,,,,,EdgeProp
+THE MAKENA,504,,,,,EdgeProp
+THE MARBELLA,239,,,,,EdgeProp
+THE MAYFAIR,452,,,,,EdgeProp
+THE MAYLEA,88,,,,,EdgeProp
+THE METROPOLITAN CONDOMINIUM,382,,,,,EdgeProp
+THE MEYERISE,239,,,,,EdgeProp
+THE MEZZO,127,,,,,EdgeProp
+THE MILTONIA RESIDENCES,410,,,,,EdgeProp
+THE MINTON,1145,,,,,EdgeProp
 THE MYST,408,CDL,99 yrs lease commencing from 2023,2027,D23,EdgeProp
+THE NAUTICAL,435,,,,,EdgeProp
+THE NEXUS,242,,,,,EdgeProp
+THE OCEANFRONT @ SENTOSA COVE,264,,,,,EdgeProp
 THE ORIE,777,CDL & Frasers Property & Sekisui House,99 yrs lease commencing from 2024,2028,D12,EdgeProp
+THE PALETTE,892,,,,,EdgeProp
+THE PANORAMA,698,,,,,EdgeProp
+THE PARC CONDOMINIUM,659,,,,,EdgeProp
+THE PEAK@BALMEG,180,,,,,EdgeProp
+THE PEARL @ MOUNT FABER,192,,,,,EdgeProp
+THE PIER AT ROBERTSON,201,,,,,EdgeProp
+THE PLAZA,234,,,,,EdgeProp
+THE POIZ RESIDENCES,731,,,,,EdgeProp
+THE PROMENADE@PELIKAT,164,,,,,EdgeProp
+THE QUARTZ,625,,,,,EdgeProp
+THE QUINN,139,,,,,EdgeProp
+THE RAINTREE,315,,,,,EdgeProp
 THE REEF AT KING'S DOCK,429,Mapletree & Keppel Land,99 yrs lease commencing from 2021,2025,D04,EdgeProp
 THE RESERVE RESIDENCES,732,Far East Organization & Sino Group,99 yrs lease commencing from 2021,2028,D21,EdgeProp
+THE RESIDENCES AT W SINGAPORE SENTOSA COVE,228,,,,,EdgeProp
 THE ROBERTSON OPUS,348,Frasers Property & Sekisui House,999 yrs lease commencing from 1841,2028,D09,EdgeProp
+THE ROCHESTER RESIDENCES,366,,,,,EdgeProp
+THE SAIL @ MARINA BAY,1111,,,,,EdgeProp
+THE SANTORINI,597,,,,,EdgeProp
+THE SCALA,468,,,,,EdgeProp
+THE SEA VIEW,546,,,,,EdgeProp
+THE SEAFRONT ON MEYER,327,,,,,EdgeProp
+THE SEAWIND,222,,,,,EdgeProp
 THE SEN,347,Sustained Land,99 years leasehold,,D21,EdgeProp
+THE SHORE RESIDENCES,408,,,,,EdgeProp
 THE SHOREFRONT,23,165@Loyang Pte Ltd,999 yrs lease commencing from 1937,2026,D17,EdgeProp
+THE SIXTH AVENUE RESIDENCES,175,,,,,EdgeProp
+THE SKYWOODS,420,,,,,EdgeProp
+THE SORRENTO,131,,,,,EdgeProp
+THE SPRINGBLOOM,372,,,,,EdgeProp
+THE SUMMIT,242,,,,,EdgeProp
+THE SUNNY SPRING,338,,,,,EdgeProp
+THE TANAMERA,288,,,,,EdgeProp
+THE TAPESTRY,861,,,,,EdgeProp
+THE TEMBUSU,337,,,,,EdgeProp
+THE TENNERY,338,,,,,EdgeProp
+THE TESSARINA,443,,,,,EdgeProp
+THE TRE VER,729,,,,,EdgeProp
+THE TREVOSE,142,,,,,EdgeProp
+THE TRILINQ,755,,,,,EdgeProp
+THE TRILLIUM,231,,,,,EdgeProp
+THE TRIZON,289,,,,,EdgeProp
+THE TROPICA,537,,,,,EdgeProp
+THE TRUMPS,189,,,,,EdgeProp
+THE VENUE RESIDENCES,266,,,,,EdgeProp
+THE VERVE,106,,,,,EdgeProp
+THE VIRIDIAN,108,,,,,EdgeProp
+THE VISION,295,,,,,EdgeProp
+THE WARREN,699,,,,,EdgeProp
 THE WATERGARDENS AT CANBERRA,448,UOL Group & Singapore Land & Kheng Leong,99 yrs lease commencing from 2020,2024,D27,EdgeProp
+THE WATERINA,398,,,,,EdgeProp
+THE WATERSIDE,502,,,,,EdgeProp
+THE WHARF RESIDENCE,186,,,,,EdgeProp
+THE WISTERIA,216,,,,,EdgeProp
 THE WOODLEIGH RESIDENCES,667,Kajima Development & SPH,99 yrs lease commencing from 2017,2023,D13,EdgeProp
+THOMSON 800,390,,,,,EdgeProp
+THOMSON GRAND,361,,,,,EdgeProp
+THOMSON IMPRESSIONS,288,,,,,EdgeProp
+THOMSON THREE,445,,,,,EdgeProp
+TIVOLI GRANDE,82,,,,,EdgeProp
 TMW MAXWELL,324,Chip Eng Seng,99 yrs lease commencing from 2023,2027,D02,EdgeProp
+TRE RESIDENCES,250,,,,,EdgeProp
+TREASURE AT TAMPINES,2203,,,,,EdgeProp
+TREE HOUSE,429,,,,,EdgeProp
+TRELLIS TOWERS,384,,,,,EdgeProp
+TREVISTA,590,,,,,EdgeProp
+TRIBECA,175,,,,,EdgeProp
+TRILIGHT,205,,,,,EdgeProp
+TRILIVE,222,,,,,EdgeProp
+TROPICAL SPRING,242,,,,,EdgeProp
+TURQUOISE,91,,,,,EdgeProp
+TWIN VEW,520,,,,,EdgeProp
+UE SQUARE,495,,,,,EdgeProp
 UNION SQUARE RESIDENCES,366,CDL,99 yrs lease commencing from 2024,2028,D01,EdgeProp
 UPPERHOUSE AT ORCHARD BOULEVARD,301,UOL Group & Singapore Land,99 yrs lease commencing from 2024,,D10,EdgeProp
+UPTOWN @ FARRER,116,,,,,EdgeProp
+URBAN TREASURES,237,,,,,EdgeProp
+URBAN VISTA,582,,,,,EdgeProp
+V ON SHENTON,510,,,,,EdgeProp
+VACANZA @ EAST,473,,,,,EdgeProp
+VALLEY PARK,728,,,,,EdgeProp
 VAN HOLLAND,69,Koh Brothers Development,Freehold,,D10,EdgeProp
+VARSITY PARK CONDOMINIUM,530,,,,,EdgeProp
+VERDALE,258,,,,,EdgeProp
+VERTICUS,162,,,,,EdgeProp
+VIBES @ EAST COAST,117,,,,,EdgeProp
+VIDA,137,,,,,EdgeProp
 VIEW AT KISMIS,186,Roxy-Pacific & Tong Eng Group,99 yrs lease commencing from 2019,2024,D21,EdgeProp
-WATTEN HOUSE,180,UOL Group & SingLand,Freehold,2027,D11,EdgeProp
-WILSHIRE RESIDENCES,85,Tong Eng Group & Roxy-Pacific & Kim Seng,Freehold,,D10,EdgeProp
+VILLA MARINA,432,,,,,EdgeProp
+VILLAGE @ PASIR PANJANG,148,,,,,EdgeProp
+VISIONCREST,265,,,,,EdgeProp
+VISTA RESIDENCES,280,,,,,EdgeProp
+VIVA VISTA,144,,,,,EdgeProp
+VIZ AT HOLLAND,165,,,,,EdgeProp
+VUE 8 RESIDENCE,463,,,,,EdgeProp
 W RESIDENCES MARINA VIEW - SINGAPORE,683,IOI Properties,99 yrs lease commencing from 2021,,D01,EdgeProp
+WALLICH RESIDENCE,181,,,,,EdgeProp
+WATER PLACE,437,,,,,EdgeProp
+WATERBANK AT DAKOTA,616,,,,,EdgeProp
+WATERFORD RESIDENCE,118,,,,,EdgeProp
+WATERFRONT @ FABER,210,,,,,EdgeProp
+WATERFRONT GOLD,361,,,,,EdgeProp
+WATERFRONT ISLE,561,,,,,EdgeProp
+WATERFRONT KEY,437,,,,,EdgeProp
+WATERFRONT WAVES,405,,,,,EdgeProp
+WATERMARK ROBERTSON QUAY,206,,,,,EdgeProp
+WATERSCAPE AT CAVENAGH,200,,,,,EdgeProp
+WATERTOWN,992,,,,,EdgeProp
+WATERVIEW,696,,,,,EdgeProp
+WATTEN HOUSE,180,UOL Group & SingLand,Freehold,2027,D11,EdgeProp
+WEST BAY CONDOMINIUM,318,,,,,EdgeProp
+WESTCOVE CONDOMINIUM,234,,,,,EdgeProp
+WHISTLER GRAND,716,,,,,EdgeProp
+WILSHIRE RESIDENCES,85,Tong Eng Group & Roxy-Pacific & Kim Seng,Freehold,,D10,EdgeProp
+WOODGROVE CONDOMINIUM,248,,,,,EdgeProp
+WOODHAVEN,337,,,,,EdgeProp
+YISHUN EMERALD,436,,,,,EdgeProp
+YISHUN SAPPHIRE,380,,,,,EdgeProp
+ZEDGE,102,,,,,EdgeProp
 ZYANYA,34,NNB 8 Development,Freehold,,D14,EdgeProp
 ZYON GRAND,706,CDL & Mitsui Fudosan,99 yrs lease commencing from 2024,,D03,EdgeProp
+EASTWOOD LODGE,16,,,,,EdgeProp
+GRANDVIEW SUITES,52,,,,,EdgeProp
+BALMORAL HILLS,62,,,,,EdgeProp
+NEWTON SUITES,118,,,,,EdgeProp
+THE QUAYSIDE,228,,,,,EdgeProp
+LILYDALE,318,,,,,EdgeProp
+THOMSON GROVE,116,,,,,EdgeProp
+SUITES AT BUKIT TIMAH,71,,,,,EdgeProp
+TOMLINSON HEIGHTS,70,,,,,EdgeProp
+BURLINGTON SQUARE,179,,,,,EdgeProp
+ASTOR GREEN,170,,,,,EdgeProp
+ST FRANCIS COURT,71,,,,,EdgeProp
+THE HELICONIA,103,,,,,EdgeProp
+KAP RESIDENCES,142,,,,,EdgeProp
+LINCOLN SUITES,175,,,,,EdgeProp
+LE CRESCENDO,228,,,,,EdgeProp
+GOLDENHILL PARK CONDOMINIUM,390,,,,,EdgeProp
+THE HILLSIDE,340,,,,,EdgeProp
+MON JERVOIS,109,,,,,EdgeProp
+TEDGE,42,,,,,EdgeProp
+THE CRISTALLO,74,,,,,EdgeProp
+FULCRUM,128,,,,,EdgeProp
+VIVA,235,,,,,EdgeProp
+PATERSON SUITES,102,,,,,EdgeProp
+ZENITH,85,,,,,EdgeProp
+NESS,62,,,,,EdgeProp
+STELLAR RV,120,,,,,EdgeProp
+THE WATERLINE,103,,,,,EdgeProp
+CENTRAL VIEW,104,,,,,EdgeProp
+THE BEVERLY,118,,,,,EdgeProp
+SHELFORD SUITES,77,,,,,EdgeProp
+RV SUITES,96,,,,,EdgeProp
+ISUITES @ PALM,64,,,,,EdgeProp
+SUNSHINE PLAZA,160,,,,,EdgeProp
+TIERRA VUE,129,,,,,EdgeProp
+ORCHARD SCOTTS,387,,,,,EdgeProp
+NEWTON 18,81,,,,,EdgeProp
+ONE LEICESTER,194,,,,,EdgeProp
+ROBIN SUITES,92,,,,,EdgeProp
+ADRIA,105,,,,,EdgeProp
+LE REGAL,88,,,,,EdgeProp
+THE SERENADE @ HOLLAND,89,,,,,EdgeProp
+OKIO,104,,,,,EdgeProp
+THE PETALS,270,,,,,EdgeProp
+RIVERWALK APARTMENTS,118,,,,,EdgeProp
+KENTISH GREEN,122,,,,,EdgeProp
+10 SHELFORD,69,,,,,EdgeProp
+THE ATRIA AT MEYER,158,,,,,EdgeProp
+WHITEHAVEN,120,,,,,EdgeProp
+OASIS GARDEN,134,,,,,EdgeProp
+EON SHENTON,132,,,,,EdgeProp
+AMARANDA GARDENS,189,,,,,EdgeProp
+YONG AN PARK,288,,,,,EdgeProp
+HILLS TWOONE,71,,,,,EdgeProp
+6 DERBYSHIRE,168,,,,,EdgeProp
+CASA FORTUNA,106,,,,,EdgeProp
+NOVENA COURT,107,,,,,EdgeProp
+ST PATRICK'S RESIDENCES,102,,,,,EdgeProp
+8M RESIDENCES,68,,,,,EdgeProp
+SIMS GREEN,108,,,,,EdgeProp
+COASTAL BREEZE RESIDENCES,63,,,,,EdgeProp
+THE PATERSON,88,,,,,EdgeProp
+PARC BLEU,55,,,,,EdgeProp
+ASTRID MEADOWS,208,,,,,EdgeProp
+TROPIKA EAST,105,,,,,EdgeProp
+TIARA,264,,,,,EdgeProp
+SIN MING PLAZA,102,,,,,EdgeProp
+CAIRNHILL RESIDENCES,97,,,,,EdgeProp
+TERESA VILLE,264,,,,,EdgeProp
+BLUWATERS 2,71,,,,,EdgeProp
+MONTROSA,122,,,,,EdgeProp
+REZI 26,106,,,,,EdgeProp
+ADAM PARK CONDOMINIUM,118,,,,,EdgeProp
+AVA TOWERS,124,,,,,EdgeProp
+PINNACLE 16,73,,,,,EdgeProp
+ATRIUM RESIDENCES,142,,,,,EdgeProp
+LA BRISA,84,,,,,EdgeProp
+YEWTEE RESIDENCES,139,,,,,EdgeProp
+LEONIE SUITES,97,,,,,EdgeProp
+NEEM TREE,84,,,,,EdgeProp
+KING'S MANSION,196,,,,,EdgeProp
+BLOSSOMS @ WOODLEIGH,240,,,,,EdgeProp
+EAST COAST RESIDENCES,59,,,,,EdgeProp
+THE RIVERINE BY THE PARK,96,,,,,EdgeProp
+THE VERMONT ON CAIRNHILL,158,,,,,EdgeProp
+HILLVIEW PARK,184,,,,,EdgeProp
+LUMA,75,,,,,EdgeProp
+REZI 24,110,,,,,EdgeProp
+BREEZE BY THE EAST,88,,,,,EdgeProp
+BUKIT REGENCY,224,,,,,EdgeProp
+KIM SIA COURT,172,,,,,EdgeProp
+THE WATER EDGE,98,,,,,EdgeProp
+LEGENDA AT JOO CHIAT,100,,,,,EdgeProp
+MODA,56,,,,,EdgeProp
+DOMUS,104,,,,,EdgeProp
+# 1 LOFT,80,,,,,EdgeProp
+AMBER 45,139,,,,,EdgeProp
+PATERSON RESIDENCE,110,,,,,EdgeProp
+PARBURY HILL CONDOMINIUM,182,,,,,EdgeProp
+THE CHUAN,106,,,,,EdgeProp
+ROOTS @ TRANSIT,31,,,,,EdgeProp
+KENSINGTON PARK CONDOMINIUM,310,,,,,EdgeProp
+THE CAPE,76,,,,,EdgeProp
+THREE 11,65,,,,,EdgeProp
+GAMBIR RIDGE,77,,,,,EdgeProp
+BUTTERWORTH 8,216,,,,,EdgeProp
+M21,61,,,,,EdgeProp
+HALLMARK RESIDENCES,75,,,,,EdgeProp
+PAVILION SQUARE,42,,,,,EdgeProp
+MEYERHOUSE,56,,,,,EdgeProp
+NOUVELLE PARK,108,,,,,EdgeProp
+THE STELLAR,162,,,,,EdgeProp
+EMERALD GARDEN,265,,,,,EdgeProp
+THE INSPIRA,120,,,,,EdgeProp
+IMPERIAL HEIGHTS,100,,,,,EdgeProp
+M5,33,,,,,EdgeProp
+HOUGANG GREEN,90,,,,,EdgeProp
+THE SUITES AT CENTRAL,157,,,,,EdgeProp
+THE MONTANA,108,,,,,EdgeProp
+LAGUNA GREEN,121,,,,,EdgeProp
+RIVIERA 38,102,,,,,EdgeProp
+PARC MONDRIAN,100,,,,,EdgeProp
+EAST VILLAGE,90,,,,,EdgeProp
+FLAME TREE PARK,160,,,,,EdgeProp
+SINGA HILLS,58,,,,,EdgeProp
+GRAND DUCHESS AT ST PATRICK'S,121,,,,,EdgeProp
+WOODSVILLE 28,110,,,,,EdgeProp
+RIVERIA GARDENS,49,,,,,EdgeProp
+ARDMORE II,118,,,,,EdgeProp
+ONE OXLEY RISE,89,,,,,EdgeProp
+PARKSHORE,152,,,,,EdgeProp
+THE CORNWALL,99,,,,,EdgeProp
+HERITAGE EAST,65,,,,,EdgeProp
+THE LENOX,76,,,,,EdgeProp
+MATTAR RESIDENCES,26,,,,,EdgeProp
+ROBIN RESIDENCES,134,,,,,EdgeProp
+NEWTON EDGE,104,,,,,EdgeProp
+SIMS EDGE,78,,,,,EdgeProp
+M66,70,,,,,EdgeProp
+TWIN REGENCY,234,,,,,EdgeProp
+THE ESSENCE,84,,,,,EdgeProp
+THOMSON V TWO,74,,,,,EdgeProp
+SUITES AT ORCHARD,118,,,,,EdgeProp
+JUPITER 18,53,,,,,EdgeProp
+SUITES 28,64,,,,,EdgeProp
+THE STERLING,232,,,,,EdgeProp
+DUNEARN 386,35,,,,,EdgeProp
+MIMOSA PARK,175,,,,,EdgeProp
+CHANTILLY RISE,120,,,,,EdgeProp
+1919,75,,,,,EdgeProp
+THE SOUND,104,,,,,EdgeProp
+PALM SPRING,167,,,,,EdgeProp
+JOOL SUITES,52,,,,,EdgeProp
+THE GERANIUM,62,,,,,EdgeProp
+ST MICHAEL'S PLACE,74,,,,,EdgeProp
+THE ALCOVE,102,,,,,EdgeProp
+D'ECOSIA,73,,,,,EdgeProp
+THE METZ,169,,,,,EdgeProp
+CORALIS,127,,,,,EdgeProp
+THE LIGHT @ CAIRNHILL,121,,,,,EdgeProp
+THE REGENCY AT TIONG BAHRU,158,,,,,EdgeProp
+LATTICE ONE,48,,,,,EdgeProp
+KENTISH LODGE,75,,,,,EdgeProp
+ONE FORT,79,,,,,EdgeProp
+MILL POINT,108,,,,,EdgeProp
+8 RODYK,50,,,,,EdgeProp
+THE COSMOPOLITAN,228,,,,,EdgeProp
+VA RESIDENCES,52,,,,,EdgeProp
+VERSILIA ON HAIG,128,,,,,EdgeProp
+THE AZURE,116,,,,,EdgeProp
+PARKSUITES,119,,,,,EdgeProp
+DORMER PARK,92,,,,,EdgeProp
+THE SHELFORD,215,,,,,EdgeProp
+SUITES DE LAUREL,72,,,,,EdgeProp
+THE WOODGROVE,72,,,,,EdgeProp
+THE LINCOLN MODERN,56,,,,,EdgeProp
+SMART SUITES,72,,,,,EdgeProp
+D'WEAVE,71,,,,,EdgeProp
+THE WINDSOR,159,,,,,EdgeProp
+MARINE BLUE,124,,,,,EdgeProp
+ROBINSON SUITES,167,,,,,EdgeProp
+SUITES @ SIMS,48,,,,,EdgeProp
+KEMBANGAN SUITES,60,,,,,EdgeProp
+HUME PARK I,328,,,,,EdgeProp
+EAST PALM,42,,,,,EdgeProp
+LE CONNEY PARK,44,,,,,EdgeProp
+TRESALVEO,176,,,,,EdgeProp
+ONE ST MICHAEL'S,131,,,,,EdgeProp
+MERA SPRINGS,129,,,,,EdgeProp
+RANGOON 88,48,,,,,EdgeProp
+SHELFORD REGENCY,56,,,,,EdgeProp
+ORANGE GROVE RESIDENCES,60,,,,,EdgeProp
+CASABELLA,82,,,,,EdgeProp
+THE ACACIAS,65,,,,,EdgeProp
+HOLLAND RESIDENCES,83,,,,,EdgeProp
+LATITUDE,127,,,,,EdgeProp
+CENTRAL IMPERIAL,63,,,,,EdgeProp
+BOTANIC GARDENS VIEW,144,,,,,EdgeProp
+THE FORD @ HOLLAND,85,,,,,EdgeProp
+MILLAGE,70,,,,,EdgeProp
+PARC HAVEN,137,,,,,EdgeProp
+THE LOFT,77,,,,,EdgeProp
+MEADOWLODGE,64,,,,,EdgeProp
+THE BENTLY RESIDENCES@KOVAN,48,,,,,EdgeProp
+SPAZIO @ KOVAN,48,,,,,EdgeProp
+HARBOURLIGHTS,139,,,,,EdgeProp
+ELLIOT AT THE EAST COAST,119,,,,,EdgeProp
+ALESSANDREA,105,,,,,EdgeProp
+UBER 388,95,,,,,EdgeProp
+THE VERANDAH RESIDENCES,170,,,,,EdgeProp
+BLU CORAL,79,,,,,EdgeProp
+MIRO,85,,,,,EdgeProp
+ONE EIGHTIES RESIDENCES,52,,,,,EdgeProp
+LANDBAY CONDOMINIUM,122,,,,,EdgeProp
+GILSTEAD TWO,110,,,,,EdgeProp
+SUITES @ GUILLEMARD,72,,,,,EdgeProp
+CHELSEA LODGE,78,,,,,EdgeProp
+CITYVISTA RESIDENCES,70,,,,,EdgeProp
+CAIRNHILL PLAZA,204,,,,,EdgeProp
+SPANISH VILLAGE,226,,,,,EdgeProp
+CASA PASIR RIS,58,,,,,EdgeProp
+JERVOIS PRIVE,43,,,,,EdgeProp
+THE BEACON,124,,,,,EdgeProp
+STRATA,100,,,,,EdgeProp
+URBANA,126,,,,,EdgeProp
+LA MARIPOSA,17,,,,,EdgeProp
+OCEAN FRONT SUITES,58,,,,,EdgeProp
+RESIDENCES @ KILLINEY,68,,,,,EdgeProp
+MANDALE HEIGHTS,96,,,,,EdgeProp
+EASTWOOD CENTRE,48,,,,,EdgeProp
+KELLOCK LODGE,48,,,,,EdgeProp
+CITY LOFT,40,,,,,EdgeProp
+THE RED HOUSE,42,,,,,EdgeProp
+THE HACIENDA,109,,,,,EdgeProp
+NATHAN RESIDENCES,91,,,,,EdgeProp
+ROBERTSON EDGE,70,,,,,EdgeProp
+GRANGE HEIGHTS,120,,,,,EdgeProp
+THE CITRON RESIDENCES,54,,,,,EdgeProp
+RESIDENCE TWENTY-TWO,22,,,,,EdgeProp
+BEAUTY WORLD CENTRE,80,,,,,EdgeProp
+THE MARQUE @ IRRAWADDY,48,,,,,EdgeProp
+PINEWOOD GARDENS,149,,,,,EdgeProp
+ESCADA VIEW,80,,,,,EdgeProp
+LE HILL CONDOMINIUM,97,,,,,EdgeProp
+FORTE SUITES,106,,,,,EdgeProp
+ONE BALMORAL,91,,,,,EdgeProp
+FLORAVILLE,50,,,,,EdgeProp
+QUEENSWAY TOWER,78,,,,,EdgeProp
+LEONIE GARDENS,138,,,,,EdgeProp
+THE AXIS,52,,,,,EdgeProp
+8 BASSEIN,74,,,,,EdgeProp
+18 WOODSVILLE,101,,,,,EdgeProp
+LAUREL TREE,70,,,,,EdgeProp
+THE ANSLEY,100,,,,,EdgeProp
+TANGERINE GROVE,125,,,,,EdgeProp
+THE CALLISTA,87,,,,,EdgeProp
+WINDY HEIGHTS,200,,,,,EdgeProp
+BIJOU,120,,,,,EdgeProp
+DE ROYALE,204,,,,,EdgeProp
+VIVACE,85,,,,,EdgeProp
+MONTVIEW,115,,,,,EdgeProp
+ALLSWORTH PARK,170,,,,,EdgeProp
+THE COTZ,48,,,,,EdgeProp
+THE ASTON,80,,,,,EdgeProp
+EDENZ SUITES,34,,,,,EdgeProp
+WATTEN HILL,70,,,,,EdgeProp
+THE TIER,48,,,,,EdgeProp
+ADANA @ THOMSON,74,,,,,EdgeProp
+DORSETT RESIDENCES,68,,,,,EdgeProp
+SUITES @ TOPAZ,46,,,,,EdgeProp
+RESIDENCES BOTANIQUE,81,,,,,EdgeProp
+VIBES@UPPER SERANGOON,60,,,,,EdgeProp
+THE ARISTO @ AMBER,56,,,,,EdgeProp
+THE BROOKS I,33,,,,,EdgeProp
+CHERRYHILL,163,,,,,EdgeProp
+MACKENZIE 88,55,,,,,EdgeProp
+BOTANIC GARDENS MANSION,112,,,,,EdgeProp
+TREASURES@G6,39,,,,,EdgeProp
+LAGUNA 88,88,,,,,EdgeProp
+LAVERNE'S LOFT,44,,,,,EdgeProp
+TREVOSE PARK,150,,,,,EdgeProp
+D'ZIRE,47,,,,,EdgeProp
+28 RC SUITES,45,,,,,EdgeProp
+PARK 1 SUITES,26,,,,,EdgeProp
+RV EDGE,108,,,,,EdgeProp
+CASA ROSA,96,,,,,EdgeProp
+CRESCENDO PARK,77,,,,,EdgeProp
+THE MERASAGA,116,,,,,EdgeProp
+CASSIA VIEW,72,,,,,EdgeProp
+CENTRA RESIDENCE,78,,,,,EdgeProp
+THE CENTRIO,53,,,,,EdgeProp
+EASTWOOD REGENCY,75,,,,,EdgeProp
+THE BOUTIQ,130,,,,,EdgeProp
+LEONIE HILL RESIDENCES,80,,,,,EdgeProp
+FABER GARDEN CONDOMINIUM,233,,,,,EdgeProp
+SUNVILLE,147,,,,,EdgeProp
+ESPIRA SUITES,46,,,,,EdgeProp
+NAUNG RESIDENCE,60,,,,,EdgeProp
+PRISTINE HEIGHTS,60,,,,,EdgeProp
+OXLEY EDGE,45,,,,,EdgeProp
+THE LEGEND,98,,,,,EdgeProp
