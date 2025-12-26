@@ -33,9 +33,6 @@ function lazyWithRetry(componentImport) {
 const MacroOverviewContent = lazyWithRetry(() =>
   import('./pages/MacroOverview').then(m => ({ default: m.MacroOverviewContent }))
 );
-const FloorDispersionContent = lazyWithRetry(() =>
-  import('./pages/FloorDispersion').then(m => ({ default: m.FloorDispersionContent }))
-);
 const ProjectDeepDiveContent = lazyWithRetry(() =>
   import('./pages/ProjectDeepDive').then(m => ({ default: m.ProjectDeepDiveContent }))
 );
@@ -72,10 +69,9 @@ function DashboardLoadingFallback() {
  * - /landing: Landing page (public)
  * - /login: User authentication
  * - /market-pulse: Market analytics dashboard (premium)
+ * - /district-deep-dive: District deep dive analysis (premium)
+ * - /project-deep-dive: Project analysis with exit queue risk & floor liquidity (premium)
  * - /value-parity: Budget search tool (premium) - includes New Launches + Resale
- * - /floor-dispersion: Floor level analysis (premium)
- * - /district-deep-dive: District and project deep dive analysis (premium)
- * - /project-deep-dive: Project-specific analysis with exit queue risk (premium)
  */
 function App() {
   return (
@@ -143,22 +139,9 @@ function App() {
             }
           />
 
-          {/* Floor Dispersion - Floor level analysis (Protected, Lazy-loaded) */}
-          <Route
-            path="/floor-dispersion"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout activePage="floor-dispersion">
-                  <Suspense fallback={<DashboardLoadingFallback />}>
-                    <FloorDispersionContent />
-                  </Suspense>
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Legacy route redirect */}
-          <Route path="/analytics-view" element={<Navigate to="/floor-dispersion" replace />} />
+          {/* Legacy route redirects */}
+          <Route path="/floor-dispersion" element={<Navigate to="/project-deep-dive" replace />} />
+          <Route path="/analytics-view" element={<Navigate to="/project-deep-dive" replace />} />
 
           {/* District & Project Deep Dive (Protected, Lazy-loaded) */}
           <Route

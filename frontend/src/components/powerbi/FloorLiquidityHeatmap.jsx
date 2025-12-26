@@ -22,7 +22,7 @@ import {
  * Y-axis: Project Names (alphabetical)
  * Cell color: Liquidity Score (Z-score of velocity within project)
  */
-export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightProject }) {
+export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightProject: _highlightProject }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
 
@@ -90,7 +90,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
 
       // Calculate velocities and Z-scores for district
       const velocities = [];
-      for (const [zone, totals] of Object.entries(zoneTotals)) {
+      for (const [, totals] of Object.entries(zoneTotals)) {
         totals.velocity = totals.count / windowMonths;
         velocities.push(totals.velocity);
       }
@@ -101,7 +101,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
         const variance = velocities.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / velocities.length;
         const std = Math.sqrt(variance);
 
-        for (const [zone, totals] of Object.entries(zoneTotals)) {
+        for (const [, totals] of Object.entries(zoneTotals)) {
           if (std > 0) {
             totals.z_score = (totals.velocity - mean) / std;
           } else {
