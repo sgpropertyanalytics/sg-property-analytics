@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import FloorLiquidityChart from '../components/powerbi/FloorLiquidityChart';
 import FloorPremiumByRegionChart from '../components/powerbi/FloorPremiumByRegionChart';
 import FloorPremiumTrendChart from '../components/powerbi/FloorPremiumTrendChart';
-import FloorLiquidityHeatmap from '../components/powerbi/FloorLiquidityHeatmap';
 import { ErrorBoundary, ChartWatermark } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
@@ -135,17 +134,6 @@ export function FloorDispersionContent() {
           </ErrorBoundary>
         </div>
 
-        {/* Liquidity Heatmap - Full tower view */}
-        <div className="mt-6">
-          <ErrorBoundary name="Liquidity Heatmap" compact>
-            <ChartWatermark>
-              <FloorLiquidityHeatmap
-                bedroom={bedroom || undefined}
-                segment={segment || undefined}
-              />
-            </ChartWatermark>
-          </ErrorBoundary>
-        </div>
       </div>
     </div>
   );

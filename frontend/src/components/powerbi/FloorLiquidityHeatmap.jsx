@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
@@ -29,7 +29,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
   // Local state for window toggle
   const [windowMonths, setWindowMonths] = useState(12);
 
-  // Collapsible district state
+  // Collapsible district state - default expanded
   const [expandedDistricts, setExpandedDistricts] = useState(new Set());
 
   // Tooltip state
@@ -131,6 +131,13 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
 
     return { grouped, sortedDistricts, districtAggregates, maxVolume };
   }, [data.projects, windowMonths]);
+
+  // Auto-expand all districts when data loads
+  useEffect(() => {
+    if (projectsByDistrict.sortedDistricts.length > 0) {
+      setExpandedDistricts(new Set(projectsByDistrict.sortedDistricts));
+    }
+  }, [projectsByDistrict.sortedDistricts]);
 
   // Toggle district expansion
   const toggleDistrict = (district) => {
