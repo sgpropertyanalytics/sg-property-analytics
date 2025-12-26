@@ -29,6 +29,15 @@ All documentation has been consolidated into `/docs`:
 | [docs/decisions.md](./docs/decisions.md) | Design decisions, roadmap |
 | [docs/glossary.md](./docs/glossary.md) | Terms, acronyms |
 
+**Claude Guardrail Skills** (auto-activate before relevant changes):
+
+| Skill | Trigger |
+|-------|---------|
+| `sql-guardrails` | Any SQL query or backend service |
+| `contract-async-guardrails` | Any frontend data fetching |
+| `api-endpoint-guardrails` | Creating new API endpoints |
+| `dashboard-guardrails` | Modifying dashboard charts |
+
 ---
 
 # 1. QUICK START
@@ -265,6 +274,35 @@ CI Scripts:
   npm run lint:strict  # Fails on any warning (use when ready)
   npm run build        # Fails on broken imports
   npm run typecheck    # Catches type mismatches (optional, noisy)
+```
+
+### Card 10: API Endpoint Standardization (MANDATORY)
+
+```
+NEW CHART/DATA FEATURE? USE /api/aggregate!
+
+Decision Tree:
+  Need new data? → Can /aggregate handle it?
+    YES → Use /aggregate (don't create endpoint)
+    NO  → Extend /aggregate (add metric/group_by)
+
+/aggregate already supports:
+  group_by: month, quarter, year, district, bedroom, sale_type,
+            project, region, floor_level
+  metrics:  count, median_psf, avg_psf, total_value, median_price,
+            avg_price, min_psf, max_psf, price_25th, price_75th
+
+FORBIDDEN: Creating dedicated endpoints like:
+  /psf_trends_by_bedroom    → Use /aggregate?group_by=bedroom,month
+  /market_stats_by_region   → Use /aggregate?group_by=region
+  /distribution_by_type     → Use /aggregate?group_by=sale_type
+
+ALLOWED dedicated endpoints:
+  /projects/<name>/*  → Complex project-scoped analysis
+  /admin/*            → Internal operations
+  /filter-options     → Metadata only
+
+Full reference: See .claude/skills/api-endpoint-guardrails/SKILL.md
 ```
 
 ---
