@@ -23,10 +23,10 @@ const K_PROJECT_THRESHOLD = 15;
 const getAgeBucket = (age, isFreehold = false) => {
   if (isFreehold) return 'FH';
   if (age === null || age === undefined) return '-';
-  if (age <= 3) return 'Just TOP';
+  if (age < 4) return 'Just TOP';
   if (age <= 8) return 'Recently TOP';
   if (age <= 15) return 'Young Resale';
-  if (age <= 25) return 'Mature Resale';
+  if (age <= 25) return 'Resale';
   return 'Old Resale';
 };
 
