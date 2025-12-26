@@ -22,7 +22,7 @@ import {
   FLOOR_LEVEL_LABELS_SHORT,
   getFloorLevelIndex,
 } from '../../constants';
-import { getAggField, AggField } from '../../schemas/apiContract';
+import { getAggField, AggField, isFloorLevel } from '../../schemas/apiContract';
 
 ChartJS.register(
   CategoryScale,
@@ -92,7 +92,7 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
           results[region] = rawData
             .filter(d => {
               const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
-              return floorLevel && floorLevel !== 'Unknown';
+              return floorLevel && !isFloorLevel.unknown(floorLevel);
             })
             .sort((a, b) => {
               const aLevel = getAggField(a, AggField.FLOOR_LEVEL);

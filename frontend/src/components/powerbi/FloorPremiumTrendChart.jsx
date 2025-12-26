@@ -18,7 +18,7 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
-import { getAggField, AggField } from '../../schemas/apiContract';
+import { getAggField, AggField, isFloorLevel } from '../../schemas/apiContract';
 
 ChartJS.register(
   CategoryScale,
@@ -86,7 +86,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
       // Filter out Unknown floor levels (use getAggField for v1/v2 compatibility)
       return data.filter(d => {
         const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
-        return floorLevel && floorLevel !== 'Unknown';
+        return floorLevel && !isFloorLevel.unknown(floorLevel);
       });
     },
     [debouncedFilterKey, bedroom, segment],

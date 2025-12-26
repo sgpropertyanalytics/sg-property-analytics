@@ -200,7 +200,16 @@ export const RegionLabels = {
 };
 
 /**
- * Floor level enum values.
+ * Floor level enum values (v2 API format - lowercase).
+ *
+ * Source of truth: backend/services/classifier_extended.py
+ * Floor Classification Tiers:
+ *   01-05  → Low
+ *   06-10  → Mid-Low
+ *   11-20  → Mid
+ *   21-30  → Mid-High
+ *   31-40  → High
+ *   41+    → Luxury
  */
 export const FloorLevel = {
   LOW: 'low',
@@ -213,9 +222,24 @@ export const FloorLevel = {
 };
 
 /**
- * Display labels for floor levels.
+ * Floor level DB values (what classifier_extended.py outputs).
+ * Used for v1 API responses and aggregate endpoints.
+ */
+export const FloorLevelDB = {
+  LOW: 'Low',
+  MID_LOW: 'Mid-Low',
+  MID: 'Mid',
+  MID_HIGH: 'Mid-High',
+  HIGH: 'High',
+  LUXURY: 'Luxury',
+  UNKNOWN: 'Unknown',
+};
+
+/**
+ * Display labels for floor levels (with floor ranges).
  */
 export const FloorLevelLabels = {
+  // v2 API format
   [FloorLevel.LOW]: 'Low (01-05)',
   [FloorLevel.MID_LOW]: 'Mid-Low (06-10)',
   [FloorLevel.MID]: 'Mid (11-20)',
@@ -223,6 +247,61 @@ export const FloorLevelLabels = {
   [FloorLevel.HIGH]: 'High (31-40)',
   [FloorLevel.LUXURY]: 'Luxury (41+)',
   [FloorLevel.UNKNOWN]: 'Unknown',
+  // v1 DB format (for backwards compatibility)
+  [FloorLevelDB.LOW]: 'Low (01-05)',
+  [FloorLevelDB.MID_LOW]: 'Mid-Low (06-10)',
+  [FloorLevelDB.MID]: 'Mid (11-20)',
+  [FloorLevelDB.MID_HIGH]: 'Mid-High (21-30)',
+  [FloorLevelDB.HIGH]: 'High (31-40)',
+  [FloorLevelDB.LUXURY]: 'Luxury (41+)',
+  [FloorLevelDB.UNKNOWN]: 'Unknown',
+};
+
+/**
+ * Short labels for floor levels (just the classification name).
+ */
+export const FloorLevelLabelsShort = {
+  // v2 API format
+  [FloorLevel.LOW]: 'Low',
+  [FloorLevel.MID_LOW]: 'Mid-Low',
+  [FloorLevel.MID]: 'Mid',
+  [FloorLevel.MID_HIGH]: 'Mid-High',
+  [FloorLevel.HIGH]: 'High',
+  [FloorLevel.LUXURY]: 'Luxury',
+  [FloorLevel.UNKNOWN]: 'Unknown',
+  // v1 DB format
+  [FloorLevelDB.LOW]: 'Low',
+  [FloorLevelDB.MID_LOW]: 'Mid-Low',
+  [FloorLevelDB.MID]: 'Mid',
+  [FloorLevelDB.MID_HIGH]: 'Mid-High',
+  [FloorLevelDB.HIGH]: 'High',
+  [FloorLevelDB.LUXURY]: 'Luxury',
+  [FloorLevelDB.UNKNOWN]: 'Unknown',
+};
+
+/**
+ * Helpers to check floor level regardless of v1 (DB) or v2 (API) format.
+ */
+export const isFloorLevel = {
+  low: (val) => val === FloorLevel.LOW || val === FloorLevelDB.LOW,
+  midLow: (val) => val === FloorLevel.MID_LOW || val === FloorLevelDB.MID_LOW,
+  mid: (val) => val === FloorLevel.MID || val === FloorLevelDB.MID,
+  midHigh: (val) => val === FloorLevel.MID_HIGH || val === FloorLevelDB.MID_HIGH,
+  high: (val) => val === FloorLevel.HIGH || val === FloorLevelDB.HIGH,
+  luxury: (val) => val === FloorLevel.LUXURY || val === FloorLevelDB.LUXURY,
+  unknown: (val) => val === FloorLevel.UNKNOWN || val === FloorLevelDB.UNKNOWN,
+};
+
+/**
+ * Get display label for any floor level value (v1 or v2 format).
+ * @param {string} val - Floor level value
+ * @param {boolean} short - Use short label (default: false)
+ * @returns {string} Display label
+ */
+export const getFloorLevelLabel = (val, short = false) => {
+  if (!val) return 'Unknown';
+  const labels = short ? FloorLevelLabelsShort : FloorLevelLabels;
+  return labels[val] || val;
 };
 
 /**

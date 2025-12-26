@@ -24,7 +24,7 @@ import {
   FLOOR_LEVEL_LABELS,
   getFloorLevelIndex,
 } from '../../constants';
-import { getAggField, AggField } from '../../schemas/apiContract';
+import { getAggField, AggField, isFloorLevel } from '../../schemas/apiContract';
 
 ChartJS.register(
   CategoryScale,
@@ -74,7 +74,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
       return rawData
         .filter(d => {
           const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
-          return floorLevel && floorLevel !== 'Unknown';
+          return floorLevel && !isFloorLevel.unknown(floorLevel);
         })
         .sort((a, b) => {
           const aLevel = getAggField(a, AggField.FLOOR_LEVEL);
