@@ -4,11 +4,28 @@ This document outlines the version lifecycle and deprecation process for the SG 
 
 ## Current Version Status
 
-| Version | Status | Description | Deprecation Date |
-|---------|--------|-------------|-----------------|
-| v1 | Deprecated (Sunset TBD) | Legacy snake_case fields | TBD |
-| v2 | Supported | camelCase fields + enum normalization | - |
-| v3 | Current | Stabilization release with version tracking | - |
+| Version | Status | Description | Deprecation Date | Sunset Date |
+|---------|--------|-------------|-----------------|-------------|
+| v1 | Deprecated | Legacy snake_case fields | 2025-12-25 | 2026-04-01 |
+| v2 | Supported | camelCase fields + enum normalization | - | - |
+| v3 | Current | Stabilization release with version tracking | - | - |
+
+### v1 Sunset Timeline
+
+**v1 is deprecated as of 2025-12-25 and will be removed on 2026-04-01.**
+
+| Milestone | Date | Action |
+|-----------|------|--------|
+| Deprecated | 2025-12-25 | Console warnings in dev mode |
+| Warning Phase | 2026-02-01 | Response includes deprecation warning header |
+| Block New Clients | 2026-03-01 | New API clients get 400 if requesting v1 |
+| Sunset | 2026-04-01 | v1 removed entirely, requests return 410 Gone |
+
+**Migration Notes:**
+- v1 uses `snake_case` fields (e.g., `sale_type`, `median_psf`)
+- v2+ uses `camelCase` fields (e.g., `saleType`, `medianPsf`)
+- Frontend adapters handle v1/v2 transparently via `getAggField()`
+- After sunset, adapters will no longer need v1 fallbacks
 
 ## Version Lifecycle
 

@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useState, useMemo } from 'react';
+import { useAbortableQuery } from '../../hooks';
+import { QueryState } from '../common/QueryState';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getFloorLiquidityHeatmap } from '../../api/client';
 import {
@@ -28,21 +29,36 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
   // Local state for window toggle
   const [windowMonths, setWindowMonths] = useState(12);
 
-  // Data state
-  const [data, setData] = useState({ projects: [], floor_zone_order: [] });
-  const [meta, setMeta] = useState({ exclusions: {} });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
-
   // Collapsible district state
   const [expandedDistricts, setExpandedDistricts] = useState(new Set());
 
   // Tooltip state
   const [hoveredCell, setHoveredCell] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  const { data: apiResponse, loading, error, refetch } = useAbortableQuery(
+    async (signal) => {
+      const params = buildApiParams({
+        window_months: windowMonths
+      });
+      if (bedroom) params.bedroom = bedroom;
+      if (segment) params.segment = segment;
+
+      const response = await getFloorLiquidityHeatmap(params, { signal });
+
+      return {
+        data: response.data?.data || { projects: [], floor_zone_order: [] },
+        meta: response.data?.meta || { exclusions: {} }
+      };
+    },
+    [debouncedFilterKey, windowMonths, bedroom, segment],
+    { initialData: { data: { projects: [], floor_zone_order: [] }, meta: { exclusions: {} } } }
+  );
+
+  // Extract data and meta from response
+  const data = apiResponse?.data || { projects: [], floor_zone_order: [] };
+  const meta = apiResponse?.meta || { exclusions: {} };
 
   // Group projects by district and calculate district-level aggregations
   const projectsByDistrict = useMemo(() => {
@@ -132,46 +148,6 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
   const expandAll = () => setExpandedDistricts(new Set(projectsByDistrict.sortedDistricts));
   const collapseAll = () => setExpandedDistricts(new Set());
 
-  // Fetch data
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const params = buildApiParams({
-          window_months: windowMonths
-        });
-        if (bedroom) params.bedroom = bedroom;
-        if (segment) params.segment = segment;
-
-        const response = await getFloorLiquidityHeatmap(params, { signal });
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        setData(response.data?.data || { projects: [], floor_zone_order: [] });
-        setMeta(response.data?.meta || { exclusions: {} });
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching heatmap data:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey, windowMonths, bedroom, segment]);
-
   // Floor zones to display
   const floorZones = data.floor_zone_order?.length > 0
     ? data.floor_zone_order
@@ -191,40 +167,8 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
     setHoveredCell(null);
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: 200 }}>
-        <div className="flex items-center justify-center h-full">
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-            <span className="text-[#547792]">Loading liquidity data...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: 200 }}>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-red-500">Error: {error}</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (data.projects.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-6" style={{ minHeight: 200 }}>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-[#547792]">No resale data available for current filters</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={data.projects.length === 0}>
     <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
       {/* Header */}
       <div className="px-6 py-4 border-b border-[#94B4C1]/30">
@@ -668,6 +612,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
         </div>
       </div>
     </div>
+    </QueryState>
   );
 }
 

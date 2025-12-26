@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useState, useMemo } from 'react';
+import { useAbortableQuery } from '../../hooks';
 import { getHotProjects } from '../../api/client';
 import { BlurredProject, BlurredCurrency } from '../BlurredCell';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -34,68 +34,50 @@ export function HotProjectsTable({
 }) {
   const subscriptionContext = useSubscription();
   const isPremium = subscriptionContext?.isPremium ?? true;
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [sortConfig, setSortConfig] = useState({
     column: 'first_new_sale',  // Default: sort by latest launch date
     order: 'desc',
   });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
-
   // Handle manual refresh
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
-  // Fetch data with optional filters
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
+  // Stable key for filters to prevent unnecessary refetches
+  const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const params = { limit: 200 };
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  const { data, loading, error } = useAbortableQuery(
+    async (signal) => {
+      const params = { limit: 200 };
 
-        // Apply filters if provided
-        if (filters) {
-          if (filters.priceMin) params.price_min = filters.priceMin;
-          if (filters.priceMax) params.price_max = filters.priceMax;
-          if (filters.bedroom) params.bedroom = filters.bedroom;
-          if (filters.region) params.market_segment = filters.region;
-          if (filters.district) params.district = filters.district;
-        }
-
-        const response = await getHotProjects(params, { signal });
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        const projects = response.data.projects || [];
-        setData(projects);
-
-        // Notify parent of data count
-        if (onDataLoad) {
-          onDataLoad(projects.length);
-        }
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching hot projects:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-        }
+      // Apply filters if provided
+      if (filters) {
+        if (filters.priceMin) params.price_min = filters.priceMin;
+        if (filters.priceMax) params.price_max = filters.priceMax;
+        if (filters.bedroom) params.bedroom = filters.bedroom;
+        if (filters.region) params.market_segment = filters.region;
+        if (filters.district) params.district = filters.district;
       }
-    };
 
-    fetchData();
-  }, [filters, onDataLoad, refreshTrigger, startRequest, isStale, getSignal]);
+      const response = await getHotProjects(params, { signal });
+      const projects = response.data.projects || [];
+
+      // Notify parent of data count
+      if (onDataLoad) {
+        onDataLoad(projects.length);
+      }
+
+      return projects;
+    },
+    [filtersKey, refreshTrigger],
+    {
+      initialData: [],
+      onSuccess: (projects) => {
+        if (onDataLoad) onDataLoad(projects.length);
+      }
+    }
+  );
 
   // Handle sort
   const handleSort = (column) => {

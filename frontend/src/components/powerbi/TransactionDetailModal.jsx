@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useState, useMemo } from 'react';
+import { useAbortableQuery } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getTransactionsList } from '../../api/client';
 import { DISTRICT_NAMES, formatPrice, formatPSF } from '../../constants';
@@ -14,66 +14,45 @@ import { isSaleType, getTxnField, TxnField } from '../../schemas/apiContract';
  */
 export function TransactionDetailModal({ isOpen, onClose, title, additionalFilters = {} }) {
   const { buildApiParams } = usePowerBIFilters();
-  const [transactions, setTransactions] = useState([]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total_records: 0,
-    total_pages: 0,
-  });
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
   const [sortBy, setSortBy] = useState('transaction_date');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Prevent stale responses and cancel in-flight requests
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Stable key for additionalFilters to prevent unnecessary refetches
-  const additionalFiltersKey = JSON.stringify(additionalFilters);
+  const additionalFiltersKey = useMemo(() => JSON.stringify(additionalFilters), [additionalFilters]);
 
-  // Fetch transactions when modal opens or filters change
-  useEffect(() => {
-    if (!isOpen) return;
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  // CRITICAL: isOpen in deps ensures rapid open/close cancels properly
+  const { data: apiResponse, loading, error, refetch } = useAbortableQuery(
+    async (signal) => {
+      const params = buildApiParams({
+        ...additionalFilters,
+        page,
+        limit,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      });
+      const response = await getTransactionsList(params, { signal });
 
-    const requestId = startRequest();
-    const signal = getSignal();
+      return {
+        transactions: response.data.transactions || [],
+        pagination: response.data.pagination || { page: 1, limit: 20, total_records: 0, total_pages: 0 },
+      };
+    },
+    [isOpen, additionalFiltersKey, page, limit, sortBy, sortOrder],
+    {
+      enabled: isOpen, // Only fetch when modal is open
+      initialData: {
+        transactions: [],
+        pagination: { page: 1, limit: 20, total_records: 0, total_pages: 0 },
+      },
+    }
+  );
 
-    const fetchTransactions = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const params = buildApiParams({
-          ...additionalFilters,
-          page: pagination.page,
-          limit: pagination.limit,
-          sort_by: sortBy,
-          sort_order: sortOrder,
-        });
-        const response = await getTransactionsList(params, { signal });
-
-        // Ignore stale responses
-        if (isStale(requestId)) return;
-
-        setTransactions(response.data.transactions || []);
-        setPagination(prev => ({
-          ...prev,
-          ...response.data.pagination,
-        }));
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching transactions:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-        }
-      }
-    };
-    fetchTransactions();
-  }, [isOpen, additionalFiltersKey, pagination.page, pagination.limit, sortBy, sortOrder, startRequest, isStale, getSignal, buildApiParams]);
+  // Extract data from response
+  const transactions = apiResponse?.transactions || [];
+  const pagination = apiResponse?.pagination || { page: 1, limit: 20, total_records: 0, total_pages: 0 };
 
   const handleSort = (column) => {
     if (sortBy === column) {
@@ -85,7 +64,7 @@ export function TransactionDetailModal({ isOpen, onClose, title, additionalFilte
   };
 
   const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPage(newPage);
   };
 
   if (!isOpen) return null;
@@ -263,16 +242,16 @@ export function TransactionDetailModal({ isOpen, onClose, title, additionalFilte
           {/* Footer with pagination */}
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
             <div className="text-sm text-slate-500">
-              Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-              {Math.min(pagination.page * pagination.limit, pagination.total_records)} of{' '}
+              Showing {((page - 1) * limit) + 1} to{' '}
+              {Math.min(page * limit, pagination.total_records)} of{' '}
               {pagination.total_records.toLocaleString()} transactions
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page <= 1}
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1}
                 className={`px-3 py-1.5 text-sm rounded border ${
-                  pagination.page <= 1
+                  page <= 1
                     ? 'border-slate-200 text-slate-400 cursor-not-allowed'
                     : 'border-slate-300 text-slate-700 hover:bg-slate-100'
                 }`}
@@ -280,13 +259,13 @@ export function TransactionDetailModal({ isOpen, onClose, title, additionalFilte
                 Previous
               </button>
               <span className="text-sm text-slate-600">
-                Page {pagination.page} of {pagination.total_pages}
+                Page {page} of {pagination.total_pages}
               </span>
               <button
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page >= pagination.total_pages}
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page >= pagination.total_pages}
                 className={`px-3 py-1.5 text-sm rounded border ${
-                  pagination.page >= pagination.total_pages
+                  page >= pagination.total_pages
                     ? 'border-slate-200 text-slate-400 cursor-not-allowed'
                     : 'border-slate-300 text-slate-700 hover:bg-slate-100'
                 }`}

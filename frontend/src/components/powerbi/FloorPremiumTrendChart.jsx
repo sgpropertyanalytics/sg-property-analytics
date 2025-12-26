@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useRef, useMemo } from 'react';
+import { useAbortableQuery } from '../../hooks';
+import { QueryState } from '../common/QueryState';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -66,62 +67,31 @@ const FLOOR_TIERS = {
 export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
-  const [rawData, setRawData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const chartRef = useRef(null);
 
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  const { data: rawData, loading, error, refetch } = useAbortableQuery(
+    async (signal) => {
+      const params = buildApiParams({
+        group_by: 'year,floor_level',
+        metrics: 'count,median_psf_actual,avg_psf'
+      });
 
-  // Fetch data grouped by year and floor_level
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
+      if (bedroom) params.bedroom = bedroom;
+      if (segment) params.segment = segment;
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+      const response = await getAggregate(params, { signal });
+      const data = response.data.data || [];
 
-      try {
-        // We need to fetch data for each year and floor level combination
-        // Using a custom approach: fetch by year, then by floor_level
-        const params = buildApiParams({
-          group_by: 'year,floor_level',
-          metrics: 'count,median_psf_actual,avg_psf'
-        });
-
-        if (bedroom) params.bedroom = bedroom;
-        if (segment) params.segment = segment;
-
-        const response = await getAggregate(params, { signal });
-        const data = response.data.data || [];
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        // Filter out Unknown floor levels (use getAggField for v1/v2 compatibility)
-        const filtered = data.filter(d => {
-          const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
-          return floorLevel && floorLevel !== 'Unknown';
-        });
-        setRawData(filtered);
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching trend data:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey, bedroom, segment]);
+      // Filter out Unknown floor levels (use getAggField for v1/v2 compatibility)
+      return data.filter(d => {
+        const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
+        return floorLevel && floorLevel !== 'Unknown';
+      });
+    },
+    [debouncedFilterKey, bedroom, segment],
+    { initialData: [] }
+  );
 
   // Process data into tier groups by year
   const processedData = useMemo(() => {
@@ -247,40 +217,7 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
   // Card height for consistent alignment with FloorPremiumByRegionChart
   const cardHeight = height + 80;
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-            <span className="text-[#547792]">Loading trend data...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-red-500">Error: {error}</div>
-        </div>
-      </div>
-    );
-  }
-
   const { years, premiums } = premiumTrends;
-
-  if (years.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-[#547792]">No trend data available</div>
-        </div>
-      </div>
-    );
-  }
 
   // Build datasets - only Upper and Mid (Lower is always 0% as baseline)
   const datasets = [
@@ -342,44 +279,46 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
   const midTrend = getLatestTrend(premiums.Mid);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
-      {/* Header - shrink-0 */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-        <h3 className="font-semibold text-[#213448]">Floor Premium Trend</h3>
-        <p className="text-xs text-[#547792] mt-0.5">
-          How floor premiums have evolved over time
-        </p>
-      </div>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={years.length === 0}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
+        {/* Header - shrink-0 */}
+        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
+          <h3 className="font-semibold text-[#213448]">Floor Premium Trend</h3>
+          <p className="text-xs text-[#547792] mt-0.5">
+            How floor premiums have evolved over time
+          </p>
+        </div>
 
-      {/* Chart slot - flex-1 min-h-0 overflow-hidden */}
-      <ChartSlot>
-        <PreviewChartOverlay chartRef={chartRef}>
-          <Chart ref={chartRef} type="line" data={chartData} options={options} />
-        </PreviewChartOverlay>
-      </ChartSlot>
+        {/* Chart slot - flex-1 min-h-0 overflow-hidden */}
+        <ChartSlot>
+          <PreviewChartOverlay chartRef={chartRef}>
+            <Chart ref={chartRef} type="line" data={chartData} options={options} />
+          </PreviewChartOverlay>
+        </ChartSlot>
 
-      {/* Footer - wraps on mobile */}
-      <div className="shrink-0 min-h-[44px] px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-        <span className="shrink-0 text-[#547792] font-medium">Recent Trend:</span>
-        {upperTrend !== null && (
-          <div className="shrink-0 flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FLOOR_TIERS.Upper.color }} />
-            <span className="text-[#213448]">
-              Upper {upperTrend >= 0 ? '↑' : '↓'} {Math.abs(upperTrend).toFixed(1)}pp
-            </span>
-          </div>
-        )}
-        {midTrend !== null && (
-          <div className="shrink-0 flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FLOOR_TIERS.Mid.color }} />
-            <span className="text-[#213448]">
-              Mid {midTrend >= 0 ? '↑' : '↓'} {Math.abs(midTrend).toFixed(1)}pp
-            </span>
-          </div>
-        )}
-        <span className="shrink-0 text-[#547792] ml-auto">vs Lower floor baseline</span>
+        {/* Footer - wraps on mobile */}
+        <div className="shrink-0 min-h-[44px] px-4 py-2 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <span className="shrink-0 text-[#547792] font-medium">Recent Trend:</span>
+          {upperTrend !== null && (
+            <div className="shrink-0 flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FLOOR_TIERS.Upper.color }} />
+              <span className="text-[#213448]">
+                Upper {upperTrend >= 0 ? '↑' : '↓'} {Math.abs(upperTrend).toFixed(1)}pp
+              </span>
+            </div>
+          )}
+          {midTrend !== null && (
+            <div className="shrink-0 flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: FLOOR_TIERS.Mid.color }} />
+              <span className="text-[#213448]">
+                Mid {midTrend >= 0 ? '↑' : '↓'} {Math.abs(midTrend).toFixed(1)}pp
+              </span>
+            </div>
+          )}
+          <span className="shrink-0 text-[#547792] ml-auto">vs Lower floor baseline</span>
+        </div>
       </div>
-    </div>
+    </QueryState>
   );
 }
 

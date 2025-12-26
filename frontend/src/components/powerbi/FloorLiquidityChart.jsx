@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React, { useRef, useMemo } from 'react';
+import { useAbortableQuery } from '../../hooks';
+import { QueryState } from '../common/QueryState';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -53,77 +54,37 @@ ChartJS.register(
 export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [error, setError] = useState(null);
   const chartRef = useRef(null);
-  const isInitialLoad = useRef(true);
 
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  const { data, loading, error, refetch } = useAbortableQuery(
+    async (signal) => {
+      const params = buildApiParams({
+        group_by: 'floor_level',
+        metrics: 'count,median_psf_actual,psf_25th,psf_75th,avg_psf'
+      });
 
-  // Fetch floor level data
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
+      if (bedroom) params.bedroom = bedroom;
+      if (segment) params.segment = segment;
 
-    const fetchData = async () => {
-      if (isInitialLoad.current) {
-        setLoading(true);
-      } else {
-        setUpdating(true);
-      }
-      setError(null);
+      const response = await getAggregate(params, { signal });
+      const rawData = response.data.data || [];
 
-      try {
-        const params = buildApiParams({
-          group_by: 'floor_level',
-          metrics: 'count,median_psf_actual,psf_25th,psf_75th,avg_psf'
+      // Use getAggField for v1/v2 compatibility
+      return rawData
+        .filter(d => {
+          const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
+          return floorLevel && floorLevel !== 'Unknown';
+        })
+        .sort((a, b) => {
+          const aLevel = getAggField(a, AggField.FLOOR_LEVEL);
+          const bLevel = getAggField(b, AggField.FLOOR_LEVEL);
+          return getFloorLevelIndex(aLevel) - getFloorLevelIndex(bLevel);
         });
-
-        if (bedroom) params.bedroom = bedroom;
-        if (segment) params.segment = segment;
-
-        const response = await getAggregate(params, { signal });
-        const rawData = response.data.data || [];
-
-        // Use getAggField for v1/v2 compatibility
-        const sortedData = rawData
-          .filter(d => {
-            const floorLevel = getAggField(d, AggField.FLOOR_LEVEL);
-            return floorLevel && floorLevel !== 'Unknown';
-          })
-          .sort((a, b) => {
-            const aLevel = getAggField(a, AggField.FLOOR_LEVEL);
-            const bLevel = getAggField(b, AggField.FLOOR_LEVEL);
-            return getFloorLevelIndex(aLevel) - getFloorLevelIndex(bLevel);
-          });
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        setData(sortedData);
-        isInitialLoad.current = false;
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        // Ignore errors from stale requests
-        if (isStale(requestId)) return;
-        console.error('Error fetching floor level data:', err);
-        setError(err.message);
-      } finally {
-        // Only clear loading for the current request
-        if (!isStale(requestId)) {
-          setLoading(false);
-          setUpdating(false);
-        }
-      }
-    };
-
-    fetchData();
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey, bedroom, segment, startRequest, isStale]);
+    },
+    [debouncedFilterKey, bedroom, segment],
+    { initialData: [] }
+  );
 
   // Calculate baseline for premium calculation (use getAggField for v1/v2 compatibility)
   const baselinePSF = useMemo(() => {
@@ -266,40 +227,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   // Card height - hero chart uses full height prop
   const cardHeight = height + 180; // Extra space for header/legend/premium pills/footer
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-            <span className="text-[#547792]">Loading floor analysis...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-red-500">Error: {error}</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (data.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-[#547792]">No floor level data available for current filters</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Extract from computed values (safe after early returns)
+  // Extract from computed values
   const { labels, counts, medianPSFs, psf25ths, psf75ths, maxCount } = chartComputations;
   const totalTransactions = counts.reduce((a, b) => a + b, 0);
 
@@ -380,23 +308,21 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
   const mostLiquidTier = data[counts.indexOf(maxCount)]?.floor_level;
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col transition-opacity duration-150 ${updating ? 'opacity-70' : ''}`} style={{ height: cardHeight }}>
-      {/* Header - shrink-0 */}
-      <div className="px-6 py-4 border-b border-[#94B4C1]/30 shrink-0">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <h3 className="font-bold text-lg text-[#213448]">Floor Liquidity-Adjusted Price Curve</h3>
-              {updating && (
-                <div className="w-4 h-4 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-              )}
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: cardHeight }}>
+        {/* Header - shrink-0 */}
+        <div className="px-6 py-4 border-b border-[#94B4C1]/30 shrink-0">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <div className="flex items-center gap-3">
+                <h3 className="font-bold text-lg text-[#213448]">Floor Liquidity-Adjusted Price Curve</h3>
+              </div>
+              <p className="text-sm text-[#547792] mt-0.5">
+                Where price is real, not imagined
+              </p>
             </div>
-            <p className="text-sm text-[#547792] mt-0.5">
-              Where price is real, not imagined
-            </p>
           </div>
         </div>
-      </div>
 
       {/* Simple Legend - shrink-0 */}
       <div className="px-6 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20 shrink-0">
@@ -470,6 +396,7 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
         <span className="shrink-0 text-[#94B4C1]">Hover for details</span>
       </div>
     </div>
+    </QueryState>
   );
 }
 
