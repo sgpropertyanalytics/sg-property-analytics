@@ -207,7 +207,7 @@ class PropertyAgeBucket:
 
     Buckets:
     - new_sale: Project has 0 resale transactions (market state, not age)
-    - recently_top: 0-8 years since lease start (recently completed)
+    - recently_top: 4-8 years since lease start (first resales happening)
     - young_resale: 8-15 years since lease start
     - resale: 15-25 years since lease start
     - mature_resale: 25+ years since lease start
@@ -222,7 +222,7 @@ class PropertyAgeBucket:
 
     LABELS = {
         NEW_SALE: 'New Sale (No Resales Yet)',
-        RECENTLY_TOP: 'Recently TOP (0-8 years)',
+        RECENTLY_TOP: 'Recently TOP (4-8 years)',
         YOUNG_RESALE: 'Young Resale (8-15 years)',
         RESALE: 'Resale (15-25 years)',
         MATURE_RESALE: 'Mature Resale (25+ years)',
@@ -230,7 +230,7 @@ class PropertyAgeBucket:
 
     LABELS_SHORT = {
         NEW_SALE: 'New',
-        RECENTLY_TOP: '0-8yr',
+        RECENTLY_TOP: '4-8yr',
         YOUNG_RESALE: '8-15yr',
         RESALE: '15-25yr',
         MATURE_RESALE: '25yr+',
@@ -239,7 +239,7 @@ class PropertyAgeBucket:
     # Age boundaries: (min_inclusive, max_exclusive)
     # None means unbounded
     AGE_RANGES = {
-        RECENTLY_TOP: (0, 8),
+        RECENTLY_TOP: (4, 8),
         YOUNG_RESALE: (8, 15),
         RESALE: (15, 25),
         MATURE_RESALE: (25, None),

@@ -65,7 +65,7 @@ class TestPropertyAgeBucketEnum:
         from schemas.api_contract import PropertyAgeBucket
 
         # Test each age-based bucket
-        assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP) == (0, 8)
+        assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP) == (4, 8)
         assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.YOUNG_RESALE) == (8, 15)
         assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.RESALE) == (15, 25)
         assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.MATURE_RESALE) == (25, None)
@@ -93,10 +93,10 @@ class TestPropertyAgeBucketEnum:
         """Age 8 should go to young_resale (not recently_top) due to exclusive upper bound."""
         from schemas.api_contract import PropertyAgeBucket
 
-        # recently_top: [0, 8) → age 8 is NOT in this bucket
+        # recently_top: [4, 8) → age 8 is NOT in this bucket
         recently_top_range = PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP)
-        assert recently_top_range == (0, 8)
-        # 8 >= 0 and 8 < 8 is False, so age 8 is NOT recently_top
+        assert recently_top_range == (4, 8)
+        # 8 >= 4 and 8 < 8 is False, so age 8 is NOT recently_top
 
         # young_resale: [8, 15) → age 8 IS in this bucket
         young_resale_range = PropertyAgeBucket.get_age_range(PropertyAgeBucket.YOUNG_RESALE)
@@ -259,11 +259,12 @@ class TestAgeBoundaryLogic:
         """Age 8 should be in young_resale, not recently_top."""
         from schemas.api_contract import PropertyAgeBucket
 
-        # recently_top: [0, 8) → 0 <= age < 8
+        # recently_top: [4, 8) → 4 <= age < 8
         recently_top = PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP)
         min_age, max_age = recently_top
         assert min_age <= 7 < max_age  # age 7 is in recently_top
         assert not (min_age <= 8 < max_age)  # age 8 is NOT in recently_top
+        assert not (min_age <= 3 < max_age)  # age 3 is NOT in recently_top (it's new_sale)
 
         # young_resale: [8, 15) → 8 <= age < 15
         young_resale = PropertyAgeBucket.get_age_range(PropertyAgeBucket.YOUNG_RESALE)
