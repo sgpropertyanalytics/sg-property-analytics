@@ -331,6 +331,27 @@ export const getFilterOptions = () =>
   apiClient.get('/filter-options');
 
 /**
+ * Get market activity heatmap by bedroom and property age
+ * Used by ValueParityPanel's Explore Budget tab
+ *
+ * Shows % distribution of transactions within budget range, grouped by:
+ * - Bedroom type (1BR, 2BR, 3BR, 4BR, 5+BR)
+ * - Property age band (New Sale, Recently TOP, Young Resale, etc.)
+ *
+ * @param {Object} params - Query parameters
+ * @param {number} params.budget - Target budget in SGD (required)
+ * @param {number} [params.tolerance=100000] - Price tolerance (+/-)
+ * @param {number} [params.bedroom] - Optional bedroom filter (1-5)
+ * @param {string} [params.segment] - Market segment (CCR/RCR/OCR)
+ * @param {string} [params.district] - District code (D01-D28)
+ * @param {string} [params.tenure] - Tenure type
+ * @param {Object} [options] - Request options
+ * @param {AbortSignal} [options.signal] - AbortController signal
+ */
+export const getBudgetHeatmap = (params = {}, options = {}) =>
+  apiClient.get(`/budget-heatmap?${buildQueryString(params)}`, { signal: options.signal });
+
+/**
  * Floor liquidity heatmap - shows which floor zones resell faster by project
  * Uses Z-score normalization within each project for fair comparison
  * @param {Object} params - Query parameters

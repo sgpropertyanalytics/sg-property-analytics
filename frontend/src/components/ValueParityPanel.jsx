@@ -5,6 +5,7 @@ import DealCheckerContent from './powerbi/DealCheckerContent';
 import { HotProjectsTable } from './powerbi/HotProjectsTable';
 import { UpcomingLaunchesTable } from './powerbi/UpcomingLaunchesTable';
 import { ResultsSummaryBar } from './ResultsSummaryBar';
+import { BudgetActivityHeatmap } from './powerbi/BudgetActivityHeatmap';
 
 /**
  * ValueParityPanel - Budget-based property search tool with Deal Checker
@@ -428,6 +429,17 @@ export function ValueParityPanel() {
           loading={loading}
           hotProjectsCount={hotProjectsCount}
           onJumpToNewLaunches={() => newLaunchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        />
+      )}
+
+      {/* ===== MARKET ACTIVITY HEATMAP: Bedroom Mix by Property Age ===== */}
+      {hasSearched && (
+        <BudgetActivityHeatmap
+          budget={budget}
+          bedroom={bedroom || null}
+          region={region || null}
+          district={district || null}
+          tenure={tenure || null}
         />
       )}
 

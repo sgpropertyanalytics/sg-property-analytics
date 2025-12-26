@@ -2497,6 +2497,82 @@ def scatter_sample_deprecated():
 
 
 # ============================================================================
+# BUDGET HEATMAP ENDPOINT
+# ============================================================================
+
+@analytics_bp.route("/budget-heatmap", methods=["GET"])
+def budget_heatmap():
+    """
+    Market activity heatmap by bedroom type and property age.
+
+    Shows transaction distribution (percentages) within budget range.
+    Used by Value Parity page's Explore Budget tab.
+
+    Query Parameters:
+        budget (required): Target budget in SGD
+        tolerance: +/- range (default 100000)
+        bedroom: Optional bedroom filter (1-5)
+        segment: Market segment (CCR/RCR/OCR)
+        district: District code (D01-D28)
+        tenure: Tenure type (Freehold/99-year/999-year)
+        schema: v2 for camelCase response
+
+    Returns:
+        Matrix of transaction percentages by bedroom (X) and age band (Y)
+        with k-anonymity suppression for low-count cells.
+    """
+    from services.budget_analysis_service import (
+        get_market_activity_heatmap,
+        serialize_heatmap_v2
+    )
+
+    try:
+        # Parse required budget
+        budget = request.args.get('budget', type=int)
+        if not budget:
+            return jsonify({"error": "budget parameter is required"}), 400
+
+        if budget < 100000 or budget > 50000000:
+            return jsonify({"error": "budget must be between $100K and $50M"}), 400
+
+        # Parse optional filters
+        tolerance = request.args.get('tolerance', 100000, type=int)
+        bedroom = request.args.get('bedroom', type=int)
+        segment = request.args.get('segment')
+        district = request.args.get('district')
+        tenure = request.args.get('tenure')
+        skip_cache = request.args.get('skip_cache', 'false').lower() == 'true'
+
+        # Validate tolerance
+        if tolerance < 10000 or tolerance > 500000:
+            tolerance = 100000  # Default to 100K if out of range
+
+        # Get data
+        result = get_market_activity_heatmap(
+            budget=budget,
+            tolerance=tolerance,
+            bedroom=bedroom,
+            segment=segment,
+            district=district,
+            tenure=tenure,
+            skip_cache=skip_cache
+        )
+
+        # Handle schema version
+        schema_version = request.args.get('schema', 'v1')
+        if schema_version == 'v2':
+            return jsonify(serialize_heatmap_v2(result))
+
+        # v1 response (default)
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
 # KPI SUMMARY ENDPOINT (OPTIMIZED SINGLE-CALL)
 # ============================================================================
 
