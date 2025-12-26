@@ -177,7 +177,7 @@ export function PriceByAgeRegionChart({ height = 400 }) {
     return toPriceByAgeRegionChartData(dataToUse, BEDROOM_COLORS);
   }, [transformedData, isMobile, selectedBedroom]);
 
-  // Chart.js options for horizontal floating bars
+  // Chart.js options for horizontal stacked/overlapping bars
   const options = useMemo(
     () => ({
       ...baseChartJsOptions,
@@ -185,6 +185,7 @@ export function PriceByAgeRegionChart({ height = 400 }) {
       scales: {
         y: {
           type: 'category',
+          stacked: true, // Stack bars on same y-position (overlapping)
           title: {
             display: true,
             text: 'Age Bucket × Region',
@@ -208,6 +209,7 @@ export function PriceByAgeRegionChart({ height = 400 }) {
         x: {
           type: 'linear',
           position: 'bottom',
+          stacked: true, // Enable stacking on x-axis for floating bars to overlap
           title: {
             display: true,
             text: 'Total Price ($)',
