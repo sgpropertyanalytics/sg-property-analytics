@@ -144,7 +144,8 @@ def district_psf():
     period = request.args.get("period", "12m")
     bed_filter = request.args.get("bed", "all")
     age_filter = request.args.get("age", "all")
-    sale_type_filter = request.args.get("sale_type", "all")
+    # Accept both v2 (saleType) and v1 (sale_type) params
+    sale_type_filter = request.args.get("saleType") or request.args.get("sale_type", "all")
 
     # Calculate date range based on period
     today = datetime.now().date()
