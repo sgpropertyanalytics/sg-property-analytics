@@ -96,7 +96,9 @@ export function GLSDataTable({ height = 400 }) {
     };
 
     fetchData();
-  }, [shouldFetch]);
+    // startRequest/isStale/getSignal are stable functions from useStaleRequestGuard
+    // filter/segmentFilter/sortConfig are included to re-fetch when they change
+  }, [shouldFetch, filter, segmentFilter, sortConfig.column, sortConfig.order, startRequest, isStale, getSignal]);
 
   // Handle sort
   const handleSort = (column) => {

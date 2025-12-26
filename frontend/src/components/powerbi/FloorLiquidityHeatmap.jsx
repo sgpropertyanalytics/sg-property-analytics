@@ -170,7 +170,8 @@ export function FloorLiquidityHeatmap({ bedroom, segment }) {
 
     fetchData();
     // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey, windowMonths, bedroom, segment]);
+    // buildApiParams/getSignal/startRequest/isStale are stable functions from context/hooks
+  }, [debouncedFilterKey, windowMonths, bedroom, segment, buildApiParams, getSignal, startRequest, isStale]);
 
   // Floor zones to display
   const floorZones = data.floor_zone_order?.length > 0

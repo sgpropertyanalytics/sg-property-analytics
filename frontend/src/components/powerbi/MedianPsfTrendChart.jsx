@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useCallback } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import {
@@ -88,7 +88,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
     ocrCount: rawData.map(d => d.ocrCount),
   }), [rawData]);
 
-  const handleClick = (event) => {
+  const handleClick = useCallback((event) => {
     const chart = chartRef.current;
     if (!chart) return;
 
@@ -101,7 +101,7 @@ export function MedianPsfTrendChart({ height = 300 }) {
         applyHighlight('time', timeGrouping, timeValue);
       }
     }
-  };
+  }, [data.labels, applyHighlight, timeGrouping]);
 
   // Determine highlighted index for visual emphasis
   const highlightedIndex = highlight.source === 'time' && highlight.value

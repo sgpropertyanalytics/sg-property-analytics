@@ -92,7 +92,9 @@ export function UpcomingLaunchesTable({
     };
 
     fetchData();
-  }, [shouldFetch]);
+    // startRequest/isStale/getSignal are stable functions from useStaleRequestGuard
+    // sortConfig is included to re-fetch when sort changes
+  }, [shouldFetch, sortConfig.column, sortConfig.order, startRequest, isStale, getSignal]);
 
   // Handle sort
   const handleSort = (column) => {

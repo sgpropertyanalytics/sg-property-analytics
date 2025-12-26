@@ -96,7 +96,8 @@ export function MarketMomentumGrid() {
 
     fetchData();
     // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey]);
+    // buildApiParams/getSignal/startRequest/isStale are stable functions from context/hooks
+  }, [debouncedFilterKey, buildApiParams, getSignal, startRequest, isStale]);
 
   // Handle district click - apply cross-filter
   const handleDistrictClick = (district) => {

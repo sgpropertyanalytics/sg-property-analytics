@@ -126,50 +126,54 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
     ],
   };
 
-  // Build annotations for median line and IQR band
-  const annotations = {};
+  // Build annotations for median line and IQR band (memoized to prevent useMemo recalc)
+  const annotations = useMemo(() => {
+    const result = {};
 
-  // IQR band (Q1-Q3) - shaded background
-  if (q1BinIndex >= 0 && q3BinIndex >= 0) {
-    annotations.iqrBand = {
-      type: 'box',
-      xMin: q1BinIndex - 0.5,
-      xMax: q3BinIndex + 0.5,
-      backgroundColor: 'rgba(33, 52, 72, 0.08)',  // Light navy background
-      borderColor: 'rgba(33, 52, 72, 0.2)',
-      borderWidth: 1,
-      borderDash: [4, 4],
-      label: {
-        display: true,
-        content: 'IQR',
-        position: 'start',
-        color: 'rgba(33, 52, 72, 0.5)',
-        font: { size: 9, weight: 'normal' },
-      },
-    };
-  }
+    // IQR band (Q1-Q3) - shaded background
+    if (q1BinIndex >= 0 && q3BinIndex >= 0) {
+      result.iqrBand = {
+        type: 'box',
+        xMin: q1BinIndex - 0.5,
+        xMax: q3BinIndex + 0.5,
+        backgroundColor: 'rgba(33, 52, 72, 0.08)',  // Light navy background
+        borderColor: 'rgba(33, 52, 72, 0.2)',
+        borderWidth: 1,
+        borderDash: [4, 4],
+        label: {
+          display: true,
+          content: 'IQR',
+          position: 'start',
+          color: 'rgba(33, 52, 72, 0.5)',
+          font: { size: 9, weight: 'normal' },
+        },
+      };
+    }
 
-  // Median line - solid vertical line
-  if (medianBinIndex >= 0) {
-    annotations.medianLine = {
-      type: 'line',
-      xMin: medianBinIndex,
-      xMax: medianBinIndex,
-      borderColor: 'rgba(33, 52, 72, 0.8)',  // Dark navy
-      borderWidth: 2,
-      borderDash: [],  // Solid line
-      label: {
-        display: true,
-        content: `Median: ${formatPrice(stats?.median)}`,
-        position: 'start',
-        backgroundColor: 'rgba(33, 52, 72, 0.9)',
-        color: '#fff',
-        font: { size: 10, weight: 'bold' },
-        padding: { x: 6, y: 3 },
-        borderRadius: 3,
-      },
-    };
-  }
+    // Median line - solid vertical line
+    if (medianBinIndex >= 0) {
+      result.medianLine = {
+        type: 'line',
+        xMin: medianBinIndex,
+        xMax: medianBinIndex,
+        borderColor: 'rgba(33, 52, 72, 0.8)',  // Dark navy
+        borderWidth: 2,
+        borderDash: [],  // Solid line
+        label: {
+          display: true,
+          content: `Median: ${formatPrice(stats?.median)}`,
+          position: 'start',
+          backgroundColor: 'rgba(33, 52, 72, 0.9)',
+          color: '#fff',
+          font: { size: 10, weight: 'bold' },
+          padding: { x: 6, y: 3 },
+          borderRadius: 3,
+        },
+      };
+    }
+
+    return result;
+  }, [q1BinIndex, q3BinIndex, medianBinIndex, stats?.median]);
 
   const options = useMemo(() => ({
     ...baseChartJsOptions,

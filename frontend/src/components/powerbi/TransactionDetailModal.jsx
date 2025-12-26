@@ -73,6 +73,8 @@ export function TransactionDetailModal({ isOpen, onClose, title, additionalFilte
       }
     };
     fetchTransactions();
+    // additionalFiltersKey is a stable JSON string of additionalFilters, used for dep comparison
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, additionalFiltersKey, pagination.page, pagination.limit, sortBy, sortOrder, startRequest, isStale, getSignal, buildApiParams]);
 
   const handleSort = (column) => {

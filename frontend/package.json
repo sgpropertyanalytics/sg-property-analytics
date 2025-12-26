@@ -9,7 +9,9 @@
     "test": "vitest",
     "test:ci": "vitest run",
     "lint": "eslint \"src/**/*.{js,jsx}\"",
-    "lint:ci": "eslint \"src/**/*.{js,jsx}\"",
+    "lint:ci": "node scripts/eslint-ratchet.js",
+    "lint:ratchet": "node scripts/eslint-ratchet.js",
+    "lint:ratchet:update": "node scripts/eslint-ratchet.js --update",
     "lint:strict": "eslint \"src/**/*.{js,jsx}\" --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json"
   },

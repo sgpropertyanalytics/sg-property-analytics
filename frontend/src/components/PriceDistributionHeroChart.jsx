@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useCallback } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -364,7 +364,7 @@ export function PriceDistributionHeroChart({
   }, [bins, selectedPriceRange]);
 
   // Handle chart click - triggers bin filter
-  const handleChartClick = (event) => {
+  const handleChartClick = useCallback((event) => {
     const chart = chartRef.current;
     if (!chart || !onBinClick) return;
 
@@ -376,7 +376,7 @@ export function PriceDistributionHeroChart({
         onBinClick({ start: clickedBin.start, end: clickedBin.end });
       }
     }
-  };
+  }, [bins, onBinClick]);
 
   // Generate chart data with color intensity based on count
   const chartData = useMemo(() => {
@@ -520,7 +520,7 @@ export function PriceDistributionHeroChart({
         }
       },
     },
-  }), [bins, totalCount, buyerPrice, onBinClick]);
+  }), [bins, totalCount, buyerPrice, onBinClick, handleChartClick]);
 
   // Loading state
   if (loading) {

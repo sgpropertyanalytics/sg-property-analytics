@@ -489,7 +489,7 @@ export default function MarketStrategyMap() {
 
   useEffect(() => {
     fetchData();
-  }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
+  }, [filterKey, fetchData]);
 
   // Create district data lookup
   const districtMap = useMemo(() => {

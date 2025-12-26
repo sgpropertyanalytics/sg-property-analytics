@@ -40,6 +40,24 @@ ChartJS.register(
  * - Opacity handles overplotting
  * - Tooltips show project details
  */
+
+// Bedroom colors - consistent palette across charts (module-level for stable reference)
+const BEDROOM_COLORS = {
+  1: 'rgba(247, 190, 129, 0.7)', // Light orange
+  2: 'rgba(79, 129, 189, 0.7)',  // Blue
+  3: 'rgba(40, 82, 122, 0.7)',   // Dark blue
+  4: 'rgba(17, 43, 60, 0.7)',    // Darkest navy
+  5: 'rgba(155, 187, 89, 0.7)',  // Green
+};
+
+const BEDROOM_BORDER_COLORS = {
+  1: 'rgba(247, 190, 129, 1)',
+  2: 'rgba(79, 129, 189, 1)',
+  3: 'rgba(40, 82, 122, 1)',
+  4: 'rgba(17, 43, 60, 1)',
+  5: 'rgba(155, 187, 89, 1)',
+};
+
 export function UnitSizeVsPriceChart({ height = 350 }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
@@ -59,23 +77,6 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
   // Handle refresh button click - generates random seed for new sample
   const handleRefresh = () => {
     setRefreshSeed(Math.random().toString(36).substring(2, 10));
-  };
-
-  // Bedroom colors - consistent palette across charts
-  const bedroomColors = {
-    1: 'rgba(247, 190, 129, 0.7)', // Light orange
-    2: 'rgba(79, 129, 189, 0.7)',  // Blue
-    3: 'rgba(40, 82, 122, 0.7)',   // Dark blue
-    4: 'rgba(17, 43, 60, 0.7)',    // Darkest navy
-    5: 'rgba(155, 187, 89, 0.7)',  // Green
-  };
-
-  const bedroomBorderColors = {
-    1: 'rgba(247, 190, 129, 1)',
-    2: 'rgba(79, 129, 189, 1)',
-    3: 'rgba(40, 82, 122, 1)',
-    4: 'rgba(17, 43, 60, 1)',
-    5: 'rgba(155, 187, 89, 1)',
   };
 
   // Fetch scatter data
@@ -135,7 +136,8 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
     fetchData();
     // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
     // refreshSeed is local control for manual sample refresh
-  }, [debouncedFilterKey, refreshSeed]);
+    // buildApiParams/getSignal/startRequest/isStale are stable functions from context/hooks
+  }, [debouncedFilterKey, refreshSeed, buildApiParams, getSignal, startRequest, isStale]);
 
   // Transform data for Chart.js - group by bedroom
   const chartData = useMemo(() => {
@@ -160,8 +162,8 @@ export function UnitSizeVsPriceChart({ height = 350 }) {
       .map(([bedroom, points]) => ({
         label: getBedroomLabelShort(bedroom),
         data: points,
-        backgroundColor: bedroomColors[bedroom] || 'rgba(128, 128, 128, 0.7)',
-        borderColor: bedroomBorderColors[bedroom] || 'rgba(128, 128, 128, 1)',
+        backgroundColor: BEDROOM_COLORS[bedroom] || 'rgba(128, 128, 128, 0.7)',
+        borderColor: BEDROOM_BORDER_COLORS[bedroom] || 'rgba(128, 128, 128, 1)',
         borderWidth: 1,
         pointRadius: 4,
         pointHoverRadius: 6,

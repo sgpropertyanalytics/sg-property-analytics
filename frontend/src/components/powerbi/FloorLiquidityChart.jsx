@@ -123,7 +123,8 @@ export function FloorLiquidityChart({ height = 400, bedroom, segment }) {
 
     fetchData();
     // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey, bedroom, segment, startRequest, isStale]);
+    // buildApiParams/getSignal are stable functions from context/hooks
+  }, [debouncedFilterKey, bedroom, segment, startRequest, isStale, buildApiParams, getSignal]);
 
   // Calculate baseline for premium calculation (use getAggField for v1/v2 compatibility)
   const baselinePSF = useMemo(() => {

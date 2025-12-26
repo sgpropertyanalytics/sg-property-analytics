@@ -8,7 +8,7 @@
  * - Currency formatting
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 // PSF validation range
 const PSF_MIN = 300;
@@ -36,9 +36,9 @@ export function UnitPsfInput({
     }
   }, [value]);
 
-  // Debounced onChange
-  const debouncedOnChange = useCallback(
-    debounce((val) => {
+  // Debounced onChange - useMemo ensures stable debounced function reference
+  const debouncedOnChange = useMemo(
+    () => debounce((val) => {
       if (onChange) {
         onChange(val);
       }

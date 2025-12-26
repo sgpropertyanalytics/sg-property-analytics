@@ -135,7 +135,8 @@ export function FloorPremiumByRegionChart({ height = 300, bedroom }) {
 
     fetchAllRegions();
     // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey, bedroom, startRequest, isStale]);
+    // buildApiParams/getSignal are stable functions from context/hooks
+  }, [debouncedFilterKey, bedroom, startRequest, isStale, buildApiParams, getSignal]);
 
   // Calculate premiums for each region (use getAggField for v1/v2 compatibility)
   const premiumsByRegion = useMemo(() => {

@@ -121,7 +121,8 @@ export function FloorPremiumTrendChart({ height = 300, bedroom, segment }) {
 
     fetchData();
     // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey, bedroom, segment]);
+    // buildApiParams/getSignal/startRequest/isStale are stable functions from context/hooks
+  }, [debouncedFilterKey, bedroom, segment, buildApiParams, getSignal, startRequest, isStale]);
 
   // Process data into tier groups by year
   const processedData = useMemo(() => {

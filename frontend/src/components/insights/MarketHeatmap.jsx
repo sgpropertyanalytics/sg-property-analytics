@@ -132,7 +132,7 @@ export default function MarketHeatmap() {
 
   useEffect(() => {
     fetchData();
-  }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
+  }, [filterKey, fetchData]);
 
   // Create a map for quick district lookup
   const districtMap = useMemo(() => {
