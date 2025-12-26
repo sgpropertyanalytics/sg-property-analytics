@@ -1,0 +1,174 @@
+/**
+ * DistrictLiquidityMap Utilities
+ *
+ * Pure functions for geometry calculations and styling.
+ */
+
+import { LIQUIDITY_FILLS } from './constants';
+
+// =============================================================================
+// GEOMETRY UTILITIES
+// =============================================================================
+
+/**
+ * Calculate the centroid of a polygon using the "polylabel" algorithm.
+ * Returns the visual center suitable for label placement.
+ */
+export function polylabel(polygon) {
+  const ring = polygon[0];
+  if (!ring || ring.length < 4) return null;
+
+  let sumX = 0,
+    sumY = 0,
+    sumArea = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [x1, y1] = ring[i];
+    const [x2, y2] = ring[j];
+    const cross = x1 * y2 - x2 * y1;
+    sumX += (x1 + x2) * cross;
+    sumY += (y1 + y2) * cross;
+    sumArea += cross;
+  }
+
+  if (sumArea === 0) {
+    const xs = ring.map((p) => p[0]);
+    const ys = ring.map((p) => p[1]);
+    return {
+      lng: (Math.min(...xs) + Math.max(...xs)) / 2,
+      lat: (Math.min(...ys) + Math.max(...ys)) / 2,
+    };
+  }
+
+  sumArea *= 3;
+  return { lng: sumX / sumArea, lat: sumY / sumArea };
+}
+
+// =============================================================================
+// LIQUIDITY STYLING
+// =============================================================================
+
+/**
+ * Get fill color based on Z-score.
+ */
+export function getLiquidityFill(zScore) {
+  if (zScore === null || zScore === undefined) return LIQUIDITY_FILLS.noData;
+  if (zScore >= 1.5) return LIQUIDITY_FILLS.veryHigh;
+  if (zScore >= 0.5) return LIQUIDITY_FILLS.high;
+  if (zScore >= -0.5) return LIQUIDITY_FILLS.neutral;
+  if (zScore >= -1.5) return LIQUIDITY_FILLS.low;
+  return LIQUIDITY_FILLS.veryLow;
+}
+
+/**
+ * Get CSS classes for liquidity tier badge.
+ */
+export function getTierBadgeStyle(tier) {
+  switch (tier) {
+    case 'Very High':
+      return 'bg-[#213448] text-white';
+    case 'High':
+      return 'bg-[#547792] text-white';
+    case 'Neutral':
+      return 'bg-[#94B4C1] text-[#213448]';
+    case 'Low':
+      return 'bg-[#EAE0CF] text-[#547792]';
+    case 'Very Low':
+      return 'bg-[#EAE0CF] text-[#94B4C1]';
+    default:
+      return 'bg-gray-200 text-gray-500';
+  }
+}
+
+// =============================================================================
+// SCORE STYLING (shared by HoverCard and LiquidityRankingTable)
+// =============================================================================
+
+/**
+ * Get CSS classes for score badge based on score value.
+ */
+export function getScoreBadgeStyle(score) {
+  if (score === null || score === undefined) return 'bg-gray-100 text-gray-500';
+  if (score >= 80) return 'bg-emerald-100 text-emerald-700'; // Excellent
+  if (score >= 60) return 'bg-emerald-50 text-emerald-600'; // Good
+  if (score >= 40) return 'bg-amber-50 text-amber-700'; // Average
+  if (score >= 20) return 'bg-orange-50 text-orange-600'; // Below Average
+  return 'bg-rose-50 text-rose-600'; // Poor
+}
+
+/**
+ * Get text label for score value.
+ */
+export function getScoreLabel(score) {
+  if (score === null || score === undefined) return '-';
+  if (score >= 80) return 'Excellent';
+  if (score >= 60) return 'Good';
+  if (score >= 40) return 'Average';
+  if (score >= 20) return 'Below Avg';
+  return 'Poor';
+}
+
+// =============================================================================
+// BADGE STYLING (for tables)
+// =============================================================================
+
+/**
+ * Get CSS classes for region badge.
+ */
+export function getRegionBadge(region) {
+  switch (region) {
+    case 'CCR':
+      return 'bg-[#213448] text-white';
+    case 'RCR':
+      return 'bg-[#547792] text-white';
+    case 'OCR':
+      return 'bg-[#94B4C1] text-[#213448]';
+    default:
+      return 'bg-gray-200 text-gray-600';
+  }
+}
+
+/**
+ * Get CSS classes for fragility badge.
+ */
+export function getFragilityBadge(fragility) {
+  switch (fragility) {
+    case 'Robust':
+      return 'bg-emerald-100 text-emerald-700';
+    case 'Moderate':
+      return 'bg-amber-100 text-amber-700';
+    case 'Fragile':
+      return 'bg-rose-100 text-rose-700';
+    default:
+      return 'bg-gray-100 text-gray-500';
+  }
+}
+
+/**
+ * Get CSS classes for tier badge (table version).
+ */
+export function getTierBadge(tier) {
+  switch (tier) {
+    case 'Very High':
+      return 'bg-[#213448] text-white';
+    case 'High':
+      return 'bg-[#547792] text-white';
+    case 'Neutral':
+      return 'bg-[#94B4C1] text-[#213448]';
+    case 'Low':
+      return 'bg-[#EAE0CF] text-[#547792]';
+    case 'Very Low':
+      return 'bg-[#EAE0CF] text-[#94B4C1]';
+    default:
+      return 'bg-gray-100 text-gray-500';
+  }
+}
+
+/**
+ * Convert fragility label to spread label.
+ */
+export function getSpreadLabel(fragilityLabel) {
+  if (fragilityLabel === 'Robust') return 'Wide';
+  if (fragilityLabel === 'Moderate') return 'Medium';
+  if (fragilityLabel === 'Fragile') return 'Narrow';
+  return '-';
+}

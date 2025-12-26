@@ -28,14 +28,16 @@ import {
   LOCATION_LEVELS,
 } from './constants';
 
-// Derived state functions
-import { deriveActiveFilters, countActiveFilters, generateFilterKey } from './deriveActiveFilters';
-import { buildApiParamsFromState } from './buildApiParams';
+// Derived state and API params (consolidated)
+import {
+  deriveActiveFilters,
+  countActiveFilters,
+  generateFilterKey,
+  buildApiParamsFromState,
+} from './utils';
 
-// Hooks
-import { useFilterOptions } from './useFilterOptions';
-import { useRouteReset } from './useRouteReset';
-import { useDebouncedFilterKey } from './useDebouncedFilterKey';
+// Hooks (consolidated)
+import { useFilterOptions, useRouteReset, useDebouncedFilterKey } from './hooks';
 
 const PowerBIFilterContext = createContext(null);
 

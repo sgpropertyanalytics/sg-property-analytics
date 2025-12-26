@@ -1,15 +1,19 @@
 /**
- * Active Filters Derivation
+ * PowerBI Filter Utilities
  *
- * Pure function to derive combined filters for API calls.
+ * Pure functions for filter derivation and API parameter building.
+ */
+
+// =============================================================================
+// ACTIVE FILTERS DERIVATION
+// =============================================================================
+
+/**
+ * Derive active filters from all filter sources.
  * PRIORITY ORDER (like Power BI):
  * 1. Sidebar filters (slicers) - HIGHEST priority, never overwritten
  * 2. Cross-filters - only apply if sidebar filter not set
  * 3. Highlights - only apply to date if sidebar date not set
- */
-
-/**
- * Derive active filters from all filter sources.
  *
  * @param {Object} filters - Sidebar filters
  * @param {Object} crossFilter - Cross-filter state
@@ -22,39 +26,32 @@ export function deriveActiveFilters(filters, crossFilter, highlight, breadcrumbs
   const combined = { ...filters };
 
   // Apply cross-filter ONLY if corresponding sidebar filter is NOT set
-  // Sidebar slicers always take precedence (Power BI behavior)
   if (crossFilter.dimension && crossFilter.value) {
     switch (crossFilter.dimension) {
       case 'district':
-        // Only apply if no districts selected in sidebar
         if (filters.districts.length === 0) {
           combined.districts = [crossFilter.value];
         }
         break;
       case 'bedroom':
-        // Only apply if no bedroom types selected in sidebar
         if (filters.bedroomTypes.length === 0) {
           combined.bedroomTypes = [parseInt(crossFilter.value)];
         }
         break;
       case 'sale_type':
-        // Only apply if no sale type selected in sidebar
         if (!filters.saleType) {
           combined.saleType = crossFilter.value;
         }
         break;
       case 'region':
-        // Only apply if no segments selected in sidebar
         if (filters.segments.length === 0) {
           combined.segments = [crossFilter.value];
         }
         break;
-      // NOTE: 'project' case removed - project is drill-through only
     }
   }
 
   // Apply highlight filter ONLY if sidebar date range is NOT set
-  // Sidebar date filter always takes precedence
   if (highlight.dimension && highlight.value) {
     const sidebarDateSet = filters.dateRange.start || filters.dateRange.end;
 
@@ -90,13 +87,9 @@ export function deriveActiveFilters(filters, crossFilter, highlight, breadcrumbs
     if (lastTime && lastTime.value) {
       if (drillPath.time === 'quarter') {
         const yearStr = String(breadcrumbs.time[0].value);
-        combined.dateRange = {
-          start: `${yearStr}-01-01`,
-          end: `${yearStr}-12-31`,
-        };
+        combined.dateRange = { start: `${yearStr}-01-01`, end: `${yearStr}-12-31` };
       } else if (drillPath.time === 'month') {
         const lastValue = String(lastTime.value);
-
         let year;
         if (breadcrumbs.time.length >= 2) {
           year = String(breadcrumbs.time[0].value);
@@ -104,7 +97,6 @@ export function deriveActiveFilters(filters, crossFilter, highlight, breadcrumbs
           const yearMatch = lastValue.match(/^(\d{4})/);
           year = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
         }
-
         const qMatch = lastValue.match(/Q(\d)/);
         const q = qMatch ? parseInt(qMatch[1]) : 1;
         const quarterStartMonth = (q - 1) * 3 + 1;
@@ -119,12 +111,10 @@ export function deriveActiveFilters(filters, crossFilter, highlight, breadcrumbs
   }
 
   // Apply location breadcrumb filters
-  if (breadcrumbs.location.length > 0) {
-    if (drillPath.location === 'district') {
-      const regionBreadcrumb = breadcrumbs.location[0];
-      if (regionBreadcrumb?.value) {
-        combined.segments = [String(regionBreadcrumb.value)];
-      }
+  if (breadcrumbs.location.length > 0 && drillPath.location === 'district') {
+    const regionBreadcrumb = breadcrumbs.location[0];
+    if (regionBreadcrumb?.value) {
+      combined.segments = [String(regionBreadcrumb.value)];
     }
   }
 
@@ -133,11 +123,6 @@ export function deriveActiveFilters(filters, crossFilter, highlight, breadcrumbs
 
 /**
  * Count active filters for badge display.
- *
- * @param {Object} filters - Sidebar filters
- * @param {Object} crossFilter - Cross-filter state
- * @param {Object} highlight - Highlight state
- * @returns {number} Count of active filters
  */
 export function countActiveFilters(filters, crossFilter, highlight) {
   let count = 0;
@@ -159,11 +144,6 @@ export function countActiveFilters(filters, crossFilter, highlight) {
 
 /**
  * Generate stable filter key for chart dependencies.
- *
- * @param {Object} activeFilters - Combined active filters
- * @param {Object} highlight - Highlight state
- * @param {Object} factFilter - Fact filter state
- * @returns {string} JSON string key
  */
 export function generateFilterKey(activeFilters, highlight, factFilter) {
   return JSON.stringify({
@@ -181,4 +161,89 @@ export function generateFilterKey(activeFilters, highlight, factFilter) {
     highlight: highlight.value ? { dim: highlight.dimension, val: highlight.value } : null,
     factFilter: factFilter.priceRange,
   });
+}
+
+// =============================================================================
+// API PARAMETERS BUILDER
+// =============================================================================
+
+/**
+ * Build API query params from active filters.
+ */
+export function buildApiParamsFromState(
+  activeFilters,
+  filters,
+  highlight,
+  factFilter,
+  additionalParams = {},
+  options = {}
+) {
+  const params = { ...additionalParams };
+  const {
+    excludeHighlight = false,
+    includeFactFilter = false,
+    excludeLocationDrill = false,
+    excludeOwnDimension = null,
+  } = options;
+
+  // Apply date range
+  const highlightApplied = highlight.dimension && highlight.value;
+  const dateFromHighlight = highlightApplied && !filters.dateRange.start && !filters.dateRange.end;
+
+  if (!excludeHighlight || !dateFromHighlight) {
+    if (activeFilters.dateRange.start) params.date_from = activeFilters.dateRange.start;
+    if (activeFilters.dateRange.end) params.date_to = activeFilters.dateRange.end;
+  } else if (excludeHighlight && dateFromHighlight) {
+    if (filters.dateRange.start) params.date_from = filters.dateRange.start;
+    if (filters.dateRange.end) params.date_to = filters.dateRange.end;
+  }
+
+  // Districts
+  if (excludeOwnDimension !== 'district') {
+    if (excludeLocationDrill) {
+      if (filters.districts.length > 0) params.district = filters.districts.join(',');
+    } else if (activeFilters.districts.length > 0) {
+      params.district = activeFilters.districts.join(',');
+    }
+  }
+
+  // Bedrooms
+  if (excludeOwnDimension !== 'bedroom' && activeFilters.bedroomTypes.length > 0) {
+    params.bedroom = activeFilters.bedroomTypes.join(',');
+  }
+
+  // Segments
+  if (excludeOwnDimension !== 'segment') {
+    if (excludeLocationDrill) {
+      if (filters.segments.length > 0) params.segment = filters.segments.join(',');
+    } else if (activeFilters.segments.length > 0) {
+      params.segment = activeFilters.segments.join(',');
+    }
+  }
+
+  // Sale type
+  if (excludeOwnDimension !== 'sale_type' && activeFilters.saleType) {
+    params.sale_type = activeFilters.saleType;
+  }
+
+  // Ranges
+  if (activeFilters.psfRange.min !== null) params.psf_min = activeFilters.psfRange.min;
+  if (activeFilters.psfRange.max !== null) params.psf_max = activeFilters.psfRange.max;
+  if (activeFilters.sizeRange.min !== null) params.size_min = activeFilters.sizeRange.min;
+  if (activeFilters.sizeRange.max !== null) params.size_max = activeFilters.sizeRange.max;
+
+  // Fact filter (for transaction tables)
+  if (includeFactFilter) {
+    if (factFilter.priceRange?.min !== null) params.price_min = factFilter.priceRange.min;
+    if (factFilter.priceRange?.max !== null) params.price_max = factFilter.priceRange.max;
+  }
+
+  // Other filters
+  if (activeFilters.tenure) params.tenure = activeFilters.tenure;
+  if (activeFilters.propertyAge?.min !== null) params.property_age_min = activeFilters.propertyAge.min;
+  if (activeFilters.propertyAge?.max !== null) params.property_age_max = activeFilters.propertyAge.max;
+  if (activeFilters.project) params.project = activeFilters.project;
+  if (activeFilters.propertyAgeBucket) params.propertyAgeBucket = activeFilters.propertyAgeBucket;
+
+  return params;
 }
