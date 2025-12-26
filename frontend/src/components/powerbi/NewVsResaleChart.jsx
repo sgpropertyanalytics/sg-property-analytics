@@ -79,7 +79,8 @@ export function NewVsResaleChart({ height = 350 }) {
       const response = await getNewVsResale(params, { signal });
 
       // Validate API contract version (dev/test only)
-      assertKnownVersion(response, '/api/new-vs-resale');
+      // Pass response.data (API body with meta), not response (axios wrapper)
+      assertKnownVersion(response.data, '/api/new-vs-resale');
 
       // Debug logging (dev only)
       logFetchDebug('NewVsResaleChart', {

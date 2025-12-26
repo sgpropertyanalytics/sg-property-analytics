@@ -27,6 +27,7 @@ import {
   detectMarketSignals,
   detectInversionZones,
   logFetchDebug,
+  assertKnownVersion,
 } from '../../adapters';
 
 ChartJS.register(
@@ -89,6 +90,10 @@ export function PriceCompressionChart({ height = 380 }) {
       }, { excludeHighlight: true });
 
       const response = await getAggregate(params, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/aggregate');
+
       const rawData = response.data?.data || [];
 
       // Debug logging (dev only)

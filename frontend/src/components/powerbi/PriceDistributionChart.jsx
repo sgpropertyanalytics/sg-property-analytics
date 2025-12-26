@@ -21,6 +21,7 @@ import {
   formatPrice,
   findBinIndex,
   logFetchDebug,
+  assertKnownVersion,
 } from '../../adapters';
 
 ChartJS.register(
@@ -66,6 +67,10 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
 
       // Skip cache when toggling to ensure fresh data
       const response = await getDashboard(params, { skipCache: showFullRange, signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/dashboard');
+
       const responseData = response.data || {};
       const apiData = responseData.data || {};
 

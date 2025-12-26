@@ -20,7 +20,7 @@ import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import { SaleType, SaleTypeLabels } from '../../schemas/apiContract';
-import { transformTimeSeries, logFetchDebug } from '../../adapters';
+import { transformTimeSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
 
 ChartJS.register(
   CategoryScale,
@@ -66,6 +66,10 @@ export function TimeTrendChart({ onCrossFilter: _onCrossFilter, onDrillThrough: 
       }, { excludeHighlight: true });
 
       const response = await getAggregate(params, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/aggregate');
+
       const rawData = response.data?.data || [];
 
       // Debug logging (dev only)

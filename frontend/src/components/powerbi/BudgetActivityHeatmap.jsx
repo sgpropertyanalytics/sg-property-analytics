@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { getBudgetHeatmap } from '../../api/client';
 import { getBedroomLabelShort } from '../../constants';
+import { assertKnownVersion } from '../../adapters';
 import { ChartSkeleton } from '../common/ChartSkeleton';
 
 // Time window presets: label → months
@@ -99,6 +100,10 @@ export function BudgetActivityHeatmap({
   const { data, loading, error } = useAbortableQuery(
     async (signal) => {
       const response = await getBudgetHeatmap(apiParams, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/budget-heatmap');
+
       return response.data;
     },
     [JSON.stringify(apiParams)],

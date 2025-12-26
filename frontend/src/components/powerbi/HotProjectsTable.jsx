@@ -5,6 +5,7 @@ import { BlurredProject, BlurredCurrency } from '../BlurredCell';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { SuppressedValue } from '../SuppressedValue';
 import { getRegionBadgeClass } from '../../constants';
+import { assertKnownVersion } from '../../adapters';
 
 /**
  * Active New Sales Table - Shows LAUNCHED projects with sales progress
@@ -63,6 +64,10 @@ export function HotProjectsTable({
       }
 
       const response = await getHotProjects(params, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/hot-projects');
+
       const projects = response.data.projects || [];
 
       // Notify parent of data count

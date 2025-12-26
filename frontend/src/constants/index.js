@@ -297,7 +297,8 @@ export const classifyBedroomThreeTier = (areaSqft, saleType = null, transactionD
   }
 
   // Determine which tier to use
-  if (saleTypeStr === 'New Sale' && saleDate !== null) {
+  // Use isSaleType helper to handle both v1 ('New Sale') and v2 ('new_sale') formats
+  if (isSaleType.newSale(saleTypeStr) && saleDate !== null) {
     if (saleDate >= HARMONIZATION_DATE) {
       // Tier 1: Post-Harmonization New Sale
       return classifyWithThresholds(areaSqft, BEDROOM_THRESHOLDS_TIER1);
@@ -328,7 +329,8 @@ export const getBedroomClassificationTier = (saleType, transactionDate) => {
     if (isNaN(saleDate.getTime())) saleDate = null;
   }
 
-  if (saleTypeStr === 'New Sale' && saleDate !== null) {
+  // Use isSaleType helper to handle both v1 ('New Sale') and v2 ('new_sale') formats
+  if (isSaleType.newSale(saleTypeStr) && saleDate !== null) {
     if (saleDate >= HARMONIZATION_DATE) {
       return 'Tier 1: New Sale Post-Harmonization (Ultra Compact)';
     }

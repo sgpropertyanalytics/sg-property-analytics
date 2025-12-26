@@ -12,7 +12,7 @@ import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { useAbortableQuery } from '../../hooks/useAbortableQuery';
 import { getPsfByPriceBand } from '../../api/client';
-import { transformPsfByPriceBand, toPsfByPriceBandChartData } from '../../adapters/aggregateAdapter';
+import { transformPsfByPriceBand, toPsfByPriceBandChartData, assertKnownVersion } from '../../adapters/aggregateAdapter';
 import { QueryState } from '../common/QueryState';
 import { ChartSlot } from '../ui/ChartSlot';
 import { baseChartJsOptions } from '../../constants/chartOptions';
@@ -287,6 +287,10 @@ export function PsfByPriceBandChart({ height = 350 }) {
       const params = buildApiParams({});
 
       const response = await getPsfByPriceBand(params, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/psf-by-price-band');
+
       return response.data;
     },
     [debouncedFilterKey],

@@ -5,7 +5,7 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
 import { isSaleType } from '../../schemas/apiContract';
-import { transformGrowthDumbbellSeries, logFetchDebug } from '../../adapters';
+import { transformGrowthDumbbellSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
 
 // All districts
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
@@ -99,6 +99,10 @@ export function GrowthDumbbellChart() {
       }, { excludeHighlight: true });
 
       const response = await getAggregate(params, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/aggregate');
+
       const rawData = response.data?.data || [];
 
       // Debug logging (dev only)

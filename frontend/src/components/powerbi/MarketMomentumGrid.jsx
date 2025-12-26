@@ -5,6 +5,7 @@ import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { DistrictMicroChart } from './DistrictMicroChart';
 import { isSaleType, getAggField, AggField } from '../../schemas/apiContract';
+import { assertKnownVersion } from '../../adapters';
 import { ChartSkeleton } from '../common/ChartSkeleton';
 
 // All districts ordered by region: CCR → RCR → OCR
@@ -38,6 +39,10 @@ export function MarketMomentumGrid() {
       }, { excludeHighlight: true });
 
       const response = await getAggregate(params, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/aggregate');
+
       const rawData = response.data?.data || [];
 
       // Group by district, preserving quarter order

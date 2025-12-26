@@ -3,6 +3,7 @@ import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { getGLSAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { getRegionBadgeClass } from '../../constants';
+import { assertKnownVersion } from '../../adapters';
 
 /**
  * GLS Data Table - Shows Government Land Sales tender details
@@ -65,6 +66,10 @@ export function GLSDataTable({ height = 400 }) {
       }
 
       const response = await getGLSAll(params, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/gls');
+
       return response.data.data || [];
     },
     [filter, segmentFilter, sortConfig.column, sortConfig.order, refreshTrigger],

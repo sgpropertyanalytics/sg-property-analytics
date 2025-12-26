@@ -9,6 +9,7 @@ import {
   LIQUIDITY_COLORS,
   getLiquidityColor,
 } from '../../constants';
+import { assertKnownVersion } from '../../adapters';
 
 /**
  * Floor Liquidity Heatmap
@@ -47,6 +48,9 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       if (district) params.district = district;
 
       const response = await getFloorLiquidityHeatmap(params, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/floor-liquidity-heatmap');
 
       return {
         data: response.data?.data || { projects: [], floor_zone_order: [] },

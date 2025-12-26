@@ -17,7 +17,7 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
-import { transformTimeSeriesByRegion, logFetchDebug } from '../../adapters';
+import { transformTimeSeriesByRegion, logFetchDebug, assertKnownVersion } from '../../adapters';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -60,6 +60,10 @@ export function MedianPsfTrendChart({ height = 300 }) {
       }, { excludeHighlight: true });
 
       const response = await getAggregate(params, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/aggregate');
+
       const apiData = response.data?.data || [];
 
       // Debug logging (dev only)

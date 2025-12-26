@@ -3,6 +3,7 @@ import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { getUpcomingLaunchesAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { getRegionBadgeClass } from '../../constants';
+import { assertKnownVersion } from '../../adapters';
 
 /**
  * Upcoming Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
@@ -61,6 +62,10 @@ export function UpcomingLaunchesTable({
       };
 
       const response = await getUpcomingLaunchesAll(params, { signal });
+
+      // Validate API contract version (dev/test only)
+      assertKnownVersion(response.data, '/api/upcoming-launches');
+
       return response.data.data || [];
     },
     [sortConfig.column, sortConfig.order, refreshTrigger],
