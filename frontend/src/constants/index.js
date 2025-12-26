@@ -70,6 +70,26 @@ export const isDistrictInRegion = (district, region) => {
   return getRegionForDistrict(district) === region.toUpperCase();
 };
 
+/**
+ * Region badge styling utilities
+ * Centralizes the CCR/RCR/OCR badge color logic used across components.
+ */
+export const REGION_BADGE_CLASSES = {
+  CCR: 'bg-[#213448] text-white',
+  RCR: 'bg-[#547792] text-white',
+  OCR: 'bg-[#94B4C1] text-[#213448]',
+};
+
+/**
+ * Get Tailwind classes for a region badge
+ * @param {string} region - Region code (CCR, RCR, OCR) - case insensitive
+ * @returns {string} Tailwind CSS classes for the badge
+ */
+export const getRegionBadgeClass = (region) => {
+  const r = (region || '').toUpperCase();
+  return REGION_BADGE_CLASSES[r] || REGION_BADGE_CLASSES.OCR;
+};
+
 // =============================================================================
 // DISTRICT NAMES
 // =============================================================================

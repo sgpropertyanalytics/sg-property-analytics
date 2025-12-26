@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { getUpcomingLaunchesAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { getRegionBadgeClass } from '../../constants';
 
 /**
  * Upcoming Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
@@ -201,11 +202,7 @@ export function UpcomingLaunchesTable({
                     {formatDate(project.expected_launch_date, project.launch_year)}
                   </div>
                   {project.market_segment && (
-                    <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] font-medium rounded ${
-                      project.market_segment === 'CCR' ? 'bg-[#213448] text-white' :
-                      project.market_segment === 'RCR' ? 'bg-[#547792] text-white' :
-                      'bg-[#94B4C1] text-[#213448]'
-                    }`}>
+                    <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] font-medium rounded ${getRegionBadgeClass(project.market_segment)}`}>
                       {project.market_segment}
                     </span>
                   )}
@@ -297,11 +294,7 @@ export function UpcomingLaunchesTable({
                     {/* Segment - using theme colors to match HotProjectsTable */}
                     <td className="px-3 py-2 border-b border-slate-100">
                       {project.market_segment ? (
-                        <span className={`inline-block px-1.5 py-0.5 text-[10px] font-medium rounded ${
-                          project.market_segment === 'CCR' ? 'bg-[#213448] text-white' :
-                          project.market_segment === 'RCR' ? 'bg-[#547792] text-white' :
-                          'bg-[#94B4C1] text-[#213448]'
-                        }`}>
+                        <span className={`inline-block px-1.5 py-0.5 text-[10px] font-medium rounded ${getRegionBadgeClass(project.market_segment)}`}>
                           {project.market_segment}
                         </span>
                       ) : (

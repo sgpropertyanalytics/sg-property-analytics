@@ -4,6 +4,7 @@ import { getHotProjects } from '../../api/client';
 import { BlurredProject, BlurredCurrency } from '../BlurredCell';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { SuppressedValue, ObservationCount, COMPLIANT_LABELS } from '../SuppressedValue';
+import { getRegionBadgeClass } from '../../constants';
 
 /**
  * Active New Sales Table - Shows LAUNCHED projects with sales progress
@@ -266,11 +267,7 @@ export function HotProjectsTable({
                   <div className="text-xs text-[#547792]">
                     {project.first_new_sale ? new Date(project.first_new_sale).toLocaleDateString('en-SG', { year: 'numeric', month: 'short' }) : '-'}
                   </div>
-                  <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] font-medium rounded ${
-                    project.market_segment === 'CCR' ? 'bg-[#213448] text-white' :
-                    project.market_segment === 'RCR' ? 'bg-[#547792] text-white' :
-                    'bg-[#94B4C1] text-[#213448]'
-                  }`}>
+                  <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] font-medium rounded ${getRegionBadgeClass(project.market_segment)}`}>
                     {project.market_segment || '-'}
                   </span>
                   <div className="text-xs text-[#213448] font-medium mt-1">
@@ -393,11 +390,7 @@ export function HotProjectsTable({
 
                     {/* Market Segment */}
                     <td className="px-3 py-2 border-b border-slate-100">
-                      <span className={`inline-block px-1.5 py-0.5 text-[10px] font-medium rounded ${
-                        project.market_segment === 'CCR' ? 'bg-[#213448] text-white' :
-                        project.market_segment === 'RCR' ? 'bg-[#547792] text-white' :
-                        'bg-[#94B4C1] text-[#213448]'
-                      }`}>
+                      <span className={`inline-block px-1.5 py-0.5 text-[10px] font-medium rounded ${getRegionBadgeClass(project.market_segment)}`}>
                         {project.market_segment || '-'}
                       </span>
                     </td>

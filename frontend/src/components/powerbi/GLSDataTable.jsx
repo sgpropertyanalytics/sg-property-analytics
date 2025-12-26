@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { getGLSAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { getRegionBadgeClass } from '../../constants';
 
 /**
  * GLS Data Table - Shows Government Land Sales tender details
@@ -273,13 +274,7 @@ export function GLSDataTable({ height = 400 }) {
                     <div className="text-xs text-[#547792] mt-0.5">
                       {formatDate(tender.release_date)}
                       {tender.market_segment && (
-                        <span className={`ml-2 px-1.5 py-0.5 text-[10px] font-medium rounded ${
-                          tender.market_segment === 'CCR'
-                            ? 'bg-purple-100 text-purple-700'
-                            : tender.market_segment === 'RCR'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-teal-100 text-teal-700'
-                        }`}>
+                        <span className={`ml-2 px-1.5 py-0.5 text-[10px] font-medium rounded ${getRegionBadgeClass(tender.market_segment)}`}>
                           {tender.market_segment}
                         </span>
                       )}
@@ -389,13 +384,7 @@ export function GLSDataTable({ height = 400 }) {
                     </td>
                     <td className="px-3 py-2 border-b border-slate-100">
                       {tender.market_segment ? (
-                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
-                          tender.market_segment === 'CCR'
-                            ? 'bg-purple-100 text-purple-700'
-                            : tender.market_segment === 'RCR'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-teal-100 text-teal-700'
-                        }`}>
+                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${getRegionBadgeClass(tender.market_segment)}`}>
                           {tender.market_segment}
                         </span>
                       ) : (
