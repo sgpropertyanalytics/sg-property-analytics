@@ -489,18 +489,16 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
 
           {/* Property Age Bucket Buttons */}
           <FilterGroup label="Property Age">
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-5 gap-1">
               {/* Use normalized propertyAgeBuckets from API, fallback to hardcoded for safety */}
               {(filterOptions.propertyAgeBuckets?.length > 0
                 ? filterOptions.propertyAgeBuckets
                 : [
                     { value: PropertyAgeBucket.NEW_SALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.NEW_SALE, true) },
-                    { value: PropertyAgeBucket.JUST_TOP, label: getPropertyAgeBucketLabel(PropertyAgeBucket.JUST_TOP, true) },
                     { value: PropertyAgeBucket.RECENTLY_TOP, label: getPropertyAgeBucketLabel(PropertyAgeBucket.RECENTLY_TOP, true) },
                     { value: PropertyAgeBucket.YOUNG_RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.YOUNG_RESALE, true) },
                     { value: PropertyAgeBucket.RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.RESALE, true) },
                     { value: PropertyAgeBucket.MATURE_RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.MATURE_RESALE, true) },
-                    { value: PropertyAgeBucket.UNKNOWN_AGE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.UNKNOWN_AGE, true) },
                   ]
               ).map(bucket => {
                 const isSelected = filters.propertyAgeBucket === bucket.value;
@@ -523,7 +521,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
               })}
             </div>
             <p className="text-[10px] text-slate-500 mt-1.5 italic">
-              Based on lease commencement. Freehold → Unknown.
+              Based on lease commencement year.
             </p>
           </FilterGroup>
         </FilterSection>

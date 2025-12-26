@@ -5,7 +5,6 @@ Tests for the PropertyAgeBucket enum, filter parsing, and SQL generation.
 Ensures:
 - All buckets are defined with labels
 - Age boundaries are correct (exclusive upper bounds)
-- Freehold → unknown_age
 - New Sale uses correlated NOT EXISTS for 0 resale transactions
 - v1 and v2 parameter formats accepted
 """
@@ -22,8 +21,8 @@ class TestPropertyAgeBucketEnum:
         from schemas.api_contract import PropertyAgeBucket
 
         expected = [
-            'new_sale', 'just_top', 'recently_top',
-            'young_resale', 'resale', 'mature_resale', 'unknown_age'
+            'new_sale', 'recently_top',
+            'young_resale', 'resale', 'mature_resale'
         ]
         assert set(PropertyAgeBucket.ALL) == set(expected)
 
@@ -66,42 +65,38 @@ class TestPropertyAgeBucketEnum:
         from schemas.api_contract import PropertyAgeBucket
 
         # Test each age-based bucket
-        assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.JUST_TOP) == (0, 4)
-        assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP) == (4, 8)
+        assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP) == (0, 8)
         assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.YOUNG_RESALE) == (8, 15)
         assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.RESALE) == (15, 25)
         assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.MATURE_RESALE) == (25, None)
 
     def test_special_buckets_no_age_boundaries(self):
-        """new_sale and unknown_age should have no age ranges."""
+        """new_sale should have no age range (it's market state, not age-based)."""
         from schemas.api_contract import PropertyAgeBucket
 
         assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.NEW_SALE) is None
-        assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.UNKNOWN_AGE) is None
 
     def test_is_age_based_classification(self):
         """is_age_based should correctly classify buckets."""
         from schemas.api_contract import PropertyAgeBucket
 
         # Age-based buckets
-        assert PropertyAgeBucket.is_age_based(PropertyAgeBucket.JUST_TOP) is True
         assert PropertyAgeBucket.is_age_based(PropertyAgeBucket.RECENTLY_TOP) is True
         assert PropertyAgeBucket.is_age_based(PropertyAgeBucket.YOUNG_RESALE) is True
         assert PropertyAgeBucket.is_age_based(PropertyAgeBucket.RESALE) is True
         assert PropertyAgeBucket.is_age_based(PropertyAgeBucket.MATURE_RESALE) is True
 
-        # Non-age-based buckets
+        # Non-age-based buckets (new_sale is market state, not age-based)
         assert PropertyAgeBucket.is_age_based(PropertyAgeBucket.NEW_SALE) is False
-        assert PropertyAgeBucket.is_age_based(PropertyAgeBucket.UNKNOWN_AGE) is False
 
     def test_boundary_age_8_goes_to_young_resale(self):
         """Age 8 should go to young_resale (not recently_top) due to exclusive upper bound."""
         from schemas.api_contract import PropertyAgeBucket
 
-        # recently_top: [4, 8) → age 8 is NOT in this bucket
+        # recently_top: [0, 8) → age 8 is NOT in this bucket
         recently_top_range = PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP)
-        assert recently_top_range == (4, 8)
-        # 8 >= 4 and 8 < 8 is False, so age 8 is NOT recently_top
+        assert recently_top_range == (0, 8)
+        # 8 >= 0 and 8 < 8 is False, so age 8 is NOT recently_top
 
         # young_resale: [8, 15) → age 8 IS in this bucket
         young_resale_range = PropertyAgeBucket.get_age_range(PropertyAgeBucket.YOUNG_RESALE)
@@ -116,9 +111,9 @@ class TestPropertyAgeBucketParsing:
         """v2 camelCase parameter name should be parsed."""
         from schemas.api_contract import parse_filter_params
 
-        args = {'propertyAgeBucket': 'just_top'}
+        args = {'propertyAgeBucket': 'recently_top'}
         params = parse_filter_params(args)
-        assert params.get('property_age_bucket') == 'just_top'
+        assert params.get('property_age_bucket') == 'recently_top'
 
     def test_parse_v1_snake_case_param(self):
         """v1 snake_case parameter name should be parsed."""
@@ -260,20 +255,20 @@ class TestPropertyAgeBucketFilterBuilder:
 class TestAgeBoundaryLogic:
     """Test that age boundary logic is correct."""
 
-    def test_exclusive_upper_bound_4(self):
-        """Age 4 should be in recently_top, not just_top."""
+    def test_exclusive_upper_bound_8(self):
+        """Age 8 should be in young_resale, not recently_top."""
         from schemas.api_contract import PropertyAgeBucket
 
-        # just_top: [0, 4) → 0 <= age < 4
-        just_top = PropertyAgeBucket.get_age_range(PropertyAgeBucket.JUST_TOP)
-        min_age, max_age = just_top
-        assert min_age <= 3 < max_age  # age 3 is in just_top
-        assert not (min_age <= 4 < max_age)  # age 4 is NOT in just_top
-
-        # recently_top: [4, 8) → 4 <= age < 8
+        # recently_top: [0, 8) → 0 <= age < 8
         recently_top = PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP)
         min_age, max_age = recently_top
-        assert min_age <= 4 < max_age  # age 4 IS in recently_top
+        assert min_age <= 7 < max_age  # age 7 is in recently_top
+        assert not (min_age <= 8 < max_age)  # age 8 is NOT in recently_top
+
+        # young_resale: [8, 15) → 8 <= age < 15
+        young_resale = PropertyAgeBucket.get_age_range(PropertyAgeBucket.YOUNG_RESALE)
+        min_age, max_age = young_resale
+        assert min_age <= 8 < max_age  # age 8 IS in young_resale
 
     def test_exclusive_upper_bound_15(self):
         """Age 15 should be in resale, not young_resale."""

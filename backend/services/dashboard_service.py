@@ -447,13 +447,6 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
             """).bindparams(resale_type=resale_db_value)
             conditions.append(not_exists_clause)
 
-        elif property_age_bucket == PropertyAgeBucket.UNKNOWN_AGE:
-            # Freehold OR missing lease_start_year → unknown age
-            conditions.append(or_(
-                Transaction.lease_start_year.is_(None),
-                Transaction.tenure.ilike('%freehold%')
-            ))
-
         else:
             # Age-based buckets (leasehold only)
             age_range = PropertyAgeBucket.get_age_range(property_age_bucket)
@@ -516,10 +509,6 @@ def build_property_age_bucket_filter(bucket: str, txn_table=None):
                   AND COALESCE(t2.is_outlier, false) = false
             )
         """).bindparams(resale_type=resale_db_value)
-
-    elif bucket == PropertyAgeBucket.UNKNOWN_AGE:
-        # Freehold OR missing lease_start_year
-        return or_(T.lease_start_year.is_(None), T.tenure.ilike('%freehold%'))
 
     else:
         # Age-based buckets

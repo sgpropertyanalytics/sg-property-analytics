@@ -202,54 +202,44 @@ class PropertyAgeBucket:
     This is "lease age" (years since lease commencement), NOT building age.
 
     IMPORTANT:
-    - Freehold properties are EXCLUDED (their lease_start_year is land grant date)
-    - Freehold and missing lease_start_year → unknown_age bucket
+    - Freehold properties are EXCLUDED from age-based filters
     - Age boundaries use exclusive upper bounds: [min, max)
 
     Buckets:
     - new_sale: Project has 0 resale transactions (market state, not age)
-    - just_top: 0-4 years since lease start
-    - recently_top: 4-8 years since lease start
+    - recently_top: 0-8 years since lease start (recently completed)
     - young_resale: 8-15 years since lease start
     - resale: 15-25 years since lease start
     - mature_resale: 25+ years since lease start
-    - unknown_age: Freehold OR missing lease_start_year
     """
     NEW_SALE = 'new_sale'
-    JUST_TOP = 'just_top'
     RECENTLY_TOP = 'recently_top'
     YOUNG_RESALE = 'young_resale'
     RESALE = 'resale'
     MATURE_RESALE = 'mature_resale'
-    UNKNOWN_AGE = 'unknown_age'
 
-    ALL = [NEW_SALE, JUST_TOP, RECENTLY_TOP, YOUNG_RESALE, RESALE, MATURE_RESALE, UNKNOWN_AGE]
+    ALL = [NEW_SALE, RECENTLY_TOP, YOUNG_RESALE, RESALE, MATURE_RESALE]
 
     LABELS = {
         NEW_SALE: 'New Sale (No Resales Yet)',
-        JUST_TOP: 'Just TOP (0-4 years)',
-        RECENTLY_TOP: 'Recently TOP (4-8 years)',
+        RECENTLY_TOP: 'Recently TOP (0-8 years)',
         YOUNG_RESALE: 'Young Resale (8-15 years)',
         RESALE: 'Resale (15-25 years)',
         MATURE_RESALE: 'Mature Resale (25+ years)',
-        UNKNOWN_AGE: 'Unknown Age',
     }
 
     LABELS_SHORT = {
         NEW_SALE: 'New',
-        JUST_TOP: '0-4yr',
-        RECENTLY_TOP: '4-8yr',
+        RECENTLY_TOP: '0-8yr',
         YOUNG_RESALE: '8-15yr',
         RESALE: '15-25yr',
         MATURE_RESALE: '25yr+',
-        UNKNOWN_AGE: 'Unknown',
     }
 
     # Age boundaries: (min_inclusive, max_exclusive)
     # None means unbounded
     AGE_RANGES = {
-        JUST_TOP: (0, 4),
-        RECENTLY_TOP: (4, 8),
+        RECENTLY_TOP: (0, 8),
         YOUNG_RESALE: (8, 15),
         RESALE: (15, 25),
         MATURE_RESALE: (25, None),

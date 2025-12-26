@@ -232,18 +232,16 @@ export const FloorLevelLabels = {
  * This is "lease age" (years since lease commencement), NOT building age.
  *
  * IMPORTANT:
- * - Freehold properties → unknown_age (their lease_start_year is land grant date)
+ * - Freehold properties are excluded from age-based filtering
  * - new_sale is a market state (0 resale transactions), not age-based
  * - Age boundaries use exclusive upper bounds: [min, max)
  */
 export const PropertyAgeBucket = {
   NEW_SALE: 'new_sale',
-  JUST_TOP: 'just_top',
   RECENTLY_TOP: 'recently_top',
   YOUNG_RESALE: 'young_resale',
   RESALE: 'resale',
   MATURE_RESALE: 'mature_resale',
-  UNKNOWN_AGE: 'unknown_age',
 };
 
 /**
@@ -251,12 +249,10 @@ export const PropertyAgeBucket = {
  */
 export const PropertyAgeBucketLabels = {
   [PropertyAgeBucket.NEW_SALE]: 'New Sale (No Resales Yet)',
-  [PropertyAgeBucket.JUST_TOP]: 'Just TOP (0-4 years)',
-  [PropertyAgeBucket.RECENTLY_TOP]: 'Recently TOP (4-8 years)',
+  [PropertyAgeBucket.RECENTLY_TOP]: 'Recently TOP (0-8 years)',
   [PropertyAgeBucket.YOUNG_RESALE]: 'Young Resale (8-15 years)',
   [PropertyAgeBucket.RESALE]: 'Resale (15-25 years)',
   [PropertyAgeBucket.MATURE_RESALE]: 'Mature Resale (25+ years)',
-  [PropertyAgeBucket.UNKNOWN_AGE]: 'Unknown Age',
 };
 
 /**
@@ -264,12 +260,10 @@ export const PropertyAgeBucketLabels = {
  */
 export const PropertyAgeBucketLabelsShort = {
   [PropertyAgeBucket.NEW_SALE]: 'New',
-  [PropertyAgeBucket.JUST_TOP]: '0-4yr',
-  [PropertyAgeBucket.RECENTLY_TOP]: '4-8yr',
+  [PropertyAgeBucket.RECENTLY_TOP]: '0-8yr',
   [PropertyAgeBucket.YOUNG_RESALE]: '8-15yr',
   [PropertyAgeBucket.RESALE]: '15-25yr',
   [PropertyAgeBucket.MATURE_RESALE]: '25yr+',
-  [PropertyAgeBucket.UNKNOWN_AGE]: 'Unknown',
 };
 
 /**
@@ -277,15 +271,13 @@ export const PropertyAgeBucketLabelsShort = {
  */
 export const isPropertyAgeBucket = {
   newSale: (val) => val === PropertyAgeBucket.NEW_SALE,
-  justTop: (val) => val === PropertyAgeBucket.JUST_TOP,
   recentlyTop: (val) => val === PropertyAgeBucket.RECENTLY_TOP,
   youngResale: (val) => val === PropertyAgeBucket.YOUNG_RESALE,
   resale: (val) => val === PropertyAgeBucket.RESALE,
   matureResale: (val) => val === PropertyAgeBucket.MATURE_RESALE,
-  unknownAge: (val) => val === PropertyAgeBucket.UNKNOWN_AGE,
   // Utility helpers
-  isAgeKnown: (val) => val !== PropertyAgeBucket.UNKNOWN_AGE && val !== PropertyAgeBucket.NEW_SALE,
-  isYoung: (val) => [PropertyAgeBucket.JUST_TOP, PropertyAgeBucket.RECENTLY_TOP, PropertyAgeBucket.YOUNG_RESALE].includes(val),
+  isAgeBased: (val) => val !== PropertyAgeBucket.NEW_SALE,
+  isYoung: (val) => [PropertyAgeBucket.RECENTLY_TOP, PropertyAgeBucket.YOUNG_RESALE].includes(val),
   isMature: (val) => [PropertyAgeBucket.RESALE, PropertyAgeBucket.MATURE_RESALE].includes(val),
 };
 
