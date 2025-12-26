@@ -41,7 +41,6 @@ const medianLinePlugin = {
   id: 'medianLine',
   afterDatasetsDraw(chart) {
     const { ctx, scales } = chart;
-    const xScale = scales.x;
     const yScale = scales.y;
 
     chart.data.datasets.forEach((dataset, datasetIndex) => {
@@ -485,9 +484,6 @@ export function PsfByPriceBandChart({ height = 350 }) {
                 const ccrPct = Math.round((ccrCount / total) * 100);
                 const rcrPct = Math.round((rcrCount / total) * 100);
                 const ocrPct = Math.round((ocrCount / total) * 100);
-                // Show dominant region
-                const dominant = ccrPct >= rcrPct && ccrPct >= ocrPct ? 'CCR' :
-                                 rcrPct >= ocrPct ? 'RCR' : 'OCR';
                 lines.push(`Region: ${ccrPct}% CCR | ${rcrPct}% RCR | ${ocrPct}% OCR`);
               }
 
@@ -547,6 +543,8 @@ export function PsfByPriceBandChart({ height = 350 }) {
       onRetry={refetch}
       empty={!transformedData?.hasData}
       emptyMessage="No PSF data available for current filters"
+      skeleton="bar"
+      height={400}
     >
       <div
         className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"

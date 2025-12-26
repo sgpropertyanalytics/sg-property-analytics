@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import {
   DISTRICT_NAMES,
@@ -7,7 +7,7 @@ import {
   BEDROOM_THRESHOLDS_TIER3,
   BEDROOM_ORDER_NUMERIC,
 } from '../../constants';
-import { SaleType, isSaleType, PropertyAgeBucket, getPropertyAgeBucketLabel } from '../../schemas/apiContract';
+import { PropertyAgeBucket, getPropertyAgeBucketLabel } from '../../schemas/apiContract';
 
 /**
  * Power BI-style Filter Sidebar
@@ -15,7 +15,7 @@ import { SaleType, isSaleType, PropertyAgeBucket, getPropertyAgeBucketLabel } fr
  * Contains dropdown/multi-select filters for all dimensions.
  * Defaults all filters to 'All' (no restriction).
  */
-export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
+export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle }) {
   const {
     filters,
     filterOptions,
@@ -23,11 +23,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     activeFilterCount,
     setDateRange,
     setDistricts,
-    toggleDistrict,
-    setBedroomTypes,
     toggleBedroomType,
     toggleSegment,
-    setSaleType,
     setPropertyAgeBucket,
     resetFilters,
     clearCrossFilter,
@@ -669,48 +666,6 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function RangeSlider({ min, max, value, onChange, step = 1 }) {
-  const [localMin, localMax] = value;
-
-  const handleMinChange = (e) => {
-    const newMin = e.target.value ? parseFloat(e.target.value) : null;
-    onChange(newMin, localMax);
-  };
-
-  const handleMaxChange = (e) => {
-    const newMax = e.target.value ? parseFloat(e.target.value) : null;
-    onChange(localMin, newMax);
-  };
-
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <input
-          type="number"
-          value={localMin ?? ''}
-          onChange={handleMinChange}
-          placeholder="Min"
-          min={min}
-          max={max}
-          step={step}
-          className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <span className="text-slate-400 self-center">-</span>
-        <input
-          type="number"
-          value={localMax ?? ''}
-          onChange={handleMaxChange}
-          placeholder="Max"
-          min={min}
-          max={max}
-          step={step}
-          className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
     </div>
   );
 }

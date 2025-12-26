@@ -194,7 +194,7 @@ export function PriceCompressionChart({ height = 380 }) {
           usePointStyle: true,
           padding: 15,
           font: { size: 11 },
-          generateLabels: (chart) => {
+          generateLabels: (_chart) => {
             return [
               {
                 text: 'CCR ↔ RCR Spread (solid)',
@@ -420,7 +420,7 @@ export function PriceCompressionChart({ height = 380 }) {
 /**
  * Build Chart.js annotation boxes for inversion zones
  */
-function buildInversionZones(zones, data) {
+function buildInversionZones(zones, _data) {
   const result = {};
 
   // CCR Discount zones (green/amber background)

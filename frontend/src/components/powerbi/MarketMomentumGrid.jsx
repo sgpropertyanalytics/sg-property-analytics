@@ -5,6 +5,7 @@ import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { DistrictMicroChart } from './DistrictMicroChart';
 import { isSaleType, getAggField, AggField } from '../../schemas/apiContract';
+import { ChartSkeleton } from '../common/ChartSkeleton';
 
 // All districts ordered by region: CCR → RCR → OCR
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
@@ -77,32 +78,7 @@ export function MarketMomentumGrid() {
 
   // Loading skeleton
   if (loading) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-        {/* Header */}
-        <div className="px-3 md:px-4 py-3 border-b border-[#94B4C1]/30">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <div className="h-5 w-32 md:w-48 bg-[#EAE0CF]/50 rounded animate-pulse" />
-              <div className="h-3 w-48 md:w-64 bg-[#EAE0CF]/30 rounded mt-1 animate-pulse" />
-            </div>
-            <div className="h-4 w-28 md:w-40 bg-[#EAE0CF]/30 rounded animate-pulse" />
-          </div>
-        </div>
-
-        {/* Grid skeleton */}
-        <div className="p-3 lg:p-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3">
-            {ALL_DISTRICTS.map((district) => (
-              <div
-                key={district}
-                className="aspect-[4/3] bg-[#EAE0CF]/20 rounded border border-[#94B4C1]/30 animate-pulse"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <ChartSkeleton type="grid" height={400} />;
   }
 
   // Error state

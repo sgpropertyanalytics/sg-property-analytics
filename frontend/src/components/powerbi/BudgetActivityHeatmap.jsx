@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { getBudgetHeatmap } from '../../api/client';
 import { getBedroomLabelShort } from '../../constants';
+import { ChartSkeleton } from '../common/ChartSkeleton';
 
 // Time window presets: label → months
 const TIME_PRESETS = {
@@ -113,15 +114,7 @@ export function BudgetActivityHeatmap({
 
   // Loading state
   if (loading) {
-    return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-6">
-        <div className="animate-pulse space-y-3">
-          <div className="h-5 bg-[#EAE0CF]/50 rounded w-2/3" />
-          <div className="h-3 bg-[#EAE0CF]/30 rounded w-1/3" />
-          <div className="h-40 bg-[#EAE0CF]/30 rounded mt-4" />
-        </div>
-      </div>
-    );
+    return <ChartSkeleton type="grid" height={280} />;
   }
 
   // Error state

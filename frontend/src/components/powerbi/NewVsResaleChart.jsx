@@ -19,7 +19,7 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import { transformNewVsResaleSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
-import { SaleType, SaleTypeLabels, PremiumTrend, PremiumTrendLabels, isPremiumTrend, PropertyAgeBucket, PropertyAgeBucketLabels } from '../../schemas/apiContract';
+import { SaleType, SaleTypeLabels, PremiumTrendLabels, isPremiumTrend, PropertyAgeBucket, PropertyAgeBucketLabels } from '../../schemas/apiContract';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -237,7 +237,7 @@ export function NewVsResaleChart({ height = 350 }) {
             size: 10,
           },
           // Show fewer labels on mobile
-          callback: function(value, index, ticks) {
+          callback: function(value, index, _ticks) {
             // Show every label on desktop, every 2nd on tablet, every 3rd on mobile
             if (typeof window !== 'undefined') {
               if (window.innerWidth < 640 && index % 3 !== 0) return '';

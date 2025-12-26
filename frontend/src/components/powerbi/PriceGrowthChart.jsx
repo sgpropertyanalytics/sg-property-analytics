@@ -25,6 +25,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
+import { ChartSkeleton } from '../common/ChartSkeleton';
 
 ChartJS.register(
   CategoryScale,
@@ -314,20 +315,7 @@ export function PriceGrowthChart({
 
   // Loading state
   if (loading) {
-    return (
-      <div
-        className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
-        style={{ height }}
-      >
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-          <div className="h-5 w-48 bg-[#EAE0CF]/50 rounded animate-pulse" />
-          <div className="h-4 w-32 bg-[#EAE0CF]/30 rounded animate-pulse mt-2" />
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-[#547792]">Loading price growth data...</div>
-        </div>
-      </div>
-    );
+    return <ChartSkeleton type="line" height={height} />;
   }
 
   // Error state

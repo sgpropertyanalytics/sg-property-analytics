@@ -3,7 +3,7 @@ import { useAbortableQuery } from '../../hooks';
 import { getHotProjects } from '../../api/client';
 import { BlurredProject, BlurredCurrency } from '../BlurredCell';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { SuppressedValue, ObservationCount, COMPLIANT_LABELS } from '../SuppressedValue';
+import { SuppressedValue } from '../SuppressedValue';
 import { getRegionBadgeClass } from '../../constants';
 
 /**
@@ -120,8 +120,9 @@ export function HotProjectsTable({
     return 'bg-green-100 text-green-700';                      // High inventory available
   };
 
-  // Calculate min/max for color scaling
-  const priceRange = React.useMemo(() => {
+  // Calculate min/max for color scaling (reserved for future use)
+  // eslint-disable-next-line no-unused-vars
+  const _priceRange = React.useMemo(() => {
     const prices = data.filter(p => p.median_price).map(p => p.median_price);
     const psfs = data.filter(p => p.median_psf).map(p => p.median_psf);
     return {
@@ -132,8 +133,9 @@ export function HotProjectsTable({
     };
   }, [data]);
 
-  // Color scale using theme colors: highest = #213448, lowest = #EAE0CF
-  const getValueColor = (value, min, max) => {
+  // Color scale using theme colors: highest = #213448, lowest = #EAE0CF (reserved for future use)
+  // eslint-disable-next-line no-unused-vars
+  const _getValueColor = (value, min, max) => {
     if (value === null || value === undefined) return { bg: '#f1f5f9', text: '#64748b' };
     const ratio = (value - min) / (max - min || 1);
     // Interpolate between colors based on ratio

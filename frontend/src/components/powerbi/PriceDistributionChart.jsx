@@ -219,7 +219,8 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         },
       },
     },
-  }), [bins, displayCount, annotations]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [bins, displayCount, medianBinIndex, q1BinIndex, q3BinIndex]);
 
   // Card layout contract: flex column with fixed total height
   // Header/Note/Footer are shrink-0, chart slot is flex-1 min-h-0

@@ -60,14 +60,14 @@ export function DistrictMicroChart({ district, data, onClick }) {
   const lineColor = '#1f2937'; // Dark gray/black
 
   // Calculate local min/max and growth metrics
-  const { latestPsf, minPsf, maxPsf, paddedMin, paddedMax, growthPercent } = useMemo(() => {
+  const { latestPsf, paddedMin, paddedMax, growthPercent } = useMemo(() => {
     if (!data || data.length === 0) {
-      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null };
+      return { latestPsf: null, paddedMin: 0, paddedMax: 0, growthPercent: null };
     }
 
     const psfValues = data.map(d => d.medianPsf).filter(v => v > 0);
     if (psfValues.length === 0) {
-      return { latestPsf: null, minPsf: 0, maxPsf: 0, paddedMin: 0, paddedMax: 0, growthPercent: null };
+      return { latestPsf: null, paddedMin: 0, paddedMax: 0, growthPercent: null };
     }
 
     const min = Math.min(...psfValues);
@@ -82,8 +82,6 @@ export function DistrictMicroChart({ district, data, onClick }) {
 
     return {
       latestPsf: lastPsf,
-      minPsf: min,
-      maxPsf: max,
       paddedMin: Math.max(0, min - padding),
       paddedMax: max + padding,
       growthPercent: growth,

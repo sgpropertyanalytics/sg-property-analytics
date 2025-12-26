@@ -13,6 +13,7 @@
  */
 
 import { useMemo, useRef } from 'react';
+import { ChartSkeleton } from '../common/ChartSkeleton';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -61,7 +62,7 @@ export function PriceBandChart({
   trend,
   verdict,
   unitPsf,
-  dataSource = 'project',
+  dataSource: _dataSource = 'project',
   proxyLabel,
   dataQuality,
   loading = false,
@@ -185,7 +186,7 @@ export function PriceBandChart({
             padding: 15,
             font: { size: 11 },
             color: COLORS.oceanBlue,
-            filter: (item) => {
+            filter: (_item) => {
               // Show all three legends
               return true;
             },
@@ -276,20 +277,7 @@ export function PriceBandChart({
 
   // Loading state
   if (loading) {
-    return (
-      <div
-        className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
-        style={{ height }}
-      >
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-          <div className="h-5 w-48 bg-[#EAE0CF]/50 rounded animate-pulse" />
-          <div className="h-4 w-32 bg-[#EAE0CF]/30 rounded animate-pulse mt-2" />
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-[#547792]">Loading price bands...</div>
-        </div>
-      </div>
-    );
+    return <ChartSkeleton type="line" height={height} />;
   }
 
   // Error state
