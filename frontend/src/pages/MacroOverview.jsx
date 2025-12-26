@@ -309,15 +309,17 @@ export function MacroOverviewContent() {
                   </ErrorBoundary>
                 </div>
 
-                {/* Price Distribution - Histogram (Watermarked for free users) */}
-                <ErrorBoundary name="Price Distribution" compact>
-                  <ChartWatermark>
-                    <PriceDistributionChart
-                      onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
-                      height={standardChartHeight}
-                    />
-                  </ChartWatermark>
-                </ErrorBoundary>
+                {/* Price Distribution - Histogram Full width (Watermarked for free users) */}
+                <div className="lg:col-span-2">
+                  <ErrorBoundary name="Price Distribution" compact>
+                    <ChartWatermark>
+                      <PriceDistributionChart
+                        onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
+                        height={standardChartHeight}
+                      />
+                    </ChartWatermark>
+                  </ErrorBoundary>
+                </div>
 
                 {/* New Launch vs Resale Comparison - Full width (Watermarked for free users) */}
                 <div className="lg:col-span-2">
