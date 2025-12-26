@@ -2,7 +2,10 @@
 Analytics API Routes - Split into domain-specific modules
 
 This package organizes the analytics endpoints into logical domains:
-- core.py: Main dashboard, aggregate, filter-options, kpi-summary
+- dashboard.py: Unified dashboard endpoint
+- aggregate.py: Flexible aggregation (THE STANDARD)
+- filters.py: Filter options endpoint
+- kpi.py: KPI summary endpoint
 - admin.py: Health, debug, admin endpoints
 - deprecated.py: Deprecated 410 endpoints
 - precomputed.py: Precomputed stats endpoints (legacy)
@@ -34,7 +37,10 @@ def add_contract_version_header(response):
 
 # Import all route modules to register their routes with the blueprint
 # Order doesn't matter since Flask routes are matched by specificity
-from routes.analytics import core
+from routes.analytics import dashboard
+from routes.analytics import aggregate
+from routes.analytics import filters
+from routes.analytics import kpi
 from routes.analytics import admin
 from routes.analytics import deprecated
 from routes.analytics import precomputed
