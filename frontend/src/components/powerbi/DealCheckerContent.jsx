@@ -267,14 +267,14 @@ export default function DealCheckerContent() {
   };
 
   // Get all nearby projects for the table (combine 1km and 2km)
-  // Filter out projects with 0 transactions
+  // Only show projects with >= K_PROJECT_THRESHOLD transactions (usable price data)
   const nearbyProjects = useMemo(() => {
     if (!result?.map_data) return [];
     const projects_1km = result.map_data.projects_1km || [];
     const projects_2km = result.map_data.projects_2km || [];
     const allProjects = [...projects_1km, ...projects_2km];
-    // Remove projects with 0 observations
-    return allProjects.filter(p => (p.transaction_count || 0) > 0);
+    // Only include projects with enough transactions to show price data
+    return allProjects.filter(p => (p.transaction_count || 0) >= K_PROJECT_THRESHOLD);
   }, [result?.map_data]);
 
   // Calculate volume thresholds for gradient coloring
