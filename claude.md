@@ -22,6 +22,7 @@
 | [SQL_BEST_PRACTICES.md](./SQL_BEST_PRACTICES.md) | SQL guardrails and v2 API compliance |
 | [CONTRACT_ASYNC_SAFETY.md](./CONTRACT_ASYNC_SAFETY.md) | Frontend contract and async safety rules |
 | [TECHNICAL_ARCHITECTURE.md](./TECHNICAL_ARCHITECTURE.md) | System architecture details |
+| [LEGAL_COMPLIANCE.md](./LEGAL_COMPLIANCE.md) | Data usage, IP, and URA compliance rules |
 | [scripts/audit-async-safety.sh](./frontend/scripts/audit-async-safety.sh) | Async data-fetching audit script |
 | [e2e/rapid-interaction.spec.js](./frontend/e2e/rapid-interaction.spec.js) | Playwright smoke tests for rapid interactions |
 
