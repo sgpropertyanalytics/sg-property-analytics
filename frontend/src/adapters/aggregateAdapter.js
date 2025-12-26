@@ -30,6 +30,8 @@ import {
   API_CONTRACT_VERSION,
   SUPPORTED_API_CONTRACT_VERSIONS,
   API_CONTRACT_VERSIONS,
+  PropertyAgeBucket,
+  PropertyAgeBucketLabelsShort,
 } from '../schemas/apiContract';
 
 // =============================================================================
@@ -1139,18 +1141,18 @@ export const transformPriceByAgeRegion = (rawResponse) => {
     return { byCategory: new Map(), categories: [], bedrooms: [], meta, hasData: false };
   }
 
-  // Define display order
-  const AGE_BUCKET_ORDER = ['recently_top', 'young_resale', 'resale', 'mature_resale'];
+  // Define display order - use canonical constants from apiContract.js
+  const AGE_BUCKET_ORDER = [
+    PropertyAgeBucket.RECENTLY_TOP,
+    PropertyAgeBucket.YOUNG_RESALE,
+    PropertyAgeBucket.RESALE,
+    PropertyAgeBucket.MATURE_RESALE,
+  ];
   const REGION_ORDER = ['CCR', 'RCR', 'OCR'];
   const BEDROOM_ORDER = ['1BR', '2BR', '3BR', '4BR', '5BR+'];
 
-  // Age bucket labels for display
-  const AGE_LABELS = {
-    'recently_top': 'Recently TOP',
-    'young_resale': 'Young Resale',
-    'resale': 'Resale',
-    'mature_resale': 'Mature Resale',
-  };
+  // Age bucket labels for display - use canonical labels from apiContract.js
+  const AGE_LABELS = PropertyAgeBucketLabelsShort;
 
   // Build category key and group data
   const byCategory = new Map();

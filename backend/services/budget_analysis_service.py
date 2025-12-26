@@ -35,7 +35,7 @@ PROPERTY_AGE_BANDS = [
     {'key': 'recently_top', 'label': 'Recently TOP (4-8 yrs)', 'is_new_sale': False, 'min_age': 4, 'max_age': 8},
     {'key': 'young_resale', 'label': 'Young Resale (8-15 yrs)', 'is_new_sale': False, 'min_age': 8, 'max_age': 15},
     {'key': 'resale', 'label': 'Resale (15-25 yrs)', 'is_new_sale': False, 'min_age': 15, 'max_age': 25},
-    {'key': 'old_resale', 'label': 'Old Resale (25+ yrs)', 'is_new_sale': False, 'min_age': 25, 'max_age': None},
+    {'key': 'mature_resale', 'label': 'Mature Resale (25+ yrs)', 'is_new_sale': False, 'min_age': 25, 'max_age': None},
 ]
 
 BEDROOM_TYPES = [1, 2, 3, 4, 5]  # 5 represents 5+
@@ -241,7 +241,7 @@ def get_market_activity_heatmap(
                     WHEN property_age >= 4 AND property_age < 8 THEN 'recently_top'
                     WHEN property_age >= 8 AND property_age < 15 THEN 'young_resale'
                     WHEN property_age >= 15 AND property_age < 25 THEN 'resale'
-                    WHEN property_age >= 25 THEN 'old_resale'
+                    WHEN property_age >= 25 THEN 'mature_resale'
                     ELSE 'unknown'
                 END as age_band
             FROM age_calc

@@ -383,14 +383,14 @@ export const isValidTenure = (tenure) => {
  * 2. Freehold = tenure from URA (explicitly labeled)
  * 3. Age bands (for resale leasehold only):
  *
- * | Band         | Age Range | Boundary Logic          |
- * |--------------|-----------|-------------------------|
- * | new_sale     | N/A       | sale_type == 'New Sale' |
- * | recently_top | 4-8 yrs   | age >= 4 AND age < 8    |
- * | young_resale | 8-15 yrs  | age >= 8 AND age < 15   |
- * | resale       | 15-25 yrs | age >= 15 AND age < 25  |
- * | old_resale   | 25+ yrs   | age >= 25               |
- * | freehold     | N/A       | tenure == 'Freehold'    |
+ * | Band          | Age Range | Boundary Logic          |
+ * |---------------|-----------|-------------------------|
+ * | new_sale      | N/A       | sale_type == 'New Sale' |
+ * | recently_top  | 4-8 yrs   | age >= 4 AND age < 8    |
+ * | young_resale  | 8-15 yrs  | age >= 8 AND age < 15   |
+ * | resale        | 15-25 yrs | age >= 15 AND age < 25  |
+ * | mature_resale | 25+ yrs   | age >= 25               |
+ * | freehold      | N/A       | tenure == 'Freehold'    |
  *
  * Note: Resale properties aged 0-4 years are rare (sub-sales)
  * and will show as '-' (unclassified)
@@ -400,7 +400,7 @@ export const PROPERTY_AGE_BANDS = [
   { key: 'recently_top', label: 'Recently TOP', minAge: 4, maxAge: 8, source: 'age' },
   { key: 'young_resale', label: 'Young Resale', minAge: 8, maxAge: 15, source: 'age' },
   { key: 'resale', label: 'Resale', minAge: 15, maxAge: 25, source: 'age' },
-  { key: 'old_resale', label: 'Old Resale', minAge: 25, maxAge: null, source: 'age' },
+  { key: 'mature_resale', label: 'Mature Resale', minAge: 25, maxAge: null, source: 'age' },
 ];
 
 /**
@@ -411,7 +411,7 @@ export const AGE_BAND_LABELS_FULL = {
   recently_top: 'Recently TOP (4-8 yrs)',
   young_resale: 'Young Resale (8-15 yrs)',
   resale: 'Resale (15-25 yrs)',
-  old_resale: 'Old Resale (25+ yrs)',
+  mature_resale: 'Mature Resale (25+ yrs)',
   freehold: 'Freehold',
 };
 
@@ -423,7 +423,7 @@ export const AGE_BAND_LABELS_SHORT = {
   recently_top: 'Recently TOP',
   young_resale: 'Young Resale',
   resale: 'Resale',
-  old_resale: 'Old Resale',
+  mature_resale: 'Mature Resale',
   freehold: 'Freehold',
 };
 
@@ -451,7 +451,7 @@ export const getAgeBandKey = (age, isFreehold = false, isNewSale = false) => {
   if (age < 8) return 'recently_top';
   if (age < 15) return 'young_resale';
   if (age < 25) return 'resale';
-  return 'old_resale';
+  return 'mature_resale';
 };
 
 /**
