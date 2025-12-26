@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
-import { DISTRICT_NAMES } from '../../constants';
+import {
+  DISTRICT_NAMES,
+  BEDROOM_THRESHOLDS_TIER1,
+  BEDROOM_THRESHOLDS_TIER2,
+  BEDROOM_THRESHOLDS_TIER3,
+  BEDROOM_ORDER_NUMERIC,
+} from '../../constants';
 import { SaleType, isSaleType, PropertyAgeBucket, getPropertyAgeBucketLabel } from '../../schemas/apiContract';
 
 /**
@@ -288,7 +294,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
             ))}
           </div>
 
-          {/* Classification Tiers Info */}
+          {/* Classification Tiers Info - Generated from constants */}
           <div className="text-[10px] text-slate-500 mt-2 space-y-1.5 italic overflow-hidden">
             <div className="text-slate-500 break-words">Bedroom Classification (sqft): Post-harm: after AC ledge removal | Pre-harm: before</div>
             <div className="overflow-x-auto">
@@ -296,38 +302,30 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
               <thead>
                 <tr className="text-slate-600 bg-slate-50/50">
                   <th className="text-left font-medium p-1 border border-dotted border-slate-400">Type</th>
-                  <th className="text-center font-medium p-1 border border-dotted border-slate-400">1BR</th>
-                  <th className="text-center font-medium p-1 border border-dotted border-slate-400">2BR</th>
-                  <th className="text-center font-medium p-1 border border-dotted border-slate-400">3BR</th>
-                  <th className="text-center font-medium p-1 border border-dotted border-slate-400">4BR</th>
-                  <th className="text-center font-medium p-1 border border-dotted border-slate-400">5BR+</th>
+                  {BEDROOM_ORDER_NUMERIC.map((br) => (
+                    <th key={br} className="text-center font-medium p-1 border border-dotted border-slate-400">
+                      {br === 5 ? '5BR+' : `${br}BR`}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="text-slate-500">
-                <tr title="Post-harmonization: AC ledge rules changed">
-                  <td className="text-left p-1 border border-dotted border-slate-400">New ≥Jun'23</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;580</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;780</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1150</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1450</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">≥1450</td>
-                </tr>
-                <tr title="Pre-harmonization: Before AC ledge rule changes">
-                  <td className="text-left p-1 border border-dotted border-slate-400">New &lt;Jun'23</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;600</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;850</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1200</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1500</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">≥1500</td>
-                </tr>
-                <tr title="Resale units: Legacy larger sizes">
-                  <td className="text-left p-1 border border-dotted border-slate-400">Resale</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;600</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;950</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1350</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">&lt;1650</td>
-                  <td className="text-center p-1 border border-dotted border-slate-400">≥1650</td>
-                </tr>
+                {[
+                  { label: "New ≥Jun'23", thresholds: BEDROOM_THRESHOLDS_TIER1, title: 'Post-harmonization: AC ledge rules changed' },
+                  { label: "New <Jun'23", thresholds: BEDROOM_THRESHOLDS_TIER2, title: 'Pre-harmonization: Before AC ledge rule changes' },
+                  { label: 'Resale', thresholds: BEDROOM_THRESHOLDS_TIER3, title: 'Resale units: Legacy larger sizes' },
+                ].map(({ label, thresholds, title }) => (
+                  <tr key={label} title={title}>
+                    <td className="text-left p-1 border border-dotted border-slate-400">{label}</td>
+                    {BEDROOM_ORDER_NUMERIC.map((br) => (
+                      <td key={br} className="text-center p-1 border border-dotted border-slate-400">
+                        {br === 5
+                          ? `≥${thresholds[4]}`
+                          : `<${thresholds[br]}`}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
               </tbody>
             </table>
             </div>
