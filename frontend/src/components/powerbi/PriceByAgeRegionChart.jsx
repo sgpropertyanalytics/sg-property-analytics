@@ -60,17 +60,22 @@ const medianLinePlugin = {
         const barY = bar.y;
         const p50X = xScale.getPixelForValue(p50);
 
-        // Draw median line (white with shadow for visibility)
+        // Get the dataset's border color for the median line
+        const medianColor = dataset.borderColor || '#ffffff';
+
         ctx.save();
 
-        // Shadow for depth
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-        ctx.shadowBlur = 2;
-        ctx.shadowOffsetX = 1;
-
-        // White median line (vertical for horizontal bars)
+        // White stroke first (for contrast on dark bars)
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(p50X, barY - barHeight / 2 + 2);
+        ctx.lineTo(p50X, barY + barHeight / 2 - 2);
+        ctx.stroke();
+
+        // Color overlay matching bedroom
+        ctx.strokeStyle = medianColor;
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(p50X, barY - barHeight / 2 + 2);
         ctx.lineTo(p50X, barY + barHeight / 2 - 2);
@@ -177,6 +182,22 @@ export function PriceByAgeRegionChart({ height = 400 }) {
     return toPriceByAgeRegionChartData(dataToUse, BEDROOM_COLORS);
   }, [transformedData, isMobile, selectedBedroom]);
 
+  // Calculate X-axis max from P95 of P75 values to prevent extreme outliers from stretching the chart
+  const xAxisMax = useMemo(() => {
+    if (!chartData.datasets || chartData.datasets.length === 0) return undefined;
+
+    // Collect all P75 values (second element of each [p25, p75] pair)
+    const allP75Values = chartData.datasets
+      .flatMap((ds) => ds.data.filter(Boolean).map((d) => d[1]))
+      .sort((a, b) => a - b);
+
+    if (allP75Values.length === 0) return undefined;
+
+    // Use P95 of P75 values with 10% padding
+    const p95Index = Math.floor(allP75Values.length * 0.95);
+    return allP75Values[Math.min(p95Index, allP75Values.length - 1)] * 1.1;
+  }, [chartData]);
+
   // Chart.js options for horizontal stacked/overlapping bars
   const options = useMemo(
     () => ({
@@ -210,6 +231,7 @@ export function PriceByAgeRegionChart({ height = 400 }) {
           type: 'linear',
           position: 'bottom',
           stacked: true, // Enable stacking on x-axis for floating bars to overlap
+          max: xAxisMax, // Cap at P95 of P75 values to prevent extreme luxury prices from stretching chart
           title: {
             display: true,
             text: 'Total Price ($)',
@@ -304,7 +326,7 @@ export function PriceByAgeRegionChart({ height = 400 }) {
         }
       },
     }),
-    [isMobile, transformedData, chartData, applyCrossFilter]
+    [isMobile, transformedData, chartData, applyCrossFilter, xAxisMax]
   );
 
   // Calculate stats for footer
