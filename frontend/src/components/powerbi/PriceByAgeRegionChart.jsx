@@ -4,10 +4,12 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Chart } from 'react-chartjs-2';
 
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { useAbortableQuery } from '../../hooks/useAbortableQuery';
@@ -19,7 +21,17 @@ import { baseChartJsOptions } from '../../constants/chartOptions';
 import { formatPrice } from '../../constants';
 
 // Register Chart.js components
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend);
+
+/**
+ * Region tabs - market segments
+ */
+const REGIONS = ['CCR', 'RCR', 'OCR'];
+const REGION_LABELS = {
+  CCR: 'Core Central',
+  RCR: 'Rest of Central',
+  OCR: 'Outside Central',
+};
 
 /**
  * Bedroom colors from CLAUDE.md color palette
@@ -33,104 +45,22 @@ const BEDROOM_COLORS = {
   '5BR+': { bg: 'rgba(155, 187, 89, 0.85)', border: '#9bbb59' },  // Green
 };
 
-const BEDROOM_ORDER = ['1BR', '2BR', '3BR', '4BR', '5BR+'];
-
 /**
- * Custom plugin to draw P50 median line markers on horizontal floating bars
- * Creates a box-plot style visualization with vertical median markers
- */
-const medianLinePlugin = {
-  id: 'medianLineHorizontal',
-  afterDatasetsDraw(chart) {
-    const { ctx, scales } = chart;
-    const xScale = scales.x;
-    const yScale = scales.y;
-
-    chart.data.datasets.forEach((dataset, datasetIndex) => {
-      const meta = chart.getDatasetMeta(datasetIndex);
-      const p50Values = dataset.p50Values;
-
-      if (!p50Values || !meta.visible) return;
-
-      meta.data.forEach((bar, index) => {
-        const p50 = p50Values[index];
-        if (p50 == null || !bar) return;
-
-        const barHeight = bar.height;
-        const barY = bar.y;
-        const p50X = xScale.getPixelForValue(p50);
-
-        // Get the dataset's border color for the median line
-        const medianColor = dataset.borderColor || '#ffffff';
-
-        ctx.save();
-
-        // White stroke first (for contrast on dark bars)
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(p50X, barY - barHeight / 2 + 2);
-        ctx.lineTo(p50X, barY + barHeight / 2 - 2);
-        ctx.stroke();
-
-        // Color overlay matching bedroom
-        ctx.strokeStyle = medianColor;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(p50X, barY - barHeight / 2 + 2);
-        ctx.lineTo(p50X, barY + barHeight / 2 - 2);
-        ctx.stroke();
-
-        ctx.restore();
-      });
-    });
-  },
-};
-
-/**
- * Custom plugin to draw horizontal separator lines between age bucket groups
- */
-const horizontalSeparatorPlugin = {
-  id: 'horizontalSeparator',
-  beforeDraw(chart) {
-    const { ctx, scales, chartArea } = chart;
-    const yScale = scales.y;
-
-    if (!yScale || !chartArea) return;
-
-    const labels = chart.data.labels || [];
-    if (labels.length < 2) return;
-
-    ctx.save();
-    ctx.strokeStyle = 'rgba(148, 180, 193, 0.4)'; // Light separator color
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]); // Dashed line
-
-    // Draw line between each age bucket group (every 3 labels since CCR/RCR/OCR per bucket)
-    for (let i = 2; i < labels.length; i += 3) {
-      if (i >= labels.length - 1) continue;
-
-      const y1 = yScale.getPixelForValue(i);
-      const y2 = yScale.getPixelForValue(i + 1);
-      const separatorY = (y1 + y2) / 2;
-
-      ctx.beginPath();
-      ctx.moveTo(chartArea.left, separatorY);
-      ctx.lineTo(chartArea.right, separatorY);
-      ctx.stroke();
-    }
-
-    ctx.restore();
-  },
-};
-
-/**
- * PriceByAgeRegionChart - Horizontal grouped floating bar chart
+ * PriceByAgeRegionChart - Vertical band+line chart with region tabs
  *
- * Shows total transaction price percentiles (P25/P50/P75) grouped by:
- * - Y-axis: Age Bucket × Region combinations (e.g., "Recently TOP - CCR")
- * - X-axis: Total Price ($)
+ * Shows total transaction price percentiles (P25/P50/P75) by property age:
+ * - X-axis: Age Bucket (Recently TOP → Young Resale → Resale → Mature Resale)
+ * - Y-axis: Total Price ($)
  * - Colors: Bedroom type (1BR-5BR+)
+ * - Bands: P25-P75 range (shows price dispersion)
+ * - Lines: P50 median (shows central tendency)
+ *
+ * Region tabs (CCR/RCR/OCR) allow comparison across market segments.
+ *
+ * Key insights:
+ * - Price decay with age (bands slope down left→right)
+ * - Bedroom divergence (2BR vs 3BR gap)
+ * - Risk areas (wide bands = high price dispersion)
  *
  * Compliance:
  * - Per LEGAL_COMPLIANCE.md: Aggregated data only
@@ -138,19 +68,17 @@ const horizontalSeparatorPlugin = {
  * - Cells with fewer than 15 observations are suppressed
  * - No individual transaction data exposed
  */
-export function PriceByAgeRegionChart({ height = 400 }) {
+export function PriceByAgeRegionChart({ height = 350 }) {
   const chartRef = useRef(null);
   const { buildApiParams, debouncedFilterKey, applyCrossFilter } = usePowerBIFilters();
 
-  // Mobile: bedroom selector state
-  const [selectedBedroom, setSelectedBedroom] = useState(null);
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  // Region tab state
+  const [selectedRegion, setSelectedRegion] = useState('RCR');
 
   // Fetch price by age region data
   const { data: rawData, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       const params = buildApiParams({});
-
       const response = await getPriceByAgeRegion(params, { signal });
       return response.data;
     },
@@ -164,74 +92,57 @@ export function PriceByAgeRegionChart({ height = 400 }) {
     return transformPriceByAgeRegion(rawData);
   }, [rawData]);
 
-  // Convert to Chart.js format
+  // Convert to Chart.js format for selected region
   const chartData = useMemo(() => {
     if (!transformedData?.hasData) {
       return { labels: [], datasets: [] };
     }
 
-    // On mobile with bedroom selector, filter to single bedroom
-    let dataToUse = transformedData;
-    if (isMobile && selectedBedroom) {
-      dataToUse = {
-        ...transformedData,
-        bedrooms: [selectedBedroom],
-      };
+    const regionData = transformedData.byRegion.get(selectedRegion);
+    if (!regionData) {
+      return { labels: [], datasets: [] };
     }
 
-    return toPriceByAgeRegionChartData(dataToUse, BEDROOM_COLORS);
-  }, [transformedData, isMobile, selectedBedroom]);
+    return toPriceByAgeRegionChartData(
+      regionData,
+      transformedData.ageBuckets,
+      transformedData.ageBucketLabels,
+      transformedData.bedrooms,
+      BEDROOM_COLORS
+    );
+  }, [transformedData, selectedRegion]);
 
-  // Calculate X-axis max from P95 of P75 values to prevent extreme outliers from stretching the chart
-  const xAxisMax = useMemo(() => {
-    if (!chartData.datasets || chartData.datasets.length === 0) return undefined;
-
-    // Collect all P75 values (second element of each [p25, p75] pair)
-    const allP75Values = chartData.datasets
-      .flatMap((ds) => ds.data.filter(Boolean).map((d) => d[1]))
-      .sort((a, b) => a - b);
-
-    if (allP75Values.length === 0) return undefined;
-
-    // Use P95 of P75 values with 10% padding
-    const p95Index = Math.floor(allP75Values.length * 0.95);
-    return allP75Values[Math.min(p95Index, allP75Values.length - 1)] * 1.1;
-  }, [chartData]);
-
-  // Chart.js options for horizontal stacked/overlapping bars
+  // Chart.js options for vertical band+line chart
   const options = useMemo(
     () => ({
       ...baseChartJsOptions,
-      indexAxis: 'y', // HORIZONTAL bars
+      responsive: true,
+      maintainAspectRatio: false,
       scales: {
-        y: {
+        x: {
           type: 'category',
-          stacked: true, // Stack bars on same y-position (overlapping)
           title: {
             display: true,
-            text: 'Age Bucket × Region',
+            text: 'Property Age',
             color: '#547792',
             font: { size: 12, weight: '500' },
-            padding: { bottom: 8 },
           },
           grid: {
             display: false,
           },
           ticks: {
             color: '#547792',
-            font: { size: 10, weight: '500' },
-            padding: 4,
+            font: { size: 11, weight: '500' },
+            padding: 8,
           },
           border: {
             display: true,
             color: 'rgba(148, 180, 193, 0.5)',
           },
         },
-        x: {
+        y: {
           type: 'linear',
-          position: 'bottom',
-          stacked: true, // Enable stacking on x-axis for floating bars to overlap
-          max: xAxisMax, // Cap at P95 of P75 values to prevent extreme luxury prices from stretching chart
+          position: 'left',
           title: {
             display: true,
             text: 'Total Price ($)',
@@ -256,7 +167,7 @@ export function PriceByAgeRegionChart({ height = 400 }) {
       },
       plugins: {
         legend: {
-          display: !isMobile, // Hide legend on mobile (we have tabs instead)
+          display: true,
           position: 'top',
           align: 'center',
           labels: {
@@ -267,6 +178,8 @@ export function PriceByAgeRegionChart({ height = 400 }) {
             font: { size: 11, weight: '500' },
             boxWidth: 12,
             boxHeight: 12,
+            // Filter to show only bedroom bands (not median lines)
+            filter: (legendItem) => !legendItem.text.includes('Median'),
           },
         },
         tooltip: {
@@ -280,34 +193,28 @@ export function PriceByAgeRegionChart({ height = 400 }) {
           callbacks: {
             title: (ctx) => {
               if (ctx.length === 0) return '';
-              const category = chartData.labels[ctx[0].dataIndex];
-              return `${ctx[0].dataset.label} @ ${category}`;
+              const ageBucket = chartData.labels[ctx[0].dataIndex];
+              return `${ageBucket} - ${selectedRegion}`;
             },
             label: (ctx) => {
-              const [p25, p75] = ctx.raw || [null, null];
-              const p50Values = ctx.dataset.p50Values;
-              const p50 = p50Values?.[ctx.dataIndex];
+              const dataset = ctx.dataset;
+              const isLine = dataset.type === 'line';
 
-              if (p25 === null || p75 === null) {
-                return 'Insufficient data';
+              if (isLine) {
+                // Median line
+                const p50 = ctx.raw;
+                return `${dataset.label.replace(' Median', '')} P50: ${formatPrice(p50)}`;
+              } else {
+                // Band (bar)
+                const [p25, p75] = ctx.raw || [null, null];
+                if (p25 === null || p75 === null) {
+                  return 'Insufficient data';
+                }
+                return [
+                  `${dataset.label} P75: ${formatPrice(p75)}`,
+                  `${dataset.label} P25: ${formatPrice(p25)}`,
+                ];
               }
-
-              // Get observation count from transformed data
-              const category = chartData.labels[ctx.dataIndex];
-              const bedroom = ctx.dataset.label;
-              const bedroomData = transformedData?.byCategory?.get(category)?.get(bedroom);
-
-              const lines = [
-                `P75: ${formatPrice(p75)}`,
-                `P50: ${formatPrice(p50)} (median)`,
-                `P25: ${formatPrice(p25)}`,
-              ];
-
-              if (bedroomData?.observationCount) {
-                lines.push(`Based on ${bedroomData.observationCount} transactions`);
-              }
-
-              return lines;
             },
           },
         },
@@ -315,37 +222,33 @@ export function PriceByAgeRegionChart({ height = 400 }) {
       onClick: (event, elements) => {
         if (elements.length > 0) {
           const datasetIndex = elements[0].datasetIndex;
-          const bedroom = chartData.datasets[datasetIndex]?.label;
-          if (bedroom) {
-            // Extract bedroom count from label (e.g., "2BR" -> 2)
-            const match = bedroom.match(/(\d+)/);
-            if (match) {
-              applyCrossFilter('bedroom', 'bedroom', parseInt(match[1], 10));
-            }
+          const dataset = chartData.datasets[datasetIndex];
+          // Extract bedroom from label (e.g., "2BR" or "2BR Median")
+          const bedroomMatch = dataset?.label?.match(/^(\d+BR\+?)/);
+          if (bedroomMatch) {
+            const bedroomCount = parseInt(bedroomMatch[1], 10);
+            applyCrossFilter('bedroom', 'bedroom', bedroomCount);
           }
         }
       },
     }),
-    [isMobile, transformedData, chartData, applyCrossFilter, xAxisMax]
+    [chartData, selectedRegion, applyCrossFilter]
   );
 
   // Calculate stats for footer
   const stats = useMemo(() => {
     if (!transformedData?.hasData) {
-      return { totalObservations: 0, categoryCount: 0, bedroomCount: 0 };
+      return { totalObservations: 0, ageBucketCount: 0, bedroomCount: 0 };
     }
     return {
       totalObservations: transformedData.meta?.totalObservations || 0,
-      categoryCount: transformedData.categories.length,
+      ageBucketCount: transformedData.ageBuckets.length,
       bedroomCount: transformedData.bedrooms.length,
     };
   }, [transformedData]);
 
-  // Available bedrooms for mobile selector
-  const availableBedrooms = transformedData?.bedrooms || [];
-
-  // Card height calculation - taller for more categories
-  const cardHeight = height + (isMobile ? 230 : 190);
+  // Card height calculation
+  const cardHeight = height + 180;
 
   return (
     <QueryState
@@ -359,71 +262,64 @@ export function PriceByAgeRegionChart({ height = 400 }) {
         className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
       >
-        {/* Header */}
+        {/* Header with Region Tabs */}
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-          <h3 className="font-semibold text-[#213448]">
-            Price by Property Age & Region
-          </h3>
-          <p className="text-xs text-[#547792] mt-1">
-            How do transaction prices vary across lifecycle stages and market segments?
-          </p>
-        </div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-[#213448]">
+                Price by Property Age
+              </h3>
+              <p className="text-xs text-[#547792] mt-0.5">
+                How do prices decay as properties age?
+              </p>
+            </div>
 
-        {/* Mobile: Bedroom selector tabs */}
-        {isMobile && availableBedrooms.length > 0 && (
-          <div className="px-4 py-2 border-b border-[#94B4C1]/30 shrink-0 flex gap-1 overflow-x-auto">
-            <button
-              onClick={() => setSelectedBedroom(null)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
-                selectedBedroom === null
-                  ? 'bg-[#213448] text-white'
-                  : 'bg-[#EAE0CF]/50 text-[#547792] hover:bg-[#EAE0CF]'
-              }`}
-            >
-              All
-            </button>
-            {BEDROOM_ORDER.filter((br) => availableBedrooms.includes(br)).map((br) => (
-              <button
-                key={br}
-                onClick={() => setSelectedBedroom(br)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
-                  selectedBedroom === br
-                    ? 'bg-[#213448] text-white'
-                    : 'bg-[#EAE0CF]/50 text-[#547792] hover:bg-[#EAE0CF]'
-                }`}
-              >
-                {br}
-              </button>
-            ))}
+            {/* Region Tabs */}
+            <div className="flex gap-1">
+              {REGIONS.map((region) => (
+                <button
+                  key={region}
+                  onClick={() => setSelectedRegion(region)}
+                  title={REGION_LABELS[region]}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    selectedRegion === region
+                      ? 'bg-[#213448] text-white'
+                      : 'bg-[#EAE0CF]/50 text-[#547792] hover:bg-[#EAE0CF]'
+                  }`}
+                >
+                  {region}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
+        </div>
 
         {/* How to read box */}
         <div className="px-4 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20 shrink-0">
           <p className="text-xs text-[#547792] leading-relaxed">
             <span className="font-medium text-[#213448]">How to read:</span>{' '}
-            Each bar shows P25-P75 price range. White line = median (P50).
-            Longer bars = more price variability.
+            Each colored band shows P25-P75 price range. Lines show median (P50).
+            Wider bands = more price variability (higher risk).
           </p>
         </div>
 
         {/* Chart */}
         <ChartSlot>
-          <Bar
+          <Chart
             ref={chartRef}
+            type="bar"
             data={chartData}
             options={options}
-            plugins={[medianLinePlugin, horizontalSeparatorPlugin]}
           />
         </ChartSlot>
 
         {/* Footer */}
         <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">
           <span>
-            {stats.totalObservations.toLocaleString()} observations across {stats.categoryCount} groups
+            {REGION_LABELS[selectedRegion]} • {stats.ageBucketCount} age groups • {stats.bedroomCount} bedroom types
           </span>
           <span className="text-[#94B4C1]">
-            White line = median (P50)
+            Band = P25-P75 • Line = Median
           </span>
         </div>
       </div>

@@ -1104,28 +1104,30 @@ export const toPsfByPriceBandChartData = (transformedData, bedroomColors = {}) =
 // =============================================================================
 
 /**
- * Transform raw price by age region data for the horizontal grouped bar chart.
+ * Transform raw price by age region data for the vertical band+line chart.
  *
  * The backend returns data grouped by age bucket, region, and bedroom.
  * This adapter:
  * - Validates response structure and API version
- * - Groups data by (ageBucket x region) for Y-axis categories
+ * - Groups data by Region first, then AgeBucket, then Bedroom
  * - Handles suppressed cells (K-anonymity)
  *
  * @param {Object} rawResponse - Raw API response from /api/price-by-age-region
  * @returns {Object} Transformed data:
  *   {
- *     byCategory: Map<categoryKey, Map<bedroom, { p25, p50, p75, suppressed }>>,
- *     categories: string[],  // Ordered Y-axis labels: "Recently TOP - CCR", etc.
- *     bedrooms: string[],    // Ordered list of bedrooms with data
- *     meta: Object,          // API metadata
+ *     byRegion: Map<region, Map<ageBucket, Map<bedroom, { p25, p50, p75, suppressed }>>>,
+ *     regions: string[],      // ['CCR', 'RCR', 'OCR']
+ *     ageBuckets: string[],   // Ordered age buckets with data
+ *     bedrooms: string[],     // Ordered list of bedrooms with data
+ *     ageBucketLabels: Object, // { recently_top: 'Recently TOP', ... }
+ *     meta: Object,           // API metadata
  *     hasData: boolean
  *   }
  */
 export const transformPriceByAgeRegion = (rawResponse) => {
   if (!rawResponse) {
     if (isDev) console.warn('[transformPriceByAgeRegion] Null input');
-    return { byCategory: new Map(), categories: [], bedrooms: [], meta: {}, hasData: false };
+    return { byRegion: new Map(), regions: [], ageBuckets: [], bedrooms: [], ageBucketLabels: {}, meta: {}, hasData: false };
   }
 
   const data = rawResponse.data;
@@ -1138,7 +1140,7 @@ export const transformPriceByAgeRegion = (rawResponse) => {
 
   if (!Array.isArray(data)) {
     if (isDev) console.warn('[transformPriceByAgeRegion] Invalid response - data is not an array');
-    return { byCategory: new Map(), categories: [], bedrooms: [], meta, hasData: false };
+    return { byRegion: new Map(), regions: [], ageBuckets: [], bedrooms: [], ageBucketLabels: {}, meta, hasData: false };
   }
 
   // Define display order - use canonical constants from apiContract.js
@@ -1154,9 +1156,10 @@ export const transformPriceByAgeRegion = (rawResponse) => {
   // Age bucket labels for display - use canonical labels from apiContract.js
   const AGE_LABELS = PropertyAgeBucketLabelsShort;
 
-  // Build category key and group data
-  const byCategory = new Map();
-  const observedCategories = new Set();
+  // Group data by Region → AgeBucket → Bedroom
+  const byRegion = new Map();
+  const observedRegions = new Set();
+  const observedAgeBuckets = new Set();
   const observedBedrooms = new Set();
 
   data.forEach((row) => {
@@ -1166,15 +1169,22 @@ export const transformPriceByAgeRegion = (rawResponse) => {
 
     if (!ageBucket || !region || !bedroom) return;
 
-    const categoryKey = `${AGE_LABELS[ageBucket] || ageBucket} - ${region}`;
-    observedCategories.add(categoryKey);
+    observedRegions.add(region);
+    observedAgeBuckets.add(ageBucket);
     observedBedrooms.add(bedroom);
 
-    if (!byCategory.has(categoryKey)) {
-      byCategory.set(categoryKey, new Map());
+    // Initialize nested maps
+    if (!byRegion.has(region)) {
+      byRegion.set(region, new Map());
     }
+    const regionMap = byRegion.get(region);
 
-    byCategory.get(categoryKey).set(bedroom, {
+    if (!regionMap.has(ageBucket)) {
+      regionMap.set(ageBucket, new Map());
+    }
+    const ageBucketMap = regionMap.get(ageBucket);
+
+    ageBucketMap.set(bedroom, {
       p25: row.p25,
       p50: row.p50,
       p75: row.p75,
@@ -1185,87 +1195,106 @@ export const transformPriceByAgeRegion = (rawResponse) => {
     });
   });
 
-  // Sort categories: Age bucket order, then region order
-  const categories = [];
-  AGE_BUCKET_ORDER.forEach((bucket) => {
-    REGION_ORDER.forEach((region) => {
-      const key = `${AGE_LABELS[bucket] || bucket} - ${region}`;
-      if (observedCategories.has(key)) {
-        categories.push(key);
-      }
-    });
-  });
-
+  // Order by canonical constants
+  const regions = REGION_ORDER.filter((r) => observedRegions.has(r));
+  const ageBuckets = AGE_BUCKET_ORDER.filter((ab) => observedAgeBuckets.has(ab));
   const bedrooms = BEDROOM_ORDER.filter((br) => observedBedrooms.has(br));
 
   return {
-    byCategory,
-    categories,
+    byRegion,
+    regions,
+    ageBuckets,
     bedrooms,
+    ageBucketLabels: AGE_LABELS,
     meta,
     hasData: data.length > 0,
   };
 };
 
 /**
- * Convert transformed price by age region data to Chart.js horizontal bar format.
+ * Convert transformed price by age region data to Chart.js vertical band+line format.
  *
- * Creates floating bar datasets where each bar represents P25-P75 range.
+ * Creates floating bar datasets (P25-P75 bands) and line datasets (P50 medians).
+ * X-axis: Age buckets, Y-axis: Price, Color: Bedroom type
  *
- * @param {Object} transformedData - Output from transformPriceByAgeRegion
+ * @param {Map} regionData - Map<ageBucket, Map<bedroom, { p25, p50, p75 }>> for selected region
+ * @param {string[]} ageBuckets - Ordered age bucket keys
+ * @param {Object} ageBucketLabels - { recently_top: 'Recently TOP', ... }
+ * @param {string[]} bedrooms - Ordered bedroom types with data
  * @param {Object} bedroomColors - Map of bedroom type to { bg, border } colors
- * @returns {Object} Chart.js compatible data for horizontal bars
+ * @returns {Object} Chart.js compatible data for vertical bars + lines
  */
-export const toPriceByAgeRegionChartData = (transformedData, bedroomColors = {}) => {
-  if (!transformedData?.hasData) {
+export const toPriceByAgeRegionChartData = (regionData, ageBuckets, ageBucketLabels, bedrooms, bedroomColors = {}) => {
+  if (!regionData || ageBuckets.length === 0) {
     return { labels: [], datasets: [] };
   }
 
-  const { byCategory, categories, bedrooms } = transformedData;
+  // X-axis labels
+  const labels = ageBuckets.map((ab) => ageBucketLabels[ab] || ab);
 
-  // Create one dataset per bedroom type
-  const datasets = bedrooms.map((bedroom) => {
+  // Create TWO datasets per bedroom: band (bar) + median (line)
+  const datasets = [];
+
+  bedrooms.forEach((bedroom) => {
     const colors = bedroomColors[bedroom] || {
-      bg: 'rgba(128, 128, 128, 0.7)',
+      bg: 'rgba(128, 128, 128, 0.3)',
       border: 'rgba(128, 128, 128, 1)',
     };
 
-    // Build data array: one entry per category
-    // For horizontal floating bars, data is [low, high] for each bar
-    const data = categories.map((category) => {
-      const bedroomData = byCategory.get(category)?.get(bedroom);
-
+    // Band data (P25-P75 floating bars)
+    const bandData = ageBuckets.map((ageBucket) => {
+      const bedroomData = regionData.get(ageBucket)?.get(bedroom);
       if (!bedroomData || bedroomData.suppressed || bedroomData.p25 == null || bedroomData.p75 == null) {
         return null;
       }
-
       return [bedroomData.p25, bedroomData.p75];
     });
 
-    // Build median markers for P50
-    const p50Values = categories.map((category) => {
-      const bedroomData = byCategory.get(category)?.get(bedroom);
+    // Median data (P50 line)
+    const medianData = ageBuckets.map((ageBucket) => {
+      const bedroomData = regionData.get(ageBucket)?.get(bedroom);
       if (!bedroomData || bedroomData.suppressed || bedroomData.p50 == null) {
         return null;
       }
       return bedroomData.p50;
     });
 
-    return {
-      label: bedroom,
-      data,
-      p50Values,
-      backgroundColor: colors.bg,
+    // Add band dataset (floating bar)
+    datasets.push({
+      type: 'bar',
+      label: `${bedroom}`,
+      data: bandData,
+      backgroundColor: colors.bg.replace(/[\d.]+\)$/, '0.35)'), // More transparent for band
       borderColor: colors.border,
       borderWidth: 1,
-      borderRadius: 2,
-      barPercentage: 0.8,
-      categoryPercentage: 0.9,
-    };
+      borderRadius: 3,
+      barPercentage: 0.7,
+      categoryPercentage: 0.85,
+      order: 2, // Draw bars behind lines
+    });
+
+    // Add median line dataset
+    datasets.push({
+      type: 'line',
+      label: `${bedroom} Median`,
+      data: medianData,
+      borderColor: colors.border,
+      backgroundColor: colors.border,
+      borderWidth: 2.5,
+      pointRadius: 5,
+      pointBackgroundColor: colors.border,
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2,
+      fill: false,
+      tension: 0.1,
+      order: 1, // Draw lines in front
+      // Hide from legend (we only show bedroom once)
+      legendHidden: true,
+    });
   });
 
   return {
-    labels: categories,
+    labels,
     datasets,
   };
 };
