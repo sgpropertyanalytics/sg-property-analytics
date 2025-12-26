@@ -483,14 +483,18 @@ def get_multi_scope_comparison():
     scope_2km = compute_scope_stats(projects_2km, bedroom, buyer_price, sqft)
 
     # Get transaction stats per project for map display and table
-    # Includes count, median price, p25/p75 prices, and median sqft
+    # Includes count, median price, p25/p75 prices, median sqft, and median property age
+    from datetime import date
+    current_year = date.today().year
+
     tx_stats = db.session.query(
         Transaction.project_name,
         func.count(Transaction.id).label('count'),
         func.percentile_cont(0.25).within_group(Transaction.price).label('p25_price'),
         func.percentile_cont(0.5).within_group(Transaction.price).label('median_price'),
         func.percentile_cont(0.75).within_group(Transaction.price).label('p75_price'),
-        func.percentile_cont(0.5).within_group(Transaction.area_sqft).label('median_sqft')
+        func.percentile_cont(0.5).within_group(Transaction.area_sqft).label('median_sqft'),
+        func.percentile_cont(0.5).within_group(current_year - Transaction.lease_start_year).label('median_age')
     ).filter(
         exclude_outliers(Transaction),
         Transaction.project_name.in_(projects_2km),
@@ -503,7 +507,8 @@ def get_multi_scope_comparison():
             'p25_price': round(t.p25_price) if t.p25_price else None,
             'median_price': round(t.median_price) if t.median_price else None,
             'p75_price': round(t.p75_price) if t.p75_price else None,
-            'median_sqft': round(t.median_sqft) if t.median_sqft else None
+            'median_sqft': round(t.median_sqft) if t.median_sqft else None,
+            'median_age': round(t.median_age) if t.median_age else None
         }
         for t in tx_stats
     }
@@ -513,7 +518,7 @@ def get_multi_scope_comparison():
     projects_in_2km_only = []  # Projects between 1-2km
 
     for p in all_nearby:
-        stats = tx_stats_map.get(p['project_name'], {'count': 0, 'p25_price': None, 'median_price': None, 'p75_price': None, 'median_sqft': None})
+        stats = tx_stats_map.get(p['project_name'], {'count': 0, 'p25_price': None, 'median_price': None, 'p75_price': None, 'median_sqft': None, 'median_age': None})
         p_data = {
             'project_name': p['project_name'],
             'latitude': p['latitude'],
@@ -524,7 +529,9 @@ def get_multi_scope_comparison():
             'p25_price': stats['p25_price'],
             'median_price': stats['median_price'],
             'p75_price': stats['p75_price'],
-            'median_sqft': stats['median_sqft']
+            'median_sqft': stats['median_sqft'],
+            'median_age': stats['median_age'],
+            'bedroom': bedroom
         }
 
         if p['distance_km'] <= 1.0:

@@ -18,6 +18,16 @@ import { SuppressedValue } from '../SuppressedValue';
 // K-anonymity threshold for project-level data (min 15 for privacy)
 const K_PROJECT_THRESHOLD = 15;
 
+// Get age bucket label from median property age
+const getAgeBucket = (age) => {
+  if (age === null || age === undefined) return '-';
+  if (age <= 3) return 'New';
+  if (age <= 8) return '4-8y';
+  if (age <= 15) return '9-15y';
+  if (age <= 25) return '16-25y';
+  return '25y+';
+};
+
 // Format price for display
 const formatPrice = (value) => {
   if (value === null || value === undefined) return '-';
@@ -615,9 +625,15 @@ export default function DealCheckerContent() {
                             </div>
                           </div>
                         </div>
-                        {/* Row 1: Obs & Volume/Sqft */}
-                        <div className="flex justify-between items-center mt-2 text-xs text-[#547792]">
+                        {/* Row 1: BR, Age, Obs */}
+                        <div className="flex items-center gap-3 mt-2 text-xs text-[#547792]">
+                          <span>{p.bedroom || '-'}BR</span>
+                          <span>Age: {getAgeBucket(p.median_age)}</span>
                           <span>{(p.transaction_count || 0).toLocaleString()} obs</span>
+                        </div>
+                        {/* Row 2: Sqft or Volume label */}
+                        <div className="flex justify-between items-center mt-1 text-xs text-[#547792]">
+                          <span>{p.median_sqft?.toLocaleString() || '-'} sqft</span>
                           {isSuppressed ? (
                             volumeLabel && (
                               <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${volumeLabel.style}`}>
@@ -669,6 +685,24 @@ export default function DealCheckerContent() {
                         <div className="flex items-center justify-end gap-1">
                           <span>Dist</span>
                           <SortIcon column="distance_km" />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-center font-medium text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleProjectsSort('bedroom')}
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <span>BR</span>
+                          <SortIcon column="bedroom" />
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2 text-center font-medium text-slate-600 border-b cursor-pointer hover:bg-slate-100 select-none"
+                        onClick={() => handleProjectsSort('median_age')}
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <span>Age</span>
+                          <SortIcon column="median_age" />
                         </div>
                       </th>
                       <th
@@ -743,6 +777,12 @@ export default function DealCheckerContent() {
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
                             {p.distance_km === 0 ? '-' : `${(p.distance_km * 1000).toFixed(0)}m`}
                           </td>
+                          <td className="px-3 py-2 border-b border-slate-100 text-center text-slate-600">
+                            {p.bedroom || '-'}
+                          </td>
+                          <td className="px-3 py-2 border-b border-slate-100 text-center text-slate-600">
+                            {getAgeBucket(p.median_age)}
+                          </td>
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 font-medium">
                             {(p.transaction_count || 0).toLocaleString()}
                           </td>
@@ -777,7 +817,7 @@ export default function DealCheckerContent() {
                     })}
                     {sortedNearbyProjects.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-3 py-6 text-center text-slate-500">
+                        <td colSpan={9} className="px-3 py-6 text-center text-slate-500">
                           No nearby projects found
                         </td>
                       </tr>
