@@ -234,9 +234,9 @@ export function PsfByPriceBandChart({ height = 350 }) {
 
       return {
         ...dataset,
-        // Improved bar spacing
-        barPercentage: 0.75,
-        categoryPercentage: 0.85,
+        // Wider bars with tighter spacing
+        barPercentage: 0.9,
+        categoryPercentage: 0.92,
         // Highlight best value bedroom with stronger border
         borderWidth: isBestValueBedroom ? 2.5 : 1,
         borderColor: isBestValueBedroom ? '#22c55e' : dataset.borderColor, // Green border for best
