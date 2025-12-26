@@ -26,7 +26,7 @@ import { useStaleRequestGuard } from '../../hooks';
 const MAP_CONFIG = {
   center: { longitude: SINGAPORE_CENTER.lng, latitude: SINGAPORE_CENTER.lat },
   defaultZoom: 10.8,
-  maxBounds: [[103.55, 1.15], [104.15, 1.50]],
+  maxBounds: [[103.55, 1.22], [104.15, 1.50]],  // Limit south to avoid showing too much sea
   minZoom: 10,
   maxZoom: 15,
 };
