@@ -36,14 +36,15 @@ Ensure all data classifications, labels, and naming conventions are consistent a
 
 ```javascript
 // CORRECT - Use constants
-import { CCR_DISTRICTS, getRegionForDistrict, REGION_BADGE_CLASSES } from '../constants';
+import { REGIONS, CCR_DISTRICTS, getRegionForDistrict, REGION_BADGE_CLASSES } from '../constants';
 
+REGIONS.forEach(region => { ... });  // ['CCR', 'RCR', 'OCR']
 const region = getRegionForDistrict(district);
 const badgeClass = REGION_BADGE_CLASSES[region];
 
 // FORBIDDEN - Hardcoded
-const regions = ['CCR', 'RCR', 'OCR'];  // Hardcoded array
-if (district === 'D01') region = 'CCR';  // Hardcoded mapping
+const regions = ['CCR', 'RCR', 'OCR'];  // Use REGIONS constant instead
+if (district === 'D01') region = 'CCR';  // Use getRegionForDistrict()
 ```
 
 ### Backend
@@ -70,24 +71,64 @@ if district in ['D01', 'D02', 'D06', ...]:  # Hardcoded list
 | 4 | `4BR` | `4-Bedroom` | `4` |
 | 5+ | `5BR+` | `5-Bedroom+` | `5` |
 
+### Bedroom Classification (Three-Tier System)
+
+**SINGLE SOURCE OF TRUTH:**
+- **Frontend**: `frontend/src/constants/index.js`
+- **Backend**: `backend/services/classifier.py`
+
+URA data doesn't include bedroom count. We estimate based on unit area (sqft) with **three tiers**:
+
+| Tier | Context | 1BR | 2BR | 3BR | 4BR | 5BR+ |
+|------|---------|-----|-----|-----|-----|------|
+| **Tier 1** | New Sale ≥ Jun 2023 (Post-Harmonization) | <580 | <780 | <1150 | <1450 | ≥1450 |
+| **Tier 2** | New Sale < Jun 2023 (Pre-Harmonization) | <600 | <850 | <1200 | <1500 | ≥1500 |
+| **Tier 3** | Resale (any date) | <600 | <950 | <1350 | <1650 | ≥1650 |
+
+**Why three tiers?**
+- **Tier 1 (Ultra Compact)**: After June 2023 AC ledge removal rules, developers build smaller units
+- **Tier 2 (Modern Compact)**: Pre-2023 new sales still had AC ledges counted in GFA
+- **Tier 3 (Legacy)**: Resale units are typically larger (older developments)
+
 ### Usage
 
 ```javascript
-// CORRECT
-import { BEDROOM_LABELS_SHORT, getBedroomLabelShort } from '../constants';
+// CORRECT - Use constants
+import {
+  BEDROOM_ORDER,           // ['1BR', '2BR', '3BR', '4BR', '5BR+']
+  BEDROOM_ORDER_NUMERIC,   // [1, 2, 3, 4, 5]
+  BEDROOM_THRESHOLDS_TIER1,
+  BEDROOM_THRESHOLDS_TIER2,
+  BEDROOM_THRESHOLDS_TIER3,
+  classifyBedroom,         // Simple fallback
+  classifyBedroomThreeTier, // Full 3-tier logic
+  getBedroomLabelShort,
+} from '../constants';
 
-const label = getBedroomLabelShort(bedroomCount);  // "2BR"
+// Classify a unit
+const bedroom = classifyBedroomThreeTier(750, 'New Sale', '2024-01-15');
+// Returns: 2 (Tier 1: 750 < 780)
 
-// FORBIDDEN
-const BEDROOM_ORDER = ['1BR', '2BR', '3BR', '4BR', '5BR+'];  // Hardcoded
+// For display/sorting
+BEDROOM_ORDER.forEach(br => { ... });
+const label = getBedroomLabelShort(2);  // "2BR"
+
+// FORBIDDEN - Hardcoded
+const BEDROOM_ORDER = ['1BR', '2BR', '3BR', '4BR', '5BR+'];  // Use constant
+if (area < 580) bedroom = 1;  // Use classifyBedroomThreeTier()
 ```
 
-### Add to Constants if Missing
+### Backend Usage
 
-If you need bedroom order for sorting, add to `constants/index.js`:
-```javascript
-export const BEDROOM_ORDER = [1, 2, 3, 4, 5];
-export const BEDROOM_LABELS_ORDER = BEDROOM_ORDER.map(b => getBedroomLabelShort(b));
+```python
+# CORRECT - Use services/classifier.py
+from services.classifier import classify_bedroom_three_tier, classify_bedroom
+
+bedroom = classify_bedroom_three_tier(750, 'New Sale', date(2024, 1, 15))
+
+# FORBIDDEN
+if area < 580:
+    bedroom = 1  # Hardcoded threshold
 ```
 
 ---
@@ -290,8 +331,9 @@ import { getBedroomColor } from '../constants'; // Add if missing
 Before any chart/filter/data change:
 
 ```
-[ ] No hardcoded region strings ('CCR', 'RCR', 'OCR')
-[ ] No hardcoded bedroom labels ('1BR', '2BR', etc.)
+[ ] No hardcoded region strings - use REGIONS constant
+[ ] No hardcoded bedroom labels - use BEDROOM_ORDER constant
+[ ] No hardcoded bedroom thresholds - use classifyBedroomThreeTier()
 [ ] No hardcoded floor levels ('Low', 'Mid', etc.)
 [ ] No hardcoded sale types ('New Sale', 'Resale')
 [ ] No hardcoded tenure strings ('Freehold', '99-year')

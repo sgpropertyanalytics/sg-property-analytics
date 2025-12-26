@@ -312,27 +312,56 @@ Full reference: See .claude/skills/api-endpoint-guardrails/SKILL.md
 ALL CLASSIFICATIONS MUST USE CENTRALIZED CONSTANTS!
 
 Sources of Truth:
-  Backend:  backend/constants.py, backend/schemas/api_contract.py
+  Backend:  backend/constants.py, backend/services/classifier.py
   Frontend: frontend/src/constants/index.js, src/schemas/apiContract.js
 
 Classification Standards:
-  Region:     CCR, RCR, OCR (use getRegionForDistrict())
-  Bedroom:    1BR, 2BR, 3BR, 4BR, 5BR+ (use getBedroomLabelShort())
-  Floor:      Low, Mid-Low, Mid, Mid-High, High, Luxury (use FLOOR_LEVELS)
-  Sale Type:  use isSaleType.newSale(), isSaleType.resale()
-  Tenure:     use isTenure.freehold(), TenureLabelsShort
-  Age Band:   use getAgeBandKey(), AGE_BAND_LABELS_SHORT
+  Region:     REGIONS, getRegionForDistrict()
+  Bedroom:    BEDROOM_ORDER, classifyBedroomThreeTier()
+  Floor:      FLOOR_LEVELS, getFloorLevelLabel()
+  Sale Type:  isSaleType.newSale(), isSaleType.resale()
+  Tenure:     isTenure.freehold(), TenureLabelsShort
+  Age Band:   getAgeBandKey(), AGE_BAND_LABELS_SHORT
 
 FORBIDDEN (hardcoded strings):
-  const regions = ['CCR', 'RCR', 'OCR']  → import from constants
+  const regions = ['CCR', 'RCR', 'OCR']  → use REGIONS constant
+  const order = ['1BR', '2BR', ...]      → use BEDROOM_ORDER constant
+  if (area < 580) bedroom = 1            → use classifyBedroomThreeTier()
   if (sale_type === 'New Sale')          → use isSaleType.newSale()
-  const label = '2BR'                    → use getBedroomLabelShort(2)
 
 Filter Params (API):
   district, bedroom, segment, sale_type (singular, snake_case)
   NOT: districts, bedrooms, region, saleType
 
 Full reference: See .claude/skills/data-standards/SKILL.md
+```
+
+### Card 12: Bedroom Classification (Three-Tier)
+
+```
+BEDROOM CLASSIFICATION USES THREE TIERS!
+
+Single Source of Truth:
+  Frontend: constants/index.js (classifyBedroomThreeTier)
+  Backend:  services/classifier.py (classify_bedroom_three_tier)
+
+Thresholds (sqft):
+  Tier 1 (New ≥Jun'23): <580, <780, <1150, <1450, ≥1450
+  Tier 2 (New <Jun'23): <600, <850, <1200, <1500, ≥1500
+  Tier 3 (Resale):      <600, <950, <1350, <1650, ≥1650
+
+Usage:
+  // Frontend
+  import { classifyBedroomThreeTier, BEDROOM_ORDER } from '../constants';
+  const bedroom = classifyBedroomThreeTier(area, saleType, date);
+
+  // Backend
+  from services.classifier import classify_bedroom_three_tier
+  bedroom = classify_bedroom_three_tier(area, sale_type, date)
+
+FORBIDDEN:
+  if area < 580: bedroom = 1  // Hardcoded threshold
+  const BEDROOM_ORDER = [...]  // Hardcoded order
 ```
 
 ---
