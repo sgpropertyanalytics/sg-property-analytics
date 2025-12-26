@@ -2615,114 +2615,6 @@ def psf_by_price_band():
 
 
 # ============================================================================
-# PRICE BY AGE REGION ENDPOINT
-# ============================================================================
-
-@analytics_bp.route("/price-by-age-region", methods=["GET"])
-def price_by_age_region():
-    """
-    Total price percentiles grouped by age bucket, region, and bedroom type.
-
-    Returns P25/P50/P75 total transaction price values for each
-    (age_bucket x region x bedroom) combination.
-    Implements K-anonymity (K=15) - cells with fewer observations are suppressed.
-
-    This endpoint is designed for a Horizontal Grouped Bar Chart visualization
-    that helps users understand:
-    - How transaction prices vary across property lifecycle stages
-    - Regional price differences within each age bucket
-    - Bedroom type distribution across age/region segments
-
-    Notes:
-    - Excludes freehold properties (lease_start_year for freehold is land grant, not TOP)
-    - Excludes properties < 4 years old (considered "new_sale" phase)
-    - Age = EXTRACT(YEAR FROM transaction_date) - lease_start_year
-
-    Query Parameters:
-        date_from: YYYY-MM-DD (default: 2 years ago)
-        date_to: YYYY-MM-DD (default: today)
-        district: comma-separated districts (D01,D02,...)
-        region: CCR, RCR, OCR (alias: segment)
-        sale_type: 'new_sale' or 'resale' (v2), or 'New Sale'/'Resale' (v1)
-        tenure: 'freehold', '99_year', '999_year' (v2), or DB values (v1)
-        schema: 'v2' for strict camelCase response
-
-    Returns:
-        {
-            "data": [
-                {
-                    "ageBucket": "recently_top",
-                    "ageBucketLabel": "4-8yr",
-                    "region": "CCR",
-                    "bedroom": "2BR",
-                    "bedroomCount": 2,
-                    "p25": 2100000,
-                    "p50": 2450000,
-                    "p75": 2800000,
-                    "observationCount": 125,
-                    "suppressed": false
-                },
-                ...
-            ],
-            "meta": {
-                "kAnonymity": {
-                    "threshold": 15,
-                    "level": "age_bucket_region_bedroom",
-                    "message": "..."
-                },
-                "dateRange": {...},
-                "totalObservations": 5432,
-                "apiContractVersion": "v3",
-                "contractHash": "pbar:v3:..."
-            }
-        }
-    """
-    from datetime import date, timedelta
-    from services.dashboard_service import query_price_by_age_region
-    from schemas.api_contract import (
-        parse_filter_params,
-        apply_price_by_age_region_k_anonymity,
-        serialize_price_by_age_region
-    )
-
-    # Parse filter params at boundary (route knows nothing about DB values)
-    params = parse_filter_params(request.args)
-
-    # Set default date range if not provided (2 years)
-    if not params.get('date_from'):
-        params['date_from'] = date.today() - timedelta(days=365 * 2)
-    if not params.get('date_to'):
-        params['date_to'] = date.today()
-
-    # Execute query (service handles SQL)
-    raw_data = query_price_by_age_region(params)
-
-    # Apply K-anonymity
-    data = apply_price_by_age_region_k_anonymity(raw_data)
-
-    # Build additional meta
-    meta = {
-        'dateRange': {
-            'from': params['date_from'].isoformat() if params.get('date_from') else None,
-            'to': params['date_to'].isoformat() if params.get('date_to') else None,
-        },
-        'totalObservations': sum(row.get('observationCount', 0) for row in data),
-        'filters': {
-            'district': params.get('districts'),
-            'region': params.get('segments_db'),
-            'saleType': params.get('sale_type_db'),
-            'tenure': params.get('tenure_db'),
-        }
-    }
-
-    # Serialize response (v2 support)
-    schema = request.args.get('schema')
-    include_deprecated = schema != 'v2'
-
-    return jsonify(serialize_price_by_age_region(data, meta, include_deprecated))
-
-
-# ============================================================================
 # BUDGET HEATMAP ENDPOINT
 # ============================================================================
 
@@ -3263,7 +3155,6 @@ def get_transaction_price_growth():
     """
     start = time.time()
     from services.price_growth_service import get_transaction_price_growth as compute_growth
-    from schemas.api_contract import serialize_price_growth_response
     from datetime import datetime
 
     try:
