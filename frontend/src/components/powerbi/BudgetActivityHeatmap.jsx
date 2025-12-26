@@ -3,14 +3,13 @@ import { useAbortableQuery } from '../../hooks';
 import { getBudgetHeatmap } from '../../api/client';
 import { getBedroomLabelShort } from '../../constants';
 
-// Time window options in months
-const TIME_WINDOW_OPTIONS = [
-  { value: 12, label: '12 months' },
-  { value: 24, label: '24 months' },
-  { value: 36, label: '36 months' },
-  { value: 48, label: '48 months' },
-  { value: 60, label: '60 months' },
-];
+// Time window presets: label → months
+const TIME_PRESETS = {
+  '3M': 3,
+  '12M': 12,
+  '2Y': 24,
+  '5Y': 60,
+};
 
 /**
  * Color scale for heatmap intensity based on percentage
@@ -80,8 +79,9 @@ export function BudgetActivityHeatmap({
   district = null,
   tenure = null,
 }) {
-  // Time window state (default 24 months)
-  const [timeWindow, setTimeWindow] = useState(24);
+  // Time window state (default 3M)
+  const [timePreset, setTimePreset] = useState('3M');
+  const timeWindow = TIME_PRESETS[timePreset];
 
   // Build API params
   const apiParams = useMemo(() => ({
@@ -164,23 +164,22 @@ export function BudgetActivityHeatmap({
             </p>
           </div>
 
-          {/* Time window dropdown */}
-          <div className="flex items-center gap-2 shrink-0">
-            <label htmlFor="time-window" className="text-xs text-[#547792]">
-              Window:
-            </label>
-            <select
-              id="time-window"
-              value={timeWindow}
-              onChange={(e) => setTimeWindow(Number(e.target.value))}
-              className="text-xs border border-[#94B4C1]/50 rounded px-2 py-1 bg-white text-[#213448] focus:outline-none focus:ring-1 focus:ring-[#547792]"
-            >
-              {TIME_WINDOW_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+          {/* Time window buttons */}
+          <div className="flex items-center gap-1 shrink-0">
+            {Object.keys(TIME_PRESETS).map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setTimePreset(preset)}
+                className={`px-2 py-1 text-xs rounded transition-colors ${
+                  timePreset === preset
+                    ? 'bg-[#213448] text-white'
+                    : 'bg-white border border-[#94B4C1]/50 text-[#547792] hover:bg-[#EAE0CF]/50'
+                }`}
+              >
+                {preset}
+              </button>
+            ))}
           </div>
         </div>
 
