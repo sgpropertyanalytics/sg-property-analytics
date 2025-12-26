@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useCallback } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import {
@@ -84,7 +84,7 @@ export function TimeTrendChart({ onCrossFilter: _onCrossFilter, onDrillThrough: 
     { initialData: [] }
   );
 
-  const handleClick = (event) => {
+  const handleClick = useCallback((event) => {
     const chart = chartRef.current;
     if (!chart) return;
 
@@ -100,7 +100,7 @@ export function TimeTrendChart({ onCrossFilter: _onCrossFilter, onDrillThrough: 
         applyHighlight('time', timeGrouping, timeValue);
       }
     }
-  };
+  }, [data, timeGrouping, applyHighlight]);
 
   // Use the time grain that matches the current data to avoid "Unknown" labels during drill transitions
   const labels = data.map(d => d.period ?? '');
