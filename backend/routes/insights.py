@@ -186,9 +186,9 @@ def district_psf():
     # Apply sale type filter (new_sale, resale)
     if sale_type_filter and sale_type_filter != "all":
         if sale_type_filter == "new_sale":
-            filter_conditions.append(Transaction.sale_type == "New Sale")
+            filter_conditions.append(Transaction.sale_type == SALE_TYPE_NEW)
         elif sale_type_filter == "resale":
-            filter_conditions.append(Transaction.sale_type == "Resale")
+            filter_conditions.append(Transaction.sale_type == SALE_TYPE_RESALE)
 
     try:
         # Query current period data - grouped by district
@@ -232,9 +232,9 @@ def district_psf():
             # Apply same sale type filter for YoY
             if sale_type_filter and sale_type_filter != "all":
                 if sale_type_filter == "new_sale":
-                    yoy_conditions.append(Transaction.sale_type == "New Sale")
+                    yoy_conditions.append(Transaction.sale_type == SALE_TYPE_NEW)
                 elif sale_type_filter == "resale":
-                    yoy_conditions.append(Transaction.sale_type == "Resale")
+                    yoy_conditions.append(Transaction.sale_type == SALE_TYPE_RESALE)
 
             yoy_query = db.session.query(
                 Transaction.district,

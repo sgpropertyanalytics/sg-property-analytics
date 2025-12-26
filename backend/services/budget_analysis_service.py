@@ -21,6 +21,7 @@ from sqlalchemy import text
 
 from models.database import db
 from db.sql import OUTLIER_FILTER, get_outlier_filter_sql
+from constants import SALE_TYPE_NEW
 
 logger = logging.getLogger(__name__)
 
@@ -236,7 +237,7 @@ def get_market_activity_heatmap(
             SELECT
                 LEAST(bedroom_count, 5) as bedroom,
                 CASE
-                    WHEN sale_type = 'New Sale' THEN 'new_sale'
+                    WHEN sale_type = '{SALE_TYPE_NEW}' THEN 'new_sale'
                     WHEN property_age IS NULL THEN 'unknown'
                     WHEN property_age >= 4 AND property_age < 8 THEN 'recently_top'
                     WHEN property_age >= 8 AND property_age < 15 THEN 'young_resale'
