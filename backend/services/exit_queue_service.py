@@ -41,11 +41,14 @@ class UniqueUnitsStats:
 
 @dataclass
 class UnitData:
-    """Data from new_launch_units CSV."""
+    """Data from hybrid unit lookup (CSV, database, or estimation)."""
     total_units: Optional[int]
     top_year: Optional[int]
     tenure: Optional[str]
     developer: Optional[str]
+    unit_source: Optional[str] = None  # 'csv', 'database', 'estimated', or None
+    confidence: Optional[str] = None    # 'high', 'medium', 'low', or None
+    note: Optional[str] = None          # Human-readable explanation
 
 
 @dataclass
@@ -89,6 +92,9 @@ class DataQuality:
     completeness: str  # 'complete', 'partial', 'no_resales'
     sample_window_months: int
     warnings: list
+    unit_source: Optional[str] = None   # 'csv', 'database', 'estimated', or None
+    unit_confidence: Optional[str] = None  # 'high', 'medium', 'low', or None
+    unit_note: Optional[str] = None     # Human-readable explanation
 
 
 @dataclass
@@ -440,13 +446,16 @@ def get_exit_queue_analysis(
     twelve_months_ago = current_date - timedelta(days=365)
     twenty_four_months_ago = current_date - timedelta(days=730)
 
-    # Get unit data from CSV
+    # Get unit data from hybrid lookup (CSV → database → estimation)
     unit_data_raw = get_units_for_project(project_name)
     unit_data = UnitData(
         total_units=unit_data_raw.get('total_units') if unit_data_raw else None,
         top_year=unit_data_raw.get('top') if unit_data_raw else None,
         tenure=unit_data_raw.get('tenure') if unit_data_raw else None,
-        developer=unit_data_raw.get('developer') if unit_data_raw else None
+        developer=unit_data_raw.get('developer') if unit_data_raw else None,
+        unit_source=unit_data_raw.get('unit_source') if unit_data_raw else None,
+        confidence=unit_data_raw.get('confidence') if unit_data_raw else None,
+        note=unit_data_raw.get('note') if unit_data_raw else None,
     )
 
     # Query basic stats
@@ -509,7 +518,10 @@ def get_exit_queue_analysis(
         has_total_units=unit_data.total_units is not None,
         completeness="complete" if (unit_data.top_year and unit_data.total_units) else "partial",
         sample_window_months=sample_window,
-        warnings=warnings
+        warnings=warnings,
+        unit_source=unit_data.unit_source,
+        unit_confidence=unit_data.confidence,
+        unit_note=unit_data.note,
     )
 
     fundamentals = PropertyFundamentals(

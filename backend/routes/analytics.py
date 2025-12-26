@@ -3177,7 +3177,7 @@ def get_resale_projects():
 
             # Check if we have unit data for this project
             unit_data = get_units_for_project(project_name)
-            has_total_units = unit_data is not None and unit_data.get('units') is not None
+            has_total_units = unit_data is not None and unit_data.get('total_units') is not None
             has_top_year = unit_data is not None and unit_data.get('top') is not None
 
             projects.append({
@@ -3225,7 +3225,7 @@ def get_project_exit_queue(project_name):
     try:
         from models.database import db
         from sqlalchemy import text
-        from services.new_launch_units import get_units_for_project
+        from services.new_launch_units import get_project_units
         from services.exit_queue_service import get_exit_queue_analysis
         from schemas.api_contract import serialize_exit_queue_dual
 
@@ -3233,11 +3233,12 @@ def get_project_exit_queue(project_name):
         include_v2 = request.args.get('v2', 'true').lower() != 'false'
 
         # Call the service - returns (result, error_response, status_code)
+        # Uses hybrid lookup: CSV → database → estimation
         result, error_response, status_code = get_exit_queue_analysis(
             db=db,
             text=text,
             project_name=project_name,
-            get_units_for_project=get_units_for_project
+            get_units_for_project=get_project_units  # Hybrid lookup with confidence
         )
 
         elapsed = time.time() - start

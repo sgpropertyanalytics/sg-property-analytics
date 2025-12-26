@@ -1,29 +1,41 @@
 """
-New Launch Units Service - CSV Lookup with Resale Filter
+New Launch Units Service - Hybrid Unit Lookup
 
-Reads total_units data from: backend/data/new_launch_units.csv
+Provides total_units data from multiple sources with confidence labeling:
 
-A project is considered a "new launch" if:
-1. It exists in the CSV file with total_units data
-2. It has NOT yet had any resale transactions in the database
+1. CSV file (backend/data/new_launch_units.csv) - Authoritative for new launches
+2. upcoming_launches database table - Secondary source with data provenance
+3. Transaction-based estimation - Fallback for older projects
 
-Once a project has its first resale transaction, it transitions to the
-resale market and is no longer considered a new launch.
-
-To add new projects, edit the CSV file and commit to git.
+Each response includes:
+- total_units: The unit count (or None if unavailable)
+- unit_source: 'csv', 'database', 'estimated', or None
+- confidence: 'high', 'medium', 'low', or None
+- note: Human-readable explanation of data source
 
 Usage:
-    from services.new_launch_units import get_units_for_project, is_new_launch
+    from services.new_launch_units import get_project_units
 
-    # Check if project is still a new launch
-    if is_new_launch("GRAND DUNMAN"):
-        result = get_units_for_project("GRAND DUNMAN")
-        # Returns: {"total_units": 1008, "source": "EdgeProp", ...}
+    # Hybrid lookup with confidence labeling
+    result = get_project_units("D'LEEDON")
+    # Returns: {
+    #     "total_units": 1715,
+    #     "unit_source": "estimated",
+    #     "confidence": "medium",
+    #     "note": "Estimated from max unit number in transactions"
+    # }
+
+Legacy functions still available:
+    - get_units_for_project() - CSV-only lookup
+    - is_new_launch() - Check if project is still a new launch
 """
 
 import os
 import csv
-from typing import Dict, Any, List, Set
+import logging
+from typing import Dict, Any, List, Set, Optional
+
+logger = logging.getLogger('new_launch_units')
 
 
 # Path to CSV file in backend/data folder (tracked in git)
@@ -291,3 +303,228 @@ def cleanup_resale_projects() -> Dict[str, Any]:
             "error": str(e),
             "message": f"Failed to update CSV: {e}"
         }
+
+
+# =============================================================================
+# HYBRID UNIT LOOKUP (NEW)
+# =============================================================================
+
+# Confidence levels for unit data sources
+CONFIDENCE_HIGH = 'high'      # Official sources (CSV, verified database)
+CONFIDENCE_MEDIUM = 'medium'  # Estimated from unit numbers
+CONFIDENCE_LOW = 'low'        # Estimated from unique units (less reliable)
+
+# Estimation correction factor for unique units approach
+# Accounts for units that haven't transacted yet
+UNIQUE_UNITS_CORRECTION_FACTOR = 1.15
+
+
+def get_project_units(project_name: str) -> Dict[str, Any]:
+    """
+    Get total units for a project using hybrid lookup with confidence labeling.
+
+    Lookup hierarchy:
+    1. CSV file (authoritative for new launches) - HIGH confidence
+    2. upcoming_launches database table - confidence from data_confidence column
+    3. Transaction-based estimation - MEDIUM/LOW confidence
+
+    Args:
+        project_name: The project name to look up
+
+    Returns:
+        Dict with:
+        - total_units: int or None
+        - unit_source: 'csv', 'database', 'estimated', or None
+        - confidence: 'high', 'medium', 'low', or None
+        - note: Human-readable explanation
+        - top: TOP year if available
+        - developer: Developer name if available
+        - district: District if available
+        - tenure: Tenure type if available
+    """
+    normalized = project_name.upper().strip()
+
+    # Base response structure
+    result = {
+        "project_name": project_name,
+        "total_units": None,
+        "unit_source": None,
+        "confidence": None,
+        "note": None,
+        "top": None,
+        "developer": None,
+        "district": None,
+        "tenure": None,
+    }
+
+    # -------------------------------------------------------------------------
+    # Source 1: CSV file (highest priority for new launches)
+    # -------------------------------------------------------------------------
+    csv_data = _load_data()
+    if normalized in csv_data:
+        info = csv_data[normalized]
+        if info.get('total_units'):
+            result.update({
+                "total_units": info['total_units'],
+                "unit_source": "csv",
+                "confidence": CONFIDENCE_HIGH,
+                "note": f"Official data from {info.get('source', 'CSV')}",
+                "top": info.get('top'),
+                "developer": info.get('developer'),
+                "district": info.get('district'),
+                "tenure": info.get('tenure'),
+            })
+            logger.debug(f"Found {project_name} in CSV: {info['total_units']} units")
+            return result
+
+    # -------------------------------------------------------------------------
+    # Source 2: upcoming_launches database table
+    # -------------------------------------------------------------------------
+    db_result = _lookup_upcoming_launches(normalized)
+    if db_result and db_result.get('total_units'):
+        db_confidence = db_result.get('data_confidence', CONFIDENCE_MEDIUM)
+        result.update({
+            "total_units": db_result['total_units'],
+            "unit_source": "database",
+            "confidence": db_confidence,
+            "note": f"From {db_result.get('data_source', 'database')}",
+            "top": db_result.get('expected_top_date'),
+            "developer": db_result.get('developer'),
+            "district": db_result.get('district'),
+            "tenure": db_result.get('tenure'),
+        })
+        logger.debug(f"Found {project_name} in upcoming_launches: {db_result['total_units']} units")
+        return result
+
+    # -------------------------------------------------------------------------
+    # Source 3: Transaction-based estimation
+    # -------------------------------------------------------------------------
+    estimation = _estimate_units_from_transactions(normalized)
+    if estimation and estimation.get('total_units'):
+        result.update({
+            "total_units": estimation['total_units'],
+            "unit_source": "estimated",
+            "confidence": estimation['confidence'],
+            "note": estimation['note'],
+            "district": estimation.get('district'),
+            "tenure": estimation.get('tenure'),
+        })
+        logger.debug(f"Estimated {project_name}: {estimation['total_units']} units")
+        return result
+
+    # No data available
+    result["note"] = "No unit data available from any source"
+    return result
+
+
+def _lookup_upcoming_launches(project_name_upper: str) -> Optional[Dict[str, Any]]:
+    """Look up project in upcoming_launches table."""
+    try:
+        from models.database import db
+        from models.upcoming_launch import UpcomingLaunch
+
+        launch = UpcomingLaunch.query.filter(
+            db.func.upper(UpcomingLaunch.project_name) == project_name_upper
+        ).first()
+
+        if launch:
+            return {
+                "total_units": launch.total_units,
+                "data_source": launch.data_source,
+                "data_confidence": launch.data_confidence,
+                "expected_top_date": launch.expected_top_date.year if launch.expected_top_date else None,
+                "developer": launch.developer,
+                "district": launch.district,
+                "tenure": launch.tenure,
+            }
+    except Exception as e:
+        logger.warning(f"Error looking up upcoming_launches for {project_name_upper}: {e}")
+
+    return None
+
+
+def _estimate_units_from_transactions(project_name_upper: str) -> Optional[Dict[str, Any]]:
+    """
+    Estimate total units from transaction patterns.
+
+    Uses unique combinations of (floor_range, area_sqft) to estimate distinct units.
+    The transactions table uses floor_level (High/Mid/Low) with floor_range (e.g., "31 to 35")
+    rather than specific unit numbers.
+
+    Confidence depends on transaction repeat ratio:
+    - MEDIUM: High repeat ratio indicates mature market with stable unit count
+    - LOW: Low repeat ratio suggests not all units have transacted yet
+
+    Returns None if insufficient data for estimation.
+    """
+    try:
+        from models.database import db
+        from sqlalchemy import text
+        from db.sql import OUTLIER_FILTER
+
+        # Count unique units by floor_range + rounded area combination
+        # This identifies distinct unit types in the project
+        unique_units_result = db.session.execute(text(f"""
+            SELECT
+                COUNT(DISTINCT CONCAT(
+                    COALESCE(floor_range, floor_level, ''),
+                    '-',
+                    COALESCE(ROUND(area_sqft)::text, '')
+                )) as unique_units,
+                COUNT(*) as transaction_count,
+                MAX(district) as district,
+                MAX(tenure) as tenure
+            FROM transactions
+            WHERE UPPER(project_name) = :project_name
+              AND {OUTLIER_FILTER}
+        """), {"project_name": project_name_upper}).fetchone()
+
+        if unique_units_result and unique_units_result[0] and unique_units_result[0] >= 5:
+            unique_count = unique_units_result[0]
+            transaction_count = unique_units_result[1]
+
+            # Calculate repeat ratio to determine market maturity
+            # Higher ratio = more resales per unique unit = more mature market
+            repeat_ratio = transaction_count / unique_count if unique_count > 0 else 1
+
+            if repeat_ratio >= 2:
+                # High repeat ratio = mature market, unique count is more reliable
+                # Apply small adjustment for units that may never transact (e.g., owner-occupied)
+                estimated_units = int(unique_count * 1.05)
+                confidence = CONFIDENCE_MEDIUM
+                note = f"Estimated from {unique_count} unique units ({transaction_count} transactions)"
+            else:
+                # Low repeat ratio = not all units have transacted yet
+                # Apply correction factor to account for untransacted units
+                estimated_units = int(unique_count * UNIQUE_UNITS_CORRECTION_FACTOR)
+                confidence = CONFIDENCE_LOW
+                note = f"Estimated from {unique_count} unique units (may be incomplete)"
+
+            return {
+                "total_units": estimated_units,
+                "confidence": confidence,
+                "note": note,
+                "district": unique_units_result[2],
+                "tenure": unique_units_result[3],
+            }
+
+    except Exception as e:
+        logger.warning(f"Error estimating units for {project_name_upper}: {e}")
+
+    return None
+
+
+def get_project_units_batch(project_names: List[str]) -> Dict[str, Dict[str, Any]]:
+    """
+    Get units for multiple projects efficiently.
+
+    Args:
+        project_names: List of project names
+
+    Returns:
+        Dict mapping project names to their unit data
+    """
+    results = {}
+    for name in project_names:
+        results[name] = get_project_units(name)
+    return results

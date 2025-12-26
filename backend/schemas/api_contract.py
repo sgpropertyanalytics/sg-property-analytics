@@ -1116,6 +1116,9 @@ class ExitQueueFields:
     COMPLETENESS = 'completeness'
     SAMPLE_WINDOW_MONTHS = 'sampleWindowMonths'
     WARNINGS = 'warnings'
+    UNIT_SOURCE = 'unitSource'           # 'csv', 'database', 'estimated', or None
+    UNIT_CONFIDENCE = 'unitConfidence'   # 'high', 'medium', 'low', or None
+    UNIT_NOTE = 'unitNote'               # Human-readable explanation
 
     # Fundamentals
     TOTAL_UNITS = 'totalUnits'
@@ -1220,7 +1223,10 @@ def serialize_exit_queue_v1(result) -> Dict[str, Any]:
             "has_total_units": result.data_quality.has_total_units,
             "completeness": result.data_quality.completeness,
             "sample_window_months": result.data_quality.sample_window_months,
-            "warnings": result.data_quality.warnings
+            "warnings": result.data_quality.warnings,
+            "unit_source": result.data_quality.unit_source,
+            "unit_confidence": result.data_quality.unit_confidence,
+            "unit_note": result.data_quality.unit_note,
         },
         "fundamentals": {
             "total_units": result.fundamentals.total_units,
@@ -1270,7 +1276,10 @@ def serialize_exit_queue_v2(result) -> Dict[str, Any]:
             ExitQueueFields.HAS_TOTAL_UNITS: result.data_quality.has_total_units,
             ExitQueueFields.COMPLETENESS: result.data_quality.completeness,
             ExitQueueFields.SAMPLE_WINDOW_MONTHS: result.data_quality.sample_window_months,
-            ExitQueueFields.WARNINGS: result.data_quality.warnings
+            ExitQueueFields.WARNINGS: result.data_quality.warnings,
+            ExitQueueFields.UNIT_SOURCE: result.data_quality.unit_source,
+            ExitQueueFields.UNIT_CONFIDENCE: result.data_quality.unit_confidence,
+            ExitQueueFields.UNIT_NOTE: result.data_quality.unit_note,
         },
         ExitQueueFields.FUNDAMENTALS: {
             ExitQueueFields.TOTAL_UNITS: result.fundamentals.total_units,
