@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
+import { PowerBIFilterProvider } from './context/PowerBIFilterContext';
 import LandingPage from './pages/Landing';
 import Login from './pages/Login';
 import Pricing from './pages/Pricing';
@@ -66,6 +67,8 @@ function App() {
       <SubscriptionProvider>
         <DataProvider>
           <BrowserRouter>
+            {/* PowerBIFilterProvider wraps all routes to prevent context recreation on navigation */}
+            <PowerBIFilterProvider>
             <Routes>
               {/* ===== Public Routes (No Dashboard Layout) ===== */}
 
@@ -179,6 +182,7 @@ function App() {
               {/* Catch-all -> Landing Page */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </PowerBIFilterProvider>
           </BrowserRouter>
         </DataProvider>
       </SubscriptionProvider>

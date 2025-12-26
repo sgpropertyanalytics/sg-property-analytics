@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { GlobalNavRail, NAV_ITEMS } from './GlobalNavRail';
-import { PowerBIFilterProvider } from '../../context/PowerBIFilterContext';
 import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
 import { ErrorBoundary } from '../ui';
 import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
@@ -79,7 +78,6 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
   const showFilterSidebar = pageConfig.showFilterSidebar;
 
   return (
-    <PowerBIFilterProvider>
       <div className="flex h-screen bg-[#EAE0CF]/30 overflow-hidden">
         {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
         {/* Desktop: Always visible | Mobile: Hidden */}
@@ -228,7 +226,6 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
         {/* Pricing Modal - Global paywall trigger */}
         <PricingModal isOpen={showPricingModal} onClose={hidePaywall} />
       </div>
-    </PowerBIFilterProvider>
   );
 }
 
