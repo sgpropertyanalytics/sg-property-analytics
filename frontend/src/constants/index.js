@@ -371,6 +371,95 @@ export const isValidTenure = (tenure) => {
 };
 
 // =============================================================================
+// PROPERTY AGE BANDS - SINGLE SOURCE OF TRUTH
+// Matches backend/services/budget_analysis_service.py PROPERTY_AGE_BANDS
+// =============================================================================
+
+/**
+ * Property age band definitions
+ * - new_sale: Based on sale_type, not property age
+ * - Age bands use >= min and < max boundaries
+ * - just_top: Special band for 0-3 year old properties (not in heatmap API)
+ */
+export const PROPERTY_AGE_BANDS = [
+  { key: 'new_sale', label: 'New Sale', isNewSale: true, minAge: null, maxAge: null },
+  { key: 'just_top', label: 'Just TOP', isNewSale: false, minAge: 0, maxAge: 4 },
+  { key: 'recently_top', label: 'Recently TOP', isNewSale: false, minAge: 4, maxAge: 8 },
+  { key: 'young_resale', label: 'Young Resale', isNewSale: false, minAge: 8, maxAge: 15 },
+  { key: 'resale', label: 'Resale', isNewSale: false, minAge: 15, maxAge: 25 },
+  { key: 'old_resale', label: 'Old Resale', isNewSale: false, minAge: 25, maxAge: null },
+];
+
+/**
+ * Age band labels with year ranges (for display in legends/headers)
+ */
+export const AGE_BAND_LABELS_FULL = {
+  new_sale: 'New Sale',
+  just_top: 'Just TOP (0-3 yrs)',
+  recently_top: 'Recently TOP (4-8 yrs)',
+  young_resale: 'Young Resale (8-15 yrs)',
+  resale: 'Resale (15-25 yrs)',
+  old_resale: 'Old Resale (25+ yrs)',
+  freehold: 'Freehold',
+};
+
+/**
+ * Age band short labels (for compact displays like table cells)
+ */
+export const AGE_BAND_LABELS_SHORT = {
+  new_sale: 'New',
+  just_top: 'Just TOP',
+  recently_top: 'Recently TOP',
+  young_resale: 'Young Resale',
+  resale: 'Resale',
+  old_resale: 'Old Resale',
+  freehold: 'FH',
+};
+
+/**
+ * Get age band key from property age
+ * Matches backend SQL logic: age >= min AND age < max
+ *
+ * @param {number|null} age - Property age in years
+ * @param {boolean} isFreehold - Whether property is freehold (no reliable TOP date)
+ * @returns {string} Age band key
+ */
+export const getAgeBandKey = (age, isFreehold = false) => {
+  if (isFreehold) return 'freehold';
+  if (age === null || age === undefined) return null;
+  if (age < 4) return 'just_top';
+  if (age < 8) return 'recently_top';
+  if (age < 15) return 'young_resale';
+  if (age < 25) return 'resale';
+  return 'old_resale';
+};
+
+/**
+ * Get age band label for display
+ *
+ * @param {number|null} age - Property age in years
+ * @param {boolean} isFreehold - Whether property is freehold
+ * @param {boolean} short - Use short label (default: true)
+ * @returns {string} Display label
+ */
+export const getAgeBandLabel = (age, isFreehold = false, short = true) => {
+  const key = getAgeBandKey(age, isFreehold);
+  if (!key) return '-';
+  return short ? AGE_BAND_LABELS_SHORT[key] : AGE_BAND_LABELS_FULL[key];
+};
+
+/**
+ * Get tooltip text for age band (useful for FH explanation)
+ *
+ * @param {string} bandKey - Age band key
+ * @returns {string|null} Tooltip text or null
+ */
+export const getAgeBandTooltip = (bandKey) => {
+  if (bandKey === 'freehold') return 'Freehold (age not available)';
+  return null;
+};
+
+// =============================================================================
 // LIQUIDITY HEATMAP COLORS
 // =============================================================================
 

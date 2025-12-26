@@ -18,17 +18,8 @@ import { SuppressedValue } from '../SuppressedValue';
 // K-anonymity threshold for project-level data (min 15 for privacy)
 const K_PROJECT_THRESHOLD = 15;
 
-// Get age bucket label from median property age
-// For freehold: show "FH" since we don't have reliable TOP year data
-const getAgeBucket = (age, isFreehold = false) => {
-  if (isFreehold) return 'FH';
-  if (age === null || age === undefined) return '-';
-  if (age < 4) return 'Just TOP';
-  if (age <= 8) return 'Recently TOP';
-  if (age <= 15) return 'Young Resale';
-  if (age <= 25) return 'Resale';
-  return 'Old Resale';
-};
+// Age band helpers - imported from centralized constants (SINGLE SOURCE OF TRUTH)
+import { getAgeBandLabel, getAgeBandKey, getAgeBandTooltip } from '../../constants';
 
 // Format price for display
 const formatPrice = (value) => {
@@ -630,8 +621,8 @@ export default function DealCheckerContent() {
                         {/* Row 1: BR, Age, Obs */}
                         <div className="flex items-center gap-3 mt-2 text-xs text-[#547792]">
                           <span>{p.bedroom || '-'}BR</span>
-                          <span title={p.is_freehold ? 'Freehold (age not available)' : undefined}>
-                            Age: {getAgeBucket(p.median_age, p.is_freehold)}
+                          <span title={getAgeBandTooltip(getAgeBandKey(p.median_age, p.is_freehold))}>
+                            Age: {getAgeBandLabel(p.median_age, p.is_freehold)}
                           </span>
                           <span>{(p.transaction_count || 0).toLocaleString()} obs</span>
                         </div>
@@ -786,9 +777,9 @@ export default function DealCheckerContent() {
                           </td>
                           <td
                             className="px-3 py-2 border-b border-slate-100 text-center text-slate-600"
-                            title={p.is_freehold ? 'Freehold (age not available)' : undefined}
+                            title={getAgeBandTooltip(getAgeBandKey(p.median_age, p.is_freehold))}
                           >
-                            {getAgeBucket(p.median_age, p.is_freehold)}
+                            {getAgeBandLabel(p.median_age, p.is_freehold)}
                           </td>
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 font-medium">
                             {(p.transaction_count || 0).toLocaleString()}
