@@ -10,11 +10,12 @@
  * - Gating warnings for special cases
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { getProjectNames, getProjectExitQueue, getProjectPriceBands } from '../api/client';
+import { getProjectNames, getProjectExitQueue, getProjectPriceBands, getProjectPriceGrowth } from '../api/client';
 import ExitRiskDashboard from '../components/powerbi/ExitRiskDashboard';
 import ProjectFundamentalsPanel from '../components/powerbi/ProjectFundamentalsPanel';
 import ResaleMetricsCards from '../components/powerbi/ResaleMetricsCards';
 import PriceBandChart from '../components/powerbi/PriceBandChart';
+import PriceGrowthChart from '../components/powerbi/PriceGrowthChart';
 import UnitPsfInput from '../components/powerbi/UnitPsfInput';
 import { KeyInsightBox } from '../components/ui/KeyInsightBox';
 
@@ -53,6 +54,11 @@ export function ProjectDeepDiveContent() {
   const [priceBandsLoading, setPriceBandsLoading] = useState(false);
   const [priceBandsError, setPriceBandsError] = useState(null);
   const [unitPsf, setUnitPsf] = useState(null);
+
+  // Price growth state
+  const [priceGrowthData, setPriceGrowthData] = useState(null);
+  const [priceGrowthLoading, setPriceGrowthLoading] = useState(false);
+  const [priceGrowthError, setPriceGrowthError] = useState(null);
 
   // Load project options on mount
   useEffect(() => {
@@ -124,6 +130,31 @@ export function ProjectDeepDiveContent() {
     fetchPriceBands();
   }, [selectedProject, unitPsf]);
 
+  // Load price growth data when project is selected
+  useEffect(() => {
+    if (!selectedProject) {
+      setPriceGrowthData(null);
+      setPriceGrowthError(null);
+      return;
+    }
+
+    const fetchPriceGrowth = async () => {
+      setPriceGrowthLoading(true);
+      setPriceGrowthError(null);
+      try {
+        const response = await getProjectPriceGrowth(selectedProject.name);
+        setPriceGrowthData(response.data);
+      } catch (err) {
+        console.error('Failed to load price growth:', err);
+        setPriceGrowthError(err.response?.data?.error || 'Failed to load price growth');
+        setPriceGrowthData(null);
+      } finally {
+        setPriceGrowthLoading(false);
+      }
+    };
+    fetchPriceGrowth();
+  }, [selectedProject]);
+
   // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -168,6 +199,8 @@ export function ProjectDeepDiveContent() {
     setPriceBandsData(null);
     setPriceBandsError(null);
     setUnitPsf(null);
+    setPriceGrowthData(null);
+    setPriceGrowthError(null);
   };
 
   // Render gating warnings
@@ -460,6 +493,26 @@ export function ProjectDeepDiveContent() {
                 />
               </>
             )}
+
+            {/* Price Growth Analysis */}
+            <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
+              <div className="mb-4">
+                <h2 className="text-base font-semibold text-[#213448] mb-1">
+                  Price Growth Analysis
+                </h2>
+                <p className="text-sm text-[#547792]">
+                  Historical PSF trend and cumulative growth for this project
+                </p>
+              </div>
+              <PriceGrowthChart
+                data={priceGrowthData}
+                loading={priceGrowthLoading}
+                error={priceGrowthError}
+                projectName={selectedProject?.name}
+                district={selectedProject?.district}
+                height={400}
+              />
+            </div>
 
             {/* Gating Warnings */}
             {renderGatingWarnings()}
