@@ -586,80 +586,23 @@ def resale_stats():
 
 
 @analytics_bp.route("/transactions", methods=["GET"])
-def transactions():
-    """Get detailed transaction list - still uses database query for flexibility."""
-    start = time.time()
-    
-    from models.transaction import Transaction
-    from models.database import db
-    from sqlalchemy import and_
-    
-    start_date = request.args.get("start_date")
-    end_date = request.args.get("end_date")
-    districts_param = request.args.get("district")  # Singular form, comma-separated
-    bedroom_param = request.args.get("bedroom", "2,3,4")
-    limit_param = request.args.get("limit", "200000")
-    segment = request.args.get("segment")
-    
-    try:
-        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
-        limit = int(limit_param)
-    except ValueError:
-        return jsonify({"error": "Invalid parameter"}), 400
+def transactions_deprecated():
+    """
+    DEPRECATED: Raw transaction endpoint removed for URA compliance.
+    CRITICAL: Return 410 BEFORE any DB call - never execute queries.
 
-    # Use active_query() to exclude outliers
-    query = Transaction.active_query()
-
-    # Apply filters
-    if districts_param:
-        districts = [d.strip() for d in districts_param.split(",") if d.strip()]
-        normalized = []
-        for d in districts:
-            d = str(d).strip().upper()
-            if not d.startswith("D"):
-                d = f"D{d.zfill(2)}"
-            normalized.append(d)
-        query = query.filter(Transaction.district.in_(normalized))
-    
-    if bedroom_types:
-        query = query.filter(Transaction.bedroom_count.in_(bedroom_types))
-    
-    if start_date:
-        from datetime import datetime
-        start_dt = datetime.strptime(start_date + "-01", "%Y-%m-%d")
-        query = query.filter(Transaction.transaction_date >= start_dt)
-    
-    if end_date:
-        from datetime import datetime
-        from calendar import monthrange
-        year, month = map(int, end_date.split("-"))
-        last_day = monthrange(year, month)[1]
-        end_dt = datetime(year, month, last_day)
-        query = query.filter(Transaction.transaction_date <= end_dt)
-    
-    # Segment filter (supports comma-separated values e.g., "CCR,RCR")
-    if segment:
-        from services.data_processor import _get_market_segment
-        segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
-        all_districts = db.session.query(Transaction.district).distinct().all()
-        segment_districts = [
-            d[0] for d in all_districts
-            if _get_market_segment(d[0]) in segments
-        ]
-        query = query.filter(Transaction.district.in_(segment_districts))
-
-    transactions = query.limit(limit).all()
-
-    # SECURITY: Use tier-aware serialization
-    from utils.subscription import serialize_transactions
-    result = serialize_transactions(transactions)
-
-    elapsed = time.time() - start
-    print(f"GET /api/transactions took: {elapsed:.4f} seconds (returned {len(result)} rows)")
+    This endpoint previously returned up to 200K raw transaction records,
+    violating URA data usage rules. Use /aggregate-summary instead.
+    """
+    # No DB calls - return immediately
+    import logging
+    logging.warning(f"Deprecated /transactions called from {request.remote_addr}")
     return jsonify({
-        "count": len(result),
-        "transactions": result
-    })
+        "error": "This endpoint has been deprecated",
+        "message": "Use /aggregate-summary for market insights",
+        "migration_guide": "https://docs.sgpropertytrend.com/api/migration",
+        "reason": "URA compliance - raw transaction data no longer exposed"
+    }), 410
 
 
 @analytics_bp.route("/price_trends", methods=["GET"])
@@ -1690,51 +1633,100 @@ def aggregate():
     return jsonify(result)
 
 
-@analytics_bp.route("/transactions/list", methods=["GET"])
-def transactions_list():
+# =============================================================================
+# AGGREGATE SUMMARY ENDPOINT (URA-Compliant Replacement for /transactions)
+# =============================================================================
+
+# Cost controls to prevent DoS via expensive queries
+MAX_TIME_BUCKETS = 40
+MAX_BIN_COUNT = 20
+
+
+def _make_aggregate_cache_key():
     """
-    Paginated transaction list endpoint for drill-through, histogram analysis,
-    and Value Parity Tool budget search.
+    Generate stable cache key from normalized, sorted query params.
+
+    CRITICAL: Uses stable string representation instead of hash()
+    (Python hash() changes per restart, breaks caching)
+    """
+    relevant_params = [
+        'district', 'segment', 'bedroom', 'saleType', 'sale_type',
+        'tenure', 'date_from', 'date_to', 'price_min', 'price_max',
+        'psf_min', 'psf_max', 'bin_count'
+    ]
+    sorted_params = sorted(
+        (k, request.args.get(k))
+        for k in relevant_params
+        if request.args.get(k)
+    )
+    param_str = '&'.join(f"{k}={v}" for k, v in sorted_params)
+    return f"agg_summary:{param_str}"
+
+
+@analytics_bp.route("/aggregate-summary", methods=["GET"])
+def aggregate_summary():
+    """
+    URA-Compliant aggregate summary endpoint.
+
+    Returns aggregated market metrics and distributions without
+    exposing individual transaction records.
 
     Query params:
-      - Same filters as /aggregate
-      - page: page number (default 1)
-      - limit: records per page (default 50, max 10000 for histogram use cases)
-      - sort_by: column to sort (default transaction_date)
-      - sort_order: asc or desc (default desc)
-      - price_min: minimum price filter (for budget search)
-      - price_max: maximum price filter (for budget search)
-      - lease_age: lease age range filter (0-5, 5-10, 10-20, 20+)
+      - district: Filter by district(s), comma-separated
+      - segment: Filter by CCR/RCR/OCR
+      - bedroom: Filter by bedroom count(s)
+      - saleType/sale_type: Filter by New Sale/Resale
+      - tenure: Filter by Freehold/99-year
+      - date_from, date_to: Date range filter
+      - price_min, price_max: Price range filter
+      - psf_min, psf_max: PSF range filter
+      - bin_count: Number of histogram bins (default 10, max 20)
 
     Returns:
       {
-        "transactions": [...],
-        "pagination": {
-          "page": N,
-          "limit": N,
-          "total_records": N,
-          "total_pages": N
+        "summary": {
+          "observationCount": N,
+          "medianPsf": N,
+          "medianPrice": N,
+          "psfRange": {"p10": N, "p25": N, "p50": N, "p75": N, "p90": N},
+          "priceRange": {"p10": N, "p25": N, "p50": N, "p75": N, "p90": N}
+        },
+        "bedroomMix": [{"bedroom": 2, "count": N, "pct": N}, ...],
+        "saleMix": [{"saleType": "resale", "count": N, "pct": N}, ...],
+        "psfDistribution": [{"binStart": N, "binEnd": N, "count": N}, ...],
+        "meta": {
+          "kAnonymityPassed": true,
+          "fallbackLevel": null,
+          "observationCount": N
         }
       }
     """
     import time
-    from datetime import datetime
     from models.transaction import Transaction
     from models.database import db
-    from sqlalchemy import desc, asc, func
+    from sqlalchemy import func, text
+    from utils.subscription import (
+        get_granularity_level,
+        check_k_anonymity,
+        build_k_anonymity_meta
+    )
 
     start = time.time()
 
-    # Pagination params
-    # No max limit - allow fetching all records for accurate histogram analysis
-    page = int(request.args.get("page", 1))
-    limit = int(request.args.get("limit", 50))
-    sort_by = request.args.get("sort_by", "transaction_date")
-    sort_order = request.args.get("sort_order", "desc")
+    # Check cache first
+    cache_key = _make_aggregate_cache_key()
+    cached = _dashboard_cache.get(cache_key)
+    if cached:
+        return jsonify(cached)
 
-    # Build query with same filters as aggregate
-    # Use active_query() to exclude outliers
+    # Enforce bin limits
+    bin_count = min(int(request.args.get('bin_count', 10)), MAX_BIN_COUNT)
+
+    # Build base query with outlier exclusion
     query = Transaction.active_query()
+
+    # Collect filter params for K-anonymity check
+    filter_params = {}
 
     # District filter
     districts_param = request.args.get("district")
@@ -1746,14 +1738,9 @@ def transactions_list():
                 d = f"D{d.zfill(2)}"
             normalized.append(d)
         query = query.filter(Transaction.district.in_(normalized))
+        filter_params['district'] = districts_param
 
-    # Bedroom filter
-    bedroom_param = request.args.get("bedroom")
-    if bedroom_param:
-        bedrooms = [int(b.strip()) for b in bedroom_param.split(",") if b.strip()]
-        query = query.filter(Transaction.bedroom_count.in_(bedrooms))
-
-    # Segment filter (supports comma-separated values e.g., "CCR,RCR")
+    # Segment filter
     segment = request.args.get("segment")
     if segment:
         from services.data_processor import _get_market_segment
@@ -1764,13 +1751,18 @@ def transactions_list():
             if _get_market_segment(d[0]) in segments
         ]
         query = query.filter(Transaction.district.in_(segment_districts))
+        filter_params['segment'] = segment
 
-    # Sale type filter - accepts both v1 (sale_type) and v2 (saleType) formats
-    # Also handles both DB values ('New Sale') and API enums ('new_sale')
+    # Bedroom filter
+    bedroom_param = request.args.get("bedroom")
+    if bedroom_param:
+        bedrooms = [int(b.strip()) for b in bedroom_param.split(",") if b.strip()]
+        query = query.filter(Transaction.bedroom_count.in_(bedrooms))
+
+    # Sale type filter
     from schemas.api_contract import SaleType
     sale_type_param = request.args.get("saleType") or request.args.get("sale_type")
     if sale_type_param:
-        # Check if it's a v2 API enum and convert to DB value
         if sale_type_param in SaleType.ALL:
             sale_type_db = SaleType.to_db(sale_type_param)
         else:
@@ -1778,6 +1770,7 @@ def transactions_list():
         query = query.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
 
     # Date range filter
+    from datetime import datetime
     date_from = request.args.get("date_from")
     date_to = request.args.get("date_to")
     if date_from:
@@ -1793,23 +1786,7 @@ def transactions_list():
         except ValueError:
             pass
 
-    # PSF range filter
-    psf_min = request.args.get("psf_min")
-    psf_max = request.args.get("psf_max")
-    if psf_min:
-        query = query.filter(Transaction.psf >= float(psf_min))
-    if psf_max:
-        query = query.filter(Transaction.psf <= float(psf_max))
-
-    # Size range filter
-    size_min = request.args.get("size_min")
-    size_max = request.args.get("size_max")
-    if size_min:
-        query = query.filter(Transaction.area_sqft >= float(size_min))
-    if size_max:
-        query = query.filter(Transaction.area_sqft <= float(size_max))
-
-    # Price range filter (for Value Parity Tool budget filter)
+    # Price/PSF range filters
     price_min = request.args.get("price_min")
     price_max = request.args.get("price_max")
     if price_min:
@@ -1817,111 +1794,213 @@ def transactions_list():
     if price_max:
         query = query.filter(Transaction.price <= float(price_max))
 
-    # Lease age filter (years since lease started)
-    lease_age = request.args.get("lease_age")
-    if lease_age:
-        from datetime import datetime
-        current_year = datetime.now().year
-        if lease_age == "0-5":
-            # Lease started within last 5 years
-            query = query.filter(Transaction.lease_start_year >= current_year - 5)
-        elif lease_age == "4-9":
-            # Young Resale: 4-9 years old
-            query = query.filter(Transaction.lease_start_year >= current_year - 9)
-            query = query.filter(Transaction.lease_start_year <= current_year - 4)
-        elif lease_age == "5-10":
-            query = query.filter(Transaction.lease_start_year >= current_year - 10)
-            query = query.filter(Transaction.lease_start_year < current_year - 5)
-        elif lease_age == "10-20":
-            query = query.filter(Transaction.lease_start_year >= current_year - 20)
-            query = query.filter(Transaction.lease_start_year < current_year - 10)
-        elif lease_age == "20+":
-            query = query.filter(Transaction.lease_start_year < current_year - 20)
+    psf_min = request.args.get("psf_min")
+    psf_max = request.args.get("psf_max")
+    if psf_min:
+        query = query.filter(Transaction.psf >= float(psf_min))
+    if psf_max:
+        query = query.filter(Transaction.psf <= float(psf_max))
 
-    # Tenure filter
-    tenure = request.args.get("tenure")
-    if tenure:
-        from sqlalchemy import or_, and_
-        tenure_lower = tenure.lower()
-        if tenure_lower == TENURE_FREEHOLD.lower():
-            query = query.filter(or_(
-                Transaction.tenure.ilike("%freehold%"),
-                Transaction.remaining_lease == 999
-            ))
-        elif tenure_lower in [TENURE_99_YEAR.lower(), "99"]:
-            query = query.filter(and_(
-                Transaction.remaining_lease < 999,
-                Transaction.remaining_lease > 0
-            ))
+    # Get total count for K-anonymity check
+    total_count = query.count()
 
-    # Project filter - supports both partial match (search) and exact match (drill-through)
-    project_exact = request.args.get("project_exact")
-    project = request.args.get("project")
-    if project_exact:
-        # EXACT match - for ProjectDetailPanel drill-through
-        query = query.filter(Transaction.project_name == project_exact)
-    elif project:
-        # PARTIAL match - for search functionality
-        query = query.filter(Transaction.project_name.ilike(f"%{project}%"))
+    # Check K-anonymity
+    granularity = get_granularity_level(filter_params)
+    passes_k, k_error = check_k_anonymity(total_count, level=granularity)
 
-    # Get total count before pagination
-    total_records = query.count()
-    total_pages = (total_records + limit - 1) // limit
+    if not passes_k:
+        # Return minimal response with K-anonymity warning
+        result = {
+            "summary": None,
+            "bedroomMix": [],
+            "saleMix": [],
+            "psfDistribution": [],
+            "meta": build_k_anonymity_meta(False, granularity, total_count),
+            "warning": k_error
+        }
+        return jsonify(result)
 
-    # SECURITY: K-anonymity check for free users
-    # Prevents re-identification by requiring minimum result count
-    from utils.subscription import check_k_anonymity, is_premium_user
-    passes_k_check, k_error = check_k_anonymity(total_records)
-    if not passes_k_check:
-        return jsonify({
-            "transactions": [],
-            "pagination": {
-                "page": 1,
-                "limit": limit,
-                "total_records": 0,
-                "total_pages": 0
+    # Calculate aggregates using SQL
+    # PSF percentiles
+    psf_stats = db.session.query(
+        func.percentile_cont(0.10).within_group(Transaction.psf).label('p10'),
+        func.percentile_cont(0.25).within_group(Transaction.psf).label('p25'),
+        func.percentile_cont(0.50).within_group(Transaction.psf).label('p50'),
+        func.percentile_cont(0.75).within_group(Transaction.psf).label('p75'),
+        func.percentile_cont(0.90).within_group(Transaction.psf).label('p90'),
+    ).filter(
+        Transaction.is_outlier == False
+    )
+
+    # Apply same filters to stats query
+    if districts_param:
+        psf_stats = psf_stats.filter(Transaction.district.in_(normalized))
+    if segment:
+        psf_stats = psf_stats.filter(Transaction.district.in_(segment_districts))
+    if bedroom_param:
+        psf_stats = psf_stats.filter(Transaction.bedroom_count.in_(bedrooms))
+    if sale_type_param:
+        psf_stats = psf_stats.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
+    if date_from:
+        psf_stats = psf_stats.filter(Transaction.transaction_date >= from_dt)
+    if date_to:
+        psf_stats = psf_stats.filter(Transaction.transaction_date <= to_dt)
+
+    psf_result = psf_stats.first()
+
+    # Price percentiles (similar structure)
+    price_stats = db.session.query(
+        func.percentile_cont(0.10).within_group(Transaction.price).label('p10'),
+        func.percentile_cont(0.25).within_group(Transaction.price).label('p25'),
+        func.percentile_cont(0.50).within_group(Transaction.price).label('p50'),
+        func.percentile_cont(0.75).within_group(Transaction.price).label('p75'),
+        func.percentile_cont(0.90).within_group(Transaction.price).label('p90'),
+    ).filter(
+        Transaction.is_outlier == False
+    )
+
+    # Apply same filters
+    if districts_param:
+        price_stats = price_stats.filter(Transaction.district.in_(normalized))
+    if segment:
+        price_stats = price_stats.filter(Transaction.district.in_(segment_districts))
+    if bedroom_param:
+        price_stats = price_stats.filter(Transaction.bedroom_count.in_(bedrooms))
+    if sale_type_param:
+        price_stats = price_stats.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
+    if date_from:
+        price_stats = price_stats.filter(Transaction.transaction_date >= from_dt)
+    if date_to:
+        price_stats = price_stats.filter(Transaction.transaction_date <= to_dt)
+
+    price_result = price_stats.first()
+
+    # Bedroom mix
+    bedroom_mix_query = db.session.query(
+        Transaction.bedroom_count,
+        func.count(Transaction.id).label('count')
+    ).filter(
+        Transaction.is_outlier == False
+    ).group_by(Transaction.bedroom_count)
+
+    # Apply filters
+    if districts_param:
+        bedroom_mix_query = bedroom_mix_query.filter(Transaction.district.in_(normalized))
+    if segment:
+        bedroom_mix_query = bedroom_mix_query.filter(Transaction.district.in_(segment_districts))
+    if sale_type_param:
+        bedroom_mix_query = bedroom_mix_query.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
+    if date_from:
+        bedroom_mix_query = bedroom_mix_query.filter(Transaction.transaction_date >= from_dt)
+    if date_to:
+        bedroom_mix_query = bedroom_mix_query.filter(Transaction.transaction_date <= to_dt)
+
+    bedroom_mix_result = bedroom_mix_query.all()
+    bedroom_total = sum(r.count for r in bedroom_mix_result) or 1
+    bedroom_mix = [
+        {
+            "bedroom": r.bedroom_count,
+            "count": r.count,
+            "pct": round(r.count / bedroom_total * 100, 1)
+        }
+        for r in bedroom_mix_result
+    ]
+
+    # Sale type mix
+    sale_mix_query = db.session.query(
+        Transaction.sale_type,
+        func.count(Transaction.id).label('count')
+    ).filter(
+        Transaction.is_outlier == False
+    ).group_by(Transaction.sale_type)
+
+    # Apply filters
+    if districts_param:
+        sale_mix_query = sale_mix_query.filter(Transaction.district.in_(normalized))
+    if segment:
+        sale_mix_query = sale_mix_query.filter(Transaction.district.in_(segment_districts))
+    if bedroom_param:
+        sale_mix_query = sale_mix_query.filter(Transaction.bedroom_count.in_(bedrooms))
+    if date_from:
+        sale_mix_query = sale_mix_query.filter(Transaction.transaction_date >= from_dt)
+    if date_to:
+        sale_mix_query = sale_mix_query.filter(Transaction.transaction_date <= to_dt)
+
+    sale_mix_result = sale_mix_query.all()
+    sale_total = sum(r.count for r in sale_mix_result) or 1
+    sale_mix = [
+        {
+            "saleType": SaleType.from_db(r.sale_type) if r.sale_type else "unknown",
+            "count": r.count,
+            "pct": round(r.count / sale_total * 100, 1)
+        }
+        for r in sale_mix_result
+    ]
+
+    # Build response
+    result = {
+        "summary": {
+            "observationCount": total_count,
+            "medianPsf": round(psf_result.p50) if psf_result and psf_result.p50 else None,
+            "medianPrice": round(price_result.p50) if price_result and price_result.p50 else None,
+            "psfRange": {
+                "p10": round(psf_result.p10) if psf_result and psf_result.p10 else None,
+                "p25": round(psf_result.p25) if psf_result and psf_result.p25 else None,
+                "p50": round(psf_result.p50) if psf_result and psf_result.p50 else None,
+                "p75": round(psf_result.p75) if psf_result and psf_result.p75 else None,
+                "p90": round(psf_result.p90) if psf_result and psf_result.p90 else None,
             },
-            "warning": k_error,
-            "_restricted": True
-        })
-
-    # Apply sorting
-    sort_col = getattr(Transaction, sort_by, Transaction.transaction_date)
-    if sort_order == "asc":
-        query = query.order_by(asc(sort_col))
-    else:
-        query = query.order_by(desc(sort_col))
-
-    # Apply pagination
-    offset = (page - 1) * limit
-    transactions = query.offset(offset).limit(limit).all()
+            "priceRange": {
+                "p10": round(price_result.p10) if price_result and price_result.p10 else None,
+                "p25": round(price_result.p25) if price_result and price_result.p25 else None,
+                "p50": round(price_result.p50) if price_result and price_result.p50 else None,
+                "p75": round(price_result.p75) if price_result and price_result.p75 else None,
+                "p90": round(price_result.p90) if price_result and price_result.p90 else None,
+            }
+        },
+        "bedroomMix": bedroom_mix,
+        "saleMix": sale_mix,
+        "psfDistribution": [],  # TODO: Add histogram if needed
+        "meta": build_k_anonymity_meta(True, None, total_count)
+    }
 
     elapsed = time.time() - start
-    print(f"GET /api/transactions/list took: {elapsed:.4f} seconds (page {page}, {len(transactions)} records)")
+    result["meta"]["elapsedMs"] = round(elapsed * 1000, 2)
 
-    # Schema version control: v1 (default) includes deprecated fields, v2 is clean
-    schema_version = request.args.get("schema", "v1")
+    # Cache result
+    _dashboard_cache.set(cache_key, result)
 
-    # SECURITY: Use tier-aware serialization
-    # Premium users get full data, free/anonymous users get masked teaser data
-    from utils.subscription import serialize_transactions
-    from schemas.api_contract import API_CONTRACT_VERSION
-    serialized = serialize_transactions(transactions, schema_version=schema_version)
+    return jsonify(result)
 
+
+@analytics_bp.route("/transactions/list", methods=["GET"])
+def transactions_list_deprecated():
+    """
+    DEPRECATED: Raw transaction list endpoint removed for URA compliance.
+    CRITICAL: Return 410 BEFORE any DB call - never execute queries.
+
+    This endpoint previously returned paginated raw transaction records,
+    violating URA data usage rules. Use /aggregate-summary instead.
+
+    The platform now provides aggregated insights only:
+    - Market observations (not individual transactions)
+    - Median/percentile metrics
+    - Distribution analysis
+    - Trend indicators
+    """
+    # No DB calls - return immediately
+    import logging
+    logging.warning(f"Deprecated /transactions/list called from {request.remote_addr}")
     return jsonify({
-        "transactions": serialized,
-        "pagination": {
-            "page": page,
-            "limit": limit,
-            "total_records": total_records,
-            "total_pages": total_pages
-        },
-        "meta": {
-            "apiContractVersion": API_CONTRACT_VERSION,
-            "schemaVersion": schema_version,
-            "elapsedMs": round(elapsed * 1000, 2)
+        "error": "This endpoint has been deprecated",
+        "message": "Use /aggregate-summary for market insights",
+        "migration_guide": "https://docs.sgpropertytrend.com/api/migration",
+        "reason": "URA compliance - raw transaction data no longer exposed",
+        "alternatives": {
+            "aggregate_summary": "/api/aggregate-summary - Market metrics and distributions",
+            "project_summary": "/api/projects/<name>/summary - Project-level aggregates"
         }
-    })
+    }), 410
 
 
 @analytics_bp.route("/filter-options", methods=["GET"])

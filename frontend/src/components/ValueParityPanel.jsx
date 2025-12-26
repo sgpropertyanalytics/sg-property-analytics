@@ -82,6 +82,7 @@ export function ValueParityPanel() {
   // Step 4: Resale Market state (all resale transactions)
   const [resaleMarketData, setResaleMarketData] = useState([]);
   const [resaleMarketLoading, setResaleMarketLoading] = useState(false);
+  const [resaleMarketError, setResaleMarketError] = useState(null);
   const [resaleMarketPagination, setResaleMarketPagination] = useState({
     page: 1,
     limit: 10,
@@ -169,6 +170,13 @@ export function ValueParityPanel() {
       // Guard: Don't update state if request is stale
       if (requestId !== undefined && isStale(requestId)) return;
 
+      // Handle 410 Gone (deprecated endpoint)
+      if (response.status === 410) {
+        setError('Transaction-level data has been deprecated. Use aggregated market insights instead.');
+        setData([]);
+        return;
+      }
+
       setData(response.data.transactions || []);
       setPagination(prev => ({
         ...prev,
@@ -184,6 +192,13 @@ export function ValueParityPanel() {
 
       // Guard: Check stale after error too
       if (requestId !== undefined && isStale(requestId)) return;
+
+      // Handle 410 Gone response
+      if (err.response?.status === 410) {
+        setError('Transaction-level data has been deprecated for compliance. Use Market Insights for aggregated analytics.');
+        setData([]);
+        return;
+      }
 
       console.error('Error fetching transactions:', err);
       setError(err.message || 'Failed to fetch transactions');
@@ -231,6 +246,13 @@ export function ValueParityPanel() {
       // Guard: Don't update state if request is stale
       if (requestId !== undefined && isStale(requestId)) return;
 
+      // Handle 410 Gone (deprecated endpoint)
+      if (response.status === 410) {
+        setResaleMarketError('Transaction-level data has been deprecated. Use aggregated market insights instead.');
+        setResaleMarketData([]);
+        return;
+      }
+
       setResaleMarketData(response.data.transactions || []);
       setResaleMarketPagination(prev => ({
         ...prev,
@@ -246,6 +268,13 @@ export function ValueParityPanel() {
 
       // Guard: Check stale after error too
       if (requestId !== undefined && isStale(requestId)) return;
+
+      // Handle 410 Gone response
+      if (err.response?.status === 410) {
+        setResaleMarketError('Transaction-level data has been deprecated for compliance. Use Market Insights for aggregated analytics.');
+        setResaleMarketData([]);
+        return;
+      }
 
       console.error('Error fetching resale market:', err);
     } finally {

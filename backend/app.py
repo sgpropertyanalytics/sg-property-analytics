@@ -165,6 +165,12 @@ def create_app():
     # Initialize Flask-Migrate for database migrations
     migrate.init_app(app, db)
 
+    # Initialize rate limiter for URA compliance (prevents bulk data extraction)
+    from utils.rate_limiter import init_limiter
+    limiter = init_limiter(app)
+    app.limiter = limiter  # Store for route access
+    print("   ✓ Rate limiter initialized")
+
     # Create database tables and run auto-validation
     with app.app_context():
         # Import all models before create_all to ensure tables are created

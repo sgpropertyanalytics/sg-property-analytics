@@ -1,57 +1,33 @@
 import React from 'react';
-import { isSaleType, getTxnField, TxnField } from '../schemas/apiContract';
 
 /**
- * MobileTransactionCard - Card view for transactions on mobile devices
+ * DEPRECATED: MobileTransactionCard removed for URA compliance.
  *
- * Shows key transaction details in a compact, touch-friendly card format:
- * - Project name
- * - Location and bedroom info
- * - Price and PSF
- * - Sale type badge
+ * This component previously displayed individual transaction cards which violates
+ * URA data usage rules. Individual transaction records are no longer exposed.
+ *
+ * The platform now provides aggregated market insights instead.
  */
-export function MobileTransactionCard({ transaction, formatCurrency, formatDate, formatRemainingLease }) {
-  const txn = transaction;
-
-  // Default formatter if not provided
-  const formatLease = formatRemainingLease || ((years) => {
-    if (years === null || years === undefined) return '-';
-    if (years >= 999) return 'Freehold';
-    return `${years} yrs`;
-  });
-
+export function MobileTransactionCard({ transaction: _transaction, formatCurrency: _formatCurrency, formatDate: _formatDate, formatRemainingLease: _formatRemainingLease }) {
   return (
-    <div className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 active:bg-[#EAE0CF]/20">
-      <div className="flex justify-between items-start gap-3">
-        {/* Left: Property info */}
-        <div className="min-w-0 flex-1">
-          <div className="font-medium text-[#213448] truncate">
-            {txn.project_name || txn.project_name_masked || '-'}
-          </div>
-          <div className="text-xs text-[#547792] mt-0.5">
-            {txn.district || '-'} &bull; {txn.bedroom_count || '-'}BR &bull; {formatDate(txn.transaction_date)}
-          </div>
-          <div className="text-xs text-[#547792] mt-0.5">
-            {txn.area_sqft?.toLocaleString() || txn.area_sqft_masked || '-'} {txn.area_sqft ? 'sqft' : ''} &bull; {formatLease(txn.remaining_lease)}
-          </div>
-        </div>
-
-        {/* Right: Price and type */}
-        <div className="flex-shrink-0 text-right">
-          <div className="font-semibold text-[#213448]">
-            {txn.price ? formatCurrency(txn.price) : txn.price_masked || '-'}
-          </div>
-          <div className="text-xs text-[#547792]">
-            {txn.psf ? `$${txn.psf.toLocaleString()} PSF` : txn.psf_masked || '-'}
-          </div>
-          <span className={`inline-block mt-1 px-1.5 py-0.5 text-xs rounded ${
-            isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE))
-              ? 'bg-green-100 text-green-700'
-              : 'bg-blue-100 text-blue-700'
-          }`}>
-            {isSaleType.newSale(getTxnField(txn, TxnField.SALE_TYPE)) ? 'New' : 'Resale'}
-          </span>
-        </div>
+    <div className="p-3 bg-white rounded-lg border border-amber-200 bg-amber-50/50">
+      <div className="flex items-center gap-2">
+        <svg
+          className="w-4 h-4 text-amber-600 flex-shrink-0"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+        <span className="text-xs text-amber-800">
+          Transaction cards deprecated - use aggregated insights instead
+        </span>
       </div>
     </div>
   );

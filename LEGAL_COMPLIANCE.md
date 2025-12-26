@@ -15,6 +15,7 @@
 11. [Internal Compliance Checklist](#10-internal-compliance-checklist)
 12. [Feature Compliance Checklist](#11-feature-compliance-checklist)
 13. [Go / No-Go Decision Framework](#12-go--no-go-decision-framework)
+14. [Data Retention Policy](#13-data-retention-policy)
 
 ---
 
@@ -434,6 +435,49 @@ Does it EXPLAIN the data?   → Safe to ship
 
 ---
 
+## 13. Data Retention Policy
+
+### 13.1 Raw Data Handling
+
+| Stage | Retention | Security |
+|-------|-----------|----------|
+| **Processing** | Original transaction CSVs deleted within 7 days | Encrypted at rest (AES-256) |
+| **Access** | Raw data access restricted to data pipeline service accounts | Audit logged |
+| **Logs** | Application logs exclude raw transaction payloads | Rotating 30-day retention |
+
+### 13.2 Stored Data
+
+| Data Type | Retention | Purpose |
+|-----------|-----------|---------|
+| **Aggregated tables** | Indefinite | Compliant by design (no raw data) |
+| **Project × Quarter summaries** | Indefinite | Pre-computed analytics |
+| **Raw transaction backups** | **Not retained** | Never stored in backups |
+
+### 13.3 Deletion Schedule
+
+| Data Type | Retention Period |
+|-----------|-----------------|
+| Raw CSV imports | Deleted within 7 days of processing |
+| Processing logs with raw data | 30 days rolling |
+| Aggregated analytics data | Retained indefinitely |
+| User account data | Until account deletion + 30 days |
+
+### 13.4 Data Processing Pipeline
+
+```
+URA Source → Staging (encrypted) → Aggregation → Delete Raw → Store Aggregates
+     ↓              ↓                    ↓              ↓              ↓
+  Download    7-day retention    SQL aggregation    Secure wipe    Indefinite
+```
+
+**Key Principles:**
+1. Raw data is transient - never stored long-term
+2. Only aggregated data persists
+3. No raw transaction backups exist
+4. Audit trail documents processing timestamps
+
+---
+
 ## Legal Defensibility Statement
 
 This platform's approach is:
@@ -446,4 +490,4 @@ This platform's approach is:
 
 ---
 
-*Last updated: December 2024 (v1.1 - Added Feature Compliance Checklist)*
+*Last updated: December 2024 (v1.2 - Added Data Retention Policy, URA Compliance Remediation)*

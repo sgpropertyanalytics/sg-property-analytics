@@ -197,37 +197,217 @@ def serialize_transactions(transactions, is_premium=None, schema_version='v1'):
         return [serialize_transaction_teaser(t, include_deprecated=include_deprecated) for t in transactions]
 
 
-# K-anonymity threshold for free tier
-# If a query returns fewer than this many records, don't return individual data
-K_ANONYMITY_THRESHOLD = 10
+# ============================================================================
+# TIERED K-ANONYMITY FOR URA COMPLIANCE
+# ============================================================================
+#
+# Data privacy rules apply uniformly to ALL users regardless of subscription tier.
+# Premium access enhances analytical tools, NOT data granularity.
+#
+# Thresholds by granularity level:
+#   - Market/Segment: K ≥ 30 (broadest scope)
+#   - District: K ≥ 20
+#   - Project (large): K ≥ 15
+#   - Unit-level: ALWAYS BLOCKED
+#
+# If K-anonymity fails at the requested level, we auto-widen to a higher level.
+
+K_THRESHOLDS = {
+    "market": 30,      # Broadest - highest threshold
+    "segment": 30,     # CCR/RCR/OCR
+    "district": 20,    # D01-D28
+    "project": 15,     # Individual projects
+    "unit": None,      # ALWAYS BLOCKED - never allow
+}
+
+# Legacy constant for backward compatibility
+K_ANONYMITY_THRESHOLD = 30  # Use the strictest threshold as default
 
 
-def check_k_anonymity(count, is_premium=None):
+def get_k_threshold(level: str) -> int:
     """
-    Check if result set is large enough to prevent re-identification.
-
-    For free users, if a filtered query returns fewer than K records,
-    the data is too specific and could identify individual transactions.
+    Get K threshold for a granularity level.
 
     Args:
-        count: Number of records in result set
-        is_premium: Override tier check
+        level: One of 'market', 'segment', 'district', 'project', 'unit'
+
+    Returns:
+        int threshold for that level
+
+    Raises:
+        ValueError if level is 'unit' (always blocked)
+    """
+    if level == "unit":
+        raise ValueError("Unit-level queries are not permitted")
+    return K_THRESHOLDS.get(level, 30)  # Default to strictest
+
+
+def get_granularity_level(filters: dict) -> str:
+    """
+    Derive granularity level from filter parameters.
+
+    Examines the effective filter grouping to determine privacy level.
+
+    Args:
+        filters: Dict of filter parameters
+
+    Returns:
+        One of 'market', 'segment', 'district', 'project'
+    """
+    # Unit-identifying fields are always blocked
+    UNIT_FIELDS = {'unit', 'unit_number', 'address', 'block', 'stack', 'floor',
+                   'floor_range', 'floor_level'}
+
+    if filters:
+        filter_keys = {k.lower() for k in filters.keys()}
+        if filter_keys & UNIT_FIELDS:
+            return "unit"  # Will be blocked
+
+        if filters.get('project_exact') or filters.get('project'):
+            return "project"
+        elif filters.get('district'):
+            return "district"
+        elif filters.get('segment'):
+            return "segment"
+
+    return "market"
+
+
+def check_k_anonymity(count, level=None, filters=None):
+    """
+    Tiered K-anonymity check.
+
+    CRITICAL: Same rules apply uniformly regardless of subscription tier.
+    Premium differentiation is in tooling, NOT data granularity.
+
+    Args:
+        count: Number of observations in result set
+        level: Granularity level ('market', 'segment', 'district', 'project')
+               If not provided, derived from filters
+        filters: Filter dict to derive level from (if level not provided)
 
     Returns:
         tuple: (passes_check: bool, error_message: str or None)
     """
-    if is_premium is None:
-        is_premium = is_premium_user()
+    # Derive level from filters if not explicitly provided
+    if level is None:
+        level = get_granularity_level(filters or {})
 
-    # Premium users get all data
-    if is_premium:
-        return (True, None)
+    # Unit-level is always blocked
+    if level == "unit":
+        return (False, "Unit-level data is not available for privacy reasons.")
 
-    # Free users: enforce k-anonymity
-    if count < K_ANONYMITY_THRESHOLD:
-        return (False, f"Not enough data. Broaden your filters to see results (minimum {K_ANONYMITY_THRESHOLD} transactions required).")
-
+    k_required = get_k_threshold(level)
+    if count < k_required:
+        return (
+            False,
+            f"Insufficient market activity at {level} level. "
+            f"Minimum {k_required} observations required."
+        )
     return (True, None)
+
+
+def auto_widen_for_k_anonymity(filters: dict, get_count_fn):
+    """
+    Automatically widen filters until K-anonymity passes.
+
+    Progressively widens: project → district → segment → market
+
+    Args:
+        filters: Original filter dict
+        get_count_fn: Callable that takes filters and returns count
+
+    Returns:
+        tuple: (final_filters: dict, fallback_level: str, count: int)
+    """
+    def remove_project(f):
+        """Remove project filters"""
+        result = dict(f)
+        result.pop('project', None)
+        result.pop('project_exact', None)
+        return result
+
+    def remove_district(f):
+        """Remove district filter (keep project removed)"""
+        result = remove_project(f)
+        result.pop('district', None)
+        return result
+
+    def remove_segment(f):
+        """Remove segment filter (keep district/project removed)"""
+        result = remove_district(f)
+        result.pop('segment', None)
+        return result
+
+    current_level = get_granularity_level(filters)
+
+    # Build widening path from current level
+    if current_level == "unit":
+        # Unit is always blocked - widen to project first
+        widening_path = [
+            (remove_project(filters), "project", 15),
+            (remove_district(filters), "district", 20),
+            (remove_segment(filters), "segment", 30),
+            ({}, "market", 30),
+        ]
+    elif current_level == "project":
+        widening_path = [
+            (filters, "project", 15),
+            (remove_project(filters), "district", 20),
+            (remove_district(filters), "segment", 30),
+            (remove_segment(filters), "market", 30),
+        ]
+    elif current_level == "district":
+        widening_path = [
+            (filters, "district", 20),
+            (remove_district(filters), "segment", 30),
+            (remove_segment(filters), "market", 30),
+        ]
+    elif current_level == "segment":
+        widening_path = [
+            (filters, "segment", 30),
+            (remove_segment(filters), "market", 30),
+        ]
+    else:  # market
+        widening_path = [(filters, "market", 30)]
+
+    for widened_filters, level, k_required in widening_path:
+        count = get_count_fn(widened_filters)
+        if count >= k_required:
+            return widened_filters, level, count
+
+    # Even market-wide doesn't pass - return with warning
+    return {}, "market", 0
+
+
+def build_k_anonymity_meta(passed: bool, fallback_level: str, count: int) -> dict:
+    """
+    Build metadata block with clear K-anonymity messaging.
+
+    Provides transparency about data aggregation level.
+
+    Args:
+        passed: Whether K-anonymity check passed
+        fallback_level: Level data is aggregated at (None if original level)
+        count: Number of observations
+
+    Returns:
+        dict with kAnonymity metadata for API responses
+    """
+    messages = {
+        None: None,
+        "project": None,  # Original level passed
+        "district": "Expanded to district level due to limited market activity.",
+        "segment": "Expanded to market segment level due to limited market activity.",
+        "market": "Showing market-wide data due to limited activity in selected filters.",
+    }
+
+    return {
+        "kAnonymityPassed": passed,
+        "fallbackLevel": fallback_level,
+        "message": messages.get(fallback_level),
+        "observationCount": count,
+    }
 
 
 def enforce_filter_granularity(filters, is_premium=None):
