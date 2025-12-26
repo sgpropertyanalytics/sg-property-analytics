@@ -268,11 +268,12 @@ export default function DealCheckerMap({
       </Marker>
 
       {/* Popup for clicked nearby project */}
+      {/* Dynamic anchor: use "top" for markers in upper half to prevent cutoff */}
       {popupInfo && (
         <Popup
           latitude={popupInfo.latitude}
           longitude={popupInfo.longitude}
-          anchor="bottom"
+          anchor={popupInfo.latitude > centerProject.latitude ? 'top' : 'bottom'}
           onClose={() => setPopupInfo(null)}
           closeButton={true}
           closeOnClick={false}
