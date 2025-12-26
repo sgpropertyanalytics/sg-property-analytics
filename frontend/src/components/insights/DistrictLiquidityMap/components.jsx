@@ -544,15 +544,18 @@ export function LiquidityRankingTable({ districtData }) {
                     {m.monthly_velocity?.toFixed(1) || '0'}
                   </div>
                 </div>
-                <div className="bg-[#EAE0CF]/30 rounded p-1.5 relative overflow-hidden">
-                  {/* Background bar for proportional volume */}
-                  <div
-                    className="absolute bottom-0 left-0 h-1 bg-[#547792]/30 rounded-b-sm"
-                    style={{ width: `${((m.tx_count || 0) / maxTxCount) * 100}%` }}
-                  />
-                  <div className="text-[10px] text-[#547792]">Tx</div>
-                  <div className="text-sm font-semibold text-[#213448]">
-                    {m.tx_count?.toLocaleString() || '0'}
+                <div className="bg-[#EAE0CF]/30 rounded p-1.5">
+                  <div className="text-[10px] text-[#547792] mb-1">Tx</div>
+                  <div className="flex items-center gap-1">
+                    <div className="flex-1 h-3 bg-[#EAE0CF]/50 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#547792] rounded-full"
+                        style={{ width: `${((m.tx_count || 0) / maxTxCount) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-semibold text-[#213448] min-w-[32px] text-right">
+                      {m.tx_count?.toLocaleString() || '0'}
+                    </span>
                   </div>
                 </div>
                 <div className="bg-emerald-50/50 rounded p-1.5">
@@ -828,15 +831,17 @@ export function LiquidityRankingTable({ districtData }) {
                   </td>
 
                   {/* Transaction Count (Market Structure - Combined) with inline bar */}
-                  <td className="px-3 py-2 text-right text-[#213448]">
-                    <div className="relative flex items-center justify-end">
-                      {/* Background bar showing proportional volume */}
-                      <div
-                        className="absolute left-0 top-1/2 -translate-y-1/2 h-4 rounded-sm bg-[#547792]/20"
-                        style={{ width: `${((m.tx_count || 0) / maxTxCount) * 100}%` }}
-                      />
-                      {/* Text value on top */}
-                      <span className="relative z-10 font-medium">
+                  <td className="px-3 py-2 text-[#213448]">
+                    <div className="flex items-center gap-2">
+                      {/* Proportional volume bar */}
+                      <div className="flex-1 h-5 bg-[#EAE0CF]/40 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[#547792] rounded-full"
+                          style={{ width: `${((m.tx_count || 0) / maxTxCount) * 100}%` }}
+                        />
+                      </div>
+                      {/* Number value */}
+                      <span className="text-right font-medium min-w-[45px]">
                         {m.tx_count?.toLocaleString() || '0'}
                       </span>
                     </div>
