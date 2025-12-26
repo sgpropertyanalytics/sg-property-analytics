@@ -1,0 +1,351 @@
+/**
+ * API Contract Enums
+ *
+ * Enum values, labels, and type-checking helpers for API v2 responses.
+ * Includes backwards compatibility with v1 DB string values.
+ */
+
+// =============================================================================
+// SALE TYPE
+// =============================================================================
+
+/**
+ * Sale type enum values.
+ * API returns these lowercase values in v2, but DB stores 'New Sale', 'Resale', etc.
+ */
+export const SaleType = {
+  NEW_SALE: 'new_sale',
+  RESALE: 'resale',
+  SUB_SALE: 'sub_sale',
+};
+
+/**
+ * Display labels for sale types.
+ */
+export const SaleTypeLabels = {
+  [SaleType.NEW_SALE]: 'New Sale',
+  [SaleType.RESALE]: 'Resale',
+  [SaleType.SUB_SALE]: 'Sub Sale',
+};
+
+/**
+ * Helpers to check sale type regardless of v1 (DB) or v2 (API) format.
+ */
+export const isSaleType = {
+  newSale: (val) => val === SaleType.NEW_SALE || val === 'New Sale',
+  resale: (val) => val === SaleType.RESALE || val === 'Resale',
+  subSale: (val) => val === SaleType.SUB_SALE || val === 'Sub Sale',
+};
+
+/**
+ * Get display label for any sale type value (v1 or v2 format).
+ */
+export const getSaleTypeLabel = (val) => {
+  if (!val) return 'Unknown';
+  if (SaleTypeLabels[val]) return SaleTypeLabels[val];
+  if (['New Sale', 'Resale', 'Sub Sale'].includes(val)) return val;
+  return val;
+};
+
+// =============================================================================
+// TENURE
+// =============================================================================
+
+/**
+ * Tenure type enum values.
+ */
+export const Tenure = {
+  FREEHOLD: 'freehold',
+  LEASEHOLD_99: '99_year',
+  LEASEHOLD_999: '999_year',
+};
+
+/**
+ * Display labels for tenure types.
+ */
+export const TenureLabels = {
+  [Tenure.FREEHOLD]: 'Freehold',
+  [Tenure.LEASEHOLD_99]: '99-year',
+  [Tenure.LEASEHOLD_999]: '999-year',
+};
+
+/**
+ * Short labels for tenure types (for compact display).
+ */
+export const TenureLabelsShort = {
+  [Tenure.FREEHOLD]: 'FH',
+  [Tenure.LEASEHOLD_99]: '99yr',
+  [Tenure.LEASEHOLD_999]: '999yr',
+};
+
+/**
+ * Get display label for any tenure value (v1 or v2 format).
+ */
+export const getTenureLabel = (val, short = false) => {
+  if (!val) return 'Unknown';
+  const labels = short ? TenureLabelsShort : TenureLabels;
+  if (labels[val]) return labels[val];
+  if (['Freehold', '99-year', '999-year'].includes(val)) {
+    return short
+      ? { Freehold: 'FH', '99-year': '99yr', '999-year': '999yr' }[val]
+      : val;
+  }
+  return val;
+};
+
+/**
+ * Helpers to check tenure regardless of v1 (DB) or v2 (API) format.
+ */
+export const isTenure = {
+  freehold: (val) => val === Tenure.FREEHOLD || val === 'Freehold',
+  leasehold99: (val) => val === Tenure.LEASEHOLD_99 || val === '99-year',
+  leasehold999: (val) => val === Tenure.LEASEHOLD_999 || val === '999-year',
+};
+
+// =============================================================================
+// REGION
+// =============================================================================
+
+/**
+ * Region/market segment enum values.
+ */
+export const Region = {
+  CCR: 'ccr',
+  RCR: 'rcr',
+  OCR: 'ocr',
+};
+
+/**
+ * Display labels for regions.
+ */
+export const RegionLabels = {
+  [Region.CCR]: 'CCR',
+  [Region.RCR]: 'RCR',
+  [Region.OCR]: 'OCR',
+};
+
+// =============================================================================
+// FLOOR LEVEL
+// =============================================================================
+
+/**
+ * Floor level enum values (v2 API format - lowercase).
+ *
+ * Source of truth: backend/services/classifier_extended.py
+ * Floor Classification Tiers:
+ *   01-05  → Low
+ *   06-10  → Mid-Low
+ *   11-20  → Mid
+ *   21-30  → Mid-High
+ *   31-40  → High
+ *   41+    → Luxury
+ */
+export const FloorLevel = {
+  LOW: 'low',
+  MID_LOW: 'mid_low',
+  MID: 'mid',
+  MID_HIGH: 'mid_high',
+  HIGH: 'high',
+  LUXURY: 'luxury',
+  UNKNOWN: 'unknown',
+};
+
+/**
+ * Floor level DB values (what classifier_extended.py outputs).
+ * Used for v1 API responses and aggregate endpoints.
+ */
+export const FloorLevelDB = {
+  LOW: 'Low',
+  MID_LOW: 'Mid-Low',
+  MID: 'Mid',
+  MID_HIGH: 'Mid-High',
+  HIGH: 'High',
+  LUXURY: 'Luxury',
+  UNKNOWN: 'Unknown',
+};
+
+/**
+ * Display labels for floor levels (with floor ranges).
+ */
+export const FloorLevelLabels = {
+  // v2 API format
+  [FloorLevel.LOW]: 'Low (01-05)',
+  [FloorLevel.MID_LOW]: 'Mid-Low (06-10)',
+  [FloorLevel.MID]: 'Mid (11-20)',
+  [FloorLevel.MID_HIGH]: 'Mid-High (21-30)',
+  [FloorLevel.HIGH]: 'High (31-40)',
+  [FloorLevel.LUXURY]: 'Luxury (41+)',
+  [FloorLevel.UNKNOWN]: 'Unknown',
+  // v1 DB format (for backwards compatibility)
+  [FloorLevelDB.LOW]: 'Low (01-05)',
+  [FloorLevelDB.MID_LOW]: 'Mid-Low (06-10)',
+  [FloorLevelDB.MID]: 'Mid (11-20)',
+  [FloorLevelDB.MID_HIGH]: 'Mid-High (21-30)',
+  [FloorLevelDB.HIGH]: 'High (31-40)',
+  [FloorLevelDB.LUXURY]: 'Luxury (41+)',
+  [FloorLevelDB.UNKNOWN]: 'Unknown',
+};
+
+/**
+ * Short labels for floor levels (just the classification name).
+ */
+export const FloorLevelLabelsShort = {
+  // v2 API format
+  [FloorLevel.LOW]: 'Low',
+  [FloorLevel.MID_LOW]: 'Mid-Low',
+  [FloorLevel.MID]: 'Mid',
+  [FloorLevel.MID_HIGH]: 'Mid-High',
+  [FloorLevel.HIGH]: 'High',
+  [FloorLevel.LUXURY]: 'Luxury',
+  [FloorLevel.UNKNOWN]: 'Unknown',
+  // v1 DB format
+  [FloorLevelDB.LOW]: 'Low',
+  [FloorLevelDB.MID_LOW]: 'Mid-Low',
+  [FloorLevelDB.MID]: 'Mid',
+  [FloorLevelDB.MID_HIGH]: 'Mid-High',
+  [FloorLevelDB.HIGH]: 'High',
+  [FloorLevelDB.LUXURY]: 'Luxury',
+  [FloorLevelDB.UNKNOWN]: 'Unknown',
+};
+
+/**
+ * Helpers to check floor level regardless of v1 (DB) or v2 (API) format.
+ */
+export const isFloorLevel = {
+  low: (val) => val === FloorLevel.LOW || val === FloorLevelDB.LOW,
+  midLow: (val) => val === FloorLevel.MID_LOW || val === FloorLevelDB.MID_LOW,
+  mid: (val) => val === FloorLevel.MID || val === FloorLevelDB.MID,
+  midHigh: (val) => val === FloorLevel.MID_HIGH || val === FloorLevelDB.MID_HIGH,
+  high: (val) => val === FloorLevel.HIGH || val === FloorLevelDB.HIGH,
+  luxury: (val) => val === FloorLevel.LUXURY || val === FloorLevelDB.LUXURY,
+  unknown: (val) => val === FloorLevel.UNKNOWN || val === FloorLevelDB.UNKNOWN,
+};
+
+/**
+ * Get display label for any floor level value (v1 or v2 format).
+ */
+export const getFloorLevelLabel = (val, short = false) => {
+  if (!val) return 'Unknown';
+  const labels = short ? FloorLevelLabelsShort : FloorLevelLabels;
+  return labels[val] || val;
+};
+
+// =============================================================================
+// PROPERTY AGE BUCKET
+// =============================================================================
+
+/**
+ * Property age bucket enum values.
+ *
+ * Age calculation: floor(transaction_year - lease_start_year)
+ * This is "lease age" (years since lease commencement), NOT building age.
+ *
+ * IMPORTANT:
+ * - new_sale is a market state (0 resale transactions), not age-based
+ * - freehold is tenure-based (no lease), not age-based
+ * - Age boundaries use exclusive upper bounds: [min, max)
+ */
+export const PropertyAgeBucket = {
+  NEW_SALE: 'new_sale',
+  RECENTLY_TOP: 'recently_top',
+  YOUNG_RESALE: 'young_resale',
+  RESALE: 'resale',
+  MATURE_RESALE: 'mature_resale',
+  FREEHOLD: 'freehold',
+};
+
+/**
+ * Display labels for property age buckets.
+ */
+export const PropertyAgeBucketLabels = {
+  [PropertyAgeBucket.NEW_SALE]: 'New Sale (No Resales Yet)',
+  [PropertyAgeBucket.RECENTLY_TOP]: 'Recently TOP (4-8 years)',
+  [PropertyAgeBucket.YOUNG_RESALE]: 'Young Resale (8-15 years)',
+  [PropertyAgeBucket.RESALE]: 'Resale (15-25 years)',
+  [PropertyAgeBucket.MATURE_RESALE]: 'Mature Resale (25+ years)',
+  [PropertyAgeBucket.FREEHOLD]: 'Freehold',
+};
+
+/**
+ * Short labels for property age buckets (for compact display).
+ */
+export const PropertyAgeBucketLabelsShort = {
+  [PropertyAgeBucket.NEW_SALE]: 'New',
+  [PropertyAgeBucket.RECENTLY_TOP]: '4-8yr',
+  [PropertyAgeBucket.YOUNG_RESALE]: '8-15yr',
+  [PropertyAgeBucket.RESALE]: '15-25yr',
+  [PropertyAgeBucket.MATURE_RESALE]: '25yr+',
+  [PropertyAgeBucket.FREEHOLD]: 'FH',
+};
+
+/**
+ * Helpers to check property age bucket values.
+ */
+export const isPropertyAgeBucket = {
+  newSale: (val) => val === PropertyAgeBucket.NEW_SALE,
+  recentlyTop: (val) => val === PropertyAgeBucket.RECENTLY_TOP,
+  youngResale: (val) => val === PropertyAgeBucket.YOUNG_RESALE,
+  resale: (val) => val === PropertyAgeBucket.RESALE,
+  matureResale: (val) => val === PropertyAgeBucket.MATURE_RESALE,
+  freehold: (val) => val === PropertyAgeBucket.FREEHOLD,
+  // Utility helpers
+  isAgeBased: (val) => ![PropertyAgeBucket.NEW_SALE, PropertyAgeBucket.FREEHOLD].includes(val),
+  isYoung: (val) => [PropertyAgeBucket.RECENTLY_TOP, PropertyAgeBucket.YOUNG_RESALE].includes(val),
+  isMature: (val) => [PropertyAgeBucket.RESALE, PropertyAgeBucket.MATURE_RESALE].includes(val),
+};
+
+/**
+ * Get display label for any property age bucket value.
+ */
+export const getPropertyAgeBucketLabel = (val, short = false) => {
+  if (!val) return 'All';
+  const labels = short ? PropertyAgeBucketLabelsShort : PropertyAgeBucketLabels;
+  return labels[val] || val;
+};
+
+// =============================================================================
+// PREMIUM TREND
+// =============================================================================
+
+/**
+ * Premium trend enum values (for New vs Resale comparison).
+ * Indicates direction of premium gap between new launches and resales.
+ */
+export const PremiumTrend = {
+  WIDENING: 'widening',
+  NARROWING: 'narrowing',
+  STABLE: 'stable',
+};
+
+/**
+ * Display labels for premium trends.
+ */
+export const PremiumTrendLabels = {
+  [PremiumTrend.WIDENING]: 'Gap widening',
+  [PremiumTrend.NARROWING]: 'Gap narrowing',
+  [PremiumTrend.STABLE]: 'Stable',
+};
+
+/**
+ * Helpers to check premium trend values.
+ */
+export const isPremiumTrend = {
+  widening: (val) => val === PremiumTrend.WIDENING,
+  narrowing: (val) => val === PremiumTrend.NARROWING,
+  stable: (val) => val === PremiumTrend.STABLE,
+};
+
+// =============================================================================
+// BEDROOM
+// =============================================================================
+
+/**
+ * Bedroom enum values (matches backend Bedroom class).
+ */
+export const Bedroom = {
+  ONE: 1,
+  TWO: 2,
+  THREE: 3,
+  FOUR: 4,
+  FIVE_PLUS: '5_plus',
+};
