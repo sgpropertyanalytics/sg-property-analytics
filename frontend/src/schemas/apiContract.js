@@ -225,6 +225,82 @@ export const FloorLevelLabels = {
   [FloorLevel.UNKNOWN]: 'Unknown',
 };
 
+/**
+ * Property age bucket enum values.
+ *
+ * Age calculation: floor(transaction_year - lease_start_year)
+ * This is "lease age" (years since lease commencement), NOT building age.
+ *
+ * IMPORTANT:
+ * - Freehold properties → unknown_age (their lease_start_year is land grant date)
+ * - new_sale is a market state (0 resale transactions), not age-based
+ * - Age boundaries use exclusive upper bounds: [min, max)
+ */
+export const PropertyAgeBucket = {
+  NEW_SALE: 'new_sale',
+  JUST_TOP: 'just_top',
+  RECENTLY_TOP: 'recently_top',
+  YOUNG_RESALE: 'young_resale',
+  RESALE: 'resale',
+  MATURE_RESALE: 'mature_resale',
+  UNKNOWN_AGE: 'unknown_age',
+};
+
+/**
+ * Display labels for property age buckets.
+ */
+export const PropertyAgeBucketLabels = {
+  [PropertyAgeBucket.NEW_SALE]: 'New Sale (No Resales Yet)',
+  [PropertyAgeBucket.JUST_TOP]: 'Just TOP (0-4 years)',
+  [PropertyAgeBucket.RECENTLY_TOP]: 'Recently TOP (4-8 years)',
+  [PropertyAgeBucket.YOUNG_RESALE]: 'Young Resale (8-15 years)',
+  [PropertyAgeBucket.RESALE]: 'Resale (15-25 years)',
+  [PropertyAgeBucket.MATURE_RESALE]: 'Mature Resale (25+ years)',
+  [PropertyAgeBucket.UNKNOWN_AGE]: 'Unknown Age',
+};
+
+/**
+ * Short labels for property age buckets (for compact display).
+ */
+export const PropertyAgeBucketLabelsShort = {
+  [PropertyAgeBucket.NEW_SALE]: 'New',
+  [PropertyAgeBucket.JUST_TOP]: '0-4yr',
+  [PropertyAgeBucket.RECENTLY_TOP]: '4-8yr',
+  [PropertyAgeBucket.YOUNG_RESALE]: '8-15yr',
+  [PropertyAgeBucket.RESALE]: '15-25yr',
+  [PropertyAgeBucket.MATURE_RESALE]: '25yr+',
+  [PropertyAgeBucket.UNKNOWN_AGE]: 'Unknown',
+};
+
+/**
+ * Helpers to check property age bucket values.
+ */
+export const isPropertyAgeBucket = {
+  newSale: (val) => val === PropertyAgeBucket.NEW_SALE,
+  justTop: (val) => val === PropertyAgeBucket.JUST_TOP,
+  recentlyTop: (val) => val === PropertyAgeBucket.RECENTLY_TOP,
+  youngResale: (val) => val === PropertyAgeBucket.YOUNG_RESALE,
+  resale: (val) => val === PropertyAgeBucket.RESALE,
+  matureResale: (val) => val === PropertyAgeBucket.MATURE_RESALE,
+  unknownAge: (val) => val === PropertyAgeBucket.UNKNOWN_AGE,
+  // Utility helpers
+  isAgeKnown: (val) => val !== PropertyAgeBucket.UNKNOWN_AGE && val !== PropertyAgeBucket.NEW_SALE,
+  isYoung: (val) => [PropertyAgeBucket.JUST_TOP, PropertyAgeBucket.RECENTLY_TOP, PropertyAgeBucket.YOUNG_RESALE].includes(val),
+  isMature: (val) => [PropertyAgeBucket.RESALE, PropertyAgeBucket.MATURE_RESALE].includes(val),
+};
+
+/**
+ * Get display label for any property age bucket value.
+ * @param {string} val - Property age bucket enum value
+ * @param {boolean} short - Whether to use short labels
+ * @returns {string} Display label
+ */
+export const getPropertyAgeBucketLabel = (val, short = false) => {
+  if (!val) return 'All';
+  const labels = short ? PropertyAgeBucketLabelsShort : PropertyAgeBucketLabels;
+  return labels[val] || val;
+};
+
 // =============================================================================
 // RESPONSE FIELD NAMES (camelCase for v2)
 // =============================================================================
@@ -844,11 +920,25 @@ export const normalizeFilterOptions = (apiResponse) => {
   const districtsRaw = apiResponse.districts || [];
   const bedroomsRaw = apiResponse.bedrooms || [];
   const marketSegmentsRaw = apiResponse.marketSegments || regionsRaw;
+  const propertyAgeBucketsRaw = apiResponse.propertyAgeBuckets || apiResponse.property_age_buckets || [];
 
   // Date/PSF/Size ranges (same structure in v1 and v2)
   const dateRange = apiResponse.dateRange || apiResponse.date_range || { min: null, max: null };
   const psfRange = apiResponse.psfRange || apiResponse.psf_range || { min: null, max: null };
   const sizeRange = apiResponse.sizeRange || apiResponse.size_range || { min: null, max: null };
+
+  // Normalize property age buckets: ensure {value, label} format
+  const normalizePropertyAgeBuckets = (buckets) => {
+    if (!buckets || !Array.isArray(buckets)) return [];
+    return buckets.map((item) => {
+      if (isValueLabelFormat(item)) return item;
+      // Raw enum string → create {value, label}
+      return {
+        value: item,
+        label: PropertyAgeBucketLabels[item] || item,
+      };
+    });
+  };
 
   return {
     saleTypes: normalizeSaleTypes(saleTypesRaw),
@@ -857,6 +947,7 @@ export const normalizeFilterOptions = (apiResponse) => {
     districts: normalizeDistricts(districtsRaw),
     bedrooms: normalizeBedrooms(bedroomsRaw),
     marketSegments: normalizeRegions(marketSegmentsRaw),
+    propertyAgeBuckets: normalizePropertyAgeBuckets(propertyAgeBucketsRaw),
     dateRange,
     psfRange,
     sizeRange,

@@ -31,7 +31,7 @@ from typing import Dict, Any, List, Optional
 from functools import wraps
 import threading
 
-from sqlalchemy import text, func, case, literal, and_, or_, extract, cast, Integer, Float
+from sqlalchemy import text, func, case, literal, and_, or_, extract, cast, Integer, Float, exists
 from sqlalchemy.orm import Session
 
 from models.database import db
@@ -425,7 +425,123 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
         # PARTIAL match - for search functionality
         conditions.append(Transaction.project_name.ilike(f'%{project}%'))
 
+    # Property age bucket filter
+    # Uses lease age: floor(transaction_year - lease_start_year)
+    # Freehold excluded (their lease_start_year is land grant date, not building age)
+    property_age_bucket = filters.get('property_age_bucket')
+    if property_age_bucket:
+        from schemas.api_contract import PropertyAgeBucket, SaleType
+
+        if property_age_bucket == PropertyAgeBucket.NEW_SALE:
+            # CORRELATED SUBQUERY: project has 0 resale transactions
+            # This is a market state, not age-based
+            # Use text() directly with NOT EXISTS for proper SQL generation
+            resale_db_value = SaleType.to_db(SaleType.RESALE)
+            not_exists_clause = text("""
+                NOT EXISTS (
+                    SELECT 1 FROM transactions t2
+                    WHERE t2.project_name = transactions.project_name
+                      AND LOWER(t2.sale_type) = LOWER(:resale_type)
+                      AND COALESCE(t2.is_outlier, false) = false
+                )
+            """).bindparams(resale_type=resale_db_value)
+            conditions.append(not_exists_clause)
+
+        elif property_age_bucket == PropertyAgeBucket.UNKNOWN_AGE:
+            # Freehold OR missing lease_start_year → unknown age
+            conditions.append(or_(
+                Transaction.lease_start_year.is_(None),
+                Transaction.tenure.ilike('%freehold%')
+            ))
+
+        else:
+            # Age-based buckets (leasehold only)
+            age_range = PropertyAgeBucket.get_age_range(property_age_bucket)
+            if age_range:
+                min_age, max_age = age_range
+                lease_age_expr = extract('year', Transaction.transaction_date) - Transaction.lease_start_year
+
+                # MUST be leasehold with valid lease_start_year
+                is_leasehold = and_(
+                    Transaction.lease_start_year.isnot(None),
+                    ~Transaction.tenure.ilike('%freehold%')
+                )
+
+                bucket_conditions = [is_leasehold]
+                if min_age is not None:
+                    bucket_conditions.append(lease_age_expr >= min_age)
+                if max_age is not None:
+                    bucket_conditions.append(lease_age_expr < max_age)  # EXCLUSIVE upper bound
+
+                conditions.append(and_(*bucket_conditions))
+
     return conditions
+
+
+def build_property_age_bucket_filter(bucket: str, txn_table=None):
+    """
+    Build SQLAlchemy filter expression for a property age bucket.
+
+    This is a reusable helper for any endpoint that needs to filter by property age bucket.
+    Uses lease age: floor(EXTRACT(YEAR FROM transaction_date) - lease_start_year)
+
+    Args:
+        bucket: PropertyAgeBucket enum value (e.g., 'young_resale', 'new_sale')
+        txn_table: Transaction table/alias to use (defaults to Transaction model)
+
+    Returns:
+        SQLAlchemy filter expression that can be used with .filter()
+
+    Example:
+        from services.dashboard_service import build_property_age_bucket_filter
+        from schemas.api_contract import PropertyAgeBucket
+
+        filter_expr = build_property_age_bucket_filter(PropertyAgeBucket.YOUNG_RESALE)
+        query = query.filter(filter_expr)
+    """
+    from schemas.api_contract import PropertyAgeBucket, SaleType
+
+    T = txn_table if txn_table is not None else Transaction
+    lease_age_expr = extract('year', T.transaction_date) - T.lease_start_year
+
+    if bucket == PropertyAgeBucket.NEW_SALE:
+        # CORRELATED SUBQUERY: project has 0 resale transactions
+        # Use text() directly with NOT EXISTS for proper SQL generation
+        resale_db_value = SaleType.to_db(SaleType.RESALE)
+        return text("""
+            NOT EXISTS (
+                SELECT 1 FROM transactions t2
+                WHERE t2.project_name = transactions.project_name
+                  AND LOWER(t2.sale_type) = LOWER(:resale_type)
+                  AND COALESCE(t2.is_outlier, false) = false
+            )
+        """).bindparams(resale_type=resale_db_value)
+
+    elif bucket == PropertyAgeBucket.UNKNOWN_AGE:
+        # Freehold OR missing lease_start_year
+        return or_(T.lease_start_year.is_(None), T.tenure.ilike('%freehold%'))
+
+    else:
+        # Age-based buckets
+        age_range = PropertyAgeBucket.get_age_range(bucket)
+        if not age_range:
+            return literal(True)  # Unknown bucket, no filter
+
+        min_age, max_age = age_range
+
+        # MUST be leasehold with valid lease_start_year
+        is_leasehold = and_(
+            T.lease_start_year.isnot(None),
+            ~T.tenure.ilike('%freehold%')
+        )
+
+        conditions = [is_leasehold]
+        if min_age is not None:
+            conditions.append(lease_age_expr >= min_age)
+        if max_age is not None:
+            conditions.append(lease_age_expr < max_age)  # EXCLUSIVE upper bound
+
+        return and_(*conditions)
 
 
 # ============================================================================
@@ -1054,6 +1170,148 @@ def get_dashboard_data(
         logger.info(f"Dashboard computed in {elapsed:.1f}ms, {total_records} records matched")
 
         return result
+
+
+# ============================================================================
+# PSF BY PRICE BAND QUERY
+# ============================================================================
+
+def query_psf_by_price_band(
+    params: Dict[str, Any],
+    session: Optional[Session] = None
+) -> List[Dict]:
+    """
+    Query PSF percentiles grouped by price band and bedroom type.
+
+    Uses SQL aggregation only (no pandas) for memory safety on 512MB Render.
+
+    Args:
+        params: Parsed filter params from parse_filter_params():
+            - date_from: Python date object
+            - date_to: Python date object
+            - sale_type_db: DB-format sale type (e.g., 'New Sale')
+            - districts: List of district codes
+            - segments_db: List of regions (CCR, RCR, OCR)
+            - tenure_db: Tenure string
+        session: Optional SQLAlchemy session
+
+    Returns:
+        List of dicts with keys: price_band, bedroom_group, observation_count, p25, p50, p75
+    """
+    # Build filter clauses using :param style ONLY
+    filters = [OUTLIER_FILTER]
+    bind_params = {}
+
+    # Date filters
+    if params.get('date_from'):
+        filters.append("transaction_date >= :date_from")
+        bind_params['date_from'] = params['date_from']  # Python date object
+
+    if params.get('date_to'):
+        filters.append("transaction_date <= :date_to")
+        bind_params['date_to'] = params['date_to']  # Python date object
+
+    # Sale type filter
+    if params.get('sale_type_db'):
+        filters.append("sale_type = :sale_type")
+        bind_params['sale_type'] = params['sale_type_db']
+
+    # District filter
+    if params.get('districts'):
+        districts = params['districts']
+        if isinstance(districts, str):
+            districts = [districts]
+        filters.append("district = ANY(:districts)")
+        bind_params['districts'] = districts
+
+    # Region/segment filter - use district mapping (market_segment column may be null/inconsistent)
+    if params.get('segments_db'):
+        segments = params['segments_db']
+        if isinstance(segments, str):
+            segments = [segments]
+        # Get all districts for the requested segments
+        from constants import get_districts_for_region
+        segment_districts = []
+        for seg in segments:
+            segment_districts.extend(get_districts_for_region(seg))
+        if segment_districts:
+            filters.append("district = ANY(:segment_districts)")
+            bind_params['segment_districts'] = segment_districts
+
+    # Tenure filter
+    if params.get('tenure_db'):
+        filters.append("tenure = :tenure")
+        bind_params['tenure'] = params['tenure_db']
+
+    where_clause = " AND ".join(filters)
+
+    sql = f"""
+    WITH price_banded AS (
+      SELECT
+        psf,
+        bedroom_count,
+        price,
+        CASE
+          WHEN price < 1000000 THEN '$0.5M-1M'
+          WHEN price < 1500000 THEN '$1M-1.5M'
+          WHEN price < 2000000 THEN '$1.5M-2M'
+          WHEN price < 2500000 THEN '$2M-2.5M'
+          WHEN price < 3000000 THEN '$2.5M-3M'
+          WHEN price < 3500000 THEN '$3M-3.5M'
+          WHEN price < 4000000 THEN '$3.5M-4M'
+          WHEN price < 5000000 THEN '$4M-5M'
+          ELSE '$5M+'
+        END AS price_band,
+        CASE
+          WHEN bedroom_count >= 5 THEN 5
+          ELSE bedroom_count
+        END AS bedroom_group
+      FROM transactions
+      WHERE {where_clause}
+        AND price >= 500000
+        AND psf IS NOT NULL
+        AND bedroom_count IS NOT NULL
+    )
+    SELECT
+      price_band,
+      bedroom_group,
+      COUNT(*) AS observation_count,
+      PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY psf) AS p25,
+      PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY psf) AS p50,
+      PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY psf) AS p75
+    FROM price_banded
+    GROUP BY price_band, bedroom_group
+    ORDER BY
+      CASE price_band
+        WHEN '$0.5M-1M' THEN 1
+        WHEN '$1M-1.5M' THEN 2
+        WHEN '$1.5M-2M' THEN 3
+        WHEN '$2M-2.5M' THEN 4
+        WHEN '$2.5M-3M' THEN 5
+        WHEN '$3M-3.5M' THEN 6
+        WHEN '$3.5M-4M' THEN 7
+        WHEN '$4M-5M' THEN 8
+        ELSE 9
+      END,
+      bedroom_group
+    """
+
+    sess = session or db.session
+    result = sess.execute(text(sql), bind_params)
+
+    # Convert to list of dicts
+    rows = []
+    for row in result:
+        rows.append({
+            'price_band': row.price_band,
+            'bedroom_group': row.bedroom_group,
+            'observation_count': row.observation_count,
+            'p25': float(row.p25) if row.p25 is not None else None,
+            'p50': float(row.p50) if row.p50 is not None else None,
+            'p75': float(row.p75) if row.p75 is not None else None,
+        })
+
+    return rows
 
 
 # ============================================================================

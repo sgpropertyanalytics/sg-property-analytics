@@ -169,6 +169,12 @@ def dashboard():
             if request.args.get('property_age_max'):
                 filters['property_age_max'] = int(request.args.get('property_age_max'))
 
+            # Property age bucket filter (v2: propertyAgeBucket, v1: property_age_bucket)
+            from schemas.api_contract import PropertyAgeBucket
+            property_age_bucket = request.args.get('propertyAgeBucket') or request.args.get('property_age_bucket')
+            if property_age_bucket and PropertyAgeBucket.is_valid(property_age_bucket):
+                filters['property_age_bucket'] = property_age_bucket
+
             # Project filter - supports both partial match (search) and exact match (drill-through)
             if request.args.get('project_exact'):
                 filters['project_exact'] = request.args.get('project_exact')
@@ -1950,7 +1956,7 @@ def filter_options():
     from models.database import db
     from sqlalchemy import func, distinct
     from services.data_processor import _get_market_segment
-    from schemas.api_contract import serialize_filter_options
+    from schemas.api_contract import serialize_filter_options, PropertyAgeBucket
 
     # Schema version: v1 (dual-mode) or v2 (strict)
     schema_version = request.args.get('schema', 'v1')
@@ -2016,6 +2022,7 @@ def filter_options():
             psf_range=psf_range,
             size_range=size_range,
             tenures=tenures,
+            property_age_buckets=PropertyAgeBucket.ALL,
             include_deprecated=include_deprecated
         ))
     except Exception as e:
@@ -2505,6 +2512,106 @@ def scatter_sample_deprecated():
         "message": "Transaction-level scatter data is no longer available. Use aggregate visualizations instead.",
         "alternatives": ["/aggregate-summary", "/dashboard?panels=price_histogram"]
     }), 410
+
+
+# ============================================================================
+# PSF BY PRICE BAND ENDPOINT
+# ============================================================================
+
+@analytics_bp.route("/psf-by-price-band", methods=["GET"])
+def psf_by_price_band():
+    """
+    PSF percentiles grouped by price band and bedroom type.
+
+    Returns P25/P50/P75 PSF values for each (price_band, bedroom) combination.
+    Implements K-anonymity (K=15) - cells with fewer observations are suppressed.
+
+    This endpoint is designed for a Grouped Floating Bar Chart visualization
+    that helps users understand:
+    - PSF distribution across budget ranges
+    - How different bedroom types compare within price bands
+    - Where bedroom types overlap (competition zones)
+
+    Query Parameters:
+        date_from: YYYY-MM-DD (default: 2 years ago)
+        date_to: YYYY-MM-DD (default: today)
+        district: comma-separated districts (D01,D02,...)
+        region: CCR, RCR, OCR (alias: segment)
+        sale_type: 'new_sale' or 'resale' (v2), or 'New Sale'/'Resale' (v1)
+        tenure: 'freehold', '99_year', '999_year' (v2), or DB values (v1)
+        schema: 'v2' for strict camelCase response
+
+    Returns:
+        {
+            "data": [
+                {
+                    "priceBand": "$1.5M-2M",
+                    "priceBandMin": 1500000,
+                    "priceBandMax": 1999999,
+                    "bedroom": "2BR",
+                    "bedroomCount": 2,
+                    "p25": 1850,
+                    "p50": 1980,
+                    "p75": 2120,
+                    "observationCount": 48,
+                    "suppressed": false
+                },
+                ...
+            ],
+            "meta": {
+                "kAnonymity": {
+                    "threshold": 15,
+                    "level": "price_band_bedroom",
+                    "message": "..."
+                },
+                "apiContractVersion": "v3",
+                "contractHash": "psfpb:v3:..."
+            }
+        }
+    """
+    from datetime import date, datetime, timedelta
+    from services.dashboard_service import query_psf_by_price_band
+    from schemas.api_contract import (
+        parse_filter_params,
+        apply_psf_by_price_band_k_anonymity,
+        serialize_psf_by_price_band
+    )
+
+    # Parse filter params at boundary (route knows nothing about DB values)
+    params = parse_filter_params(request.args)
+
+    # Set default date range if not provided (2 years)
+    if not params.get('date_from'):
+        params['date_from'] = date.today() - timedelta(days=365 * 2)
+    if not params.get('date_to'):
+        params['date_to'] = date.today()
+
+    # Execute query (service handles SQL)
+    raw_data = query_psf_by_price_band(params)
+
+    # Apply K-anonymity
+    data = apply_psf_by_price_band_k_anonymity(raw_data)
+
+    # Build additional meta
+    meta = {
+        'dateRange': {
+            'from': params['date_from'].isoformat() if params.get('date_from') else None,
+            'to': params['date_to'].isoformat() if params.get('date_to') else None,
+        },
+        'totalObservations': sum(row.get('observationCount', 0) for row in data),
+        'filters': {
+            'district': params.get('districts'),
+            'region': params.get('segments_db'),
+            'saleType': params.get('sale_type_db'),
+            'tenure': params.get('tenure_db'),
+        }
+    }
+
+    # Serialize response (v2 support)
+    schema = request.args.get('schema')
+    include_deprecated = schema != 'v2'
+
+    return jsonify(serialize_psf_by_price_band(data, meta, include_deprecated))
 
 
 # ============================================================================

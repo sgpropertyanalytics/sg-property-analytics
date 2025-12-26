@@ -58,6 +58,7 @@ CONTRACT_SCHEMA_HASHES = {
     'filter_options': 'fopt:v3:saleTypes|tenures|regions|districts|bedrooms',
     'price_bands': 'pb:v3:bands|latest|trend|verdict|dataQuality',
     'exit_queue': 'eq:v3:fundamentals|resaleMetrics|riskAssessment|gatingFlags',
+    'psf_by_price_band': 'psfpb:v3:priceBand|bedroom|p25|p50|p75|observationCount|suppressed',
 }
 
 
@@ -191,6 +192,94 @@ class FloorLevel:
         if db_value is None:
             return None
         return cls.DB_TO_API.get(db_value, db_value.lower().replace('-', '_') if db_value else None)
+
+
+class PropertyAgeBucket:
+    """
+    Property age bucket enum values for API responses.
+
+    Age calculation: floor(EXTRACT(YEAR FROM transaction_date) - lease_start_year)
+    This is "lease age" (years since lease commencement), NOT building age.
+
+    IMPORTANT:
+    - Freehold properties are EXCLUDED (their lease_start_year is land grant date)
+    - Freehold and missing lease_start_year → unknown_age bucket
+    - Age boundaries use exclusive upper bounds: [min, max)
+
+    Buckets:
+    - new_sale: Project has 0 resale transactions (market state, not age)
+    - just_top: 0-4 years since lease start
+    - recently_top: 4-8 years since lease start
+    - young_resale: 8-15 years since lease start
+    - resale: 15-25 years since lease start
+    - mature_resale: 25+ years since lease start
+    - unknown_age: Freehold OR missing lease_start_year
+    """
+    NEW_SALE = 'new_sale'
+    JUST_TOP = 'just_top'
+    RECENTLY_TOP = 'recently_top'
+    YOUNG_RESALE = 'young_resale'
+    RESALE = 'resale'
+    MATURE_RESALE = 'mature_resale'
+    UNKNOWN_AGE = 'unknown_age'
+
+    ALL = [NEW_SALE, JUST_TOP, RECENTLY_TOP, YOUNG_RESALE, RESALE, MATURE_RESALE, UNKNOWN_AGE]
+
+    LABELS = {
+        NEW_SALE: 'New Sale (No Resales Yet)',
+        JUST_TOP: 'Just TOP (0-4 years)',
+        RECENTLY_TOP: 'Recently TOP (4-8 years)',
+        YOUNG_RESALE: 'Young Resale (8-15 years)',
+        RESALE: 'Resale (15-25 years)',
+        MATURE_RESALE: 'Mature Resale (25+ years)',
+        UNKNOWN_AGE: 'Unknown Age',
+    }
+
+    LABELS_SHORT = {
+        NEW_SALE: 'New',
+        JUST_TOP: '0-4yr',
+        RECENTLY_TOP: '4-8yr',
+        YOUNG_RESALE: '8-15yr',
+        RESALE: '15-25yr',
+        MATURE_RESALE: '25yr+',
+        UNKNOWN_AGE: 'Unknown',
+    }
+
+    # Age boundaries: (min_inclusive, max_exclusive)
+    # None means unbounded
+    AGE_RANGES = {
+        JUST_TOP: (0, 4),
+        RECENTLY_TOP: (4, 8),
+        YOUNG_RESALE: (8, 15),
+        RESALE: (15, 25),
+        MATURE_RESALE: (25, None),
+    }
+
+    @classmethod
+    def is_valid(cls, value: Optional[str]) -> bool:
+        """Check if value is a valid PropertyAgeBucket enum."""
+        return value in cls.ALL
+
+    @classmethod
+    def get_label(cls, value: str, short: bool = False) -> str:
+        """Get display label for a bucket value."""
+        labels = cls.LABELS_SHORT if short else cls.LABELS
+        return labels.get(value, value)
+
+    @classmethod
+    def get_age_range(cls, value: str) -> Optional[tuple]:
+        """
+        Get age range for a bucket.
+
+        Returns:
+            Tuple of (min_inclusive, max_exclusive) or None for non-age buckets
+        """
+        return cls.AGE_RANGES.get(value)
+
+    @classmethod
+    def is_age_based(cls, value: str) -> bool:
+        """Check if bucket is age-based (vs market-state like new_sale)."""
+        return value in cls.AGE_RANGES
 
 
 # =============================================================================
@@ -505,6 +594,11 @@ def parse_filter_params(request_args: dict) -> Dict[str, Any]:
     elif project:
         params['project'] = project
 
+    # Property age bucket filter: accept both v2 camelCase and v1 snake_case
+    property_age_bucket = request_args.get('propertyAgeBucket') or request_args.get('property_age_bucket')
+    if property_age_bucket and PropertyAgeBucket.is_valid(property_age_bucket):
+        params['property_age_bucket'] = property_age_bucket
+
     return params
 
 
@@ -732,6 +826,7 @@ def serialize_filter_options(
     psf_range: dict,
     size_range: dict,
     tenures: list,
+    property_age_buckets: list = None,
     include_deprecated: bool = True
 ) -> Dict[str, Any]:
     """Serialize filter options to API v2 schema.
@@ -751,6 +846,7 @@ def serialize_filter_options(
         psf_range: Dict with min/max PSF
         size_range: Dict with min/max size
         tenures: List of DB tenure values
+        property_age_buckets: List of PropertyAgeBucket enum values (defaults to ALL)
         include_deprecated: If True, include old snake_case fields
 
     Returns:
@@ -792,6 +888,14 @@ def serialize_filter_options(
     # Market segments (same as regions for now)
     market_segments_v2 = regions_v2.copy()
 
+    # Property age buckets: {value: enum, label: display}
+    if property_age_buckets is None:
+        property_age_buckets = PropertyAgeBucket.ALL
+    property_age_buckets_v2 = [
+        _make_option(bucket, PropertyAgeBucket.get_label(bucket))
+        for bucket in property_age_buckets
+    ]
+
     # Build v2 response
     result = {
         FilterOptionsFields.SALE_TYPES: sale_types_v2,
@@ -804,6 +908,7 @@ def serialize_filter_options(
         FilterOptionsFields.DATE_RANGE: date_range,
         FilterOptionsFields.PSF_RANGE: psf_range,
         FilterOptionsFields.SIZE_RANGE: size_range,
+        'propertyAgeBuckets': property_age_buckets_v2,
         'apiContractVersion': API_CONTRACT_VERSION,
         'contractHash': get_schema_hash('filter_options'),
     }
@@ -820,6 +925,7 @@ def serialize_filter_options(
             'date_range': date_range,
             'psf_range': psf_range,
             'size_range': size_range,
+            'property_age_buckets': property_age_buckets,  # Raw enum list for v1 compat
         })
 
     return result
@@ -1623,3 +1729,177 @@ def serialize_price_bands_dual(
         response['apiContractVersion'] = API_CONTRACT_VERSION
         response['contractHash'] = get_schema_hash('price_bands')
         return response
+
+
+# =============================================================================
+# PSF BY PRICE BAND SERIALIZATION
+# =============================================================================
+
+class PsfByPriceBandFields:
+    """Field names for PSF by price band API response (camelCase for v2)."""
+    PRICE_BAND = 'priceBand'
+    PRICE_BAND_MIN = 'priceBandMin'
+    PRICE_BAND_MAX = 'priceBandMax'
+    BEDROOM = 'bedroom'
+    BEDROOM_COUNT = 'bedroomCount'
+    P25 = 'p25'
+    P50 = 'p50'
+    P75 = 'p75'
+    OBSERVATION_COUNT = 'observationCount'
+    SUPPRESSED = 'suppressed'
+
+
+# K-anonymity threshold for PSF by price band
+PSF_BY_PRICE_BAND_K_THRESHOLD = 15
+
+
+# Price band definitions (ordered)
+PRICE_BANDS = [
+    {'label': '$0.5M-1M', 'min': 500000, 'max': 999999, 'order': 1},
+    {'label': '$1M-1.5M', 'min': 1000000, 'max': 1499999, 'order': 2},
+    {'label': '$1.5M-2M', 'min': 1500000, 'max': 1999999, 'order': 3},
+    {'label': '$2M-2.5M', 'min': 2000000, 'max': 2499999, 'order': 4},
+    {'label': '$2.5M-3M', 'min': 2500000, 'max': 2999999, 'order': 5},
+    {'label': '$3M-3.5M', 'min': 3000000, 'max': 3499999, 'order': 6},
+    {'label': '$3.5M-4M', 'min': 3500000, 'max': 3999999, 'order': 7},
+    {'label': '$4M-5M', 'min': 4000000, 'max': 4999999, 'order': 8},
+    {'label': '$5M+', 'min': 5000000, 'max': None, 'order': 9},
+]
+
+
+def _bedroom_label(count: int) -> str:
+    """Convert bedroom count to display label."""
+    if count is None:
+        return 'Unknown'
+    if count >= 5:
+        return '5BR+'
+    return f'{count}BR'
+
+
+def _get_price_band_bounds(label: str) -> tuple:
+    """Get min/max bounds for a price band label."""
+    for band in PRICE_BANDS:
+        if band['label'] == label:
+            return band['min'], band['max']
+    return None, None
+
+
+def apply_psf_by_price_band_k_anonymity(rows: list) -> list:
+    """
+    Apply K-anonymity to PSF by price band data.
+
+    Suppresses cells with fewer than K observations by setting
+    p25, p50, p75 to None and suppressed to True.
+
+    Args:
+        rows: List of dicts from SQL query with keys:
+              price_band, bedroom_group, observation_count, p25, p50, p75
+
+    Returns:
+        List of dicts with K-anonymity applied
+    """
+    result = []
+    for row in rows:
+        obs_count = row.get('observation_count', 0)
+        price_band = row.get('price_band')
+        bedroom = row.get('bedroom_group')
+        band_min, band_max = _get_price_band_bounds(price_band)
+
+        if obs_count < PSF_BY_PRICE_BAND_K_THRESHOLD:
+            result.append({
+                'priceBand': price_band,
+                'priceBandMin': band_min,
+                'priceBandMax': band_max,
+                'bedroom': _bedroom_label(bedroom),
+                'bedroomCount': bedroom,
+                'p25': None,
+                'p50': None,
+                'p75': None,
+                'observationCount': obs_count,
+                'suppressed': True
+            })
+        else:
+            result.append({
+                'priceBand': price_band,
+                'priceBandMin': band_min,
+                'priceBandMax': band_max,
+                'bedroom': _bedroom_label(bedroom),
+                'bedroomCount': bedroom,
+                'p25': round(row['p25'], 0) if row.get('p25') is not None else None,
+                'p50': round(row['p50'], 0) if row.get('p50') is not None else None,
+                'p75': round(row['p75'], 0) if row.get('p75') is not None else None,
+                'observationCount': obs_count,
+                'suppressed': False
+            })
+    return result
+
+
+def serialize_psf_by_price_band_row(
+    row: Dict[str, Any],
+    include_deprecated: bool = True
+) -> Dict[str, Any]:
+    """Serialize a single PSF by price band row to API v2 schema."""
+    v2_row = {
+        PsfByPriceBandFields.PRICE_BAND: row['priceBand'],
+        PsfByPriceBandFields.PRICE_BAND_MIN: row.get('priceBandMin'),
+        PsfByPriceBandFields.PRICE_BAND_MAX: row.get('priceBandMax'),
+        PsfByPriceBandFields.BEDROOM: row['bedroom'],
+        PsfByPriceBandFields.BEDROOM_COUNT: row['bedroomCount'],
+        PsfByPriceBandFields.P25: row['p25'],
+        PsfByPriceBandFields.P50: row['p50'],
+        PsfByPriceBandFields.P75: row['p75'],
+        PsfByPriceBandFields.OBSERVATION_COUNT: row['observationCount'],
+        PsfByPriceBandFields.SUPPRESSED: row['suppressed'],
+    }
+
+    if include_deprecated:
+        # v1 snake_case fields for backwards compatibility
+        v2_row.update({
+            'price_band': row['priceBand'],
+            'price_band_min': row.get('priceBandMin'),
+            'price_band_max': row.get('priceBandMax'),
+            'bedroom_count': row['bedroomCount'],
+            'observation_count': row['observationCount'],
+        })
+
+    return v2_row
+
+
+def serialize_psf_by_price_band(
+    data: list,
+    meta: Optional[Dict[str, Any]] = None,
+    include_deprecated: bool = True
+) -> Dict[str, Any]:
+    """
+    Serialize PSF by price band response with v2 support.
+
+    Args:
+        data: List of dicts (after K-anonymity applied)
+        meta: Optional metadata dict
+        include_deprecated: If True, include v1 snake_case fields
+
+    Returns:
+        Complete response dict with serialized data and meta
+    """
+    serialized = [
+        serialize_psf_by_price_band_row(row, include_deprecated=include_deprecated)
+        for row in data
+    ]
+
+    response_meta = {
+        'kAnonymity': {
+            'threshold': PSF_BY_PRICE_BAND_K_THRESHOLD,
+            'level': 'price_band_bedroom',
+            'message': 'Data aggregated to protect privacy. Groups with fewer than 15 observations are suppressed.'
+        },
+        'apiContractVersion': API_CONTRACT_VERSION,
+        'contractHash': get_schema_hash('psf_by_price_band'),
+    }
+
+    if meta:
+        response_meta.update(meta)
+
+    return {
+        'data': serialized,
+        'meta': response_meta,
+    }

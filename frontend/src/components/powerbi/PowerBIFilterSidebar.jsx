@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { DISTRICT_NAMES } from '../../constants';
-import { SaleType, Tenure, isSaleType, isTenure } from '../../schemas/apiContract';
+import { SaleType, isSaleType, PropertyAgeBucket, getPropertyAgeBucketLabel } from '../../schemas/apiContract';
 
 /**
  * Power BI-style Filter Sidebar
@@ -22,8 +22,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
     toggleBedroomType,
     toggleSegment,
     setSaleType,
-    setTenure,
-    setPropertyAge,
+    setPropertyAgeBucket,
     resetFilters,
     clearCrossFilter,
   } = usePowerBIFilters();
@@ -454,8 +453,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
           onToggle={() => toggleSection('propertyDetails')}
           activeCount={
             (filters.saleType ? 1 : 0) +
-            (filters.tenure ? 1 : 0) +
-            (filters.propertyAge.min !== null || filters.propertyAge.max !== null ? 1 : 0)
+            (filters.propertyAgeBucket ? 1 : 0)
           }
         >
           {/* Sale Type Buttons */}
@@ -489,67 +487,43 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle }) {
             </div>
           </FilterGroup>
 
-          {/* Tenure Buttons */}
-          <FilterGroup label="Tenure">
-            <div className="grid grid-cols-3 gap-2">
-              {/* Use normalized tenures from API, fallback to hardcoded for safety */}
-              {(filterOptions.tenures?.length > 0
-                ? filterOptions.tenures
+          {/* Property Age Bucket Buttons */}
+          <FilterGroup label="Property Age">
+            <div className="grid grid-cols-2 gap-1.5">
+              {/* Use normalized propertyAgeBuckets from API, fallback to hardcoded for safety */}
+              {(filterOptions.propertyAgeBuckets?.length > 0
+                ? filterOptions.propertyAgeBuckets
                 : [
-                    { value: Tenure.LEASEHOLD_99, label: '99yr' },
-                    { value: Tenure.LEASEHOLD_999, label: '999yr' },
-                    { value: Tenure.FREEHOLD, label: 'FH' }
+                    { value: PropertyAgeBucket.NEW_SALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.NEW_SALE, true) },
+                    { value: PropertyAgeBucket.JUST_TOP, label: getPropertyAgeBucketLabel(PropertyAgeBucket.JUST_TOP, true) },
+                    { value: PropertyAgeBucket.RECENTLY_TOP, label: getPropertyAgeBucketLabel(PropertyAgeBucket.RECENTLY_TOP, true) },
+                    { value: PropertyAgeBucket.YOUNG_RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.YOUNG_RESALE, true) },
+                    { value: PropertyAgeBucket.RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.RESALE, true) },
+                    { value: PropertyAgeBucket.MATURE_RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.MATURE_RESALE, true) },
+                    { value: PropertyAgeBucket.UNKNOWN_AGE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.UNKNOWN_AGE, true) },
                   ]
-              ).map(type => {
-                // Use isTenure helpers to check equality (handles both v1 and v2 values)
-                const isSelected =
-                  type.value === Tenure.LEASEHOLD_99 ? isTenure.leasehold99(filters.tenure) :
-                  type.value === Tenure.LEASEHOLD_999 ? isTenure.leasehold999(filters.tenure) :
-                  type.value === Tenure.FREEHOLD ? isTenure.freehold(filters.tenure) :
-                  filters.tenure === type.value;
+              ).map(bucket => {
+                const isSelected = filters.propertyAgeBucket === bucket.value;
 
                 return (
                   <button
                     type="button"
-                    key={type.value}
-                    onClick={(e) => { e.preventDefault(); setTenure(isSelected ? null : type.value); }}
-                    className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
+                    key={bucket.value}
+                    onClick={(e) => { e.preventDefault(); setPropertyAgeBucket(isSelected ? null : bucket.value); }}
+                    className={`min-h-[40px] py-2 text-xs rounded-md border transition-colors ${
                       isSelected
                         ? 'bg-[#547792] text-white border-[#547792]'
                         : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
                     }`}
+                    title={getPropertyAgeBucketLabel(bucket.value)}
                   >
-                    {type.label}
+                    {bucket.label}
                   </button>
                 );
               })}
             </div>
-          </FilterGroup>
-
-          {/* Property Age Range */}
-          <FilterGroup label="Property Age (years)">
-            <div className="flex gap-2 items-center flex-nowrap">
-              <input
-                type="number"
-                value={filters.propertyAge.min ?? ''}
-                onChange={(e) => setPropertyAge(e.target.value ? parseInt(e.target.value) : null, filters.propertyAge.max)}
-                placeholder="Min"
-                min={0}
-                className="w-[70px] min-w-0 px-2 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-slate-400 flex-shrink-0">-</span>
-              <input
-                type="number"
-                value={filters.propertyAge.max ?? ''}
-                onChange={(e) => setPropertyAge(filters.propertyAge.min, e.target.value ? parseInt(e.target.value) : null)}
-                placeholder="Max"
-                min={0}
-                className="w-[70px] min-w-0 px-2 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-[10px] text-slate-400 flex-shrink-0">yrs</span>
-            </div>
             <p className="text-[10px] text-slate-500 mt-1.5 italic">
-              Leasehold only (freehold excluded).
+              Based on lease commencement. Freehold → Unknown.
             </p>
           </FilterGroup>
         </FilterSection>

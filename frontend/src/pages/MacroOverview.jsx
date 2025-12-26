@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { MedianPsfTrendChart } from '../components/powerbi/MedianPsfTrendChart';
-import { UnitSizeVsPriceChart } from '../components/powerbi/UnitSizeVsPriceChart';
+import { PsfByPriceBandChart } from '../components/powerbi/PsfByPriceBandChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { PriceCompressionChart } from '../components/powerbi/PriceCompressionChart';
@@ -310,10 +310,10 @@ export function MacroOverviewContent() {
                   </ErrorBoundary>
                 </div>
 
-                {/* Unit Size vs Price - Scatter chart (Watermarked for free users) */}
-                <ErrorBoundary name="Unit Size vs Price" compact>
+                {/* PSF by Price Band - Grouped floating bar chart (Watermarked for free users) */}
+                <ErrorBoundary name="PSF by Price Band" compact>
                   <ChartWatermark>
-                    <UnitSizeVsPriceChart height={standardChartHeight} />
+                    <PsfByPriceBandChart height={standardChartHeight} />
                   </ChartWatermark>
                 </ErrorBoundary>
 
