@@ -21,6 +21,7 @@ import {
   ALL_DISTRICTS,
 } from '../../data/singaporeDistricts';
 import { useStaleRequestGuard } from '../../hooks';
+import { getRegionBadgeClass } from '../../constants';
 
 // Color scale for PSF values (using project theme)
 const PSF_COLOR_SCALE = {
@@ -347,18 +348,7 @@ export default function MarketHeatmap() {
                       <span className="font-semibold text-[#213448]">
                         {hoveredDistrictData.district_id}
                       </span>
-                      <span
-                        className={`
-                        text-xs px-1.5 py-0.5 rounded
-                        ${
-                          hoveredDistrictData.region === 'CCR'
-                            ? 'bg-[#213448] text-white'
-                            : hoveredDistrictData.region === 'RCR'
-                            ? 'bg-[#547792] text-white'
-                            : 'bg-[#94B4C1] text-[#213448]'
-                        }
-                      `}
-                      >
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${getRegionBadgeClass(hoveredDistrictData.region)}`}>
                         {hoveredDistrictData.region}
                       </span>
                     </div>

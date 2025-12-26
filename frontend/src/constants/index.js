@@ -90,6 +90,17 @@ export const getRegionBadgeClass = (region) => {
   return REGION_BADGE_CLASSES[r] || REGION_BADGE_CLASSES.OCR;
 };
 
+/**
+ * Check if a region uses dark background (for text contrast decisions)
+ * CCR and RCR have dark backgrounds, OCR has light background
+ * @param {string} region - Region code (CCR, RCR, OCR)
+ * @returns {boolean} True if region has dark background
+ */
+export const isRegionDark = (region) => {
+  const r = (region || '').toUpperCase();
+  return r === 'CCR' || r === 'RCR';
+};
+
 // =============================================================================
 // DISTRICT NAMES
 // =============================================================================

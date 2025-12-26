@@ -18,6 +18,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 import { useStaleRequestGuard } from '../../hooks';
+import { getRegionBadgeClass } from '../../constants';
 
 // Theme colors (Warm Precision palette)
 const COLORS = {
@@ -510,18 +511,7 @@ export default function MarketHeatmap3D() {
                   <span className="font-semibold text-white">
                     {popupInfo.district.district_id}
                   </span>
-                  <span
-                    className={`
-                    text-xs px-1.5 py-0.5 rounded font-medium
-                    ${
-                      popupInfo.district.region === 'CCR'
-                        ? 'bg-[#213448] text-[#94B4C1]'
-                        : popupInfo.district.region === 'RCR'
-                        ? 'bg-[#547792] text-white'
-                        : 'bg-[#94B4C1] text-[#213448]'
-                    }
-                  `}
-                  >
+                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${getRegionBadgeClass(popupInfo.district.region)}`}>
                     {popupInfo.district.region}
                   </span>
                 </div>

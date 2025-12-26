@@ -12,7 +12,7 @@ import {
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
 import { BASE_CHART_OPTIONS } from '../../constants/chartOptions';
-import { getRegionForDistrict, DISTRICT_NAMES } from '../../constants';
+import { getRegionForDistrict, DISTRICT_NAMES, isRegionDark } from '../../constants';
 
 ChartJS.register(
   CategoryScale,
@@ -228,7 +228,7 @@ export function DistrictMicroChart({ district, data, onClick }) {
   }
 
   // Determine growth color for text - use high contrast colors on dark backgrounds
-  const isDarkHeader = region === 'CCR' || region === 'RCR';
+  const isDarkHeader = isRegionDark(region);
   const growthTextColor = growthPercent === null
     ? (isDarkHeader ? 'text-white/70' : 'text-[#94B4C1]')
     : growthPercent >= 0

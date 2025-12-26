@@ -15,7 +15,7 @@ import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
-import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
+import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../hooks';
 
@@ -264,17 +264,7 @@ function HoverCard({ district, data }) {
           <span className="font-bold text-[#213448] text-sm">
             {district.district}
           </span>
-          <span
-            className={`
-              text-[9px] px-1.5 py-0.5 rounded-full font-semibold
-              ${district.region === 'CCR'
-                ? 'bg-[#213448] text-white'
-                : district.region === 'RCR'
-                ? 'bg-[#547792] text-white'
-                : 'bg-[#94B4C1] text-[#213448]'
-              }
-            `}
-          >
+          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${getRegionBadgeClass(district.region)}`}>
             {district.region}
           </span>
         </div>
