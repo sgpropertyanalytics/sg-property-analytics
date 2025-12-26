@@ -540,7 +540,7 @@ export function LiquidityRankingTable({ districtData }) {
               <div className="grid grid-cols-4 gap-1.5 text-center">
                 <div className="bg-sky-50/50 rounded p-1.5">
                   <div className="text-[10px] text-[#547792]">Velocity</div>
-                  <div className="text-sm font-semibold text-[#213448]">
+                  <div className="text-sm text-[#213448]">
                     {m.monthly_velocity?.toFixed(1) || '0'}
                   </div>
                 </div>
@@ -553,14 +553,14 @@ export function LiquidityRankingTable({ districtData }) {
                         style={{ width: `${((m.tx_count || 0) / maxTxCount) * 100}%` }}
                       />
                     </div>
-                    <span className="text-xs font-semibold text-[#213448] min-w-[32px] text-right">
+                    <span className="text-xs text-[#213448] min-w-[32px] text-right">
                       {m.tx_count?.toLocaleString() || '0'}
                     </span>
                   </div>
                 </div>
                 <div className="bg-emerald-50/50 rounded p-1.5">
                   <div className="text-[10px] text-[#547792]">Tier</div>
-                  <div className="text-[10px] font-semibold text-[#213448]">
+                  <div className="text-[10px] text-[#213448]">
                     {m.liquidity_tier || '-'}
                   </div>
                 </div>
@@ -578,7 +578,7 @@ export function LiquidityRankingTable({ districtData }) {
                   Z:{' '}
                   <span
                     className={
-                      m.z_score >= 0 ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'
+                      m.z_score >= 0 ? 'text-emerald-600' : 'text-rose-600'
                     }
                   >
                     {m.z_score?.toFixed(2) || '-'}
@@ -841,7 +841,7 @@ export function LiquidityRankingTable({ districtData }) {
                         />
                       </div>
                       {/* Number value */}
-                      <span className="text-right font-medium min-w-[45px]">
+                      <span className="text-right min-w-[45px]">
                         {m.tx_count?.toLocaleString() || '0'}
                       </span>
                     </div>
@@ -857,20 +857,20 @@ export function LiquidityRankingTable({ districtData }) {
                   </td>
 
                   {/* Exit Safety Group - Monthly Velocity (Resale-only) */}
-                  <td className="px-3 py-2 text-right font-semibold text-[#213448] bg-emerald-50/40">
+                  <td className="px-3 py-2 text-right text-[#213448] bg-emerald-50/40">
                     {m.monthly_velocity?.toFixed(1) || '0'}
                   </td>
 
                   {/* Exit Safety Group - Z-Score (Resale-only) */}
-                  <td className="px-3 py-2 text-right bg-emerald-50/40">
+                  <td className="px-3 py-2 text-right text-[#213448] bg-emerald-50/40">
                     <span
-                      className={`font-semibold ${
+                      className={
                         (m.z_score || 0) >= 0.5
                           ? 'text-emerald-600'
                           : (m.z_score || 0) <= -0.5
                             ? 'text-rose-600'
-                            : 'text-[#213448]'
-                      }`}
+                            : ''
+                      }
                     >
                       {m.z_score?.toFixed(2) || '-'}
                     </span>
