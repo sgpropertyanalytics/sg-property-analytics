@@ -207,6 +207,28 @@ export const BEDROOM_FILTER_OPTIONS_EMPTY = [
 ];
 
 /**
+ * Period filter options for time-based dropdowns.
+ * Centralized to avoid duplication across components.
+ */
+export const PERIOD_FILTER_OPTIONS = [
+  { value: '3m', label: '3M', fullLabel: '3 Months' },
+  { value: '6m', label: '6M', fullLabel: '6 Months' },
+  { value: '12m', label: '1Y', fullLabel: '1 Year' },
+  { value: 'all', label: 'All', fullLabel: 'All Time' },
+];
+
+/**
+ * Market segment (region) filter options.
+ * Uses empty string for "All Segments" default.
+ */
+export const SEGMENT_FILTER_OPTIONS = [
+  { value: '', label: 'All Segments', fullLabel: 'All Segments' },
+  { value: 'CCR', label: 'CCR', fullLabel: 'CCR (Core Central)' },
+  { value: 'RCR', label: 'RCR', fullLabel: 'RCR (Rest of Central)' },
+  { value: 'OCR', label: 'OCR', fullLabel: 'OCR (Outside Central)' },
+];
+
+/**
  * Format a price value for display
  * @param {number} value - The price value
  * @returns {string} Formatted price string (e.g., "$2.41M", "$500K")

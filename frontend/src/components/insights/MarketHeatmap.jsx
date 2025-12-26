@@ -19,7 +19,7 @@ import {
   ALL_DISTRICTS,
 } from '../../data/singaporeDistricts';
 import { useStaleRequestGuard } from '../../hooks';
-import { getRegionBadgeClass, BEDROOM_FILTER_OPTIONS } from '../../constants';
+import { getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 
 // Color scale for PSF values (using project theme)
 const PSF_COLOR_SCALE = {
@@ -55,16 +55,9 @@ function formatYoY(value) {
   return { text: `${arrow} ${Math.abs(value).toFixed(1)}%`, color };
 }
 
-// Use centralized bedroom filter options
+// Use centralized filter options
 const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
-
-// Period filter options
-const PERIOD_OPTIONS = [
-  { value: '3m', label: '3M' },
-  { value: '6m', label: '6M' },
-  { value: '12m', label: '1Y' },
-  { value: 'all', label: 'All' },
-];
+const PERIOD_OPTIONS = PERIOD_FILTER_OPTIONS;
 
 export default function MarketHeatmap() {
   const [districtData, setDistrictData] = useState([]);

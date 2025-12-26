@@ -15,7 +15,7 @@ import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
-import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS } from '../../constants';
+import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../hooks';
 
@@ -56,21 +56,15 @@ const VOLUME_GLOW = {
   mild: 'drop-shadow(0 0 8px rgba(250, 204, 21, 0.55))',   // Yellow - 20-30%
 };
 
-// Use centralized bedroom filter options
+// Use centralized filter options
 const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
+const PERIOD_OPTIONS = PERIOD_FILTER_OPTIONS;
 
 const AGE_OPTIONS = [
   { value: 'all', label: 'All' },
   { value: 'new', label: 'New/TOP (0-5 yrs)' },
   { value: 'young', label: 'Young Resale (5-10 yrs)' },
   { value: 'resale', label: 'Resale (>10 yrs)' },
-];
-
-const PERIOD_OPTIONS = [
-  { value: '3m', label: '3M' },
-  { value: '6m', label: '6M' },
-  { value: '12m', label: '1Y' },
-  { value: 'all', label: 'All' },
 ];
 
 // Manual marker offsets for crowded central districts

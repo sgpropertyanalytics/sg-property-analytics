@@ -6,7 +6,7 @@ import FloorLiquidityHeatmap from '../components/powerbi/FloorLiquidityHeatmap';
 import { ErrorBoundary, ChartWatermark } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
-import { BEDROOM_FILTER_OPTIONS_EMPTY } from '../constants';
+import { BEDROOM_FILTER_OPTIONS_EMPTY, SEGMENT_FILTER_OPTIONS } from '../constants';
 
 /**
  * Floor Dispersion Page - Floor Level Analysis
@@ -17,16 +17,9 @@ import { BEDROOM_FILTER_OPTIONS_EMPTY } from '../constants';
  * - Inline filters for bedroom and market segment
  */
 
-// Use centralized bedroom options (with empty string for 'all')
+// Use centralized filter options
 const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS_EMPTY;
-
-// Market segment options
-const SEGMENT_OPTIONS = [
-  { value: '', label: 'All Segments' },
-  { value: 'CCR', label: 'CCR (Core Central)' },
-  { value: 'RCR', label: 'RCR (Rest of Central)' },
-  { value: 'OCR', label: 'OCR (Outside Central)' },
-];
+const SEGMENT_OPTIONS = SEGMENT_FILTER_OPTIONS;
 
 export function FloorDispersionContent() {
   const [bedroom, setBedroom] = useState('');

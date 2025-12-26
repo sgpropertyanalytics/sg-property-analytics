@@ -18,7 +18,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 import { useStaleRequestGuard } from '../../hooks';
-import { getRegionBadgeClass, BEDROOM_FILTER_OPTIONS } from '../../constants';
+import { getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 
 // Theme colors (Warm Precision palette)
 const COLORS = {
@@ -141,16 +141,9 @@ function formatYoY(value) {
   return { text: `${arrow} ${Math.abs(value).toFixed(1)}%`, colorClass };
 }
 
-// Use centralized bedroom filter options
+// Use centralized filter options
 const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
-
-// Period filter options
-const PERIOD_OPTIONS = [
-  { value: '3m', label: '3M' },
-  { value: '6m', label: '6M' },
-  { value: '12m', label: '1Y' },
-  { value: 'all', label: 'All' },
-];
+const PERIOD_OPTIONS = PERIOD_FILTER_OPTIONS;
 
 // Dark Matter map style (CARTO Dark Matter - free, no API key)
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
