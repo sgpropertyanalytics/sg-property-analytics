@@ -9,11 +9,11 @@ import { MarketMomentumGrid, GrowthDumbbellChart } from '../components/powerbi';
  * Two tabs:
  * 1. District (Volume/Liquidity) - Volume and liquidity analysis across districts
  *    - Liquidity Map (IMPLEMENTED)
- *    - Market Momentum Grid (IMPLEMENTED)
- *    - Growth Dumbbell Chart (IMPLEMENTED)
  *
  * 2. District (Price/PSF) - Price and PSF analysis across districts
  *    - Market Strategy Map (IMPLEMENTED)
+ *    - Market Momentum Grid (IMPLEMENTED) - Median PSF by district
+ *    - Growth Dumbbell Chart (IMPLEMENTED) - PSF growth comparison
  */
 export function DistrictDeepDiveContent() {
   const [activeTab, setActiveTab] = useState('volume'); // 'volume' | 'price'
@@ -98,7 +98,7 @@ export function DistrictDeepDiveContent() {
 
 /**
  * District (Volume/Liquidity) Tab Content
- * Features: Liquidity Map, Market Momentum Grid, Growth Dumbbell Chart
+ * Features: Liquidity Map
  */
 function DistrictVolumeContent() {
   return (
@@ -106,16 +106,6 @@ function DistrictVolumeContent() {
       {/* District Liquidity Map */}
       <ChartWatermark>
         <DistrictLiquidityMap />
-      </ChartWatermark>
-
-      {/* Market Momentum Grid - Historical price growth by district */}
-      <ChartWatermark>
-        <MarketMomentumGrid />
-      </ChartWatermark>
-
-      {/* Growth Leaderboard - Dumbbell chart comparing start vs end price */}
-      <ChartWatermark>
-        <GrowthDumbbellChart />
       </ChartWatermark>
 
       {/* Coming Soon Features */}
@@ -165,7 +155,7 @@ function DistrictVolumeContent() {
 
 /**
  * District (Price/PSF) Tab Content
- * Features: Market Strategy Map showing district PSF overview
+ * Features: Market Strategy Map, Market Momentum Grid, Growth Dumbbell Chart
  */
 function DistrictPriceContent() {
   return (
@@ -173,6 +163,16 @@ function DistrictPriceContent() {
       {/* District Price Map */}
       <ChartWatermark>
         <MarketStrategyMap />
+      </ChartWatermark>
+
+      {/* Market Momentum Grid - Median PSF by district */}
+      <ChartWatermark>
+        <MarketMomentumGrid />
+      </ChartWatermark>
+
+      {/* Growth Leaderboard - Dumbbell chart comparing start vs end PSF */}
+      <ChartWatermark>
+        <GrowthDumbbellChart />
       </ChartWatermark>
     </div>
   );
