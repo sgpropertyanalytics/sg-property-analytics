@@ -33,9 +33,32 @@ const generateLoadingText = () => {
   return `Loading project ${generateRandomProjectName()}, project ${generateRandomProjectName()}, project ${generateRandomProjectName()}...`;
 };
 
+// localStorage keys for persistence
+const STORAGE_KEY_PROJECT = 'projectDeepDive:selectedProject';
+const STORAGE_KEY_UNIT_PSF = 'projectDeepDive:unitPsf';
+
+// Helper to safely read from localStorage
+const getStoredProject = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_PROJECT);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+
+const getStoredUnitPsf = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_UNIT_PSF);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+
 export function ProjectDeepDiveContent() {
-  // Project selection state
-  const [selectedProject, setSelectedProject] = useState(null);
+  // Project selection state - initialize from localStorage
+  const [selectedProject, setSelectedProject] = useState(() => getStoredProject());
   const [projectSearch, setProjectSearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -54,7 +77,25 @@ export function ProjectDeepDiveContent() {
   const [priceBandsData, setPriceBandsData] = useState(null);
   const [priceBandsLoading, setPriceBandsLoading] = useState(false);
   const [priceBandsError, setPriceBandsError] = useState(null);
-  const [unitPsf, setUnitPsf] = useState(null);
+  const [unitPsf, setUnitPsf] = useState(() => getStoredUnitPsf());
+
+  // Persist selectedProject to localStorage
+  useEffect(() => {
+    if (selectedProject) {
+      localStorage.setItem(STORAGE_KEY_PROJECT, JSON.stringify(selectedProject));
+    } else {
+      localStorage.removeItem(STORAGE_KEY_PROJECT);
+    }
+  }, [selectedProject]);
+
+  // Persist unitPsf to localStorage
+  useEffect(() => {
+    if (unitPsf !== null) {
+      localStorage.setItem(STORAGE_KEY_UNIT_PSF, JSON.stringify(unitPsf));
+    } else {
+      localStorage.removeItem(STORAGE_KEY_UNIT_PSF);
+    }
+  }, [unitPsf]);
 
   // Price growth state
   const [priceGrowthData, setPriceGrowthData] = useState(null);
