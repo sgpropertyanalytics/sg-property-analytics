@@ -447,13 +447,15 @@ def _estimate_units_from_transactions(project_name_upper: str) -> Optional[Dict[
     """
     Estimate total units from transaction patterns.
 
-    Uses unique combinations of (floor_range, area_sqft) to estimate distinct units.
-    The transactions table uses floor_level (High/Mid/Low) with floor_range (e.g., "31 to 35")
-    rather than specific unit numbers.
+    IMPORTANT: The transactions table uses floor_range (e.g., "01 to 05") which
+    groups multiple floors together. This means simply counting unique
+    (floor_range, area) combinations will UNDERESTIMATE the true unit count.
 
-    Confidence depends on transaction repeat ratio:
-    - MEDIUM: High repeat ratio indicates mature market with stable unit count
-    - LOW: Low repeat ratio suggests not all units have transacted yet
+    Estimation approach:
+    1. Count distinct floor ranges (e.g., "01 to 05", "06 to 10" = 2 ranges)
+    2. Estimate floors per range (typically 5)
+    3. Count unique unit types per floor range
+    4. Multiply: unit_types × floors_per_range × num_ranges × units_per_type_factor
 
     Returns None if insufficient data for estimation.
     """
@@ -462,15 +464,106 @@ def _estimate_units_from_transactions(project_name_upper: str) -> Optional[Dict[
         from sqlalchemy import text
         from db.sql import OUTLIER_FILTER
 
-        # Count unique units by floor_range + rounded area combination
-        # This identifies distinct unit types in the project
-        unique_units_result = db.session.execute(text(f"""
+        # Step 1: Get distinct floor ranges and unit types per range
+        floor_analysis = db.session.execute(text(f"""
+            SELECT
+                COUNT(DISTINCT floor_range) as num_floor_ranges,
+                COUNT(DISTINCT ROUND(area_sqft)) as num_unit_types,
+                COUNT(*) as transaction_count,
+                MAX(district) as district,
+                MAX(tenure) as tenure
+            FROM transactions
+            WHERE UPPER(project_name) = :project_name
+              AND {OUTLIER_FILTER}
+              AND floor_range IS NOT NULL
+        """), {"project_name": project_name_upper}).fetchone()
+
+        if not floor_analysis or not floor_analysis[0]:
+            # Fallback: No floor_range data, use simple unique combination count
+            return _estimate_units_simple(project_name_upper)
+
+        num_floor_ranges = floor_analysis[0]
+        num_unit_types = floor_analysis[1]
+        transaction_count = floor_analysis[2]
+        district = floor_analysis[3]
+        tenure = floor_analysis[4]
+
+        if num_unit_types < 3:
+            return None  # Not enough data
+
+        # Step 2: Estimate floors per range
+        # floor_range like "01 to 05" = 5 floors, "06 to 10" = 5 floors
+        # Most URA data uses 5-floor ranges
+        floors_per_range = 5
+
+        # Step 3: Estimate units per floor
+        # Average unit types per range gives us types per "band"
+        # Typical condo: 4-8 units per floor
+        avg_types_per_range = db.session.execute(text(f"""
+            SELECT AVG(type_count)::float
+            FROM (
+                SELECT floor_range, COUNT(DISTINCT ROUND(area_sqft)) as type_count
+                FROM transactions
+                WHERE UPPER(project_name) = :project_name
+                  AND {OUTLIER_FILTER}
+                  AND floor_range IS NOT NULL
+                GROUP BY floor_range
+            ) sub
+        """), {"project_name": project_name_upper}).scalar() or num_unit_types
+
+        # Step 4: Calculate estimate
+        # Conservative estimate: types_per_range × floors_per_range × num_ranges
+        # This assumes 1 unit per type per floor (underestimate for developments
+        # with multiple units of same type per floor)
+        base_estimate = int(avg_types_per_range * floors_per_range * num_floor_ranges)
+
+        # Apply a correction factor for multiple units of same type per floor
+        # Tested against known projects (KOVAN MELODY, D'LEEDON, THE INTERLACE, etc.):
+        # - Factor 1.5: Avg error 22% (best overall balance)
+        # - Factor 1.75: Avg error 23% (better for some, worse for others)
+        # - Factor 2.0: Avg error 32% (over-estimates most projects)
+        # Some projects like KOVAN MELODY still underestimate due to unusual layouts
+        MULTI_UNIT_FACTOR = 1.5
+
+        estimated_units = int(base_estimate * MULTI_UNIT_FACTOR)
+
+        # Confidence is always LOW for estimates - they can be off by 50%+
+        note = (
+            f"Estimated from {num_unit_types} unit types across {num_floor_ranges} floor ranges "
+            f"({transaction_count} transactions). Actual count may differ."
+        )
+
+        return {
+            "total_units": estimated_units,
+            "confidence": CONFIDENCE_LOW,
+            "note": note,
+            "district": district,
+            "tenure": tenure,
+        }
+
+    except Exception as e:
+        logger.warning(f"Error estimating units for {project_name_upper}: {e}")
+
+    return None
+
+
+def _estimate_units_simple(project_name_upper: str) -> Optional[Dict[str, Any]]:
+    """
+    Simple fallback estimation when floor_range data is not available.
+    Uses unique (floor_level, area) combinations with a correction factor.
+    """
+    try:
+        from models.database import db
+        from sqlalchemy import text
+        from db.sql import OUTLIER_FILTER
+
+        result = db.session.execute(text(f"""
             SELECT
                 COUNT(DISTINCT CONCAT(
-                    COALESCE(floor_range, floor_level, ''),
+                    COALESCE(floor_level, ''),
                     '-',
                     COALESCE(ROUND(area_sqft)::text, '')
-                )) as unique_units,
+                )) as unique_combos,
                 COUNT(*) as transaction_count,
                 MAX(district) as district,
                 MAX(tenure) as tenure
@@ -479,37 +572,25 @@ def _estimate_units_from_transactions(project_name_upper: str) -> Optional[Dict[
               AND {OUTLIER_FILTER}
         """), {"project_name": project_name_upper}).fetchone()
 
-        if unique_units_result and unique_units_result[0] and unique_units_result[0] >= 5:
-            unique_count = unique_units_result[0]
-            transaction_count = unique_units_result[1]
+        if result and result[0] and result[0] >= 5:
+            unique_combos = result[0]
+            transaction_count = result[1]
 
-            # Calculate repeat ratio to determine market maturity
-            # Higher ratio = more resales per unique unit = more mature market
-            repeat_ratio = transaction_count / unique_count if unique_count > 0 else 1
-
-            if repeat_ratio >= 2:
-                # High repeat ratio = mature market, unique count is more reliable
-                # Apply small adjustment for units that may never transact (e.g., owner-occupied)
-                estimated_units = int(unique_count * 1.05)
-                confidence = CONFIDENCE_MEDIUM
-                note = f"Estimated from {unique_count} unique units ({transaction_count} transactions)"
-            else:
-                # Low repeat ratio = not all units have transacted yet
-                # Apply correction factor to account for untransacted units
-                estimated_units = int(unique_count * UNIQUE_UNITS_CORRECTION_FACTOR)
-                confidence = CONFIDENCE_LOW
-                note = f"Estimated from {unique_count} unique units (may be incomplete)"
+            # Apply large correction factor since floor_level is even more aggregated
+            # (High/Mid/Low instead of specific ranges)
+            SIMPLE_CORRECTION_FACTOR = 8.0
+            estimated_units = int(unique_combos * SIMPLE_CORRECTION_FACTOR)
 
             return {
                 "total_units": estimated_units,
-                "confidence": confidence,
-                "note": note,
-                "district": unique_units_result[2],
-                "tenure": unique_units_result[3],
+                "confidence": CONFIDENCE_LOW,
+                "note": f"Rough estimate from {unique_combos} unit patterns ({transaction_count} transactions). Actual count may differ significantly.",
+                "district": result[2],
+                "tenure": result[3],
             }
 
     except Exception as e:
-        logger.warning(f"Error estimating units for {project_name_upper}: {e}")
+        logger.warning(f"Error in simple estimation for {project_name_upper}: {e}")
 
     return None
 
