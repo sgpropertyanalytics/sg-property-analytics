@@ -85,6 +85,11 @@ Before starting migration, verify:
 | FloorPremiumTrendChart | ✅ Done | N/A (inline) | useAbortableQuery + QueryState |
 | FloorLiquidityHeatmap | ✅ Done | N/A (inline) | useAbortableQuery + QueryState |
 | UnitSizeVsPriceChart | ✅ Done | N/A (inline) | useAbortableQuery + QueryState |
+| HotProjectsTable | ✅ Done | N/A (inline) | useAbortableQuery + external filters |
+| GLSDataTable | ✅ Done | N/A (inline) | useAbortableQuery + useDeferredFetch |
+| UpcomingLaunchesTable | ✅ Done | N/A (inline) | useAbortableQuery + useDeferredFetch |
+| MarketMomentumGrid | ✅ Done | N/A (inline) | useAbortableQuery + district grouping |
+| TransactionDetailModal | ✅ Done | N/A (inline) | useAbortableQuery + pagination |
 | VolumeByLocationChart | ❌ N/A | N/A | File doesn't exist in codebase |
 
 ---

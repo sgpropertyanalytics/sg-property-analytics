@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useStaleRequestGuard } from '../../hooks';
+import React from 'react';
+import { useAbortableQuery } from '../../hooks';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
@@ -25,78 +25,50 @@ const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
 export function MarketMomentumGrid() {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, applyCrossFilter, filters } = usePowerBIFilters();
-  const [data, setData] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  const { data, loading, error, refetch } = useAbortableQuery(
+    async (signal) => {
+      // Single API call for all districts, grouped by quarter
+      // Uses excludeHighlight: true because this is a time-series visualization
+      const params = buildApiParams({
+        group_by: 'quarter,district',
+        metrics: 'median_psf,total_value',
+      }, { excludeHighlight: true });
 
-  // Fetch data for all districts
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
+      const response = await getAggregate(params, { signal });
+      const rawData = response.data?.data || [];
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+      // Group by district, preserving quarter order
+      const districtData = {};
+      ALL_DISTRICTS.forEach(d => {
+        districtData[d] = [];
+      });
 
-      try {
-        // Single API call for all districts, grouped by quarter
-        // Uses excludeHighlight: true because this is a time-series visualization
-        const params = buildApiParams({
-          group_by: 'quarter,district',
-          metrics: 'median_psf,total_value',
-        }, { excludeHighlight: true });
-
-        const response = await getAggregate(params, { signal });
-        const rawData = response.data?.data || [];
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        // Group by district, preserving quarter order
-        const districtData = {};
-        ALL_DISTRICTS.forEach(d => {
-          districtData[d] = [];
-        });
-
-        rawData.forEach(row => {
-          const district = row.district;
-          if (district && districtData[district]) {
-            // Use getAggField for v1/v2 compatibility
-            const medianPsf = getAggField(row, AggField.MEDIAN_PSF) || getAggField(row, AggField.AVG_PSF) || 0;
-            const totalValue = getAggField(row, AggField.TOTAL_VALUE) || 0;
-            districtData[district].push({
-              quarter: row.quarter,
-              medianPsf,
-              totalValue,
-            });
-          }
-        });
-
-        // Sort each district's data by quarter
-        Object.values(districtData).forEach(arr => {
-          arr.sort((a, b) => (a.quarter || '').localeCompare(b.quarter || ''));
-        });
-
-        setData(districtData);
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching market momentum data:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
+      rawData.forEach(row => {
+        const district = row.district;
+        if (district && districtData[district]) {
+          // Use getAggField for v1/v2 compatibility
+          const medianPsf = getAggField(row, AggField.MEDIAN_PSF) || getAggField(row, AggField.AVG_PSF) || 0;
+          const totalValue = getAggField(row, AggField.TOTAL_VALUE) || 0;
+          districtData[district].push({
+            quarter: row.quarter,
+            medianPsf,
+            totalValue,
+          });
         }
-      }
-    };
+      });
 
-    fetchData();
-    // debouncedFilterKey delays fetch by 200ms to prevent rapid-fire requests
-  }, [debouncedFilterKey]);
+      // Sort each district's data by quarter
+      Object.values(districtData).forEach(arr => {
+        arr.sort((a, b) => (a.quarter || '').localeCompare(b.quarter || ''));
+      });
+
+      return districtData;
+    },
+    [debouncedFilterKey],
+    { initialData: {} }
+  );
 
   // Handle district click - apply cross-filter
   const handleDistrictClick = (district) => {
@@ -142,7 +114,13 @@ export function MarketMomentumGrid() {
         </div>
         <div className="p-8 text-center">
           <p className="text-sm text-[#547792]">Unable to load market data</p>
-          <p className="text-xs text-[#94B4C1] mt-1">{error}</p>
+          <p className="text-xs text-[#94B4C1] mt-1">{error?.message || error}</p>
+          <button
+            onClick={refetch}
+            className="mt-3 px-3 py-1.5 text-xs bg-[#547792] text-white rounded hover:bg-[#213448] transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { useStaleRequestGuard, useDeferredFetch } from '../../hooks';
+import React, { useState, useMemo } from 'react';
+import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { getGLSAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
 
@@ -21,9 +21,6 @@ import { useSubscription } from '../../context/SubscriptionContext';
 export function GLSDataTable({ height = 400 }) {
   const subscriptionContext = useSubscription();
   const isPremium = subscriptionContext?.isPremium ?? true;
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'launched', 'awarded'
   const [segmentFilter, setSegmentFilter] = useState(''); // '', 'CCR', 'RCR', 'OCR'
   const [sortConfig, setSortConfig] = useState({
@@ -31,9 +28,6 @@ export function GLSDataTable({ height = 400 }) {
     order: 'desc',
   });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  // Prevent stale responses from overwriting fresh data
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Create a stable key for deferred fetch (changes when filter/sort/refresh changes)
   const deferKey = useMemo(
@@ -51,52 +45,33 @@ export function GLSDataTable({ height = 400 }) {
   // Handle manual refresh
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
-  // Fetch data when filters change (only if visible)
-  useEffect(() => {
-    if (!shouldFetch) return;
+  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  // enabled: shouldFetch ensures we only fetch when visible (deferred fetch)
+  const { data, loading, error } = useAbortableQuery(
+    async (signal) => {
+      const params = {
+        limit: 100,
+        sort: sortConfig.column,
+        order: sortConfig.order,
+      };
 
-    const requestId = startRequest();
-    const signal = getSignal();
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const params = {
-          limit: 100,
-          sort: sortConfig.column,
-          order: sortConfig.order,
-        };
-
-        if (filter !== 'all') {
-          params.status = filter;
-        }
-
-        if (segmentFilter) {
-          params.market_segment = segmentFilter;
-        }
-
-        const response = await getGLSAll(params, { signal });
-
-        // Ignore stale responses - a newer request has started
-        if (isStale(requestId)) return;
-
-        setData(response.data.data || []);
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        if (isStale(requestId)) return;
-        console.error('Error fetching GLS data:', err);
-        setError(err.message);
-      } finally {
-        if (!isStale(requestId)) {
-          setLoading(false);
-        }
+      if (filter !== 'all') {
+        params.status = filter;
       }
-    };
 
-    fetchData();
-  }, [shouldFetch]);
+      if (segmentFilter) {
+        params.market_segment = segmentFilter;
+      }
+
+      const response = await getGLSAll(params, { signal });
+      return response.data.data || [];
+    },
+    [filter, segmentFilter, sortConfig.column, sortConfig.order, refreshTrigger],
+    {
+      enabled: shouldFetch,
+      initialData: [],
+    }
+  );
 
   // Handle sort
   const handleSort = (column) => {
