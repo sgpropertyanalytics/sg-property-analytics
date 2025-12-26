@@ -15,7 +15,7 @@ import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
-import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
+import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS, AGE_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../hooks';
 
@@ -51,13 +51,7 @@ const VOLUME_GLOW = {
 // Use centralized filter options
 const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
 const PERIOD_OPTIONS = PERIOD_FILTER_OPTIONS;
-
-const AGE_OPTIONS = [
-  { value: 'all', label: 'All' },
-  { value: 'new', label: 'New/TOP (0-5 yrs)' },
-  { value: 'young', label: 'Young Resale (5-10 yrs)' },
-  { value: 'resale', label: 'Resale (>10 yrs)' },
-];
+const AGE_OPTIONS = AGE_FILTER_OPTIONS;
 
 // Manual marker offsets for crowded central districts
 const MARKER_OFFSETS = {
