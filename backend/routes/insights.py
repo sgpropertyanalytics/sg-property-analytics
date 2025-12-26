@@ -104,7 +104,11 @@ def district_psf():
     Query params:
       - period: Time period filter - 3m, 6m, 12m, all (default: 12m)
       - bed: Bedroom filter - all, 1, 2, 3, 4+, 5 (default: all)
-      - age: Property age filter (default: all)
+      - sale_type: Sale type filter (default: all)
+          - all: All sale types
+          - new_sale: New Sale transactions only
+          - resale: Resale transactions only
+      - age: Property age filter (default: all) [deprecated - use sale_type]
           - all: All properties
           - new: 0-5 years (New Sale / Recently TOP)
           - young: 5-10 years (Young Resale)
@@ -140,6 +144,7 @@ def district_psf():
     period = request.args.get("period", "12m")
     bed_filter = request.args.get("bed", "all")
     age_filter = request.args.get("age", "all")
+    sale_type_filter = request.args.get("sale_type", "all")
 
     # Calculate date range based on period
     today = datetime.now().date()
@@ -177,6 +182,13 @@ def district_psf():
     age_condition = build_property_age_filter(age_filter)
     if age_condition is not None:
         filter_conditions.append(age_condition)
+
+    # Apply sale type filter (new_sale, resale)
+    if sale_type_filter and sale_type_filter != "all":
+        if sale_type_filter == "new_sale":
+            filter_conditions.append(Transaction.sale_type == "New Sale")
+        elif sale_type_filter == "resale":
+            filter_conditions.append(Transaction.sale_type == "Resale")
 
     try:
         # Query current period data - grouped by district
@@ -216,6 +228,13 @@ def district_psf():
             # Apply same property age filter for YoY
             if age_condition is not None:
                 yoy_conditions.append(age_condition)
+
+            # Apply same sale type filter for YoY
+            if sale_type_filter and sale_type_filter != "all":
+                if sale_type_filter == "new_sale":
+                    yoy_conditions.append(Transaction.sale_type == "New Sale")
+                elif sale_type_filter == "resale":
+                    yoy_conditions.append(Transaction.sale_type == "Resale")
 
             yoy_query = db.session.query(
                 Transaction.district,
