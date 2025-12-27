@@ -79,6 +79,11 @@ def get_sql(params: Dict[str, Any]) -> str:
 
 def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     """Map query result to KPIResult."""
+    # Calculate date windows for debug output
+    max_date = filters.get('max_date') or date.today()
+    current_min = max_date - timedelta(days=90)
+    prev_min = current_min - timedelta(days=90)
+
     if not row:
         return KPIResult(
             kpi_id="total_transactions",
@@ -132,7 +137,13 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
                 "Number of resale transactions in the last 90 days.\n"
                 "The change vs the previous period indicates whether "
                 "market activity is increasing or slowing."
-            )
+            ),
+            # Debug: show actual date windows used
+            "debug_dates": {
+                "max_date": str(max_date),
+                "current_period": f"{current_min} to {max_date}",
+                "previous_period": f"{prev_min} to {current_min}",
+            }
         }
     )
 
