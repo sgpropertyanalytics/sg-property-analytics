@@ -32,19 +32,16 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
     max_date = filters.get('max_date') or date.today()
 
     # Use MONTH boundaries because URA data is month-level (all txns dated 1st of month)
-    # Current period: last 3 months (including current month)
-    # Previous period: 3 months before that
+    #
+    # RULE: Only use COMPLETE months. If today is in month M, latest complete = M-1.
     #
     # Example: if max_date is Dec 27, 2025:
-    #   max_exclusive = Jan 1, 2026
-    #   current_min = Oct 1, 2025 (3 months: Oct, Nov, Dec)
-    #   prev_min = Jul 1, 2025 (3 months: Jul, Aug, Sep)
+    #   max_exclusive = Dec 1, 2025 (1st of current month - excludes incomplete Dec)
+    #   current_min = Sep 1, 2025 (3 complete months: Sep, Oct, Nov)
+    #   prev_min = Jun 1, 2025 (3 months: Jun, Jul, Aug)
 
-    # max_exclusive is the first of next month
-    if max_date.month == 12:
-        max_exclusive = date(max_date.year + 1, 1, 1)
-    else:
-        max_exclusive = date(max_date.year, max_date.month + 1, 1)
+    # max_exclusive is the first of CURRENT month (excludes incomplete current month)
+    max_exclusive = date(max_date.year, max_date.month, 1)
 
     # Current period starts 3 months before max_exclusive
     if max_exclusive.month <= 3:
