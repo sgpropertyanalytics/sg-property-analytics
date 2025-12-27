@@ -41,12 +41,30 @@ def test_supply():
             return jsonify({"step": 2, "message": "Import works"})
 
         elif step == "3":
-            # Test service call
-            from services.supply_service import get_supply_summary
-            result = get_supply_summary(include_gls=False, launch_year=2026)
-            return jsonify({"step": 3, "message": "Service works", "totals": result.get("totals", {})})
+            # Test just unsold inventory
+            from services.supply_service import _get_unsold_inventory_by_district
+            result = _get_unsold_inventory_by_district()
+            return jsonify({"step": 3, "message": "Unsold inventory works", "count": len(result), "sample": dict(list(result.items())[:3])})
 
         elif step == "4":
+            # Test just upcoming launches
+            from services.supply_service import _get_upcoming_launches_by_district
+            result = _get_upcoming_launches_by_district(2026)
+            return jsonify({"step": 4, "message": "Upcoming launches works", "count": len(result), "sample": dict(list(result.items())[:3])})
+
+        elif step == "5":
+            # Test just GLS
+            from services.supply_service import _get_gls_pipeline_by_region
+            result = _get_gls_pipeline_by_region()
+            return jsonify({"step": 5, "message": "GLS works", "result": result})
+
+        elif step == "6":
+            # Full call without GLS
+            from services.supply_service import get_supply_summary
+            result = get_supply_summary(include_gls=False, launch_year=2026)
+            return jsonify({"step": 6, "message": "Service works", "totals": result.get("totals", {})})
+
+        elif step == "7":
             # Full call with GLS
             from services.supply_service import get_supply_summary
             result = get_supply_summary(include_gls=True, launch_year=2026)
