@@ -388,18 +388,6 @@ export function SupplyBreakdownTable({
             </tbody>
           </table>
         </div>
-
-        {/* Footer */}
-        <div className="px-6 py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30">
-          <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
-            <span className="text-[#94B4C1]">
-              Launch Year: {launchYear} • Click district to see projects
-            </span>
-            <span className="text-[#94B4C1]">
-              Higher bar = More supply
-            </span>
-          </div>
-        </div>
       </div>
     </QueryState>
   );
