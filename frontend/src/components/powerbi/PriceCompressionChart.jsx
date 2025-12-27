@@ -465,7 +465,7 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
     if (type === 'ccr-rcr') {
       // CCR < RCR: Prime Discount (opportunity)
       return (
-        <div className="bg-amber-100 border-2 border-amber-400 rounded-lg px-3 py-2 text-center h-[72px] flex flex-col justify-center">
+        <div className="bg-amber-100 border-2 border-amber-400 rounded-lg px-3 py-2 text-center sm:h-[72px] flex flex-col justify-center">
           <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
             Market Anomaly
           </div>
@@ -481,7 +481,7 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
     if (type === 'rcr-ocr') {
       // OCR > RCR: Risk Alert
       return (
-        <div className="bg-red-50 border-2 border-red-500 rounded-lg px-3 py-2 text-center h-[72px] flex flex-col justify-center">
+        <div className="bg-red-50 border-2 border-red-500 rounded-lg px-3 py-2 text-center sm:h-[72px] flex flex-col justify-center">
           <div className="text-[10px] font-bold text-red-800 uppercase tracking-wider">
             Risk Alert
           </div>
@@ -501,7 +501,7 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
   const isBelowAvg = pctVsAvg !== null && pctVsAvg < 0;
 
   return (
-    <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center h-[72px] flex flex-col justify-center">
+    <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center sm:h-[72px] flex flex-col justify-center">
       <div className="text-[10px] text-[#547792] uppercase tracking-wide truncate">
         {labels[type]}
       </div>
