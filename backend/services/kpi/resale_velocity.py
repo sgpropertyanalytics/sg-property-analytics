@@ -208,7 +208,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 
     return KPIResult(
         kpi_id="resale_velocity",
-        title="Resale Velocity",
+        title="Annualized Resale Velocity",
         value=round(annualized, 2),
         formatted_value=f"{annualized:.1f}%",
         subtitle="annualized turnover",
@@ -244,7 +244,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 class ResaleVelocitySpec:
     """KPI Spec for Resale Velocity."""
     kpi_id = "resale_velocity"
-    title = "Resale Velocity"
+    title = "Annualized Resale Velocity"
     subtitle = "annualized turnover"
 
     @staticmethod

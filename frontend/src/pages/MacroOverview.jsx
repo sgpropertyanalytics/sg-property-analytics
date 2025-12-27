@@ -250,31 +250,32 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
 
-                {/* Card 4: Resale Velocity (annualized turnover) */}
+                {/* Card 4: Annualized Resale Velocity */}
                 <KPICardV2
-                  title="Resale Velocity"
+                  title="Annualized Resale Velocity"
                   value={(() => {
                     const kpi = getKpi('resale_velocity');
                     if (!kpi?.value && kpi?.value !== 0) return '—';
-                    const { current_txns, total_units, annualized_velocity } = kpi.meta || {};
+                    const { prior_txns, pct_change } = kpi.meta || {};
                     const direction = kpi.trend?.direction;
                     const label = kpi.trend?.label;
-                    const colorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
-                    // Abbreviate large numbers (257603 -> 258K)
-                    const formatCompact = (n) => n >= 1000 ? `${Math.round(n / 1000)}K` : n?.toLocaleString();
+                    const labelColorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
+                    const arrow = pct_change > 0 ? '▲' : pct_change < 0 ? '▼' : '—';
+                    const changeColorClass = pct_change > 0 ? 'text-green-600' : pct_change < 0 ? 'text-red-600' : 'text-gray-500';
+                    const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
                     return (
                       <>
                         <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
-                          {kpi.formatted_value} <span className={`text-xs font-bold uppercase tracking-wider ${colorClass}`}>{label}</span>
+                          {kpi.formatted_value} <span className={`text-xs font-bold uppercase tracking-wider ${labelColorClass}`}>{label}</span>
                         </div>
-                        {annualized_velocity != null && (
-                          <div className="text-[12px] sm:text-[14px] text-gray-600">
-                            {annualized_velocity}% annualized
+                        {pct_change != null && (
+                          <div className={`text-[12px] sm:text-[14px] font-medium ${changeColorClass}`}>
+                            {arrow} {pctStr} QoQ
                           </div>
                         )}
-                        {current_txns != null && total_units != null && (
-                          <div className="text-[10px] sm:text-[12px] text-gray-500 truncate">
-                            {formatCompact(current_txns)} txns / {formatCompact(total_units)} units
+                        {prior_txns != null && (
+                          <div className="text-[10px] sm:text-[12px] text-gray-500">
+                            Prev: {prior_txns?.toLocaleString()} txns
                           </div>
                         )}
                       </>
