@@ -277,6 +277,57 @@ PLANNING_AREA_TO_DISTRICT = {
 }
 
 
+# =============================================================================
+# GLS STREET TO DISTRICT MAPPING (Geocoding Fallback)
+# =============================================================================
+# For GLS locations where OneMap returns NIL postal code/planning area.
+# These are manually verified mappings based on URA GLS site locations.
+#
+# Key: lowercase street name (partial match)
+# Value: District code
+
+GLS_STREET_TO_DISTRICT = {
+    # OCR
+    "bedok rise": "D16",        # Bedok area
+    "punggol walk": "D19",      # Punggol area
+    "woodlands drive": "D25",   # Woodlands area
+
+    # RCR
+    "dorset road": "D08",       # Little India / Farrer Park (Kallang)
+    "faber walk": "D05",        # Clementi / West Coast area
+    "margaret drive": "D03",    # Queenstown area
+    "telok ayer": "D01",        # CBD
+
+    # CCR / RCR boundary
+    "river valley road": "D09", # River Valley (CCR)
+    "bukit timah road": "D21",  # Upper Bukit Timah (OCR) - Dairy Farm area
+    "de souza avenue": "D19",   # Punggol / Sengkang area
+    "cross street": "D01",      # CBD / Chinatown
+}
+
+
+def get_district_from_street(street_name: str) -> str | None:
+    """
+    Derive district from street name (last resort fallback for GLS).
+
+    Args:
+        street_name: Raw street/location name from GLS data
+
+    Returns:
+        District code (e.g., "D16") or None if no match
+    """
+    if not street_name:
+        return None
+
+    name_lower = street_name.lower().strip()
+
+    for street_pattern, district in GLS_STREET_TO_DISTRICT.items():
+        if street_pattern in name_lower:
+            return district
+
+    return None
+
+
 def get_district_from_postal_code(postal_code: str) -> str | None:
     """
     Derive district from Singapore postal code.

@@ -23,6 +23,7 @@ try:
     from constants import (
         get_district_from_postal_code,
         get_district_from_planning_area,
+        get_district_from_street,
         get_region_for_district,
     )
 except ImportError:
@@ -30,6 +31,7 @@ except ImportError:
     from backend.constants import (
         get_district_from_postal_code,
         get_district_from_planning_area,
+        get_district_from_street,
         get_region_for_district,
     )
 
@@ -1477,7 +1479,7 @@ def scrape_gls_tenders(
                     # Last resort: use legacy planning_area → region mapping
                     market_segment = get_region_from_planning_area(data['planning_area'])
 
-            # Method 3: Subzone lookup (last fallback)
+            # Method 3: Subzone lookup (fallback)
             if not postal_district and not market_segment:
                 planning_area = lookup_planning_area_from_subzone(location)
                 if planning_area:
@@ -1487,6 +1489,12 @@ def scrape_gls_tenders(
                         market_segment = get_region_for_district(postal_district)
                     else:
                         market_segment = get_region_from_planning_area(planning_area)
+
+            # Method 4: Street name lookup (last resort for known GLS locations)
+            if not postal_district:
+                postal_district = get_district_from_street(location)
+                if postal_district:
+                    market_segment = get_region_for_district(postal_district)
 
             # Set derived fields
             data['postal_district'] = postal_district
