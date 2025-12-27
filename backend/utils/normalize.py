@@ -187,6 +187,25 @@ def to_date(
         )
 
 
+def clamp_date_to_today(value: Optional[date]) -> Optional[date]:
+    """
+    Clamp a date to today if it's in the future.
+
+    Used to prevent future-dated data from distorting analytics.
+    See: CLAUDE.md Card 15 (Date Anchoring Rule)
+
+    Args:
+        value: Date to clamp (can be None)
+
+    Returns:
+        Original date if in past/present, or today if in future
+    """
+    if value is None:
+        return None
+    today = date.today()
+    return min(value, today)
+
+
 def to_datetime(
     value: Optional[str],
     *,

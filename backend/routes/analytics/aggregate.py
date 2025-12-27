@@ -16,7 +16,7 @@ from constants import (
     TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR
 )
 from utils.normalize import (
-    to_int, to_float, to_date, to_list, to_bool,
+    to_int, to_float, to_date, to_list, to_bool, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 
@@ -171,7 +171,7 @@ def aggregate():
             filter_conditions.append(Transaction.transaction_date >= from_dt)
             filters_applied["date_from"] = from_dt.isoformat()
 
-        to_dt = to_date(request.args.get("date_to"), field="date_to")
+        to_dt = clamp_date_to_today(to_date(request.args.get("date_to"), field="date_to"))
         if to_dt:
             filter_conditions.append(Transaction.transaction_date <= to_dt)
             filters_applied["date_to"] = to_dt.isoformat()
@@ -592,7 +592,7 @@ def aggregate_summary():
         if from_dt:
             query = query.filter(Transaction.transaction_date >= from_dt)
 
-        to_dt = to_date(request.args.get("date_to"), field="date_to")
+        to_dt = clamp_date_to_today(to_date(request.args.get("date_to"), field="date_to"))
         if to_dt:
             query = query.filter(Transaction.transaction_date <= to_dt)
 

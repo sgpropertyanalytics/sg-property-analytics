@@ -13,7 +13,7 @@ from flask import request, jsonify
 from routes.analytics import analytics_bp
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
 from utils.normalize import (
-    to_int, to_float, to_date, to_list, to_bool,
+    to_int, to_float, to_date, to_list, to_bool, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 
@@ -99,7 +99,7 @@ def dashboard():
                 if date_from:
                     filters['date_from'] = date_from
 
-                date_to = to_date(request.args.get('date_to'), field='date_to')
+                date_to = clamp_date_to_today(to_date(request.args.get('date_to'), field='date_to'))
                 if date_to:
                     filters['date_to'] = date_to
 

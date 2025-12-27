@@ -12,7 +12,7 @@ import time
 from flask import request, jsonify
 from routes.analytics import analytics_bp
 from utils.normalize import (
-    to_int, to_date,
+    to_int, to_date, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 
@@ -64,7 +64,7 @@ def get_transaction_price_growth():
 
         # Parse date params (must be Python date objects for SQL guardrails)
         date_from = to_date(request.args.get('date_from'), field='date_from')
-        date_to = to_date(request.args.get('date_to'), field='date_to')
+        date_to = clamp_date_to_today(to_date(request.args.get('date_to'), field='date_to'))
 
         # Parse pagination params
         page = to_int(request.args.get('page'), default=1, field='page')
