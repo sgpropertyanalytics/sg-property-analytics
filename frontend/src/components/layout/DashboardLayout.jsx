@@ -119,7 +119,6 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
             {/* Filter Sidebar */}
             <div
               className={`
-                transition-all duration-200 ease-out
                 min-w-0
                 ${filterSidebarCollapsed ? 'w-12' : 'w-72'}
               `}
