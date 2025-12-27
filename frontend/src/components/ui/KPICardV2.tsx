@@ -29,6 +29,8 @@ interface KPICardV2Props {
   };
   /** Context text shown in Layer 3 */
   transition?: string;
+  /** Formula/calculation shown in footer (smaller, muted) */
+  formula?: string;
   footerMeta?: string;
   loading?: boolean;
   className?: string;
@@ -41,6 +43,7 @@ export function KPICardV2({
   value,
   trend,
   transition,
+  formula,
   footerMeta,
   loading = false,
   className = '',
@@ -69,7 +72,7 @@ export function KPICardV2({
                   <span className="w-3.5 h-3.5 flex items-center justify-center text-[9px] text-[#94B4C1] hover:text-[#547792] cursor-help transition-colors border border-[#94B4C1] rounded-full">
                     ?
                   </span>
-                  <div className="absolute left-0 top-5 z-50 hidden group-hover:block w-48 p-2 bg-[#213448] text-white text-[10px] leading-relaxed rounded shadow-lg">
+                  <div className="absolute left-0 top-5 z-50 hidden group-hover:block w-64 p-3 bg-[#213448] text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line">
                     {tooltip}
                   </div>
                 </div>
@@ -100,9 +103,16 @@ export function KPICardV2({
         {loading ? (
           <div className="h-3 bg-[#94B4C1]/20 rounded w-1/2 animate-pulse" />
         ) : (
-          <span className="text-xs text-[#547792]">
-            {transition || trend?.label || footerMeta}
-          </span>
+          <div className="space-y-0.5">
+            <span className="text-xs text-[#547792] block">
+              {transition || trend?.label || footerMeta}
+            </span>
+            {formula && (
+              <span className="text-[10px] text-[#94B4C1] block font-mono">
+                {formula}
+              </span>
+            )}
+          </div>
         )}
       </div>
     </div>

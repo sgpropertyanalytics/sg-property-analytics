@@ -347,7 +347,16 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "confidence": confidence,
             "used_fallback": use_fallback,
             "sale_type": "resale",
-            "description": "Market Momentum measures whether recent price changes are stronger or weaker than normal. A higher score indicates buyer advantage, while a lower score indicates seller advantage. It reflects price movement, not whether homes are cheap or expensive."
+            "description": (
+                "Market Momentum measures whether recent price changes are "
+                "stronger or weaker than normal.\n\n"
+                "Score Range:\n"
+                "60-70: Buyers have leverage\n"
+                "~50: Stable/balanced market\n"
+                "30-40: Sellers have leverage\n\n"
+                "It reflects price movement, not whether homes are cheap or expensive."
+            ),
+            "formula": f"z={round(z_score, 2) if z_score is not None else '—'} → 50-(z×10)"
         }
     )
 
