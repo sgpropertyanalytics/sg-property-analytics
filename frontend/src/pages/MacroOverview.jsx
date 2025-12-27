@@ -165,7 +165,7 @@ export function MacroOverviewContent() {
                     return (
                       <>
                         <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
-                          {current_score} <span className={`text-[14px] sm:text-[16px] font-normal ${conditionColorClass}`}>{label}</span>
+                          {current_score} <span className={`text-xs font-bold uppercase tracking-wider ${conditionColorClass}`}>{label}</span>
                         </div>
                         {score_change_pct != null && (
                           <div className={`text-[12px] sm:text-[14px] font-medium ${changeColorClass}`}>
