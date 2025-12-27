@@ -351,16 +351,27 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
         if prev_score:
             score_change = ((score - prev_score) / prev_score) * 100
 
-    # Determine market condition
+    # Determine market condition (based on score value)
     if score > 55:
         label = "Buyer advantage"
-        direction = "up"
+        condition_direction = "up"
     elif score < 45:
         label = "Seller advantage"
-        direction = "down"
+        condition_direction = "down"
     else:
         label = "Balanced"
-        direction = "neutral"
+        condition_direction = "neutral"
+
+    # Determine change direction (based on score change)
+    if score_change is not None:
+        if score_change > 0.5:
+            change_direction = "up"
+        elif score_change < -0.5:
+            change_direction = "down"
+        else:
+            change_direction = "neutral"
+    else:
+        change_direction = "neutral"
 
     # Format value with Q-o-Q change if available
     if score_change is not None:
@@ -380,7 +391,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
         subtitle="volatility-adjusted",
         trend={
             "value": round(score),
-            "direction": direction,
+            "direction": condition_direction,
             "label": label
         },
         insight=insight,
@@ -388,7 +399,8 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "current_score": round(score),
             "prev_score": round(prev_score) if prev_score else None,
             "score_change_pct": round(score_change, 1) if score_change is not None else None,
-            "direction": direction,
+            "change_direction": change_direction,  # For arrow (based on score change)
+            "condition_direction": condition_direction,  # For market condition
             "label": label,
             "volatility": round(volatility, 2) if volatility else None,
             "volatility_quarters": volatility_quarters,

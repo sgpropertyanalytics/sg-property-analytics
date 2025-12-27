@@ -155,17 +155,20 @@ export function MacroOverviewContent() {
                   value={(() => {
                     const kpi = getKpi('market_momentum');
                     if (!kpi?.meta?.current_score) return '—';
-                    const { current_score, prev_score, score_change_pct, direction, label } = kpi.meta;
-                    const arrow = direction === 'up' ? '▲' : direction === 'down' ? '▼' : '—';
-                    const colorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
+                    const { current_score, prev_score, score_change_pct, change_direction, condition_direction, label } = kpi.meta;
+                    // Arrow based on score CHANGE direction
+                    const arrow = change_direction === 'up' ? '▲' : change_direction === 'down' ? '▼' : '—';
+                    const changeColorClass = change_direction === 'up' ? 'text-green-600' : change_direction === 'down' ? 'text-red-600' : 'text-gray-500';
+                    // Label color based on market CONDITION
+                    const conditionColorClass = condition_direction === 'up' ? 'text-green-600' : condition_direction === 'down' ? 'text-red-600' : 'text-gray-500';
                     const pctStr = score_change_pct != null ? (score_change_pct >= 0 ? `+${score_change_pct}%` : `${score_change_pct}%`) : '';
                     return (
                       <>
                         <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
-                          {current_score} <span className={`text-[14px] sm:text-[16px] font-normal ${colorClass}`}>{label}</span>
+                          {current_score} <span className={`text-[14px] sm:text-[16px] font-normal ${conditionColorClass}`}>{label}</span>
                         </div>
                         {score_change_pct != null && (
-                          <div className={`text-[12px] sm:text-[14px] font-medium ${colorClass}`}>
+                          <div className={`text-[12px] sm:text-[14px] font-medium ${changeColorClass}`}>
                             {arrow} {pctStr} QoQ
                           </div>
                         )}
