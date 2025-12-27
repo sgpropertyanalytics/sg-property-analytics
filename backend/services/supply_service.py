@@ -581,7 +581,7 @@ def _get_upcoming_launches_with_projects(launch_year: int) -> tuple:
 
     Returns:
         Tuple of (district_totals: Dict[str, int], projects: List[Dict])
-        projects: [{ name, district, region, units, launch_quarter }]
+        projects: [{ name, district, region, units, expected_launch_date }]
     """
     imports = _get_imports()
     db = imports['db']
@@ -596,7 +596,7 @@ def _get_upcoming_launches_with_projects(launch_year: int) -> tuple:
             UpcomingLaunch.project_name,
             UpcomingLaunch.district,
             UpcomingLaunch.total_units,
-            UpcomingLaunch.launch_quarter
+            UpcomingLaunch.expected_launch_date
         ).filter(
             UpcomingLaunch.launch_year == launch_year
         ).all()
@@ -616,13 +616,18 @@ def _get_upcoming_launches_with_projects(launch_year: int) -> tuple:
             units = int(row.total_units)
             region = get_region_for_district(d)
 
+            # Derive quarter from expected_launch_date if available
+            launch_quarter = None
+            if row.expected_launch_date:
+                launch_quarter = f"Q{((row.expected_launch_date.month - 1) // 3) + 1}"
+
             district_totals[d] += units
             projects.append({
                 'name': row.project_name or 'Unknown Project',
                 'district': d,
                 'region': region,
                 'units': units,
-                'launch_quarter': row.launch_quarter,
+                'launch_quarter': launch_quarter,
                 'category': 'upcoming'
             })
 

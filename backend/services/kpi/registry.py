@@ -120,11 +120,12 @@ def run_all_kpis(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
         kpi_result = run_kpi(spec, filters)
         result_dict = asdict(kpi_result)
 
-        # Track errors for debugging
-        if result_dict.get('meta', {}).get('error'):
+        # Track errors for debugging (meta can be None, not just missing)
+        meta = result_dict.get('meta') or {}
+        if meta.get('error'):
             errors.append({
                 'kpi_id': spec.kpi_id,
-                'error': result_dict['meta']['error']
+                'error': meta['error']
             })
 
         results.append(result_dict)
