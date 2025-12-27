@@ -155,12 +155,13 @@ def get_transaction_price_growth(
                 psf,
 
                 -- First PSF in this segment (project + bedroom + floor)
+                -- Secondary sort by id ensures deterministic ordering for same-date transactions
                 FIRST_VALUE(psf) OVER (
                     PARTITION BY
                         project_name,
                         bedroom_count,
                         COALESCE(floor_level, 'Unknown')
-                    ORDER BY transaction_date
+                    ORDER BY transaction_date, id
                     ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
                 ) as first_psf,
 
@@ -170,7 +171,7 @@ def get_transaction_price_growth(
                         project_name,
                         bedroom_count,
                         COALESCE(floor_level, 'Unknown')
-                    ORDER BY transaction_date
+                    ORDER BY transaction_date, id
                 ) as prev_psf,
 
                 -- Previous transaction date
@@ -179,7 +180,7 @@ def get_transaction_price_growth(
                         project_name,
                         bedroom_count,
                         COALESCE(floor_level, 'Unknown')
-                    ORDER BY transaction_date
+                    ORDER BY transaction_date, id
                 ) as prev_date,
 
                 -- Row number within segment (for identifying first transaction)
@@ -188,7 +189,7 @@ def get_transaction_price_growth(
                         project_name,
                         bedroom_count,
                         COALESCE(floor_level, 'Unknown')
-                    ORDER BY transaction_date
+                    ORDER BY transaction_date, id
                 ) as txn_sequence
 
             FROM transactions
@@ -242,7 +243,8 @@ def get_transaction_price_growth(
             project_name,
             bedroom_count,
             floor_level,
-            transaction_date
+            transaction_date,
+            id
         LIMIT :limit OFFSET :offset
     """)
 
@@ -345,6 +347,7 @@ def get_segment_summary(
     query = text(f"""
         WITH transaction_growth AS (
             SELECT
+                id,
                 project_name,
                 bedroom_count,
                 COALESCE(floor_level, 'Unknown') as floor_level,
@@ -353,23 +356,23 @@ def get_segment_summary(
 
                 FIRST_VALUE(psf) OVER (
                     PARTITION BY project_name, bedroom_count, COALESCE(floor_level, 'Unknown')
-                    ORDER BY transaction_date
+                    ORDER BY transaction_date, id
                     ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
                 ) as first_psf,
 
                 LAG(psf) OVER (
                     PARTITION BY project_name, bedroom_count, COALESCE(floor_level, 'Unknown')
-                    ORDER BY transaction_date
+                    ORDER BY transaction_date, id
                 ) as prev_psf,
 
                 LAG(transaction_date) OVER (
                     PARTITION BY project_name, bedroom_count, COALESCE(floor_level, 'Unknown')
-                    ORDER BY transaction_date
+                    ORDER BY transaction_date, id
                 ) as prev_date,
 
                 ROW_NUMBER() OVER (
                     PARTITION BY project_name, bedroom_count, COALESCE(floor_level, 'Unknown')
-                    ORDER BY transaction_date
+                    ORDER BY transaction_date, id
                 ) as txn_sequence
 
             FROM transactions
