@@ -296,7 +296,7 @@ export function PriceCompressionChart({ height = 380 }) {
         <InlineCardRow blur={!isPremium}>
           {/* Compression Score */}
           <InlineCard
-            label="Compression"
+            label="Compression Score"
             value={compressionScore.score}
             subtext={compressionScore.label}
           />
@@ -423,8 +423,8 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
     : null;
 
   const labels = {
-    'ccr-rcr': 'Prime Premium (CCR vs RCR)',
-    'rcr-ocr': 'Fringe Premium (RCR vs OCR)',
+    'ccr-rcr': 'CCR > RCR Premium',
+    'rcr-ocr': 'RCR > OCR Premium',
   };
 
   // Inverted states (anomalies)
