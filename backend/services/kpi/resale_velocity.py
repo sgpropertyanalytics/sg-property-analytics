@@ -182,16 +182,22 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     else:
         confidence = "low"
 
-    # Interpretation thresholds (annualized)
-    if current_annualized >= 4:
-        label = "Hot"
+    # Interpretation thresholds (annualized turnover)
+    if current_annualized > 6:
+        label = "High Turnover"
+        direction = "up"
+    elif current_annualized >= 4:
+        label = "Very Active"
+        direction = "up"
+    elif current_annualized >= 3:
+        label = "Active"
         direction = "up"
     elif current_annualized >= 2:
         label = "Healthy"
         direction = "neutral"
     elif current_annualized >= 1:
         label = "Slow"
-        direction = "neutral"
+        direction = "down"
     else:
         label = "Illiquid"
         direction = "down"
@@ -233,10 +239,12 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "description": (
                 "Measures how fast resale homes are changing hands.\n\n"
                 "Interpretation (annualized)\n"
-                "• ≥4%: Hot – fast-moving market\n"
-                "• 2–4%: Healthy – balanced liquidity\n"
-                "• 1–2%: Slow – limited activity\n"
-                "• <1%: Illiquid – hard to exit\n\n"
+                "• >6%: High Turnover\n"
+                "• 4–6%: Very Active\n"
+                "• 3–4%: Active\n"
+                "• 2–3%: Healthy\n"
+                "• 1–2%: Slow\n"
+                "• <1%: Illiquid\n\n"
                 "Based on 3-month resale transactions divided by total "
                 "completed units. Excludes new sales and boutique projects (<100 units)."
             )
