@@ -77,7 +77,7 @@ export function SupplyKpiCards({
       <KPICardV2
         title="Unsold Inventory"
         value={formatUnits(unsoldInventory)}
-        footnote="Developer stock"
+        transition="Developer stock"
         loading={loading}
       />
 
@@ -85,7 +85,7 @@ export function SupplyKpiCards({
       <KPICardV2
         title="Upcoming Launches"
         value={formatUnits(upcomingLaunches)}
-        footnote={`Targeting ${launchYear}`}
+        transition={`Targeting ${launchYear}`}
         loading={loading}
       />
 
@@ -93,7 +93,7 @@ export function SupplyKpiCards({
       <KPICardV2
         title="GLS Pipeline"
         value={includeGls ? formatUnits(glsPipeline) : '—'}
-        footnote={includeGls ? 'Open tenders' : 'GLS excluded'}
+        transition={includeGls ? 'Open tenders' : 'GLS excluded'}
         loading={loading}
       />
     </KPICardV2Group>

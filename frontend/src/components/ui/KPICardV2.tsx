@@ -27,8 +27,10 @@ interface KPICardV2Props {
     direction: 'up' | 'down' | 'neutral';
     label?: string;
   };
-  /** Context footnote text shown in footer */
+  /** Context footnote text shown in footer (9px) */
   footnote?: string;
+  /** @deprecated Use footnote instead */
+  transition?: string;
   loading?: boolean;
   className?: string;
 }
@@ -40,9 +42,12 @@ export function KPICardV2({
   value,
   trend,
   footnote,
+  transition,
   loading = false,
   className = '',
 }: KPICardV2Props) {
+  // Backward compatibility: prefer footnote, fallback to transition
+  const footerText = footnote || transition;
   return (
     <div
       className={`
@@ -99,7 +104,7 @@ export function KPICardV2({
           <div className="h-3 bg-[#94B4C1]/20 rounded w-1/2 animate-pulse" />
         ) : (
           <span className="text-[9px] text-[#547792] block whitespace-pre-line">
-            {footnote}
+            {footerText}
           </span>
         )}
       </div>
