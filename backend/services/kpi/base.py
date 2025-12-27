@@ -147,27 +147,26 @@ def build_monthly_comparison_bounds(
     CRITICAL: URA data is month-level - all transactions within a month
     are dated to the 1st of that month. Day-level boundaries will fail.
 
+    RULE: Only use COMPLETE months. If today is in month M, latest complete = M-1.
+
     Example with max_date=Dec 27, period_months=3:
-        max_date_exclusive: Jan 1, 2026
-        min_date: Oct 1, 2025 (current: Oct, Nov, Dec)
-        prev_min_date: Jul 1, 2025 (previous: Jul, Aug, Sep)
+        max_date_exclusive: Dec 1, 2025 (1st of current month - excludes incomplete Dec)
+        min_date: Sep 1, 2025 (current: Sep, Oct, Nov - 3 complete months)
+        prev_min_date: Jun 1, 2025 (previous: Jun, Jul, Aug)
 
     Returns:
         {
-            min_date: 1st of month, N months before max_date's month
-            max_date_exclusive: 1st of month after max_date's month
-            prev_min_date: 1st of month, 2N months before max_date's month
+            min_date: 1st of month, N months before current month
+            max_date_exclusive: 1st of current month (excludes incomplete month)
+            prev_min_date: 1st of month, 2N months before current month
             prev_max_date_exclusive: same as min_date
         }
     """
     if max_date is None:
         max_date = date.today()
 
-    # max_exclusive is 1st of next month
-    if max_date.month == 12:
-        max_exclusive = date(max_date.year + 1, 1, 1)
-    else:
-        max_exclusive = date(max_date.year, max_date.month + 1, 1)
+    # max_exclusive is 1st of CURRENT month (excludes incomplete current month)
+    max_exclusive = date(max_date.year, max_date.month, 1)
 
     # Current period starts N months before max_exclusive
     min_date = _months_back(max_exclusive, period_months)

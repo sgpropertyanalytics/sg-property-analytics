@@ -46,16 +46,16 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
 
     CRITICAL: Uses MONTH boundaries because URA data is month-level.
     All transactions within a month are dated to the 1st of that month.
+
+    RULE: Only use COMPLETE months. If today is in month M, latest complete = M-1.
+    Example (Dec 27): Current = Sep,Oct,Nov | Previous = Jun,Jul,Aug
     """
     max_date = filters.get('max_date')
     if max_date is None:
         max_date = date.today()
 
-    # max_exclusive is 1st of next month
-    if max_date.month == 12:
-        max_exclusive = date(max_date.year + 1, 1, 1)
-    else:
-        max_exclusive = date(max_date.year, max_date.month + 1, 1)
+    # max_exclusive is 1st of CURRENT month (excludes incomplete current month)
+    max_exclusive = date(max_date.year, max_date.month, 1)
 
     # Current quarter: last 3 months (Q0)
     # Previous quarter: 3-6 months ago (Q1)
