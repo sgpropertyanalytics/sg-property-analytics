@@ -254,34 +254,108 @@ if (age < 5) band = 'new';  // Wrong classification
 
 ## Part 8: Filter Parameter Standards
 
-### API Parameter Naming Convention
+### Two-Layer Naming Convention
 
-| Concept | API Param | NOT |
-|---------|-----------|-----|
-| District | `district` | ~~districts~~ |
-| Bedroom | `bedroom` | ~~bedrooms~~, ~~bedroom_type~~ |
-| Region/Segment | `segment` | ~~region~~ (region is output field name) |
-| Sale Type | `sale_type` | ~~saleType~~ (API uses snake_case) |
-| Date Range | `date_from`, `date_to` | ~~start_date~~, ~~dateFrom~~ |
+Filter parameters use **different naming at different layers**:
 
-### Usage
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  FRONTEND                                                        │
+│  buildApiParams() → { district: 'D01,D02', bedroom: '2,3' }     │
+│                           ↓ SINGULAR                             │
+├─────────────────────────────────────────────────────────────────┤
+│  API BOUNDARY (HTTP Request)                                     │
+│  ?district=D01,D02&bedroom=2,3&segment=CCR                      │
+│                           ↓ SINGULAR                             │
+├─────────────────────────────────────────────────────────────────┤
+│  ROUTE HANDLER (routes/*.py)                                     │
+│  Parses & normalizes → { districts: [...], bedrooms: [...] }    │
+│                           ↓ PLURAL                               │
+├─────────────────────────────────────────────────────────────────┤
+│  SERVICE LAYER (services/*.py)                                   │
+│  filters.get('districts'), filters.get('bedrooms')              │
+│                           = PLURAL                               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### API Parameters (Singular) — Frontend & HTTP
+
+| Concept | API Param | Format | Example |
+|---------|-----------|--------|---------|
+| District | `district` | Comma-separated | `district=D01,D02` |
+| Bedroom | `bedroom` | Comma-separated | `bedroom=2,3` |
+| Segment | `segment` | Comma-separated | `segment=CCR,RCR` |
+| Sale Type | `sale_type` | Single value | `sale_type=Resale` |
+| Date Range | `date_from`, `date_to` | ISO date | `date_from=2024-01-01` |
+| PSF Range | `psf_min`, `psf_max` | Number | `psf_min=1500` |
+| Size Range | `size_min`, `size_max` | Number | `size_min=800` |
+| Tenure | `tenure` | Single value | `tenure=Freehold` |
+| Project | `project` | String | `project=Parc` |
+
+### Service Filters (Plural) — Backend Services
+
+| Concept | Service Key | Type | Example |
+|---------|-------------|------|---------|
+| Districts | `districts` | `List[str]` | `['D01', 'D02']` |
+| Bedrooms | `bedrooms` | `List[int]` | `[2, 3]` |
+| Segments | `segments` | `List[str]` | `['CCR', 'RCR']` |
+| Sale Type | `sale_type` | `str` | `'Resale'` |
+| Date Range | `date_from`, `date_to` | `date` | Python date objects |
+
+### Frontend Usage
 
 ```javascript
-// CORRECT
+// CORRECT - API params are SINGULAR, comma-separated strings
 const params = {
-  district: 'D01,D02',      // Comma-separated, singular key
-  bedroom: '2,3',           // Comma-separated, singular key
-  segment: 'CCR',           // Filter param
-  sale_type: 'Resale',      // snake_case for API
+  district: 'D01,D02',      // Singular key, comma-separated
+  bedroom: '2,3',           // Singular key, comma-separated
+  segment: 'CCR',           // Singular key
+  sale_type: 'Resale',      // snake_case
 };
 
-// FORBIDDEN
+// FORBIDDEN - Never use plural or arrays in API params
 const params = {
   districts: ['D01', 'D02'],  // Wrong: plural, array
   bedrooms: '2,3',            // Wrong: plural
-  region: 'CCR',              // Wrong: region is output field
+  region: 'CCR',              // Wrong: use 'segment'
 };
 ```
+
+### Backend Route Handler
+
+```python
+# Route handler normalizes singular → plural for services
+@app.route('/api/data')
+def get_data():
+    # Parse singular API params
+    district_param = request.args.get('district', '')
+    bedroom_param = request.args.get('bedroom', '')
+
+    # Normalize to plural for service layer
+    filters = {
+        'districts': [d.strip() for d in district_param.split(',') if d.strip()],
+        'bedrooms': [int(b) for b in bedroom_param.split(',') if b.strip()],
+    }
+
+    return service.get_data(filters)
+```
+
+### Backend Service
+
+```python
+# Services expect PLURAL keys with list values
+def get_data(filters: dict):
+    districts = filters.get('districts', [])  # List[str]
+    bedrooms = filters.get('bedrooms', [])    # List[int]
+    segments = filters.get('segments', [])    # List[str]
+    sale_type = filters.get('sale_type')      # str (singular - not a list)
+```
+
+### Why This Convention?
+
+1. **API params are singular** — Matches HTTP convention (`?id=1,2` not `?ids=1,2`)
+2. **Service filters are plural** — Semantically correct for lists (`districts` contains multiple districts)
+3. **Route handlers bridge the gap** — Single place for normalization/validation
 
 ---
 
@@ -393,8 +467,20 @@ BEFORE WRITING ANY DATA CODE:
 [ ] Check apiContract.js for enum helpers
 [ ] Use helper functions (getRegionForDistrict, isSaleType, etc.)
 [ ] Never hardcode classification strings
-[ ] Filter params: singular, snake_case (district, bedroom)
 [ ] Response fields: use adapters for v1/v2 normalization
+
+FILTER NAMING (Two-Layer Convention):
+┌──────────────────────────────────────────────────────┐
+│ API PARAMS (singular)  →  SERVICE FILTERS (plural)   │
+│ district               →  districts                  │
+│ bedroom                →  bedrooms                   │
+│ segment                →  segments                   │
+│ sale_type              →  sale_type (stays singular) │
+└──────────────────────────────────────────────────────┘
+
+Frontend: params.district = 'D01,D02'     // SINGULAR
+Route:    filters['districts'] = [...]    // PLURAL
+Service:  filters.get('districts', [])    // PLURAL
 
 ADDING NEW CLASSIFICATION:
 1. Add to backend/constants.py
