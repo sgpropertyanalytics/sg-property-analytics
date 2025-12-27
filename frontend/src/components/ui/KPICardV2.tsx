@@ -98,8 +98,8 @@ export function KPICardV2({
         )}
       </div>
 
-      {/* Layer 3: Context - pinned to bottom */}
-      <div className="flex-shrink-0">
+      {/* Layer 3: Context - pinned to bottom with shaded background */}
+      <div className="flex-shrink-0 -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 px-4 sm:px-5 py-2 bg-[#EAE0CF]/30 rounded-b-lg">
         {loading ? (
           <div className="h-3 bg-[#94B4C1]/20 rounded w-1/2 animate-pulse" />
         ) : (
