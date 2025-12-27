@@ -91,11 +91,11 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "label": "vs prev 30d"
         }
 
-    # Build insight
+    # Build insight - show previous value with time context
     if prev and prev_count > 0:
-        insight = f"${round(prev):,} → ${round(current):,}"
+        insight = f"${round(prev):,} (30 days ago)"
     else:
-        insight = f"${round(current):,} ({current_count} txns)"
+        insight = None
 
     return KPIResult(
         kpi_id="median_psf",
