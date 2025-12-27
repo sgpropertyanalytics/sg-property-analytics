@@ -106,22 +106,30 @@ export const transformCompressionSeries = (rawData, expectedGrain = null) => {
  * 100 = spreads at historical minimum (tight)
  * 0 = spreads at historical maximum (wide)
  *
- * @param {Array} data - Output from transformCompressionSeries
- * @returns {{ score: number, label: string }}
+ * IMPORTANT: min/max should be calculated from FULL HISTORICAL data (baseline),
+ * not from the filtered view. This ensures scores are comparable across time filters.
+ *
+ * @param {Array} data - Output from transformCompressionSeries (filtered view)
+ * @param {Object} historicalBaseline - Optional { min, max } from full historical data
+ * @returns {{ score: number, label: string, current: number, min: number, max: number }}
  */
-export const calculateCompressionScore = (data) => {
+export const calculateCompressionScore = (data, historicalBaseline = null) => {
   if (!Array.isArray(data) || data.length < 2) {
-    return { score: 50, label: 'moderate' };
+    return { score: 50, label: 'moderate', current: null, min: null, max: null };
   }
 
   const spreads = data.map(d => d.combinedSpread).filter(v => v != null && v > 0);
-  if (spreads.length < 2) return { score: 50, label: 'moderate' };
+  if (spreads.length < 2) return { score: 50, label: 'moderate', current: null, min: null, max: null };
 
+  // Current spread from filtered data (latest period)
   const current = spreads[spreads.length - 1];
-  const minSpread = Math.min(...spreads);
-  const maxSpread = Math.max(...spreads);
 
-  if (maxSpread === minSpread) return { score: 50, label: 'moderate' };
+  // Use historical baseline if provided, otherwise fall back to filtered data
+  // WARNING: Using filtered data for min/max makes scores relative to themselves
+  const minSpread = historicalBaseline?.min ?? Math.min(...spreads);
+  const maxSpread = historicalBaseline?.max ?? Math.max(...spreads);
+
+  if (maxSpread === minSpread) return { score: 50, label: 'moderate', current, min: minSpread, max: maxSpread };
 
   // Score: 100 = at min (tight), 0 = at max (wide)
   const score = Math.round(100 - ((current - minSpread) / (maxSpread - minSpread)) * 100);
@@ -131,7 +139,28 @@ export const calculateCompressionScore = (data) => {
   if (clampedScore >= 70) label = 'tight';
   else if (clampedScore <= 30) label = 'wide';
 
-  return { score: clampedScore, label };
+  return { score: clampedScore, label, current, min: minSpread, max: maxSpread };
+};
+
+/**
+ * Calculate historical baseline (min/max) from full dataset.
+ * This should be called once with unfiltered data and cached.
+ *
+ * @param {Array} data - Output from transformCompressionSeries (FULL historical data)
+ * @returns {{ min: number, max: number }}
+ */
+export const calculateHistoricalBaseline = (data) => {
+  if (!Array.isArray(data) || data.length < 2) {
+    return { min: 0, max: 1000 }; // Fallback defaults
+  }
+
+  const spreads = data.map(d => d.combinedSpread).filter(v => v != null && v > 0);
+  if (spreads.length < 2) return { min: 0, max: 1000 };
+
+  return {
+    min: Math.min(...spreads),
+    max: Math.max(...spreads),
+  };
 };
 
 /**

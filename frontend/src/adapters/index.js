@@ -27,6 +27,7 @@ export {
   // Compression analysis transformations
   transformCompressionSeries,
   calculateCompressionScore,
+  calculateHistoricalBaseline,
   calculateAverageSpreads,
   detectMarketSignals,
   detectInversionZones,

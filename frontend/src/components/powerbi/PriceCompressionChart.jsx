@@ -23,6 +23,7 @@ import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformCompressionSeries,
   calculateCompressionScore,
+  calculateHistoricalBaseline,
   calculateAverageSpreads,
   detectMarketSignals,
   detectInversionZones,
@@ -81,6 +82,26 @@ export function PriceCompressionChart({ height = 380 }) {
     fetchOnMount: true,
   });
 
+  // HISTORICAL BASELINE: Fetch full historical data once (no date filters)
+  // This provides stable min/max for compression score calculation
+  // Uses quarterly grain for efficiency - baseline doesn't need fine-grained time
+  const { data: baselineData } = useAbortableQuery(
+    async (signal) => {
+      // No date filters, no highlights - full historical data
+      const params = {
+        group_by: 'quarter,region',
+        metrics: 'median_psf,count',
+      };
+
+      const response = await getAggregate(params, { signal });
+      const rawData = response.data?.data || [];
+      const transformed = transformCompressionSeries(rawData, 'quarter');
+      return calculateHistoricalBaseline(transformed);
+    },
+    [], // Empty deps = fetch once on mount
+    { initialData: { min: 0, max: 1000 }, enabled: shouldFetch }
+  );
+
   // Data fetching with useAbortableQuery - automatic abort/stale handling
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
@@ -127,8 +148,11 @@ export function PriceCompressionChart({ height = 380 }) {
     }
   };
 
-  // Computed values
-  const compressionScore = useMemo(() => calculateCompressionScore(data), [data]);
+  // Computed values - use historical baseline for stable min/max
+  const compressionScore = useMemo(
+    () => calculateCompressionScore(data, baselineData),
+    [data, baselineData]
+  );
   const marketSignals = useMemo(() => detectMarketSignals(data), [data]);
   const inversionZones = useMemo(() => detectInversionZones(data), [data]);
   const averageSpreads = useMemo(() => calculateAverageSpreads(data), [data]);

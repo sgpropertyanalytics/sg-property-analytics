@@ -47,6 +47,7 @@ import { transformTimeSeries, transformTimeSeriesByRegion } from './timeSeries';
 import {
   transformCompressionSeries,
   calculateCompressionScore,
+  calculateHistoricalBaseline,
   calculateAverageSpreads,
   detectMarketSignals,
   detectInversionZones,
@@ -94,6 +95,7 @@ export {
   // Compression
   transformCompressionSeries,
   calculateCompressionScore,
+  calculateHistoricalBaseline,
   calculateAverageSpreads,
   detectMarketSignals,
   detectInversionZones,
