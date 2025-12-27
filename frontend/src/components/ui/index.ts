@@ -15,6 +15,7 @@
 
 // KPI components
 export { KPICard, KPICardSkeleton, KPICardGroup } from './KPICard';
+export { KPICardV2, KPICardV2Skeleton, KPICardV2Group, mapKpiV2ToCardProps } from './KPICardV2';
 
 // Insight components
 export { KeyInsightBox } from './KeyInsightBox';

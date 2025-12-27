@@ -317,6 +317,19 @@ export const getKpiSummary = (params = {}) =>
   apiClient.get(`/kpi-summary?${buildQueryString(params)}`);
 
 /**
+ * Get KPI summary using v2 standardized format
+ * Returns array of KPIResult objects with consistent shape.
+ * @param {Object} params - Filter parameters
+ * @param {string} params.district - Comma-separated districts
+ * @param {string} params.bedroom - Comma-separated bedroom counts
+ * @param {string} params.segment - CCR, RCR, OCR
+ * @param {Object} options - Request options
+ * @param {AbortSignal} options.signal - Abort signal for cancellation
+ */
+export const getKpiSummaryV2 = (params = {}, { signal } = {}) =>
+  apiClient.get(`/kpi-summary-v2?${buildQueryString(params)}`, { signal });
+
+/**
  * Get available filter options based on current data
  */
 export const getFilterOptions = () =>

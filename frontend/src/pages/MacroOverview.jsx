@@ -10,10 +10,10 @@ import { TransactionDetailModal } from '../components/powerbi/TransactionDetailM
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TimeGranularityToggle } from '../components/powerbi/TimeGranularityToggle';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
-import { getKpiSummary } from '../api/client';
+import { getKpiSummaryV2 } from '../api/client';
 import { useData } from '../context/DataContext';
 // Standardized responsive UI components (layout wrappers only)
-import { ErrorBoundary, ChartWatermark } from '../components/ui';
+import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
@@ -56,21 +56,19 @@ export function MacroOverviewContent() {
   const compressionHeight = useChartHeight(380, MOBILE_CAPS.tall);        // 380px desktop, max 320px mobile
 
   // Summary KPIs - Deal detection metrics with trend indicators
-  // Uses single optimized API call for fast loading
+  // Uses v2 standardized API format
   // Reacts to: Location filters (district, bedroom, segment)
   // Ignores: Date range filters (always shows "current market" status)
-  const [kpis, setKpis] = useState({
-    medianPsf: { current: 0, trend: 0, insight: '' },
-    priceSpread: { iqrRatio: 0, label: 'Loading', insight: '' },
-    newLaunchPremium: { value: 0, trend: 'stable', insight: '' },
-    marketMomentum: { score: 50, label: 'Loading', insight: '' },
-    loading: true,
-  });
+  const [kpis, setKpis] = useState({ items: [], loading: true });
 
-  // Fetch KPIs using single optimized API call
+  // Fetch KPIs using v2 standardized API
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchKpis = async () => {
       try {
+        setKpis(prev => ({ ...prev, loading: true }));
+
         // Build location/property filters (react to sidebar, but NOT date range)
         const params = {};
         if (filters.districts?.length > 0) {
@@ -83,40 +81,26 @@ export function MacroOverviewContent() {
           params.segment = filters.segment;
         }
 
-        // Single API call for all KPI metrics
-        const response = await getKpiSummary(params);
-        const data = response.data;
+        // Single API call for all KPI metrics (v2 format)
+        const response = await getKpiSummaryV2(params, { signal: controller.signal });
 
         setKpis({
-          medianPsf: {
-            current: data.medianPsf.current,
-            trend: data.medianPsf.trend,
-            insight: data.insights.psf,
-          },
-          priceSpread: {
-            iqrRatio: data.priceSpread.iqrRatio,
-            label: data.priceSpread.label,
-            insight: data.insights.spread,
-          },
-          newLaunchPremium: {
-            value: data.newLaunchPremium.value,
-            trend: data.newLaunchPremium.trend,
-            insight: data.insights.premium,
-          },
-          marketMomentum: {
-            score: data.marketMomentum.score,
-            label: data.marketMomentum.label,
-            insight: data.insights.momentum,
-          },
+          items: response.data.kpis || [],
           loading: false,
         });
       } catch (err) {
+        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
         console.error('Error fetching KPIs:', err);
         setKpis(prev => ({ ...prev, loading: false }));
       }
     };
+
     fetchKpis();
+    return () => controller.abort();
   }, [filters.districts, filters.bedroomTypes, filters.segment]); // Re-fetch when location filters change
+
+  // Helper to get KPI by ID from the array
+  const getKpi = (kpiId) => kpis.items.find(k => k.kpi_id === kpiId);
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
     setModalTitle(title);
@@ -198,94 +182,49 @@ export function MacroOverviewContent() {
 
           {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">
-              {/* KPI Summary Cards with Insight Boxes */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
+              {/* KPI Summary Cards - Using standardized KPICardV2 */}
+              <KPICardV2Group columns={4} className="mb-4 md:mb-6">
                 {/* Card 1: Market Median PSF */}
-                <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-                  {/* Insight Box */}
-                  <div className="bg-[#213448] px-3 py-2 text-white">
-                    <span className="text-[10px] md:text-xs">{kpis.loading ? 'Loading...' : kpis.medianPsf.insight}</span>
-                  </div>
-                  {/* Number Display */}
-                  <div className="p-3 md:p-4">
-                    <div className="text-xs text-[#547792] mb-1">Market Median PSF</div>
-                    {kpis.loading ? (
-                      <div className="h-8 bg-[#94B4C1]/30 rounded animate-pulse" />
-                    ) : (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl md:text-3xl font-bold text-[#213448]">
-                          ${kpis.medianPsf.current.toLocaleString()}
-                        </span>
-                        {kpis.medianPsf.trend !== null && (
-                          <span className={`text-xs font-medium ${kpis.medianPsf.trend > 0 ? 'text-red-500' : kpis.medianPsf.trend < 0 ? 'text-green-600' : 'text-[#547792]'}`}>
-                            {kpis.medianPsf.trend > 0 ? '+' : ''}{kpis.medianPsf.trend}%
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <KPICardV2
+                  title="Market Median PSF"
+                  value={getKpi('median_psf')?.formatted_value || '—'}
+                  insight={getKpi('median_psf')?.insight}
+                  trend={getKpi('median_psf')?.trend}
+                  subtitle={getKpi('median_psf')?.subtitle}
+                  footerMeta={getKpi('median_psf')?.meta?.current_count ? `${getKpi('median_psf').meta.current_count.toLocaleString()} txns` : undefined}
+                  loading={kpis.loading}
+                />
 
                 {/* Card 2: Price Spread (IQR) */}
-                <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-                  <div className="bg-[#213448] px-3 py-2 text-white">
-                    <span className="text-[10px] md:text-xs">{kpis.loading ? 'Loading...' : kpis.priceSpread.insight}</span>
-                  </div>
-                  <div className="p-3 md:p-4">
-                    <div className="text-xs text-[#547792] mb-1">Price Spread (IQR)</div>
-                    {kpis.loading ? (
-                      <div className="h-8 bg-[#94B4C1]/30 rounded animate-pulse" />
-                    ) : (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl md:text-3xl font-bold text-[#213448]">
-                          {kpis.priceSpread.iqrRatio}%
-                        </span>
-                        <span className="text-xs text-[#547792]">{kpis.priceSpread.label}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <KPICardV2
+                  title="Price Spread (IQR)"
+                  value={getKpi('price_spread')?.formatted_value || '—'}
+                  insight={getKpi('price_spread')?.insight}
+                  trend={getKpi('price_spread')?.trend}
+                  subtitle={getKpi('price_spread')?.subtitle}
+                  loading={kpis.loading}
+                />
 
                 {/* Card 3: New Launch Premium */}
-                <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-                  <div className="bg-[#213448] px-3 py-2 text-white">
-                    <span className="text-[10px] md:text-xs">{kpis.loading ? 'Loading...' : kpis.newLaunchPremium.insight}</span>
-                  </div>
-                  <div className="p-3 md:p-4">
-                    <div className="text-xs text-[#547792] mb-1">New Launch Premium</div>
-                    {kpis.loading ? (
-                      <div className="h-8 bg-[#94B4C1]/30 rounded animate-pulse" />
-                    ) : (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl md:text-3xl font-bold text-[#213448]">
-                          {kpis.newLaunchPremium.value > 0 ? '+' : ''}{kpis.newLaunchPremium.value}%
-                        </span>
-                        <span className="text-xs text-[#547792]">{kpis.newLaunchPremium.trend}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <KPICardV2
+                  title="New Launch Premium"
+                  value={getKpi('new_launch_premium')?.formatted_value || '—'}
+                  insight={getKpi('new_launch_premium')?.insight}
+                  trend={getKpi('new_launch_premium')?.trend}
+                  subtitle={getKpi('new_launch_premium')?.subtitle}
+                  loading={kpis.loading}
+                />
 
                 {/* Card 4: Market Momentum */}
-                <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-                  <div className="bg-[#213448] px-3 py-2 text-white">
-                    <span className="text-[10px] md:text-xs">{kpis.loading ? 'Loading...' : kpis.marketMomentum.insight}</span>
-                  </div>
-                  <div className="p-3 md:p-4">
-                    <div className="text-xs text-[#547792] mb-1">Market Momentum</div>
-                    {kpis.loading ? (
-                      <div className="h-8 bg-[#94B4C1]/30 rounded animate-pulse" />
-                    ) : (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl md:text-3xl font-bold text-[#213448]">
-                          {kpis.marketMomentum.score}
-                        </span>
-                        <span className="text-xs text-[#547792]">{kpis.marketMomentum.label}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                <KPICardV2
+                  title="Market Momentum"
+                  value={getKpi('market_momentum')?.formatted_value || '—'}
+                  insight={getKpi('market_momentum')?.insight}
+                  trend={getKpi('market_momentum')?.trend}
+                  subtitle={getKpi('market_momentum')?.subtitle}
+                  loading={kpis.loading}
+                />
+              </KPICardV2Group>
 
               {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
               {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
