@@ -234,7 +234,7 @@ export function InlineCardRow({
     <div
       className={`
         grid mt-3
-        ${compact ? 'gap-2 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]' : 'gap-3 [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]'}
+        ${compact ? 'gap-2 [grid-template-columns:repeat(auto-fit,minmax(120px,1fr))]' : 'gap-3 [grid-template-columns:repeat(auto-fit,minmax(140px,1fr))]'}
         ${blur ? 'blur-sm grayscale-[40%]' : ''}
         ${className}
       `.trim()}
