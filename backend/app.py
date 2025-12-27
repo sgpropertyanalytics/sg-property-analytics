@@ -299,6 +299,10 @@ def create_app():
     from routes.insights import insights_bp
     app.register_blueprint(insights_bp, url_prefix='/api/insights')
 
+    # Supply Pipeline routes (waterfall chart data)
+    from routes.supply import supply_bp
+    app.register_blueprint(supply_bp, url_prefix='/api/supply')
+
     # Serve dashboard.html at root
     @app.route("/", methods=["GET"])
     def index():

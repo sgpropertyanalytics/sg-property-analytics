@@ -569,5 +569,34 @@ export const getProjectPriceBands = (projectName, params = {}, options = {}) =>
 export const getProjectPriceGrowth = (projectName, options = {}) =>
   apiClient.get(`/transactions/price-growth?project=${encodeURIComponent(projectName)}&per_page=500`, options);
 
+// ===== Supply Pipeline API Functions =====
+
+/**
+ * Get aggregated supply pipeline data for waterfall visualization
+ *
+ * Returns supply data from three mutually exclusive sources:
+ * - Unsold Inventory: Developer stock from launched projects
+ * - Upcoming Launches: Pre-launch projects by year
+ * - GLS Pipeline: Open GLS tenders (unassigned sites)
+ *
+ * @param {Object} params - Query parameters
+ * @param {boolean} [params.includeGls=true] - Include GLS pipeline in totals
+ * @param {number} [params.launchYear=2026] - Year filter for upcoming launches
+ * @param {Object} [options] - Request options
+ * @param {AbortSignal} [options.signal] - AbortController signal
+ * @returns {Promise<{
+ *   byRegion: {
+ *     CCR: {unsoldInventory, upcomingLaunches, glsPipeline, totalEffectiveSupply, components},
+ *     RCR: {...},
+ *     OCR: {...}
+ *   },
+ *   byDistrict: {D01: {...}, ...},
+ *   totals: {unsoldInventory, upcomingLaunches, glsPipeline, totalEffectiveSupply},
+ *   meta: {launchYear, includeGls, computedAs, asOfDate, warnings}
+ * }>}
+ */
+export const getSupplySummary = (params = {}, options = {}) =>
+  apiClient.get(`/supply/summary?${buildQueryString(params)}`, { signal: options.signal });
+
 export default apiClient;
 
