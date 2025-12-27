@@ -124,7 +124,10 @@ export function SupplyWaterfallChart({
       skeleton="bar"
       height={height}
     >
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col h-full">
+      <div
+        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        style={{ height }}
+      >
         {/* Header */}
         <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
           <div className="flex items-start justify-between gap-2">
