@@ -168,20 +168,24 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
 
-                {/* Card 3: New Launch Premium */}
+                {/* Card 3: New Launch Premium - Micro-bar comparison */}
                 <KPICardV2
                   title="New Launch Premium"
                   value={getKpi('new_launch_premium')?.formatted_value || '—'}
-                  trend={getKpi('new_launch_premium')?.trend}
-                  transition={getKpi('new_launch_premium')?.insight}
+                  variant="comparison"
+                  comparison={getKpi('new_launch_premium')?.meta ? {
+                    primary: { label: 'New', value: getKpi('new_launch_premium').meta.new_psf || 0 },
+                    secondary: { label: 'Resale', value: getKpi('new_launch_premium').meta.resale_psf || 0 }
+                  } : undefined}
                   loading={kpis.loading}
                 />
 
-                {/* Card 4: Market Momentum */}
+                {/* Card 4: Market Momentum - Radial gauge */}
                 <KPICardV2
                   title="Market Momentum"
                   value={getKpi('market_momentum')?.formatted_value || '—'}
-                  trend={getKpi('market_momentum')?.trend}
+                  variant="gauge"
+                  gaugeValue={getKpi('market_momentum')?.value || 50}
                   transition={getKpi('market_momentum')?.insight}
                   loading={kpis.loading}
                 />
