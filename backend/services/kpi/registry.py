@@ -27,24 +27,24 @@ logger = logging.getLogger('kpi.registry')
 
 # Import all KPI specs
 from services.kpi.median_psf import SPEC as median_psf_spec
-from services.kpi.price_spread import SPEC as price_spread_spec
-from services.kpi.new_launch_premium import SPEC as new_launch_premium_spec
+from services.kpi.resale_velocity import SPEC as resale_velocity_spec
+from services.kpi.kpi_total_transactions import SPEC as total_transactions_spec
 from services.kpi.market_momentum import SPEC as market_momentum_spec
 
 
 # Explicit order - frontend relies on this (stable, deterministic)
 KPI_ORDER = [
     'median_psf',
-    'price_spread',
-    'new_launch_premium',
+    'resale_velocity',
+    'total_transactions',
     'market_momentum',
 ]
 
 # Registry by ID for lookup
 KPI_REGISTRY = {
     'median_psf': median_psf_spec,
-    'price_spread': price_spread_spec,
-    'new_launch_premium': new_launch_premium_spec,
+    'resale_velocity': resale_velocity_spec,
+    'total_transactions': total_transactions_spec,
     'market_momentum': market_momentum_spec,
 }
 
