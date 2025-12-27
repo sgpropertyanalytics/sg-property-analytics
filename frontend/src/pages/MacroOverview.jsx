@@ -154,7 +154,7 @@ export function MacroOverviewContent() {
                   title="Market Momentum"
                   value={getKpi('market_momentum')?.formatted_value || '—'}
                   trend={getKpi('market_momentum')?.trend}
-                  transition={getKpi('market_momentum')?.insight}
+                  footnote={getKpi('market_momentum')?.insight}
                   tooltip={getKpi('market_momentum')?.meta?.description}
                   loading={kpis.loading}
                 />
@@ -164,7 +164,7 @@ export function MacroOverviewContent() {
                   title="Resale PSF Growth"
                   value={getKpi('median_psf')?.formatted_value || '—'}
                   trend={getKpi('median_psf')?.trend}
-                  transition={getKpi('median_psf')?.insight}
+                  footnote={getKpi('median_psf')?.insight}
                   loading={kpis.loading}
                 />
 
@@ -173,7 +173,7 @@ export function MacroOverviewContent() {
                   title="Price Spread (IQR)"
                   value={getKpi('price_spread')?.formatted_value || '—'}
                   trend={getKpi('price_spread')?.trend}
-                  transition={getKpi('price_spread')?.insight}
+                  footnote={getKpi('price_spread')?.insight}
                   loading={kpis.loading}
                 />
 
@@ -181,7 +181,7 @@ export function MacroOverviewContent() {
                 <KPICardV2
                   title="New Launch Premium"
                   value={getKpi('new_launch_premium')?.formatted_value || '—'}
-                  transition={getKpi('new_launch_premium')?.insight}
+                  footnote={getKpi('new_launch_premium')?.insight}
                   loading={kpis.loading}
                 />
               </KPICardV2Group>

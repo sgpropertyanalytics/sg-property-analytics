@@ -158,19 +158,11 @@ export function mapKpiV2ToCardProps(kpi: {
   insight?: string;
   meta?: Record<string, unknown>;
 }): KPICardV2Props {
-  let footerMeta = '';
-  if (kpi.meta) {
-    if ('current_count' in kpi.meta) {
-      footerMeta = `${(kpi.meta.current_count as number).toLocaleString()} txns`;
-    }
-  }
-
   return {
     title: kpi.title,
     value: kpi.formatted_value,
     trend: kpi.trend,
-    transition: kpi.insight,
-    footerMeta: footerMeta || undefined,
+    footnote: kpi.insight,
   };
 }
 
