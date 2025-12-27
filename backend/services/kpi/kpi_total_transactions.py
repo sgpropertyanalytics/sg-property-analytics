@@ -149,7 +149,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "direction": direction,
             "label": label
         },
-        insight="Resale transactions only",
+        insight=None,
         meta={
             "current_count": current_count,
             "previous_count": previous_count,
@@ -158,8 +158,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "label": label,
             "description": (
                 "Measures the change in resale transaction volume "
-                "over the latest 3 full months versus the previous 3 months. "
-                "Outliers excluded.\n\n"
+                "over the latest 3 full months versus the previous 3 months.\n\n"
                 "Trend Interpretation\n"
                 "• > +10%: Strong Growth\n"
                 "• +5% to +10%: Growing\n"
