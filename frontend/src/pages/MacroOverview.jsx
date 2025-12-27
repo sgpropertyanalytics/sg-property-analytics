@@ -256,7 +256,7 @@ export function MacroOverviewContent() {
                   value={(() => {
                     const kpi = getKpi('resale_velocity');
                     if (!kpi?.value && kpi?.value !== 0) return '—';
-                    const { prior_txns, pct_change } = kpi.meta || {};
+                    const { prior_annualized, pct_change } = kpi.meta || {};
                     const direction = kpi.trend?.direction;
                     const label = kpi.trend?.label;
                     const labelColorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
@@ -273,9 +273,9 @@ export function MacroOverviewContent() {
                             {arrow} {pctStr} QoQ
                           </div>
                         )}
-                        {prior_txns != null && (
+                        {prior_annualized != null && (
                           <div className="text-[10px] sm:text-[12px] text-gray-500">
-                            Prev: {prior_txns?.toLocaleString()} txns
+                            Prev: {prior_annualized}%
                           </div>
                         )}
                       </>

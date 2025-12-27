@@ -166,9 +166,13 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     current_txns = int(row.current_txns or 0)
     prior_txns = int(row.prior_txns or 0)
 
-    # Calculate velocities (as percentage)
+    # Calculate velocities (as percentage of stock)
     current_velocity = (current_txns / total_units) * 100
     prior_velocity = (prior_txns / total_units) * 100 if prior_txns > 0 else 0
+
+    # Annualized velocities (quarterly × 4)
+    current_annualized = current_velocity * 4
+    prior_annualized = prior_velocity * 4
 
     # Determine confidence based on transaction count
     if current_txns >= 20:
@@ -178,39 +182,37 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     else:
         confidence = "low"
 
-    # Interpretation thresholds (annualized equivalents)
-    # 3-month velocity → annualized = velocity × 4
-    annualized = current_velocity * 4
-    if annualized >= 4:
+    # Interpretation thresholds (annualized)
+    if current_annualized >= 4:
         label = "Hot"
         direction = "up"
-    elif annualized >= 2:
+    elif current_annualized >= 2:
         label = "Healthy"
         direction = "neutral"
-    elif annualized >= 1:
+    elif current_annualized >= 1:
         label = "Slow"
         direction = "neutral"
     else:
         label = "Illiquid"
         direction = "down"
 
-    # Calculate Q-o-Q change for trend
-    if prior_velocity > 0:
-        pct_change = ((current_velocity - prior_velocity) / prior_velocity) * 100
+    # Calculate Q-o-Q change for trend (based on annualized velocity)
+    if prior_annualized > 0:
+        pct_change = ((current_annualized - prior_annualized) / prior_annualized) * 100
     else:
         pct_change = 0
 
     # Footer: show the calculation
     insight = (
         f"{current_txns:,} txns ÷ {total_units:,} units × 4\n"
-        f"= {annualized:.1f}% annualized"
+        f"= {current_annualized:.1f}% annualized"
     )
 
     return KPIResult(
         kpi_id="resale_velocity",
         title="Annualized Resale Velocity",
-        value=round(annualized, 2),
-        formatted_value=f"{annualized:.1f}%",
+        value=round(current_annualized, 2),
+        formatted_value=f"{current_annualized:.1f}%",
         subtitle="annualized turnover",
         trend={
             "value": round(pct_change, 1),
@@ -223,7 +225,8 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "prior_txns": prior_txns,
             "total_units": total_units,
             "projects_counted": projects_counted,
-            "annualized_velocity": round(annualized, 2),
+            "current_annualized": round(current_annualized, 2),
+            "prior_annualized": round(prior_annualized, 2),
             "quarterly_velocity": round(current_velocity, 2),
             "confidence": confidence,
             "pct_change": round(pct_change, 1),
