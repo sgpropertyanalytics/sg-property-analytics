@@ -140,6 +140,61 @@ classifyBedroomThreeTier(area, saleType, date)
 - Date presets anchor from `dateRange.max`
 - If control dependency not ready → disable OR fallback (never silent no-op)
 
+## URA Data Granularity
+**Critical:** URA transaction data is **month-level only**. All transactions within a month are dated to the **1st of that month**.
+
+```sql
+-- BUG: "Last 90 days" from Dec 27 creates Oct 2 boundary
+WHERE transaction_date >= '2025-10-02'  -- Excludes ALL October (dated Oct 1)
+
+-- FIX: Use month boundaries
+WHERE transaction_date >= '2025-10-01'  -- Includes October
+```
+
+**Rules:**
+1. **Rolling windows = months, not days** — Use "last 3 months" not "last 90 days"
+2. **Boundaries on 1st of month** — `current_min = date(year, month, 1)`
+3. **Labels must match logic** — Don't say "90 days" if using month buckets
+
+**KPI Pattern:**
+```python
+# Current: Oct, Nov, Dec | Previous: Jul, Aug, Sep
+if max_date.month == 12:
+    max_exclusive = date(max_date.year + 1, 1, 1)
+else:
+    max_exclusive = date(max_date.year, max_date.month + 1, 1)
+
+# Go back 3 months
+current_min = date(max_exclusive.year, max_exclusive.month - 3, 1)  # Handle year wrap
+```
+
+## Date Filter Contract
+**API contract:** All date filters use half-open intervals.
+
+| Parameter | Meaning | SQL |
+|-----------|---------|-----|
+| `date_from` | Inclusive start | `>= :date_from` |
+| `date_to` | **Exclusive** end | `< :date_to` |
+
+```python
+# Route layer: normalize to exclusive
+to_dt = to_date(request.args.get("date_to"))
+if to_dt:
+    filter_conditions.append(Transaction.transaction_date < to_dt + timedelta(days=1))
+```
+
+**Common bugs:**
+- `<= date_to` with midnight → excludes entire end date
+- Timezone shift → `2025-12-01` becomes `2025-11-30` in UTC
+- String comparison instead of DATE type
+
+**Smoke tests (must pass):**
+| Test | Expected |
+|------|----------|
+| `from=2025-12-01, to=2025-12-02` | Dec 1 only |
+| `from=2025-11-15, to=2025-12-15` | Both Nov and Dec |
+| `from=2025-11-01, to=2025-12-01` | November only |
+
 ## UI States
 Every async hook returns `{ data, loading, error }`. UI must handle ALL THREE:
 ```jsx
