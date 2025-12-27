@@ -214,6 +214,7 @@ export function MacroOverviewContent() {
                     );
                   })()}
                   footnote={getKpi('median_psf')?.insight}
+                  tooltip={getKpi('median_psf')?.meta?.description}
                   loading={kpis.loading}
                 />
 
