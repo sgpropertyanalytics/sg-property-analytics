@@ -170,7 +170,14 @@ export function BeadsChart({ height = 300 }) {
             color: '#547792',
           },
           ticks: {
-            callback: (value) => `$${value}M`,
+            stepSize: 0.5, // $500k intervals
+            callback: (value) => {
+              // Show as $500K, $1M, $1.5M, $2M, etc.
+              if (value === 0) return '$0';
+              if (value < 1) return `$${value * 1000}K`;
+              if (value % 1 === 0) return `$${value}M`;
+              return `$${value}M`;
+            },
             color: '#547792',
             font: { size: 10 },
           },
@@ -178,9 +185,10 @@ export function BeadsChart({ height = 300 }) {
             display: false, // Remove vertical grid lines (distracting)
           },
           min: 0,
-          suggestedMax: stats?.priceRange?.max
-            ? Math.ceil((stats.priceRange.max / 1000000) * 1.2)
-            : 10,
+          // Tight max: round up to nearest $500K with small padding
+          max: stats?.priceRange?.max
+            ? Math.ceil((stats.priceRange.max / 1000000) * 2) / 2 + 0.5
+            : 4,
         },
         y: {
           type: 'linear',
