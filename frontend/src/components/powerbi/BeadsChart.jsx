@@ -295,10 +295,10 @@ export function BeadsChart({ height = 300 }) {
         {/* Header - shrink-0 */}
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
           <h3 className="font-semibold text-[#213448]">
-            Price by Region & Bedroom
+            Volume-Weighted Median Price by Region & Bedroom
           </h3>
           <p className="text-xs text-[#547792] mt-0.5">
-            Bubble size = volume • Position = median price
+            Bubble size = transaction count • Position = median price
           </p>
         </div>
 

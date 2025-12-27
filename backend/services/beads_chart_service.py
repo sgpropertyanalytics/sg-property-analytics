@@ -46,8 +46,8 @@ def _build_where_clause(filters: Dict[str, Any]) -> tuple:
         where_parts.append("transaction_date <= :date_to")
         params['date_to'] = filters['date_to']
 
-    # Districts (explicit)
-    districts = filters.get('districts', [])
+    # Districts (explicit) - accept both 'district' and 'districts' keys
+    districts = filters.get('districts') or filters.get('district', [])
     if districts:
         if isinstance(districts, str):
             districts = [d.strip() for d in districts.split(',')]
@@ -75,8 +75,8 @@ def _build_where_clause(filters: Dict[str, Any]) -> tuple:
                 for i, d in enumerate(all_segment_districts):
                     params[f'seg_district_{i}'] = d
 
-    # Bedrooms filter (user can filter to specific bedrooms)
-    bedrooms = filters.get('bedrooms', [])
+    # Bedrooms filter - accept both 'bedroom' and 'bedrooms' keys
+    bedrooms = filters.get('bedrooms') or filters.get('bedroom', [])
     if bedrooms:
         if isinstance(bedrooms, str):
             bedrooms = [int(b.strip()) for b in bedrooms.split(',')]
@@ -113,6 +113,16 @@ def _build_where_clause(filters: Dict[str, Any]) -> tuple:
     if filters.get('size_max') is not None:
         where_parts.append("area_sqft <= :size_max")
         params['size_max'] = float(filters['size_max'])
+
+    # Tenure filter
+    if filters.get('tenure'):
+        where_parts.append("LOWER(tenure) = LOWER(:tenure)")
+        params['tenure'] = filters['tenure']
+
+    # Project filter
+    if filters.get('project'):
+        where_parts.append("project_name ILIKE :project")
+        params['project'] = f"%{filters['project']}%"
 
     return where_parts, params
 
