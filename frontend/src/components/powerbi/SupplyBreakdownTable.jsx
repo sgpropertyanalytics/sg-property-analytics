@@ -15,11 +15,11 @@ import { QueryState } from '../common/QueryState';
 import { getSupplySummary } from '../../api/client';
 import { DISTRICT_NAMES, getRegionForDistrict, getRegionBadgeClass } from '../../constants';
 
-// Colors from design system
+// Colors for volume bars (warm tones)
 const COLORS = {
-  unsold: '#213448',    // Navy
-  upcoming: '#547792',  // Blue
-  gls: '#94B4C1',       // Sky
+  unsold: '#92400e',    // Warm brown
+  upcoming: '#c2410c',  // Warm orange
+  gls: '#94B4C1',       // Sky (unchanged)
 };
 
 /**

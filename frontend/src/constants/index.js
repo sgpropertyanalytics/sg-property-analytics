@@ -75,9 +75,9 @@ export const isDistrictInRegion = (district, region) => {
  * Centralizes the CCR/RCR/OCR badge color logic used across components.
  */
 export const REGION_BADGE_CLASSES = {
-  CCR: 'bg-[#92400e] text-white',  // Warm brown (premium)
-  RCR: 'bg-[#c2410c] text-white',  // Warm orange (city fringe)
-  OCR: 'bg-[#a16207] text-white',  // Warm gold (suburban)
+  CCR: 'bg-[#213448] text-white',
+  RCR: 'bg-[#547792] text-white',
+  OCR: 'bg-[#94B4C1] text-[#213448]',
 };
 
 /**
