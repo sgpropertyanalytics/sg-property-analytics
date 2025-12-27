@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { GLSDataTable } from '../components/powerbi/GLSDataTable';
 import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
 import { SupplyWaterfallChart } from '../components/powerbi/SupplyWaterfallChart';
+import { SupplyKpiCards } from '../components/powerbi/SupplyKpiCards';
 import { ErrorBoundary } from '../components/ui';
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 import { REGIONS } from '../constants';
@@ -46,6 +47,14 @@ export function SupplyInsightsContent() {
 
         {/* Content */}
         <div className="animate-view-enter space-y-4 md:space-y-6">
+
+          {/* ===== KPI Cards (3 equal columns) ===== */}
+          <ErrorBoundary name="Supply KPI Cards" compact>
+            <SupplyKpiCards
+              includeGls={includeGls}
+              launchYear={launchYear}
+            />
+          </ErrorBoundary>
 
           {/* ===== Controls Row (Single Row) ===== */}
           <div className="flex flex-wrap items-center gap-3 bg-white rounded-lg border border-[#94B4C1]/50 p-3 md:p-4">
