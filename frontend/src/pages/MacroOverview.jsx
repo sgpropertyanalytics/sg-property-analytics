@@ -214,9 +214,9 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
 
-                {/* Card 3: Total Transactions (Resale, last 3 months) */}
+                {/* Card 3: Total Resale Transactions (last 3 months) */}
                 <KPICardV2
-                  title="Total Transactions"
+                  title="Total Resale Transactions"
                   value={(() => {
                     const kpi = getKpi('total_transactions');
                     if (!kpi?.meta?.current_count && kpi?.meta?.current_count !== 0) return '—';

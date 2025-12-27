@@ -102,7 +102,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     if not row:
         return KPIResult(
             kpi_id="total_transactions",
-            title="Total Transactions",
+            title="Total Resale Transactions",
             value=0,
             formatted_value="—",
             subtitle="Last 3 months",
@@ -160,7 +160,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 
 class TotalTransactionsSpec:
     kpi_id = "total_transactions"
-    title = "Total Transactions"
+    title = "Total Resale Transactions"
     subtitle = "Last 3 months"
 
     @staticmethod
