@@ -3,6 +3,7 @@ import { GLSDataTable } from '../components/powerbi/GLSDataTable';
 import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
 import { SupplyWaterfallChart } from '../components/powerbi/SupplyWaterfallChart';
 import { SupplyKpiCards } from '../components/powerbi/SupplyKpiCards';
+import { SupplyBreakdownTable } from '../components/powerbi/SupplyBreakdownTable';
 import { ErrorBoundary } from '../components/ui';
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 import { REGIONS } from '../constants';
@@ -140,6 +141,16 @@ export function SupplyInsightsContent() {
               />
             </ErrorBoundary>
           </div>
+
+          {/* ===== Supply Breakdown Table ===== */}
+          <ErrorBoundary name="Supply Breakdown Table" compact>
+            <SupplyBreakdownTable
+              selectedRegion={selectedRegion}
+              includeGls={includeGls}
+              launchYear={launchYear}
+              height={tableHeight}
+            />
+          </ErrorBoundary>
 
           {/* ===== Divider ===== */}
           <div className="border-t border-[#94B4C1]/30 my-6" />
