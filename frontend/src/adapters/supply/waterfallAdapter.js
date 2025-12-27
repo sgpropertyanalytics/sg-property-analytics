@@ -460,10 +460,90 @@ export function getWaterfallChartOptions(onBarClick, totals, includeGls) {
   };
 }
 
+/**
+ * Get chart options for the district stacked bar chart.
+ * Shows legend and proper tooltips for stacked bars.
+ */
+export function getDistrictChartOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index',
+    },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'end',
+        labels: {
+          boxWidth: 12,
+          boxHeight: 12,
+          padding: 8,
+          font: { size: 11 },
+          color: '#213448',
+        },
+      },
+      tooltip: {
+        enabled: true,
+        callbacks: {
+          title: (items) => items[0]?.label || '',
+          label: (context) => {
+            const label = context.dataset.label || '';
+            const value = context.raw || 0;
+            return `${label}: ${formatNumber(value)} units`;
+          },
+          footer: (items) => {
+            const total = items.reduce((sum, item) => sum + (item.raw || 0), 0);
+            return `Total: ${formatNumber(total)} units`;
+          },
+        },
+        backgroundColor: 'rgba(33, 52, 72, 0.95)',
+        padding: 10,
+        titleFont: { size: 12, weight: 'bold' },
+        bodyFont: { size: 11 },
+        footerFont: { size: 11, weight: 'bold' },
+      },
+    },
+    scales: {
+      x: {
+        stacked: true,
+        grid: { display: false },
+        ticks: {
+          font: { size: 10 },
+          color: '#547792',
+          maxRotation: 45,
+          minRotation: 0,
+        },
+      },
+      y: {
+        stacked: true,
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(148, 180, 193, 0.2)',
+        },
+        ticks: {
+          callback: (value) => formatNumber(value),
+          font: { size: 11 },
+          color: '#547792',
+        },
+        title: {
+          display: true,
+          text: 'Units',
+          font: { size: 12 },
+          color: '#547792',
+        },
+      },
+    },
+  };
+}
+
 export default {
   transformRegionalWaterfall,
   transformDistrictWaterfall,
   getWaterfallTooltip,
   getWaterfallChartOptions,
+  getDistrictChartOptions,
   waterfallConnectorPlugin,
 };

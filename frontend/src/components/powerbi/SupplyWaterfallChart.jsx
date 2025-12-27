@@ -36,6 +36,7 @@ import {
   transformRegionalWaterfall,
   transformDistrictWaterfall,
   getWaterfallChartOptions,
+  getDistrictChartOptions,
   waterfallConnectorPlugin,
 } from '../../adapters/supply/waterfallAdapter';
 
@@ -107,15 +108,24 @@ export function SupplyWaterfallChart({
     return transformRegionalWaterfall(apiResponse, { region: selectedRegion, includeGls });
   }, [apiResponse, view, selectedRegion, includeGls]);
 
-  // Chart options with click handler
+  // Chart options - different for waterfall vs district stacked bar
   const chartOptions = useMemo(() => {
     if (!chartData?.totals) return baseChartJsOptions;
 
+    if (view === 'district') {
+      // District view: stacked bar with legend
+      return {
+        ...baseChartJsOptions,
+        ...getDistrictChartOptions(),
+      };
+    }
+
+    // Waterfall view: no legend, custom tooltip
     return {
       ...baseChartJsOptions,
       ...getWaterfallChartOptions(onRegionClick, chartData.totals, includeGls),
     };
-  }, [chartData, onRegionClick, includeGls]);
+  }, [chartData, view, onRegionClick, includeGls]);
 
   // Chart title based on view
   // TRUE waterfall: title shows what we're looking at
