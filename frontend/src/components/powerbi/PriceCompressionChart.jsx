@@ -157,7 +157,6 @@ export function PriceCompressionChart({ height = 380 }) {
   const inversionZones = useMemo(() => detectInversionZones(data), [data]);
   const averageSpreads = useMemo(() => calculateAverageSpreads(data), [data]);
   const latestData = data[data.length - 1] || {};
-  const sparklineData = data.map(d => d.combinedSpread).filter(v => v != null);
 
   // Highlighted index for visual emphasis
   const highlightedIndex = useMemo(() => {
@@ -332,7 +331,6 @@ export function PriceCompressionChart({ height = 380 }) {
           <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center min-w-[90px] h-[72px] flex flex-col justify-center">
             <div className="text-xl md:text-2xl font-bold text-[#213448]">{compressionScore.score}</div>
             <div className="text-[10px] md:text-xs text-[#547792]">Compression ({compressionScore.label})</div>
-            <Sparkline data={sparklineData} width={70} height={16} />
           </div>
 
           {/* Smart Market Signal Cards */}
@@ -445,36 +443,6 @@ function buildInversionZones(zones, _data) {
 // ============================================
 // SUB-COMPONENTS
 // ============================================
-
-/**
- * Mini sparkline for compression trend
- */
-function Sparkline({ data, width = 70, height = 16 }) {
-  if (!data || data.length < 2) return null;
-
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-
-  const points = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * width;
-    const y = height - ((v - min) / range) * height;
-    return `${x},${y}`;
-  }).join(' ');
-
-  return (
-    <svg width={width} height={height} className="mx-auto mt-1">
-      <polyline
-        points={points}
-        fill="none"
-        stroke="#547792"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 /**
  * Smart Market Signal Card
