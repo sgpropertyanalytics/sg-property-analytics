@@ -39,6 +39,7 @@ export {
   detectInversionZones,
   // Distribution / Histogram
   formatPrice,
+  formatPriceRange,
   transformDistributionSeries,
   findBinIndex,
   // Chart-specific transforms

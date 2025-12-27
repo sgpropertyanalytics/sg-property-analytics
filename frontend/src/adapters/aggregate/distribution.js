@@ -94,7 +94,7 @@ export const transformDistributionSeries = (rawHistogram) => {
     return {
       start,
       end,
-      label: `${formatPrice(start)}-${formatPrice(end)}`,
+      label: formatPriceRange(start, end),
       count,
     };
   });
