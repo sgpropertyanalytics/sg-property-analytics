@@ -305,25 +305,18 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
         label = "Balanced"
         direction = "neutral"
 
-    # Build insight text
-    if z_score is not None:
-        abs_z = abs(z_score)
-        if abs_z < 0.5:
-            move_desc = "normal"
-        elif abs_z < 1.5:
-            move_desc = "moderate"
-        else:
-            move_desc = "strong"
-
-        window = "180D" if use_fallback else "Q-o-Q"
-        insight = f"Resale {psf_change:+.1f}% {window} ({move_desc} move)"
+    # Build insight text - show full formula calculation
+    if z_score is not None and volatility:
+        insight = (
+            f"z = {psf_change:+.1f}% / {volatility:.2f}% = {z_score:.2f} → "
+            f"50 - ({z_score:.2f} × 10) = {round(score)}"
+        )
     else:
-        window = "180D" if use_fallback else "Q-o-Q"
-        insight = f"Resale {psf_change:+.1f}% {window}"
+        insight = f"PSF Δ = {psf_change:+.1f}% → Score = {round(score)}"
 
     # Add confidence indicator
     if confidence != "high":
-        insight += f" [{confidence} confidence]"
+        insight += f" [{confidence}]"
 
     return KPIResult(
         kpi_id="market_momentum",
@@ -355,8 +348,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
                 "~50: Stable/balanced market\n"
                 "30-40: Sellers have leverage\n\n"
                 "It reflects price movement, not whether homes are cheap or expensive."
-            ),
-            "formula": f"z={round(z_score, 2) if z_score is not None else '—'} → 50-(z×10)"
+            )
         }
     )
 
