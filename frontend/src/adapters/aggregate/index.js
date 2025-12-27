@@ -55,6 +55,7 @@ import {
 
 import {
   formatPrice,
+  formatPriceRange,
   transformDistributionSeries,
   findBinIndex,
 } from './distribution';
@@ -101,6 +102,7 @@ export {
   detectInversionZones,
   // Distribution / Histogram
   formatPrice,
+  formatPriceRange,
   transformDistributionSeries,
   findBinIndex,
   // Chart-specific transforms
@@ -146,6 +148,7 @@ export default {
   detectInversionZones,
   // Distribution helpers
   formatPrice,
+  formatPriceRange,
   findBinIndex,
   // Observability
   logFetchDebug,

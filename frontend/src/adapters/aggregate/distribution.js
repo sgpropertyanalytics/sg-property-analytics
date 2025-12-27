@@ -24,6 +24,31 @@ export const formatPrice = (value) => {
 };
 
 /**
+ * Format price range compactly for KPI cards (e.g., "$1.2–2.3M")
+ *
+ * Bloomberg-style: Single currency symbol, unit suffix at end only.
+ * Saves ~8 characters vs "${formatPrice(low)} – ${formatPrice(high)}".
+ *
+ * @param {number} low - Lower bound
+ * @param {number} high - Upper bound
+ * @returns {string} Compact range string
+ */
+export const formatPriceRange = (low, high) => {
+  if (low == null || high == null) return '-';
+
+  // Both in millions
+  if (low >= 1000000 && high >= 1000000) {
+    return `$${(low / 1000000).toFixed(1)}–${(high / 1000000).toFixed(1)}M`;
+  }
+  // Both in thousands
+  if (low < 1000000 && high < 1000000) {
+    return `$${(low / 1000).toFixed(0)}–${(high / 1000).toFixed(0)}K`;
+  }
+  // Mixed (low in K, high in M)
+  return `$${(low / 1000).toFixed(0)}K–${(high / 1000000).toFixed(1)}M`;
+};
+
+/**
  * Transform raw histogram data from /api/dashboard?panels=price_histogram
  *
  * Handles both legacy (array) and new (object) formats.

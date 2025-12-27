@@ -34,6 +34,7 @@ export {
   // Distribution / histogram transformations
   transformDistributionSeries,
   formatPrice,
+  formatPriceRange,
   findBinIndex,
   // New vs Resale transformations
   transformNewVsResaleSeries,

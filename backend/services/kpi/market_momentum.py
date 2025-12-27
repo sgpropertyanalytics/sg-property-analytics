@@ -305,18 +305,8 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
         label = "Balanced"
         direction = "neutral"
 
-    # Build insight text - show full formula calculation
-    if z_score is not None and volatility:
-        insight = (
-            f"z = {psf_change:+.1f}% / {volatility:.2f}% = {z_score:.2f} → "
-            f"50 - ({z_score:.2f} × 10) = {round(score)}"
-        )
-    else:
-        insight = f"PSF Δ = {psf_change:+.1f}% → Score = {round(score)}"
-
-    # Add confidence indicator
-    if confidence != "high":
-        insight += f" [{confidence}]"
+    # Build insight text - show mathematical formula
+    insight = "Score = 50 − (PSF_Growth% / Std_Dev%) × 10"
 
     return KPIResult(
         kpi_id="market_momentum",
