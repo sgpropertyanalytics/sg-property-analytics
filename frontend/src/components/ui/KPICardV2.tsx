@@ -90,8 +90,8 @@ export function KPICardV2({
         )}
       </div>
 
-      {/* Layer 2: Hero Data - fills remaining space */}
-      <div className="flex-1 flex items-center">
+      {/* Layer 2: Hero Data - fills remaining space, aligned to bottom */}
+      <div className="flex-1 flex items-end pb-1">
         {loading ? (
           <div className="h-8 bg-[#94B4C1]/30 rounded w-24 animate-pulse" />
         ) : typeof value === 'string' ? (
@@ -99,7 +99,7 @@ export function KPICardV2({
             {value}
           </span>
         ) : (
-          <div className="leading-tight">{value}</div>
+          <div className="space-y-1">{value}</div>
         )}
       </div>
     </div>
