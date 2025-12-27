@@ -27,11 +27,8 @@ interface KPICardV2Props {
     direction: 'up' | 'down' | 'neutral';
     label?: string;
   };
-  /** Context text shown in Layer 3 */
-  transition?: string;
-  /** Formula/calculation shown in footer (smaller, muted) */
-  formula?: string;
-  footerMeta?: string;
+  /** Context footnote text shown in footer */
+  footnote?: string;
   loading?: boolean;
   className?: string;
 }
@@ -42,9 +39,7 @@ export function KPICardV2({
   tooltip,
   value,
   trend,
-  transition,
-  formula,
-  footerMeta,
+  footnote,
   loading = false,
   className = '',
 }: KPICardV2Props) {
@@ -98,21 +93,14 @@ export function KPICardV2({
         )}
       </div>
 
-      {/* Layer 3: Context - pinned to bottom with shaded background */}
+      {/* Layer 3: Footnote - pinned to bottom with shaded background */}
       <div className="flex-shrink-0 -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 px-4 sm:px-5 py-2 bg-[#EAE0CF]/30 rounded-b-lg">
         {loading ? (
           <div className="h-3 bg-[#94B4C1]/20 rounded w-1/2 animate-pulse" />
         ) : (
-          <div className="space-y-0.5">
-            <span className="text-[11px] text-[#547792] block whitespace-pre-line">
-              {transition || trend?.label || footerMeta}
-            </span>
-            {formula && (
-              <span className="text-[9px] text-[#94B4C1] block font-mono">
-                {formula}
-              </span>
-            )}
-          </div>
+          <span className="text-[9px] text-[#547792] block whitespace-pre-line">
+            {footnote}
+          </span>
         )}
       </div>
     </div>
