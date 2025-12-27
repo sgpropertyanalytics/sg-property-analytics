@@ -4,7 +4,7 @@
 
 | Resource | Purpose |
 |----------|---------|
-| **Skills** | `/sql-guardrails`, `/input-boundary-guardrails`, `/contract-async-guardrails`, `/data-standards`, `/dashboard-guardrails` |
+| **Skills** | `/sql-guardrails`, `/input-boundary-guardrails`, `/contract-async-guardrails`, `/data-standards`, `/dashboard-guardrails`, `/api-url-guardrails` |
 | **Docs** | `docs/backend.md` (SQL), `docs/frontend.md` (filters), `docs/architecture.md` |
 
 ---
@@ -184,6 +184,39 @@ Pattern for non-Market Pulse charts:
   }
 ```
 
+## Card 14: API URL & Routing
+```
+SINGLE SOURCE OF TRUTH:
+  frontend/src/api/client.js → getApiBase() → API_BASE
+  All calls use apiClient (never raw fetch with hardcoded URLs)
+
+CANONICAL PREFIX:
+  Production: /api/* (Vercel rewrites to Render)
+  Development: http://localhost:5000/api
+  NEVER mix /health and /api/health in same env
+
+ENVIRONMENT PARITY:
+  Dev should mirror prod routing structure
+  If prod uses /api/* rewrite → dev should too
+
+FAIL FAST:
+  [ ] Validate VITE_API_URL at build time in prod
+  [ ] Smoke test /health, /api/health before deploy
+  [ ] Log full resolved URL on 4xx/5xx errors
+
+FORBIDDEN:
+  ❌ fetch('/api/...') - use apiClient
+  ❌ Different URL patterns per environment
+  ❌ Hardcoded backend URLs in components
+  ❌ Silent failures on missing config
+
+DEBUG CHECKLIST (when 404 in prod):
+  1. Check vercel.json rewrite rules
+  2. Verify VITE_API_URL in Vercel env vars
+  3. Confirm backend serves /api/* (not just /*)
+  4. Check apiClient.defaults.baseURL in browser console
+```
+
 ---
 
 # 3. CORE PRINCIPLES
@@ -321,6 +354,7 @@ Use: getRegionForDistrict('D07') → 'CCR'
 | `/data-standards` | Any classification/label |
 | `/dashboard-guardrails` | Any chart modification |
 | `/api-endpoint-guardrails` | Creating new endpoints |
+| `/api-url-guardrails` | API client setup, URL routing, 404 debugging |
 
 ---
 
@@ -429,6 +463,37 @@ Constants:    THING_DEFAULTS, THING_THRESHOLDS
 /* eslint-disable */
 ```
 Every suppression must have a justification comment.
+
+## Principle 11: No Import-Time Side Effects
+```
+RULE: Never do I/O, heavy compute, or data loading at import time.
+
+ALLOWED at module top-level:
+  ✅ Constants
+  ✅ Type definitions
+  ✅ Function definitions
+  ✅ Class definitions
+
+FORBIDDEN at module top-level:
+  ❌ fetch() / axios calls
+  ❌ Database queries
+  ❌ File reads
+  ❌ Heavy computation
+  ❌ console.log (except in dev guards)
+
+PUT SIDE EFFECTS INSIDE:
+  → Request handlers
+  → Service functions
+  → useEffect / lifecycle hooks
+  → Background tasks
+  → Explicit init() functions
+```
+
+**Why:** Import-time side effects cause:
+- Slow cold starts (all imports run before first request)
+- Test isolation failures
+- Circular dependency crashes
+- Unpredictable initialization order
 
 ## Pre-Commit Checklist
 Before you commit, ask:
