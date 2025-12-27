@@ -7,6 +7,10 @@ import { useAuth } from '../context/AuthContext';
  * Redirects unauthenticated users to /login while preserving
  * the originally requested URL for post-login redirect.
  *
+ * IMPORTANT: Only shows loading state during INITIAL auth check.
+ * Once initialized, we never show loading again to prevent layout unmount
+ * during navigation (which causes nav rail flicker).
+ *
  * Usage:
  *   <Route path="/market-pulse" element={
  *     <ProtectedRoute>
@@ -18,9 +22,10 @@ export function ProtectedRoute({ children }) {
   const { isAuthenticated, loading, initialized } = useAuth();
   const location = useLocation();
 
-  // Show loading state while checking auth
-  // Wait for both loading to finish AND auth to be initialized
-  if (loading || !initialized) {
+  // Show loading state ONLY during initial auth check
+  // Once initialized, keep showing children to prevent layout flicker
+  // This prevents DashboardLayout from unmounting during navigation
+  if (!initialized) {
     return (
       <div className="min-h-screen bg-[#EAE0CF]/30 flex items-center justify-center">
         <div className="text-center">

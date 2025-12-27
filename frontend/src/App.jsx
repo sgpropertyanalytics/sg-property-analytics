@@ -47,9 +47,11 @@ const SupplyInsightsContent = lazyWithRetry(() =>
 );
 
 // Loading fallback for lazy-loaded pages
+// min-h-[50vh] ensures the fallback doesn't collapse during transitions
+// which could cause layout recalculation and nav rail flicker
 function DashboardLoadingFallback() {
   return (
-    <div className="h-full flex items-center justify-center bg-[#EAE0CF]/30">
+    <div className="h-full min-h-[50vh] flex items-center justify-center bg-[#EAE0CF]/30">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
         <span className="text-sm text-[#547792]">Loading dashboard...</span>
