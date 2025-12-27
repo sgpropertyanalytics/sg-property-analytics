@@ -72,18 +72,18 @@ export function KPICardV2({
       </div>
 
       {/* Layer 2: Hero Data - centered by justify-between */}
-      <div className="flex items-baseline gap-2">
+      <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
         {loading ? (
           <div className="h-8 bg-[#94B4C1]/30 rounded w-24 animate-pulse" />
         ) : (
           <>
-            <span className="text-2xl sm:text-[32px] font-bold text-[#213448] font-mono tabular-nums leading-none">
+            <span className="text-[22px] sm:text-[32px] font-bold text-[#213448] font-mono tabular-nums leading-none">
               {value}
             </span>
             {trend && trend.value !== 0 && (
               <span
                 className={`
-                  text-xs font-medium px-1.5 py-0.5 rounded
+                  text-[10px] sm:text-xs font-medium px-1 sm:px-1.5 py-0.5 rounded whitespace-nowrap
                   ${getTrendStyles(trend.direction).text}
                   ${getTrendStyles(trend.direction).bg}
                 `}
