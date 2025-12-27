@@ -264,31 +264,32 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         </div>
 
         {/* Stats row - Grid with equal columns, Bloomberg-style label/value layout */}
+        {/* text-xs on mobile, text-sm on tablet+ to prevent overflow */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
           {stats?.median && (
-            <div className="bg-[#213448]/5 rounded px-2.5 py-1.5">
+            <div className="bg-[#213448]/5 rounded px-2 sm:px-2.5 py-1.5">
               <div className="text-[10px] text-[#547792] uppercase tracking-wide">Median</div>
-              <div className="text-sm font-semibold font-mono tabular-nums text-[#213448] whitespace-nowrap">{formatPrice(stats.median)}</div>
+              <div className="text-xs sm:text-sm font-semibold font-mono tabular-nums text-[#213448] whitespace-nowrap">{formatPrice(stats.median)}</div>
             </div>
           )}
           {stats?.p25 && stats?.p75 && (
-            <div className="bg-[#213448]/5 rounded px-2.5 py-1.5">
+            <div className="bg-[#213448]/5 rounded px-2 sm:px-2.5 py-1.5">
               <div className="text-[10px] text-[#547792] uppercase tracking-wide">Q1–Q3</div>
-              <div className="text-sm font-semibold font-mono tabular-nums text-[#213448] whitespace-nowrap">
+              <div className="text-xs sm:text-sm font-semibold font-mono tabular-nums text-[#213448] whitespace-nowrap">
                 {formatPrice(stats.p25)} – {formatPrice(stats.p75)}
               </div>
             </div>
           )}
           {stats?.iqr && (
-            <div className="bg-[#213448]/5 rounded px-2.5 py-1.5">
+            <div className="bg-[#213448]/5 rounded px-2 sm:px-2.5 py-1.5">
               <div className="text-[10px] text-[#547792] uppercase tracking-wide">IQR</div>
-              <div className="text-sm font-semibold font-mono tabular-nums text-[#213448] whitespace-nowrap">{formatPrice(stats.iqr)}</div>
+              <div className="text-xs sm:text-sm font-semibold font-mono tabular-nums text-[#213448] whitespace-nowrap">{formatPrice(stats.iqr)}</div>
             </div>
           )}
           {modeBucket && (
-            <div className="bg-[#213448]/5 rounded px-2.5 py-1.5">
+            <div className="bg-[#213448]/5 rounded px-2 sm:px-2.5 py-1.5">
               <div className="text-[10px] text-[#547792] uppercase tracking-wide">Mode</div>
-              <div className="text-sm font-semibold text-[#213448] whitespace-nowrap">{modeBucket.label}</div>
+              <div className="text-xs sm:text-sm font-semibold text-[#213448] whitespace-nowrap">{modeBucket.label}</div>
             </div>
           )}
         </div>
