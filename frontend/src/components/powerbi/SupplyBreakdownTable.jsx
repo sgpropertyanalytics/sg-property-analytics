@@ -110,13 +110,9 @@ export function SupplyBreakdownTable({
   // Format number with commas
   const formatNum = (n) => n?.toLocaleString() || '0';
 
-  // Get short area name (first location only)
-  const getShortAreaName = (district) => {
-    const fullName = DISTRICT_NAMES[district];
-    if (!fullName) return '';
-    // Take first part before / or ,
-    const firstPart = fullName.split(/[\/,]/)[0].trim();
-    return firstPart;
+  // Get full area name for district
+  const getAreaName = (district) => {
+    return DISTRICT_NAMES[district] || '';
   };
 
   return (
@@ -185,7 +181,7 @@ export function SupplyBreakdownTable({
           <table className="w-full border-collapse text-xs min-w-[600px]">
             <thead className="sticky top-0 bg-white z-10">
               <tr>
-                <th className="sticky left-0 bg-[#EAE0CF]/50 text-left px-3 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[200px]">
+                <th className="sticky left-0 bg-[#EAE0CF]/50 text-left px-3 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[320px]">
                   District
                 </th>
                 <th className="bg-[#EAE0CF]/50 text-center px-2 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[100px]">
@@ -208,7 +204,7 @@ export function SupplyBreakdownTable({
               {tableData.districts.map((row) => {
                 const isExpanded = expandedDistricts.has(row.district);
                 const hasProjects = row.projects && row.projects.length > 0;
-                const areaName = getShortAreaName(row.district);
+                const areaName = getAreaName(row.district);
 
                 return (
                   <React.Fragment key={row.district}>
@@ -233,11 +229,12 @@ export function SupplyBreakdownTable({
                             <div className="w-3 h-3" />
                           )}
                           <span>{row.district}</span>
+                          <span className="text-[#547792] font-normal">–</span>
                           <span className="text-[#547792] font-normal truncate">
                             {areaName}
                           </span>
                           <span className="text-[10px] text-[#94B4C1] font-normal ml-auto shrink-0">
-                            ({row.projects.length} projects)
+                            ({row.projects.length})
                           </span>
                         </div>
                       </td>
