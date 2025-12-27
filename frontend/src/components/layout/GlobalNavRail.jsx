@@ -150,7 +150,6 @@ export function GlobalNavRail({ activePage, onPageChange, expanded = false }) {
               className={`
                 group relative flex items-center
                 ${expanded ? 'gap-3 px-3 py-3 rounded-lg' : 'flex-col justify-center w-full aspect-square rounded-xl'}
-                transition-all duration-200 ease-out
                 ${isActive
                   ? 'bg-[#547792]/40 text-[#EAE0CF]'
                   : 'text-[#94B4C1]/60 hover:bg-[#547792]/30 hover:text-[#EAE0CF]'
@@ -165,7 +164,7 @@ export function GlobalNavRail({ activePage, onPageChange, expanded = false }) {
               )}
 
               {/* Icon */}
-              <span className={`transition-transform duration-200 flex-shrink-0 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}>
+              <span className={`flex-shrink-0 ${isActive ? 'scale-110' : ''}`}>
                 {item.icon}
               </span>
 
