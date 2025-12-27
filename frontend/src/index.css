@@ -231,11 +231,11 @@ input[type="range"].slider-thumb::-moz-range-progress {
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    #EAE0CF 0%,
-    #f5f0e8 25%,
-    #EAE0CF 50%,
-    #f5f0e8 75%,
-    #EAE0CF 100%
+    #f0ebe3 0%,
+    #faf8f5 25%,
+    #f0ebe3 50%,
+    #faf8f5 75%,
+    #f0ebe3 100%
   );
   background-size: 200% 100%;
   animation: shimmer 3.5s ease-in-out infinite;
@@ -243,14 +243,14 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* Chart skeleton container */
 .chart-skeleton {
-  background-color: #fafaf8;
+  background-color: #fefefe;
   position: relative;
   overflow: hidden;
 }
 
 /* SVG circle shimmer for map markers */
 .chart-skeleton svg circle.skeleton-shimmer {
-  fill: #EAE0CF;
+  fill: #f0ebe3;
   animation: shimmer 3.5s ease-in-out infinite;
 }
 
