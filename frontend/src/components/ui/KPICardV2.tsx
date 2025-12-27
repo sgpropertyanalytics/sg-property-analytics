@@ -21,7 +21,8 @@ interface KPICardV2Props {
   subtitle?: string;
   /** Tooltip text shown on hover of info icon */
   tooltip?: string;
-  value: string;
+  /** Primary value - can be string or structured ReactNode */
+  value: string | React.ReactNode;
   trend?: {
     value: number;
     direction: 'up' | 'down' | 'neutral';
@@ -91,10 +92,12 @@ export function KPICardV2({
       <div>
         {loading ? (
           <div className="h-8 bg-[#94B4C1]/30 rounded w-24 animate-pulse" />
-        ) : (
+        ) : typeof value === 'string' ? (
           <span className="text-[22px] sm:text-[32px] font-bold text-[#213448] font-mono tabular-nums leading-none">
             {value}
           </span>
+        ) : (
+          <div className="leading-tight">{value}</div>
         )}
       </div>
 

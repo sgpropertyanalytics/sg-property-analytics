@@ -159,11 +159,34 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
 
-                {/* Card 2: Resale Median PSF Growth % (Q-o-Q) */}
+                {/* Card 2: Resale Median PSF (Q-o-Q) */}
                 <KPICardV2
-                  title="Resale Median PSF Growth %"
-                  value={getKpi('median_psf')?.formatted_value || '—'}
-                  trend={getKpi('median_psf')?.trend}
+                  title="Resale Median PSF"
+                  value={(() => {
+                    const kpi = getKpi('median_psf');
+                    if (!kpi?.meta?.current_psf) return '—';
+                    const { current_psf, prev_psf, pct_change, direction } = kpi.meta;
+                    const arrow = direction === 'up' ? '▲' : direction === 'down' ? '▼' : '—';
+                    const colorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
+                    const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
+                    return (
+                      <>
+                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
+                          ${current_psf?.toLocaleString()} <span className="text-[14px] sm:text-[16px] font-normal">psf</span>
+                        </div>
+                        {pct_change != null && (
+                          <div className={`text-[12px] sm:text-[14px] font-medium ${colorClass}`}>
+                            {arrow} {pctStr} QoQ
+                          </div>
+                        )}
+                        {prev_psf && (
+                          <div className="text-[10px] sm:text-[12px] text-gray-500">
+                            Prev: ${prev_psf?.toLocaleString()} psf
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                   footnote={getKpi('median_psf')?.insight}
                   loading={kpis.loading}
                 />

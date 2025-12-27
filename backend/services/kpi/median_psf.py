@@ -88,7 +88,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     if not row or not row.current_psf:
         return KPIResult(
             kpi_id="median_psf",
-            title="Resale Median PSF Growth %",
+            title="Resale Median PSF",
             value=0,
             formatted_value="—",
             subtitle="Q-o-Q (resale only)",
@@ -106,25 +106,14 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 
     # Calculate growth %
     # Formula: (Current - Previous) / Previous × 100
-    trend = None
     pct_change = None
+    direction = "neutral"
     if prev and prev > 0 and prev_count > 0:
         pct_change = ((current - prev) / prev) * 100
-        trend = {
-            "value": round(pct_change, 1),
-            "direction": "up" if pct_change > 0.5 else "down" if pct_change < -0.5 else "neutral",
-            "label": "vs prev 90d"
-        }
+        direction = "up" if pct_change > 0.5 else "down" if pct_change < -0.5 else "neutral"
 
-    # Format the primary value as growth % with PSF context beside it
-    if pct_change is not None:
-        pct_str = f"+{round(pct_change, 1)}%" if pct_change >= 0 else f"{round(pct_change, 1)}%"
-        if prev and prev_count > 0:
-            formatted_value = f"{pct_str} (Current: ${round(current):,} | Previous: ${round(prev):,})"
-        else:
-            formatted_value = f"{pct_str} (Current: ${round(current):,})"
-    else:
-        formatted_value = "—"
+    # Format the primary value as PSF (frontend will add structured content)
+    formatted_value = f"${round(current):,}"
 
     # Build insight - rolling 90D context (footer only)
     insight = "Rolling 90D Q-o-Q Median PSF"
@@ -135,17 +124,23 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 
     return KPIResult(
         kpi_id="median_psf",
-        title="Resale Median PSF Growth %",
-        value=round(pct_change, 1) if pct_change is not None else None,
+        title="Resale Median PSF",
+        value=round(current),
         formatted_value=formatted_value,
         subtitle="Q-o-Q (resale only)",
-        trend=trend,
+        trend={
+            "value": round(pct_change, 1) if pct_change is not None else 0,
+            "direction": direction,
+            "label": "QoQ"
+        } if pct_change is not None else None,
         insight=insight,
         meta={
             "current_count": current_count,
             "prev_count": prev_count,
             "current_psf": round(current),
             "prev_psf": round(prev) if prev else None,
+            "pct_change": round(pct_change, 1) if pct_change is not None else None,
+            "direction": direction,
             "low_confidence": low_confidence,
             "sale_type": "resale"
         }
@@ -156,7 +151,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 # Note: SQL is built dynamically, so we wrap it
 class MedianPsfSpec:
     kpi_id = "median_psf"
-    title = "Resale Median PSF Growth %"
+    title = "Resale Median PSF"
     subtitle = "Q-o-Q (resale only)"
 
     @staticmethod
