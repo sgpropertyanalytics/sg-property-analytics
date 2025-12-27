@@ -10,76 +10,14 @@
 
 /**
  * Derive active filters from all filter sources.
- * PRIORITY ORDER (like Power BI):
- * 1. Sidebar filters (slicers) - HIGHEST priority, never overwritten
- * 2. Cross-filters - only apply if sidebar filter not set
- * 3. Highlights - only apply to date if sidebar date not set
  *
  * @param {Object} filters - Sidebar filters
- * @param {Object} crossFilter - Cross-filter state
- * @param {Object} highlight - Highlight state
  * @param {Object} breadcrumbs - Breadcrumb state
  * @param {Object} drillPath - Drill path state
  * @returns {Object} Combined active filters
  */
-export function deriveActiveFilters(filters, crossFilter, highlight, breadcrumbs, drillPath) {
+export function deriveActiveFilters(filters, breadcrumbs, drillPath) {
   const combined = { ...filters };
-
-  // Apply cross-filter ONLY if corresponding sidebar filter is NOT set
-  if (crossFilter.dimension && crossFilter.value) {
-    switch (crossFilter.dimension) {
-      case 'district':
-        if (filters.districts.length === 0) {
-          combined.districts = [crossFilter.value];
-        }
-        break;
-      case 'bedroom':
-        if (filters.bedroomTypes.length === 0) {
-          combined.bedroomTypes = [parseInt(crossFilter.value)];
-        }
-        break;
-      case 'sale_type':
-        if (!filters.saleType) {
-          combined.saleType = crossFilter.value;
-        }
-        break;
-      case 'region':
-        if (filters.segments.length === 0) {
-          combined.segments = [crossFilter.value];
-        }
-        break;
-    }
-  }
-
-  // Apply highlight filter ONLY if sidebar date range is NOT set
-  if (highlight.dimension && highlight.value) {
-    const sidebarDateSet = filters.dateRange.start || filters.dateRange.end;
-
-    if (!sidebarDateSet) {
-      if (highlight.dimension === 'month') {
-        const [year, month] = highlight.value.split('-');
-        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-        combined.dateRange = {
-          start: `${highlight.value}-01`,
-          end: `${highlight.value}-${String(lastDay).padStart(2, '0')}`,
-        };
-      } else if (highlight.dimension === 'quarter') {
-        const [year, q] = highlight.value.split('-Q');
-        const quarterStartMonth = (parseInt(q) - 1) * 3 + 1;
-        const quarterEndMonth = quarterStartMonth + 2;
-        const lastDay = new Date(parseInt(year), quarterEndMonth, 0).getDate();
-        combined.dateRange = {
-          start: `${year}-${String(quarterStartMonth).padStart(2, '0')}-01`,
-          end: `${year}-${String(quarterEndMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
-        };
-      } else if (highlight.dimension === 'year') {
-        combined.dateRange = {
-          start: `${highlight.value}-01-01`,
-          end: `${highlight.value}-12-31`,
-        };
-      }
-    }
-  }
 
   // Apply time breadcrumb filters
   if (breadcrumbs.time.length > 0) {
@@ -124,7 +62,7 @@ export function deriveActiveFilters(filters, crossFilter, highlight, breadcrumbs
 /**
  * Count active filters for badge display.
  */
-export function countActiveFilters(filters, crossFilter, highlight) {
+export function countActiveFilters(filters) {
   let count = 0;
   if (filters.dateRange.start || filters.dateRange.end) count++;
   if (filters.districts.length > 0) count++;
@@ -137,15 +75,13 @@ export function countActiveFilters(filters, crossFilter, highlight) {
   if (filters.propertyAge.min !== null || filters.propertyAge.max !== null) count++;
   if (filters.propertyAgeBucket) count++;
   if (filters.project) count++;
-  if (crossFilter.value) count++;
-  if (highlight.value) count++;
   return count;
 }
 
 /**
  * Generate stable filter key for chart dependencies.
  */
-export function generateFilterKey(activeFilters, highlight, factFilter) {
+export function generateFilterKey(activeFilters, factFilter) {
   return JSON.stringify({
     dateRange: activeFilters.dateRange,
     districts: activeFilters.districts,
@@ -158,7 +94,6 @@ export function generateFilterKey(activeFilters, highlight, factFilter) {
     propertyAge: activeFilters.propertyAge,
     propertyAgeBucket: activeFilters.propertyAgeBucket,
     project: activeFilters.project,
-    highlight: highlight.value ? { dim: highlight.dimension, val: highlight.value } : null,
     factFilter: factFilter.priceRange,
   });
 }
@@ -173,30 +108,20 @@ export function generateFilterKey(activeFilters, highlight, factFilter) {
 export function buildApiParamsFromState(
   activeFilters,
   filters,
-  highlight,
   factFilter,
   additionalParams = {},
   options = {}
 ) {
   const params = { ...additionalParams };
   const {
-    excludeHighlight = false,
     includeFactFilter = false,
     excludeLocationDrill = false,
     excludeOwnDimension = null,
   } = options;
 
   // Apply date range
-  const highlightApplied = highlight.dimension && highlight.value;
-  const dateFromHighlight = highlightApplied && !filters.dateRange.start && !filters.dateRange.end;
-
-  if (!excludeHighlight || !dateFromHighlight) {
-    if (activeFilters.dateRange.start) params.date_from = activeFilters.dateRange.start;
-    if (activeFilters.dateRange.end) params.date_to = activeFilters.dateRange.end;
-  } else if (excludeHighlight && dateFromHighlight) {
-    if (filters.dateRange.start) params.date_from = filters.dateRange.start;
-    if (filters.dateRange.end) params.date_to = filters.dateRange.end;
-  }
+  if (activeFilters.dateRange.start) params.date_from = activeFilters.dateRange.start;
+  if (activeFilters.dateRange.end) params.date_to = activeFilters.dateRange.end;
 
   // Districts
   if (excludeOwnDimension !== 'district') {

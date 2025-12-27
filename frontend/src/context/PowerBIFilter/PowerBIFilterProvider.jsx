@@ -3,7 +3,6 @@
  *
  * Manages:
  * - Sidebar filters (user-applied filters)
- * - Cross-filters (from chart click interactions)
  * - Drill state (current hierarchy level)
  * - Filter options (available values from API)
  * - Selected project (drill-through only, does NOT affect global charts)
@@ -232,7 +231,6 @@ export function PowerBIFilterProvider({ children }) {
         ...prev,
         location: prev.location.length > 0 ? prev.location.slice(0, -1) : [],
       }));
-      setCrossFilter(INITIAL_CROSS_FILTER);
       setSelectedProjectState(INITIAL_SELECTED_PROJECT);
     }
   }, []);
@@ -244,7 +242,6 @@ export function PowerBIFilterProvider({ children }) {
     } else if (type === 'location') {
       setDrillPath((prev) => ({ ...prev, location: LOCATION_LEVELS[index] }));
       setBreadcrumbs((prev) => ({ ...prev, location: prev.location.slice(0, index) }));
-      setCrossFilter(INITIAL_CROSS_FILTER);
       setSelectedProjectState(INITIAL_SELECTED_PROJECT);
     }
   }, []);
@@ -260,18 +257,18 @@ export function PowerBIFilterProvider({ children }) {
 
   // ===== Derived State =====
   const activeFilters = useMemo(
-    () => deriveActiveFilters(filters, crossFilter, highlight, breadcrumbs, drillPath),
-    [filters, crossFilter, highlight, breadcrumbs, drillPath]
+    () => deriveActiveFilters(filters, breadcrumbs, drillPath),
+    [filters, breadcrumbs, drillPath]
   );
 
   const activeFilterCount = useMemo(
-    () => countActiveFilters(filters, crossFilter, highlight),
-    [filters, crossFilter, highlight]
+    () => countActiveFilters(filters),
+    [filters]
   );
 
   const filterKey = useMemo(
-    () => generateFilterKey(activeFilters, highlight, factFilter),
-    [activeFilters, highlight, factFilter]
+    () => generateFilterKey(activeFilters, factFilter),
+    [activeFilters, factFilter]
   );
 
   const debouncedFilterKey = useDebouncedFilterKey(filterKey);
@@ -279,18 +276,16 @@ export function PowerBIFilterProvider({ children }) {
   // ===== Build API Params =====
   const buildApiParams = useCallback(
     (additionalParams = {}, options = {}) => {
-      return buildApiParamsFromState(activeFilters, filters, highlight, factFilter, additionalParams, options);
+      return buildApiParamsFromState(activeFilters, filters, factFilter, additionalParams, options);
     },
-    [activeFilters, filters, highlight, factFilter]
+    [activeFilters, filters, factFilter]
   );
 
   // ===== Context Value =====
   const value = {
     // State
     filters,
-    crossFilter,
     factFilter,
-    highlight,
     drillPath,
     breadcrumbs,
     filterOptions,
@@ -320,14 +315,6 @@ export function PowerBIFilterProvider({ children }) {
     setPropertyAgeBucket,
     setProject,
     resetFilters,
-
-    // Cross-filter
-    applyCrossFilter,
-    clearCrossFilter,
-
-    // Highlight
-    applyHighlight,
-    clearHighlight,
 
     // Drill navigation
     drillDown,

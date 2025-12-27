@@ -34,31 +34,12 @@ export const INITIAL_FILTERS = {
 };
 
 /**
- * Default cross-filter state.
- * Applied when user clicks on a CATEGORICAL chart element (district, bedroom, etc.)
- */
-export const INITIAL_CROSS_FILTER = {
-  source: null,        // which chart applied it ('location', 'bedroom', 'price')
-  dimension: null,     // 'district', 'region', 'bedroom', 'sale_type'
-  value: null,         // 'D09', 'CCR', '3', etc.
-};
-
-/**
  * Default fact filter state.
  * Filters that only apply to FACT tables (Transaction Data Table).
+ * NOTE: Kept as dead code for safety during cross-filter removal.
  */
 export const INITIAL_FACT_FILTER = {
-  priceRange: { min: null, max: null },  // from Price Distribution chart click
-};
-
-/**
- * Default highlight state.
- * Applied when user clicks on a TIME chart element (year, quarter, month).
- */
-export const INITIAL_HIGHLIGHT = {
-  source: null,        // which chart applied it ('time')
-  dimension: null,     // 'year', 'quarter', 'month'
-  value: null,         // '2024', '2024-Q3', '2024-03', etc.
+  priceRange: { min: null, max: null },
 };
 
 /**
@@ -87,6 +68,25 @@ export const INITIAL_BREADCRUMBS = {
 };
 
 /**
+ * Default highlight state.
+ * Used for highlighting specific data points on charts.
+ */
+export const INITIAL_HIGHLIGHT = {
+  type: null,    // 'time' | 'location' | null
+  value: null,   // The highlighted value
+};
+
+/**
+ * Default cross-filter state.
+ * NOTE: Cross-filtering removed but kept for safety during transition.
+ */
+export const INITIAL_CROSS_FILTER = {
+  source: null,       // Chart that initiated the cross-filter
+  dimension: null,    // 'time' | 'location' | 'project'
+  value: null,        // The selected value
+};
+
+/**
  * Default filter options state.
  */
 export const INITIAL_FILTER_OPTIONS = {
@@ -109,12 +109,6 @@ export const INITIAL_FILTER_OPTIONS = {
   loading: true,
   error: null,
 };
-
-/**
- * Categorical dimensions that support cross-filtering.
- * NOTE: 'project' is NOT included - project is drill-through only.
- */
-export const CATEGORICAL_DIMENSIONS = ['district', 'region', 'bedroom', 'sale_type'];
 
 /**
  * Time drill levels.
