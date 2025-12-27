@@ -324,30 +324,28 @@ export function PriceCompressionChart({ height = 380 }) {
           </div>
         </div>
 
-        {/* KPI Row: Compression Score + Market Signals */}
-        {/* All 3 cards same height (h-[72px]) and blurred for free users */}
-        <div className={`flex flex-wrap items-stretch gap-3 mt-3 ${!isPremium ? 'blur-sm grayscale-[40%]' : ''}`}>
+        {/* KPI Row: Grid with equal columns for consistent sizing */}
+        {/* All 3 cards same width and height, blurred for free users */}
+        <div className={`grid grid-cols-3 gap-3 mt-3 ${!isPremium ? 'blur-sm grayscale-[40%]' : ''}`}>
           {/* Compression Score Box */}
-          <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center min-w-[90px] h-[72px] flex flex-col justify-center">
-            <div className="text-xl md:text-2xl font-bold text-[#213448]">{compressionScore.score}</div>
+          <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center h-[72px] flex flex-col justify-center">
+            <div className="text-xl md:text-2xl font-bold font-mono tabular-nums text-[#213448]">{compressionScore.score}</div>
             <div className="text-[10px] md:text-xs text-[#547792]">Compression ({compressionScore.label})</div>
           </div>
 
           {/* Smart Market Signal Cards */}
-          <div className="flex flex-wrap items-stretch gap-2">
-            <MarketSignalCard
-              type="ccr-rcr"
-              spread={latestData.ccrRcrSpread}
-              avgSpread={averageSpreads.ccrRcr}
-              isInverted={marketSignals.ccrDiscount}
-            />
-            <MarketSignalCard
-              type="rcr-ocr"
-              spread={latestData.rcrOcrSpread}
-              avgSpread={averageSpreads.rcrOcr}
-              isInverted={marketSignals.ocrOverheated}
-            />
-          </div>
+          <MarketSignalCard
+            type="ccr-rcr"
+            spread={latestData.ccrRcrSpread}
+            avgSpread={averageSpreads.ccrRcr}
+            isInverted={marketSignals.ccrDiscount}
+          />
+          <MarketSignalCard
+            type="rcr-ocr"
+            spread={latestData.rcrOcrSpread}
+            avgSpread={averageSpreads.rcrOcr}
+            isInverted={marketSignals.ocrOverheated}
+          />
         </div>
       </div>
 
@@ -467,11 +465,11 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
     if (type === 'ccr-rcr') {
       // CCR < RCR: Prime Discount (opportunity)
       return (
-        <div className="bg-amber-100 border-2 border-amber-400 rounded-lg px-3 py-2 text-center min-w-[140px] h-[72px] flex flex-col justify-center">
+        <div className="bg-amber-100 border-2 border-amber-400 rounded-lg px-3 py-2 text-center h-[72px] flex flex-col justify-center">
           <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
             Market Anomaly
           </div>
-          <div className="text-lg md:text-xl font-bold text-amber-900">
+          <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-amber-900">
             −${Math.abs(spread).toLocaleString()} PSF
           </div>
           <div className="text-[10px] text-amber-700 font-semibold">
@@ -483,11 +481,11 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
     if (type === 'rcr-ocr') {
       // OCR > RCR: Risk Alert
       return (
-        <div className="bg-red-50 border-2 border-red-500 rounded-lg px-3 py-2 text-center min-w-[140px] h-[72px] flex flex-col justify-center">
+        <div className="bg-red-50 border-2 border-red-500 rounded-lg px-3 py-2 text-center h-[72px] flex flex-col justify-center">
           <div className="text-[10px] font-bold text-red-800 uppercase tracking-wider">
             Risk Alert
           </div>
-          <div className="text-lg md:text-xl font-bold text-red-900">
+          <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-red-900">
             −${Math.abs(spread).toLocaleString()} PSF
           </div>
           <div className="text-[10px] text-red-700 font-semibold">
@@ -503,11 +501,11 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
   const isBelowAvg = pctVsAvg !== null && pctVsAvg < 0;
 
   return (
-    <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center min-w-[140px] h-[72px] flex flex-col justify-center">
-      <div className="text-[10px] text-[#547792] uppercase tracking-wide">
+    <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center h-[72px] flex flex-col justify-center">
+      <div className="text-[10px] text-[#547792] uppercase tracking-wide truncate">
         {labels[type]}
       </div>
-      <div className="text-lg md:text-xl font-bold text-[#213448]">
+      <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-[#213448]">
         +${spread.toLocaleString()} PSF
       </div>
       {pctVsAvg !== null && (
