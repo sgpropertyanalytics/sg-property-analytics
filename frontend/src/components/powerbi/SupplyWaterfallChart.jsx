@@ -175,27 +175,6 @@ export function SupplyWaterfallChart({
             )}
           </div>
 
-          {/* KPI Row - Component breakdown */}
-          {chartData?.totals && view === 'regional' && (
-            <div className="flex flex-wrap items-stretch gap-2 mt-3">
-              <SupplyKpiCard
-                label="Unsold"
-                value={chartData.totals.unsoldInventory}
-                color="#213448"
-              />
-              <SupplyKpiCard
-                label="Upcoming"
-                value={chartData.totals.upcomingLaunches}
-                color="#547792"
-              />
-              <SupplyKpiCard
-                label="GLS"
-                value={chartData.totals.glsPipeline}
-                color="#94B4C1"
-                excluded={!includeGls}
-              />
-            </div>
-          )}
         </div>
 
         {/* Chart Area */}
@@ -235,31 +214,6 @@ export function SupplyWaterfallChart({
         </div>
       </div>
     </QueryState>
-  );
-}
-
-/**
- * Supply KPI Card - Shows a single supply component value
- */
-function SupplyKpiCard({ label, value, color, excluded = false }) {
-  return (
-    <div
-      className={`rounded-lg px-3 py-2 text-center min-w-[80px] flex-1 max-w-[110px] ${
-        excluded ? 'opacity-50' : ''
-      }`}
-      style={{ backgroundColor: `${color}15` }}
-    >
-      <div
-        className="text-[10px] uppercase tracking-wide"
-        style={{ color: excluded ? '#94B4C1' : color }}
-      >
-        {label}
-        {excluded && ' (off)'}
-      </div>
-      <div className={`text-base font-bold ${excluded ? 'text-[#94B4C1]' : 'text-[#213448]'}`}>
-        {value?.toLocaleString() || 0}
-      </div>
-    </div>
   );
 }
 
