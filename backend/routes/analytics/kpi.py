@@ -65,7 +65,8 @@ def kpi_summary():
         # Build filter conditions
         filter_sql = OUTLIER_FILTER
         params = {
-            'max_date_exclusive': max_date_exclusive,
+            'max_date': max_date,  # Used in INTERVAL calculations
+            'max_date_exclusive': max_date_exclusive,  # Used in < comparisons
             'thirty_days_ago': thirty_days_ago,
             'sixty_days_ago': sixty_days_ago
         }
