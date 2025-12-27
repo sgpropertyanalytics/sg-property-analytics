@@ -513,15 +513,20 @@ export const createPortalSession = (returnUrl) => {
 // ===== Exit Queue Risk API Functions =====
 
 /**
- * Get exit queue risk metrics for a specific project
- * Returns maturity, pressure, absorption metrics and risk assessment
+ * Get liquidity assessment and turnover metrics for a specific project
+ *
+ * Liquidity Zones (transactions per 100 units):
+ * - Low Liquidity (<5): harder to exit
+ * - Healthy Liquidity (5-15): optimal for exit
+ * - Elevated Turnover (>15): possible volatility
+ *
  * @param {string} projectName - The project name
  * @returns {Promise<{
  *   project_name: string,
- *   data_quality: {has_top_year, has_total_units, completeness, sample_window_months, warnings},
+ *   data_quality: {has_top_year, has_total_units, completeness, sample_window_months, warnings, unit_source, unit_confidence, unit_note},
  *   fundamentals: {total_units, top_year, property_age_years, age_source, tenure, district, developer, first_resale_date},
- *   resale_metrics: {unique_resale_units_total, unique_resale_units_12m, total_resale_transactions, resale_maturity_pct, active_exit_pressure_pct, absorption_speed_days, transactions_per_100_units, resales_last_24m},
- *   risk_assessment: {maturity_zone, pressure_zone, quadrant, overall_risk, interpretation},
+ *   resale_metrics: {total_resale_transactions, resales_12m, market_turnover_pct, recent_turnover_pct},
+ *   risk_assessment: {market_turnover_zone, recent_turnover_zone, overall_risk, interpretation},
  *   gating_flags: {is_boutique, is_brand_new, is_ultra_luxury, is_thin_data, unit_type_mixed}
  * }>}
  */

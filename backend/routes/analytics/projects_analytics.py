@@ -257,8 +257,8 @@ def get_project_exit_queue(project_name):
     Returns:
     - data_quality: Completeness flags and warnings
     - fundamentals: Property age, total units, tenure, district
-    - resale_metrics: Unique units resold, maturity %, pressure %, absorption speed
-    - risk_assessment: Maturity zone, pressure zone, overall risk, interpretation
+    - resale_metrics: Transaction counts and turnover metrics (displayed as "X per 100 units")
+    - risk_assessment: Liquidity zones (low/healthy/high), overall risk, interpretation
     - gating_flags: Boutique, brand new, ultra-luxury, thin data, unit-type mixed
 
     Query params:

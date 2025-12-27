@@ -15,7 +15,6 @@ from dataclasses import dataclass
 # Import service components
 from services.exit_queue_service import (
     BasicStats,
-    UniqueUnitsStats,
     UnitData,
     DataQuality,
     PropertyFundamentals,
@@ -24,10 +23,9 @@ from services.exit_queue_service import (
     GatingFlags,
     ExitQueueResult,
     calculate_property_age,
-    calculate_percentages,
-    get_maturity_zone,
-    get_pressure_zone,
-    get_quadrant_and_risk,
+    calculate_turnover_metrics,
+    get_liquidity_zone,
+    get_overall_risk,
     generate_interpretation,
     calculate_gating_flags,
     generate_warnings,
@@ -39,7 +37,7 @@ from schemas.api_contract import (
     serialize_exit_queue_v2,
     serialize_exit_queue_dual,
     ExitQueueFields,
-    RiskZone,
+    LiquidityZone,
     OverallRisk,
 )
 
@@ -50,7 +48,7 @@ from schemas.api_contract import (
 
 @pytest.fixture
 def sample_result():
-    """Create a sample ExitQueueResult for testing."""
+    """Create a sample ExitQueueResult for testing (no total_units data)."""
     return ExitQueueResult(
         project_name="THE SAIL @ MARINA BAY",
         data_quality=DataQuality(
@@ -71,21 +69,16 @@ def sample_result():
             first_resale_date=date(2020, 12, 31)
         ),
         resale_metrics=ResaleMetrics(
-            unique_resale_units_total=149,
-            unique_resale_units_12m=47,
             total_resale_transactions=267,
-            resale_maturity_pct=None,
-            active_exit_pressure_pct=None,
-            absorption_speed_days=181.0,
-            transactions_per_100_units=None,
-            resales_last_24m=108
+            resales_12m=47,
+            market_turnover_pct=None,
+            recent_turnover_pct=None
         ),
         risk_assessment=RiskAssessment(
-            maturity_zone="unknown",
-            pressure_zone="unknown",
-            quadrant="insufficient_data",
+            market_turnover_zone="unknown",
+            recent_turnover_zone="unknown",
             overall_risk="unknown",
-            interpretation="Cannot generate risk assessment without total units data."
+            interpretation="Turnover data unavailable. Total units information required for calculation."
         ),
         gating_flags=GatingFlags(
             is_boutique=False,
@@ -99,7 +92,7 @@ def sample_result():
 
 @pytest.fixture
 def complete_result():
-    """Create a complete ExitQueueResult with all data available."""
+    """Create a complete ExitQueueResult with all data available (healthy liquidity)."""
     return ExitQueueResult(
         project_name="PARC CLEMATIS",
         data_quality=DataQuality(
@@ -120,21 +113,16 @@ def complete_result():
             first_resale_date=date(2025, 2, 1)
         ),
         resale_metrics=ResaleMetrics(
-            unique_resale_units_total=46,
-            unique_resale_units_12m=46,
-            total_resale_transactions=69,
-            resale_maturity_pct=3.1,
-            active_exit_pressure_pct=3.1,
-            absorption_speed_days=90.0,
-            transactions_per_100_units=4.7,
-            resales_last_24m=69
+            total_resale_transactions=147,  # 10 per 100 units (healthy)
+            resales_12m=44,  # 3 per 100 units (low)
+            market_turnover_pct=10.0,  # healthy range (5-15)
+            recent_turnover_pct=3.0  # low range (<5)
         ),
         risk_assessment=RiskAssessment(
-            maturity_zone="red",
-            pressure_zone="green",
-            quadrant="immature_low_pressure",
-            overall_risk="moderate",
-            interpretation="This is an early-stage resale market with only 3.1% of units having changed hands."
+            market_turnover_zone="healthy",  # 5-15 = healthy
+            recent_turnover_zone="low",  # <5 = low
+            overall_risk="low",  # healthy market = low risk
+            interpretation="This is a balanced resale market with 10.0 transactions per 100 units. Favorable conditions for both buying and selling."
         ),
         gating_flags=GatingFlags(
             is_boutique=False,
@@ -177,65 +165,65 @@ class TestMetricCalculations:
         assert age is None
         assert source == "insufficient_data"
 
-    def test_calculate_percentages_with_units(self):
-        """Percentages calculated correctly when total_units available."""
-        mat, press, trans = calculate_percentages(100, 20, 150, 1000)
-        assert mat == 10.0
-        assert press == 2.0
-        assert trans == 15.0
+    def test_calculate_turnover_metrics_with_units(self):
+        """Turnover calculated correctly when total_units available."""
+        market, recent = calculate_turnover_metrics(150, 30, 1000)
+        assert market == 15.0  # 150/1000 * 100
+        assert recent == 3.0   # 30/1000 * 100
 
-    def test_calculate_percentages_without_units(self):
+    def test_calculate_turnover_metrics_without_units(self):
         """Returns None when total_units not available."""
-        mat, press, trans = calculate_percentages(100, 20, 150, None)
-        assert mat is None
-        assert press is None
-        assert trans is None
+        market, recent = calculate_turnover_metrics(150, 30, None)
+        assert market is None
+        assert recent is None
 
-    def test_maturity_zone_green(self):
-        """High maturity returns green."""
-        assert get_maturity_zone(45.0) == "green"
+    def test_liquidity_zone_low(self):
+        """<5 returns low (Low Liquidity)."""
+        assert get_liquidity_zone(3.0) == "low"
+        assert get_liquidity_zone(4.9) == "low"
 
-    def test_maturity_zone_yellow(self):
-        """Medium maturity returns yellow."""
-        assert get_maturity_zone(25.0) == "yellow"
+    def test_liquidity_zone_healthy(self):
+        """5-15 returns healthy (Healthy Liquidity)."""
+        assert get_liquidity_zone(5.0) == "healthy"
+        assert get_liquidity_zone(10.0) == "healthy"
+        assert get_liquidity_zone(15.0) == "healthy"
 
-    def test_maturity_zone_red(self):
-        """Low maturity returns red."""
-        assert get_maturity_zone(10.0) == "red"
+    def test_liquidity_zone_high(self):
+        """>15 returns high (Elevated Turnover)."""
+        assert get_liquidity_zone(15.1) == "high"
+        assert get_liquidity_zone(25.0) == "high"
 
-    def test_maturity_zone_unknown(self):
+    def test_liquidity_zone_unknown(self):
         """None returns unknown."""
-        assert get_maturity_zone(None) == "unknown"
+        assert get_liquidity_zone(None) == "unknown"
 
-    def test_pressure_zone_green(self):
-        """Low pressure returns green."""
-        assert get_pressure_zone(3.0) == "green"
-
-    def test_pressure_zone_yellow(self):
-        """Medium pressure returns yellow."""
-        assert get_pressure_zone(7.0) == "yellow"
-
-    def test_pressure_zone_red(self):
-        """High pressure returns red."""
-        assert get_pressure_zone(12.0) == "red"
-
-    def test_quadrant_proven_low_pressure(self):
-        """Green/green returns proven_low_pressure with low risk."""
-        quad, risk = get_quadrant_and_risk("green", "green")
-        assert quad == "proven_low_pressure"
+    def test_overall_risk_healthy_market(self):
+        """Healthy market zone returns low risk."""
+        risk = get_overall_risk("healthy", "healthy")
+        assert risk == "low"
+        risk = get_overall_risk("healthy", "low")
+        assert risk == "low"
+        risk = get_overall_risk("healthy", "high")
         assert risk == "low"
 
-    def test_quadrant_immature_high_pressure(self):
-        """Red/red returns immature_high_pressure with elevated risk."""
-        quad, risk = get_quadrant_and_risk("red", "red")
-        assert quad == "immature_high_pressure"
+    def test_overall_risk_low_market(self):
+        """Low market zone returns moderate or elevated risk."""
+        risk = get_overall_risk("low", "healthy")
+        assert risk == "moderate"
+        risk = get_overall_risk("low", "low")
         assert risk == "elevated"
 
-    def test_quadrant_insufficient_data(self):
-        """Unknown zone returns insufficient_data."""
-        quad, risk = get_quadrant_and_risk("unknown", "green")
-        assert quad == "insufficient_data"
-        assert risk == "unknown"
+    def test_overall_risk_high_market(self):
+        """High market zone returns moderate or elevated risk."""
+        risk = get_overall_risk("high", "healthy")
+        assert risk == "moderate"
+        risk = get_overall_risk("high", "high")
+        assert risk == "elevated"
+
+    def test_overall_risk_unknown(self):
+        """Unknown zone returns unknown risk."""
+        assert get_overall_risk("unknown", "healthy") == "unknown"
+        assert get_overall_risk("healthy", "unknown") == "unknown"
 
 
 class TestGatingFlags:
@@ -243,47 +231,47 @@ class TestGatingFlags:
 
     def test_is_boutique_true(self):
         """Projects with <50 units are boutique."""
-        flags = calculate_gating_flags(45, 5, 2500.0, "D15", 20, 15, 3)
+        flags = calculate_gating_flags(45, 5, 2500.0, "D15", 20, 3)
         assert flags.is_boutique is True
 
     def test_is_boutique_false(self):
         """Projects with >=50 units are not boutique."""
-        flags = calculate_gating_flags(100, 5, 2500.0, "D15", 20, 15, 3)
+        flags = calculate_gating_flags(100, 5, 2500.0, "D15", 20, 3)
         assert flags.is_boutique is False
 
     def test_is_brand_new_true(self):
         """Projects <2 years old are brand new."""
-        flags = calculate_gating_flags(100, 1, 2500.0, "D15", 20, 15, 3)
+        flags = calculate_gating_flags(100, 1, 2500.0, "D15", 20, 3)
         assert flags.is_brand_new is True
 
     def test_is_ultra_luxury_by_psf(self):
         """Projects with median PSF >3000 are ultra-luxury."""
-        flags = calculate_gating_flags(100, 5, 3500.0, "D15", 20, 15, 3)
+        flags = calculate_gating_flags(100, 5, 3500.0, "D15", 20, 3)
         assert flags.is_ultra_luxury is True
 
     def test_is_ultra_luxury_by_district(self):
         """Projects in D09/D10/D11 are ultra-luxury."""
-        flags = calculate_gating_flags(100, 5, 2000.0, "D09", 20, 15, 3)
+        flags = calculate_gating_flags(100, 5, 2000.0, "D09", 20, 3)
         assert flags.is_ultra_luxury is True
 
-    def test_is_thin_data_by_units(self):
-        """Projects with <8 unique resale units have thin data."""
-        flags = calculate_gating_flags(100, 5, 2000.0, "D15", 5, 15, 3)
+    def test_is_thin_data_true(self):
+        """Projects with <10 total resale transactions have thin data."""
+        flags = calculate_gating_flags(100, 5, 2000.0, "D15", 5, 3)
         assert flags.is_thin_data is True
 
-    def test_is_thin_data_by_resales(self):
-        """Projects with <10 resales in 24m have thin data."""
-        flags = calculate_gating_flags(100, 5, 2000.0, "D15", 20, 5, 3)
-        assert flags.is_thin_data is True
+    def test_is_thin_data_false(self):
+        """Projects with >=10 total resale transactions don't have thin data."""
+        flags = calculate_gating_flags(100, 5, 2000.0, "D15", 15, 3)
+        assert flags.is_thin_data is False
 
     def test_unit_type_mixed(self):
         """Projects with >1 bedroom type are mixed."""
-        flags = calculate_gating_flags(100, 5, 2000.0, "D15", 20, 15, 3)
+        flags = calculate_gating_flags(100, 5, 2000.0, "D15", 20, 3)
         assert flags.unit_type_mixed is True
 
     def test_unit_type_not_mixed(self):
         """Projects with 1 bedroom type are not mixed."""
-        flags = calculate_gating_flags(100, 5, 2000.0, "D15", 20, 15, 1)
+        flags = calculate_gating_flags(100, 5, 2000.0, "D15", 20, 1)
         assert flags.unit_type_mixed is False
 
 
@@ -335,23 +323,18 @@ class TestV2SchemaContract:
         v2 = serialize_exit_queue_v2(sample_result)
         rm = v2["resaleMetrics"]
 
-        assert "uniqueResaleUnitsTotal" in rm
-        assert "uniqueResaleUnits12m" in rm
         assert "totalResaleTransactions" in rm
-        assert "resaleMaturityPct" in rm
-        assert "activeExitPressurePct" in rm
-        assert "absorptionSpeedDays" in rm
-        assert "transactionsPer100Units" in rm
-        assert "resalesLast24m" in rm
+        assert "resales12m" in rm
+        assert "marketTurnoverPct" in rm
+        assert "recentTurnoverPct" in rm
 
     def test_v2_risk_assessment_fields(self, sample_result):
         """v2 riskAssessment has correct camelCase fields."""
         v2 = serialize_exit_queue_v2(sample_result)
         ra = v2["riskAssessment"]
 
-        assert "maturityZone" in ra
-        assert "pressureZone" in ra
-        assert "quadrant" in ra
+        assert "marketTurnoverZone" in ra
+        assert "recentTurnoverZone" in ra
         assert "overallRisk" in ra
         assert "interpretation" in ra
 
@@ -366,24 +349,24 @@ class TestV2SchemaContract:
         assert "isThinData" in gf
         assert "unitTypeMixed" in gf
 
-    def test_v2_risk_zone_enum_values(self, complete_result):
-        """v2 risk zones use correct enum values."""
+    def test_v2_liquidity_zone_enum_values(self, complete_result):
+        """v2 liquidity zones use correct enum values."""
         v2 = serialize_exit_queue_v2(complete_result)
         ra = v2["riskAssessment"]
 
-        # Red maturity zone should map to 'high'
-        assert ra["maturityZone"] == RiskZone.HIGH
+        # Market turnover of 10.0 = healthy zone
+        assert ra["marketTurnoverZone"] == "healthy"
 
-        # Green pressure zone should map to 'low'
-        assert ra["pressureZone"] == RiskZone.LOW
+        # Recent turnover of 3.0 = low zone
+        assert ra["recentTurnoverZone"] == "low"
 
     def test_v2_overall_risk_enum_values(self, complete_result):
         """v2 overall risk uses correct enum values."""
         v2 = serialize_exit_queue_v2(complete_result)
         ra = v2["riskAssessment"]
 
-        # Moderate risk
-        assert ra["overallRisk"] == OverallRisk.MODERATE
+        # Healthy market = low risk
+        assert ra["overallRisk"] == OverallRisk.LOW
 
 
 # =============================================================================
@@ -426,6 +409,8 @@ class TestDualModeSerialization:
         assert response["project_name"] == response["_v2"]["projectName"]
         assert response["fundamentals"]["total_units"] == response["_v2"]["fundamentals"]["totalUnits"]
         assert response["resale_metrics"]["total_resale_transactions"] == response["_v2"]["resaleMetrics"]["totalResaleTransactions"]
+        assert response["resale_metrics"]["resales_12m"] == response["_v2"]["resaleMetrics"]["resales12m"]
+        assert response["resale_metrics"]["market_turnover_pct"] == response["_v2"]["resaleMetrics"]["marketTurnoverPct"]
 
 
 # =============================================================================
@@ -440,8 +425,8 @@ class TestNullHandling:
         v1 = serialize_exit_queue_v1(sample_result)
 
         assert v1["fundamentals"]["total_units"] is None
-        assert v1["resale_metrics"]["resale_maturity_pct"] is None
-        assert v1["resale_metrics"]["active_exit_pressure_pct"] is None
+        assert v1["resale_metrics"]["market_turnover_pct"] is None
+        assert v1["resale_metrics"]["recent_turnover_pct"] is None
 
     def test_null_first_resale_date(self):
         """Handles null first_resale_date gracefully."""
@@ -449,27 +434,28 @@ class TestNullHandling:
             project_name="TEST",
             data_quality=DataQuality(False, False, "partial", 0, []),
             fundamentals=PropertyFundamentals(None, None, None, "insufficient_data", None, "D01", None, None),
-            resale_metrics=ResaleMetrics(0, 0, 0, None, None, None, None, 0),
-            risk_assessment=RiskAssessment("unknown", "unknown", "insufficient_data", "unknown", ""),
+            resale_metrics=ResaleMetrics(0, 0, None, None),
+            risk_assessment=RiskAssessment("unknown", "unknown", "unknown", ""),
             gating_flags=GatingFlags(False, False, False, True, False)
         )
 
         v1 = serialize_exit_queue_v1(result)
         assert v1["fundamentals"]["first_resale_date"] is None
 
-    def test_null_absorption_speed(self, sample_result):
-        """Handles null absorption_speed_days in complete result."""
+    def test_null_turnover_metrics(self, sample_result):
+        """Handles null turnover metrics gracefully."""
         result = ExitQueueResult(
             project_name="TEST",
             data_quality=sample_result.data_quality,
             fundamentals=sample_result.fundamentals,
-            resale_metrics=ResaleMetrics(10, 5, 20, None, None, None, None, 8),
+            resale_metrics=ResaleMetrics(20, 5, None, None),
             risk_assessment=sample_result.risk_assessment,
             gating_flags=sample_result.gating_flags
         )
 
         v1 = serialize_exit_queue_v1(result)
-        assert v1["resale_metrics"]["absorption_speed_days"] is None
+        assert v1["resale_metrics"]["market_turnover_pct"] is None
+        assert v1["resale_metrics"]["recent_turnover_pct"] is None
 
     def test_warnings_list_handling(self, sample_result):
         """Warnings list is correctly serialized."""

@@ -1243,20 +1243,15 @@ class ExitQueueFields:
     DEVELOPER = 'developer'
     FIRST_RESALE_DATE = 'firstResaleDate'
 
-    # Resale Metrics
-    UNIQUE_RESALE_UNITS_TOTAL = 'uniqueResaleUnitsTotal'
-    UNIQUE_RESALE_UNITS_12M = 'uniqueResaleUnits12m'
+    # Resale Metrics (transaction-based, displayed as "X per 100 units")
     TOTAL_RESALE_TRANSACTIONS = 'totalResaleTransactions'
-    RESALE_MATURITY_PCT = 'resaleMaturityPct'
-    ACTIVE_EXIT_PRESSURE_PCT = 'activeExitPressurePct'
-    ABSORPTION_SPEED_DAYS = 'absorptionSpeedDays'
-    TRANSACTIONS_PER_100_UNITS = 'transactionsPer100Units'
-    RESALES_LAST_24M = 'resalesLast24m'
+    RESALES_12M = 'resales12m'
+    MARKET_TURNOVER_PCT = 'marketTurnoverPct'      # total_resale_transactions / total_units × 100
+    RECENT_TURNOVER_PCT = 'recentTurnoverPct'      # resales_12m / total_units × 100
 
-    # Risk Assessment
-    MATURITY_ZONE = 'maturityZone'
-    PRESSURE_ZONE = 'pressureZone'
-    QUADRANT = 'quadrant'
+    # Risk Assessment (liquidity-based zones)
+    MARKET_TURNOVER_ZONE = 'marketTurnoverZone'    # 'low', 'healthy', 'high', 'unknown'
+    RECENT_TURNOVER_ZONE = 'recentTurnoverZone'    # 'low', 'healthy', 'high', 'unknown'
     OVERALL_RISK = 'overallRisk'
     INTERPRETATION = 'interpretation'
 
@@ -1268,25 +1263,26 @@ class ExitQueueFields:
     UNIT_TYPE_MIXED = 'unitTypeMixed'
 
 
-class RiskZone:
-    """Risk zone enum values for v2 API."""
+class LiquidityZone:
+    """
+    Liquidity zone enum values for v2 API.
+
+    Zones based on turnover per 100 units:
+    - 'low' (<5): Low Liquidity - harder to exit
+    - 'healthy' (5-15): Healthy Liquidity - optimal for exit
+    - 'high' (>15): Elevated Turnover - possible volatility
+    """
     LOW = 'low'
-    MODERATE = 'moderate'
+    HEALTHY = 'healthy'
     HIGH = 'high'
     UNKNOWN = 'unknown'
 
-    # Mapping from internal zone colors to API enum
-    COLOR_TO_API = {
-        'green': LOW,
-        'yellow': MODERATE,
-        'red': HIGH,
-        'unknown': UNKNOWN
-    }
+    ALL = [LOW, HEALTHY, HIGH, UNKNOWN]
 
     @classmethod
-    def from_color(cls, color: str) -> str:
-        """Convert internal zone color to API enum."""
-        return cls.COLOR_TO_API.get(color, cls.UNKNOWN)
+    def is_valid(cls, value: str) -> bool:
+        """Check if value is a valid liquidity zone."""
+        return value in cls.ALL
 
 
 class OverallRisk:
@@ -1328,6 +1324,9 @@ def serialize_exit_queue_v1(result) -> Dict[str, Any]:
     """
     Serialize ExitQueueResult to v1 schema (snake_case keys).
     This is the current production format for backwards compatibility.
+
+    Note: Turnover values should be displayed as "X transactions per 100 units" in UI,
+    NOT as "X%" - the *_pct suffix is internal naming only.
     """
     return {
         "project_name": result.project_name,
@@ -1352,19 +1351,14 @@ def serialize_exit_queue_v1(result) -> Dict[str, Any]:
             "first_resale_date": result.fundamentals.first_resale_date.isoformat() if result.fundamentals.first_resale_date else None
         },
         "resale_metrics": {
-            "unique_resale_units_total": result.resale_metrics.unique_resale_units_total,
-            "unique_resale_units_12m": result.resale_metrics.unique_resale_units_12m,
             "total_resale_transactions": result.resale_metrics.total_resale_transactions,
-            "resale_maturity_pct": result.resale_metrics.resale_maturity_pct,
-            "active_exit_pressure_pct": result.resale_metrics.active_exit_pressure_pct,
-            "absorption_speed_days": result.resale_metrics.absorption_speed_days,
-            "transactions_per_100_units": result.resale_metrics.transactions_per_100_units,
-            "resales_last_24m": result.resale_metrics.resales_last_24m
+            "resales_12m": result.resale_metrics.resales_12m,
+            "market_turnover_pct": result.resale_metrics.market_turnover_pct,
+            "recent_turnover_pct": result.resale_metrics.recent_turnover_pct
         },
         "risk_assessment": {
-            "maturity_zone": result.risk_assessment.maturity_zone,
-            "pressure_zone": result.risk_assessment.pressure_zone,
-            "quadrant": result.risk_assessment.quadrant,
+            "market_turnover_zone": result.risk_assessment.market_turnover_zone,
+            "recent_turnover_zone": result.risk_assessment.recent_turnover_zone,
             "overall_risk": result.risk_assessment.overall_risk,
             "interpretation": result.risk_assessment.interpretation
         },
@@ -1381,6 +1375,9 @@ def serialize_exit_queue_v1(result) -> Dict[str, Any]:
 def serialize_exit_queue_v2(result) -> Dict[str, Any]:
     """
     Serialize ExitQueueResult to v2 schema (camelCase keys + enum values).
+
+    Note: Turnover values should be displayed as "X transactions per 100 units" in UI,
+    NOT as "X%" - the *Pct suffix is internal naming only.
     """
     return {
         ExitQueueFields.PROJECT_NAME: result.project_name,
@@ -1405,19 +1402,14 @@ def serialize_exit_queue_v2(result) -> Dict[str, Any]:
             ExitQueueFields.FIRST_RESALE_DATE: result.fundamentals.first_resale_date.isoformat() if result.fundamentals.first_resale_date else None
         },
         ExitQueueFields.RESALE_METRICS: {
-            ExitQueueFields.UNIQUE_RESALE_UNITS_TOTAL: result.resale_metrics.unique_resale_units_total,
-            ExitQueueFields.UNIQUE_RESALE_UNITS_12M: result.resale_metrics.unique_resale_units_12m,
             ExitQueueFields.TOTAL_RESALE_TRANSACTIONS: result.resale_metrics.total_resale_transactions,
-            ExitQueueFields.RESALE_MATURITY_PCT: result.resale_metrics.resale_maturity_pct,
-            ExitQueueFields.ACTIVE_EXIT_PRESSURE_PCT: result.resale_metrics.active_exit_pressure_pct,
-            ExitQueueFields.ABSORPTION_SPEED_DAYS: result.resale_metrics.absorption_speed_days,
-            ExitQueueFields.TRANSACTIONS_PER_100_UNITS: result.resale_metrics.transactions_per_100_units,
-            ExitQueueFields.RESALES_LAST_24M: result.resale_metrics.resales_last_24m
+            ExitQueueFields.RESALES_12M: result.resale_metrics.resales_12m,
+            ExitQueueFields.MARKET_TURNOVER_PCT: result.resale_metrics.market_turnover_pct,
+            ExitQueueFields.RECENT_TURNOVER_PCT: result.resale_metrics.recent_turnover_pct
         },
         ExitQueueFields.RISK_ASSESSMENT: {
-            ExitQueueFields.MATURITY_ZONE: RiskZone.from_color(result.risk_assessment.maturity_zone),
-            ExitQueueFields.PRESSURE_ZONE: RiskZone.from_color(result.risk_assessment.pressure_zone),
-            ExitQueueFields.QUADRANT: result.risk_assessment.quadrant,
+            ExitQueueFields.MARKET_TURNOVER_ZONE: result.risk_assessment.market_turnover_zone,
+            ExitQueueFields.RECENT_TURNOVER_ZONE: result.risk_assessment.recent_turnover_zone,
             ExitQueueFields.OVERALL_RISK: OverallRisk.from_internal(result.risk_assessment.overall_risk),
             ExitQueueFields.INTERPRETATION: result.risk_assessment.interpretation
         },

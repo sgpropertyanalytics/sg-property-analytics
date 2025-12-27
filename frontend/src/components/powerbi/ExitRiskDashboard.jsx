@@ -1,41 +1,54 @@
 /**
- * ExitRiskDashboard - Two-axis exit queue risk visualization
+ * ExitRiskDashboard - Liquidity zone risk visualization
  *
  * Displays:
- * - Resale Market Maturity bar (0-100%, zones: Red 0-15%, Yellow 15-40%, Green 40%+)
- * - Recent Exit Pressure bar (0-20%+, zones: Green 0-5%, Yellow 5-10%, Red 10%+)
- * - Exit Risk Assessment badge (Low / Moderate / Elevated)
+ * - Market Turnover bar (transactions per 100 units)
+ * - Recent Turnover bar (12m transactions per 100 units)
+ * - Liquidity Assessment badge (Low Risk / Moderate Risk / Elevated Risk)
  * - Interpretation text from backend
+ *
+ * Liquidity Zones (transactions per 100 units):
+ * - Low Liquidity (<5): Soft amber - harder to exit
+ * - Healthy Liquidity (5-15): Muted green - optimal for exit
+ * - Elevated Turnover (>15): Muted red - possible volatility
+ *
+ * IMPORTANT: Values displayed as "X per 100 units" (NEVER with % symbol)
  */
 
-// Color constants from project palette
-const COLORS = {
-  green: '#10B981',   // emerald-500 - good
-  yellow: '#F59E0B',  // amber-500 - moderate
-  red: '#EF4444',     // red-500 - bad/warning
-  navy: '#213448',    // deep navy - primary text
-  ocean: '#547792',   // ocean blue - secondary text
-  sand: '#EAE0CF',    // sand - backgrounds
-  sky: '#94B4C1',     // sky blue - borders
+// Institutional color palette for liquidity zones
+const LIQUIDITY_COLORS = {
+  low: '#F59E0B',      // Soft amber - Low Liquidity
+  healthy: '#10B981',  // Muted green - Healthy Liquidity (optimal)
+  high: '#EF4444',     // Muted red - Elevated Turnover
+  unknown: '#94B4C1',  // Sky blue - Unknown
 };
 
-// Get color for maturity zone (high = good)
-const getMaturityColor = (pct) => {
-  if (pct === null || pct === undefined) return COLORS.sky;
-  if (pct >= 40) return COLORS.green;
-  if (pct >= 15) return COLORS.yellow;
-  return COLORS.red;
+// Get liquidity zone from turnover value
+const getLiquidityZone = (turnover) => {
+  if (turnover === null || turnover === undefined) return 'unknown';
+  if (turnover < 5) return 'low';
+  if (turnover <= 15) return 'healthy';
+  return 'high';
 };
 
-// Get color for pressure zone (low = good)
-const getPressureColor = (pct) => {
-  if (pct === null || pct === undefined) return COLORS.sky;
-  if (pct < 5) return COLORS.green;
-  if (pct < 10) return COLORS.yellow;
-  return COLORS.red;
+// Get color for turnover value based on liquidity zone
+const getTurnoverColor = (turnover) => {
+  const zone = getLiquidityZone(turnover);
+  return LIQUIDITY_COLORS[zone] || LIQUIDITY_COLORS.unknown;
 };
 
-// Get color for overall risk badge
+// Get zone label for display
+const getZoneLabel = (zone) => {
+  const labels = {
+    low: 'Low Liquidity',
+    healthy: 'Healthy Liquidity',
+    high: 'Elevated Turnover',
+    unknown: 'Insufficient Data',
+  };
+  return labels[zone] || 'Unknown';
+};
+
+// Get styles for overall risk badge
 const getRiskBadgeStyles = (risk) => {
   switch (risk) {
     case 'low':
@@ -62,11 +75,17 @@ const getRiskBadgeStyles = (risk) => {
   }
 };
 
-// Progress bar component with color zones
-function RiskProgressBar({ label, value, maxValue = 100, zones, getColor, suffix = '%' }) {
-  const percentage = value !== null ? Math.min((value / maxValue) * 100, 100) : 0;
-  const color = getColor(value);
-  const displayValue = value !== null ? `${value}${suffix}` : 'N/A';
+// Turnover bar component with liquidity zone coloring
+function TurnoverBar({ label, value, maxValue = 30 }) {
+  const zone = getLiquidityZone(value);
+  const color = getTurnoverColor(value);
+  const percentage = value !== null && value !== undefined
+    ? Math.min((value / maxValue) * 100, 100)
+    : 0;
+  const displayValue = value !== null && value !== undefined
+    ? `${value} per 100 units`
+    : 'N/A';
+  const zoneLabel = getZoneLabel(zone);
 
   return (
     <div className="mb-6">
@@ -75,12 +94,14 @@ function RiskProgressBar({ label, value, maxValue = 100, zones, getColor, suffix
         <span className="text-xs font-medium uppercase tracking-wide text-[#547792]">
           {label}
         </span>
-        <span
-          className="text-sm font-semibold"
-          style={{ color }}
-        >
-          {displayValue}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className="text-sm font-semibold"
+            style={{ color }}
+          >
+            {displayValue}
+          </span>
+        </div>
       </div>
 
       {/* Progress bar container */}
@@ -95,14 +116,19 @@ function RiskProgressBar({ label, value, maxValue = 100, zones, getColor, suffix
         />
       </div>
 
-      {/* Zone markers */}
-      <div className="flex justify-between mt-1 text-[10px] text-[#94B4C1]">
-        {zones.map((zone, i) => (
-          <span key={i} className="flex flex-col items-center">
-            <span>{zone.label}</span>
-            <span className="text-[9px]">({zone.range})</span>
-          </span>
-        ))}
+      {/* Zone indicator */}
+      <div className="flex justify-between mt-1">
+        <span
+          className="text-[10px] font-medium px-2 py-0.5 rounded"
+          style={{ color, backgroundColor: `${color}20` }}
+        >
+          {zoneLabel}
+        </span>
+        <div className="flex gap-4 text-[9px] text-[#94B4C1]">
+          <span>&lt;5: Low</span>
+          <span>5-15: Healthy</span>
+          <span>&gt;15: Elevated</span>
+        </div>
       </div>
     </div>
   );
@@ -115,20 +141,20 @@ function ExitRiskDashboardSkeleton() {
     <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6 animate-pulse">
       <div className="h-4 bg-[#94B4C1]/30 rounded w-1/3 mb-6" />
 
-      {/* Maturity bar skeleton */}
+      {/* Market turnover bar skeleton */}
       <div className="mb-6">
         <div className="flex justify-between mb-2">
           <div className="h-3 bg-[#94B4C1]/30 rounded w-1/4" />
-          <div className="h-3 bg-[#94B4C1]/30 rounded w-16" />
+          <div className="h-3 bg-[#94B4C1]/30 rounded w-24" />
         </div>
         <div className="h-4 bg-[#94B4C1]/30 rounded-full" />
       </div>
 
-      {/* Pressure bar skeleton */}
+      {/* Recent turnover bar skeleton */}
       <div className="mb-6">
         <div className="flex justify-between mb-2">
           <div className="h-3 bg-[#94B4C1]/30 rounded w-1/4" />
-          <div className="h-3 bg-[#94B4C1]/30 rounded w-16" />
+          <div className="h-3 bg-[#94B4C1]/30 rounded w-24" />
         </div>
         <div className="h-4 bg-[#94B4C1]/30 rounded-full" />
       </div>
@@ -145,10 +171,10 @@ function ExitRiskDashboardSkeleton() {
 }
 
 export default function ExitRiskDashboard({
-  maturityPct,
-  pressurePct,
-  maturityZone: _maturityZone,
-  pressureZone: _pressureZone,
+  marketTurnoverPct,
+  recentTurnoverPct,
+  marketTurnoverZone: _marketTurnoverZone, // Can derive from value, but accept for consistency
+  recentTurnoverZone: _recentTurnoverZone,
   overallRisk,
   interpretation,
   loading = false,
@@ -159,42 +185,25 @@ export default function ExitRiskDashboard({
 
   const riskBadge = getRiskBadgeStyles(overallRisk);
 
-  // Zone definitions for labels
-  const maturityZones = [
-    { label: 'Early', range: '0-15%' },
-    { label: 'Developing', range: '15-40%' },
-    { label: 'Proven', range: '40%+' },
-  ];
-
-  const pressureZones = [
-    { label: 'Low', range: '0-5%' },
-    { label: 'Moderate', range: '5-10%' },
-    { label: 'High', range: '10%+' },
-  ];
-
   return (
     <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6">
       {/* Header */}
       <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-6">
-        Exit Queue Risk Assessment
+        Liquidity Assessment
       </h3>
 
-      {/* Maturity Bar */}
-      <RiskProgressBar
-        label="Resale Market Maturity"
-        value={maturityPct}
-        maxValue={100}
-        zones={maturityZones}
-        getColor={getMaturityColor}
+      {/* Market Turnover Bar */}
+      <TurnoverBar
+        label="Market Turnover"
+        value={marketTurnoverPct}
+        maxValue={30}  // Scale to 30 for better visualization
       />
 
-      {/* Pressure Bar */}
-      <RiskProgressBar
-        label="Recent Exit Pressure (12 months)"
-        value={pressurePct}
-        maxValue={20}  // Scale to 20% max for better visualization
-        zones={pressureZones}
-        getColor={getPressureColor}
+      {/* Recent Turnover Bar */}
+      <TurnoverBar
+        label="Recent Turnover (12M)"
+        value={recentTurnoverPct}
+        maxValue={20}  // Scale to 20 for recent (typically lower)
       />
 
       {/* Risk Badge */}
@@ -212,7 +221,11 @@ export default function ExitRiskDashboard({
           {interpretation}
         </div>
       )}
+
+      {/* Helper note */}
+      <div className="mt-4 text-[10px] text-[#94B4C1] text-center">
+        Turnover = resale transactions per 100 units. Green zone (5-15) indicates optimal liquidity.
+      </div>
     </div>
   );
 }
-

@@ -5,9 +5,14 @@
  * - Searchable project dropdown for projects with resale transactions
  * - Property fundamentals (age, units, tenure)
  * - Historical Downside Protection (P25/P50/P75 price bands)
- * - Exit queue risk assessment (maturity, pressure, risk badge)
- * - Resale activity metrics
+ * - Liquidity assessment (market turnover, recent turnover, risk badge)
+ * - Resale activity metrics (transactions per 100 units)
  * - Gating warnings for special cases
+ *
+ * Liquidity Zones (transactions per 100 units):
+ * - Low Liquidity (<5): harder to exit
+ * - Healthy Liquidity (5-15): optimal for exit
+ * - Elevated Turnover (>15): possible volatility
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { getProjectNames, getProjectExitQueue, getProjectPriceBands, getProjectPriceGrowth } from '../api/client';
@@ -516,7 +521,7 @@ export function ProjectDeepDiveContent() {
               Select a Project to Analyze
             </h2>
             <p className="text-sm text-[#547792] max-w-md mx-auto">
-              Search for any condominium project with resale transaction history to view exit queue risk analysis, market maturity, and resale pressure metrics.
+              Search for any condominium project with resale transaction history to view liquidity assessment, turnover metrics, and downside protection analysis.
             </p>
           </div>
         )}
@@ -563,14 +568,10 @@ export function ProjectDeepDiveContent() {
               {/* Right: Resale Activity Metrics (only if resale data exists) */}
               {exitQueueData.resale_metrics ? (
                 <ResaleMetricsCards
-                  uniqueResaleUnitsTotal={exitQueueData.resale_metrics?.unique_resale_units_total}
-                  uniqueResaleUnits12m={exitQueueData.resale_metrics?.unique_resale_units_12m}
                   totalResaleTransactions={exitQueueData.resale_metrics?.total_resale_transactions}
-                  resaleMaturityPct={exitQueueData.resale_metrics?.resale_maturity_pct}
-                  activeExitPressurePct={exitQueueData.resale_metrics?.active_exit_pressure_pct}
-                  absorptionSpeedDays={exitQueueData.resale_metrics?.absorption_speed_days}
-                  transactionsPer100Units={exitQueueData.resale_metrics?.transactions_per_100_units}
-                  resalesLast24m={exitQueueData.resale_metrics?.resales_last_24m}
+                  resales12m={exitQueueData.resale_metrics?.resales_12m}
+                  marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
+                  recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
                   totalUnits={exitQueueData.fundamentals?.total_units}
                   compact
                 />
@@ -608,10 +609,10 @@ export function ProjectDeepDiveContent() {
             {exitQueueData.resale_metrics && (
               <>
                 <ExitRiskDashboard
-                  maturityPct={exitQueueData.resale_metrics?.resale_maturity_pct}
-                  pressurePct={exitQueueData.resale_metrics?.active_exit_pressure_pct}
-                  maturityZone={exitQueueData.risk_assessment?.maturity_zone}
-                  pressureZone={exitQueueData.risk_assessment?.pressure_zone}
+                  marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
+                  recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
+                  marketTurnoverZone={exitQueueData.risk_assessment?.market_turnover_zone}
+                  recentTurnoverZone={exitQueueData.risk_assessment?.recent_turnover_zone}
                   overallRisk={exitQueueData.risk_assessment?.overall_risk}
                   interpretation={exitQueueData.risk_assessment?.interpretation}
                 />
