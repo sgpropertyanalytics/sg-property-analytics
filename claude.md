@@ -63,6 +63,7 @@ X-axis = CATEGORY → default behavior
 [ ] Enums via api_contract.py
 [ ] COALESCE(is_outlier, false) = false
 [ ] SQL in services/, not routes
+[ ] Deterministic ORDER BY (date + unique_id)
 ```
 
 ## Card 6: Async Safety
@@ -127,6 +128,33 @@ Canonical Types:
   Date → datetime.date    | Money → int (cents)
   Time → datetime (UTC)   | Percent → float (0-1)
   IDs → str               | Flags → bool
+```
+
+## Card 12: Deterministic Ordering
+```
+RULE: Time-series queries MUST include stable tie-breaker in ORDER BY
+
+FORBIDDEN:
+  ORDER BY transaction_date              ❌ Non-deterministic
+
+REQUIRED:
+  ORDER BY transaction_date, id          ✅ Stable
+  ORDER BY transaction_date, project_id, unit_id  ✅ Composite key
+
+WHEN THIS MATTERS:
+  - Cumulative sums / running totals
+  - Window functions (LAG, LEAD, ROW_NUMBER)
+  - "Pick first/last row" queries
+  - Trend lines from sorted points
+
+WHEN SAFE TO SKIP:
+  - Aggregations (median, percentiles, COUNT)
+  - GROUP BY date → aggregate → ORDER BY date
+
+TIE-BREAKER PRIORITY:
+  1. transaction_id / primary key (best)
+  2. source_id from URA / ingestion key
+  3. Composite: price, area, project_name
 ```
 
 ---
