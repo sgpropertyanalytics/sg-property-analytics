@@ -15,11 +15,11 @@ import { QueryState } from '../common/QueryState';
 import { getSupplySummary } from '../../api/client';
 import { DISTRICT_NAMES, getRegionForDistrict, getRegionBadgeClass } from '../../constants';
 
-// Colors for volume bars (warm tones)
+// Colors for volume bars (muted warm tones)
 const COLORS = {
-  unsold: '#92400e',    // Warm brown
-  upcoming: '#c2410c',  // Warm orange
-  gls: '#94B4C1',       // Sky (unchanged)
+  unsold: '#6b4226',    // Muted chocolate brown
+  upcoming: '#9c6644',  // Muted terracotta
+  gls: '#c4a77d',       // Muted camel/tan
 };
 
 /**

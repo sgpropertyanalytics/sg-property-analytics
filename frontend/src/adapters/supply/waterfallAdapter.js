@@ -17,23 +17,23 @@
  * RULE: Chart component receives this and renders. No math in component.
  */
 
-// Colors for supply charts (warm tones for unsold/upcoming)
+// Colors for supply charts (muted warm tones)
 const COLORS = {
-  unsoldInventory: '#92400e',  // Warm brown
-  upcomingLaunches: '#c2410c', // Warm orange
-  glsPipeline: '#94B4C1',      // Sky Blue
-  glsExcluded: 'rgba(148, 180, 193, 0.3)',  // Sky Blue @ 30% opacity
-  total: '#EAE0CF',            // Sand/Cream
+  unsoldInventory: '#6b4226',  // Muted chocolate brown (darkest)
+  upcomingLaunches: '#9c6644', // Muted terracotta (medium)
+  glsPipeline: '#c4a77d',      // Muted camel/tan (lighter)
+  glsExcluded: 'rgba(196, 167, 125, 0.3)',  // Camel @ 30% opacity
+  total: '#e8dcc8',            // Warm cream (lightest)
   spacer: 'transparent',       // Invisible spacer
-  connector: '#94B4C1',        // Bridge line color
+  connector: '#c4a77d',        // Bridge line color (matches GLS)
 };
 
 // Border colors for better definition
 const BORDER_COLORS = {
-  unsoldInventory: '#7a3309',  // Darker brown
-  upcomingLaunches: '#a3350a', // Darker orange
-  glsPipeline: '#7a9dab',
-  glsExcluded: 'rgba(122, 157, 171, 0.5)',
+  unsoldInventory: '#5a361f',  // Darker brown
+  upcomingLaunches: '#7d5236', // Darker terracotta
+  glsPipeline: '#a68b64',      // Darker camel
+  glsExcluded: 'rgba(166, 139, 100, 0.5)',
   total: '#d4c9b8',
 };
 
