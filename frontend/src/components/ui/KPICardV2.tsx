@@ -19,6 +19,8 @@ interface KPICardV2Props {
   title: string;
   /** Subtitle shown below title (methodology context) */
   subtitle?: string;
+  /** Tooltip text shown on hover of info icon */
+  tooltip?: string;
   value: string;
   trend?: {
     value: number;
@@ -35,6 +37,7 @@ interface KPICardV2Props {
 export function KPICardV2({
   title,
   subtitle,
+  tooltip,
   value,
   trend,
   transition,
@@ -56,14 +59,26 @@ export function KPICardV2({
         {loading ? (
           <div className="h-3 bg-[#94B4C1]/30 rounded w-2/3 animate-pulse" />
         ) : (
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#547792]">
-              {title}
-            </span>
-            {subtitle && (
-              <p className="text-[9px] text-[#94B4C1] mt-0.5 leading-tight">
-                {subtitle}
-              </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#547792]">
+                {title}
+              </span>
+              {subtitle && (
+                <p className="text-[9px] text-[#94B4C1] mt-0.5 leading-tight">
+                  {subtitle}
+                </p>
+              )}
+            </div>
+            {tooltip && (
+              <div className="relative group">
+                <span className="w-4 h-4 flex items-center justify-center text-[10px] text-[#94B4C1] hover:text-[#547792] cursor-help transition-colors">
+                  ?
+                </span>
+                <div className="absolute right-0 top-5 z-50 hidden group-hover:block w-48 p-2 bg-[#213448] text-white text-[10px] leading-relaxed rounded shadow-lg">
+                  {tooltip}
+                </div>
+              </div>
             )}
           </div>
         )}
