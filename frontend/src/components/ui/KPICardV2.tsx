@@ -184,8 +184,6 @@ export function KPICardV2({
     }
   };
 
-  const hasContext = transition || footerMeta || trend?.label;
-
   return (
     <div
       className={`
@@ -202,12 +200,6 @@ export function KPICardV2({
         ) : (
           <span className="text-[10px] font-bold uppercase tracking-wider text-[#547792] leading-none">
             {title}
-          </span>
-        )}
-        {/* Optional context as subtle text */}
-        {!loading && hasContext && (
-          <span className="text-[9px] text-[#94B4C1] leading-none">
-            {transition || trend?.label || footerMeta}
           </span>
         )}
       </div>

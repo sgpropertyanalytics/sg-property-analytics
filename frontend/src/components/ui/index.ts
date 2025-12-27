@@ -13,9 +13,12 @@
  * See .claude/skills/ for design system documentation.
  */
 
-// KPI components
+// KPI components (standalone cards for pages)
 export { KPICard, KPICardSkeleton, KPICardGroup } from './KPICard';
 export { KPICardV2, KPICardV2Skeleton, KPICardV2Group, mapKpiV2ToCardProps } from './KPICardV2';
+
+// Inline cards (compact cards inside chart headers)
+export { InlineCard, InlineCardGroup } from './InlineCard';
 
 // Insight components
 export { KeyInsightBox } from './KeyInsightBox';

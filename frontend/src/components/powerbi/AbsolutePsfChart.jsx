@@ -16,7 +16,7 @@ import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { PreviewChartOverlay, ChartSlot } from '../ui';
+import { PreviewChartOverlay, ChartSlot, InlineCard, InlineCardGroup } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformCompressionSeries,
@@ -235,27 +235,36 @@ export function AbsolutePsfChart({ height = 300 }) {
             </div>
           </div>
 
-          {/* KPI Row - Responsive: 1 col mobile, 3 cols tablet+ */}
-          <div className={`grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3 ${!isPremium ? 'blur-sm grayscale-[40%]' : ''}`}>
-            <PsfKpiCard
-              label="CCR"
-              value={latestData.ccr}
-              change={ccrChange}
-              color={REGION_COLORS.CCR}
-            />
-            <PsfKpiCard
-              label="RCR"
-              value={latestData.rcr}
-              change={rcrChange}
-              color={REGION_COLORS.RCR}
-            />
-            <PsfKpiCard
-              label="OCR"
-              value={latestData.ocr}
-              change={ocrChange}
-              color={REGION_COLORS.OCR}
-            />
-          </div>
+          {/* KPI Row - Using standardized InlineCard components */}
+          <InlineCardGroup columns={3} blur={!isPremium}>
+            {latestData.ccr != null && (
+              <InlineCard
+                label="CCR"
+                value={`$${Math.round(latestData.ccr).toLocaleString()}`}
+                subtext={ccrChange !== null ? `${ccrChange > 0 ? '+' : ''}${ccrChange}% vs prev` : undefined}
+                color={REGION_COLORS.CCR}
+                trend={ccrChange > 0 ? 'up' : ccrChange < 0 ? 'down' : 'neutral'}
+              />
+            )}
+            {latestData.rcr != null && (
+              <InlineCard
+                label="RCR"
+                value={`$${Math.round(latestData.rcr).toLocaleString()}`}
+                subtext={rcrChange !== null ? `${rcrChange > 0 ? '+' : ''}${rcrChange}% vs prev` : undefined}
+                color={REGION_COLORS.RCR}
+                trend={rcrChange > 0 ? 'up' : rcrChange < 0 ? 'down' : 'neutral'}
+              />
+            )}
+            {latestData.ocr != null && (
+              <InlineCard
+                label="OCR"
+                value={`$${Math.round(latestData.ocr).toLocaleString()}`}
+                subtext={ocrChange !== null ? `${ocrChange > 0 ? '+' : ''}${ocrChange}% vs prev` : undefined}
+                color={REGION_COLORS.OCR}
+                trend={ocrChange > 0 ? 'up' : ocrChange < 0 ? 'down' : 'neutral'}
+              />
+            )}
+          </InlineCardGroup>
         </div>
 
         {/* Chart Area */}
@@ -284,35 +293,6 @@ export function AbsolutePsfChart({ height = 300 }) {
         </div>
       </div>
     </QueryState>
-    </div>
-  );
-}
-
-/**
- * PSF KPI Card - Shows current value and period-over-period change
- */
-function PsfKpiCard({ label, value, change, color }) {
-  if (value == null) return null;
-
-  // Bloomberg-style: label row, value row, change row - no wrapping
-  return (
-    <div
-      className="rounded-lg px-3 py-2"
-      style={{ backgroundColor: `${color}10` }}
-    >
-      <div className="text-[10px] uppercase tracking-wide" style={{ color }}>
-        {label}
-      </div>
-      <div className="text-base md:text-lg font-bold font-mono tabular-nums text-[#213448] whitespace-nowrap">
-        ${Math.round(value).toLocaleString()}
-      </div>
-      {change !== null && (
-        <div className={`text-[10px] font-medium whitespace-nowrap ${
-          change > 0 ? 'text-emerald-600' : change < 0 ? 'text-red-600' : 'text-[#547792]'
-        }`}>
-          {change > 0 ? '+' : ''}{change}% vs prev
-        </div>
-      )}
     </div>
   );
 }
