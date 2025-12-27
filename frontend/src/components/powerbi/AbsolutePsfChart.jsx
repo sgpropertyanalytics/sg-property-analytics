@@ -294,19 +294,20 @@ export function AbsolutePsfChart({ height = 300 }) {
 function PsfKpiCard({ label, value, change, color }) {
   if (value == null) return null;
 
+  // Bloomberg-style: label row, value row, change row - no wrapping
   return (
     <div
-      className="rounded-lg px-3 py-2 text-center"
+      className="rounded-lg px-3 py-2"
       style={{ backgroundColor: `${color}10` }}
     >
       <div className="text-[10px] uppercase tracking-wide" style={{ color }}>
         {label}
       </div>
-      <div className="text-base md:text-lg font-bold font-mono tabular-nums text-[#213448]">
+      <div className="text-base md:text-lg font-bold font-mono tabular-nums text-[#213448] whitespace-nowrap">
         ${Math.round(value).toLocaleString()}
       </div>
       {change !== null && (
-        <div className={`text-[10px] font-medium ${
+        <div className={`text-[10px] font-medium whitespace-nowrap ${
           change > 0 ? 'text-emerald-600' : change < 0 ? 'text-red-600' : 'text-[#547792]'
         }`}>
           {change > 0 ? '+' : ''}{change}% vs prev

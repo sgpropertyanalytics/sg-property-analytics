@@ -429,56 +429,46 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
     'rcr-ocr': 'Fringe Premium (RCR vs OCR)',
   };
 
-  // Inverted states (anomalies)
+  // Inverted states (anomalies) - Bloomberg-style label/value
   if (isInverted) {
     if (type === 'ccr-rcr') {
       // CCR < RCR: Prime Discount (opportunity)
       return (
-        <div className="bg-amber-100 border-2 border-amber-400 rounded-lg px-3 py-2 text-center sm:h-[72px] flex flex-col justify-center">
-          <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
-            Market Anomaly
-          </div>
-          <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-amber-900">
+        <div className="bg-amber-100 border-2 border-amber-400 rounded-lg px-3 py-2">
+          <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Market Anomaly</div>
+          <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-amber-900 whitespace-nowrap">
             −${Math.abs(spread).toLocaleString()} PSF
           </div>
-          <div className="text-[10px] text-amber-700 font-semibold">
-            Prime Discount
-          </div>
+          <div className="text-[10px] text-amber-700 font-semibold whitespace-nowrap">Prime Discount</div>
         </div>
       );
     }
     if (type === 'rcr-ocr') {
       // OCR > RCR: Risk Alert
       return (
-        <div className="bg-red-50 border-2 border-red-500 rounded-lg px-3 py-2 text-center sm:h-[72px] flex flex-col justify-center">
-          <div className="text-[10px] font-bold text-red-800 uppercase tracking-wider">
-            Risk Alert
-          </div>
-          <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-red-900">
+        <div className="bg-red-50 border-2 border-red-500 rounded-lg px-3 py-2">
+          <div className="text-[10px] font-bold text-red-800 uppercase tracking-wider">Risk Alert</div>
+          <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-red-900 whitespace-nowrap">
             −${Math.abs(spread).toLocaleString()} PSF
           </div>
-          <div className="text-[10px] text-red-700 font-semibold">
-            OCR Overheated
-          </div>
+          <div className="text-[10px] text-red-700 font-semibold whitespace-nowrap">OCR Overheated</div>
         </div>
       );
     }
   }
 
-  // Normal state - consistent card design
+  // Normal state - Bloomberg-style label/value
   const isAboveAvg = pctVsAvg !== null && pctVsAvg > 0;
   const isBelowAvg = pctVsAvg !== null && pctVsAvg < 0;
 
   return (
-    <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center sm:h-[72px] flex flex-col justify-center">
-      <div className="text-[10px] text-[#547792] uppercase tracking-wide truncate">
-        {labels[type]}
-      </div>
-      <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-[#213448]">
+    <div className="bg-[#213448]/5 rounded-lg px-3 py-2">
+      <div className="text-[10px] text-[#547792] uppercase tracking-wide truncate">{labels[type]}</div>
+      <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-[#213448] whitespace-nowrap">
         +${spread.toLocaleString()} PSF
       </div>
       {pctVsAvg !== null && (
-        <div className={`text-[10px] font-medium ${
+        <div className={`text-[10px] font-medium whitespace-nowrap ${
           isBelowAvg ? 'text-emerald-600' : isAboveAvg ? 'text-red-600' : 'text-[#547792]'
         }`}>
           {isBelowAvg ? `${pctVsAvg}% below avg` : isAboveAvg ? `+${pctVsAvg}% above avg` : 'At average'}
