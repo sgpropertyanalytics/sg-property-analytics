@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import {
@@ -17,13 +17,19 @@ import { ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformBeadsChartSeries,
-  filterBedroomDatasets,
   formatPrice,
   logFetchDebug,
   assertKnownVersion,
 } from '../../adapters';
 
 ChartJS.register(LinearScale, PointElement, BubbleController, Tooltip, Legend, annotationPlugin);
+
+// Region colors for strings and labels (outside component to avoid dependency issues)
+const REGION_COLORS = {
+  CCR: '#213448', // Navy
+  RCR: '#547792', // Blue
+  OCR: '#94B4C1', // Sky
+};
 
 /**
  * Beads on String Chart - Volume-Weighted Median Prices by Region & Bedroom
@@ -40,7 +46,6 @@ ChartJS.register(LinearScale, PointElement, BubbleController, Tooltip, Legend, a
  */
 export function BeadsChart({ height = 300 }) {
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
-  const [showAllBedrooms, setShowAllBedrooms] = useState(false);
   const chartRef = useRef(null);
 
   // Data fetching with useAbortableQuery
@@ -75,21 +80,8 @@ export function BeadsChart({ height = 300 }) {
     }
   );
 
-  // Filter datasets based on toggle state
-  const visibleData = useMemo(() => {
-    if (showAllBedrooms) return chartData;
-    return filterBedroomDatasets(chartData, [2, 3, 4]);
-  }, [chartData, showAllBedrooms]);
-
-  const hasData = visibleData?.datasets?.length > 0;
+  const hasData = chartData?.datasets?.length > 0;
   const { stats, stringRanges } = chartData;
-
-  // Region colors for strings and labels
-  const REGION_COLORS = {
-    CCR: '#213448', // Navy
-    RCR: '#547792', // Blue
-    OCR: '#94B4C1', // Sky
-  };
 
   // Build annotation lines for the "strings"
   const stringAnnotations = useMemo(() => {
@@ -189,13 +181,21 @@ export function BeadsChart({ height = 300 }) {
           reverse: false,
           ticks: {
             stepSize: 1,
+            autoSkip: false,
+            includeBounds: false,
             callback: (value) => {
-              const labels = ['CCR', 'RCR', 'OCR'];
-              return labels[value] || '';
+              // Only show labels at integer positions (0=CCR, 1=RCR, 2=OCR)
+              if (value === 0) return 'CCR';
+              if (value === 1) return 'RCR';
+              if (value === 2) return 'OCR';
+              return '';
             },
             color: (context) => {
-              const colors = [REGION_COLORS.CCR, REGION_COLORS.RCR, REGION_COLORS.OCR];
-              return colors[context.tick.value] || '#547792';
+              const value = context.tick.value;
+              if (value === 0) return REGION_COLORS.CCR;
+              if (value === 1) return REGION_COLORS.RCR;
+              if (value === 2) return REGION_COLORS.OCR;
+              return '#547792';
             },
             font: { size: 13, weight: 'bold' },
           },
@@ -226,31 +226,17 @@ export function BeadsChart({ height = 300 }) {
       >
         {/* Header */}
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-[#213448]">
-                Price by Region & Bedroom
-              </h3>
-              <p className="text-xs text-[#547792] mt-0.5">
-                Bubble size = volume • Position = median price
-              </p>
-            </div>
-            <button
-              onClick={() => setShowAllBedrooms(!showAllBedrooms)}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                showAllBedrooms
-                  ? 'bg-[#213448] text-white border-[#213448]'
-                  : 'bg-white text-[#547792] border-[#94B4C1] hover:bg-[#EAE0CF]/50'
-              }`}
-            >
-              {showAllBedrooms ? 'Show 2-4BR only' : 'Show all bedrooms'}
-            </button>
-          </div>
+          <h3 className="font-semibold text-[#213448]">
+            Price by Region & Bedroom
+          </h3>
+          <p className="text-xs text-[#547792] mt-0.5">
+            Bubble size = volume • Position = median price
+          </p>
         </div>
 
         {/* Chart */}
         <ChartSlot>
-          <Bubble ref={chartRef} data={visibleData} options={options} />
+          <Bubble ref={chartRef} data={chartData} options={options} />
         </ChartSlot>
 
         {/* Footer */}
