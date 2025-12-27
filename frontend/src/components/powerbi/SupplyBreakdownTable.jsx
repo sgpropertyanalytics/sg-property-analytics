@@ -194,6 +194,12 @@ export function SupplyBreakdownTable({
                 <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.upcoming }} />
                 <span className="text-[#547792]">Upcoming</span>
               </div>
+              {includeGls && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.gls }} />
+                  <span className="text-[#547792]">GLS</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -311,7 +317,7 @@ export function SupplyBreakdownTable({
                             {/* Unsold segment */}
                             {row.unsold > 0 && (
                               <div
-                                className={`h-full rounded-l ${row.upcoming === 0 ? 'rounded-r' : ''}`}
+                                className="h-full rounded-l"
                                 style={{
                                   width: `${(row.unsold / tableData.maxTotal) * 100}%`,
                                   backgroundColor: COLORS.unsold
@@ -321,10 +327,20 @@ export function SupplyBreakdownTable({
                             {/* Upcoming segment */}
                             {row.upcoming > 0 && (
                               <div
-                                className={`h-full rounded-r ${row.unsold === 0 ? 'rounded-l' : ''}`}
+                                className={`h-full ${row.unsold === 0 ? 'rounded-l' : ''}`}
                                 style={{
                                   width: `${(row.upcoming / tableData.maxTotal) * 100}%`,
                                   backgroundColor: COLORS.upcoming
+                                }}
+                              />
+                            )}
+                            {/* GLS segment */}
+                            {includeGls && row.gls > 0 && (
+                              <div
+                                className={`h-full rounded-r ${row.unsold === 0 && row.upcoming === 0 ? 'rounded-l' : ''}`}
+                                style={{
+                                  width: `${(row.gls / tableData.maxTotal) * 100}%`,
+                                  backgroundColor: COLORS.gls
                                 }}
                               />
                             )}
