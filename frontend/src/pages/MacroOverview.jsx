@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
-import { MedianPsfTrendChart } from '../components/powerbi/MedianPsfTrendChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { BeadsChart } from '../components/powerbi/BeadsChart';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
@@ -304,10 +303,18 @@ export function MacroOverviewContent() {
                   </ErrorBoundary>
                 </div>
 
-                {/* Median PSF Trend Chart - Full width, shows price trends by CCR/RCR/OCR */}
-                <div className="lg:col-span-2">
-                  <ErrorBoundary name="Median PSF Trend" compact>
-                    <MedianPsfTrendChart height={trendChartHeight} />
+                {/* Market Compression + Absolute PSF - Side by side (Watermarked for free users) */}
+                {/* Desktop/Tablet: 50/50 grid | Mobile: Stacked */}
+                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  <ErrorBoundary name="Price Compression" compact>
+                    <ChartWatermark>
+                      <PriceCompressionChart height={compressionHeight} />
+                    </ChartWatermark>
+                  </ErrorBoundary>
+                  <ErrorBoundary name="Absolute PSF" compact>
+                    <ChartWatermark>
+                      <AbsolutePsfChart height={compressionHeight} />
+                    </ChartWatermark>
                   </ErrorBoundary>
                 </div>
 
@@ -336,21 +343,6 @@ export function MacroOverviewContent() {
                   <ErrorBoundary name="New vs Resale Chart" compact>
                     <ChartWatermark>
                       <NewVsResaleChart height={standardChartHeight} />
-                    </ChartWatermark>
-                  </ErrorBoundary>
-                </div>
-
-                {/* Price Compression Analysis - Side by side with Absolute PSF (Watermarked for free users) */}
-                {/* Desktop/Tablet: 50/50 grid | Mobile: Stacked */}
-                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  <ErrorBoundary name="Price Compression" compact>
-                    <ChartWatermark>
-                      <PriceCompressionChart height={compressionHeight} />
-                    </ChartWatermark>
-                  </ErrorBoundary>
-                  <ErrorBoundary name="Absolute PSF" compact>
-                    <ChartWatermark>
-                      <AbsolutePsfChart height={compressionHeight} />
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>
