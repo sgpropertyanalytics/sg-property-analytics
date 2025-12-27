@@ -306,7 +306,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
         direction = "neutral"
 
     # Build insight text - show mathematical formula
-    insight = "Score = 50 − (PSF_Growth% / Std_Dev%) × 10"
+    insight = "Score = clamp(50 - z × 10, 30, 70) | z = Q-o-Q PSF Growth % / Q-o-Q StdDev"
 
     return KPIResult(
         kpi_id="market_momentum",
