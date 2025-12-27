@@ -83,13 +83,14 @@ export function BeadsChart({ height = 300 }) {
   const hasData = chartData?.datasets?.length > 0;
   const { stats, stringRanges } = chartData;
 
-  // Build annotation lines for the "strings"
+  // Build annotation lines for the "strings" and row separators
   const stringAnnotations = useMemo(() => {
     if (!stringRanges) return {};
 
     const annotations = {};
     const regions = ['CCR', 'RCR', 'OCR'];
 
+    // "String" lines connecting min-max price per region
     regions.forEach((region, idx) => {
       const range = stringRanges[region];
       if (range && range.min > 0 && range.max > 0) {
@@ -106,6 +107,26 @@ export function BeadsChart({ height = 300 }) {
         };
       }
     });
+
+    // Subtle separators between region rows (at y=0.5 and y=1.5)
+    annotations.separator_ccr_rcr = {
+      type: 'line',
+      yMin: 0.5,
+      yMax: 0.5,
+      borderColor: 'rgba(148, 180, 193, 0.3)', // Light sky color
+      borderWidth: 1,
+      borderDash: [4, 4],
+      z: -1, // Behind everything
+    };
+    annotations.separator_rcr_ocr = {
+      type: 'line',
+      yMin: 1.5,
+      yMax: 1.5,
+      borderColor: 'rgba(148, 180, 193, 0.3)', // Light sky color
+      borderWidth: 1,
+      borderDash: [4, 4],
+      z: -1, // Behind everything
+    };
 
     return annotations;
   }, [stringRanges]);
