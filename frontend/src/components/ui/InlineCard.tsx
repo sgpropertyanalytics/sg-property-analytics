@@ -26,10 +26,14 @@ interface InlineCardProps {
   value: string | number;
   /** Optional subtext below value */
   subtext?: string;
-  /** Optional accent color for label and background tint */
+  /** Optional accent color for label and background tint (ignored when variant is set) */
   color?: string;
   /** Trend direction for subtext styling */
   trend?: 'up' | 'down' | 'neutral';
+  /** Visual variant for alert states */
+  variant?: 'default' | 'warning' | 'danger';
+  /** Size variant - compact for tighter layouts like PriceDistributionChart */
+  size?: 'default' | 'compact';
   /** Loading state */
   loading?: boolean;
   /** Additional className */
@@ -42,11 +46,15 @@ export function InlineCard({
   subtext,
   color,
   trend,
+  variant = 'default',
+  size = 'default',
   loading = false,
   className = '',
 }: InlineCardProps) {
-  // Subtext color based on trend (price context: up = bad/red, down = good/green)
+  // Subtext color based on trend (price context: up = good/green, down = bad/red for PSF)
   const getSubtextColor = () => {
+    if (variant === 'warning') return 'text-amber-700 font-semibold';
+    if (variant === 'danger') return 'text-red-700 font-semibold';
     if (!trend) return 'text-[#547792]';
     switch (trend) {
       case 'up':
@@ -58,16 +66,57 @@ export function InlineCard({
     }
   };
 
-  // Background and label color
-  const bgStyle = color
-    ? { backgroundColor: `${color}10` }
-    : { backgroundColor: 'rgba(33, 52, 72, 0.05)' }; // #213448 at 5%
+  // Variant-based styling
+  const getVariantStyles = () => {
+    switch (variant) {
+      case 'warning':
+        return {
+          container: 'bg-amber-100 border-2 border-amber-400',
+          label: 'text-amber-800 font-bold',
+          value: 'text-amber-900',
+        };
+      case 'danger':
+        return {
+          container: 'bg-red-50 border-2 border-red-500',
+          label: 'text-red-800 font-bold',
+          value: 'text-red-900',
+        };
+      default:
+        return {
+          container: '',
+          label: 'text-[#547792]',
+          value: 'text-[#213448]',
+        };
+    }
+  };
 
-  const labelStyle = color ? { color } : undefined;
+  const variantStyles = getVariantStyles();
+
+  // Size-based styling
+  const sizeStyles = {
+    default: {
+      container: 'rounded-lg px-3 py-2',
+      value: 'text-lg md:text-xl font-bold',
+    },
+    compact: {
+      container: 'rounded px-2 sm:px-2.5 py-1.5',
+      value: 'text-xs sm:text-sm font-semibold',
+    },
+  };
+  const currentSize = sizeStyles[size];
+
+  // Background and label color (only for default variant)
+  const bgStyle = variant === 'default'
+    ? (color
+        ? { backgroundColor: `${color}10` }
+        : { backgroundColor: 'rgba(33, 52, 72, 0.05)' }) // #213448 at 5%
+    : undefined;
+
+  const labelStyle = variant === 'default' && color ? { color } : undefined;
 
   if (loading) {
     return (
-      <div className={`rounded-lg px-3 py-2 ${className}`} style={bgStyle}>
+      <div className={`${currentSize.container} ${className}`} style={bgStyle}>
         <div className="h-3 w-12 bg-[#94B4C1]/30 rounded animate-pulse mb-1" />
         <div className="h-5 w-20 bg-[#94B4C1]/30 rounded animate-pulse" />
       </div>
@@ -75,17 +124,20 @@ export function InlineCard({
   }
 
   return (
-    <div className={`rounded-lg px-3 py-2 ${className}`} style={bgStyle}>
+    <div
+      className={`${currentSize.container} ${variantStyles.container} ${className}`}
+      style={bgStyle}
+    >
       {/* Label row - uppercase, tracking-wide */}
       <div
-        className="text-[10px] uppercase tracking-wide text-[#547792]"
+        className={`text-[10px] uppercase tracking-wide ${variantStyles.label}`}
         style={labelStyle}
       >
         {label}
       </div>
 
       {/* Value row - mono, tabular-nums, nowrap */}
-      <div className="text-base md:text-lg font-bold font-mono tabular-nums text-[#213448] whitespace-nowrap">
+      <div className={`${currentSize.value} font-mono tabular-nums whitespace-nowrap ${variantStyles.value}`}>
         {typeof value === 'number' ? value.toLocaleString() : value}
       </div>
 

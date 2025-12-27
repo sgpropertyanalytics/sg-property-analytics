@@ -18,7 +18,7 @@ import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardGroup } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformCompressionSeries,
@@ -292,15 +292,14 @@ export function PriceCompressionChart({ height = 380 }) {
           </div>
         </div>
 
-        {/* KPI Row: Grid with equal columns for consistent sizing */}
-        {/* Responsive: 1 col mobile, 3 cols tablet+. Blurred for free users */}
-        <div className={`grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mt-3 ${!isPremium ? 'blur-sm grayscale-[40%]' : ''}`}>
-          {/* Compression Score Box - Bloomberg-style label/value */}
-          <div className="bg-[#213448]/5 rounded-lg px-3 py-2">
-            <div className="text-[10px] text-[#547792] uppercase tracking-wide">Compression</div>
-            <div className="text-xl md:text-2xl font-bold font-mono tabular-nums text-[#213448] whitespace-nowrap">{compressionScore.score}</div>
-            <div className="text-[10px] text-[#547792] whitespace-nowrap">{compressionScore.label}</div>
-          </div>
+        {/* KPI Row - Using standardized InlineCard components */}
+        <InlineCardGroup columns={3} blur={!isPremium}>
+          {/* Compression Score */}
+          <InlineCard
+            label="Compression"
+            value={compressionScore.score}
+            subtext={compressionScore.label}
+          />
 
           {/* Smart Market Signal Cards */}
           <MarketSignalCard
@@ -315,7 +314,7 @@ export function PriceCompressionChart({ height = 380 }) {
             avgSpread={averageSpreads.rcrOcr}
             isInverted={marketSignals.ocrOverheated}
           />
-        </div>
+        </InlineCardGroup>
       </div>
 
       {/* How to Interpret - shrink-0 */}
@@ -412,8 +411,7 @@ function buildInversionZones(zones, _data) {
 // ============================================
 
 /**
- * Smart Market Signal Card
- * Consistent height with compression score card
+ * Smart Market Signal Card - Uses InlineCard with variant support
  * Shows + sign, value, and % vs average
  */
 function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
@@ -429,52 +427,46 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
     'rcr-ocr': 'Fringe Premium (RCR vs OCR)',
   };
 
-  // Inverted states (anomalies) - Bloomberg-style label/value
+  // Inverted states (anomalies)
   if (isInverted) {
     if (type === 'ccr-rcr') {
       // CCR < RCR: Prime Discount (opportunity)
       return (
-        <div className="bg-amber-100 border-2 border-amber-400 rounded-lg px-3 py-2">
-          <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Market Anomaly</div>
-          <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-amber-900 whitespace-nowrap">
-            −${Math.abs(spread).toLocaleString()} PSF
-          </div>
-          <div className="text-[10px] text-amber-700 font-semibold whitespace-nowrap">Prime Discount</div>
-        </div>
+        <InlineCard
+          label="Market Anomaly"
+          value={`−$${Math.abs(spread).toLocaleString()} PSF`}
+          subtext="Prime Discount"
+          variant="warning"
+        />
       );
     }
     if (type === 'rcr-ocr') {
       // OCR > RCR: Risk Alert
       return (
-        <div className="bg-red-50 border-2 border-red-500 rounded-lg px-3 py-2">
-          <div className="text-[10px] font-bold text-red-800 uppercase tracking-wider">Risk Alert</div>
-          <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-red-900 whitespace-nowrap">
-            −${Math.abs(spread).toLocaleString()} PSF
-          </div>
-          <div className="text-[10px] text-red-700 font-semibold whitespace-nowrap">OCR Overheated</div>
-        </div>
+        <InlineCard
+          label="Risk Alert"
+          value={`−$${Math.abs(spread).toLocaleString()} PSF`}
+          subtext="OCR Overheated"
+          variant="danger"
+        />
       );
     }
   }
 
-  // Normal state - Bloomberg-style label/value
+  // Normal state
   const isAboveAvg = pctVsAvg !== null && pctVsAvg > 0;
   const isBelowAvg = pctVsAvg !== null && pctVsAvg < 0;
+  const subtextValue = pctVsAvg !== null
+    ? (isBelowAvg ? `${pctVsAvg}% below avg` : isAboveAvg ? `+${pctVsAvg}% above avg` : 'At average')
+    : undefined;
 
   return (
-    <div className="bg-[#213448]/5 rounded-lg px-3 py-2">
-      <div className="text-[10px] text-[#547792] uppercase tracking-wide truncate">{labels[type]}</div>
-      <div className="text-lg md:text-xl font-bold font-mono tabular-nums text-[#213448] whitespace-nowrap">
-        +${spread.toLocaleString()} PSF
-      </div>
-      {pctVsAvg !== null && (
-        <div className={`text-[10px] font-medium whitespace-nowrap ${
-          isBelowAvg ? 'text-emerald-600' : isAboveAvg ? 'text-red-600' : 'text-[#547792]'
-        }`}>
-          {isBelowAvg ? `${pctVsAvg}% below avg` : isAboveAvg ? `+${pctVsAvg}% above avg` : 'At average'}
-        </div>
-      )}
-    </div>
+    <InlineCard
+      label={labels[type]}
+      value={`+$${spread.toLocaleString()} PSF`}
+      subtext={subtextValue}
+      trend={isBelowAvg ? 'up' : isAboveAvg ? 'down' : 'neutral'}
+    />
   );
 }
 

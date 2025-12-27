@@ -14,7 +14,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
-import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardGroup } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformDistributionSeries,
@@ -263,36 +263,21 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
           </button>
         </div>
 
-        {/* Stats row - Grid with equal columns, Bloomberg-style label/value layout */}
-        {/* text-xs on mobile, text-sm on tablet+ to prevent overflow */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+        {/* Stats row - Using standardized InlineCard components (compact size) */}
+        <InlineCardGroup columns={4} className="mt-2">
           {stats?.median && (
-            <div className="bg-[#213448]/5 rounded px-2 sm:px-2.5 py-1.5">
-              <div className="text-[10px] text-[#547792] uppercase tracking-wide">Median</div>
-              <div className="text-xs sm:text-sm font-semibold font-mono tabular-nums text-[#213448] whitespace-nowrap">{formatPrice(stats.median)}</div>
-            </div>
+            <InlineCard label="Median" value={formatPrice(stats.median)} size="compact" />
           )}
           {stats?.p25 && stats?.p75 && (
-            <div className="bg-[#213448]/5 rounded px-2 sm:px-2.5 py-1.5">
-              <div className="text-[10px] text-[#547792] uppercase tracking-wide">Q1–Q3</div>
-              <div className="text-xs sm:text-sm font-semibold font-mono tabular-nums text-[#213448] whitespace-nowrap">
-                {formatPrice(stats.p25)} – {formatPrice(stats.p75)}
-              </div>
-            </div>
+            <InlineCard label="Q1–Q3" value={`${formatPrice(stats.p25)} – ${formatPrice(stats.p75)}`} size="compact" />
           )}
           {stats?.iqr && (
-            <div className="bg-[#213448]/5 rounded px-2 sm:px-2.5 py-1.5">
-              <div className="text-[10px] text-[#547792] uppercase tracking-wide">IQR</div>
-              <div className="text-xs sm:text-sm font-semibold font-mono tabular-nums text-[#213448] whitespace-nowrap">{formatPrice(stats.iqr)}</div>
-            </div>
+            <InlineCard label="IQR" value={formatPrice(stats.iqr)} size="compact" />
           )}
           {modeBucket && (
-            <div className="bg-[#213448]/5 rounded px-2 sm:px-2.5 py-1.5">
-              <div className="text-[10px] text-[#547792] uppercase tracking-wide">Mode</div>
-              <div className="text-xs sm:text-sm font-semibold text-[#213448] whitespace-nowrap">{modeBucket.label}</div>
-            </div>
+            <InlineCard label="Mode" value={modeBucket.label} size="compact" />
           )}
-        </div>
+        </InlineCardGroup>
       </div>
 
       {/* How to Interpret - shrink-0 */}

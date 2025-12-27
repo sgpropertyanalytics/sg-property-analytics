@@ -3,17 +3,16 @@ import React from 'react';
 /**
  * KPICardV2 - Universal Card System
  *
- * Strict anatomy with fixed layer heights:
+ * Space-Between Architecture (no fixed layer heights):
  * ┌─────────────────────────────────────────┐
- * │ Layer 1: Header (h-6 = 24px)            │
- * │ LABEL                                   │
- * ├─────────────────────────────────────────┤
- * │ Layer 2: Hero Data (h-12 = 48px)        │
- * │ $1,858  ▼7.1%                           │
- * ├─────────────────────────────────────────┤
- * │ Layer 3: Context (h-8 = 32px)           │
- * │ $2,001 (30 days ago)                    │
+ * │ LABEL                          ← top    │
+ * │                                         │
+ * │ $1,858  ▼7.1%                  ← center │
+ * │                                         │
+ * │ $2,001 (30 days ago)           ← bottom │
  * └─────────────────────────────────────────┘
+ *
+ * justify-between forces perfect vertical distribution.
  */
 
 interface KPICardV2Props {
@@ -61,19 +60,19 @@ export function KPICardV2({
         ${className}
       `.trim()}
     >
-      {/* Layer 1: Header (h-6 = 24px) */}
-      <div className="h-6 flex justify-between items-start">
+      {/* Layer 1: Header - pinned to top */}
+      <div className="flex-shrink-0">
         {loading ? (
           <div className="h-3 bg-[#94B4C1]/30 rounded w-2/3 animate-pulse" />
         ) : (
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#547792] leading-none">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#547792]">
             {title}
           </span>
         )}
       </div>
 
-      {/* Layer 2: Hero Data (h-12 = 48px) */}
-      <div className="h-12 flex items-baseline gap-2">
+      {/* Layer 2: Hero Data - centered by justify-between */}
+      <div className="flex items-baseline gap-2">
         {loading ? (
           <div className="h-8 bg-[#94B4C1]/30 rounded w-24 animate-pulse" />
         ) : (
@@ -84,7 +83,7 @@ export function KPICardV2({
             {trend && trend.value !== 0 && (
               <span
                 className={`
-                  text-xs font-medium px-1 rounded leading-none
+                  text-xs font-medium px-1.5 py-0.5 rounded
                   ${getTrendStyles(trend.direction).text}
                   ${getTrendStyles(trend.direction).bg}
                 `}
@@ -97,12 +96,12 @@ export function KPICardV2({
         )}
       </div>
 
-      {/* Layer 3: Context (h-8 = 32px) */}
-      <div className="h-8 w-full flex items-end">
+      {/* Layer 3: Context - pinned to bottom */}
+      <div className="flex-shrink-0">
         {loading ? (
           <div className="h-3 bg-[#94B4C1]/20 rounded w-1/2 animate-pulse" />
         ) : (
-          <span className="text-[10px] text-[#94B4C1] leading-none">
+          <span className="text-xs text-[#547792]">
             {transition || trend?.label || footerMeta}
           </span>
         )}
