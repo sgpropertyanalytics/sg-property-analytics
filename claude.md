@@ -282,6 +282,55 @@ SYMPTOM IF VIOLATED:
   - Charts skip recent periods
 ```
 
+## Card 16: UI Controls Must Not No-Op
+```
+RULE: If a control's dependency isn't ready → disable OR fallback
+
+FORBIDDEN:
+  ❌ if (!data) return { start: null, end: null }  // Silent no-op
+  ❌ Button click does nothing when API loading
+  ❌ Empty dropdown with no explanation
+
+REQUIRED:
+  ✅ Disable with visual indicator: disabled={loading}
+  ✅ Fallback with warning: effectiveMax = maxDate || today
+  ✅ Loading state: cursor-wait, gray text, spinner
+
+EXAMPLE (date presets):
+  // Bad: Silent failure
+  if (!maxDateStr) return { start: null, end: null };
+
+  // Good: Fallback with indicator
+  const effectiveMax = maxDateStr || new Date().toISOString().split('T')[0];
+  // + Show "Using today as anchor" warning in UI
+```
+
+## Card 17: Async Data Must Be Tri-State
+```
+RULE: Every async hook returns { status, data, error }
+      UI must branch on ALL THREE states
+
+HOOK PATTERN:
+  return {
+    data,           // null until loaded
+    loading,        // true while fetching
+    error,          // Error object or null
+  };
+
+UI PATTERN:
+  if (loading) return <Skeleton />;
+  if (error) return <ErrorState onRetry={refetch} />;
+  if (!data || data.length === 0) return <EmptyState />;
+  return <Chart data={data} />;
+
+FORBIDDEN:
+  ❌ if (data) return <Chart />  // Ignores loading/error
+  ❌ {data && <Chart />}         // No loading state
+  ❌ Treating loading as empty
+
+SEE ALSO: useAbortableQuery, QueryState component
+```
+
 ---
 
 # 3. CORE PRINCIPLES
@@ -747,7 +796,7 @@ ChartJS.register(LineController, CategoryScale, LinearScale, PointElement, LineE
 
 # 12. DEBUGGING 500 ERRORS
 
-## Card 15: When You See a 500
+## Card 18: When You See a 500
 ```
 IMMEDIATE ACTIONS:
   1. Check server logs for the actual exception + traceback

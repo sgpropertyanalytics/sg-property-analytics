@@ -43,10 +43,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
   const [hasInitialized, setHasInitialized] = useState(false);
 
   // Calculate date range for a preset relative to the latest data date
+  // Fix: Fallback to today if maxDate not loaded yet (prevents silent no-op)
   const calculatePresetDateRange = useCallback((preset, maxDateStr) => {
-    if (!maxDateStr) return { start: null, end: null };
-
-    const maxDate = new Date(maxDateStr);
+    // Fallback to today if filter options haven't loaded yet
+    const effectiveMaxDate = maxDateStr || new Date().toISOString().split('T')[0];
+    const maxDate = new Date(effectiveMaxDate);
     let startDate;
 
     switch (preset) {
@@ -80,7 +81,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
 
     return {
       start: formatDate(startDate),
-      end: maxDateStr
+      end: effectiveMaxDate
     };
   }, []);
 
@@ -342,22 +343,32 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
           activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
         >
           {/* Preset Buttons - Primary interaction */}
+          {/* Shows loading indicator when filter options not ready, buttons still work with fallback to today */}
           <div className="grid grid-cols-4 gap-1.5">
             {['3M', '12M', '2Y', '5Y'].map(preset => (
               <button
                 type="button"
                 key={preset}
                 onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
+                disabled={filterOptions.loading}
                 className={`min-h-[40px] py-2 text-sm rounded-md border transition-colors ${
-                  datePreset === preset
-                    ? 'bg-[#547792] text-white border-[#547792]'
-                    : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
+                  filterOptions.loading
+                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
+                    : datePreset === preset
+                      ? 'bg-[#547792] text-white border-[#547792]'
+                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
                 }`}
               >
                 {preset}
               </button>
             ))}
           </div>
+          {/* Fallback indicator when using today as anchor (filter options not loaded) */}
+          {!filterOptions.dateRange.max && !filterOptions.loading && (
+            <div className="text-[10px] text-amber-600 mt-1">
+              Using today as anchor (data range loading...)
+            </div>
+          )}
 
           {/* Custom indicator when manually edited */}
           {datePreset === 'custom' && (
