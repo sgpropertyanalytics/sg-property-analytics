@@ -167,6 +167,12 @@ def map_result(row: Any, filters: Dict[str, Any],
     else:
         pct_change = 0
 
+    # Footer: show the calculation
+    insight = (
+        f"{current_txns:,} resale txns ÷ {total_units:,} units × 100\n"
+        f"= {current_velocity:.2f}% (annualized: {annualized:.1f}%)"
+    )
+
     return KPIResult(
         kpi_id="resale_velocity",
         title="Resale Velocity",
@@ -178,7 +184,7 @@ def map_result(row: Any, filters: Dict[str, Any],
             "direction": direction,
             "label": label
         },
-        insight=f"{current_txns:,} txns · {total_units:,} units",
+        insight=insight,
         meta={
             "current_txns": current_txns,
             "prior_txns": prior_txns,
@@ -186,7 +192,17 @@ def map_result(row: Any, filters: Dict[str, Any],
             "projects_counted": projects_counted,
             "annualized_velocity": round(annualized, 2),
             "confidence": confidence,
-            "window": "90D"
+            "window": "90D",
+            "description": (
+                "Measures how fast resale homes are changing hands.\n\n"
+                "Interpretation (annualized)\n"
+                "• ≥4%: Hot – fast-moving market\n"
+                "• 2–4%: Healthy – balanced liquidity\n"
+                "• 1–2%: Slow – limited activity\n"
+                "• <1%: Illiquid – hard to exit\n\n"
+                "Based on 90-day resale transactions divided by total completed units. "
+                "Excludes new sales and boutique projects (<100 units)."
+            )
         }
     )
 
