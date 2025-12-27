@@ -75,7 +75,7 @@ export function KPICardV2({
                   <span className="w-3.5 h-3.5 flex items-center justify-center text-[9px] text-[#94B4C1] hover:text-[#547792] cursor-help transition-colors border border-[#94B4C1] rounded-full">
                     ?
                   </span>
-                  <div className="absolute right-0 top-5 z-50 hidden group-hover:block w-64 max-w-[calc(100vw-2rem)] p-3 bg-[#213448] text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line">
+                  <div className="absolute left-0 top-5 z-[100] hidden group-hover:block w-64 max-w-[calc(100vw-2rem)] p-3 bg-[#213448] text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line pointer-events-none">
                     {combinedTooltip}
                   </div>
                 </div>
