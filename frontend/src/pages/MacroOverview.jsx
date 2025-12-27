@@ -155,6 +155,7 @@ export function MacroOverviewContent() {
                   value={getKpi('market_momentum')?.formatted_value || '—'}
                   trend={getKpi('market_momentum')?.trend}
                   transition={getKpi('market_momentum')?.insight}
+                  tooltip={getKpi('market_momentum')?.meta?.description}
                   loading={kpis.loading}
                 />
 
