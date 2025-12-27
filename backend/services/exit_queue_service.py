@@ -28,15 +28,7 @@ class BasicStats:
     first_resale_date: Optional[date]
     total_resale_transactions: int
     resales_12m: int
-    resales_24m: int
     median_psf: Optional[float]
-
-
-@dataclass
-class UniqueUnitsStats:
-    """Unique unit counts."""
-    total: int
-    last_12m: int
 
 
 @dataclass
