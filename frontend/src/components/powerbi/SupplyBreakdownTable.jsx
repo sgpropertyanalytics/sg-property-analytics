@@ -275,14 +275,27 @@ export function SupplyBreakdownTable({
                       {/* Total with Bar - Now second column */}
                       <td className="px-2 py-1.5 border-r border-[#94B4C1]/30 bg-[#547792]/10">
                         <div className="flex items-center gap-1">
-                          <div className="flex-1 h-3 bg-gray-100 rounded overflow-hidden">
-                            <div
-                              className="h-full rounded"
-                              style={{
-                                width: `${(row.total / tableData.maxTotal) * 100}%`,
-                                background: `linear-gradient(to right, ${COLORS.unsold}, ${COLORS.upcoming})`
-                              }}
-                            />
+                          <div className="flex-1 h-3 bg-gray-100 rounded overflow-hidden flex">
+                            {/* Unsold segment */}
+                            {row.unsold > 0 && (
+                              <div
+                                className="h-full"
+                                style={{
+                                  width: `${(row.unsold / tableData.maxTotal) * 100}%`,
+                                  backgroundColor: COLORS.unsold
+                                }}
+                              />
+                            )}
+                            {/* Upcoming segment */}
+                            {row.upcoming > 0 && (
+                              <div
+                                className="h-full"
+                                style={{
+                                  width: `${(row.upcoming / tableData.maxTotal) * 100}%`,
+                                  backgroundColor: COLORS.upcoming
+                                }}
+                              />
+                            )}
                           </div>
                           <span className="text-[10px] text-[#213448] font-mono font-semibold w-10 text-right">
                             {formatNum(row.total)}
