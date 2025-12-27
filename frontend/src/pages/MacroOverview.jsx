@@ -9,8 +9,6 @@ import { AbsolutePsfChart } from '../components/powerbi/AbsolutePsfChart';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TimeGranularityToggle } from '../components/powerbi/TimeGranularityToggle';
-import { GLSDataTable } from '../components/powerbi/GLSDataTable';
-import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getKpiSummary } from '../api/client';
 import { useData } from '../context/DataContext';
@@ -346,20 +344,6 @@ export function MacroOverviewContent() {
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>
-              </div>
-
-              {/* GLS Data Table - Government Land Sales */}
-              <div className="mb-4 md:mb-6">
-                <ErrorBoundary name="GLS Data Table" compact>
-                  <GLSDataTable height={standardChartHeight} />
-                </ErrorBoundary>
-              </div>
-
-              {/* Upcoming Launches Table - Pre-launch projects (not yet launched) */}
-              <div className="mb-4 md:mb-6">
-                <ErrorBoundary name="Upcoming Launches" compact>
-                  <UpcomingLaunchesTable height={standardChartHeight} />
-                </ErrorBoundary>
               </div>
 
           </div>

@@ -42,6 +42,9 @@ const DistrictDeepDiveContent = lazyWithRetry(() =>
 const ValueParityPanel = lazyWithRetry(() =>
   import('./components/ValueParityPanel').then(m => ({ default: m.ValueParityPanel }))
 );
+const SupplyInsightsContent = lazyWithRetry(() =>
+  import('./pages/SupplyInsights').then(m => ({ default: m.SupplyInsightsContent }))
+);
 
 // Loading fallback for lazy-loaded pages
 function DashboardLoadingFallback() {
@@ -165,6 +168,20 @@ function App() {
                 <DashboardLayout activePage="project-deep-dive">
                   <Suspense fallback={<DashboardLoadingFallback />}>
                     <ProjectDeepDiveContent />
+                  </Suspense>
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Supply & Inventory Insights (Protected, Lazy-loaded) */}
+          <Route
+            path="/supply-insights"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout activePage="supply-insights">
+                  <Suspense fallback={<DashboardLoadingFallback />}>
+                    <SupplyInsightsContent />
                   </Suspense>
                 </DashboardLayout>
               </ProtectedRoute>
