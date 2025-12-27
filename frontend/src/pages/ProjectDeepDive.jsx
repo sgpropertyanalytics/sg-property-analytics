@@ -135,6 +135,7 @@ export function ProjectDeepDiveContent() {
     fetchProjects();
 
     return () => controller.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Mount-only: validates stored project once, re-running on change causes unnecessary fetches
   }, []);
 
   // Load exit queue data when project is selected
