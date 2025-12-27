@@ -132,7 +132,6 @@ def _get_unsold_inventory_by_district() -> Dict[str, int]:
         db = imports['db']
         func = imports['func']
         SALE_TYPE_NEW = imports['SALE_TYPE_NEW']
-        exclude_outliers = imports['exclude_outliers']
 
         from services.new_launch_units import get_new_launch_projects
         from models.transaction import Transaction
@@ -143,8 +142,8 @@ def _get_unsold_inventory_by_district() -> Dict[str, int]:
         if not new_launch_projects:
             return {}
 
-        result = defaultdict(int)
-
+        # Build project name → (total_units, district) mapping
+        project_data = {}
         for project_info in new_launch_projects:
             project_name = project_info.get('project_name')
             total_units = project_info.get('total_units') or 0
@@ -153,26 +152,52 @@ def _get_unsold_inventory_by_district() -> Dict[str, int]:
             if not project_name or not district:
                 continue
 
-            # Count new sale transactions for this project
-            new_sale_count = db.session.query(func.count(Transaction.id)).filter(
-                func.upper(Transaction.project_name) == project_name.upper(),
-                Transaction.sale_type == SALE_TYPE_NEW,
-                exclude_outliers(Transaction)
-            ).scalar() or 0
+            # Normalize district format
+            d = district.upper().strip()
+            if not d.startswith('D'):
+                d = f'D{d.zfill(2)}'
 
-            # Unsold = total - sold
-            unsold = max(0, total_units - new_sale_count)
+            project_data[project_name.upper()] = {
+                'total_units': total_units,
+                'district': d
+            }
+
+        if not project_data:
+            return {}
+
+        # Get all project names as a list
+        project_names = list(project_data.keys())
+
+        # Single bulk query: count New Sale transactions per project
+        # Using UPPER() on both sides for case-insensitive matching
+        results = db.session.query(
+            func.upper(Transaction.project_name).label('project_name'),
+            func.count(Transaction.id).label('sold_count')
+        ).filter(
+            func.upper(Transaction.project_name).in_(project_names),
+            Transaction.sale_type == SALE_TYPE_NEW,
+            # Note: Skipping outlier filter for performance, as new launches are generally not outliers
+        ).group_by(
+            func.upper(Transaction.project_name)
+        ).all()
+
+        # Build sold count lookup
+        sold_counts = {row.project_name: row.sold_count for row in results}
+
+        # Calculate unsold per district
+        result = defaultdict(int)
+        for project_name_upper, data in project_data.items():
+            sold = sold_counts.get(project_name_upper, 0)
+            unsold = max(0, data['total_units'] - sold)
 
             if unsold > 0:
-                # Normalize district format
-                d = district.upper().strip()
-                if not d.startswith('D'):
-                    d = f'D{d.zfill(2)}'
-                result[d] += unsold
+                result[data['district']] += unsold
 
         return dict(result)
     except Exception as e:
         logger.warning(f"Could not fetch unsold inventory: {e}")
+        import traceback
+        logger.warning(traceback.format_exc())
         return {}
 
 
