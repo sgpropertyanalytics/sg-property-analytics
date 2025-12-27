@@ -180,12 +180,12 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
 
-                {/* Card 4: Market Momentum - Radial gauge */}
+                {/* Card 4: Market Momentum - Trend sparkline */}
                 <KPICardV2
                   title="Market Momentum"
                   value={getKpi('market_momentum')?.formatted_value || '—'}
-                  variant="gauge"
-                  gaugeValue={getKpi('market_momentum')?.value || 50}
+                  variant="trend"
+                  trend={getKpi('market_momentum')?.trend}
                   transition={getKpi('market_momentum')?.insight}
                   loading={kpis.loading}
                 />
