@@ -98,95 +98,76 @@ function App() {
               <Route path="/pricing" element={<Pricing />} />
 
           {/* ===== Dashboard Routes with Double-Sidebar Layout ===== */}
+          {/* All dashboard routes share a single DashboardLayout to prevent nav rail flickering */}
+          {/* The layout stays mounted while only the Outlet content changes during navigation */}
+          <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+            {/* Market Pulse - Main analytics dashboard (Lazy-loaded) */}
+            <Route
+              path="/market-pulse"
+              element={
+                <Suspense fallback={<DashboardLoadingFallback />}>
+                  <MacroOverviewContent />
+                </Suspense>
+              }
+            />
 
-          {/* Market Pulse - Main analytics dashboard (Protected, Lazy-loaded) */}
-          <Route
-            path="/market-pulse"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout activePage="market-pulse">
-                  <Suspense fallback={<DashboardLoadingFallback />}>
-                    <MacroOverviewContent />
-                  </Suspense>
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Project Analysis - Redirects to Value Parity (content merged) */}
-          <Route path="/project-analysis" element={<Navigate to="/value-parity" replace />} />
-
-          {/* Value Parity Tool - No filter sidebar (Protected, Lazy-loaded) */}
-          <Route
-            path="/value-parity"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout activePage="value-parity">
-                  <Suspense fallback={<DashboardLoadingFallback />}>
-                    <div className="h-full overflow-auto">
-                      <div className="p-3 md:p-4 lg:p-6">
-                        {/* Header with Preview Mode badge */}
-                        <PageHeader
-                          title="Value Parity Tool"
-                          subtitle="Find properties within your budget and compare value across districts"
-                        />
-                        {/* Value Parity Panel - existing component */}
-                        <div className="animate-view-enter">
-                          <ValueParityPanel />
-                        </div>
+            {/* Value Parity Tool - No filter sidebar (Lazy-loaded) */}
+            <Route
+              path="/value-parity"
+              element={
+                <Suspense fallback={<DashboardLoadingFallback />}>
+                  <div className="h-full overflow-auto">
+                    <div className="p-3 md:p-4 lg:p-6">
+                      {/* Header with Preview Mode badge */}
+                      <PageHeader
+                        title="Value Parity Tool"
+                        subtitle="Find properties within your budget and compare value across districts"
+                      />
+                      {/* Value Parity Panel - existing component */}
+                      <div className="animate-view-enter">
+                        <ValueParityPanel />
                       </div>
                     </div>
-                  </Suspense>
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
+                  </div>
+                </Suspense>
+              }
+            />
+
+            {/* District Deep Dive (Lazy-loaded) */}
+            <Route
+              path="/district-deep-dive"
+              element={
+                <Suspense fallback={<DashboardLoadingFallback />}>
+                  <DistrictDeepDiveContent />
+                </Suspense>
+              }
+            />
+
+            {/* Project Deep Dive (Lazy-loaded) */}
+            <Route
+              path="/project-deep-dive"
+              element={
+                <Suspense fallback={<DashboardLoadingFallback />}>
+                  <ProjectDeepDiveContent />
+                </Suspense>
+              }
+            />
+
+            {/* Supply & Inventory Insights (Lazy-loaded) */}
+            <Route
+              path="/supply-insights"
+              element={
+                <Suspense fallback={<DashboardLoadingFallback />}>
+                  <SupplyInsightsContent />
+                </Suspense>
+              }
+            />
+          </Route>
 
           {/* Legacy route redirects */}
+          <Route path="/project-analysis" element={<Navigate to="/value-parity" replace />} />
           <Route path="/floor-dispersion" element={<Navigate to="/project-deep-dive" replace />} />
           <Route path="/analytics-view" element={<Navigate to="/project-deep-dive" replace />} />
-
-          {/* District & Project Deep Dive (Protected, Lazy-loaded) */}
-          <Route
-            path="/district-deep-dive"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout activePage="district-deep-dive">
-                  <Suspense fallback={<DashboardLoadingFallback />}>
-                    <DistrictDeepDiveContent />
-                  </Suspense>
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Project Deep Dive (Protected, Lazy-loaded) */}
-          <Route
-            path="/project-deep-dive"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout activePage="project-deep-dive">
-                  <Suspense fallback={<DashboardLoadingFallback />}>
-                    <ProjectDeepDiveContent />
-                  </Suspense>
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Supply & Inventory Insights (Protected, Lazy-loaded) */}
-          <Route
-            path="/supply-insights"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout activePage="supply-insights">
-                  <Suspense fallback={<DashboardLoadingFallback />}>
-                    <SupplyInsightsContent />
-                  </Suspense>
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
 
           {/* ===== Redirects ===== */}
 

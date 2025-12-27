@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Outlet } from 'react-router-dom';
 import { GlobalNavRail, NAV_ITEMS } from './GlobalNavRail';
 import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
 import { ErrorBoundary } from '../ui';
@@ -41,6 +41,9 @@ const PAGE_CONFIG = {
 };
 
 export function DashboardLayout({ children, activePage: propActivePage }) {
+  // Use Outlet when used as a route layout (nested routes pattern)
+  // This prevents nav rail from unmounting during page transitions
+  const content = children || <Outlet />;
   const location = useLocation();
   const { showPricingModal, hidePaywall } = useSubscription();
 
@@ -218,7 +221,7 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
           <main className="flex-1 min-w-0 overflow-auto flex flex-col">
             <ErrorBoundary name="Page Content">
               <div className="flex-1 min-w-0">
-                {children}
+                {content}
               </div>
             </ErrorBoundary>
 
