@@ -416,7 +416,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
                 "• 60–70: Buyer advantage\n"
                 "• 45–55: Balanced\n"
                 "• 30–40: Seller advantage\n\n"
-                "Based on Q-o-Q Resale Median PSF, adjusted for market volatility. "
+                "Based on Q-o-Q Resale Median PSF % growth, adjusted for market volatility. "
                 "This does not indicate whether housing prices are cheap or expensive, "
                 "it is a reflection of pricing pressure and direction."
             )
