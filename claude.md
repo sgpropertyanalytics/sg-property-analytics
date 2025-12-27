@@ -331,6 +331,64 @@ FORBIDDEN:
 SEE ALSO: useAbortableQuery, QueryState component
 ```
 
+## Card 18: Query Key Contract
+```
+RULE: If a value changes the data, it MUST be in the query key
+
+SYMPTOM:
+  User toggles "Month" → label updates to "Month" → chart still shows quarterly data
+
+ROOT CAUSE:
+  filterKey: debouncedFilterKey           ← Missing timeGrouping!
+  deps: [debouncedFilterKey, timeGrouping] ← Correct
+
+FIX:
+  filterKey: `${debouncedFilterKey}:${timeGrouping}`
+
+WHEN IS SOMETHING "DATA STATE"?
+  Ask: "Does changing this value change what the API returns?"
+  YES → Must be in query key / filterKey / deps
+  NO  → UI-only state (e.g., hover, animation)
+
+EXAMPLES:
+  ✅ Data state: timeGrouping, dateRange, segment, bedroom
+  ✅ Data state: drillLevel (year → quarter → month)
+  ❌ UI state: isExpanded, tooltipPosition, chartRef
+
+CHECKLIST FOR DEFERRED FETCH:
+  [ ] filterKey includes ALL data-affecting state
+  [ ] useAbortableQuery deps match filterKey
+  [ ] Label in header reflects current data, not requested data
+```
+
+## Card 19: View Context as Data State
+```
+RULE: If it changes aggregation → it's DATA, not presentation
+
+WRONG MENTAL MODEL:
+  "timeGrouping is just how we display the chart"
+
+CORRECT MENTAL MODEL:
+  timeGrouping=month → API returns 36 rows (monthly aggregates)
+  timeGrouping=year  → API returns 3 rows (yearly aggregates)
+  These are DIFFERENT DATASETS, not different views of same data.
+
+IMPLICATION:
+  All state that affects aggregation level, GROUP BY, or filter
+  predicates is DATA STATE and must trigger refetch.
+
+COMMON PITFALLS:
+  ❌ "It's just a toggle" - if toggle changes API params → data state
+  ❌ "It's in the header" - display layer ≠ data layer
+  ❌ "I updated the label" - label must wait for data, not lead it
+
+PATTERN:
+  // Data state flows: toggle → API → data → render → label
+  const timeGrouping = 'month';                    // 1. User selects
+  const { data } = useQuery(..., [timeGrouping]); // 2. Fetch with param
+  return <Chart data={data} label={timeGrouping}> // 3. Render together
+```
+
 ---
 
 # 3. CORE PRINCIPLES
@@ -796,7 +854,7 @@ ChartJS.register(LineController, CategoryScale, LinearScale, PointElement, LineE
 
 # 12. DEBUGGING 500 ERRORS
 
-## Card 18: When You See a 500
+## Card 20: When You See a 500
 ```
 IMMEDIATE ACTIONS:
   1. Check server logs for the actual exception + traceback

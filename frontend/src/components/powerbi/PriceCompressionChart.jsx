@@ -73,8 +73,10 @@ export function PriceCompressionChart({ height = 380 }) {
   const chartRef = useRef(null);
 
   // Defer fetch until chart is visible (low priority - below the fold)
+  // IMPORTANT: filterKey must include ALL state that affects the query data
+  // timeGrouping changes the aggregation, so it's part of the query key
   const { shouldFetch, containerRef } = useDeferredFetch({
-    filterKey: debouncedFilterKey,
+    filterKey: `${debouncedFilterKey}:${timeGrouping}`,
     priority: 'low',
     fetchOnMount: true,
   });

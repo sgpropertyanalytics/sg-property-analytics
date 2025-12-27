@@ -223,6 +223,77 @@ test('rapid filter changes work', async ({ page }) => {
 
 ---
 
+## Part 7: Query Key Contract (State-Data Alignment)
+
+### The Rule
+
+**If a value changes the data, it MUST be in the query key.**
+
+### Symptom of Violation
+
+```
+User toggles "Quarter" → "Month"
+→ UI label updates to "Month"
+→ Chart still shows quarterly data (stale!)
+```
+
+### Root Cause
+
+```javascript
+// BUG: filterKey missing timeGrouping
+const { shouldFetch } = useDeferredFetch({
+  filterKey: debouncedFilterKey,  // ❌ Missing timeGrouping!
+});
+
+const { data } = useAbortableQuery(
+  (signal) => fetchData(timeGrouping, signal),
+  [debouncedFilterKey, timeGrouping]  // ✅ Correct deps
+);
+```
+
+### Fix
+
+```javascript
+// CORRECT: filterKey includes ALL data-affecting state
+const { shouldFetch } = useDeferredFetch({
+  filterKey: `${debouncedFilterKey}:${timeGrouping}`,  // ✅
+});
+```
+
+### "Is It Data State?" Decision Tree
+
+```
+Does changing this value change what the API returns?
+├── YES → Must be in query key / filterKey / deps
+│   Examples: timeGrouping, dateRange, segment, bedroom, drillLevel
+│
+└── NO → UI-only state (exclude from query key)
+    Examples: isExpanded, tooltipPosition, chartRef, isHovered
+```
+
+### View Context as Data State
+
+```
+WRONG MENTAL MODEL:
+  "timeGrouping is just how we display the chart"
+
+CORRECT MENTAL MODEL:
+  timeGrouping=month → API returns 36 rows (monthly aggregates)
+  timeGrouping=year  → API returns 3 rows (yearly aggregates)
+  These are DIFFERENT DATASETS.
+```
+
+### Checklist for Deferred Fetch
+
+```
+[ ] filterKey includes ALL data-affecting state
+[ ] useAbortableQuery deps match the concept in filterKey
+[ ] enabled prop respects shouldFetch from useDeferredFetch
+[ ] Label in header reflects current data, not just requested data
+```
+
+---
+
 ## Quick Reference Card
 
 ```
@@ -236,6 +307,7 @@ CONTRACT & ASYNC CHECKLIST
 [ ] Enum from apiContract.js
 [ ] No hardcoded enum strings
 [ ] assertKnownVersion() in adapter
+[ ] Query key includes ALL data-affecting state (Card 18)
 ```
 
 ---
