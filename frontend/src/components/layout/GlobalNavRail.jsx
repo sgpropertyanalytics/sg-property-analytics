@@ -68,14 +68,12 @@ export const NAV_ITEMS = [
     path: '/supply-insights',
     label: 'Supply & Inventory',
     icon: (
-      // Concentric rings - dotted outer (pipeline), solid inner, filled core
+      // Concentric rings - dotted outer (pipeline), solid inner
       <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         {/* Outer dotted ring */}
         <circle cx="12" cy="12" r="10" strokeDasharray="2.5 2.5" opacity="0.9" />
         {/* Inner solid ring */}
-        <circle cx="12" cy="12" r="6.5" />
-        {/* Core (minimal mechanism) */}
-        <circle cx="12" cy="12" r="2.2" fill="currentColor" />
+        <circle cx="12" cy="12" r="4.5" />
       </svg>
     ),
   },
