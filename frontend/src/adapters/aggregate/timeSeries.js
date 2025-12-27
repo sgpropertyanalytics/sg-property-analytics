@@ -81,7 +81,7 @@ export const transformTimeSeries = (rawData, expectedGrain = null) => {
 /**
  * Transform raw aggregate data into time series with region breakdown.
  *
- * Used for charts like MedianPsfTrendChart that break down by CCR/RCR/OCR.
+ * Used for charts that break down by CCR/RCR/OCR region.
  *
  * @param {Array} rawData - Raw data from /api/aggregate
  * @param {string} expectedGrain - Expected time grain
