@@ -36,9 +36,10 @@ import {
   transformRegionalWaterfall,
   transformDistrictWaterfall,
   getWaterfallChartOptions,
+  waterfallConnectorPlugin,
 } from '../../adapters/supply/waterfallAdapter';
 
-// Register Chart.js components
+// Register Chart.js components and plugins
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -46,7 +47,8 @@ ChartJS.register(
   BarController,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  waterfallConnectorPlugin
 );
 
 /**
@@ -91,29 +93,36 @@ export function SupplyWaterfallChart({
   );
 
   // Transform data based on view mode
+  // For TRUE waterfall: X-axis is supply stages, region is a filter
   const chartData = useMemo(() => {
     if (!apiResponse) return null;
 
     if (view === 'district' && selectedRegion) {
+      // District view: stacked bars comparing districts within region
       return transformDistrictWaterfall(apiResponse, selectedRegion, { includeGls });
     }
-    return transformRegionalWaterfall(apiResponse, { includeGls });
+    // Regional waterfall: X-axis = stages (Unsold → Upcoming → GLS → Total)
+    // selectedRegion filters to one region, null shows all regions combined
+    return transformRegionalWaterfall(apiResponse, { region: selectedRegion, includeGls });
   }, [apiResponse, view, selectedRegion, includeGls]);
 
   // Chart options with click handler
   const chartOptions = useMemo(() => {
-    if (!apiResponse) return baseChartJsOptions;
+    if (!chartData?.totals) return baseChartJsOptions;
 
     return {
       ...baseChartJsOptions,
-      ...getWaterfallChartOptions(onRegionClick, apiResponse, includeGls),
+      ...getWaterfallChartOptions(onRegionClick, chartData.totals, includeGls),
     };
-  }, [apiResponse, onRegionClick, includeGls]);
+  }, [chartData, onRegionClick, includeGls]);
 
   // Chart title based on view
+  // TRUE waterfall: title shows what we're looking at
   const chartTitle = view === 'district' && selectedRegion
-    ? `${selectedRegion} District Supply`
-    : 'Regional Supply Pipeline';
+    ? `${selectedRegion} District Breakdown`
+    : selectedRegion
+      ? `${selectedRegion} Supply Accumulator`
+      : 'Total Supply Accumulator';
 
   return (
     <QueryState
@@ -197,9 +206,11 @@ export function SupplyWaterfallChart({
         {/* Footer */}
         <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">
           <span className="truncate">
-            {view === 'regional'
-              ? 'Click region bar to drill down'
-              : `Showing ${selectedRegion} districts`
+            {view === 'district'
+              ? `Showing ${selectedRegion} districts`
+              : selectedRegion
+                ? `Filtered to ${selectedRegion}`
+                : 'All regions combined'
             }
           </span>
           <span className="text-[10px] shrink-0">

@@ -83,11 +83,12 @@ export function SupplyInsightsContent() {
           {/* ===== Two-Chart Grid ===== */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
 
-            {/* Chart 1: Regional View */}
+            {/* Chart 1: TRUE Waterfall (Supply Accumulator) */}
             <div className="space-y-3">
-              <ErrorBoundary name="Regional Supply Chart" compact>
+              <ErrorBoundary name="Supply Accumulator Chart" compact>
                 <SupplyWaterfallChart
                   view="regional"
+                  selectedRegion={selectedRegion}
                   includeGls={includeGls}
                   launchYear={launchYear}
                   onRegionClick={handleRegionSelect}
@@ -158,13 +159,20 @@ export function SupplyInsightsContent() {
                   className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col items-center justify-center text-center p-8"
                   style={{ height: chartHeight }}
                 >
-                  <svg className="w-16 h-16 text-[#94B4C1]/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  {/* Stacked blocks icon representing supply accumulation */}
+                  <svg className="w-16 h-16 mb-4" viewBox="0 0 64 64" fill="none">
+                    {/* Bottom block - Unsold (Navy) */}
+                    <rect x="12" y="40" width="40" height="12" rx="2" fill="#213448" opacity="0.3" />
+                    {/* Middle block - Upcoming (Blue) */}
+                    <rect x="12" y="26" width="40" height="12" rx="2" fill="#547792" opacity="0.3" />
+                    {/* Top block - GLS (Sky) */}
+                    <rect x="12" y="12" width="40" height="12" rx="2" fill="#94B4C1" opacity="0.3" />
+                    {/* Dashed circle */}
+                    <circle cx="32" cy="32" r="28" stroke="#94B4C1" strokeWidth="2" strokeDasharray="4 4" fill="none" opacity="0.5" />
                   </svg>
                   <h3 className="text-[#213448] font-medium mb-1">District Breakdown</h3>
                   <p className="text-sm text-[#547792]">
-                    Click a region bar or select a pill to see district-level data
+                    Select a region to see district-level supply distribution
                   </p>
                 </div>
               )}

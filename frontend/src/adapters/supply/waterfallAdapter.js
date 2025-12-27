@@ -1,31 +1,21 @@
 /**
- * Supply Waterfall Adapter
+ * Supply Waterfall Adapter - TRUE Waterfall Chart
  *
- * Transforms API response into Chart.js waterfall format.
- * ALL spacer bar math is computed here - the chart component only renders.
+ * Creates an "EBITDA Bridge" style waterfall showing supply accumulation:
  *
- * Waterfall Bar Structure:
- * - Each segment has a transparent "spacer" bar that positions it
- * - The visible bar sits on top of the spacer
- * - This creates the "floating" waterfall effect
+ * X-Axis: Supply Stages (Unsold → Upcoming → GLS → Total)
+ * Y-Axis: Units
  *
- * OUTPUT STRUCTURE:
- * {
- *   labels: ['CCR', 'RCR', 'OCR', 'Total'],
- *   datasets: [...],  // Pre-computed with spacers
- *   totals: { unsoldInventory, upcomingLaunches, glsPipeline, totalEffectiveSupply },
- *   displayMeta: {
- *     subtitle: "Unsold + Upcoming + GLS Pipeline",
- *     asOf: "Dec 27, 2025",
- *     launchYear: 2026,
- *     includesGls: true
- *   }
- * }
+ * Visual Structure:
+ * - Unsold (Navy): Base bar starting from 0
+ * - Upcoming (Blue): FLOATS on top of Unsold
+ * - GLS (Sky): FLOATS on top of (Unsold + Upcoming)
+ * - Total (Sand): Full bar from 0 showing final sum
+ *
+ * The "floating" effect is achieved with transparent spacer bars.
  *
  * RULE: Chart component receives this and renders. No math in component.
  */
-
-import { REGIONS } from '../../constants';
 
 // Colors from design system
 const COLORS = {
@@ -35,6 +25,7 @@ const COLORS = {
   glsExcluded: 'rgba(148, 180, 193, 0.3)',  // Sky Blue @ 30% opacity
   total: '#EAE0CF',            // Sand/Cream
   spacer: 'transparent',       // Invisible spacer
+  connector: '#94B4C1',        // Bridge line color
 };
 
 // Border colors for better definition
@@ -48,8 +39,6 @@ const BORDER_COLORS = {
 
 /**
  * Format date string to readable format
- * @param {string} isoDate - ISO date string (YYYY-MM-DD)
- * @returns {string} Formatted date (e.g., "Dec 27, 2025")
  */
 const formatDate = (isoDate) => {
   if (!isoDate) return 'N/A';
@@ -62,52 +51,180 @@ const formatDate = (isoDate) => {
 };
 
 /**
- * Transform API response to Chart.js regional waterfall format.
+ * Format number with thousand separators
+ */
+function formatNumber(value) {
+  if (value === null || value === undefined) return '0';
+  return value.toLocaleString('en-US');
+}
+
+/**
+ * Transform API response to TRUE waterfall format.
  *
- * Creates a stacked bar chart where:
- * - Each label (CCR, RCR, OCR, Total) has 4 bar segments
- * - Segments are: Spacer + Unsold + Upcoming + GLS
- * - Spacer is transparent to position the stack
+ * X-Axis: Supply stages (Unsold → Upcoming → GLS → Total)
+ * Each step floats on top of the previous cumulative value.
  *
  * @param {Object} apiResponse - Response from /api/supply/summary
  * @param {Object} options - Transform options
- * @param {boolean} options.includeGls - Whether GLS is included in calculations
+ * @param {string} options.region - Optional region filter (CCR/RCR/OCR or null for all)
+ * @param {boolean} options.includeGls - Whether GLS is included
  * @returns {Object} Chart.js compatible data structure
  */
 export function transformRegionalWaterfall(apiResponse, options = {}) {
-  const { includeGls = true } = options;
+  const { region = null, includeGls = true } = options;
   const { byRegion, totals, meta } = apiResponse;
 
-  // Fixed order: CCR → RCR → OCR → Total
-  const labels = [...REGIONS, 'Total'];
+  // Get values for selected region or all regions
+  let unsold, upcoming, gls;
 
-  // Build datasets with spacer bars
-  const datasets = buildWaterfallDatasets(byRegion, totals, includeGls);
+  if (region && byRegion[region]) {
+    // Single region selected
+    const regionData = byRegion[region];
+    unsold = regionData.unsoldInventory || 0;
+    upcoming = regionData.upcomingLaunches || 0;
+    gls = includeGls ? (regionData.glsPipeline || 0) : 0;
+  } else {
+    // All regions (use totals)
+    unsold = totals?.unsoldInventory || 0;
+    upcoming = totals?.upcomingLaunches || 0;
+    gls = includeGls ? (totals?.glsPipeline || 0) : 0;
+  }
+
+  const total = unsold + upcoming + gls;
+
+  // Build TRUE waterfall datasets
+  const datasets = buildTrueWaterfallDatasets(unsold, upcoming, gls, total, includeGls);
+
+  // Labels for X-axis: Supply stages
+  const labels = includeGls
+    ? ['Unsold\nInventory', 'Upcoming\nLaunches', 'GLS\nPipeline', 'Total\nSupply']
+    : ['Unsold\nInventory', 'Upcoming\nLaunches', 'Total\nSupply'];
+
+  // Bridge connector points for the waterfall lines
+  const connectorPoints = buildConnectorPoints(unsold, upcoming, gls, includeGls);
 
   return {
     labels,
     datasets,
-    totals,
+    connectorPoints,
+    totals: {
+      unsoldInventory: unsold,
+      upcomingLaunches: upcoming,
+      glsPipeline: gls,
+      totalEffectiveSupply: total,
+    },
     displayMeta: {
-      subtitle: includeGls
-        ? 'Unsold Inventory + Upcoming Launches + GLS Pipeline'
-        : 'Unsold Inventory + Upcoming Launches',
+      subtitle: region
+        ? `${region} Supply Pipeline`
+        : 'All Regions Combined',
       asOf: formatDate(meta?.asOfDate),
       launchYear: meta?.launchYear || 2026,
       includesGls: includeGls,
+      selectedRegion: region,
     },
   };
 }
 
 /**
- * Transform API response to Chart.js district waterfall format.
+ * Build TRUE waterfall datasets with floating bars.
  *
- * Shows district-level breakdown for a selected region.
+ * Structure for each bar:
+ * - Spacer (transparent) + Value (colored)
  *
- * @param {Object} apiResponse - Response from /api/supply/summary
- * @param {string} selectedRegion - CCR, RCR, or OCR
- * @param {Object} options - Transform options
- * @returns {Object} Chart.js compatible data structure
+ * Spacer heights create the "floating" effect:
+ * - Unsold spacer: 0 (starts from bottom)
+ * - Upcoming spacer: unsold (floats above unsold)
+ * - GLS spacer: unsold + upcoming (floats above both)
+ * - Total spacer: 0 (full bar from bottom)
+ */
+function buildTrueWaterfallDatasets(unsold, upcoming, gls, total, includeGls) {
+  if (includeGls) {
+    // With GLS: 4 bars
+    return [
+      // Spacer bars (transparent, create floating effect)
+      {
+        label: 'Spacer',
+        data: [0, unsold, unsold + upcoming, 0],
+        backgroundColor: COLORS.spacer,
+        borderWidth: 0,
+        barPercentage: 0.6,
+        categoryPercentage: 0.7,
+      },
+      // Value bars (visible)
+      {
+        label: 'Supply',
+        data: [unsold, upcoming, gls, total],
+        backgroundColor: [
+          COLORS.unsoldInventory,
+          COLORS.upcomingLaunches,
+          COLORS.glsPipeline,
+          COLORS.total,
+        ],
+        borderColor: [
+          BORDER_COLORS.unsoldInventory,
+          BORDER_COLORS.upcomingLaunches,
+          BORDER_COLORS.glsPipeline,
+          BORDER_COLORS.total,
+        ],
+        borderWidth: 2,
+        barPercentage: 0.6,
+        categoryPercentage: 0.7,
+      },
+    ];
+  } else {
+    // Without GLS: 3 bars
+    return [
+      {
+        label: 'Spacer',
+        data: [0, unsold, 0],
+        backgroundColor: COLORS.spacer,
+        borderWidth: 0,
+        barPercentage: 0.6,
+        categoryPercentage: 0.7,
+      },
+      {
+        label: 'Supply',
+        data: [unsold, upcoming, unsold + upcoming],
+        backgroundColor: [
+          COLORS.unsoldInventory,
+          COLORS.upcomingLaunches,
+          COLORS.total,
+        ],
+        borderColor: [
+          BORDER_COLORS.unsoldInventory,
+          BORDER_COLORS.upcomingLaunches,
+          BORDER_COLORS.total,
+        ],
+        borderWidth: 2,
+        barPercentage: 0.6,
+        categoryPercentage: 0.7,
+      },
+    ];
+  }
+}
+
+/**
+ * Build connector points for bridge lines between bars.
+ * These will be drawn by a custom Chart.js plugin.
+ */
+function buildConnectorPoints(unsold, upcoming, gls, includeGls) {
+  if (includeGls) {
+    return [
+      { from: 0, to: 1, y: unsold },                    // Unsold top → Upcoming bottom
+      { from: 1, to: 2, y: unsold + upcoming },         // Upcoming top → GLS bottom
+      { from: 2, to: 3, y: unsold + upcoming + gls },   // GLS top → Total top
+    ];
+  } else {
+    return [
+      { from: 0, to: 1, y: unsold },                    // Unsold top → Upcoming bottom
+      { from: 1, to: 2, y: unsold + upcoming },         // Upcoming top → Total top
+    ];
+  }
+}
+
+/**
+ * Transform API response to district breakdown (stacked bar for comparison).
+ * Districts use stacked bars since waterfall doesn't make sense for comparison.
  */
 export function transformDistrictWaterfall(apiResponse, selectedRegion, options = {}) {
   const { includeGls = true } = options;
@@ -116,7 +233,7 @@ export function transformDistrictWaterfall(apiResponse, selectedRegion, options 
   // Filter districts by selected region
   const regionDistricts = Object.entries(byDistrict)
     .filter(([, data]) => data.region === selectedRegion)
-    .sort(([a], [b]) => a.localeCompare(b)); // D01, D02, ...
+    .sort(([a], [b]) => a.localeCompare(b));
 
   if (regionDistricts.length === 0) {
     return {
@@ -133,22 +250,18 @@ export function transformDistrictWaterfall(apiResponse, selectedRegion, options 
   }
 
   const labels = regionDistricts.map(([district]) => district);
-
-  // Build data arrays
   const unsoldData = regionDistricts.map(([, data]) => data.unsoldInventory);
   const upcomingData = regionDistricts.map(([, data]) => data.upcomingLaunches);
-  // Note: GLS is region-level only, so district glsPipeline is always 0
 
-  // Calculate region totals from district data
   const regionTotals = {
     unsoldInventory: unsoldData.reduce((a, b) => a + b, 0),
     upcomingLaunches: upcomingData.reduce((a, b) => a + b, 0),
-    glsPipeline: 0, // District level has no GLS
+    glsPipeline: 0,
     totalEffectiveSupply: 0,
   };
   regionTotals.totalEffectiveSupply = regionTotals.unsoldInventory + regionTotals.upcomingLaunches;
 
-  // For district view, we use simple stacked bar (no waterfall spacers needed)
+  // District view uses stacked bars (not waterfall)
   const datasets = [
     {
       label: 'Unsold Inventory',
@@ -176,153 +289,48 @@ export function transformDistrictWaterfall(apiResponse, selectedRegion, options 
       subtitle: `${selectedRegion} District Breakdown`,
       asOf: formatDate(meta?.asOfDate),
       launchYear: meta?.launchYear || 2026,
-      includesGls: false, // Districts don't have GLS
+      includesGls: false,
       selectedRegion,
     },
   };
 }
 
 /**
- * Build waterfall datasets with spacer bars.
- *
- * The waterfall effect is created by stacking:
- * 1. Spacer (transparent) - positions the stack at correct height
- * 2. Unsold Inventory (navy)
- * 3. Upcoming Launches (blue)
- * 4. GLS Pipeline (sky blue / grey if excluded)
- *
- * For the "Total" bar, we use the grand total value directly.
- *
- * @param {Object} byRegion - Region data from API
- * @param {Object} totals - Total values from API
- * @param {boolean} includeGls - Whether GLS is included
- * @returns {Array} Chart.js datasets
+ * Get tooltip content for waterfall bar.
  */
-function buildWaterfallDatasets(byRegion, totals, includeGls) {
-  // Order of bars: CCR, RCR, OCR, Total
-  const regions = REGIONS;
-
-  // Extract values for each region
-  const unsoldValues = regions.map((r) => byRegion[r]?.unsoldInventory || 0);
-  const upcomingValues = regions.map((r) => byRegion[r]?.upcomingLaunches || 0);
-  const glsValues = regions.map((r) =>
-    includeGls ? (byRegion[r]?.glsPipeline || 0) : 0
-  );
-
-  // Add Total column values
-  unsoldValues.push(0);     // Total bar doesn't show stacked segments
-  upcomingValues.push(0);
-  glsValues.push(0);
-
-  // Calculate spacer heights for waterfall effect
-  // For regions: spacer = 0 (bars start from bottom)
-  // This creates a simple stacked bar for each region
-  const spacerValues = regions.map(() => 0);
-  spacerValues.push(0); // Total also starts from 0
-
-  // Total bar is special - it shows the grand total as a single bar
-  const totalBarValues = regions.map(() => 0);
-  totalBarValues.push(totals?.totalEffectiveSupply || 0);
-
-  return [
-    // Spacer (invisible, positions the stack)
-    {
-      label: 'Spacer',
-      data: spacerValues,
-      backgroundColor: COLORS.spacer,
-      borderWidth: 0,
-      stack: 'supply',
-      skipNull: true,
-    },
-    // Unsold Inventory (bottom segment for regions)
-    {
-      label: 'Unsold Inventory',
-      data: unsoldValues,
-      backgroundColor: COLORS.unsoldInventory,
-      borderColor: BORDER_COLORS.unsoldInventory,
-      borderWidth: 1,
-      stack: 'supply',
-    },
-    // Upcoming Launches (middle segment)
-    {
-      label: 'Upcoming Launches',
-      data: upcomingValues,
-      backgroundColor: COLORS.upcomingLaunches,
-      borderColor: BORDER_COLORS.upcomingLaunches,
-      borderWidth: 1,
-      stack: 'supply',
-    },
-    // GLS Pipeline (top segment - grey when excluded)
-    {
-      label: includeGls ? 'GLS Pipeline' : 'GLS Pipeline (excluded)',
-      data: glsValues,
-      backgroundColor: includeGls ? COLORS.glsPipeline : COLORS.glsExcluded,
-      borderColor: includeGls ? BORDER_COLORS.glsPipeline : BORDER_COLORS.glsExcluded,
-      borderWidth: 1,
-      stack: 'supply',
-      // When excluded, show tooltip indicating it's excluded
-      excluded: !includeGls,
-    },
-    // Total bar (separate stack)
-    {
-      label: 'Total Effective Supply',
-      data: totalBarValues,
-      backgroundColor: COLORS.total,
-      borderColor: BORDER_COLORS.total,
-      borderWidth: 2,
-      stack: 'total', // Different stack so it doesn't combine with segments
-    },
-  ];
-}
-
-/**
- * Get tooltip content for a waterfall bar.
- *
- * @param {Object} context - Chart.js tooltip context
- * @param {Object} apiResponse - Original API response for detailed data
- * @param {boolean} includeGls - Whether GLS is included
- * @returns {string[]} Tooltip lines
- */
-export function getWaterfallTooltip(context, apiResponse, includeGls) {
-  const { datasetIndex, dataIndex, dataset, chart } = context;
-  const label = chart.data.labels[dataIndex];
-  const datasetLabel = dataset.label;
+export function getWaterfallTooltip(context, totals, includeGls) {
+  const { dataIndex, dataset } = context;
   const value = dataset.data[dataIndex];
 
   // Skip spacer tooltips
-  if (datasetLabel === 'Spacer' || value === 0) {
+  if (dataset.label === 'Spacer' || value === 0) {
     return [];
   }
 
+  const labels = includeGls
+    ? ['Unsold Inventory', 'Upcoming Launches', 'GLS Pipeline', 'Total Supply']
+    : ['Unsold Inventory', 'Upcoming Launches', 'Total Supply'];
+
+  const stepName = labels[dataIndex];
   const lines = [];
 
-  if (label === 'Total') {
-    // Total bar tooltip
-    lines.push('Total Effective Supply');
-    lines.push('─────────────────────');
-    lines.push(`${formatNumber(value)} units`);
-    lines.push('');
-    if (includeGls) {
-      lines.push('= Unsold + Upcoming + GLS');
-    } else {
-      lines.push('= Unsold + Upcoming');
-      lines.push('(GLS excluded)');
+  lines.push(stepName);
+  lines.push('─────────────────');
+  lines.push(`${formatNumber(value)} units`);
+
+  // Show running total for intermediate steps
+  if (stepName !== 'Total Supply') {
+    let runningTotal = 0;
+    if (dataIndex === 0) {
+      runningTotal = totals.unsoldInventory;
+    } else if (dataIndex === 1) {
+      runningTotal = totals.unsoldInventory + totals.upcomingLaunches;
+    } else if (dataIndex === 2 && includeGls) {
+      runningTotal = totals.totalEffectiveSupply;
     }
-  } else {
-    // Region bar tooltip
-    const regionData = apiResponse?.byRegion?.[label];
-    if (regionData) {
-      lines.push(`${label} Supply Pipeline`);
-      lines.push('─────────────────────');
-      lines.push(`Unsold Inventory:    ${formatNumber(regionData.unsoldInventory)} units`);
-      lines.push(`Upcoming Launches:   ${formatNumber(regionData.upcomingLaunches)} units`);
-      if (includeGls) {
-        lines.push(`GLS Pipeline:        ${formatNumber(regionData.glsPipeline)} units`);
-      } else {
-        lines.push(`GLS Pipeline:        0 (excluded)`);
-      }
-      lines.push('─────────────────────');
-      lines.push(`Total Effective:    ${formatNumber(regionData.totalEffectiveSupply)} units`);
+    if (runningTotal > 0 && dataIndex > 0) {
+      lines.push('');
+      lines.push(`Running total: ${formatNumber(runningTotal)}`);
     }
   }
 
@@ -330,22 +338,44 @@ export function getWaterfallTooltip(context, apiResponse, includeGls) {
 }
 
 /**
- * Format number with thousand separators.
+ * Chart.js plugin to draw bridge connector lines between waterfall bars.
  */
-function formatNumber(value) {
-  if (value === null || value === undefined) return '0';
-  return value.toLocaleString('en-US');
-}
+export const waterfallConnectorPlugin = {
+  id: 'waterfallConnector',
+  afterDatasetsDraw(chart) {
+    const { ctx, data, scales } = chart;
+    const connectorPoints = data.connectorPoints;
+
+    if (!connectorPoints || connectorPoints.length === 0) return;
+
+    const xScale = scales.x;
+    const yScale = scales.y;
+
+    ctx.save();
+    ctx.strokeStyle = COLORS.connector;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]); // Dotted line
+
+    connectorPoints.forEach(({ from, to, y }) => {
+      // Get x positions for bar centers
+      const x1 = xScale.getPixelForValue(from) + (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) * 0.3;
+      const x2 = xScale.getPixelForValue(to) - (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) * 0.3;
+      const yPos = yScale.getPixelForValue(y);
+
+      ctx.beginPath();
+      ctx.moveTo(x1, yPos);
+      ctx.lineTo(x2, yPos);
+      ctx.stroke();
+    });
+
+    ctx.restore();
+  },
+};
 
 /**
- * Get chart options for the waterfall chart.
- *
- * @param {Function} onBarClick - Callback when a bar is clicked
- * @param {Object} apiResponse - API response for tooltips
- * @param {boolean} includeGls - Whether GLS is included
- * @returns {Object} Chart.js options
+ * Get chart options for the TRUE waterfall chart.
  */
-export function getWaterfallChartOptions(onBarClick, apiResponse, includeGls) {
+export function getWaterfallChartOptions(onBarClick, totals, includeGls) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -354,34 +384,23 @@ export function getWaterfallChartOptions(onBarClick, apiResponse, includeGls) {
       mode: 'nearest',
     },
     onClick: (event, elements) => {
-      if (elements.length > 0 && onBarClick) {
-        const { index } = elements[0];
-        const label = event.chart.data.labels[index];
-        // Don't trigger click for Total bar
-        if (label !== 'Total' && REGIONS.includes(label)) {
-          onBarClick(label);
-        }
-      }
+      // Waterfall doesn't support drill-down (it's showing stages, not regions)
+      // The region selector is separate
     },
     plugins: {
       legend: {
-        display: true,
-        position: 'bottom',
-        labels: {
-          filter: (item) => item.text !== 'Spacer', // Hide spacer from legend
-          usePointStyle: true,
-          padding: 16,
-        },
+        display: false, // Hide legend for cleaner look
       },
       tooltip: {
         enabled: true,
         callbacks: {
-          title: () => '', // We build custom title in label callback
+          title: () => '',
           label: (context) => {
-            const lines = getWaterfallTooltip(context, apiResponse, includeGls);
+            const lines = getWaterfallTooltip(context, totals, includeGls);
             return lines.length > 0 ? lines : null;
           },
         },
+        filter: (tooltipItem) => tooltipItem.dataset.label !== 'Spacer',
         displayColors: false,
         backgroundColor: 'rgba(33, 52, 72, 0.95)',
         padding: 12,
@@ -394,8 +413,10 @@ export function getWaterfallChartOptions(onBarClick, apiResponse, includeGls) {
         stacked: true,
         grid: { display: false },
         ticks: {
-          font: { size: 12, weight: '500' },
+          font: { size: 11, weight: '600' },
           color: '#213448',
+          maxRotation: 0,
+          autoSkip: false,
         },
       },
       y: {
@@ -425,4 +446,5 @@ export default {
   transformDistrictWaterfall,
   getWaterfallTooltip,
   getWaterfallChartOptions,
+  waterfallConnectorPlugin,
 };
