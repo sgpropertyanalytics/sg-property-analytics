@@ -3,16 +3,16 @@ import React from 'react';
 /**
  * KPICardV2 - Universal Card System
  *
- * Space-Between Architecture (no fixed layer heights):
+ * Two-layer architecture (title + hero):
  * ┌─────────────────────────────────────────┐
- * │ LABEL                          ← top    │
+ * │ LABEL  (?)                     ← top    │
  * │                                         │
- * │ $1,858  ▼7.1%                  ← center │
- * │                                         │
- * │ $2,001 (30 days ago)           ← bottom │
+ * │ $1,858 psf                              │
+ * │ ▲ +3.2% QoQ                    ← hero   │
+ * │ Prev: $1,763 psf                        │
  * └─────────────────────────────────────────┘
  *
- * justify-between forces perfect vertical distribution.
+ * Footnote moved to tooltip hover.
  */
 
 interface KPICardV2Props {
@@ -28,7 +28,7 @@ interface KPICardV2Props {
     direction: 'up' | 'down' | 'neutral';
     label?: string;
   };
-  /** Context footnote text shown in footer (10px) */
+  /** Footnote text - now appended to tooltip instead of footer */
   footnote?: string;
   /** @deprecated Use footnote instead */
   transition?: string;
@@ -47,19 +47,21 @@ export function KPICardV2({
   loading = false,
   className = '',
 }: KPICardV2Props) {
-  // Backward compatibility: prefer footnote, fallback to transition
+  // Combine tooltip and footnote for hover display
   const footerText = footnote || transition;
+  const combinedTooltip = [tooltip, footerText].filter(Boolean).join('\n\n');
+
   return (
     <div
       className={`
-        bg-white border border-[#94B4C1]/50 rounded-lg pt-3 px-4 pb-4 sm:pt-3.5 sm:px-5 sm:pb-5
-        h-36 flex flex-col justify-between
+        bg-white border border-[#94B4C1]/50 rounded-lg p-4 sm:p-5
+        h-36 flex flex-col
         shadow-sm hover:shadow-md transition-shadow duration-200
         ${className}
       `.trim()}
     >
       {/* Layer 1: Header - pinned to top */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 mb-2">
         {loading ? (
           <div className="h-3 bg-[#94B4C1]/30 rounded w-2/3 animate-pulse" />
         ) : (
@@ -68,13 +70,13 @@ export function KPICardV2({
               <span className="text-xs font-bold uppercase tracking-wider text-[#547792]">
                 {title}
               </span>
-              {tooltip && (
+              {combinedTooltip && (
                 <div className="relative group">
                   <span className="w-3.5 h-3.5 flex items-center justify-center text-[9px] text-[#94B4C1] hover:text-[#547792] cursor-help transition-colors border border-[#94B4C1] rounded-full">
                     ?
                   </span>
                   <div className="absolute left-0 top-5 z-50 hidden group-hover:block w-64 p-3 bg-[#213448] text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line">
-                    {tooltip}
+                    {combinedTooltip}
                   </div>
                 </div>
               )}
@@ -88,8 +90,8 @@ export function KPICardV2({
         )}
       </div>
 
-      {/* Layer 2: Hero Data - centered by justify-between */}
-      <div>
+      {/* Layer 2: Hero Data - fills remaining space */}
+      <div className="flex-1 flex items-center">
         {loading ? (
           <div className="h-8 bg-[#94B4C1]/30 rounded w-24 animate-pulse" />
         ) : typeof value === 'string' ? (
@@ -98,17 +100,6 @@ export function KPICardV2({
           </span>
         ) : (
           <div className="leading-tight">{value}</div>
-        )}
-      </div>
-
-      {/* Layer 3: Footnote - pinned to bottom with shaded background */}
-      <div className="flex-shrink-0 -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 px-4 sm:px-5 py-2 bg-[#EAE0CF]/30 rounded-b-lg">
-        {loading ? (
-          <div className="h-3 bg-[#94B4C1]/20 rounded w-1/2 animate-pulse" />
-        ) : (
-          <span className="text-[10px] text-[#547792] block whitespace-pre-line">
-            {footerText}
-          </span>
         )}
       </div>
     </div>
