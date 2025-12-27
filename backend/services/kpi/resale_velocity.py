@@ -2,10 +2,10 @@
 KPI: Resale Transaction Velocity
 
 Measures market liquidity as resale transactions per total completed stock.
-Rolling 90-day window with period-over-period comparison.
+Rolling 3-month window with Q-o-Q comparison.
 
 Calculation:
-    velocity_pct = (resale_transactions_90d / total_completed_units) × 100
+    velocity_pct = (resale_transactions_3mo / total_completed_units) × 100
 
 Interpretation (annualized = velocity × 4):
     >= 4%: Hot (fast-moving market)
@@ -15,23 +15,56 @@ Interpretation (annualized = velocity × 4):
 """
 
 from typing import Dict, Any, Tuple
+from datetime import date
 from db.sql import OUTLIER_FILTER
+from constants import SALE_TYPE_RESALE
 from services.kpi.base import (
-    KPIResult, build_comparison_bounds, build_filter_clause
+    KPIResult, build_filter_clause
 )
 
 
 # Configuration
-LOOKBACK_DAYS = 90
 MIN_UNITS_THRESHOLD = 100  # Exclude boutique projects
 
 
 def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
-    """Build params for velocity query."""
-    params = build_comparison_bounds(
-        max_date=filters.get('max_date'),
-        period_days=LOOKBACK_DAYS
-    )
+    """Build params for velocity query using MONTH boundaries."""
+    max_date = filters.get('max_date') or date.today()
+
+    # Use MONTH boundaries because URA data is month-level (all txns dated 1st of month)
+    # Current period: last 3 months (including current month)
+    # Previous period: 3 months before that
+    #
+    # Example: if max_date is Dec 27, 2025:
+    #   max_exclusive = Jan 1, 2026
+    #   current_min = Oct 1, 2025 (3 months: Oct, Nov, Dec)
+    #   prev_min = Jul 1, 2025 (3 months: Jul, Aug, Sep)
+
+    # max_exclusive is the first of next month
+    if max_date.month == 12:
+        max_exclusive = date(max_date.year + 1, 1, 1)
+    else:
+        max_exclusive = date(max_date.year, max_date.month + 1, 1)
+
+    # Current period starts 3 months before max_exclusive
+    if max_exclusive.month <= 3:
+        current_min = date(max_exclusive.year - 1, max_exclusive.month + 9, 1)
+    else:
+        current_min = date(max_exclusive.year, max_exclusive.month - 3, 1)
+
+    # Previous period starts 3 months before current_min
+    if current_min.month <= 3:
+        prev_min = date(current_min.year - 1, current_min.month + 9, 1)
+    else:
+        prev_min = date(current_min.year, current_min.month - 3, 1)
+
+    params = {
+        'current_min_date': current_min,
+        'max_date_exclusive': max_exclusive,
+        'prev_min_date': prev_min,
+        'prev_max_date_exclusive': current_min,  # Previous ends where current starts
+        'sale_type_resale': SALE_TYPE_RESALE,
+    }
 
     filter_parts, filter_params = build_filter_clause(filters)
     params.update(filter_params)
@@ -41,32 +74,34 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_sql(params: Dict[str, Any]) -> str:
-    """
-    Build SQL for resale transaction counts.
-
-    Returns current and prior period resale counts.
-    Total units are aggregated separately in Python using CSV data.
-    """
+    """Build SQL for resale transaction counts using month boundaries."""
     filter_parts = params.pop('_filter_parts', [])
     base_filter = OUTLIER_FILTER
     if filter_parts:
         base_filter += " AND " + " AND ".join(filter_parts)
 
     return f"""
+        WITH current_period AS (
+            SELECT COUNT(*) as txn_count
+            FROM transactions
+            WHERE {base_filter}
+              AND sale_type = :sale_type_resale
+              AND transaction_date >= :current_min_date
+              AND transaction_date < :max_date_exclusive
+        ),
+        previous_period AS (
+            SELECT COUNT(*) as txn_count
+            FROM transactions
+            WHERE {base_filter}
+              AND sale_type = :sale_type_resale
+              AND transaction_date >= :prev_min_date
+              AND transaction_date < :prev_max_date_exclusive
+        )
         SELECT
-            COUNT(*) FILTER (
-                WHERE transaction_date >= :min_date
-                  AND transaction_date < :max_date_exclusive
-            ) as current_txns,
-            COUNT(*) FILTER (
-                WHERE transaction_date >= :prev_min_date
-                  AND transaction_date < :prev_max_date_exclusive
-            ) as prior_txns
-        FROM transactions
-        WHERE {base_filter}
-          AND sale_type = 'Resale'
-          AND transaction_date >= :prev_min_date
-          AND transaction_date < :max_date_exclusive
+            c.txn_count as current_txns,
+            p.txn_count as prior_txns
+        FROM current_period c
+        CROSS JOIN previous_period p
     """
 
 
@@ -116,9 +151,10 @@ def get_total_units_for_scope(filters: Dict[str, Any]) -> Tuple[int, int]:
     return total_units, projects_counted
 
 
-def map_result(row: Any, filters: Dict[str, Any],
-               total_units: int, projects_counted: int) -> KPIResult:
+def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     """Map query result + unit data to KPIResult."""
+    # Get total units for the scope
+    total_units, projects_counted = get_total_units_for_scope(filters)
 
     if not row or total_units == 0:
         return KPIResult(
@@ -126,7 +162,7 @@ def map_result(row: Any, filters: Dict[str, Any],
             title="Resale Velocity",
             value=0,
             formatted_value="—",
-            subtitle="90D turnover rate",
+            subtitle="3-month turnover",
             insight="Insufficient data"
         )
 
@@ -146,7 +182,7 @@ def map_result(row: Any, filters: Dict[str, Any],
         confidence = "low"
 
     # Interpretation thresholds (annualized equivalents)
-    # 90D velocity → annualized = velocity × 4
+    # 3-month velocity → annualized = velocity × 4
     annualized = current_velocity * 4
     if annualized >= 4:
         label = "Hot"
@@ -161,7 +197,7 @@ def map_result(row: Any, filters: Dict[str, Any],
         label = "Illiquid"
         direction = "down"
 
-    # Calculate period-over-period change for trend
+    # Calculate Q-o-Q change for trend
     if prior_velocity > 0:
         pct_change = ((current_velocity - prior_velocity) / prior_velocity) * 100
     else:
@@ -169,7 +205,7 @@ def map_result(row: Any, filters: Dict[str, Any],
 
     # Footer: show the calculation
     insight = (
-        f"{current_txns:,} resale txns ÷ {total_units:,} units × 100\n"
+        f"{current_txns:,} txns ÷ {total_units:,} units × 100\n"
         f"= {current_velocity:.2f}% (annualized: {annualized:.1f}%)"
     )
 
@@ -178,7 +214,7 @@ def map_result(row: Any, filters: Dict[str, Any],
         title="Resale Velocity",
         value=round(current_velocity, 2),
         formatted_value=f"{current_velocity:.1f}%",
-        subtitle="90D turnover rate",
+        subtitle="3-month turnover",
         trend={
             "value": round(pct_change, 1),
             "direction": direction,
@@ -192,7 +228,7 @@ def map_result(row: Any, filters: Dict[str, Any],
             "projects_counted": projects_counted,
             "annualized_velocity": round(annualized, 2),
             "confidence": confidence,
-            "window": "90D",
+            "pct_change": round(pct_change, 1),
             "description": (
                 "Measures how fast resale homes are changing hands.\n\n"
                 "Interpretation (annualized)\n"
@@ -200,23 +236,18 @@ def map_result(row: Any, filters: Dict[str, Any],
                 "• 2–4%: Healthy – balanced liquidity\n"
                 "• 1–2%: Slow – limited activity\n"
                 "• <1%: Illiquid – hard to exit\n\n"
-                "Based on 90-day resale transactions divided by total completed units. "
-                "Excludes new sales and boutique projects (<100 units)."
+                "Based on 3-month resale transactions divided by total "
+                "completed units. Excludes new sales and boutique projects (<100 units)."
             )
         }
     )
 
 
 class ResaleVelocitySpec:
-    """
-    KPI Spec for Resale Velocity.
-
-    This KPI is special: it uses a custom runner because it needs
-    both SQL data (transaction counts) and Python aggregation (total units).
-    """
+    """KPI Spec for Resale Velocity."""
     kpi_id = "resale_velocity"
     title = "Resale Velocity"
-    subtitle = "90D turnover rate"
+    subtitle = "3-month turnover"
 
     @staticmethod
     def build_params(filters):
@@ -228,10 +259,7 @@ class ResaleVelocitySpec:
 
     @staticmethod
     def map_result(row, filters):
-        # This will be called with extra args by custom runner
-        # For standard registry, get units here
-        total_units, projects_counted = get_total_units_for_scope(filters)
-        return map_result(row, filters, total_units, projects_counted)
+        return map_result(row, filters)
 
 
 SPEC = ResaleVelocitySpec()

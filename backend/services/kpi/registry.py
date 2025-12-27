@@ -35,8 +35,8 @@ from services.kpi.market_momentum import SPEC as market_momentum_spec
 # Explicit order - frontend relies on this (stable, deterministic)
 KPI_ORDER = [
     'median_psf',
-    'resale_velocity',
     'total_transactions',
+    'resale_velocity',
     'market_momentum',
 ]
 
