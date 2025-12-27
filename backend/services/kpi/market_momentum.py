@@ -1,21 +1,20 @@
 """
 KPI: Market Momentum (Volatility-Normalized, Resale-Based)
 
-A derived signal representing buyer vs seller leverage in the market.
-This is NOT a valuation metric - it indicates momentum direction only.
+Best-practice financial momentum indicator for real estate.
 
 Methodology:
-1. Compute 90-day PSF change (Q-o-Q) using RESALE transactions only
-2. Compute volatility = stddev of monthly PSF changes over last 12 months
-3. Normalize: momentum = PSF_change / volatility (z-score)
-4. Score = 50 - (normalized_momentum × 10), clamped to 30-70
+1. PSF Change: Resale Q-o-Q median PSF % (rolling 90-day quarters)
+2. Volatility: Stddev of Q-o-Q changes over last 12 quarters
+3. z-score: PSF_change / volatility
+4. Score: clamp(50 - z×10, 30, 70)
 
-Interpretation of normalized momentum:
-- +1.0 = normal upward move (1 standard deviation)
-- +2.0 = strong upward move (2 standard deviations)
-- -2.0 = strong downward move (prices falling unusually fast)
+Confidence Levels (based on resale deals per quarter):
+- High: ≥20 deals per quarter consistently
+- Medium: 10-19 deals
+- Low: <10 deals (fallback to rolling 180D window)
 
-Score interpretation:
+Score Interpretation:
 - Score > 55: Buyer advantage (prices falling unusually fast)
 - Score 45-55: Balanced market (normal movement)
 - Score < 45: Seller advantage (prices rising unusually fast)
@@ -23,36 +22,44 @@ Score interpretation:
 This does NOT mean cheap or expensive - only momentum relative to historical norms.
 """
 
-from datetime import timedelta
-from typing import Dict, Any
+from datetime import timedelta, date
+from typing import Dict, Any, Optional
 from db.sql import OUTLIER_FILTER
 from constants import SALE_TYPE_RESALE
 from services.kpi.base import (
-    KPIResult, build_comparison_bounds, build_filter_clause
+    KPIResult, build_filter_clause
 )
 
-# Minimum sample size for reliable calculation
-MIN_SAMPLE_SIZE = 20
+# Confidence thresholds (deals per quarter)
+HIGH_CONFIDENCE_MIN = 20
+MEDIUM_CONFIDENCE_MIN = 10
 
-# Minimum months of volatility data needed
-MIN_VOLATILITY_MONTHS = 6
+# Minimum quarters of volatility data needed
+MIN_VOLATILITY_QUARTERS = 4
 
 
 def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
-    """Build params for market momentum query with 90-day windows and 12-month volatility."""
-    # 90-day comparison bounds for Q-o-Q PSF change
-    params = build_comparison_bounds(
-        max_date=filters.get('max_date'),
-        period_days=90  # Rolling quarter
-    )
-
-    # Add 12-month lookback for volatility calculation
+    """Build params for market momentum query with quarterly windows."""
     max_date = filters.get('max_date')
-    if max_date:
-        params['volatility_start'] = max_date - timedelta(days=365)
-    else:
-        from datetime import date
-        params['volatility_start'] = date.today() - timedelta(days=365)
+    if max_date is None:
+        max_date = date.today()
+
+    # Current quarter: last 90 days
+    # Previous quarter: 90-180 days ago
+    params = {
+        'current_start': max_date - timedelta(days=90),
+        'current_end': max_date + timedelta(days=1),  # Exclusive
+        'prev_start': max_date - timedelta(days=180),
+        'prev_end': max_date - timedelta(days=90) + timedelta(days=1),  # Exclusive
+        # For volatility: 12 quarters back (3 years)
+        'volatility_start': max_date - timedelta(days=365 * 3),
+        'max_date': max_date,
+    }
+
+    # Fallback for low-confidence: 180-day windows
+    params['fallback_current_start'] = max_date - timedelta(days=180)
+    params['fallback_prev_start'] = max_date - timedelta(days=360)
+    params['fallback_prev_end'] = max_date - timedelta(days=180) + timedelta(days=1)
 
     filter_parts, filter_params = build_filter_clause(filters)
     params.update(filter_params)
@@ -64,72 +71,97 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
 def get_sql(params: Dict[str, Any]) -> str:
     """
     Build SQL that computes:
-    1. Current 90-day median PSF (resale only)
-    2. Previous 90-day median PSF (resale only)
-    3. Monthly median PSF over last 12 months for volatility (resale only)
+    1. Current quarter median PSF (resale only)
+    2. Previous quarter median PSF (resale only)
+    3. Quarterly median PSF over last 12 quarters for volatility
+    4. Fallback 180-day windows for low-confidence scenarios
     """
     filter_parts = params.pop('_filter_parts', [])
     base_filter = OUTLIER_FILTER
     if filter_parts:
         base_filter += " AND " + " AND ".join(filter_parts)
 
-    # CRITICAL: Resale only - exclude new sale/developer sales
     resale_filter = f"sale_type = '{SALE_TYPE_RESALE}'"
 
     return f"""
-        WITH current_period AS (
+        WITH current_quarter AS (
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
             FROM transactions
             WHERE {base_filter}
               AND {resale_filter}
-              AND transaction_date >= :min_date
-              AND transaction_date < :max_date_exclusive
+              AND transaction_date >= :current_start
+              AND transaction_date < :current_end
         ),
-        previous_period AS (
+        previous_quarter AS (
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
             FROM transactions
             WHERE {base_filter}
               AND {resale_filter}
-              AND transaction_date >= :prev_min_date
-              AND transaction_date < :prev_max_date_exclusive
+              AND transaction_date >= :prev_start
+              AND transaction_date < :prev_end
         ),
-        -- Monthly medians over last 12 months for volatility calculation (resale only)
-        monthly_psf AS (
+        -- Fallback: 180-day windows for low-confidence
+        fallback_current AS (
             SELECT
-                DATE_TRUNC('month', transaction_date) as month,
-                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
+                COUNT(*) as txn_count
+            FROM transactions
+            WHERE {base_filter}
+              AND {resale_filter}
+              AND transaction_date >= :fallback_current_start
+              AND transaction_date < :current_end
+        ),
+        fallback_previous AS (
+            SELECT
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
+                COUNT(*) as txn_count
+            FROM transactions
+            WHERE {base_filter}
+              AND {resale_filter}
+              AND transaction_date >= :fallback_prev_start
+              AND transaction_date < :fallback_prev_end
+        ),
+        -- Quarterly medians over last 12 quarters (3 years) for volatility
+        quarterly_psf AS (
+            SELECT
+                DATE_TRUNC('quarter', transaction_date) as quarter,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
+                COUNT(*) as txn_count
             FROM transactions
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :volatility_start
-              AND transaction_date < :max_date_exclusive
-            GROUP BY DATE_TRUNC('month', transaction_date)
-            HAVING COUNT(*) >= 5  -- Minimum 5 txns per month for reliable median
+              AND transaction_date < :current_end
+            GROUP BY DATE_TRUNC('quarter', transaction_date)
+            HAVING COUNT(*) >= 5  -- Minimum 5 txns per quarter for reliable median
         ),
-        -- Calculate month-over-month % changes
-        monthly_changes AS (
+        -- Calculate quarter-over-quarter % changes
+        quarterly_changes AS (
             SELECT
-                month,
+                quarter,
                 median_psf,
-                LAG(median_psf) OVER (ORDER BY month) as prev_month_psf,
+                txn_count,
+                LAG(median_psf) OVER (ORDER BY quarter) as prev_quarter_psf,
                 CASE
-                    WHEN LAG(median_psf) OVER (ORDER BY month) > 0
-                    THEN ((median_psf - LAG(median_psf) OVER (ORDER BY month))
-                          / LAG(median_psf) OVER (ORDER BY month)) * 100
+                    WHEN LAG(median_psf) OVER (ORDER BY quarter) > 0
+                    THEN ((median_psf - LAG(median_psf) OVER (ORDER BY quarter))
+                          / LAG(median_psf) OVER (ORDER BY quarter)) * 100
                     ELSE NULL
                 END as pct_change
-            FROM monthly_psf
+            FROM quarterly_psf
         ),
-        -- Volatility = standard deviation of monthly % changes
+        -- Volatility = standard deviation of Q-o-Q % changes
         volatility AS (
             SELECT
-                STDDEV(pct_change) as monthly_stddev,
-                COUNT(pct_change) as months_count
-            FROM monthly_changes
+                STDDEV(pct_change) as quarterly_stddev,
+                COUNT(pct_change) as quarters_count,
+                AVG(txn_count) as avg_deals_per_quarter,
+                MIN(txn_count) as min_deals_per_quarter
+            FROM quarterly_changes
             WHERE pct_change IS NOT NULL
         )
         SELECT
@@ -137,12 +169,46 @@ def get_sql(params: Dict[str, Any]) -> str:
             c.txn_count as current_count,
             p.median_psf as prev_psf,
             p.txn_count as prev_count,
-            v.monthly_stddev as volatility,
-            v.months_count as volatility_months
-        FROM current_period c
-        CROSS JOIN previous_period p
+            fc.median_psf as fallback_current_psf,
+            fc.txn_count as fallback_current_count,
+            fp.median_psf as fallback_prev_psf,
+            fp.txn_count as fallback_prev_count,
+            v.quarterly_stddev as volatility,
+            v.quarters_count as volatility_quarters,
+            v.avg_deals_per_quarter,
+            v.min_deals_per_quarter
+        FROM current_quarter c
+        CROSS JOIN previous_quarter p
+        CROSS JOIN fallback_current fc
+        CROSS JOIN fallback_previous fp
         CROSS JOIN volatility v
     """
+
+
+def _determine_confidence(
+    current_count: int,
+    prev_count: int,
+    min_deals_per_quarter: Optional[float]
+) -> str:
+    """
+    Determine confidence level based on deal counts.
+
+    High: ≥20 deals per quarter consistently
+    Medium: 10-19 deals
+    Low: <10 deals
+    """
+    min_count = min(current_count, prev_count)
+
+    # Also check historical consistency if available
+    if min_deals_per_quarter is not None:
+        min_count = min(min_count, int(min_deals_per_quarter))
+
+    if min_count >= HIGH_CONFIDENCE_MIN:
+        return "high"
+    elif min_count >= MEDIUM_CONFIDENCE_MIN:
+        return "medium"
+    else:
+        return "low"
 
 
 def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
@@ -151,17 +217,12 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 
     Formula:
     1. psf_change = (current - prev) / prev × 100
-    2. normalized_momentum = psf_change / volatility (z-score)
-    3. score = 50 - (normalized_momentum × 10), clamped to 30-70
-
-    Interpretation of normalized_momentum:
-    - +1.0 = normal upward move (1 standard deviation)
-    - +2.0 = strong upward move (2 standard deviations)
-    - -2.0 = strong downward move (prices falling unusually fast)
+    2. z = psf_change / volatility
+    3. score = clamp(50 - z × 10, 30, 70)
     """
     default_score = 50  # Neutral/balanced
 
-    if not row or not row.current_psf:
+    if not row:
         return KPIResult(
             kpi_id="market_momentum",
             title="Market Momentum",
@@ -172,43 +233,65 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             insight="Insufficient data"
         )
 
-    current = float(row.current_psf)
-    prev = float(row.prev_psf) if row.prev_psf else None
+    # Extract primary (90-day quarter) data
+    current_psf = float(row.current_psf) if row.current_psf else None
+    prev_psf = float(row.prev_psf) if row.prev_psf else None
     current_count = int(row.current_count or 0)
     prev_count = int(row.prev_count or 0)
+
+    # Extract fallback (180-day) data
+    fallback_current_psf = float(row.fallback_current_psf) if row.fallback_current_psf else None
+    fallback_prev_psf = float(row.fallback_prev_psf) if row.fallback_prev_psf else None
+    fallback_current_count = int(row.fallback_current_count or 0)
+    fallback_prev_count = int(row.fallback_prev_count or 0)
+
+    # Extract volatility data
     volatility = float(row.volatility) if row.volatility else None
-    volatility_months = int(row.volatility_months or 0)
+    volatility_quarters = int(row.volatility_quarters or 0)
+    avg_deals = float(row.avg_deals_per_quarter) if row.avg_deals_per_quarter else None
+    min_deals = float(row.min_deals_per_quarter) if row.min_deals_per_quarter else None
 
-    # Check sample size
-    low_confidence = current_count < MIN_SAMPLE_SIZE or prev_count < MIN_SAMPLE_SIZE
+    # Determine confidence level
+    confidence = _determine_confidence(current_count, prev_count, min_deals)
 
-    # Calculate PSF change (90-day Q-o-Q)
-    psf_change = None
-    normalized_momentum = None
-    score = default_score
+    # Use fallback if low confidence on primary data
+    use_fallback = False
+    if confidence == "low" and fallback_current_psf and fallback_prev_psf:
+        if fallback_current_count >= MEDIUM_CONFIDENCE_MIN and fallback_prev_count >= MEDIUM_CONFIDENCE_MIN:
+            current_psf = fallback_current_psf
+            prev_psf = fallback_prev_psf
+            current_count = fallback_current_count
+            prev_count = fallback_prev_count
+            confidence = _determine_confidence(current_count, prev_count, None)
+            use_fallback = True
 
-    if prev and prev > 0 and prev_count > 0:
-        # Step 1: Compute rolling PSF change
-        psf_change = ((current - prev) / prev) * 100
+    # Check if we have enough data
+    if not current_psf or not prev_psf or prev_psf <= 0:
+        return KPIResult(
+            kpi_id="market_momentum",
+            title="Market Momentum",
+            value=default_score,
+            formatted_value=str(default_score),
+            subtitle="volatility-adjusted",
+            trend={"value": default_score, "direction": "neutral", "label": "Balanced"},
+            insight="Insufficient data"
+        )
 
-        # Step 2 & 3: Normalize by volatility if we have enough data
-        if volatility and volatility > 0 and volatility_months >= MIN_VOLATILITY_MONTHS:
-            # Normalized momentum: how many std devs is this move?
-            # +1.0 = normal move, +2.0 = strong move, -2.0 = strong reversal
-            normalized_momentum = psf_change / volatility
+    # Step 1: Compute Q-o-Q PSF change
+    psf_change = ((current_psf - prev_psf) / prev_psf) * 100
 
-            # Step 4: Convert to score
-            # Score = 50 - (normalized_momentum × 10), clamped to 30-70
-            # Rising prices → positive psf_change → positive normalized → lower score → seller advantage
-            # Falling prices → negative psf_change → negative normalized → higher score → buyer advantage
-            score = 50 - (normalized_momentum * 10)
-            score = max(30, min(70, score))  # Clamp to 30-70
-        else:
-            # Fallback if not enough volatility data: use simple multiplier
-            score = 50 - (psf_change * 3)
-            score = max(30, min(70, score))
+    # Step 2 & 3: Normalize by volatility and compute score
+    z_score = None
+    if volatility and volatility > 0 and volatility_quarters >= MIN_VOLATILITY_QUARTERS:
+        z_score = psf_change / volatility
+        score = 50 - (z_score * 10)
+        score = max(30, min(70, score))  # Clamp to 30-70
+    else:
+        # Fallback if not enough volatility data
+        score = 50 - (psf_change * 3)
+        score = max(30, min(70, score))
 
-    # Determine market condition based on score thresholds
+    # Determine market condition
     if score > 55:
         label = "Buyer advantage"
         direction = "up"
@@ -219,25 +302,25 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
         label = "Balanced"
         direction = "neutral"
 
-    # Build insight text with z-score interpretation
-    if normalized_momentum is not None:
-        # Show the z-score interpretation
-        abs_z = abs(normalized_momentum)
+    # Build insight text
+    if z_score is not None:
+        abs_z = abs(z_score)
         if abs_z < 0.5:
             move_desc = "normal"
         elif abs_z < 1.5:
             move_desc = "moderate"
         else:
             move_desc = "strong"
-        insight = f"Resale {psf_change:+.1f}% Q-o-Q ({move_desc} move)"
-    elif psf_change is not None:
-        insight = f"Resale {psf_change:+.1f}% Q-o-Q"
-    else:
-        insight = "No trend data"
 
-    # Add low confidence warning
-    if low_confidence:
-        insight += " (low confidence)"
+        window = "180D" if use_fallback else "Q-o-Q"
+        insight = f"Resale {psf_change:+.1f}% {window} ({move_desc} move)"
+    else:
+        window = "180D" if use_fallback else "Q-o-Q"
+        insight = f"Resale {psf_change:+.1f}% {window}"
+
+    # Add confidence indicator
+    if confidence != "high":
+        insight += f" [{confidence} confidence]"
 
     return KPIResult(
         kpi_id="market_momentum",
@@ -252,13 +335,14 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
         },
         insight=insight,
         meta={
-            "psf_change_pct": round(psf_change, 1) if psf_change is not None else None,
-            "normalized_momentum": round(normalized_momentum, 2) if normalized_momentum is not None else None,
+            "psf_change_pct": round(psf_change, 1),
+            "z_score": round(z_score, 2) if z_score is not None else None,
             "volatility": round(volatility, 2) if volatility else None,
-            "volatility_months": volatility_months,
+            "volatility_quarters": volatility_quarters,
             "current_count": current_count,
             "prev_count": prev_count,
-            "low_confidence": low_confidence,
+            "confidence": confidence,
+            "used_fallback": use_fallback,
             "sale_type": "resale"
         }
     )
