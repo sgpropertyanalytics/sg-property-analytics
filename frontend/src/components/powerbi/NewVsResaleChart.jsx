@@ -294,10 +294,12 @@ export function NewVsResaleChart({ height = 350 }) {
   // Card layout: flex column with fixed height, header/note shrink-0, chart fills remaining
   const cardHeight = height + 180; // height prop for chart + ~180px for header/KeyInsightBox
 
+  // CRITICAL: containerRef must be OUTSIDE QueryState for IntersectionObserver to work
+  // QueryState only renders children when not loading, so ref would be null during load
   return (
+    <div ref={containerRef}>
     <QueryState loading={loading} error={error} onRetry={refetch} empty={!hasData} skeleton="bar" height={350}>
       <div
-        ref={containerRef}
         className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
       >
@@ -368,6 +370,7 @@ export function NewVsResaleChart({ height = 350 }) {
       </ChartSlot>
       </div>
     </QueryState>
+    </div>
   );
 }
 

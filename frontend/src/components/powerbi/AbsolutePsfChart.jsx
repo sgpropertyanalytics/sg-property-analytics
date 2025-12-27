@@ -251,10 +251,12 @@ export function AbsolutePsfChart({ height = 300 }) {
     },
   };
 
+  // CRITICAL: containerRef must be OUTSIDE QueryState for IntersectionObserver to work
+  // QueryState only renders children when not loading, so ref would be null during load
   return (
+    <div ref={containerRef}>
     <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={height}>
       <div
-        ref={containerRef}
         className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col h-full"
       >
         {/* Header */}
@@ -319,6 +321,7 @@ export function AbsolutePsfChart({ height = 300 }) {
         </div>
       </div>
     </QueryState>
+    </div>
   );
 }
 
