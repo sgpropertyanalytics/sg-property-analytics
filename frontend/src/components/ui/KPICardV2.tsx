@@ -104,7 +104,7 @@ export function KPICardV2({
           <div className="h-3 bg-[#94B4C1]/20 rounded w-1/2 animate-pulse" />
         ) : (
           <div className="space-y-0.5">
-            <span className="text-[11px] text-[#547792] block">
+            <span className="text-[11px] text-[#547792] block whitespace-pre-line">
               {transition || trend?.label || footerMeta}
             </span>
             {formula && (

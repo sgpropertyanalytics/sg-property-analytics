@@ -305,8 +305,8 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
         label = "Balanced"
         direction = "neutral"
 
-    # Build insight text - show mathematical formula
-    insight = "Score = clamp(50 - z × 10, 30, 70) | z = Q-o-Q PSF Growth % / Q-o-Q StdDev"
+    # Build insight text - show mathematical formula (2 rows)
+    insight = "Score = clamp(50 - z × 10, 30, 70)\nz = Q-o-Q PSF Growth % / Q-o-Q StdDev"
 
     return KPIResult(
         kpi_id="market_momentum",
