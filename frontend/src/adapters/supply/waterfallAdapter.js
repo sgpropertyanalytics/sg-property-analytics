@@ -231,23 +231,27 @@ function buildConnectorPoints(unsold, upcoming, gls, includeGls) {
 /**
  * Transform API response to district breakdown (stacked bar for comparison).
  * Districts use stacked bars since waterfall doesn't make sense for comparison.
+ *
+ * @param {Object} apiResponse - Response from /api/supply/summary
+ * @param {string|null} selectedRegion - Filter to specific region, or null for all districts
+ * @param {Object} options - Transform options
  */
 export function transformDistrictWaterfall(apiResponse, selectedRegion, options = {}) {
   const { includeGls = true } = options;
   const { byDistrict, meta } = apiResponse;
 
-  // Filter districts by selected region
-  const regionDistricts = Object.entries(byDistrict)
-    .filter(([, data]) => data.region === selectedRegion)
+  // Filter districts by selected region (or show all if null)
+  const filteredDistricts = Object.entries(byDistrict)
+    .filter(([, data]) => selectedRegion === null || data.region === selectedRegion)
     .sort(([a], [b]) => a.localeCompare(b));
 
-  if (regionDistricts.length === 0) {
+  if (filteredDistricts.length === 0) {
     return {
       labels: [],
       datasets: [],
       totals: { unsoldInventory: 0, upcomingLaunches: 0, glsPipeline: 0, totalEffectiveSupply: 0 },
       displayMeta: {
-        subtitle: `No districts in ${selectedRegion}`,
+        subtitle: selectedRegion ? `No districts in ${selectedRegion}` : 'No district data',
         asOf: formatDate(meta?.asOfDate),
         launchYear: meta?.launchYear || 2026,
         includesGls: includeGls,
@@ -255,17 +259,17 @@ export function transformDistrictWaterfall(apiResponse, selectedRegion, options 
     };
   }
 
-  const labels = regionDistricts.map(([district]) => district);
-  const unsoldData = regionDistricts.map(([, data]) => data.unsoldInventory);
-  const upcomingData = regionDistricts.map(([, data]) => data.upcomingLaunches);
+  const labels = filteredDistricts.map(([district]) => district);
+  const unsoldData = filteredDistricts.map(([, data]) => data.unsoldInventory);
+  const upcomingData = filteredDistricts.map(([, data]) => data.upcomingLaunches);
 
-  const regionTotals = {
+  const districtTotals = {
     unsoldInventory: unsoldData.reduce((a, b) => a + b, 0),
     upcomingLaunches: upcomingData.reduce((a, b) => a + b, 0),
     glsPipeline: 0,
     totalEffectiveSupply: 0,
   };
-  regionTotals.totalEffectiveSupply = regionTotals.unsoldInventory + regionTotals.upcomingLaunches;
+  districtTotals.totalEffectiveSupply = districtTotals.unsoldInventory + districtTotals.upcomingLaunches;
 
   // District view uses stacked bars (not waterfall)
   const datasets = [
@@ -290,9 +294,9 @@ export function transformDistrictWaterfall(apiResponse, selectedRegion, options 
   return {
     labels,
     datasets,
-    totals: regionTotals,
+    totals: districtTotals,
     displayMeta: {
-      subtitle: `${selectedRegion} District Breakdown`,
+      subtitle: selectedRegion ? `${selectedRegion} Districts` : 'All Districts',
       asOf: formatDate(meta?.asOfDate),
       launchYear: meta?.launchYear || 2026,
       includesGls: false,

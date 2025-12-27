@@ -97,8 +97,9 @@ export function SupplyWaterfallChart({
   const chartData = useMemo(() => {
     if (!apiResponse) return null;
 
-    if (view === 'district' && selectedRegion) {
-      // District view: stacked bars comparing districts within region
+    if (view === 'district') {
+      // District view: stacked bars comparing districts
+      // selectedRegion=null shows ALL districts, otherwise filters to region
       return transformDistrictWaterfall(apiResponse, selectedRegion, { includeGls });
     }
     // Regional waterfall: X-axis = stages (Unsold → Upcoming → GLS → Total)
@@ -118,8 +119,10 @@ export function SupplyWaterfallChart({
 
   // Chart title based on view
   // TRUE waterfall: title shows what we're looking at
-  const chartTitle = view === 'district' && selectedRegion
-    ? `${selectedRegion} District Breakdown`
+  const chartTitle = view === 'district'
+    ? selectedRegion
+      ? `${selectedRegion} District Breakdown`
+      : 'All Districts Breakdown'
     : selectedRegion
       ? `${selectedRegion} Supply Accumulator`
       : 'Total Supply Accumulator';
