@@ -187,25 +187,29 @@ export function BeadsChart({ height = 300 }) {
           min: -0.5,
           max: 2.5,
           reverse: false,
+          // Force ticks at exactly 0, 1, 2 (CCR, RCR, OCR positions)
+          afterBuildTicks: (axis) => {
+            axis.ticks = [
+              { value: 0 },
+              { value: 1 },
+              { value: 2 },
+            ];
+          },
           ticks: {
-            stepSize: 1,
-            autoSkip: false,
-            includeBounds: false,
             callback: (value) => {
-              // Only show labels at integer positions (0=CCR, 1=RCR, 2=OCR)
-              if (value === 0) return 'CCR';
-              if (value === 1) return 'RCR';
-              if (value === 2) return 'OCR';
-              return '';
+              // Map numeric positions to region labels
+              const labels = { 0: 'CCR', 1: 'RCR', 2: 'OCR' };
+              return labels[value] || '';
             },
             color: (context) => {
-              const value = context.tick.value;
+              const value = context.tick?.value;
               if (value === 0) return REGION_COLORS.CCR;
               if (value === 1) return REGION_COLORS.RCR;
               if (value === 2) return REGION_COLORS.OCR;
               return '#547792';
             },
             font: { size: 13, weight: 'bold' },
+            padding: 8,
           },
           grid: {
             display: false, // We use annotation lines instead
