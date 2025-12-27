@@ -148,6 +148,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "current_count": current_count,
             "previous_count": previous_count,
             "pct_change": round(pct_change, 1),
+            "direction": direction,
             "description": (
                 "Number of resale transactions in the last 3 months.\n"
                 "Q-o-Q change indicates whether market activity is "
