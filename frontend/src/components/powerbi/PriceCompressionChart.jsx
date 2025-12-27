@@ -18,7 +18,7 @@ import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardGroup } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformCompressionSeries,
@@ -293,7 +293,7 @@ export function PriceCompressionChart({ height = 380 }) {
         </div>
 
         {/* KPI Row - Using standardized InlineCard components */}
-        <InlineCardGroup columns={3} blur={!isPremium}>
+        <InlineCardRow blur={!isPremium}>
           {/* Compression Score */}
           <InlineCard
             label="Compression"
@@ -314,7 +314,7 @@ export function PriceCompressionChart({ height = 380 }) {
             avgSpread={averageSpreads.rcrOcr}
             isInverted={marketSignals.ocrOverheated}
           />
-        </InlineCardGroup>
+        </InlineCardRow>
       </div>
 
       {/* How to Interpret - shrink-0 */}

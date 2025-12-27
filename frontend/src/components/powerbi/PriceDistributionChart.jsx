@@ -14,7 +14,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
-import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardGroup } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformDistributionSeries,
@@ -264,7 +264,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
         </div>
 
         {/* Stats row - Using standardized InlineCard components (compact size) */}
-        <InlineCardGroup columns={4} className="mt-2">
+        <InlineCardRow compact className="mt-2">
           {stats?.median && (
             <InlineCard label="Median" value={formatPrice(stats.median)} size="compact" />
           )}
@@ -277,7 +277,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
           {modeBucket && (
             <InlineCard label="Mode" value={modeBucket.label} size="compact" />
           )}
-        </InlineCardGroup>
+        </InlineCardRow>
       </div>
 
       {/* How to Interpret - shrink-0 */}

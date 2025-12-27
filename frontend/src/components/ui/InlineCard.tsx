@@ -137,7 +137,7 @@ export function InlineCard({
 
   return (
     <div
-      className={`${currentSize.container} ${variantStyles.container} ${className}`}
+      className={`min-w-0 ${currentSize.container} ${variantStyles.container} ${className}`}
       style={bgStyle}
     >
       {/* Layer 1: Label - small, muted, 1 line, truncate */}
@@ -171,18 +171,18 @@ export function InlineCard({
 }
 
 /**
- * InlineCardGroup - Grid wrapper for InlineCards
+ * InlineCardGroup - True auto-grid wrapper for InlineCards
  *
- * Bloomberg Layout Rule: Grid controls size, NOT content.
- * Uses minmax(200px, 1fr) to prevent cards from becoming too narrow.
+ * Bloomberg Layout Rules:
+ * ✅ Uses auto-fit (auto packs items horizontally)
+ * ✅ Uses minmax(280px, 1fr) (prevents cards from getting too narrow)
+ * ✅ No fixed column count (layout adapts automatically)
+ * ✅ No media queries (responsive by design)
  *
- * On mobile (<640px): Stack vertically (1 column)
- * On tablet+: Auto-fit with min-width constraint
+ * This is the ONLY layout that behaves like Bloomberg dashboards.
  */
 interface InlineCardGroupProps {
   children: React.ReactNode;
-  /** Minimum card width in pixels (default: 200px) */
-  minCardWidth?: number;
   /** Blur for non-premium users */
   blur?: boolean;
   /** Additional className */
@@ -191,90 +191,50 @@ interface InlineCardGroupProps {
 
 export function InlineCardGroup({
   children,
-  minCardWidth = 200,
   blur = false,
   className = '',
 }: InlineCardGroupProps) {
-  // Use inline style for dynamic minmax value
-  // Mobile: single column stack
-  // Tablet+: auto-fit grid with minmax constraint
-  const gridStyle = {
-    display: 'grid',
-    gap: '0.5rem', // gap-2
-  };
-
   return (
     <div
       className={`
-        grid gap-2 sm:gap-3 mt-3
-        grid-cols-1
+        grid gap-4 mt-3
+        [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]
         ${blur ? 'blur-sm grayscale-[40%]' : ''}
         ${className}
       `.trim()}
-      style={{
-        // Override grid-template-columns on sm+ screens via CSS custom property
-        // Fallback to single column on mobile via the className above
-      }}
     >
-      <style>{`
-        @media (min-width: 640px) {
-          .inline-card-grid-${minCardWidth} {
-            grid-template-columns: repeat(auto-fit, minmax(${minCardWidth}px, 1fr)) !important;
-          }
-        }
-      `}</style>
-      <div
-        className={`
-          contents sm:grid sm:gap-3
-          inline-card-grid-${minCardWidth}
-          [&>*]:mb-2 sm:[&>*]:mb-0
-        `.trim()}
-        style={{
-          display: 'contents',
-        }}
-      >
-        {children}
-      </div>
+      {children}
     </div>
   );
 }
 
 /**
- * InlineCardRow - Simple fixed-column grid for inline cards
+ * InlineCardRow - Compact auto-grid for tighter layouts
  *
- * Use when you know the exact number of cards and want fixed columns.
- * Falls back to stacked layout on mobile.
+ * Same as InlineCardGroup but with smaller minmax (200px) for compact cards.
+ * Use for charts with many small stats (e.g., PriceDistributionChart).
  */
 interface InlineCardRowProps {
   children: React.ReactNode;
-  /** Number of columns on sm+ screens */
-  columns?: 2 | 3 | 4;
   /** Blur for non-premium users */
   blur?: boolean;
   /** Additional className */
   className?: string;
+  /** Smaller gap for compact layouts */
+  compact?: boolean;
 }
 
 export function InlineCardRow({
   children,
-  columns = 3,
   blur = false,
   className = '',
+  compact = false,
 }: InlineCardRowProps) {
-  // Fixed column layouts with minmax to prevent too-narrow cards
-  // Mobile: 1 col (or 2 for 4-column layout)
-  // Tablet+: specified columns
-  const gridCols = {
-    2: 'grid-cols-1 sm:grid-cols-2',
-    3: 'grid-cols-1 sm:grid-cols-3',
-    4: 'grid-cols-2 sm:grid-cols-4',
-  };
-
   return (
     <div
       className={`
-        grid gap-2 sm:gap-3 mt-3
-        ${gridCols[columns]}
+        grid mt-3
+        ${compact ? 'gap-2 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]' : 'gap-3 [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]'}
         ${blur ? 'blur-sm grayscale-[40%]' : ''}
         ${className}
       `.trim()}

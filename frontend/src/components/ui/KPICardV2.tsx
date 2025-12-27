@@ -39,13 +39,13 @@ export function KPICardV2({
   loading = false,
   className = '',
 }: KPICardV2Props) {
-  // Trend badge colors
+  // Trend badge colors (up = green/positive, down = red/negative)
   const getTrendStyles = (direction: 'up' | 'down' | 'neutral') => {
     switch (direction) {
       case 'up':
-        return { text: 'text-red-500', bg: 'bg-red-50', arrow: '▲' };
+        return { text: 'text-green-600', bg: 'bg-green-50', arrow: '▲' };
       case 'down':
-        return { text: 'text-green-600', bg: 'bg-green-50', arrow: '▼' };
+        return { text: 'text-red-500', bg: 'bg-red-50', arrow: '▼' };
       default:
         return { text: 'text-[#547792]', bg: 'bg-[#94B4C1]/10', arrow: '―' };
     }

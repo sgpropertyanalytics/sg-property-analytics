@@ -16,7 +16,7 @@ import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { PreviewChartOverlay, ChartSlot, InlineCard, InlineCardGroup } from '../ui';
+import { PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformCompressionSeries,
@@ -236,7 +236,7 @@ export function AbsolutePsfChart({ height = 300 }) {
           </div>
 
           {/* KPI Row - Using standardized InlineCard components */}
-          <InlineCardGroup columns={3} blur={!isPremium}>
+          <InlineCardRow blur={!isPremium}>
             {latestData.ccr != null && (
               <InlineCard
                 label="CCR"
@@ -264,7 +264,7 @@ export function AbsolutePsfChart({ height = 300 }) {
                 trend={ocrChange > 0 ? 'up' : ocrChange < 0 ? 'down' : 'neutral'}
               />
             )}
-          </InlineCardGroup>
+          </InlineCardRow>
         </div>
 
         {/* Chart Area */}
