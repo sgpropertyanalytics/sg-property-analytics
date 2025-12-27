@@ -148,7 +148,7 @@ export function MacroOverviewContent() {
           {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">
               {/* KPI Summary Cards - Using standardized KPICardV2 */}
-              <KPICardV2Group columns={3} className="mb-4 md:mb-6">
+              <KPICardV2Group columns={4} className="mb-4 md:mb-6">
                 {/* Card 1: Market Momentum */}
                 <KPICardV2
                   title="Market Momentum"
@@ -247,6 +247,40 @@ export function MacroOverviewContent() {
                   })()}
                   footnote={getKpi('total_transactions')?.insight}
                   tooltip={getKpi('total_transactions')?.meta?.description}
+                  loading={kpis.loading}
+                />
+
+                {/* Card 4: Resale Velocity (3-month turnover) */}
+                <KPICardV2
+                  title="Resale Velocity"
+                  value={(() => {
+                    const kpi = getKpi('resale_velocity');
+                    if (!kpi?.value && kpi?.value !== 0) return '—';
+                    const { current_txns, prior_txns, total_units, annualized_velocity, pct_change } = kpi.meta || {};
+                    const direction = kpi.trend?.direction;
+                    const label = kpi.trend?.label;
+                    const arrow = direction === 'up' ? '▲' : direction === 'down' ? '▼' : '—';
+                    const colorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
+                    return (
+                      <>
+                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
+                          {kpi.formatted_value} <span className={`text-xs font-bold uppercase tracking-wider ${colorClass}`}>{label}</span>
+                        </div>
+                        {annualized_velocity != null && (
+                          <div className="text-[12px] sm:text-[14px] text-gray-600">
+                            {annualized_velocity}% annualized
+                          </div>
+                        )}
+                        {current_txns != null && total_units != null && (
+                          <div className="text-[10px] sm:text-[12px] text-gray-500">
+                            {current_txns?.toLocaleString()} txns / {total_units?.toLocaleString()} units
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                  footnote={getKpi('resale_velocity')?.insight}
+                  tooltip={getKpi('resale_velocity')?.meta?.description}
                   loading={kpis.loading}
                 />
               </KPICardV2Group>
