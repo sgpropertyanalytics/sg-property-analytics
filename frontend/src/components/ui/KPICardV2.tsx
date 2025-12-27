@@ -6,19 +6,14 @@ import React from 'react';
  * Strict anatomy with fixed layer heights:
  * ┌─────────────────────────────────────────┐
  * │ Layer 1: Header (h-6 = 24px)            │
- * │ LABEL                            [icon] │
+ * │ LABEL                                   │
  * ├─────────────────────────────────────────┤
  * │ Layer 2: Hero Data (h-12 = 48px)        │
  * │ $1,858  ▼7.1%                           │
  * ├─────────────────────────────────────────┤
- * │ Layer 3: Visual Slot (h-8 = 32px)       │
- * │ ~~~~~~~~●  or  ══════  or  [■■■□□]      │
+ * │ Layer 3: Context (h-8 = 32px)           │
+ * │ $2,001 (30 days ago)                    │
  * └─────────────────────────────────────────┘
- *
- * Visual Slot Types:
- * - trend: Sparkline (2px stroke, no fill, end dot)
- * - comparison: Bullet chart (two lines + tick)
- * - composition: Stacked bar (region segments)
  */
 
 interface KPICardV2Props {
@@ -29,19 +24,7 @@ interface KPICardV2Props {
     direction: 'up' | 'down' | 'neutral';
     label?: string;
   };
-  /** Visual slot type */
-  variant?: 'trend' | 'comparison' | 'composition';
-  /** Comparison data for bullet chart */
-  comparison?: {
-    primary: { label: string; value: number };
-    secondary: { label: string; value: number };
-  };
-  /** Composition data for stacked bar */
-  composition?: {
-    segments: Array<{ label: string; value: number; color: string }>;
-    total: number;
-  };
-  /** Context text */
+  /** Context text shown in Layer 3 */
   transition?: string;
   footerMeta?: string;
   loading?: boolean;
@@ -52,9 +35,6 @@ export function KPICardV2({
   title,
   value,
   trend,
-  variant = 'trend',
-  comparison,
-  composition,
   transition,
   footerMeta,
   loading = false,

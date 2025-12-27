@@ -71,58 +71,28 @@ export function SupplyKpiCards({
     );
   }
 
-  // Region breakdown for composition bars (using design system colors)
-  const regionColors = { CCR: '#213448', RCR: '#547792', OCR: '#94B4C1' };
-
   return (
     <KPICardV2Group columns={3}>
-      {/* KPI 1: Unsold Inventory - Composition (stacked bar) */}
+      {/* KPI 1: Unsold Inventory */}
       <KPICardV2
         title="Unsold Inventory"
         value={formatUnits(unsoldInventory)}
-        variant="composition"
-        composition={{
-          segments: [
-            { label: 'CCR', value: Math.round(unsoldInventory * 0.25), color: regionColors.CCR },
-            { label: 'RCR', value: Math.round(unsoldInventory * 0.45), color: regionColors.RCR },
-            { label: 'OCR', value: Math.round(unsoldInventory * 0.30), color: regionColors.OCR },
-          ],
-          total: unsoldInventory || 1,
-        }}
         transition="Developer stock"
         loading={loading}
       />
 
-      {/* KPI 2: Upcoming Launches - Composition (stacked bar) */}
+      {/* KPI 2: Upcoming Launches */}
       <KPICardV2
         title="Upcoming Launches"
         value={formatUnits(upcomingLaunches)}
-        variant="composition"
-        composition={{
-          segments: [
-            { label: 'CCR', value: Math.round(upcomingLaunches * 0.20), color: regionColors.CCR },
-            { label: 'RCR', value: Math.round(upcomingLaunches * 0.50), color: regionColors.RCR },
-            { label: 'OCR', value: Math.round(upcomingLaunches * 0.30), color: regionColors.OCR },
-          ],
-          total: upcomingLaunches || 1,
-        }}
         transition={`Targeting ${launchYear}`}
         loading={loading}
       />
 
-      {/* KPI 3: GLS Pipeline - Composition (stacked bar) */}
+      {/* KPI 3: GLS Pipeline */}
       <KPICardV2
         title="GLS Pipeline"
         value={includeGls ? formatUnits(glsPipeline) : '—'}
-        variant={includeGls ? 'composition' : 'trend'}
-        composition={includeGls ? {
-          segments: [
-            { label: 'CCR', value: Math.round(glsPipeline * 0.15), color: regionColors.CCR },
-            { label: 'RCR', value: Math.round(glsPipeline * 0.55), color: regionColors.RCR },
-            { label: 'OCR', value: Math.round(glsPipeline * 0.30), color: regionColors.OCR },
-          ],
-          total: glsPipeline || 1,
-        } : undefined}
         transition={includeGls ? 'Open tenders' : 'GLS excluded'}
         loading={loading}
       />
