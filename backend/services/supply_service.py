@@ -127,49 +127,53 @@ def _get_unsold_inventory_by_district() -> Dict[str, int]:
     Returns:
         Dict mapping district → unsold units (e.g., {"D01": 500, "D15": 200})
     """
-    imports = _get_imports()
-    db = imports['db']
-    func = imports['func']
-    SALE_TYPE_NEW = imports['SALE_TYPE_NEW']
-    exclude_outliers = imports['exclude_outliers']
+    try:
+        imports = _get_imports()
+        db = imports['db']
+        func = imports['func']
+        SALE_TYPE_NEW = imports['SALE_TYPE_NEW']
+        exclude_outliers = imports['exclude_outliers']
 
-    from services.new_launch_units import get_new_launch_projects
-    from models.transaction import Transaction
+        from services.new_launch_units import get_new_launch_projects
+        from models.transaction import Transaction
 
-    # Get all projects that are still new launches (no resales yet)
-    new_launch_projects = get_new_launch_projects()
+        # Get all projects that are still new launches (no resales yet)
+        new_launch_projects = get_new_launch_projects()
 
-    if not new_launch_projects:
+        if not new_launch_projects:
+            return {}
+
+        result = defaultdict(int)
+
+        for project_info in new_launch_projects:
+            project_name = project_info.get('project_name')
+            total_units = project_info.get('total_units') or 0
+            district = project_info.get('district')
+
+            if not project_name or not district:
+                continue
+
+            # Count new sale transactions for this project
+            new_sale_count = db.session.query(func.count(Transaction.id)).filter(
+                func.upper(Transaction.project_name) == project_name.upper(),
+                Transaction.sale_type == SALE_TYPE_NEW,
+                exclude_outliers(Transaction)
+            ).scalar() or 0
+
+            # Unsold = total - sold
+            unsold = max(0, total_units - new_sale_count)
+
+            if unsold > 0:
+                # Normalize district format
+                d = district.upper().strip()
+                if not d.startswith('D'):
+                    d = f'D{d.zfill(2)}'
+                result[d] += unsold
+
+        return dict(result)
+    except Exception as e:
+        logger.warning(f"Could not fetch unsold inventory: {e}")
         return {}
-
-    result = defaultdict(int)
-
-    for project_info in new_launch_projects:
-        project_name = project_info.get('project_name')
-        total_units = project_info.get('total_units') or 0
-        district = project_info.get('district')
-
-        if not project_name or not district:
-            continue
-
-        # Count new sale transactions for this project
-        new_sale_count = db.session.query(func.count(Transaction.id)).filter(
-            func.upper(Transaction.project_name) == project_name.upper(),
-            Transaction.sale_type == SALE_TYPE_NEW,
-            exclude_outliers(Transaction)
-        ).scalar() or 0
-
-        # Unsold = total - sold
-        unsold = max(0, total_units - new_sale_count)
-
-        if unsold > 0:
-            # Normalize district format
-            d = district.upper().strip()
-            if not d.startswith('D'):
-                d = f'D{d.zfill(2)}'
-            result[d] += unsold
-
-    return dict(result)
 
 
 def _get_upcoming_launches_by_district(launch_year: int) -> Dict[str, int]:
@@ -188,28 +192,32 @@ def _get_upcoming_launches_by_district(launch_year: int) -> Dict[str, int]:
     db = imports['db']
     func = imports['func']
 
-    from models.upcoming_launch import UpcomingLaunch
+    try:
+        from models.upcoming_launch import UpcomingLaunch
 
-    # Query grouped by district
-    results = db.session.query(
-        UpcomingLaunch.district,
-        func.sum(UpcomingLaunch.total_units).label('total_units')
-    ).filter(
-        UpcomingLaunch.launch_year == launch_year
-    ).group_by(
-        UpcomingLaunch.district
-    ).all()
+        # Query grouped by district
+        results = db.session.query(
+            UpcomingLaunch.district,
+            func.sum(UpcomingLaunch.total_units).label('total_units')
+        ).filter(
+            UpcomingLaunch.launch_year == launch_year
+        ).group_by(
+            UpcomingLaunch.district
+        ).all()
 
-    district_units = {}
-    for row in results:
-        if row.district and row.total_units:
-            # Normalize district format
-            d = row.district.upper().strip()
-            if not d.startswith('D'):
-                d = f'D{d.zfill(2)}'
-            district_units[d] = int(row.total_units)
+        district_units = {}
+        for row in results:
+            if row.district and row.total_units:
+                # Normalize district format
+                d = row.district.upper().strip()
+                if not d.startswith('D'):
+                    d = f'D{d.zfill(2)}'
+                district_units[d] = int(row.total_units)
 
-    return district_units
+        return district_units
+    except Exception as e:
+        logger.warning(f"Could not fetch upcoming launches: {e}")
+        return {}
 
 
 def _get_gls_pipeline_by_region() -> Dict[str, int]:
@@ -228,36 +236,40 @@ def _get_gls_pipeline_by_region() -> Dict[str, int]:
     db = imports['db']
     func = imports['func']
 
-    from models.gls_tender import GLSTender
-    from models.upcoming_launch import UpcomingLaunch
+    try:
+        from models.gls_tender import GLSTender
+        from models.upcoming_launch import UpcomingLaunch
 
-    # Get GLS tenders that are:
-    # 1. status = 'launched' (open for bidding)
-    # 2. NOT linked to any upcoming_launch (unassigned)
+        # Get GLS tenders that are:
+        # 1. status = 'launched' (open for bidding)
+        # 2. NOT linked to any upcoming_launch (unassigned)
 
-    # First, get IDs of GLS tenders that ARE linked to upcoming_launches
-    linked_gls_ids_subquery = db.session.query(UpcomingLaunch.gls_tender_id).filter(
-        UpcomingLaunch.gls_tender_id.isnot(None)
-    ).subquery()
+        # First, get IDs of GLS tenders that ARE linked to upcoming_launches
+        linked_gls_ids_subquery = db.session.query(UpcomingLaunch.gls_tender_id).filter(
+            UpcomingLaunch.gls_tender_id.isnot(None)
+        ).subquery()
 
-    # Query GLS tenders: launched AND not linked
-    results = db.session.query(
-        GLSTender.market_segment,
-        func.sum(GLSTender.estimated_units).label('total_units')
-    ).filter(
-        GLSTender.status == 'launched',
-        ~GLSTender.id.in_(linked_gls_ids_subquery.select())  # NOT linked - use .select() to avoid SAWarning
-    ).group_by(
-        GLSTender.market_segment
-    ).all()
+        # Query GLS tenders: launched AND not linked
+        results = db.session.query(
+            GLSTender.market_segment,
+            func.sum(GLSTender.estimated_units).label('total_units')
+        ).filter(
+            GLSTender.status == 'launched',
+            ~GLSTender.id.in_(linked_gls_ids_subquery.select())  # NOT linked - use .select() to avoid SAWarning
+        ).group_by(
+            GLSTender.market_segment
+        ).all()
 
-    region_units = {}
-    for row in results:
-        region = row.market_segment or 'Unknown'
-        if region in ['CCR', 'RCR', 'OCR'] and row.total_units:
-            region_units[region] = int(row.total_units)
+        region_units = {}
+        for row in results:
+            region = row.market_segment or 'Unknown'
+            if region in ['CCR', 'RCR', 'OCR'] and row.total_units:
+                region_units[region] = int(row.total_units)
 
-    return region_units
+        return region_units
+    except Exception as e:
+        logger.warning(f"Could not fetch GLS pipeline: {e}")
+        return {}
 
 
 # =============================================================================
