@@ -7,6 +7,7 @@ Endpoints:
 - /filter-options - Available filter values for all dimensions
 """
 
+from datetime import date
 from flask import request, jsonify
 from routes.analytics import analytics_bp
 
@@ -43,6 +44,12 @@ def filter_options():
         # Get date range (excluding outliers)
         min_date = db.session.query(func.min(Transaction.transaction_date)).filter(outlier_filter).scalar()
         max_date = db.session.query(func.max(Transaction.transaction_date)).filter(outlier_filter).scalar()
+
+        # Cap max_date to today to prevent future-dated data from corrupting
+        # the date range calculation (e.g., 12M filter would use wrong anchor)
+        today = date.today()
+        if max_date and max_date > today:
+            max_date = today
 
         # Get PSF range (excluding outliers)
         psf_stats = db.session.query(
