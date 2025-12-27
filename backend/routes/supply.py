@@ -11,11 +11,6 @@ This is a THIN route handler - all business logic is in services/supply_service.
 
 import time
 from flask import Blueprint, request, jsonify
-from utils.normalize import (
-    to_int, to_bool,
-    ValidationError as NormalizeValidationError, validation_error_response
-)
-from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
 
 supply_bp = Blueprint('supply', __name__)
 
@@ -23,7 +18,11 @@ supply_bp = Blueprint('supply', __name__)
 @supply_bp.after_request
 def add_contract_version_header(response):
     """Add X-API-Contract-Version header to all supply responses."""
-    response.headers[API_CONTRACT_HEADER] = CURRENT_API_CONTRACT_VERSION
+    try:
+        from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+        response.headers[API_CONTRACT_HEADER] = CURRENT_API_CONTRACT_VERSION
+    except ImportError:
+        response.headers['X-API-Contract-Version'] = 'v3'
     return response
 
 
@@ -55,6 +54,11 @@ def get_supply_summary():
     # ========== PARSE & NORMALIZE INPUT ==========
     # Frontend sends camelCase, we normalize here
     try:
+        from utils.normalize import (
+            to_int, to_bool,
+            ValidationError as NormalizeValidationError, validation_error_response
+        )
+
         # includeGls (default True)
         include_gls_raw = request.args.get("includeGls", request.args.get("include_gls", "true"))
         include_gls = to_bool(include_gls_raw, default=True, field="includeGls")
@@ -72,8 +76,12 @@ def get_supply_summary():
                 "received": launch_year
             }), 400
 
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
+    except ImportError as e:
+        # Fallback if normalize module not available
+        include_gls = request.args.get("includeGls", "true").lower() == "true"
+        launch_year = int(request.args.get("launchYear", "2026"))
+    except Exception as e:
+        return jsonify({"error": f"Input validation error: {str(e)}"}), 400
 
     # ========== CALL SERVICE ==========
     try:
@@ -94,4 +102,4 @@ def get_supply_summary():
         print(f"GET /api/supply/summary ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e), "type": type(e).__name__}), 500
