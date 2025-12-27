@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getFloorLiquidityHeatmap } from '../../api/client';
 import {
   FLOOR_LEVELS,
@@ -19,13 +18,18 @@ import { assertKnownVersion } from '../../adapters';
  * Shows which floor zones have the highest resale velocity by project.
  * Uses Z-score normalization within each project for fair comparison.
  *
- * X-axis: Floor Zones (Low → Luxury)
- * Y-axis: Project Names (alphabetical)
- * Cell color: Liquidity Score (Z-score of velocity within project)
+ * IMPORTANT: This component does NOT use PowerBIFilterContext.
+ * It receives filters as props from the parent component (ProjectDeepDive).
+ * This is intentional - PowerBIFilterContext only affects Market Pulse page.
+ *
+ * @param {string} bedroom - Bedroom filter (optional)
+ * @param {string} segment - Market segment filter (CCR/RCR/OCR) (optional)
+ * @param {string} district - District filter (optional)
+ * @param {string} highlightProject - Project to highlight (optional)
  */
 export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightProject: _highlightProject }) {
-  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
+  // Create a stable filter key for dependency tracking (no PowerBIFilterContext)
+  const filterKey = useMemo(() => `${bedroom || ''}:${segment || ''}:${district || ''}`, [bedroom, segment, district]);
 
   // Local state for window toggle
   const [windowMonths, setWindowMonths] = useState(12);
@@ -40,9 +44,8 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
   // Data fetching with useAbortableQuery - automatic abort/stale handling
   const { data: apiResponse, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
-      const params = buildApiParams({
-        window_months: windowMonths
-      });
+      // Build params from props directly (not PowerBIFilterContext)
+      const params = { window_months: windowMonths };
       if (bedroom) params.bedroom = bedroom;
       if (segment) params.segment = segment;
       if (district) params.district = district;
@@ -57,7 +60,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
         meta: response.data?.meta || { exclusions: {} }
       };
     },
-    [debouncedFilterKey, windowMonths, bedroom, segment, district],
+    [filterKey, windowMonths],
     { initialData: { data: { projects: [], floor_zone_order: [] }, meta: { exclusions: {} } } }
   );
 

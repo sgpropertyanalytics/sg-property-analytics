@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useAbortableQuery } from '../../hooks';
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { DistrictMicroChart } from './DistrictMicroChart';
@@ -12,6 +11,26 @@ import { ChartSkeleton } from '../common/ChartSkeleton';
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
 
 /**
+ * Convert period string to date_from for API
+ * @param {string} period - '3m', '6m', '12m', or 'all'
+ * @returns {string|null} ISO date string or null for 'all'
+ */
+function periodToDateFrom(period) {
+  if (period === 'all') return null;
+
+  const today = new Date();
+  let months = 12; // default
+
+  if (period === '3m') months = 3;
+  else if (period === '6m') months = 6;
+  else if (period === '12m') months = 12;
+
+  const date = new Date(today);
+  date.setMonth(date.getMonth() - months);
+  return date.toISOString().split('T')[0]; // YYYY-MM-DD
+}
+
+/**
  * MarketMomentumGrid - 28-District Price Growth Visualization
  *
  * Displays a grid of micro-charts showing historical price growth for all districts.
@@ -19,24 +38,42 @@ const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
  * - Median PSF trend (line, region-colored)
  * - Total transaction value (background bars)
  *
- * Layout:
- * - Desktop (lg+): 7 columns × 4 rows
- * - Tablet (md): 4 columns × 7 rows
- * - Mobile: 2 columns × 14 rows
+ * IMPORTANT: This component does NOT use PowerBIFilterContext.
+ * It receives filters as props from the parent component (DistrictDeepDive).
+ * This is intentional - PowerBIFilterContext only affects Market Pulse page.
+ *
+ * @param {string} period - '3m', '6m', '12m', or 'all'
+ * @param {string} bedroom - 'all', '1', '2', '3', '4', '5'
+ * @param {string} saleType - 'all', 'New Sale', 'Resale'
  */
-export function MarketMomentumGrid() {
-  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey, applyCrossFilter, filters } = usePowerBIFilters();
+export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType = 'all' }) {
+  // Create a stable filter key for dependency tracking
+  const filterKey = useMemo(() => `${period}:${bedroom}:${saleType}`, [period, bedroom, saleType]);
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
-      // Single API call for all districts, grouped by quarter
-      // Uses excludeHighlight: true because this is a time-series visualization
-      const params = buildApiParams({
+      // Build API params from props (not PowerBIFilterContext)
+      const params = {
         group_by: 'quarter,district',
         metrics: 'median_psf,total_value',
-      }, { excludeHighlight: true });
+      };
+
+      // Add date_from based on period
+      const dateFrom = periodToDateFrom(period);
+      if (dateFrom) {
+        params.date_from = dateFrom;
+      }
+
+      // Add bedroom filter
+      if (bedroom && bedroom !== 'all') {
+        params.bedrooms = bedroom;
+      }
+
+      // Add sale type filter
+      if (saleType && saleType !== 'all') {
+        params.sale_type = saleType;
+      }
 
       const response = await getAggregate(params, { signal });
 
@@ -72,13 +109,15 @@ export function MarketMomentumGrid() {
 
       return districtData;
     },
-    [debouncedFilterKey],
+    [filterKey],
     { initialData: {} }
   );
 
-  // Handle district click - apply cross-filter
-  const handleDistrictClick = (district) => {
-    applyCrossFilter('location', 'district', district);
+  // Handle district click - no cross-filter since we're not using PowerBIFilterContext
+  // This is a visual-only interaction for now (could add onClick prop in future)
+  const handleDistrictClick = (_district) => {
+    // No-op: District clicks don't cross-filter in District Deep Dive
+    // The heatmap controls the filters, not individual chart interactions
   };
 
   // Loading skeleton
@@ -158,7 +197,7 @@ export function MarketMomentumGrid() {
           {/* Data indicator */}
           <div className="flex flex-wrap items-center gap-x-3 md:gap-x-4 gap-y-1 text-[10px]">
             <span className="text-[#547792] font-medium">
-              {isSaleType.resale(filters.saleType) ? 'Resale Only' : isSaleType.newSale(filters.saleType) ? 'New Sale Only' : 'All Sale Types'}
+              {isSaleType.resale(saleType) ? 'Resale Only' : isSaleType.newSale(saleType) ? 'New Sale Only' : 'All Sale Types'}
             </span>
             <span className="text-[#94B4C1]">{ALL_DISTRICTS.length} districts</span>
           </div>

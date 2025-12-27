@@ -14,6 +14,7 @@ import {
   getTierBadge,
   getSpreadLabel,
 } from './utils';
+import { BEDROOM_OPTIONS, PERIOD_OPTIONS, SALE_TYPE_OPTIONS } from './constants';
 
 // =============================================================================
 // INFO TOOLTIP
@@ -380,7 +381,19 @@ export function RegionSummaryBar({ districtData, meta: _meta }) {
 // LIQUIDITY RANKING TABLE
 // =============================================================================
 
-export function LiquidityRankingTable({ districtData }) {
+export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleType, selectedPeriod }) {
+  // Build filter description for display
+  const activeFilters = useMemo(() => {
+    const parts = [];
+    const period = PERIOD_OPTIONS.find(o => o.value === selectedPeriod);
+    if (period && selectedPeriod !== 'all') parts.push(period.fullLabel || period.label);
+    const bed = BEDROOM_OPTIONS.find(o => o.value === selectedBed);
+    if (bed && selectedBed !== 'all') parts.push(bed.fullLabel || bed.label);
+    const saleType = SALE_TYPE_OPTIONS.find(o => o.value === selectedSaleType);
+    if (saleType && selectedSaleType !== 'all') parts.push(saleType.fullLabel || saleType.label);
+    return parts.length > 0 ? parts.join(' · ') : null;
+  }, [selectedBed, selectedSaleType, selectedPeriod]);
+
   // Sort config state
   const [sortConfig, setSortConfig] = useState({
     column: 'liquidity_score',
@@ -499,6 +512,11 @@ export function LiquidityRankingTable({ districtData }) {
           </span>
           <span className="sm:hidden">Sorted by liquidity score</span>
         </p>
+        {activeFilters && (
+          <p className="text-[10px] sm:text-xs text-[#547792] mt-1">
+            <span className="font-medium">Filtered by:</span> {activeFilters}
+          </p>
+        )}
       </div>
 
       {/* Mobile/Tablet Card View - shown below lg breakpoint (1024px) */}

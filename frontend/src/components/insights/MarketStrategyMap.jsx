@@ -388,15 +388,60 @@ function RegionSummaryBar({ districtData }) {
 // MAIN COMPONENT
 // =============================================================================
 
-export default function MarketStrategyMap() {
+/**
+ * MarketStrategyMap Component
+ *
+ * Supports both controlled and uncontrolled modes:
+ * - Controlled: Pass selectedPeriod, selectedBed, selectedSaleType, onFilterChange props
+ * - Uncontrolled: Uses internal state (legacy behavior)
+ */
+export default function MarketStrategyMap({
+  selectedPeriod: controlledPeriod,
+  selectedBed: controlledBed,
+  selectedSaleType: controlledSaleType,
+  onFilterChange,
+}) {
   const { isPremium } = useSubscription();
   const [districtData, setDistrictData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedBed, setSelectedBed] = useState('all');
-  const [selectedSaleType, setSelectedSaleType] = useState('all');
-  const [selectedPeriod, setSelectedPeriod] = useState('12m');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
+
+  // Support both controlled and uncontrolled modes
+  const [internalBed, setInternalBed] = useState('all');
+  const [internalSaleType, setInternalSaleType] = useState('all');
+  const [internalPeriod, setInternalPeriod] = useState('12m');
+
+  // Use controlled values if provided, otherwise use internal state
+  const isControlled = onFilterChange !== undefined;
+  const selectedBed = isControlled ? controlledBed : internalBed;
+  const selectedSaleType = isControlled ? controlledSaleType : internalSaleType;
+  const selectedPeriod = isControlled ? controlledPeriod : internalPeriod;
+
+  // Unified setter that works in both modes
+  const setSelectedBed = (value) => {
+    if (isControlled) {
+      onFilterChange('bed', value);
+    } else {
+      setInternalBed(value);
+    }
+  };
+
+  const setSelectedSaleType = (value) => {
+    if (isControlled) {
+      onFilterChange('saleType', value);
+    } else {
+      setInternalSaleType(value);
+    }
+  };
+
+  const setSelectedPeriod = (value) => {
+    if (isControlled) {
+      onFilterChange('period', value);
+    } else {
+      setInternalPeriod(value);
+    }
+  };
 
   // Abort/stale request protection
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();

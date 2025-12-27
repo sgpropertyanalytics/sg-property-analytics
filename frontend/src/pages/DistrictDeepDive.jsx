@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { DistrictLiquidityMap, MarketStrategyMap } from '../components/insights';
 import { ChartWatermark } from '../components/ui';
 import { MarketMomentumGrid, GrowthDumbbellChart } from '../components/powerbi';
@@ -156,23 +156,62 @@ function DistrictVolumeContent() {
 /**
  * District (Price/PSF) Tab Content
  * Features: Market Strategy Map, Market Momentum Grid, Growth Dumbbell Chart
+ *
+ * IMPORTANT: This tab manages its own filter state (period, bed, saleType).
+ * These filters are shared across all three charts in this tab.
+ * This is ISOLATED from the PowerBIFilterContext sidebar (which only affects Market Pulse).
  */
 function DistrictPriceContent() {
+  // Shared filter state for all charts in this tab
+  const [selectedPeriod, setSelectedPeriod] = useState('12m');
+  const [selectedBed, setSelectedBed] = useState('all');
+  const [selectedSaleType, setSelectedSaleType] = useState('all');
+
+  // Callback for filter changes from MarketStrategyMap
+  const handleFilterChange = useCallback((filterType, value) => {
+    switch (filterType) {
+      case 'period':
+        setSelectedPeriod(value);
+        break;
+      case 'bed':
+        setSelectedBed(value);
+        break;
+      case 'saleType':
+        setSelectedSaleType(value);
+        break;
+      default:
+        break;
+    }
+  }, []);
+
   return (
     <div className="space-y-6">
-      {/* District Price Map */}
+      {/* District Price Map - controls the shared filters */}
       <ChartWatermark>
-        <MarketStrategyMap />
+        <MarketStrategyMap
+          selectedPeriod={selectedPeriod}
+          selectedBed={selectedBed}
+          selectedSaleType={selectedSaleType}
+          onFilterChange={handleFilterChange}
+        />
       </ChartWatermark>
 
-      {/* Market Momentum Grid - Median PSF by district */}
+      {/* Market Momentum Grid - uses shared filters (no PowerBIFilterContext) */}
       <ChartWatermark>
-        <MarketMomentumGrid />
+        <MarketMomentumGrid
+          period={selectedPeriod}
+          bedroom={selectedBed}
+          saleType={selectedSaleType}
+        />
       </ChartWatermark>
 
-      {/* Growth Leaderboard - Dumbbell chart comparing start vs end PSF */}
+      {/* Growth Leaderboard - uses shared filters (no PowerBIFilterContext) */}
       <ChartWatermark>
-        <GrowthDumbbellChart />
+        <GrowthDumbbellChart
+          period={selectedPeriod}
+          bedroom={selectedBed}
+          saleType={selectedSaleType}
+        />
       </ChartWatermark>
     </div>
   );

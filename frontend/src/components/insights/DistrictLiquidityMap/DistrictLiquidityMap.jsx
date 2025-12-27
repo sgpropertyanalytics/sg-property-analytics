@@ -502,7 +502,12 @@ export default function DistrictLiquidityMap() {
       {/* District Ranking Table */}
       {!loading && !error && districtData.length > 0 && (
         <div className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
-          <LiquidityRankingTable districtData={districtData} />
+          <LiquidityRankingTable
+            districtData={districtData}
+            selectedBed={selectedBed}
+            selectedSaleType={selectedSaleType}
+            selectedPeriod={selectedPeriod}
+          />
         </div>
       )}
 
