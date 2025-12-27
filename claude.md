@@ -4,7 +4,7 @@
 
 | Resource | Purpose |
 |----------|---------|
-| **Skills** | `/sql-guardrails`, `/contract-async-guardrails`, `/data-standards`, `/dashboard-guardrails` |
+| **Skills** | `/sql-guardrails`, `/input-boundary-guardrails`, `/contract-async-guardrails`, `/data-standards`, `/dashboard-guardrails` |
 | **Docs** | `docs/backend.md` (SQL), `docs/frontend.md` (filters), `docs/architecture.md` |
 
 ---
@@ -106,6 +106,27 @@ Tier 2 (New <Jun'23): <600, <850, <1200, <1500, ≥1500 sqft
 Tier 3 (Resale):      <600, <950, <1350, <1650, ≥1650 sqft
 
 Use: classifyBedroomThreeTier(area, saleType, date)
+```
+
+## Card 11: Input Boundary Rules
+```
+Golden Rule: Normalize ONCE at boundary → Trust internally
+
+BOUNDARY LAYER (route handlers):
+[ ] Use to_int(), to_date(), to_bool() from utils/normalize.py
+[ ] Handle None explicitly
+[ ] Invalid input → 400 (not 500)
+[ ] Error includes input type
+
+INTERNAL ZONE (services):
+[ ] NO int(), strptime(), json.loads()
+[ ] Types already correct
+[ ] Assertions guard assumptions
+
+Canonical Types:
+  Date → datetime.date    | Money → int (cents)
+  Time → datetime (UTC)   | Percent → float (0-1)
+  IDs → str               | Flags → bool
 ```
 
 ---
@@ -240,6 +261,7 @@ Use: getRegionForDistrict('D07') → 'CCR'
 | Skill | When to Activate |
 |-------|------------------|
 | `/sql-guardrails` | Any SQL query |
+| `/input-boundary-guardrails` | Any route handler accepting external input |
 | `/contract-async-guardrails` | Any frontend data fetching |
 | `/data-standards` | Any classification/label |
 | `/dashboard-guardrails` | Any chart modification |
