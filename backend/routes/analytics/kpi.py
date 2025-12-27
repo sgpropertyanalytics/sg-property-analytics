@@ -87,7 +87,7 @@ def kpi_summary():
         bedroom_param = request.args.get('bedroom')
         if bedroom_param:
             bedrooms = [int(b.strip()) for b in bedroom_param.split(',') if b.strip().isdigit()]
-            filter_sql += f" AND num_bedrooms IN :bedrooms"
+            filter_sql += f" AND bedroom_count IN :bedrooms"
             params['bedrooms'] = tuple(bedrooms)
 
         # Segment filter

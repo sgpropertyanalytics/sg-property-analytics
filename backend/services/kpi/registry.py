@@ -32,13 +32,24 @@ from services.kpi.new_launch_premium import SPEC as new_launch_premium_spec
 from services.kpi.market_momentum import SPEC as market_momentum_spec
 
 
-# Enabled KPIs (order matters for display)
-ENABLED_KPIS = [
-    median_psf_spec,
-    price_spread_spec,
-    new_launch_premium_spec,
-    market_momentum_spec,
+# Explicit order - frontend relies on this (stable, deterministic)
+KPI_ORDER = [
+    'median_psf',
+    'price_spread',
+    'new_launch_premium',
+    'market_momentum',
 ]
+
+# Registry by ID for lookup
+KPI_REGISTRY = {
+    'median_psf': median_psf_spec,
+    'price_spread': price_spread_spec,
+    'new_launch_premium': new_launch_premium_spec,
+    'market_momentum': market_momentum_spec,
+}
+
+# Enabled KPIs in explicit order
+ENABLED_KPIS = [KPI_REGISTRY[kpi_id] for kpi_id in KPI_ORDER]
 
 
 # =============================================================================
@@ -103,10 +114,24 @@ def run_all_kpis(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
         List of KPIResult dicts ready for JSON serialization
     """
     results = []
+    errors = []
 
     for spec in ENABLED_KPIS:
         kpi_result = run_kpi(spec, filters)
-        results.append(asdict(kpi_result))
+        result_dict = asdict(kpi_result)
+
+        # Track errors for debugging
+        if result_dict.get('meta', {}).get('error'):
+            errors.append({
+                'kpi_id': spec.kpi_id,
+                'error': result_dict['meta']['error']
+            })
+
+        results.append(result_dict)
+
+    # Log summary if any errors occurred
+    if errors:
+        logger.warning(f"KPI run completed with {len(errors)} errors: {errors}")
 
     return results
 
@@ -117,13 +142,13 @@ def get_kpi_by_id(kpi_id: str, filters: Dict[str, Any]) -> Dict[str, Any]:
 
     Useful for testing or when frontend only needs one metric.
     """
-    for spec in ENABLED_KPIS:
-        if spec.kpi_id == kpi_id:
-            return asdict(run_kpi(spec, filters))
+    spec = KPI_REGISTRY.get(kpi_id)
+    if spec:
+        return asdict(run_kpi(spec, filters))
 
     return {
         "kpi_id": kpi_id,
-        "error": f"Unknown KPI: {kpi_id}"
+        "error": f"Unknown KPI: {kpi_id}. Available: {list(KPI_REGISTRY.keys())}"
     }
 
 
