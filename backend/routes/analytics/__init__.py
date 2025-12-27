@@ -41,6 +41,7 @@ from routes.analytics import dashboard
 from routes.analytics import aggregate
 from routes.analytics import filters
 from routes.analytics import kpi
+from routes.analytics import kpi_v2
 from routes.analytics import admin
 from routes.analytics import deprecated
 from routes.analytics import precomputed
