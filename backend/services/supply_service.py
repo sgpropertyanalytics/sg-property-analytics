@@ -27,19 +27,35 @@ from datetime import date
 from typing import Dict, Any, List, Optional
 from collections import defaultdict
 
-from models.database import db
-from sqlalchemy import func, text
-from constants import (
-    get_region_for_district,
-    get_districts_for_region,
-    CCR_DISTRICTS,
-    RCR_DISTRICTS,
-    OCR_DISTRICTS,
-    SALE_TYPE_NEW,
-)
-from db.sql import exclude_outliers, OUTLIER_FILTER
-
 logger = logging.getLogger('supply_service')
+
+
+def _get_imports():
+    """Lazy imports to avoid import-time errors in production."""
+    from models.database import db
+    from sqlalchemy import func, text
+    from constants import (
+        get_region_for_district,
+        get_districts_for_region,
+        CCR_DISTRICTS,
+        RCR_DISTRICTS,
+        OCR_DISTRICTS,
+        SALE_TYPE_NEW,
+    )
+    from db.sql import exclude_outliers, OUTLIER_FILTER
+    return {
+        'db': db,
+        'func': func,
+        'text': text,
+        'get_region_for_district': get_region_for_district,
+        'get_districts_for_region': get_districts_for_region,
+        'CCR_DISTRICTS': CCR_DISTRICTS,
+        'RCR_DISTRICTS': RCR_DISTRICTS,
+        'OCR_DISTRICTS': OCR_DISTRICTS,
+        'SALE_TYPE_NEW': SALE_TYPE_NEW,
+        'exclude_outliers': exclude_outliers,
+        'OUTLIER_FILTER': OUTLIER_FILTER,
+    }
 
 
 # =============================================================================
@@ -111,6 +127,12 @@ def _get_unsold_inventory_by_district() -> Dict[str, int]:
     Returns:
         Dict mapping district → unsold units (e.g., {"D01": 500, "D15": 200})
     """
+    imports = _get_imports()
+    db = imports['db']
+    func = imports['func']
+    SALE_TYPE_NEW = imports['SALE_TYPE_NEW']
+    exclude_outliers = imports['exclude_outliers']
+
     from services.new_launch_units import get_new_launch_projects
     from models.transaction import Transaction
 
@@ -162,6 +184,10 @@ def _get_upcoming_launches_by_district(launch_year: int) -> Dict[str, int]:
     Returns:
         Dict mapping district → total units (e.g., {"D09": 800, "D21": 500})
     """
+    imports = _get_imports()
+    db = imports['db']
+    func = imports['func']
+
     from models.upcoming_launch import UpcomingLaunch
 
     # Query grouped by district
@@ -198,6 +224,10 @@ def _get_gls_pipeline_by_region() -> Dict[str, int]:
     Returns:
         Dict mapping region → estimated units (e.g., {"CCR": 2000, "RCR": 3000, "OCR": 1500})
     """
+    imports = _get_imports()
+    db = imports['db']
+    func = imports['func']
+
     from models.gls_tender import GLSTender
     from models.upcoming_launch import UpcomingLaunch
 
@@ -249,6 +279,9 @@ def _merge_district_data(
 
     Note: GLS pipeline is only available at region level, so glsPipeline=0 for all districts.
     """
+    imports = _get_imports()
+    get_region_for_district = imports['get_region_for_district']
+
     # Collect all districts
     all_districts = set(unsold_by_district.keys()) | set(upcoming_by_district.keys())
 
