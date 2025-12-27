@@ -305,7 +305,7 @@ export function BeadsChart({ height = 300 }) {
         {/* How to Interpret - shrink-0 (matches PriceDistributionChart) */}
         <div className="shrink-0">
           <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5">
               <div><span className="font-semibold text-[#213448]">X-Position</span> — Volume-weighted median price.</div>
               <div><span className="font-semibold text-[#213448]">Bubble Size</span> — Number of transactions.</div>
               <div><span className="font-semibold text-[#213448]">Color</span> — Bedroom type (1BR to 5BR+).</div>
