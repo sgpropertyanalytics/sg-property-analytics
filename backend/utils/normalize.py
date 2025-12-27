@@ -376,6 +376,55 @@ def validation_error_response(error: ValidationError) -> tuple:
     return response, 400
 
 
+# ============================================================================
+# SERVICE LAYER COERCION (for internal use)
+# ============================================================================
+
+def coerce_to_date(value) -> Optional[date]:
+    """
+    Coerce value to date object. For use in SERVICE LAYER only.
+
+    Services expect date objects internally, but this function provides
+    backward-compatibility for legacy code that may still pass strings.
+
+    Use Case:
+        Routes normalize with to_date() → pass date objects to services
+        Services use coerce_to_date() for legacy safety
+
+    Accepts:
+        - None (passthrough)
+        - date object (passthrough)
+        - datetime object (extracts .date())
+        - string 'YYYY-MM-DD' (legacy, parsed)
+
+    Raises:
+        ValueError: If value cannot be coerced to date
+
+    Example:
+        from utils.normalize import coerce_to_date
+
+        def build_filter_conditions(filters):
+            if filters.get('date_from'):
+                from_dt = coerce_to_date(filters['date_from'])
+                conditions.append(Transaction.date >= from_dt)
+    """
+    if value is None:
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, str):
+        # Support both YYYY-MM-DD and YYYY-MM
+        try:
+            if len(value) == 7:  # YYYY-MM
+                return datetime.strptime(value, "%Y-%m").date()
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        except ValueError:
+            raise ValueError(f"Cannot parse date string: {value!r}")
+    raise ValueError(f"Cannot coerce {type(value).__name__} to date: {value!r}")
+
+
 # Convenience aliases
 normalize_int = to_int
 normalize_float = to_float
@@ -385,3 +434,4 @@ normalize_datetime = to_datetime
 normalize_str = to_str
 normalize_list = to_list
 normalize_enum = to_enum
+coerce_date = coerce_to_date  # Alias

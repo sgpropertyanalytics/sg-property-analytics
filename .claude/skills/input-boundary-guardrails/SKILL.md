@@ -190,6 +190,98 @@ def get_data(
 
 ---
 
+## Part 4b: Service Layer Type Contracts
+
+### The Problem
+
+Even with proper boundary normalization, services can still crash if they assume string inputs when routes pass objects:
+
+```python
+# Route (correctly normalized)
+date_from = to_date(request.args.get('date_from'))  # Returns date object
+filters['date_from'] = date_from
+
+# Service (WRONG - assumes string)
+def validate_request(filters):
+    date_from = filters.get('date_from')
+    parsed = datetime.strptime(date_from, '%Y-%m-%d')  # ❌ TypeError!
+```
+
+### The Solution: Centralized Coerce Function
+
+Use `coerce_to_date()` from `utils/normalize.py` - the single source of truth for service-layer type coercion:
+
+```python
+# utils/normalize.py (centralized)
+from datetime import date, datetime
+
+def coerce_to_date(value) -> Optional[date]:
+    """
+    Coerce value to date object. For use in SERVICE LAYER only.
+
+    Accepts:
+        - None (passthrough)
+        - date object (passthrough)
+        - datetime object (extracts .date())
+        - string 'YYYY-MM-DD' (legacy, parsed)
+
+    Raises:
+        ValueError: If value cannot be coerced to date
+    """
+    if value is None:
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, str):
+        return datetime.strptime(value, '%Y-%m-%d').date()
+    raise ValueError(f"Cannot coerce {type(value).__name__} to date")
+```
+
+### Service Layer Pattern
+
+```python
+# services/dashboard_service.py
+from utils.normalize import coerce_to_date
+
+def build_filter_conditions(filters: Dict[str, Any]) -> List:
+    conditions = []
+
+    # Date range - coerce for legacy safety
+    if filters.get('date_from'):
+        try:
+            from_dt = coerce_to_date(filters['date_from'])
+            conditions.append(Transaction.transaction_date >= from_dt)
+        except ValueError:
+            pass  # Invalid date, skip filter
+
+    return conditions
+```
+
+### Why This Pattern?
+
+| Scenario | `strptime()` | `coerce_to_date()` |
+|----------|--------------|---------------------|
+| Route passes `date` object | ❌ TypeError | ✅ Passthrough |
+| Route passes `datetime` | ❌ TypeError | ✅ Extracts `.date()` |
+| Legacy code passes string | ✅ Works | ✅ Parses string |
+| `None` value | ❌ 500 error | ✅ Returns `None` |
+| Invalid string | ❌ 500 error | ✅ ValueError caught |
+
+### Checklist for Service Functions
+
+```
+WHEN RECEIVING FILTER DICTS:
+[ ] Import from utils.normalize import coerce_to_date
+[ ] Use coerce_to_date() not strptime()
+[ ] Handle ValueError gracefully
+[ ] Document expected types in function signature
+[ ] Add type hints: date_from: date | None
+```
+
+---
+
 ## Part 5: Centralized Normalize Utilities
 
 ### Create `/backend/utils/normalize.py`
@@ -433,11 +525,17 @@ INPUT BOUNDARY GUARDRAILS
 GOLDEN RULE:
 Normalize ONCE at boundary → Trust internally
 
-BOUNDARY LAYER:
+BOUNDARY LAYER (route handlers):
 [ ] to_int(), to_date(), to_bool() from normalize.py
 [ ] None handling explicit
 [ ] Invalid → 400 (not 500)
 [ ] Error includes input type
+
+SERVICE LAYER (internal functions):
+[ ] Use _coerce_to_date() not strptime()
+[ ] Expect objects, accept strings for legacy
+[ ] Handle ValueError gracefully
+[ ] Type hints on function signatures
 
 INTERNAL ZONE:
 [ ] NO int(), strptime(), json.loads()
@@ -445,6 +543,7 @@ INTERNAL ZONE:
 [ ] Assertions guard assumptions
 
 FORBIDDEN:
+❌ strptime() on filter dict values (use _coerce_to_date())
 ❌ Parsing in business logic
 ❌ Implicit type assumptions
 ❌ Scattered type conversions

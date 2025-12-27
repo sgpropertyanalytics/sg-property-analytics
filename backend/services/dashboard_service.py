@@ -26,7 +26,7 @@ import time
 import hashlib
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Dict, Any, List, Optional
 from functools import wraps
 import threading
@@ -175,6 +175,10 @@ class ValidationError(Exception):
     pass
 
 
+# Import centralized coercion utility
+from utils.normalize import coerce_to_date as _coerce_to_date
+
+
 def validate_request(filters: Dict[str, Any], panels: List[str], options: Dict[str, Any]) -> None:
     """
     Validate request parameters to prevent abuse and invalid queries.
@@ -185,12 +189,13 @@ def validate_request(filters: Dict[str, Any], panels: List[str], options: Dict[s
     errors = []
 
     # Date range limit
+    # Note: Routes should pass date objects (via to_date()), but we accept strings for legacy compatibility
     date_from = filters.get('date_from')
     date_to = filters.get('date_to')
     if date_from and date_to:
         try:
-            from_dt = datetime.strptime(date_from, '%Y-%m-%d')
-            to_dt = datetime.strptime(date_to, '%Y-%m-%d')
+            from_dt = _coerce_to_date(date_from)
+            to_dt = _coerce_to_date(date_to)
             if (to_dt - from_dt).days > MAX_DATE_RANGE_DAYS:
                 errors.append(f"Date range exceeds {MAX_DATE_RANGE_DAYS} days limit")
             if from_dt > to_dt:
@@ -284,16 +289,17 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
     conditions.append(exclude_outliers(Transaction))
 
     # Date range
+    # Note: Routes should pass date objects (via to_date()), but we accept strings for legacy compatibility
     if filters.get('date_from'):
         try:
-            from_dt = datetime.strptime(filters['date_from'], '%Y-%m-%d')
+            from_dt = _coerce_to_date(filters['date_from'])
             conditions.append(Transaction.transaction_date >= from_dt)
         except ValueError:
             pass
 
     if filters.get('date_to'):
         try:
-            to_dt = datetime.strptime(filters['date_to'], '%Y-%m-%d')
+            to_dt = _coerce_to_date(filters['date_to'])
             conditions.append(Transaction.transaction_date <= to_dt)
         except ValueError:
             pass
