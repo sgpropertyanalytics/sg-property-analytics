@@ -116,20 +116,18 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "label": "vs prev 90d"
         }
 
-    # Format the primary value as growth % (the main story)
+    # Format the primary value as growth % with PSF context beside it
     if pct_change is not None:
-        if pct_change >= 0:
-            formatted_value = f"+{round(pct_change, 1)}%"
+        pct_str = f"+{round(pct_change, 1)}%" if pct_change >= 0 else f"{round(pct_change, 1)}%"
+        if prev and prev_count > 0:
+            formatted_value = f"{pct_str} (Current: ${round(current):,} | Previous: ${round(prev):,})"
         else:
-            formatted_value = f"{round(pct_change, 1)}%"
+            formatted_value = f"{pct_str} (Current: ${round(current):,})"
     else:
         formatted_value = "—"
 
-    # Build insight - show rolling 90D context with PSF values (2 rows)
-    if prev and prev_count > 0:
-        insight = f"Rolling 90D Q-o-Q Median PSF\n{{Current: ${round(current):,} | Previous: ${round(prev):,}}}"
-    else:
-        insight = f"Rolling 90D Q-o-Q Median PSF\n{{Current: ${round(current):,}}}"
+    # Build insight - rolling 90D context (footer only)
+    insight = "Rolling 90D Q-o-Q Median PSF"
 
     # Add confidence warning to insight if low sample
     if confidence_label:
