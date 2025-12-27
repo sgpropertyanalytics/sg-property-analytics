@@ -10,8 +10,21 @@ Endpoints:
 
 import time
 from flask import request, jsonify
+from sqlalchemy import text
 from routes.analytics import analytics_bp
+from models.database import db
+from db.sql import OUTLIER_FILTER
 from utils.normalize import to_date
+
+
+def _get_max_transaction_date():
+    """Get the latest transaction date from the database."""
+    result = db.session.execute(text(f"""
+        SELECT MAX(transaction_date) as max_date
+        FROM transactions
+        WHERE {OUTLIER_FILTER}
+    """)).fetchone()
+    return result.max_date if result else None
 
 
 @analytics_bp.route("/kpi-summary-v2", methods=["GET"])
@@ -60,10 +73,13 @@ def kpi_summary_v2():
         if segment_param:
             filters['segment'] = segment_param
 
-        # Date filter (optional)
+        # Date filter - use max from DB if not provided (like v1 does)
         date_param = request.args.get('max_date')
         if date_param:
             filters['max_date'] = to_date(date_param, field='max_date')
+        else:
+            # Default to latest transaction date in database
+            filters['max_date'] = _get_max_transaction_date()
 
         # Run all KPIs via registry
         kpi_results = run_all_kpis(filters)
@@ -112,6 +128,9 @@ def kpi_single(kpi_id: str):
         segment_param = request.args.get('segment')
         if segment_param:
             filters['segment'] = segment_param
+
+        # Default to latest transaction date
+        filters['max_date'] = _get_max_transaction_date()
 
         result = get_kpi_by_id(kpi_id, filters)
 
