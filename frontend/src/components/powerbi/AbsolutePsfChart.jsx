@@ -272,8 +272,8 @@ export function AbsolutePsfChart({ height = 300 }) {
             </div>
           </div>
 
-          {/* KPI Row - Latest PSF values */}
-          <div className={`flex flex-wrap items-stretch gap-2 mt-3 ${!isPremium ? 'blur-sm grayscale-[40%]' : ''}`}>
+          {/* KPI Row - Grid with equal columns for consistent sizing */}
+          <div className={`grid grid-cols-3 gap-2 mt-3 ${!isPremium ? 'blur-sm grayscale-[40%]' : ''}`}>
             <PsfKpiCard
               label="CCR"
               value={latestData.ccr}
@@ -333,13 +333,13 @@ function PsfKpiCard({ label, value, change, color }) {
 
   return (
     <div
-      className="rounded-lg px-3 py-2 text-center min-w-[90px] flex-1 max-w-[120px]"
+      className="rounded-lg px-3 py-2 text-center"
       style={{ backgroundColor: `${color}10` }}
     >
       <div className="text-[10px] uppercase tracking-wide" style={{ color }}>
         {label}
       </div>
-      <div className="text-base md:text-lg font-bold text-[#213448]">
+      <div className="text-base md:text-lg font-bold font-mono tabular-nums text-[#213448]">
         ${Math.round(value).toLocaleString()}
       </div>
       {change !== null && (
