@@ -23,7 +23,7 @@ Usage:
 """
 
 import logging
-from datetime import date
+from datetime import date, timedelta
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
@@ -129,8 +129,10 @@ def get_transaction_price_growth(
         params["date_from"] = date_from
 
     if date_to:
-        filter_conditions.append("transaction_date <= :date_to")
-        params["date_to"] = date_to
+        # Use < next_day instead of <= date_to to include all transactions on date_to
+        # PostgreSQL treats date as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
+        filter_conditions.append("transaction_date < :date_to_exclusive")
+        params["date_to_exclusive"] = date_to + timedelta(days=1)
 
     if sale_type:
         # Normalize sale type through API contract

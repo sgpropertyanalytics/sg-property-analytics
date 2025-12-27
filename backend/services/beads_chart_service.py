@@ -17,6 +17,7 @@ Volume-Weighted Median Algorithm:
 """
 
 import logging
+from datetime import timedelta
 from typing import Dict, Any, List
 
 from sqlalchemy import text
@@ -43,8 +44,10 @@ def _build_where_clause(filters: Dict[str, Any]) -> tuple:
         where_parts.append("transaction_date >= :date_from")
         params['date_from'] = filters['date_from']
     if filters.get('date_to'):
-        where_parts.append("transaction_date <= :date_to")
-        params['date_to'] = filters['date_to']
+        # Use < next_day instead of <= date_to to include all transactions on date_to
+        # PostgreSQL treats date as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
+        where_parts.append("transaction_date < :date_to_exclusive")
+        params['date_to_exclusive'] = filters['date_to'] + timedelta(days=1)
 
     # Districts (explicit) - accept both 'district' and 'districts' keys
     districts = filters.get('districts') or filters.get('district', [])

@@ -213,7 +213,8 @@ def district_psf():
 
             yoy_conditions = [Transaction.outlier_filter()]
             yoy_conditions.append(Transaction.transaction_date >= yoy_from)
-            yoy_conditions.append(Transaction.transaction_date <= yoy_to)
+            # Use < next_day instead of <= yoy_to to include all transactions on yoy_to
+            yoy_conditions.append(Transaction.transaction_date < yoy_to + timedelta(days=1))
 
             # Apply same bedroom filter for YoY
             if bed_filter != "all":

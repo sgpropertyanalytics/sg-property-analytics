@@ -187,7 +187,9 @@ def get_filtered_transactions(
         year, month = map(int, end_filter.split("-")[:2])
         last_day = monthrange(year, month)[1]
         end_dt = datetime(year, month, last_day)
-        query = query.filter(Transaction.transaction_date <= end_dt)
+        # Use < next_day instead of <= end_dt to include all transactions on end_dt
+        # PostgreSQL treats datetime as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
+        query = query.filter(Transaction.transaction_date < end_dt + timedelta(days=1))
     
     # Apply limit at database level if specified
     if limit:
@@ -1672,8 +1674,11 @@ def get_new_vs_resale_comparison(
         params["start_date"] = start_date.date() if isinstance(start_date, datetime) else start_date
 
     if date_to:
-        where_conditions.append("transaction_date <= :date_to")
-        params["date_to"] = date_to
+        # Use < next_day instead of <= date_to to include all transactions on date_to
+        # PostgreSQL treats date objects as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
+        # which excludes transactions on Dec 27 after midnight
+        where_conditions.append("transaction_date < :date_to_exclusive")
+        params["date_to_exclusive"] = date_to + timedelta(days=1)
 
     # District filter (from global sidebar)
     if districts and len(districts) > 0:

@@ -59,11 +59,13 @@ def kpi_summary():
         max_date = max_date_result.max_date
         thirty_days_ago = max_date - timedelta(days=30)
         sixty_days_ago = max_date - timedelta(days=60)
+        # Use < next_day instead of <= max_date to include all transactions on max_date
+        max_date_exclusive = max_date + timedelta(days=1)
 
         # Build filter conditions
         filter_sql = OUTLIER_FILTER
         params = {
-            'max_date': max_date,
+            'max_date_exclusive': max_date_exclusive,
             'thirty_days_ago': thirty_days_ago,
             'sixty_days_ago': sixty_days_ago
         }
@@ -108,7 +110,7 @@ def kpi_summary():
                 FROM transactions
                 WHERE {filter_sql}
                   AND transaction_date >= :thirty_days_ago
-                  AND transaction_date <= :max_date
+                  AND transaction_date < :max_date_exclusive
             ),
             previous_period AS (
                 SELECT

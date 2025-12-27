@@ -15,6 +15,7 @@ from constants import (
     SALE_TYPE_NEW, SALE_TYPE_RESALE,
     TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR
 )
+from datetime import timedelta
 from utils.normalize import (
     to_int, to_float, to_date, to_list, to_bool, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
@@ -173,7 +174,9 @@ def aggregate():
 
         to_dt = clamp_date_to_today(to_date(request.args.get("date_to"), field="date_to"))
         if to_dt:
-            filter_conditions.append(Transaction.transaction_date <= to_dt)
+            # Use < next_day instead of <= to_dt to include all transactions on to_dt
+            # PostgreSQL treats date as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
+            filter_conditions.append(Transaction.transaction_date < to_dt + timedelta(days=1))
             filters_applied["date_to"] = to_dt.isoformat()
     except NormalizeValidationError as e:
         return validation_error_response(e)
@@ -594,7 +597,8 @@ def aggregate_summary():
 
         to_dt = clamp_date_to_today(to_date(request.args.get("date_to"), field="date_to"))
         if to_dt:
-            query = query.filter(Transaction.transaction_date <= to_dt)
+            # Use < next_day instead of <= to_dt to include all transactions on to_dt
+            query = query.filter(Transaction.transaction_date < to_dt + timedelta(days=1))
 
         # Price/PSF range filters
         price_min = to_float(request.args.get("price_min"), field="price_min")
@@ -658,7 +662,8 @@ def aggregate_summary():
     if date_from:
         psf_stats = psf_stats.filter(Transaction.transaction_date >= from_dt)
     if date_to:
-        psf_stats = psf_stats.filter(Transaction.transaction_date <= to_dt)
+        # Use < next_day instead of <= to_dt to include all transactions on to_dt
+        psf_stats = psf_stats.filter(Transaction.transaction_date < to_dt + timedelta(days=1))
 
     psf_result = psf_stats.first()
 
@@ -685,7 +690,8 @@ def aggregate_summary():
     if date_from:
         price_stats = price_stats.filter(Transaction.transaction_date >= from_dt)
     if date_to:
-        price_stats = price_stats.filter(Transaction.transaction_date <= to_dt)
+        # Use < next_day instead of <= to_dt to include all transactions on to_dt
+        price_stats = price_stats.filter(Transaction.transaction_date < to_dt + timedelta(days=1))
 
     price_result = price_stats.first()
 
@@ -707,7 +713,8 @@ def aggregate_summary():
     if date_from:
         bedroom_mix_query = bedroom_mix_query.filter(Transaction.transaction_date >= from_dt)
     if date_to:
-        bedroom_mix_query = bedroom_mix_query.filter(Transaction.transaction_date <= to_dt)
+        # Use < next_day instead of <= to_dt to include all transactions on to_dt
+        bedroom_mix_query = bedroom_mix_query.filter(Transaction.transaction_date < to_dt + timedelta(days=1))
 
     bedroom_mix_result = bedroom_mix_query.all()
     bedroom_total = sum(r.count for r in bedroom_mix_result) or 1
@@ -738,7 +745,8 @@ def aggregate_summary():
     if date_from:
         sale_mix_query = sale_mix_query.filter(Transaction.transaction_date >= from_dt)
     if date_to:
-        sale_mix_query = sale_mix_query.filter(Transaction.transaction_date <= to_dt)
+        # Use < next_day instead of <= to_dt to include all transactions on to_dt
+        sale_mix_query = sale_mix_query.filter(Transaction.transaction_date < to_dt + timedelta(days=1))
 
     sale_mix_result = sale_mix_query.all()
     sale_total = sum(r.count for r in sale_mix_result) or 1

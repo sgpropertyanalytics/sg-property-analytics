@@ -22,7 +22,7 @@ Usage:
 """
 
 import logging
-from datetime import date
+from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -324,8 +324,10 @@ def _compute_monthly_percentiles(
         params["date_from"] = date_from  # Pass Python date object directly
 
     if date_to:
-        conditions.append("transaction_date <= :date_to")
-        params["date_to"] = date_to  # Pass Python date object directly
+        # Use < next_day instead of <= date_to to include all transactions on date_to
+        # PostgreSQL treats date as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
+        conditions.append("transaction_date < :date_to_exclusive")
+        params["date_to_exclusive"] = date_to + timedelta(days=1)
 
     where_clause = " AND ".join(conditions)
 

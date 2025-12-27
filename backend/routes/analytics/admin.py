@@ -9,6 +9,7 @@ Endpoints:
 """
 
 import time
+from datetime import timedelta
 from flask import request, jsonify
 from routes.analytics import analytics_bp, reader
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
@@ -100,22 +101,24 @@ def debug_data_status():
         # Last 30 days check (from today)
         today = datetime.now().date()
         thirty_days_ago = today - timedelta(days=30)
+        # Use < next_day instead of <= today to include all transactions on today
+        tomorrow = today + timedelta(days=1)
 
         last_30_days = db.session.query(func.count(Transaction.id)).filter(
             Transaction.transaction_date >= thirty_days_ago,
-            Transaction.transaction_date <= today
+            Transaction.transaction_date < tomorrow
         ).scalar()
 
         # Last 30 days by sale type
         new_sales_30d = db.session.query(func.count(Transaction.id)).filter(
             Transaction.transaction_date >= thirty_days_ago,
-            Transaction.transaction_date <= today,
+            Transaction.transaction_date < tomorrow,
             Transaction.sale_type == SALE_TYPE_NEW
         ).scalar()
 
         resales_30d = db.session.query(func.count(Transaction.id)).filter(
             Transaction.transaction_date >= thirty_days_ago,
-            Transaction.transaction_date <= today,
+            Transaction.transaction_date < tomorrow,
             Transaction.sale_type == SALE_TYPE_RESALE
         ).scalar()
 
