@@ -7,7 +7,7 @@ import {
   BEDROOM_THRESHOLDS_TIER3,
   BEDROOM_ORDER_NUMERIC,
 } from '../../constants';
-import { PropertyAgeBucket, getPropertyAgeBucketLabel } from '../../schemas/apiContract';
+import { PropertyAgeBucket, getPropertyAgeBucketLabel, PropertyAgeBucketTooltips } from '../../schemas/apiContract';
 
 /**
  * Power BI-style Filter Sidebar
@@ -436,9 +436,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
           )}
         </FilterSection>
 
-        {/* Property Details Section */}
+        {/* Property Age Section */}
         <FilterSection
-          title="Property Details"
+          title="Property Age"
           icon={
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -448,46 +448,43 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
           onToggle={() => toggleSection('propertyDetails')}
           activeCount={filters.propertyAgeBucket ? 1 : 0}
         >
-          {/* Property Age Bucket Buttons - Two rows of 3 */}
-          <div className="grid grid-cols-3 gap-1.5 mb-1.5">
-            {/* First row: New, 4-8yr, 8-15yr */}
-            {(filterOptions.propertyAgeBuckets?.length > 0
-              ? filterOptions.propertyAgeBuckets.slice(0, 3)
-              : [
-                  { value: PropertyAgeBucket.NEW_SALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.NEW_SALE, true) },
-                  { value: PropertyAgeBucket.RECENTLY_TOP, label: getPropertyAgeBucketLabel(PropertyAgeBucket.RECENTLY_TOP, true) },
-                  { value: PropertyAgeBucket.YOUNG_RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.YOUNG_RESALE, true) },
-                ]
-            ).map(bucket => {
+          {/* Row 1: Market Age */}
+          <p className="text-[10px] text-[#547792] mb-1.5 font-medium">Market Age</p>
+          <div className="grid grid-cols-5 gap-1 mb-3">
+            {[
+              { value: PropertyAgeBucket.NEW_SALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.NEW_SALE, true) },
+              { value: PropertyAgeBucket.RECENTLY_TOP, label: getPropertyAgeBucketLabel(PropertyAgeBucket.RECENTLY_TOP, true) },
+              { value: PropertyAgeBucket.YOUNG_RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.YOUNG_RESALE, true) },
+              { value: PropertyAgeBucket.RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.RESALE, true) },
+              { value: PropertyAgeBucket.MATURE_RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.MATURE_RESALE, true) },
+            ].map(bucket => {
               const isSelected = filters.propertyAgeBucket === bucket.value;
+              const tooltip = PropertyAgeBucketTooltips[bucket.value];
 
               return (
                 <button
                   type="button"
                   key={bucket.value}
                   onClick={(e) => { e.preventDefault(); setPropertyAgeBucket(isSelected ? null : bucket.value); }}
-                  className={`min-h-[40px] py-2 text-xs rounded-md border transition-colors ${
+                  className={`min-h-[40px] py-2 px-1 text-[10px] leading-tight rounded-md border transition-colors ${
                     isSelected
                       ? 'bg-[#547792] text-white border-[#547792]'
                       : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
                   }`}
-                  title={getPropertyAgeBucketLabel(bucket.value)}
+                  title={tooltip || bucket.label}
                 >
                   {bucket.label}
                 </button>
               );
             })}
           </div>
-          <div className="grid grid-cols-3 gap-1.5">
-            {/* Second row: 15-25yr, 25yr+, FH */}
-            {(filterOptions.propertyAgeBuckets?.length > 0
-              ? filterOptions.propertyAgeBuckets.slice(3, 6)
-              : [
-                  { value: PropertyAgeBucket.RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.RESALE, true) },
-                  { value: PropertyAgeBucket.MATURE_RESALE, label: getPropertyAgeBucketLabel(PropertyAgeBucket.MATURE_RESALE, true) },
-                  { value: PropertyAgeBucket.FREEHOLD, label: getPropertyAgeBucketLabel(PropertyAgeBucket.FREEHOLD, true) },
-                ]
-            ).map(bucket => {
+
+          {/* Row 2: Tenure */}
+          <p className="text-[10px] text-[#547792] mb-1.5 font-medium">Tenure</p>
+          <div className="grid grid-cols-5 gap-1">
+            {[
+              { value: PropertyAgeBucket.FREEHOLD, label: getPropertyAgeBucketLabel(PropertyAgeBucket.FREEHOLD, true) },
+            ].map(bucket => {
               const isSelected = filters.propertyAgeBucket === bucket.value;
 
               return (
@@ -495,12 +492,12 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
                   type="button"
                   key={bucket.value}
                   onClick={(e) => { e.preventDefault(); setPropertyAgeBucket(isSelected ? null : bucket.value); }}
-                  className={`min-h-[40px] py-2 text-xs rounded-md border transition-colors ${
+                  className={`min-h-[40px] py-2 px-1 text-[10px] leading-tight rounded-md border transition-colors ${
                     isSelected
                       ? 'bg-[#547792] text-white border-[#547792]'
                       : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
                   }`}
-                  title={getPropertyAgeBucketLabel(bucket.value)}
+                  title={bucket.label}
                 >
                   {bucket.label}
                 </button>

@@ -270,12 +270,24 @@ export const PropertyAgeBucketLabels = {
  * Short labels for property age buckets (for compact display).
  */
 export const PropertyAgeBucketLabelsShort = {
-  [PropertyAgeBucket.NEW_SALE]: 'New',
-  [PropertyAgeBucket.RECENTLY_TOP]: '4-8yr',
-  [PropertyAgeBucket.YOUNG_RESALE]: '8-15yr',
-  [PropertyAgeBucket.RESALE]: '15-25yr',
-  [PropertyAgeBucket.MATURE_RESALE]: '25yr+',
-  [PropertyAgeBucket.FREEHOLD]: 'FH',
+  [PropertyAgeBucket.NEW_SALE]: 'New Sale',
+  [PropertyAgeBucket.RECENTLY_TOP]: 'Recently TOP',
+  [PropertyAgeBucket.YOUNG_RESALE]: 'Young Resale',
+  [PropertyAgeBucket.RESALE]: 'Resale',
+  [PropertyAgeBucket.MATURE_RESALE]: 'Mature',
+  [PropertyAgeBucket.FREEHOLD]: 'Freehold',
+};
+
+/**
+ * Tooltip descriptions for property age buckets (with age ranges).
+ */
+export const PropertyAgeBucketTooltips = {
+  [PropertyAgeBucket.NEW_SALE]: null,
+  [PropertyAgeBucket.RECENTLY_TOP]: '4–8 years',
+  [PropertyAgeBucket.YOUNG_RESALE]: '8–15 years',
+  [PropertyAgeBucket.RESALE]: '15–25 years',
+  [PropertyAgeBucket.MATURE_RESALE]: '25+ years',
+  [PropertyAgeBucket.FREEHOLD]: null,
 };
 
 /**

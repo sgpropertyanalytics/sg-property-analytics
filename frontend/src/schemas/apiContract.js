@@ -47,6 +47,7 @@ export {
   PropertyAgeBucket,
   PropertyAgeBucketLabels,
   PropertyAgeBucketLabelsShort,
+  PropertyAgeBucketTooltips,
   isPropertyAgeBucket,
   getPropertyAgeBucketLabel,
   // Premium Trend

@@ -369,7 +369,7 @@ export function ProjectDeepDiveContent() {
         </div>
 
         {/* Project Selector + Downside Protection Input - Single Card with 50/50 Split */}
-        <div className="bg-white rounded-xl border border-[#94B4C1]/30 overflow-hidden mb-6">
+        <div className="bg-white rounded-xl border border-[#94B4C1]/30 mb-6">
           <div className="grid grid-cols-1 lg:grid-cols-2">
             {/* Left: Project Selector */}
             <div className="p-4 md:p-6">
