@@ -168,11 +168,13 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
 
-                {/* Card 3: New Launch Premium */}
+                {/* Card 3: Total Transactions (Resale, rolling 90 days) */}
                 <KPICardV2
-                  title="New Launch Premium"
-                  value={getKpi('new_launch_premium')?.formatted_value || '—'}
-                  footnote={getKpi('new_launch_premium')?.insight}
+                  title="Total Transactions"
+                  value={getKpi('total_transactions')?.formatted_value || '—'}
+                  trend={getKpi('total_transactions')?.trend}
+                  footnote={getKpi('total_transactions')?.insight}
+                  tooltip={getKpi('total_transactions')?.meta?.description}
                   loading={kpis.loading}
                 />
               </KPICardV2Group>
