@@ -1641,6 +1641,11 @@ def get_new_vs_resale_comparison(
     # Set implicit time range based on drill level (only if no date filter from sidebar)
     # Year: ALL time, Quarter: 5Y, Month: 2Y
     today = datetime.now()
+
+    # Defensive clamp: never query beyond today (prevents future-dated data distortion)
+    if date_to and date_to > today.date():
+        date_to = today.date()
+
     if date_from or date_to:
         # Use sidebar date filters if provided
         start_date = None  # Will be applied via where clause

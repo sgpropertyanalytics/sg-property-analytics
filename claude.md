@@ -130,6 +130,41 @@ Canonical Types:
   IDs → str               | Flags → bool
 ```
 
+## Card 11b: Service Layer Type Contract
+```
+HARD RULES:
+  1. Routes OWN parsing (to_date, to_int, etc.)
+  2. Services OWN validation (business logic)
+  3. Services may COERCE for backward-compat, but NEVER re-parse normalized types
+  4. If you see strptime() in a service → WRONG (use coerce_to_date())
+
+CANONICAL INTERNAL TYPE FOR DATES:
+  ✅ datetime.date  — THE standard for all filter dicts
+  ❌ datetime       — only convert at the very last moment if downstream needs it
+  ❌ str            — only accept for legacy compatibility
+
+Route Handler (boundary):
+  date_from = to_date(request.args.get('date_from'))  # → date object
+  filters['date_from'] = date_from
+
+Service Layer (internal):
+  from utils.normalize import coerce_to_date  # Centralized coercion
+  from_dt = coerce_to_date(filters['date_from'])
+
+WHY THIS MATTERS:
+  ❌ strptime(date_obj, '%Y-%m-%d')  → TypeError: strptime expects str
+  ✅ coerce_to_date(date_obj)        → passthrough (already date)
+  ✅ coerce_to_date("2024-01-01")    → coerced (legacy compat)
+
+BOUNDARY ASSERTIONS (dev/test only):
+  At service entry, assert expected types to catch mismatches early:
+
+  assert filters.get('date_from') is None or isinstance(filters['date_from'], date), \
+      f"Expected date, got {type(filters['date_from'])}"
+
+  This turns vague 500s into clear assertion failures.
+```
+
 ## Card 12: Deterministic Ordering
 ```
 RULE: Time-series queries MUST include stable tie-breaker in ORDER BY
@@ -215,6 +250,36 @@ DEBUG CHECKLIST (when 404 in prod):
   2. Verify VITE_API_URL in Vercel env vars
   3. Confirm backend serves /api/* (not just /*)
   4. Check apiClient.defaults.baseURL in browser console
+```
+
+## Card 15: Date Anchoring Rule
+```
+RULE: UI date ranges must NEVER exceed today
+
+WHY:
+  - DB may contain future-dated records (projections, test data, import errors)
+  - Date presets (12M, YTD) anchor from dateRange.max
+  - If max = future date → 12M filter excludes recent actual data
+
+IMPLEMENTATION (belt + suspenders):
+
+  1. /filter-options endpoint (frontend anchor):
+     if max_date > today:
+         max_date = today
+
+  2. Service layer (defensive clamp):
+     if date_to and date_to > today.date():
+         date_to = today.date()
+
+APPLIES TO:
+  - All date range filters (3M, 12M, 2Y, 5Y, YTD)
+  - All time-series chart endpoints
+  - Transaction list endpoints
+
+SYMPTOM IF VIOLATED:
+  - "Missing Q4 data" when 12M filter applied
+  - Date presets show unexpected ranges
+  - Charts skip recent periods
 ```
 
 ---
@@ -677,3 +742,49 @@ ChartJS.register(LineController, CategoryScale, LinearScale, PointElement, LineE
 - Missing controller registration (e.g., `BubbleController` for Bubble charts)
 - Missing element registration (e.g., `PointElement` for scatter/bubble)
 - Missing scale registration (e.g., `CategoryScale` for categorical axes)
+
+---
+
+# 12. DEBUGGING 500 ERRORS
+
+## Card 15: When You See a 500
+```
+IMMEDIATE ACTIONS:
+  1. Check server logs for the actual exception + traceback
+  2. Note: endpoint, query params, and which filters were selected
+  3. Look for TypeError in strptime/int/float → likely type mismatch
+
+LOGGING REQUIREMENTS FOR API ROUTES:
+  [ ] Log endpoint + method on error
+  [ ] Log query params (repr + types)
+  [ ] Log normalized filter dict (with types)
+  [ ] Ensure error response is JSON (never HTML for API routes)
+
+EXAMPLE LOGGING PATTERN:
+  except Exception as e:
+      logger.error(f"GET /api/dashboard ERROR: {e}")
+      logger.error(f"Query params: {dict(request.args)}")
+      logger.error(f"Normalized filters: {[(k, repr(v), type(v).__name__) for k,v in filters.items()]}")
+      traceback.print_exc()
+      return jsonify({"error": str(e)}), 500
+
+TIP: Log repr(value) + type(value) for boundary params
+     This catches the "strptime got date instead of str" bug instantly.
+```
+
+## Boundary Bug Test Matrix
+
+To prevent regression, test these combinations for date parameters:
+
+| Input Type | `date_from` | `date_to` | Expected Result |
+|------------|-------------|-----------|-----------------|
+| None | `None` | `None` | ✅ No filter applied |
+| String | `"2024-01-01"` | `"2024-12-31"` | ✅ Parsed & filtered |
+| Date object | `date(2024,1,1)` | `date(2024,12,31)` | ✅ Passthrough |
+| Datetime | `datetime(...)` | `datetime(...)` | ✅ Extracted .date() |
+| Mixed | `date(...)` | `"2024-12-31"` | ✅ Both coerced |
+| Invalid string | `"not-a-date"` | `None` | ✅ 400 error (not 500) |
+
+**Regression test:** Filters only trigger when selected
+- Without filters → works ✅
+- With date filter selected → works ✅ (was causing 500 before fix)
