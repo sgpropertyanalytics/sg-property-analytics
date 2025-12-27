@@ -58,6 +58,23 @@ WHERE COALESCE(is_outlier, false) = false  -- EVERY transaction query
 - Silently ignore `AbortError`/`CanceledError`
 - Response through adapter (never access `response.data` directly)
 
+## Visibility-Gated Fetching (useDeferredFetch)
+**Rule:** `containerRef` must be mounted unconditionally.
+
+```jsx
+// BUG: ref inside QueryState (not rendered during loading)
+<QueryState loading={loading}>
+  <div ref={containerRef}>...</div>
+</QueryState>
+
+// FIX: ref OUTSIDE QueryState
+<div ref={containerRef}>
+  <QueryState loading={loading}>...</QueryState>
+</div>
+```
+
+Symptom: Chart loads initially but ignores filter changes (no error, just stale).
+
 ## Query Keys
 **Rule:** If value changes API response → must be in query key
 

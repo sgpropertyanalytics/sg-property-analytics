@@ -294,6 +294,35 @@ CORRECT MENTAL MODEL:
 
 ---
 
+## Part 8: Visibility-Gated Fetching
+
+**Rule:** Visibility-gated fetching requires a stable sentinel.
+
+```
+containerRef must be mounted unconditionally.
+Skeleton/loading states render INSIDE the sentinel, not instead of it.
+```
+
+**Bug:**
+```jsx
+<QueryState loading={loading}>
+  <div ref={containerRef}>...</div>  // NOT rendered during loading!
+</QueryState>
+```
+
+**Fix:**
+```jsx
+<div ref={containerRef}>              // ALWAYS rendered
+  <QueryState loading={loading}>
+    <div>...</div>
+  </QueryState>
+</div>
+```
+
+**Symptom:** Chart loads initially but ignores filter changes (no error, just stale).
+
+---
+
 ## Quick Reference Card
 
 ```
@@ -308,6 +337,7 @@ CONTRACT & ASYNC CHECKLIST
 [ ] No hardcoded enum strings
 [ ] assertKnownVersion() in adapter
 [ ] Query key includes ALL data-affecting state (Card 18)
+[ ] containerRef OUTSIDE conditional rendering (Part 8)
 ```
 
 ---
