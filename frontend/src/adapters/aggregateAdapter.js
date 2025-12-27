@@ -51,6 +51,9 @@ export {
   // PSF by Price Band
   transformPsfByPriceBand,
   toPsfByPriceBandChartData,
+  // Beads Chart
+  transformBeadsChartSeries,
+  filterBedroomDatasets,
 } from './aggregate';
 
 // Re-export default for backwards compatibility

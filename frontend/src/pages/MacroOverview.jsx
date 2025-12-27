@@ -3,8 +3,10 @@ import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilt
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { MedianPsfTrendChart } from '../components/powerbi/MedianPsfTrendChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
+import { BeadsChart } from '../components/powerbi/BeadsChart';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { PriceCompressionChart } from '../components/powerbi/PriceCompressionChart';
+import { AbsolutePsfChart } from '../components/powerbi/AbsolutePsfChart';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TimeGranularityToggle } from '../components/powerbi/TimeGranularityToggle';
@@ -309,14 +311,22 @@ export function MacroOverviewContent() {
                   </ErrorBoundary>
                 </div>
 
-                {/* Price Distribution - Histogram Full width (Watermarked for free users) */}
-                <div className="lg:col-span-2">
+                {/* Price Distribution + Beads Chart - Side by side */}
+                <div>
                   <ErrorBoundary name="Price Distribution" compact>
                     <ChartWatermark>
                       <PriceDistributionChart
                         onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
                         height={standardChartHeight}
                       />
+                    </ChartWatermark>
+                  </ErrorBoundary>
+                </div>
+
+                <div>
+                  <ErrorBoundary name="Price by Region & Bedroom" compact>
+                    <ChartWatermark>
+                      <BeadsChart height={standardChartHeight} />
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>
@@ -330,11 +340,17 @@ export function MacroOverviewContent() {
                   </ErrorBoundary>
                 </div>
 
-                {/* Price Compression Analysis - Full width (Watermarked for free users) */}
-                <div className="lg:col-span-2">
+                {/* Price Compression Analysis - Side by side with Absolute PSF (Watermarked for free users) */}
+                {/* Desktop/Tablet: 50/50 grid | Mobile: Stacked */}
+                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <ErrorBoundary name="Price Compression" compact>
                     <ChartWatermark>
                       <PriceCompressionChart height={compressionHeight} />
+                    </ChartWatermark>
+                  </ErrorBoundary>
+                  <ErrorBoundary name="Absolute PSF" compact>
+                    <ChartWatermark>
+                      <AbsolutePsfChart height={compressionHeight} />
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>

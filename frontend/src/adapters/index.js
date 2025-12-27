@@ -43,4 +43,7 @@ export {
   // Observability
   logFetchDebug,
   logTransformError,
+  // Beads Chart
+  transformBeadsChartSeries,
+  filterBedroomDatasets,
 } from './aggregateAdapter';

@@ -72,6 +72,11 @@ import {
   toPsfByPriceBandChartData,
 } from './psfByPriceBand';
 
+import {
+  transformBeadsChartSeries,
+  filterBedroomDatasets,
+} from './beadsChart';
+
 // Named exports
 export {
   // Validation
@@ -107,6 +112,9 @@ export {
   // PSF by Price Band
   transformPsfByPriceBand,
   toPsfByPriceBandChartData,
+  // Beads Chart
+  transformBeadsChartSeries,
+  filterBedroomDatasets,
 };
 
 // Default export for backwards compatibility
@@ -140,4 +148,7 @@ export default {
   // Observability
   logFetchDebug,
   logTransformError,
+  // Beads Chart
+  transformBeadsChartSeries,
+  filterBedroomDatasets,
 };

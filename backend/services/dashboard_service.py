@@ -205,7 +205,7 @@ def validate_request(filters: Dict[str, Any], panels: List[str], options: Dict[s
 
     # Valid panels
     valid_panels = {'time_series', 'volume_by_location', 'price_histogram',
-                    'bedroom_mix', 'summary', 'sale_type_breakdown'}
+                    'bedroom_mix', 'summary', 'sale_type_breakdown', 'beads_chart'}
     invalid_panels = set(panels) - valid_panels
     if invalid_panels:
         errors.append(f"Invalid panels: {invalid_panels}. Valid: {valid_panels}")
@@ -1029,13 +1029,17 @@ def query_summary(filters: Dict[str, Any], options: Dict[str, Any]) -> Dict:
 # MAIN DASHBOARD FUNCTION
 # ============================================================================
 
+# Import beads chart query from dedicated service module
+from services.beads_chart_service import query_beads_chart
+
 PANEL_QUERIES = {
     'time_series': query_time_series,
     'volume_by_location': query_volume_by_location,
     'price_histogram': query_price_histogram,
     'bedroom_mix': query_bedroom_mix,
     'sale_type_breakdown': query_sale_type_breakdown,
-    'summary': query_summary
+    'summary': query_summary,
+    'beads_chart': query_beads_chart,
 }
 
 
