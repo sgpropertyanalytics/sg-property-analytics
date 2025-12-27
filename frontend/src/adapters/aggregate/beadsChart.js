@@ -18,14 +18,15 @@ import { isDev } from './validation';
 
 /**
  * Color palette for bedroom types.
- * Progression from sand (1BR) to navy (5BR+) per CLAUDE.md styling guide.
+ * High-contrast progression for clear differentiation.
+ * Default view (2BR, 3BR, 4BR) uses sky/blue/navy for maximum contrast.
  */
 const BEDROOM_COLORS = {
-  1: 'rgba(234, 224, 207, 0.85)', // Sand #EAE0CF
-  2: 'rgba(148, 180, 193, 0.85)', // Sky #94B4C1
-  3: 'rgba(84, 119, 146, 0.85)', // Blue #547792
-  4: 'rgba(58, 91, 118, 0.85)', // Blend between blue and navy
-  5: 'rgba(33, 52, 72, 0.85)', // Navy #213448
+  1: 'rgba(234, 224, 207, 0.9)', // Sand #EAE0CF - lightest
+  2: 'rgba(148, 180, 193, 0.9)', // Sky #94B4C1 - light
+  3: 'rgba(84, 119, 146, 0.9)', // Blue #547792 - medium
+  4: 'rgba(33, 52, 72, 0.9)', // Navy #213448 - dark (was blend, now navy)
+  5: 'rgba(120, 80, 60, 0.9)', // Brown accent for 5BR+ to stand out
 };
 
 /**
@@ -106,6 +107,7 @@ export const transformBeadsChartSeries = (rawData) => {
         volumeRange: { min: 0, max: 0 },
         totalTransactions: 0,
       },
+      stringRanges: { CCR: { min: 0, max: 0 }, RCR: { min: 0, max: 0 }, OCR: { min: 0, max: 0 } },
     };
   }
 
@@ -150,16 +152,32 @@ export const transformBeadsChartSeries = (rawData) => {
     label: BEDROOM_LABELS[br] || `${br}BR`,
     data: byBedroom[br],
     backgroundColor: BEDROOM_COLORS[br] || BEDROOM_COLORS[5],
-    borderColor: 'rgba(33, 52, 72, 0.6)', // Navy border
-    borderWidth: 1.5,
+    borderColor: 'white', // White border for overlap management
+    borderWidth: 2,
     hoverBackgroundColor: BEDROOM_COLORS[br]
-      ? BEDROOM_COLORS[br].replace('0.85', '1')
-      : BEDROOM_COLORS[5].replace('0.85', '1'),
-    hoverBorderWidth: 2,
+      ? BEDROOM_COLORS[br].replace('0.9', '1')
+      : BEDROOM_COLORS[5].replace('0.9', '1'),
+    hoverBorderColor: '#213448',
+    hoverBorderWidth: 3,
   }));
 
   // Calculate total transactions
   const totalTransactions = rawData.reduce((sum, d) => sum + (d.transactionCount || 0), 0);
+
+  // Calculate string ranges (min/max price per region for annotation lines)
+  const stringRanges = { CCR: { min: 0, max: 0 }, RCR: { min: 0, max: 0 }, OCR: { min: 0, max: 0 } };
+  rawData.forEach((item) => {
+    const region = item.region;
+    const price = item.volumeWeightedMedian || 0;
+    if (region && stringRanges[region]) {
+      if (stringRanges[region].min === 0 || price < stringRanges[region].min) {
+        stringRanges[region].min = price;
+      }
+      if (price > stringRanges[region].max) {
+        stringRanges[region].max = price;
+      }
+    }
+  });
 
   return {
     datasets,
@@ -168,6 +186,7 @@ export const transformBeadsChartSeries = (rawData) => {
       volumeRange: { min: minVolume, max: maxVolume },
       totalTransactions,
     },
+    stringRanges,
   };
 };
 

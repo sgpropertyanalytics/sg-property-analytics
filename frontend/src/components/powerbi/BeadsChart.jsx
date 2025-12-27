@@ -9,10 +9,11 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
 import { Bubble } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
-import { KeyInsightBox, ChartSlot } from '../ui';
+import { ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformBeadsChartSeries,
@@ -22,24 +23,20 @@ import {
   assertKnownVersion,
 } from '../../adapters';
 
-ChartJS.register(LinearScale, PointElement, BubbleController, Tooltip, Legend);
+ChartJS.register(LinearScale, PointElement, BubbleController, Tooltip, Legend, annotationPlugin);
 
 /**
  * Beads on String Chart - Volume-Weighted Median Prices by Region & Bedroom
  *
- * Visualization:
+ * Visualization (TRUE "Beads on String"):
  * - X-axis: Price in millions SGD
- * - Y-axis: Regions (CCR, RCR, OCR) as horizontal "strings"
- * - Bubbles: Size = transaction volume, Color = bedroom type
+ * - Y-axis: Regions (CCR, RCR, OCR) as categorical labels
+ * - Horizontal "strings": Lines connecting min to max price per region
+ * - Bubbles ("beads"): Size = transaction volume, Color = bedroom type
+ * - White borders on bubbles for overlap management
  *
  * This chart answers ONE question:
  * "How much are 1BR, 2BR, 3BR, 4BR, 5BR selling for in CCR, RCR, and OCR?"
- *
- * Features:
- * - Volume-weighted median (transaction value as weight)
- * - Default: Shows 2BR, 3BR, 4BR only
- * - Toggle: "Show all bedrooms" reveals 1BR and 5BR+
- * - Respects global sidebar filters
  */
 export function BeadsChart({ height = 300 }) {
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
@@ -49,29 +46,23 @@ export function BeadsChart({ height = 300 }) {
   // Data fetching with useAbortableQuery
   const { data: chartData, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
-      // Use dashboard endpoint with beads_chart panel
-      // excludeLocationDrill: true - This chart shows all regions, not affected by drill
       const params = buildApiParams(
         { panels: 'beads_chart' },
         { excludeLocationDrill: true }
       );
 
       const response = await getDashboard(params, { signal });
-
-      // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/dashboard');
 
       const responseData = response.data || {};
       const apiData = responseData.data || {};
 
-      // Debug logging (dev only)
       logFetchDebug('BeadsChart', {
         endpoint: '/api/dashboard?panels=beads_chart',
         response: responseData,
         rowCount: apiData.beads_chart?.length || 0,
       });
 
-      // Use adapter for transformation
       return transformBeadsChartSeries(apiData.beads_chart);
     },
     [debouncedFilterKey],
@@ -79,6 +70,7 @@ export function BeadsChart({ height = 300 }) {
       initialData: {
         datasets: [],
         stats: { priceRange: { min: 0, max: 0 }, volumeRange: { min: 0, max: 0 }, totalTransactions: 0 },
+        stringRanges: { CCR: { min: 0, max: 0 }, RCR: { min: 0, max: 0 }, OCR: { min: 0, max: 0 } },
       },
     }
   );
@@ -89,9 +81,42 @@ export function BeadsChart({ height = 300 }) {
     return filterBedroomDatasets(chartData, [2, 3, 4]);
   }, [chartData, showAllBedrooms]);
 
-  // Check if we have data
   const hasData = visibleData?.datasets?.length > 0;
-  const { stats } = chartData;
+  const { stats, stringRanges } = chartData;
+
+  // Region colors for strings and labels
+  const REGION_COLORS = {
+    CCR: '#213448', // Navy
+    RCR: '#547792', // Blue
+    OCR: '#94B4C1', // Sky
+  };
+
+  // Build annotation lines for the "strings"
+  const stringAnnotations = useMemo(() => {
+    if (!stringRanges) return {};
+
+    const annotations = {};
+    const regions = ['CCR', 'RCR', 'OCR'];
+
+    regions.forEach((region, idx) => {
+      const range = stringRanges[region];
+      if (range && range.min > 0 && range.max > 0) {
+        annotations[`string_${region}`] = {
+          type: 'line',
+          yMin: idx,
+          yMax: idx,
+          xMin: range.min / 1000000,
+          xMax: range.max / 1000000,
+          borderColor: REGION_COLORS[region],
+          borderWidth: 3,
+          borderDash: [],
+          z: 0, // Behind the bubbles
+        };
+      }
+    });
+
+    return annotations;
+  }, [stringRanges]);
 
   // Chart.js configuration
   const options = useMemo(
@@ -131,13 +156,16 @@ export function BeadsChart({ height = 300 }) {
             },
           },
         },
+        annotation: {
+          annotations: stringAnnotations,
+        },
       },
       scales: {
         x: {
           type: 'linear',
           title: {
             display: true,
-            text: 'Volume-Weighted Median Price (Millions SGD)',
+            text: 'Volume-Weighted Median Price ($ Millions)',
             font: { size: 11, weight: '500' },
             color: '#547792',
           },
@@ -147,12 +175,11 @@ export function BeadsChart({ height = 300 }) {
             font: { size: 10 },
           },
           grid: {
-            color: 'rgba(148, 180, 193, 0.2)',
+            display: false, // Remove vertical grid lines (distracting)
           },
           min: 0,
-          // Add padding to max to prevent bubbles from being cut off
           suggestedMax: stats?.priceRange?.max
-            ? Math.ceil((stats.priceRange.max / 1000000) * 1.15)
+            ? Math.ceil((stats.priceRange.max / 1000000) * 1.2)
             : 10,
         },
         y: {
@@ -160,9 +187,6 @@ export function BeadsChart({ height = 300 }) {
           min: -0.5,
           max: 2.5,
           reverse: false,
-          title: {
-            display: false,
-          },
           ticks: {
             stepSize: 1,
             callback: (value) => {
@@ -170,33 +194,21 @@ export function BeadsChart({ height = 300 }) {
               return labels[value] || '';
             },
             color: (context) => {
-              // Color-code region labels
-              const colors = ['#213448', '#547792', '#94B4C1'];
+              const colors = [REGION_COLORS.CCR, REGION_COLORS.RCR, REGION_COLORS.OCR];
               return colors[context.tick.value] || '#547792';
             },
-            font: { size: 12, weight: 'bold' },
+            font: { size: 13, weight: 'bold' },
           },
           grid: {
-            display: true,
-            color: (context) => {
-              // Horizontal "strings" - slightly more visible
-              const colors = [
-                'rgba(33, 52, 72, 0.3)',
-                'rgba(84, 119, 146, 0.3)',
-                'rgba(148, 180, 193, 0.3)',
-              ];
-              return colors[context.tick.value] || 'rgba(148, 180, 193, 0.2)';
-            },
-            lineWidth: 2,
+            display: false, // We use annotation lines instead
           },
         },
       },
     }),
-    [stats?.priceRange?.max]
+    [stats?.priceRange?.max, stringAnnotations]
   );
 
-  // Card height calculation (chart + header + footer)
-  const cardHeight = height + 130;
+  const cardHeight = height + 100;
 
   return (
     <QueryState
@@ -220,7 +232,7 @@ export function BeadsChart({ height = 300 }) {
                 Price by Region & Bedroom
               </h3>
               <p className="text-xs text-[#547792] mt-0.5">
-                Volume-weighted median prices
+                Bubble size = volume • Position = median price
               </p>
             </div>
             <button
@@ -234,14 +246,6 @@ export function BeadsChart({ height = 300 }) {
               {showAllBedrooms ? 'Show 2-4BR only' : 'Show all bedrooms'}
             </button>
           </div>
-        </div>
-
-        {/* Insight Box */}
-        <div className="shrink-0 px-3 pt-2">
-          <KeyInsightBox title="How to Read" variant="info" compact>
-            Bubble size = transaction volume. Position = volume-weighted median
-            price.
-          </KeyInsightBox>
         </div>
 
         {/* Chart */}
