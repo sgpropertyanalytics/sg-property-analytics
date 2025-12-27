@@ -21,7 +21,7 @@ from flask import request, jsonify
 from routes.analytics import analytics_bp, reader
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
 from utils.normalize import (
-    to_int, to_date, to_list,
+    to_int, to_date, to_list, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 
@@ -344,7 +344,7 @@ def new_vs_resale():
     # Parse date params as Python date objects (not strings)
     try:
         date_from = to_date(request.args.get("date_from"), field="date_from")
-        date_to = to_date(request.args.get("date_to"), field="date_to")
+        date_to = clamp_date_to_today(to_date(request.args.get("date_to"), field="date_to"))
     except NormalizeValidationError as e:
         return validation_error_response(e)
 
