@@ -99,24 +99,6 @@ def get_sql(params: Dict[str, Any]) -> str:
 
 def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     """Map query result to KPIResult."""
-    # Calculate date windows for debug output (must match build_params logic)
-    max_date = filters.get('max_date') or date.today()
-
-    if max_date.month == 12:
-        max_exclusive = date(max_date.year + 1, 1, 1)
-    else:
-        max_exclusive = date(max_date.year, max_date.month + 1, 1)
-
-    if max_exclusive.month <= 3:
-        current_min = date(max_exclusive.year - 1, max_exclusive.month + 9, 1)
-    else:
-        current_min = date(max_exclusive.year, max_exclusive.month - 3, 1)
-
-    if current_min.month <= 3:
-        prev_min = date(current_min.year - 1, current_min.month + 9, 1)
-    else:
-        prev_min = date(current_min.year, current_min.month - 3, 1)
-
     if not row:
         return KPIResult(
             kpi_id="total_transactions",
@@ -170,13 +152,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
                 "Number of resale transactions in the last 3 months.\n"
                 "Q-o-Q change indicates whether market activity is "
                 "increasing or slowing."
-            ),
-            # Debug: show actual date windows used
-            "debug_dates": {
-                "max_date": str(max_date),
-                "current_period": f"{current_min} to {max_date}",
-                "previous_period": f"{prev_min} to {current_min}",
-            }
+            )
         }
     )
 
