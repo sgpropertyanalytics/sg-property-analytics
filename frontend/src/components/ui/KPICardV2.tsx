@@ -103,30 +103,30 @@ export function KPICardV2({
     const secondaryWidth = (comparison.secondary.value / maxVal) * 100;
 
     return (
-      <div className="mt-3 space-y-1.5">
+      <div className="mt-2 sm:mt-3 space-y-1">
         {/* Primary bar (New Launch) */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-[#547792] w-12 shrink-0">{comparison.primary.label}</span>
-          <div className="flex-1 h-3 bg-[#94B4C1]/20 rounded-sm overflow-hidden">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <span className="text-[9px] sm:text-[10px] text-[#547792] w-8 sm:w-12 shrink-0">{comparison.primary.label}</span>
+          <div className="flex-1 h-2.5 sm:h-3 bg-[#94B4C1]/20 rounded-sm overflow-hidden">
             <div
               className="h-full bg-[#213448] rounded-sm transition-all duration-500"
               style={{ width: `${primaryWidth}%` }}
             />
           </div>
-          <span className="text-[10px] font-mono text-[#213448] w-14 text-right">
+          <span className="text-[9px] sm:text-[10px] font-mono text-[#213448] w-12 sm:w-14 text-right">
             ${comparison.primary.value.toLocaleString()}
           </span>
         </div>
         {/* Secondary bar (Resale) */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-[#94B4C1] w-12 shrink-0">{comparison.secondary.label}</span>
-          <div className="flex-1 h-3 bg-[#94B4C1]/20 rounded-sm overflow-hidden">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <span className="text-[9px] sm:text-[10px] text-[#94B4C1] w-8 sm:w-12 shrink-0">{comparison.secondary.label}</span>
+          <div className="flex-1 h-2.5 sm:h-3 bg-[#94B4C1]/20 rounded-sm overflow-hidden">
             <div
               className="h-full bg-[#94B4C1] rounded-sm transition-all duration-500"
               style={{ width: `${secondaryWidth}%` }}
             />
           </div>
-          <span className="text-[10px] font-mono text-[#547792] w-14 text-right">
+          <span className="text-[9px] sm:text-[10px] font-mono text-[#547792] w-12 sm:w-14 text-right">
             ${comparison.secondary.value.toLocaleString()}
           </span>
         </div>
@@ -154,7 +154,7 @@ export function KPICardV2({
 
     return (
       <div className="flex items-center justify-end">
-        <svg width="48" height="32" viewBox="0 0 48 32" className="overflow-visible">
+        <svg width="40" height="28" viewBox="0 0 48 32" className="sm:w-12 sm:h-8 overflow-visible">
           {/* Background arc */}
           <path
             d="M 6 28 A 20 20 0 0 1 42 28"
@@ -212,7 +212,7 @@ export function KPICardV2({
     const fillPath = path + " L240,45 L0,45 Z";
 
     return (
-      <div className="absolute bottom-0 left-0 right-0 h-12 overflow-hidden rounded-b-lg pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 h-10 md:h-12 overflow-hidden rounded-b-lg pointer-events-none">
         <svg
           className="w-full h-full"
           viewBox="0 0 240 45"
@@ -249,7 +249,7 @@ export function KPICardV2({
       className={`
         relative bg-white rounded-lg border border-[#94B4C1]/50 p-4 md:p-5
         shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden
-        ${variant === 'default' ? 'pb-14' : ''}
+        ${variant === 'default' ? 'pb-12 md:pb-14' : ''}
         ${className}
       `.trim()}
     >
@@ -270,7 +270,7 @@ export function KPICardV2({
           {loading ? (
             <div className="h-9 bg-[#94B4C1]/30 rounded w-24 animate-pulse" />
           ) : (
-            <span className="text-[#213448] text-3xl font-bold tracking-tight font-mono tabular-nums leading-none">
+            <span className="text-[#213448] text-2xl sm:text-3xl font-bold tracking-tight font-mono tabular-nums leading-none">
               {value}
             </span>
           )}
