@@ -457,3 +457,70 @@ Date: [date]
 | Touch targets | ✅ Yes | Wrapper/button sizing |
 | Animations | ✅ Yes | Wrapper level only |
 | Table sorting | ✅ Required | ALL tables MUST have sortable columns |
+
+---
+
+## Part 9: PowerBIFilterContext Scope Isolation
+
+### Critical Architectural Rule
+
+**PowerBIFilterContext (sidebar filters) ONLY affects the Market Pulse page (MacroOverview.jsx).**
+
+All other pages (District Deep Dive, Project Deep Dive, Insights, etc.) must NOT use `usePowerBIFilters()` in their charts.
+
+### Page Filter Ownership
+
+| Page | Filter System | Components That May Use PowerBIFilterContext |
+|------|---------------|---------------------------------------------|
+| **Market Pulse** | PowerBIFilterContext (sidebar) | TimeTrendChart, MedianPsfTrendChart, PriceDistributionChart, NewVsResaleChart, PriceCompressionChart |
+| **District Deep Dive** | Local state (DistrictPriceContent) | NONE - uses props |
+| **Project Deep Dive** | Component props | NONE - uses props |
+| **Floor Dispersion** | Component props | NONE - uses props |
+| **Insights** | Component-local state | NONE - uses local state |
+
+### Charts That Are ISOLATED from PowerBIFilterContext
+
+These charts receive filters as props from their parent page:
+
+```
+District Deep Dive:
+├── MarketStrategyMap (local filters: period, bed, saleType)
+├── MarketMomentumGrid (props: period, bedroom, saleType)
+└── GrowthDumbbellChart (props: period, bedroom, saleType)
+
+Project Deep Dive:
+└── FloorLiquidityHeatmap (props: bedroom, segment, district)
+```
+
+### How to Check Compliance
+
+Before adding `usePowerBIFilters()` to any component:
+
+1. **Check the page** - Is this component used on Market Pulse?
+2. **If YES** → May use PowerBIFilterContext
+3. **If NO** → Must receive filters as props from parent
+
+### Implementation Pattern for Non-Market Pulse Charts
+
+```jsx
+// ✅ CORRECT: Receives filters as props (no PowerBIFilterContext)
+export function MyChart({ period = '12m', bedroom = 'all', saleType = 'all' }) {
+  const filterKey = useMemo(() => `${period}:${bedroom}:${saleType}`, [period, bedroom, saleType]);
+
+  const { data } = useAbortableQuery(
+    async (signal) => {
+      const params = { group_by: 'quarter' };
+      if (period !== 'all') params.date_from = periodToDateFrom(period);
+      if (bedroom !== 'all') params.bedrooms = bedroom;
+      if (saleType !== 'all') params.sale_type = saleType;
+
+      return await getAggregate(params, { signal });
+    },
+    [filterKey]
+  );
+}
+
+// ❌ WRONG: Using PowerBIFilterContext outside Market Pulse
+export function MyChart() {
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters(); // DON'T
+}

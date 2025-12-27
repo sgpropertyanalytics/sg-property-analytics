@@ -157,6 +157,33 @@ TIE-BREAKER PRIORITY:
   3. Composite: price, area, project_name
 ```
 
+## Card 13: Filter Scope Isolation
+```
+RULE: PowerBIFilterContext (sidebar) ONLY affects Market Pulse page
+
+Market Pulse (MacroOverview.jsx):
+  ✅ May use usePowerBIFilters()
+  Charts: TimeTrendChart, MedianPsfTrendChart, PriceDistributionChart
+
+All Other Pages:
+  ❌ Must NOT use usePowerBIFilters()
+  ✅ Receive filters as props from parent
+
+District Deep Dive:
+  MarketStrategyMap → local state (controls filters)
+  MarketMomentumGrid → props (period, bedroom, saleType)
+  GrowthDumbbellChart → props (period, bedroom, saleType)
+
+Project Deep Dive:
+  FloorLiquidityHeatmap → props (bedroom, segment, district)
+
+Pattern for non-Market Pulse charts:
+  export function MyChart({ period, bedroom, saleType }) {
+    const filterKey = `${period}:${bedroom}:${saleType}`;
+    // Build API params from props, not usePowerBIFilters()
+  }
+```
+
 ---
 
 # 3. CORE PRINCIPLES

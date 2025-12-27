@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import {
@@ -70,7 +70,6 @@ export function PriceCompressionChart({ height = 380 }) {
   const { isPremium } = useSubscription();
 
   // UI state (not data state - that comes from useAbortableQuery)
-  const [showContext, setShowContext] = useState(false);
   const chartRef = useRef(null);
 
   // Defer fetch until chart is visible (low priority - below the fold)
@@ -274,61 +273,8 @@ export function PriceCompressionChart({ height = 380 }) {
     },
   };
 
-  // Context chart data (absolute PSF values)
-  const contextChartData = {
-    labels: data.map(d => d.period),
-    datasets: [
-      {
-        label: 'CCR (Core Central)',
-        data: data.map(d => d.ccr),
-        borderColor: '#213448',
-        borderWidth: 1.5,
-        pointRadius: 0,
-        tension: 0.3,
-        spanGaps: true,
-      },
-      {
-        label: 'RCR (Rest of Central)',
-        data: data.map(d => d.rcr),
-        borderColor: '#547792',
-        borderWidth: 1.5,
-        pointRadius: 0,
-        tension: 0.3,
-        spanGaps: true,
-      },
-      {
-        label: 'OCR (Outside Central)',
-        data: data.map(d => d.ocr),
-        borderColor: '#94B4C1',
-        borderWidth: 1.5,
-        pointRadius: 0,
-        tension: 0.3,
-        spanGaps: true,
-      },
-    ],
-  };
-
-  const contextChartOptions = {
-    ...baseChartJsOptions,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: { usePointStyle: true, padding: 10, font: { size: 10 } },
-      },
-      tooltip: { enabled: false },
-    },
-    scales: {
-      x: { display: false },
-      y: {
-        ticks: { callback: (v) => `$${v.toLocaleString()}`, font: { size: 9 } },
-        grid: { color: 'rgba(148, 180, 193, 0.1)' },
-      },
-    },
-  };
-
   // Card layout: flex column with fixed height
-  // When showContext is true, we need extra space for the context chart
-  const cardHeight = height + 200 + (showContext ? height * 0.25 : 0);
+  const cardHeight = height + 200;
 
   return (
     <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={350}>
@@ -393,24 +339,8 @@ export function PriceCompressionChart({ height = 380 }) {
         )}
       </ChartSlot>
 
-      {/* Context Panel (Collapsible) - shrink-0 with fixed height */}
-      {showContext && data.length > 0 && (
-        <div className="px-3 pb-3 md:px-4 md:pb-4 shrink-0" style={{ height: height * 0.25 }}>
-          <div className="text-xs text-[#547792] mb-1 font-medium">Absolute PSF Context</div>
-          <div className="h-[calc(100%-20px)] w-full relative">
-            <Line data={contextChartData} options={contextChartOptions} />
-          </div>
-        </div>
-      )}
-
       {/* Footer - fixed height h-11 for consistent alignment */}
-      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">
-        <button
-          onClick={() => setShowContext(!showContext)}
-          className="shrink-0 hover:text-[#213448] transition-colors"
-        >
-          {showContext ? '▲ Hide' : '▼ Show'} absolute PSF
-        </button>
+      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-end gap-3 text-xs text-[#547792]">
         <span className="truncate">{data.length} periods | Click to highlight</span>
       </div>
       </div>
