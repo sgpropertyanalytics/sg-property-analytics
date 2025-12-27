@@ -1,14 +1,14 @@
 """
 KPI: Median PSF Growth (Resale Only)
 
-Shows % change in median resale PSF over rolling 90-day periods.
-Current: last 90 days vs Previous: 90 days before that.
+Shows % change in median resale PSF over rolling 3-month periods.
+Current: last 3 months vs Previous: 3 months before that.
 
 Methodology:
 - RESALE TRANSACTIONS ONLY (excludes new sale/developer sales)
 - Median computed on pooled transactions (not "median of medians")
 - Sample size gate: n < 20 → "Low confidence" warning
-- Rolling quarters for always-fresh data (not calendar quarters)
+- Month boundaries (not day-level) because URA data is month-granularity
 
 Formula:
   PSF Growth (%) = (Current Median - Previous Median) / Previous Median × 100
@@ -19,7 +19,7 @@ from db.sql import OUTLIER_FILTER
 from constants import SALE_TYPE_RESALE
 from services.kpi.base import (
     KPISpec, KPIResult,
-    build_comparison_bounds, build_filter_clause
+    build_monthly_comparison_bounds, build_filter_clause
 )
 
 # Minimum sample size for reliable median
@@ -27,11 +27,12 @@ MIN_SAMPLE_SIZE = 20
 
 
 def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
-    """Build params for median PSF query with 90-day rolling windows."""
-    # Get date bounds - 90 days for Q-o-Q comparison
-    params = build_comparison_bounds(
+    """Build params for median PSF query with 3-month rolling windows."""
+    # Get date bounds - 3 months for Q-o-Q comparison
+    # CRITICAL: Use month boundaries because URA data is month-level
+    params = build_monthly_comparison_bounds(
         max_date=filters.get('max_date'),
-        period_days=90  # Rolling quarter
+        period_months=3  # Rolling quarter (3 months)
     )
 
     # Add filter params
@@ -115,8 +116,8 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     # Format the primary value as PSF (frontend will add structured content)
     formatted_value = f"${round(current):,}"
 
-    # Build insight - rolling 90D context (footer only)
-    insight = "Rolling 90D Q-o-Q Median PSF"
+    # Build insight - rolling 3-month context (footer only)
+    insight = "Rolling 3M Q-o-Q Median PSF"
 
     # Add confidence warning to insight if low sample
     if confidence_label:

@@ -100,6 +100,10 @@ def build_comparison_bounds(
     """
     Build date params for current vs previous period comparison.
 
+    DEPRECATED: Use build_monthly_comparison_bounds() for URA data.
+    URA data is month-level (all transactions dated 1st of month),
+    so day-level boundaries like "Oct 2" will exclude October data.
+
     Returns:
         {
             min_date: start of current period,
@@ -114,6 +118,62 @@ def build_comparison_bounds(
     max_exclusive = max_date + timedelta(days=1)
     min_date = max_date - timedelta(days=period_days)
     prev_min = min_date - timedelta(days=period_days)
+
+    return {
+        'min_date': min_date,
+        'max_date_exclusive': max_exclusive,
+        'prev_min_date': prev_min,
+        'prev_max_date_exclusive': min_date,  # Previous ends where current starts
+    }
+
+
+def _months_back(from_date: date, months: int) -> date:
+    """Go back N months from a date, returning 1st of that month."""
+    year = from_date.year
+    month = from_date.month - months
+    while month <= 0:
+        month += 12
+        year -= 1
+    return date(year, month, 1)
+
+
+def build_monthly_comparison_bounds(
+    max_date: Optional[date] = None,
+    period_months: int = 3
+) -> Dict[str, Any]:
+    """
+    Build date params using MONTH boundaries for URA data.
+
+    CRITICAL: URA data is month-level - all transactions within a month
+    are dated to the 1st of that month. Day-level boundaries will fail.
+
+    Example with max_date=Dec 27, period_months=3:
+        max_date_exclusive: Jan 1, 2026
+        min_date: Oct 1, 2025 (current: Oct, Nov, Dec)
+        prev_min_date: Jul 1, 2025 (previous: Jul, Aug, Sep)
+
+    Returns:
+        {
+            min_date: 1st of month, N months before max_date's month
+            max_date_exclusive: 1st of month after max_date's month
+            prev_min_date: 1st of month, 2N months before max_date's month
+            prev_max_date_exclusive: same as min_date
+        }
+    """
+    if max_date is None:
+        max_date = date.today()
+
+    # max_exclusive is 1st of next month
+    if max_date.month == 12:
+        max_exclusive = date(max_date.year + 1, 1, 1)
+    else:
+        max_exclusive = date(max_date.year, max_date.month + 1, 1)
+
+    # Current period starts N months before max_exclusive
+    min_date = _months_back(max_exclusive, period_months)
+
+    # Previous period starts 2N months before max_exclusive
+    prev_min = _months_back(max_exclusive, period_months * 2)
 
     return {
         'min_date': min_date,

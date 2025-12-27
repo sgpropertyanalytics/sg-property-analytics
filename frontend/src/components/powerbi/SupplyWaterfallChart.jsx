@@ -172,8 +172,30 @@ export function SupplyWaterfallChart({
               </div>
             )}
           </div>
-
         </div>
+
+        {/* Legend */}
+        {view === 'regional' && (
+          <div className="px-3 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20 shrink-0">
+            <div className="flex flex-wrap items-center gap-4 text-xs">
+              <span className="text-[#547792] font-medium">Supply:</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3 rounded" style={{ backgroundColor: '#213448' }} />
+                <span className="text-[#213448]">Unsold Inventory</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3 rounded" style={{ backgroundColor: '#547792' }} />
+                <span className="text-[#547792]">Upcoming Launches</span>
+              </div>
+              {includeGls && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-3 rounded" style={{ backgroundColor: '#94B4C1' }} />
+                  <span className="text-[#547792]">GLS Pipeline</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Chart Area */}
         <ChartSlot>

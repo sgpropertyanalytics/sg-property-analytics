@@ -28,6 +28,7 @@ from services.kpi.base import (
     KPISpec,
     build_date_bounds,
     build_comparison_bounds,
+    build_monthly_comparison_bounds,
     validate_sql_params,
 )
 
@@ -40,5 +41,6 @@ __all__ = [
     'KPISpec',
     'build_date_bounds',
     'build_comparison_bounds',
+    'build_monthly_comparison_bounds',
     'validate_sql_params',
 ]

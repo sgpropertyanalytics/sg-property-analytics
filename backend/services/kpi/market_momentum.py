@@ -4,15 +4,18 @@ KPI: Market Momentum (Volatility-Normalized, Resale-Based)
 Best-practice financial momentum indicator for real estate.
 
 Methodology:
-1. PSF Change: Resale Q-o-Q median PSF % (rolling 90-day quarters)
+1. PSF Change: Resale Q-o-Q median PSF % (rolling 3-month quarters)
 2. Volatility: Stddev of Q-o-Q changes over last 12 quarters
 3. z-score: PSF_change / volatility
 4. Score: clamp(50 - z×10, 30, 70)
 
+CRITICAL: Uses month boundaries because URA data is month-level.
+All transactions within a month are dated to the 1st of that month.
+
 Confidence Levels (based on resale deals per quarter):
 - High: ≥20 deals per quarter consistently
 - Medium: 10-19 deals
-- Low: <10 deals (fallback to rolling 180D window)
+- Low: <10 deals (fallback to rolling 6-month window)
 
 Score Interpretation:
 - Score > 55: Buyer advantage (prices falling unusually fast)
@@ -22,12 +25,12 @@ Score Interpretation:
 This does NOT mean cheap or expensive - only momentum relative to historical norms.
 """
 
-from datetime import timedelta, date
+from datetime import date
 from typing import Dict, Any, Optional
 from db.sql import OUTLIER_FILTER
 from constants import SALE_TYPE_RESALE
 from services.kpi.base import (
-    KPIResult, build_filter_clause
+    KPIResult, build_filter_clause, _months_back
 )
 
 # Confidence thresholds (deals per quarter)
@@ -39,30 +42,44 @@ MIN_VOLATILITY_QUARTERS = 4
 
 
 def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
-    """Build params for market momentum query with quarterly windows."""
+    """Build params for market momentum query with quarterly windows.
+
+    CRITICAL: Uses MONTH boundaries because URA data is month-level.
+    All transactions within a month are dated to the 1st of that month.
+    """
     max_date = filters.get('max_date')
     if max_date is None:
         max_date = date.today()
 
-    # Current quarter: last 90 days (Q0)
-    # Previous quarter: 90-180 days ago (Q1)
-    # Older quarter: 180-270 days ago (Q2) - needed to calculate previous momentum
+    # max_exclusive is 1st of next month
+    if max_date.month == 12:
+        max_exclusive = date(max_date.year + 1, 1, 1)
+    else:
+        max_exclusive = date(max_date.year, max_date.month + 1, 1)
+
+    # Current quarter: last 3 months (Q0)
+    # Previous quarter: 3-6 months ago (Q1)
+    # Older quarter: 6-9 months ago (Q2) - needed to calculate previous momentum
+    current_start = _months_back(max_exclusive, 3)
+    prev_start = _months_back(max_exclusive, 6)
+    older_start = _months_back(max_exclusive, 9)
+
     params = {
-        'current_start': max_date - timedelta(days=90),
-        'current_end': max_date + timedelta(days=1),  # Exclusive
-        'prev_start': max_date - timedelta(days=180),
-        'prev_end': max_date - timedelta(days=90) + timedelta(days=1),  # Exclusive
-        'older_start': max_date - timedelta(days=270),
-        'older_end': max_date - timedelta(days=180) + timedelta(days=1),  # Exclusive
-        # For volatility: 12 quarters back (3 years)
-        'volatility_start': max_date - timedelta(days=365 * 3),
+        'current_start': current_start,
+        'current_end': max_exclusive,  # Exclusive
+        'prev_start': prev_start,
+        'prev_end': current_start,  # Exclusive (ends where current starts)
+        'older_start': older_start,
+        'older_end': prev_start,  # Exclusive (ends where prev starts)
+        # For volatility: 12 quarters back (3 years = 36 months)
+        'volatility_start': _months_back(max_exclusive, 36),
         'max_date': max_date,
     }
 
-    # Fallback for low-confidence: 180-day windows
-    params['fallback_current_start'] = max_date - timedelta(days=180)
-    params['fallback_prev_start'] = max_date - timedelta(days=360)
-    params['fallback_prev_end'] = max_date - timedelta(days=180) + timedelta(days=1)
+    # Fallback for low-confidence: 6-month windows
+    params['fallback_current_start'] = _months_back(max_exclusive, 6)
+    params['fallback_prev_start'] = _months_back(max_exclusive, 12)
+    params['fallback_prev_end'] = _months_back(max_exclusive, 6)
 
     filter_parts, filter_params = build_filter_clause(filters)
     params.update(filter_params)
