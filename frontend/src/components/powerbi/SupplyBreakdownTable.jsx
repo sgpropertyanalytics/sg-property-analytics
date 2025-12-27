@@ -279,7 +279,7 @@ export function SupplyBreakdownTable({
                             {/* Unsold segment */}
                             {row.unsold > 0 && (
                               <div
-                                className="h-full"
+                                className={`h-full rounded-l ${row.upcoming === 0 ? 'rounded-r' : ''}`}
                                 style={{
                                   width: `${(row.unsold / tableData.maxTotal) * 100}%`,
                                   backgroundColor: COLORS.unsold
@@ -289,7 +289,7 @@ export function SupplyBreakdownTable({
                             {/* Upcoming segment */}
                             {row.upcoming > 0 && (
                               <div
-                                className="h-full"
+                                className={`h-full rounded-r ${row.unsold === 0 ? 'rounded-l' : ''}`}
                                 style={{
                                   width: `${(row.upcoming / tableData.maxTotal) * 100}%`,
                                   backgroundColor: COLORS.upcoming
