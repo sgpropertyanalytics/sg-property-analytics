@@ -6,7 +6,8 @@ Two-phase model:
 - 'launched': Government intent signal (SIGNAL)
 - 'awarded': Capital committed (FACT)
 
-Pipeline: Location -> Geocode (OneMap API) -> Planning Area -> Region
+Pipeline: Location -> Geocode (OneMap API) -> Postal Code -> District -> Region
+Fallback: Location -> Planning Area -> District -> Region
 """
 import re
 import requests
@@ -16,6 +17,21 @@ from decimal import Decimal
 from bs4 import BeautifulSoup
 import time
 import functools
+
+# Import from centralized constants (single source of truth for district/region mappings)
+try:
+    from constants import (
+        get_district_from_postal_code,
+        get_district_from_planning_area,
+        get_region_for_district,
+    )
+except ImportError:
+    # Fallback for when running from different directory
+    from backend.constants import (
+        get_district_from_postal_code,
+        get_district_from_planning_area,
+        get_region_for_district,
+    )
 
 # =============================================================================
 # PLANNING AREA TO REGION MAPPING (AUTHORITATIVE)
@@ -176,11 +192,19 @@ def lookup_planning_area_from_subzone(location: str) -> Optional[str]:
 def geocode_location(location: str) -> Dict[str, Any]:
     """
     Geocode a location using OneMap API.
-    Returns lat, lon, and planning area.
+    Returns lat, lon, postal_code, and planning area.
     Uses caching to avoid repeated API calls.
+
+    Returns:
+        {
+            'latitude': float | None,
+            'longitude': float | None,
+            'postal_code': str | None,  # 6-digit Singapore postal code
+            'planning_area': str | None
+        }
     """
     if not location:
-        return {'latitude': None, 'longitude': None, 'planning_area': None}
+        return {'latitude': None, 'longitude': None, 'postal_code': None, 'planning_area': None}
 
     # Check cache first
     cache_key = location.lower().strip()
@@ -193,6 +217,7 @@ def geocode_location(location: str) -> Dict[str, Any]:
         result = {
             'latitude': None,
             'longitude': None,
+            'postal_code': None,
             'planning_area': planning_area
         }
         _onemap_cache[cache_key] = result
@@ -218,6 +243,7 @@ def geocode_location(location: str) -> Dict[str, Any]:
             geocoded = {
                 'latitude': float(result.get('LATITUDE')) if result.get('LATITUDE') else None,
                 'longitude': float(result.get('LONGITUDE')) if result.get('LONGITUDE') else None,
+                'postal_code': result.get('POSTAL') or None,  # 6-digit postal code
                 'planning_area': result.get('BUILDING'),
             }
 
@@ -236,7 +262,7 @@ def geocode_location(location: str) -> Dict[str, Any]:
         print(f"OneMap geocoding failed for '{location}': {e}")
 
     # Return empty result
-    result = {'latitude': None, 'longitude': None, 'planning_area': None}
+    result = {'latitude': None, 'longitude': None, 'postal_code': None, 'planning_area': None}
     _onemap_cache[cache_key] = result
     return result
 
@@ -1425,22 +1451,52 @@ def scrape_gls_tenders(
             geo_data = geocode_location(location)
             data['latitude'] = geo_data.get('latitude')
             data['longitude'] = geo_data.get('longitude')
+            data['postal_code'] = geo_data.get('postal_code')
             data['planning_area'] = geo_data.get('planning_area')
 
-            # Determine region from planning area
-            if data['planning_area']:
-                data['market_segment'] = get_region_from_planning_area(data['planning_area'])
-            else:
-                # Try to infer from location text
+            # =================================================================
+            # Derive postal_district and market_segment
+            # Priority: postal_code → district → region (most accurate)
+            # Fallback: planning_area → district → region
+            # =================================================================
+            postal_district = None
+            market_segment = None
+
+            # Method 1: Postal code (most accurate)
+            if data['postal_code']:
+                postal_district = get_district_from_postal_code(data['postal_code'])
+                if postal_district:
+                    market_segment = get_region_for_district(postal_district)
+
+            # Method 2: Planning area (fallback)
+            if not postal_district and data['planning_area']:
+                postal_district = get_district_from_planning_area(data['planning_area'])
+                if postal_district:
+                    market_segment = get_region_for_district(postal_district)
+                else:
+                    # Last resort: use legacy planning_area → region mapping
+                    market_segment = get_region_from_planning_area(data['planning_area'])
+
+            # Method 3: Subzone lookup (last fallback)
+            if not postal_district and not market_segment:
                 planning_area = lookup_planning_area_from_subzone(location)
                 if planning_area:
                     data['planning_area'] = planning_area
-                    data['market_segment'] = get_region_from_planning_area(planning_area)
-                else:
-                    data['market_segment'] = None
-                    data['needs_review'] = True
-                    data['review_reason'] = f"Could not determine region for: {location}"
-                    stats['needs_review'].append(release_id)
+                    postal_district = get_district_from_planning_area(planning_area)
+                    if postal_district:
+                        market_segment = get_region_for_district(postal_district)
+                    else:
+                        market_segment = get_region_from_planning_area(planning_area)
+
+            # Set derived fields
+            data['postal_district'] = postal_district
+            data['market_segment'] = market_segment
+
+            # Flag for review if we couldn't determine region
+            if not market_segment:
+                data['needs_review'] = True
+                data['review_reason'] = f"Could not determine region for: {location}"
+                stats['needs_review'].append(release_id)
 
             # Check if already exists - UPDATE instead of skip
             existing = db_session.query(GLSTender).filter_by(release_id=release_id).first()
@@ -1450,8 +1506,9 @@ def scrape_gls_tenders(
                 # This ensures PSF is recomputed correctly even for old records
                 update_fields = [
                     'status', 'release_url', 'release_date', 'tender_close_date',
-                    'location_raw', 'latitude', 'longitude', 'planning_area',
-                    'market_segment', 'site_area_sqm', 'max_gfa_sqm',
+                    'location_raw', 'latitude', 'longitude', 'postal_code',
+                    'postal_district', 'planning_area', 'market_segment',
+                    'site_area_sqm', 'max_gfa_sqm',
                     'estimated_units', 'estimated_units_source',
                     'successful_tenderer', 'tendered_price_sgd', 'psm_gfa',
                     'num_tenderers'
@@ -1491,6 +1548,8 @@ def scrape_gls_tenders(
                     location_raw=data.get('location_raw'),
                     latitude=data.get('latitude'),
                     longitude=data.get('longitude'),
+                    postal_code=data.get('postal_code'),
+                    postal_district=data.get('postal_district'),
                     planning_area=data.get('planning_area'),
                     market_segment=data.get('market_segment'),
                     site_area_sqm=data.get('site_area_sqm'),

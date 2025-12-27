@@ -262,14 +262,15 @@ export function transformDistrictWaterfall(apiResponse, selectedRegion, options 
   const labels = filteredDistricts.map(([district]) => district);
   const unsoldData = filteredDistricts.map(([, data]) => data.unsoldInventory);
   const upcomingData = filteredDistricts.map(([, data]) => data.upcomingLaunches);
+  const glsData = includeGls ? filteredDistricts.map(([, data]) => data.glsPipeline || 0) : [];
 
   const districtTotals = {
     unsoldInventory: unsoldData.reduce((a, b) => a + b, 0),
     upcomingLaunches: upcomingData.reduce((a, b) => a + b, 0),
-    glsPipeline: 0,
+    glsPipeline: includeGls ? glsData.reduce((a, b) => a + b, 0) : 0,
     totalEffectiveSupply: 0,
   };
-  districtTotals.totalEffectiveSupply = districtTotals.unsoldInventory + districtTotals.upcomingLaunches;
+  districtTotals.totalEffectiveSupply = districtTotals.unsoldInventory + districtTotals.upcomingLaunches + districtTotals.glsPipeline;
 
   // District view uses stacked bars (not waterfall)
   const datasets = [
@@ -291,6 +292,18 @@ export function transformDistrictWaterfall(apiResponse, selectedRegion, options 
     },
   ];
 
+  // Add GLS dataset if included and has data
+  if (includeGls && glsData.some(v => v > 0)) {
+    datasets.push({
+      label: 'GLS Pipeline',
+      data: glsData,
+      backgroundColor: COLORS.glsPipeline,
+      borderColor: BORDER_COLORS.glsPipeline,
+      borderWidth: 1,
+      stack: 'supply',
+    });
+  }
+
   return {
     labels,
     datasets,
@@ -299,7 +312,7 @@ export function transformDistrictWaterfall(apiResponse, selectedRegion, options 
       subtitle: selectedRegion ? `${selectedRegion} Districts` : 'All Districts',
       asOf: formatDate(meta?.asOfDate),
       launchYear: meta?.launchYear || 2026,
-      includesGls: false,
+      includesGls: includeGls && districtTotals.glsPipeline > 0,
       selectedRegion,
     },
   };

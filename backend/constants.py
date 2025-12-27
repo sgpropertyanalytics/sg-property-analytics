@@ -110,6 +110,253 @@ DISTRICT_NAMES = {
 
 
 # =============================================================================
+# POSTAL SECTOR TO DISTRICT MAPPING
+# =============================================================================
+# Singapore postal codes are 6 digits. First 2 digits = postal sector.
+# This maps postal sector → district (authoritative mapping).
+#
+# Reference: Singapore Post / URA postal district boundaries
+# Usage: get_district_from_postal_code("588996") → "D21"
+
+POSTAL_SECTOR_TO_DISTRICT = {
+    # D01 – Boat Quay / Raffles Place / Marina (CCR)
+    "01": "D01", "02": "D01", "03": "D01", "04": "D01", "05": "D01", "06": "D01",
+
+    # D02 – Shenton Way / Tanjong Pagar (CCR)
+    "07": "D02", "08": "D02",
+
+    # D03 – Queenstown / Alexandra / Tiong Bahru (RCR)
+    "14": "D03", "15": "D03", "16": "D03",
+
+    # D04 – Harbourfront / Keppel / Telok Blangah (RCR)
+    "09": "D04", "10": "D04",
+
+    # D05 – Buona Vista / Dover / Pasir Panjang (RCR)
+    "11": "D05", "12": "D05", "13": "D05",
+
+    # D06 – City Hall / Fort Canning (CCR)
+    "17": "D06",
+
+    # D07 – Bugis / Rochor (CCR)
+    "18": "D07", "19": "D07",
+
+    # D08 – Little India / Farrer Park (RCR)
+    "20": "D08", "21": "D08",
+
+    # D09 – Orchard / Somerset / River Valley (CCR)
+    "22": "D09", "23": "D09",
+
+    # D10 – Tanglin / Bukit Timah / Holland (CCR)
+    "24": "D10", "25": "D10", "26": "D10", "27": "D10",
+
+    # D11 – Newton / Novena (CCR)
+    "28": "D11", "29": "D11", "30": "D11",
+
+    # D12 – Balestier / Toa Payoh (RCR)
+    "31": "D12", "32": "D12", "33": "D12",
+
+    # D13 – Potong Pasir / MacPherson (RCR)
+    "34": "D13", "35": "D13", "36": "D13", "37": "D13",
+
+    # D14 – Geylang / Paya Lebar / Eunos (RCR)
+    "38": "D14", "39": "D14", "40": "D14", "41": "D14",
+
+    # D15 – East Coast / Marine Parade / Katong (RCR)
+    "42": "D15", "43": "D15", "44": "D15", "45": "D15",
+
+    # D16 – Bedok / Upper East Coast (OCR)
+    "46": "D16", "47": "D16", "48": "D16",
+
+    # D17 – Loyang / Changi (OCR)
+    "49": "D17", "50": "D17", "81": "D17",
+
+    # D18 – Tampines / Pasir Ris (OCR)
+    "51": "D18", "52": "D18",
+
+    # D19 – Serangoon / Hougang / Punggol / Sengkang (OCR)
+    "53": "D19", "54": "D19", "55": "D19", "82": "D19",
+
+    # D20 – Bishan / Ang Mo Kio (RCR)
+    "56": "D20", "57": "D20",
+
+    # D21 – Upper Bukit Timah / Clementi (OCR)
+    "58": "D21", "59": "D21",
+
+    # D22 – Jurong / Boon Lay (OCR)
+    "60": "D22", "61": "D22", "62": "D22", "63": "D22", "64": "D22",
+
+    # D23 – Bukit Batok / Bukit Panjang / Choa Chu Kang (OCR)
+    "65": "D23", "66": "D23", "67": "D23", "68": "D23",
+
+    # D24 – Lim Chu Kang / Tengah (OCR)
+    "69": "D24", "70": "D24", "71": "D24",
+
+    # D25 – Kranji / Woodlands (OCR)
+    "72": "D25", "73": "D25",
+
+    # D26 – Upper Thomson / Springleaf (OCR)
+    "77": "D26", "78": "D26",
+
+    # D27 – Yishun / Sembawang (OCR)
+    "75": "D27", "76": "D27",
+
+    # D28 – Seletar / Yio Chu Kang (OCR)
+    "79": "D28", "80": "D28",
+}
+
+
+# =============================================================================
+# PLANNING AREA TO DISTRICT MAPPING (Fallback)
+# =============================================================================
+# URA Planning Areas → District mapping for geocoding fallback.
+# Used when postal code is unavailable.
+#
+# Note: Some planning areas span multiple districts. This maps to the
+# PRIMARY district for that area. Edge cases may need manual review.
+#
+# Reference: URA Master Plan 2019 Planning Areas
+
+PLANNING_AREA_TO_DISTRICT = {
+    # CCR Districts
+    "Downtown Core": "D01",
+    "Marina South": "D01",
+    "Marina East": "D01",
+    "Straits View": "D01",
+    "Outram": "D02",
+    "Singapore River": "D06",
+    "Museum": "D06",
+    "Rochor": "D07",
+    "Orchard": "D09",
+    "River Valley": "D09",
+    "Tanglin": "D10",
+    "Newton": "D11",
+    "Novena": "D11",
+
+    # RCR Districts
+    "Queenstown": "D03",
+    "Bukit Merah": "D04",  # Spans D03-D04, primary is D04 (Telok Blangah)
+    "Clementi": "D05",
+    "Kallang": "D08",  # Little India / Farrer Park area
+    "Toa Payoh": "D12",
+    "Serangoon": "D13",  # Potong Pasir / MacPherson
+    "Geylang": "D14",
+    "Paya Lebar": "D14",
+    "Marine Parade": "D15",
+    "Bishan": "D20",
+    "Ang Mo Kio": "D20",
+
+    # OCR Districts
+    "Bedok": "D16",
+    "Changi": "D17",
+    "Changi Bay": "D17",
+    "Tampines": "D18",
+    "Pasir Ris": "D18",
+    "Hougang": "D19",
+    "Punggol": "D19",
+    "Sengkang": "D19",
+    "Bukit Timah": "D21",  # Upper Bukit Timah
+    "Jurong East": "D22",
+    "Jurong West": "D22",
+    "Boon Lay": "D22",
+    "Pioneer": "D22",
+    "Tuas": "D22",
+    "Bukit Batok": "D23",
+    "Bukit Panjang": "D23",
+    "Choa Chu Kang": "D23",
+    "Tengah": "D24",
+    "Lim Chu Kang": "D24",
+    "Western Water Catchment": "D24",
+    "Woodlands": "D25",
+    "Sungei Kadut": "D25",
+    "Mandai": "D26",
+    "Central Water Catchment": "D26",
+    "Sembawang": "D27",
+    "Yishun": "D27",
+    "Simpang": "D27",
+    "Seletar": "D28",
+}
+
+
+def get_district_from_postal_code(postal_code: str) -> str | None:
+    """
+    Derive district from Singapore postal code.
+
+    Args:
+        postal_code: 6-digit Singapore postal code (e.g., "588996")
+
+    Returns:
+        District code (e.g., "D21") or None if invalid/unknown
+
+    Example:
+        get_district_from_postal_code("588996") → "D21"
+        get_district_from_postal_code("018989") → "D01"
+    """
+    if not postal_code:
+        return None
+
+    # Clean and validate
+    clean = str(postal_code).strip().replace(" ", "")
+    if len(clean) < 2:
+        return None
+
+    # Extract postal sector (first 2 digits)
+    sector = clean[:2]
+
+    return POSTAL_SECTOR_TO_DISTRICT.get(sector)
+
+
+def get_district_from_planning_area(planning_area: str) -> str | None:
+    """
+    Derive district from URA planning area (fallback method).
+
+    Args:
+        planning_area: URA planning area name (e.g., "Queenstown")
+
+    Returns:
+        District code (e.g., "D03") or None if unknown
+
+    Note:
+        Some planning areas span multiple districts. This returns the
+        primary district for that area.
+    """
+    if not planning_area:
+        return None
+
+    # Try exact match first
+    area = planning_area.strip()
+    if area in PLANNING_AREA_TO_DISTRICT:
+        return PLANNING_AREA_TO_DISTRICT[area]
+
+    # Try case-insensitive match
+    area_lower = area.lower()
+    for key, district in PLANNING_AREA_TO_DISTRICT.items():
+        if key.lower() == area_lower:
+            return district
+
+    return None
+
+
+def get_region_from_postal_code(postal_code: str) -> str | None:
+    """
+    Derive market region (CCR/RCR/OCR) from postal code.
+
+    Args:
+        postal_code: 6-digit Singapore postal code
+
+    Returns:
+        Region code ('CCR', 'RCR', 'OCR') or None if invalid
+
+    Example:
+        get_region_from_postal_code("588996") → "OCR"  # D21
+        get_region_from_postal_code("238823") → "CCR"  # D09
+    """
+    district = get_district_from_postal_code(postal_code)
+    if not district:
+        return None
+    return get_region_for_district(district)
+
+
+# =============================================================================
 # BEDROOM CLASSIFICATION - See services/classifier.py for implementation
 # =============================================================================
 #

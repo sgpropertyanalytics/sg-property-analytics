@@ -11,6 +11,12 @@ CRITICAL: Categories are MUTUALLY EXCLUSIVE to prevent double-counting:
 - Upcoming Launches: Projects in upcoming_launches table (future launches)
 - GLS Pipeline: Open tenders NOT linked to any upcoming_launch (unassigned sites)
 
+GLS District Granularity:
+- GLS tenders now have postal_district derived from postal_code → sector → district
+- byDistrict includes GLS for tenders with postal_district
+- byRegion includes ALL GLS (even those without district, using market_segment)
+- This resolves the discrepancy between regional and district supply totals
+
 Response contract:
 - All numeric fields return 0 instead of null
 - All three regions (CCR, RCR, OCR) always present
@@ -91,15 +97,25 @@ def get_supply_summary(
     # Fetch each category with project-level detail
     unsold_by_district, unsold_projects = _get_unsold_inventory_with_projects()
     upcoming_by_district, upcoming_projects = _get_upcoming_launches_with_projects(launch_year)
-    gls_by_region = _get_gls_pipeline_by_region() if include_gls else {}
 
-    # Merge into district-level data (includes projects)
+    # Fetch GLS pipeline data (both region and district level)
+    gls_by_region = {}
+    gls_by_district = {}
+    gls_projects = []
+
+    if include_gls:
+        gls_by_region = _get_gls_pipeline_by_region()
+        gls_by_district, gls_projects = _get_gls_pipeline_by_district()
+
+    # Merge into district-level data (now includes GLS with district granularity)
     by_district = _merge_district_data_with_projects(
         unsold_by_district, upcoming_by_district,
-        unsold_projects, upcoming_projects
+        unsold_projects, upcoming_projects,
+        gls_by_district, gls_projects,
+        include_gls
     )
 
-    # Rollup to region level
+    # Rollup to region level (uses region-level GLS for tenders without district)
     by_region = _rollup_by_region(by_district, gls_by_region, include_gls)
 
     # Compute totals
@@ -255,8 +271,6 @@ def _get_gls_pipeline_by_region() -> Dict[str, int]:
     DEFINITION: GLS tenders with status='launched' (open for bidding, not yet awarded).
     These are UNASSIGNED sites - not yet linked to any upcoming_launch project.
 
-    Note: GLS tenders use planning_area → market_segment mapping (not district).
-
     Returns:
         Dict mapping region → estimated units (e.g., {"CCR": 2000, "RCR": 3000, "OCR": 1500})
     """
@@ -298,6 +312,89 @@ def _get_gls_pipeline_by_region() -> Dict[str, int]:
     except Exception as e:
         logger.warning(f"Could not fetch GLS pipeline: {e}")
         return {}
+
+
+def _get_gls_pipeline_by_district() -> tuple:
+    """
+    Get GLS pipeline supply by district (open tenders only).
+
+    DEFINITION: GLS tenders with status='launched' (open for bidding, not yet awarded).
+    These are UNASSIGNED sites - not yet linked to any upcoming_launch project.
+
+    Uses postal_district derived from postal_code (primary) or planning_area (fallback).
+
+    Returns:
+        Tuple of (district_totals: Dict[str, int], gls_projects: List[Dict])
+        district_totals: {"D01": 500, "D21": 800, ...}
+        gls_projects: [{ name, district, region, units, location }]
+    """
+    imports = _get_imports()
+    db = imports['db']
+    func = imports['func']
+    get_region_for_district = imports['get_region_for_district']
+
+    try:
+        from models.gls_tender import GLSTender
+        from models.upcoming_launch import UpcomingLaunch
+
+        # First, get IDs of GLS tenders that ARE linked to upcoming_launches
+        linked_gls_ids_subquery = db.session.query(UpcomingLaunch.gls_tender_id).filter(
+            UpcomingLaunch.gls_tender_id.isnot(None)
+        ).subquery()
+
+        # Query GLS tenders with district info: launched AND not linked
+        results = db.session.query(
+            GLSTender.postal_district,
+            GLSTender.market_segment,
+            GLSTender.location_raw,
+            GLSTender.estimated_units,
+            GLSTender.planning_area,
+        ).filter(
+            GLSTender.status == 'launched',
+            ~GLSTender.id.in_(linked_gls_ids_subquery.select())
+        ).all()
+
+        district_totals = defaultdict(int)
+        gls_projects = []
+
+        for row in results:
+            units = int(row.estimated_units) if row.estimated_units else 0
+            if units <= 0:
+                continue
+
+            # Determine district: postal_district (primary) or derive from market_segment (fallback)
+            district = row.postal_district
+            region = row.market_segment
+
+            if district:
+                # We have a specific district
+                region = get_region_for_district(district)
+            elif region:
+                # No district, but we have region - skip for district breakdown
+                # (will be included in region-level only)
+                district = None
+            else:
+                # No district and no region - skip
+                continue
+
+            if district:
+                district_totals[district] += units
+                gls_projects.append({
+                    'name': row.location_raw or 'GLS Site',
+                    'district': district,
+                    'region': region,
+                    'units': units,
+                    'planning_area': row.planning_area,
+                    'category': 'gls'
+                })
+
+        return dict(district_totals), gls_projects
+
+    except Exception as e:
+        logger.warning(f"Could not fetch GLS pipeline by district: {e}")
+        import traceback
+        logger.warning(traceback.format_exc())
+        return {}, []
 
 
 # =============================================================================
@@ -349,6 +446,12 @@ def _rollup_by_region(
     """
     Roll up district data to region level and add GLS pipeline.
 
+    GLS handling:
+    - Districts now have glsPipeline from tenders with postal_district
+    - gls_by_region includes ALL GLS tenders (including those without district)
+    - We use gls_by_region for the region total to ensure completeness
+    - This means region total >= sum of district GLS (some tenders may lack district)
+
     Always includes CCR, RCR, OCR even if values are 0.
 
     Returns:
@@ -365,14 +468,16 @@ def _rollup_by_region(
         "OCR": {"unsoldInventory": 0, "upcomingLaunches": 0, "glsPipeline": 0},
     }
 
-    # Sum district values into regions
+    # Sum district values into regions (unsold + upcoming only, GLS handled separately)
     for district, data in by_district.items():
         region = data["region"]
         if region in regions:
             regions[region]["unsoldInventory"] += data["unsoldInventory"]
             regions[region]["upcomingLaunches"] += data["upcomingLaunches"]
+            # Note: We DON'T sum district glsPipeline here - we use gls_by_region instead
+            # This ensures region total includes ALL GLS, even tenders without postal_district
 
-    # Add GLS pipeline (region-level only)
+    # Add GLS pipeline from region-level data (includes all tenders)
     if include_gls:
         for region, units in gls_by_region.items():
             if region in regions:
@@ -641,11 +746,23 @@ def _merge_district_data_with_projects(
     unsold_by_district: Dict[str, int],
     upcoming_by_district: Dict[str, int],
     unsold_projects: List[Dict],
-    upcoming_projects: List[Dict]
+    upcoming_projects: List[Dict],
+    gls_by_district: Dict[str, int] = None,
+    gls_projects: List[Dict] = None,
+    include_gls: bool = True
 ) -> Dict[str, Dict[str, Any]]:
     """
-    Merge unsold inventory and upcoming launches into district-level records
+    Merge unsold inventory, upcoming launches, and GLS pipeline into district-level records
     with project-level breakdown.
+
+    Args:
+        unsold_by_district: Dict of district → unsold units
+        upcoming_by_district: Dict of district → upcoming units
+        unsold_projects: List of unsold project dicts
+        upcoming_projects: List of upcoming project dicts
+        gls_by_district: Dict of district → GLS units (optional)
+        gls_projects: List of GLS project dicts (optional)
+        include_gls: Whether to include GLS in totals
 
     Returns:
         {
@@ -659,8 +776,15 @@ def _merge_district_data_with_projects(
     imports = _get_imports()
     get_region_for_district = imports['get_region_for_district']
 
-    # Collect all districts
-    all_districts = set(unsold_by_district.keys()) | set(upcoming_by_district.keys())
+    gls_by_district = gls_by_district or {}
+    gls_projects = gls_projects or []
+
+    # Collect all districts (including those with only GLS)
+    all_districts = (
+        set(unsold_by_district.keys()) |
+        set(upcoming_by_district.keys()) |
+        (set(gls_by_district.keys()) if include_gls else set())
+    )
 
     # Group projects by district
     projects_by_district = defaultdict(list)
@@ -679,24 +803,33 @@ def _merge_district_data_with_projects(
             'category': 'upcoming',
             'launch_quarter': project.get('launch_quarter')
         })
+    if include_gls:
+        for project in gls_projects:
+            projects_by_district[project['district']].append({
+                'name': project['name'],
+                'units': project['units'],
+                'category': 'gls',
+                'planning_area': project.get('planning_area')
+            })
 
     result = {}
     for district in sorted(all_districts):  # Sorted for deterministic output
         unsold = unsold_by_district.get(district, 0)
         upcoming = upcoming_by_district.get(district, 0)
+        gls = gls_by_district.get(district, 0) if include_gls else 0
 
-        # Sort projects: unsold first, then upcoming, then by units desc
+        # Sort projects: unsold first, then upcoming, then gls, then by units desc
         district_projects = projects_by_district.get(district, [])
         district_projects.sort(key=lambda p: (
-            0 if p['category'] == 'unsold' else 1,
+            0 if p['category'] == 'unsold' else (1 if p['category'] == 'upcoming' else 2),
             -p['units']
         ))
 
         result[district] = {
             "unsoldInventory": unsold,
             "upcomingLaunches": upcoming,
-            "glsPipeline": 0,  # GLS is region-level only
-            "totalEffectiveSupply": unsold + upcoming,
+            "glsPipeline": gls,
+            "totalEffectiveSupply": unsold + upcoming + gls,
             "region": get_region_for_district(district),
             "projects": district_projects
         }

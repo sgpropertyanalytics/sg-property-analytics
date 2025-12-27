@@ -5,7 +5,11 @@ Two-phase model:
 - 'launched': Government intent signal (SIGNAL - leading indicator)
 - 'awarded': Capital committed (FACT - confirmed supply)
 
-Region is derived from Planning Area via geocoding, NOT from postal district.
+Location derivation priority:
+1. postal_code → postal_district → market_segment (most accurate)
+2. planning_area → postal_district → market_segment (fallback)
+
+See backend/constants.py for POSTAL_SECTOR_TO_DISTRICT and PLANNING_AREA_TO_DISTRICT mappings.
 """
 from models.database import db
 from datetime import datetime
@@ -27,7 +31,9 @@ class GLSTender(db.Model):
     # Location (derived via geocoding)
     latitude = db.Column(db.Numeric(10, 7))
     longitude = db.Column(db.Numeric(10, 7))
-    planning_area = db.Column(db.String(100))
+    postal_code = db.Column(db.String(10))  # 6-digit Singapore postal code
+    postal_district = db.Column(db.String(5), index=True)  # D01-D28 (derived from postal_code)
+    planning_area = db.Column(db.String(100))  # URA planning area (fallback for district)
     market_segment = db.Column(db.String(10), index=True)  # CCR/RCR/OCR
 
     # Site metrics
@@ -67,6 +73,7 @@ class GLSTender(db.Model):
     # Add indexes for common query patterns
     __table_args__ = (
         db.Index('ix_gls_status_segment', 'status', 'market_segment'),
+        db.Index('ix_gls_status_district', 'status', 'postal_district'),
         db.Index('ix_gls_release_date', 'release_date'),
     )
 
@@ -82,6 +89,8 @@ class GLSTender(db.Model):
             'location_raw': self.location_raw,
             'latitude': float(self.latitude) if self.latitude else None,
             'longitude': float(self.longitude) if self.longitude else None,
+            'postal_code': self.postal_code,
+            'postal_district': self.postal_district,
             'planning_area': self.planning_area,
             'market_segment': self.market_segment,
             'site_area_sqm': float(self.site_area_sqm) if self.site_area_sqm else None,
