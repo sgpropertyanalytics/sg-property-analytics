@@ -325,10 +325,10 @@ export function PriceCompressionChart({ height = 380 }) {
         </div>
 
         {/* KPI Row: Grid with equal columns for consistent sizing */}
-        {/* All 3 cards same width and height, blurred for free users */}
-        <div className={`grid grid-cols-3 gap-3 mt-3 ${!isPremium ? 'blur-sm grayscale-[40%]' : ''}`}>
+        {/* Responsive: 1 col mobile, 3 cols tablet+. Blurred for free users */}
+        <div className={`grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mt-3 ${!isPremium ? 'blur-sm grayscale-[40%]' : ''}`}>
           {/* Compression Score Box */}
-          <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center h-[72px] flex flex-col justify-center">
+          <div className="bg-[#213448]/5 rounded-lg px-3 py-2 text-center sm:h-[72px] flex flex-col justify-center">
             <div className="text-xl md:text-2xl font-bold font-mono tabular-nums text-[#213448]">{compressionScore.score}</div>
             <div className="text-[10px] md:text-xs text-[#547792]">Compression ({compressionScore.label})</div>
           </div>

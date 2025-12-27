@@ -17,13 +17,10 @@ import { createContext, useContext, useState, useCallback, useMemo } from 'react
 // Constants and initial state
 import {
   INITIAL_FILTERS,
-  INITIAL_CROSS_FILTER,
   INITIAL_FACT_FILTER,
-  INITIAL_HIGHLIGHT,
   INITIAL_DRILL_PATH,
   INITIAL_SELECTED_PROJECT,
   INITIAL_BREADCRUMBS,
-  CATEGORICAL_DIMENSIONS,
   TIME_LEVELS,
   LOCATION_LEVELS,
 } from './constants';
@@ -44,9 +41,7 @@ const PowerBIFilterContext = createContext(null);
 export function PowerBIFilterProvider({ children }) {
   // ===== Core State =====
   const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const [crossFilter, setCrossFilter] = useState(INITIAL_CROSS_FILTER);
   const [factFilter, setFactFilter] = useState(INITIAL_FACT_FILTER);
-  const [highlight, setHighlight] = useState(INITIAL_HIGHLIGHT);
   const [drillPath, setDrillPath] = useState(INITIAL_DRILL_PATH);
   const [selectedProject, setSelectedProjectState] = useState(INITIAL_SELECTED_PROJECT);
   const [breadcrumbs, setBreadcrumbs] = useState(INITIAL_BREADCRUMBS);
@@ -73,8 +68,6 @@ export function PowerBIFilterProvider({ children }) {
   useRouteReset({
     setDrillPath,
     setBreadcrumbs,
-    setHighlight,
-    setCrossFilter,
     setFactFilter,
     setSelectedProject: setSelectedProjectState,
   });
@@ -174,53 +167,7 @@ export function PowerBIFilterProvider({ children }) {
 
   const resetFilters = useCallback(() => {
     setFilters(INITIAL_FILTERS);
-    setCrossFilter(INITIAL_CROSS_FILTER);
-    setHighlight(INITIAL_HIGHLIGHT);
     setBreadcrumbs(INITIAL_BREADCRUMBS);
-  }, []);
-
-  // ===== Cross-Filter Management =====
-  const applyCrossFilter = useCallback((source, dimension, value) => {
-    // Handle price range cross-filter specially - goes to factFilter only
-    if (dimension === 'price_range') {
-      const [min, max] = value.split('-').map(Number);
-      setFactFilter((prev) => ({ ...prev, priceRange: { min, max } }));
-      setCrossFilter({ source, dimension, value });
-      setHighlight(INITIAL_HIGHLIGHT);
-      return;
-    }
-
-    // Only apply cross-filter for categorical dimensions
-    if (CATEGORICAL_DIMENSIONS.includes(dimension)) {
-      setCrossFilter((prev) => {
-        if (prev.dimension === dimension && prev.value === value) {
-          return INITIAL_CROSS_FILTER;
-        }
-        return { source, dimension, value };
-      });
-      setHighlight(INITIAL_HIGHLIGHT);
-    } else {
-      console.warn(`applyCrossFilter called with time dimension '${dimension}'. Use applyHighlight instead.`);
-    }
-  }, []);
-
-  const clearCrossFilter = useCallback(() => {
-    setCrossFilter(INITIAL_CROSS_FILTER);
-    setFactFilter(INITIAL_FACT_FILTER);
-  }, []);
-
-  // ===== Highlight Management =====
-  const applyHighlight = useCallback((source, dimension, value) => {
-    setHighlight((prev) => {
-      if (prev.source === source && prev.dimension === dimension && prev.value === value) {
-        return INITIAL_HIGHLIGHT;
-      }
-      return { source, dimension, value };
-    });
-  }, []);
-
-  const clearHighlight = useCallback(() => {
-    setHighlight(INITIAL_HIGHLIGHT);
   }, []);
 
   // ===== Drill Navigation =====

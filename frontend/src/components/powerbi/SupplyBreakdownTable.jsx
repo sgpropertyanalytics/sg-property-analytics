@@ -4,13 +4,16 @@
  * Shows detailed breakdown of supply pipeline by district and project.
  * Collapsible rows grouped by district.
  *
- * Columns: District/Project | Unsold | Upcoming | GLS | Total
+ * Columns: District | Total | Unsold | Upcoming | GLS
+ *
+ * Styled to match FloorLiquidityHeatmap for consistency.
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import { getSupplySummary } from '../../api/client';
+import { DISTRICT_NAMES } from '../../constants';
 
 // Colors from design system
 const COLORS = {
@@ -28,7 +31,7 @@ export function SupplyBreakdownTable({
   launchYear = 2026,
   height = 400,
 }) {
-  // Collapsible state - all expanded by default
+  // Collapsible state
   const [expandedDistricts, setExpandedDistricts] = useState(new Set());
 
   // Build filter key for caching
@@ -67,7 +70,7 @@ export function SupplyBreakdownTable({
       upcoming: data.upcomingLaunches || 0,
       gls: data.glsPipeline || 0,
       total: data.totalEffectiveSupply || 0,
-      projects: data.projects || [],  // Include project-level data
+      projects: data.projects || [],
     }));
 
     // Calculate max for bar scaling
@@ -80,10 +83,10 @@ export function SupplyBreakdownTable({
     };
   }, [apiResponse, selectedRegion]);
 
-  // Start collapsed by default (less overwhelming with projects)
+  // Start collapsed by default
   useEffect(() => {
     if (tableData.districts.length > 0) {
-      setExpandedDistricts(new Set());  // Start collapsed
+      setExpandedDistricts(new Set());
     }
   }, [tableData.districts.length]);
 
@@ -107,6 +110,15 @@ export function SupplyBreakdownTable({
   // Format number with commas
   const formatNum = (n) => n?.toLocaleString() || '0';
 
+  // Get short area name (first location only)
+  const getShortAreaName = (district) => {
+    const fullName = DISTRICT_NAMES[district];
+    if (!fullName) return '';
+    // Take first part before / or ,
+    const firstPart = fullName.split(/[\/,]/)[0].trim();
+    return firstPart;
+  };
+
   return (
     <QueryState
       loading={loading}
@@ -116,31 +128,30 @@ export function SupplyBreakdownTable({
       skeleton="table"
       height={height}
     >
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden" style={{ height }}>
+      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
         {/* Header */}
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-          <div className="flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[#94B4C1]/30">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-                Supply Pipeline Breakdown
-              </h3>
-              <p className="text-xs text-[#547792] mt-0.5">
+              <h3 className="font-bold text-lg text-[#213448]">Supply Pipeline Breakdown</h3>
+              <p className="text-sm text-[#547792] mt-0.5">
                 {selectedRegion || 'All Regions'} • {tableData.districts.length} districts
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Expand/Collapse */}
+            <div className="flex items-center gap-1">
               <button
                 onClick={expandAll}
-                className="px-2 py-1 text-xs text-[#547792] hover:bg-[#EAE0CF]/50 rounded"
+                className="px-2 py-1 text-xs text-[#547792] hover:bg-[#EAE0CF]/50 rounded transition-colors"
+                title="Expand all districts"
               >
-                Expand
+                Expand All
               </button>
-              <span className="text-[#94B4C1]">|</span>
+              <span className="text-[#547792]">|</span>
               <button
                 onClick={collapseAll}
-                className="px-2 py-1 text-xs text-[#547792] hover:bg-[#EAE0CF]/50 rounded"
+                className="px-2 py-1 text-xs text-[#547792] hover:bg-[#EAE0CF]/50 rounded transition-colors"
+                title="Collapse all districts"
               >
                 Collapse
               </button>
@@ -149,30 +160,36 @@ export function SupplyBreakdownTable({
         </div>
 
         {/* Legend */}
-        <div className="px-4 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20 flex flex-wrap gap-4 text-xs">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.unsold }} />
-            <span className="text-[#213448]">Unsold Inventory</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.upcoming }} />
-            <span className="text-[#547792]">Upcoming Launches</span>
-          </div>
-          {includeGls && (
+        <div className="px-6 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20">
+          <div className="flex flex-wrap items-center gap-4 text-xs">
+            <span className="text-[#547792] font-medium">Supply:</span>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.gls }} />
-              <span className="text-[#547792]">GLS Pipeline</span>
+              <div className="w-4 h-3 rounded" style={{ backgroundColor: COLORS.unsold }} />
+              <span className="text-[#213448]">Unsold Inventory</span>
             </div>
-          )}
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-3 rounded" style={{ backgroundColor: COLORS.upcoming }} />
+              <span className="text-[#547792]">Upcoming Launches</span>
+            </div>
+            {includeGls && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3 rounded" style={{ backgroundColor: COLORS.gls }} />
+                <span className="text-[#547792]">GLS Pipeline</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Table */}
-        <div className="overflow-auto flex-1" style={{ maxHeight: height - 140 }}>
-          <table className="w-full border-collapse text-xs">
+        <div className="overflow-x-auto max-w-full" style={{ maxHeight: height - 180 }}>
+          <table className="w-full border-collapse text-xs min-w-[600px]">
             <thead className="sticky top-0 bg-white z-10">
               <tr>
-                <th className="sticky left-0 bg-[#EAE0CF]/50 text-left px-3 py-2 font-semibold text-[#213448] border-b border-[#94B4C1]/30 min-w-[120px]">
+                <th className="sticky left-0 bg-[#EAE0CF]/50 text-left px-3 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[200px]">
                   District
+                </th>
+                <th className="bg-[#EAE0CF]/50 text-center px-2 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[100px]">
+                  Total
                 </th>
                 <th className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#213448] border-b border-[#94B4C1]/30 min-w-[80px]">
                   Unsold
@@ -185,26 +202,23 @@ export function SupplyBreakdownTable({
                     GLS
                   </th>
                 )}
-                <th className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-semibold text-[#213448] border-b border-[#94B4C1]/30 min-w-[100px]">
-                  Total
-                </th>
               </tr>
             </thead>
             <tbody>
-              {tableData.districts.map((row, idx) => {
+              {tableData.districts.map((row) => {
                 const isExpanded = expandedDistricts.has(row.district);
-                const barWidth = (row.total / tableData.maxTotal) * 100;
                 const hasProjects = row.projects && row.projects.length > 0;
+                const areaName = getShortAreaName(row.district);
 
                 return (
                   <React.Fragment key={row.district}>
-                    {/* District Row */}
+                    {/* District Header Row */}
                     <tr
-                      className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} hover:bg-[#547792]/10 cursor-pointer transition-colors`}
+                      className="bg-[#547792]/10 cursor-pointer hover:bg-[#547792]/20 transition-colors"
                       onClick={() => toggleDistrict(row.district)}
                     >
                       {/* District */}
-                      <td className={`sticky left-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-3 py-2 font-medium text-[#213448] border-r border-[#94B4C1]/20`}>
+                      <td className="sticky left-0 bg-[#547792]/10 px-3 py-1.5 font-semibold text-[#213448] border-r border-[#94B4C1]/30">
                         <div className="flex items-center gap-2">
                           {hasProjects ? (
                             <svg
@@ -219,95 +233,100 @@ export function SupplyBreakdownTable({
                             <div className="w-3 h-3" />
                           )}
                           <span>{row.district}</span>
-                          <span className="text-[10px] text-[#94B4C1] font-normal">({row.region})</span>
+                          <span className="text-[#547792] font-normal truncate">
+                            {areaName}
+                          </span>
+                          <span className="text-[10px] text-[#94B4C1] font-normal ml-auto shrink-0">
+                            ({row.projects.length} projects)
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Total with Bar - Now second column */}
+                      <td className="px-2 py-1.5 border-r border-[#94B4C1]/30 bg-[#547792]/10">
+                        <div className="flex items-center gap-1">
+                          <div className="flex-1 h-3 bg-gray-100 rounded overflow-hidden">
+                            <div
+                              className="h-full rounded"
+                              style={{
+                                width: `${(row.total / tableData.maxTotal) * 100}%`,
+                                background: `linear-gradient(to right, ${COLORS.unsold}, ${COLORS.upcoming})`
+                              }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-[#213448] font-mono font-semibold w-10 text-right">
+                            {formatNum(row.total)}
+                          </span>
                         </div>
                       </td>
 
                       {/* Unsold */}
-                      <td className="text-right px-3 py-2 font-mono" style={{ color: COLORS.unsold }}>
+                      <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10" style={{ color: COLORS.unsold }}>
                         {formatNum(row.unsold)}
                       </td>
 
                       {/* Upcoming */}
-                      <td className="text-right px-3 py-2 font-mono" style={{ color: COLORS.upcoming }}>
+                      <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10" style={{ color: COLORS.upcoming }}>
                         {formatNum(row.upcoming)}
                       </td>
 
                       {/* GLS */}
                       {includeGls && (
-                        <td className="text-right px-3 py-2 font-mono" style={{ color: COLORS.gls }}>
+                        <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10" style={{ color: COLORS.gls }}>
                           {formatNum(row.gls)}
                         </td>
                       )}
-
-                      {/* Total with bar */}
-                      <td className="text-right px-3 py-2">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-16 h-2 bg-gray-100 rounded overflow-hidden">
-                            <div
-                              className="h-full rounded"
-                              style={{
-                                width: `${barWidth}%`,
-                                background: `linear-gradient(to right, ${COLORS.unsold}, ${COLORS.upcoming})`
-                              }}
-                            />
-                          </div>
-                          <span className="font-mono font-semibold text-[#213448] min-w-[50px]">
-                            {formatNum(row.total)}
-                          </span>
-                        </div>
-                      </td>
                     </tr>
 
                     {/* Project Rows (when expanded) */}
                     {isExpanded && hasProjects && row.projects.map((project, pIdx) => (
                       <tr
                         key={`${row.district}-${pIdx}`}
-                        className="bg-[#EAE0CF]/5 text-[11px]"
+                        className={pIdx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'}
                       >
                         {/* Project Name */}
-                        <td className="sticky left-0 bg-[#EAE0CF]/5 px-3 py-1.5 border-r border-[#94B4C1]/20">
-                          <div className="flex items-center gap-2 pl-5">
+                        <td className={`sticky left-0 ${pIdx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} pl-8 pr-3 py-1 text-xs font-medium text-[#213448] border-r border-[#94B4C1]/30`}>
+                          <div className="flex items-center gap-2">
                             <span
                               className="w-2 h-2 rounded-full shrink-0"
                               style={{
                                 backgroundColor: project.category === 'unsold' ? COLORS.unsold : COLORS.upcoming
                               }}
                             />
-                            <span className="text-[#547792] truncate" title={project.name}>
+                            <span className="truncate" title={project.name}>
                               {project.name}
                             </span>
                             {project.category === 'upcoming' && project.launch_quarter && (
                               <span className="text-[9px] text-[#94B4C1] shrink-0">
-                                Q{project.launch_quarter}
+                                {project.launch_quarter}
                               </span>
                             )}
                           </div>
                         </td>
 
+                        {/* Project Total */}
+                        <td className={`${pIdx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-2 py-1 border-r border-[#94B4C1]/30 text-center`}>
+                          <span className="text-[10px] text-[#547792] font-mono">
+                            {formatNum(project.units)}
+                          </span>
+                        </td>
+
                         {/* Unsold column */}
-                        <td className="text-right px-3 py-1.5 font-mono" style={{ color: COLORS.unsold }}>
+                        <td className="text-right px-3 py-1 font-mono text-[11px]" style={{ color: COLORS.unsold }}>
                           {project.category === 'unsold' ? formatNum(project.units) : '–'}
                         </td>
 
                         {/* Upcoming column */}
-                        <td className="text-right px-3 py-1.5 font-mono" style={{ color: COLORS.upcoming }}>
+                        <td className="text-right px-3 py-1 font-mono text-[11px]" style={{ color: COLORS.upcoming }}>
                           {project.category === 'upcoming' ? formatNum(project.units) : '–'}
                         </td>
 
                         {/* GLS column */}
                         {includeGls && (
-                          <td className="text-right px-3 py-1.5 font-mono text-[#94B4C1]">
+                          <td className="text-right px-3 py-1 font-mono text-[11px] text-[#94B4C1]">
                             –
                           </td>
                         )}
-
-                        {/* Total column */}
-                        <td className="text-right px-3 py-1.5">
-                          <span className="font-mono text-[#547792]">
-                            {formatNum(project.units)}
-                          </span>
-                        </td>
                       </tr>
                     ))}
                   </React.Fragment>
@@ -320,6 +339,9 @@ export function SupplyBreakdownTable({
                   <td className="sticky left-0 bg-[#213448] px-3 py-2.5 border-t border-[#547792]">
                     TOTAL
                   </td>
+                  <td className="px-2 py-2.5 font-mono border-t border-[#547792] text-center">
+                    {formatNum(tableData.totals.totalEffectiveSupply)}
+                  </td>
                   <td className="text-right px-3 py-2.5 font-mono border-t border-[#547792]">
                     {formatNum(tableData.totals.unsoldInventory)}
                   </td>
@@ -331,9 +353,6 @@ export function SupplyBreakdownTable({
                       {formatNum(tableData.totals.glsPipeline)}
                     </td>
                   )}
-                  <td className="text-right px-3 py-2.5 font-mono border-t border-[#547792]">
-                    {formatNum(tableData.totals.totalEffectiveSupply)}
-                  </td>
                 </tr>
               )}
             </tbody>
@@ -341,8 +360,15 @@ export function SupplyBreakdownTable({
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
-          Launch Year: {launchYear} • Click district to see projects
+        <div className="px-6 py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30">
+          <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
+            <span className="text-[#94B4C1]">
+              Launch Year: {launchYear} • Click district to see projects
+            </span>
+            <span className="text-[#94B4C1]">
+              Higher bar = More supply
+            </span>
+          </div>
         </div>
       </div>
     </QueryState>

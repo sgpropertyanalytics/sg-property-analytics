@@ -272,8 +272,8 @@ export function AbsolutePsfChart({ height = 300 }) {
             </div>
           </div>
 
-          {/* KPI Row - Grid with equal columns for consistent sizing */}
-          <div className={`grid grid-cols-3 gap-2 mt-3 ${!isPremium ? 'blur-sm grayscale-[40%]' : ''}`}>
+          {/* KPI Row - Responsive: 1 col mobile, 3 cols tablet+ */}
+          <div className={`grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3 ${!isPremium ? 'blur-sm grayscale-[40%]' : ''}`}>
             <PsfKpiCard
               label="CCR"
               value={latestData.ccr}
