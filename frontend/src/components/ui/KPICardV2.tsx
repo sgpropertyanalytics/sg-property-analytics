@@ -6,34 +6,31 @@ import React from 'react';
  * Structure:
  * ┌─────────────────────────────────┐
  * │ [Header - dark blue #213448]    │
- * │ insight text                    │
+ * │ Title (e.g., "Market Median PSF")│
  * ├─────────────────────────────────┤
  * │ [Body - white]                  │
- * │ Title (small, gray)             │
  * │ Value  Trend%                   │
  * ├─────────────────────────────────┤
- * │ [Footer - light gray] (optional)│
- * │ subtitle • secondary info       │
+ * │ [Footer - sand #EAE0CF/30]      │
+ * │ $2,001 → $1,858 • 169 txns      │
  * └─────────────────────────────────┘
  *
  * Designed to consume KPI v2 API response directly.
  */
 
 interface KPICardV2Props {
-  /** KPI title displayed in body */
+  /** KPI title displayed in header (e.g., "Market Median PSF") */
   title: string;
   /** Main value (pre-formatted, e.g., "$1,858" or "36.5%") */
   value: string;
-  /** Insight text shown in dark header */
-  insight?: string;
   /** Trend percentage and direction */
   trend?: {
     value: number;
     direction: 'up' | 'down' | 'neutral';
     label?: string;
   };
-  /** Subtitle shown in footer */
-  subtitle?: string;
+  /** Transition text for footer (e.g., "$2,001 → $1,858") */
+  transition?: string;
   /** Additional footer text (e.g., "169 txns") */
   footerMeta?: string;
   /** Loading state */
@@ -45,9 +42,8 @@ interface KPICardV2Props {
 export function KPICardV2({
   title,
   value,
-  insight,
   trend,
-  subtitle,
+  transition,
   footerMeta,
   loading = false,
   className = '',
@@ -64,7 +60,7 @@ export function KPICardV2({
     }
   };
 
-  const hasFooter = subtitle || footerMeta;
+  const hasFooter = transition || footerMeta;
 
   return (
     <div
@@ -73,20 +69,19 @@ export function KPICardV2({
         ${className}
       `.trim()}
     >
-      {/* Header - Dark blue with insight */}
+      {/* Header - Dark blue with title */}
       <div className="bg-[#213448] px-3 py-2 text-white min-h-[32px] flex items-center">
         {loading ? (
           <div className="h-3 bg-white/20 rounded w-3/4 animate-pulse" />
         ) : (
-          <span className="text-[10px] md:text-xs leading-tight">
-            {insight || '\u00A0'}
+          <span className="text-xs md:text-sm font-medium leading-tight">
+            {title}
           </span>
         )}
       </div>
 
-      {/* Body - Title and value */}
+      {/* Body - Value and trend */}
       <div className="p-3 md:p-4">
-        <div className="text-xs text-[#547792] mb-1">{title}</div>
         {loading ? (
           <div className="h-8 bg-[#94B4C1]/30 rounded animate-pulse w-2/3" />
         ) : (
@@ -106,7 +101,7 @@ export function KPICardV2({
         )}
       </div>
 
-      {/* Footer - Subtitle and meta (optional) - matches chart footer style */}
+      {/* Footer - Transition and meta - matches chart footer style */}
       {hasFooter && (
         <div className="px-3 py-2 md:px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30">
           <div className="text-[10px] md:text-xs text-[#547792] flex items-center gap-1.5">
@@ -114,8 +109,8 @@ export function KPICardV2({
               <div className="h-3 bg-[#94B4C1]/20 rounded w-1/2 animate-pulse" />
             ) : (
               <>
-                {subtitle && <span>{subtitle}</span>}
-                {subtitle && footerMeta && <span>•</span>}
+                {transition && <span>{transition}</span>}
+                {transition && footerMeta && <span>•</span>}
                 {footerMeta && <span>{footerMeta}</span>}
               </>
             )}
@@ -173,9 +168,8 @@ export function mapKpiV2ToCardProps(kpi: {
   title: string;
   value: number | null;
   formatted_value: string;
-  subtitle?: string;
   trend?: { value: number; direction: 'up' | 'down' | 'neutral'; label?: string };
-  insight?: string;
+  insight?: string;  // Used as transition text (e.g., "$2,001 → $1,858")
   meta?: Record<string, unknown>;
 }): KPICardV2Props {
   // Build footer meta from common meta fields
@@ -189,9 +183,8 @@ export function mapKpiV2ToCardProps(kpi: {
   return {
     title: kpi.title,
     value: kpi.formatted_value,
-    insight: kpi.insight,
     trend: kpi.trend,
-    subtitle: kpi.subtitle,
+    transition: kpi.insight,  // insight contains the "$X → $Y" transition
     footerMeta: footerMeta || undefined,
   };
 }

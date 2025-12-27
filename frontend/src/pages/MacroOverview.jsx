@@ -153,9 +153,8 @@ export function MacroOverviewContent() {
                 <KPICardV2
                   title="Market Median PSF"
                   value={getKpi('median_psf')?.formatted_value || '—'}
-                  insight={getKpi('median_psf')?.insight}
                   trend={getKpi('median_psf')?.trend}
-                  subtitle={getKpi('median_psf')?.subtitle}
+                  transition={getKpi('median_psf')?.insight}
                   footerMeta={getKpi('median_psf')?.meta?.current_count ? `${getKpi('median_psf').meta.current_count.toLocaleString()} txns` : undefined}
                   loading={kpis.loading}
                 />
@@ -164,9 +163,8 @@ export function MacroOverviewContent() {
                 <KPICardV2
                   title="Price Spread (IQR)"
                   value={getKpi('price_spread')?.formatted_value || '—'}
-                  insight={getKpi('price_spread')?.insight}
                   trend={getKpi('price_spread')?.trend}
-                  subtitle={getKpi('price_spread')?.subtitle}
+                  transition={getKpi('price_spread')?.insight}
                   loading={kpis.loading}
                 />
 
@@ -174,9 +172,8 @@ export function MacroOverviewContent() {
                 <KPICardV2
                   title="New Launch Premium"
                   value={getKpi('new_launch_premium')?.formatted_value || '—'}
-                  insight={getKpi('new_launch_premium')?.insight}
                   trend={getKpi('new_launch_premium')?.trend}
-                  subtitle={getKpi('new_launch_premium')?.subtitle}
+                  transition={getKpi('new_launch_premium')?.insight}
                   loading={kpis.loading}
                 />
 
@@ -184,9 +181,8 @@ export function MacroOverviewContent() {
                 <KPICardV2
                   title="Market Momentum"
                   value={getKpi('market_momentum')?.formatted_value || '—'}
-                  insight={getKpi('market_momentum')?.insight}
                   trend={getKpi('market_momentum')?.trend}
-                  subtitle={getKpi('market_momentum')?.subtitle}
+                  transition={getKpi('market_momentum')?.insight}
                   loading={kpis.loading}
                 />
               </KPICardV2Group>
