@@ -108,6 +108,32 @@ export function BeadsChart({ height = 300 }) {
       }
     });
 
+    // Faint alternating background bands for regions
+    annotations.band_ccr = {
+      type: 'box',
+      yMin: -0.5,
+      yMax: 0.5,
+      backgroundColor: 'rgba(33, 52, 72, 0.04)', // Faint navy
+      borderWidth: 0,
+      z: -2, // Behind everything
+    };
+    annotations.band_rcr = {
+      type: 'box',
+      yMin: 0.5,
+      yMax: 1.5,
+      backgroundColor: 'transparent', // Alternate: no fill
+      borderWidth: 0,
+      z: -2,
+    };
+    annotations.band_ocr = {
+      type: 'box',
+      yMin: 1.5,
+      yMax: 2.5,
+      backgroundColor: 'rgba(33, 52, 72, 0.04)', // Faint navy
+      borderWidth: 0,
+      z: -2,
+    };
+
     // Subtle separators between region rows (at y=0.5 and y=1.5)
     annotations.separator_ccr_rcr = {
       type: 'line',
@@ -116,7 +142,7 @@ export function BeadsChart({ height = 300 }) {
       borderColor: 'rgba(148, 180, 193, 0.3)', // Light sky color
       borderWidth: 1,
       borderDash: [4, 4],
-      z: -1, // Behind everything
+      z: -1, // Behind bubbles but above bands
     };
     annotations.separator_rcr_ocr = {
       type: 'line',
@@ -125,7 +151,7 @@ export function BeadsChart({ height = 300 }) {
       borderColor: 'rgba(148, 180, 193, 0.3)', // Light sky color
       borderWidth: 1,
       borderDash: [4, 4],
-      z: -1, // Behind everything
+      z: -1,
     };
 
     return annotations;
