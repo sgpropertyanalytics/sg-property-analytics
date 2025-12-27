@@ -250,27 +250,21 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
 
-                {/* Card 4: Resale Velocity (3-month turnover) */}
+                {/* Card 4: Resale Velocity (annualized turnover) */}
                 <KPICardV2
                   title="Resale Velocity"
                   value={(() => {
                     const kpi = getKpi('resale_velocity');
                     if (!kpi?.value && kpi?.value !== 0) return '—';
-                    const { current_txns, prior_txns, total_units, annualized_velocity, pct_change } = kpi.meta || {};
+                    const { current_txns, total_units } = kpi.meta || {};
                     const direction = kpi.trend?.direction;
                     const label = kpi.trend?.label;
-                    const arrow = direction === 'up' ? '▲' : direction === 'down' ? '▼' : '—';
                     const colorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
                     return (
                       <>
                         <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
                           {kpi.formatted_value} <span className={`text-xs font-bold uppercase tracking-wider ${colorClass}`}>{label}</span>
                         </div>
-                        {annualized_velocity != null && (
-                          <div className="text-[12px] sm:text-[14px] text-gray-600">
-                            {annualized_velocity}% annualized
-                          </div>
-                        )}
                         {current_txns != null && total_units != null && (
                           <div className="text-[10px] sm:text-[12px] text-gray-500">
                             {current_txns?.toLocaleString()} txns / {total_units?.toLocaleString()} units

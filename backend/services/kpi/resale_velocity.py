@@ -202,16 +202,16 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 
     # Footer: show the calculation
     insight = (
-        f"{current_txns:,} txns ÷ {total_units:,} units × 100\n"
-        f"= {current_velocity:.2f}% (annualized: {annualized:.1f}%)"
+        f"{current_txns:,} txns ÷ {total_units:,} units × 4\n"
+        f"= {annualized:.1f}% annualized"
     )
 
     return KPIResult(
         kpi_id="resale_velocity",
         title="Resale Velocity",
-        value=round(current_velocity, 2),
-        formatted_value=f"{current_velocity:.1f}%",
-        subtitle="3-month turnover",
+        value=round(annualized, 2),
+        formatted_value=f"{annualized:.1f}%",
+        subtitle="annualized turnover",
         trend={
             "value": round(pct_change, 1),
             "direction": direction,
@@ -224,6 +224,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "total_units": total_units,
             "projects_counted": projects_counted,
             "annualized_velocity": round(annualized, 2),
+            "quarterly_velocity": round(current_velocity, 2),
             "confidence": confidence,
             "pct_change": round(pct_change, 1),
             "description": (
@@ -244,7 +245,7 @@ class ResaleVelocitySpec:
     """KPI Spec for Resale Velocity."""
     kpi_id = "resale_velocity"
     title = "Resale Velocity"
-    subtitle = "3-month turnover"
+    subtitle = "annualized turnover"
 
     @staticmethod
     def build_params(filters):
