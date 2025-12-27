@@ -20,6 +20,10 @@ import time
 from flask import request, jsonify
 from routes.analytics import analytics_bp, reader
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
+from utils.normalize import (
+    to_int, to_date, to_list,
+    ValidationError as NormalizeValidationError, validation_error_response
+)
 
 
 @analytics_bp.route("/price_trends_by_district", methods=["GET"])
@@ -330,30 +334,19 @@ def new_vs_resale():
             normalized.append(d)
         districts = normalized
 
-    bedroom_param = request.args.get("bedroom")
-    bedrooms = None
-    if bedroom_param:
-        try:
-            bedrooms = [int(b.strip()) for b in bedroom_param.split(",") if b.strip()]
-        except ValueError:
-            bedrooms = None
+    try:
+        bedrooms = to_list(request.args.get("bedroom"), item_type=int, field="bedroom")
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     segment = request.args.get("segment")
 
     # Parse date params as Python date objects (not strings)
-    from datetime import datetime
-    date_from = None
-    date_to = None
-    if request.args.get("date_from"):
-        try:
-            date_from = datetime.strptime(request.args.get("date_from"), "%Y-%m-%d").date()
-        except ValueError:
-            pass
-    if request.args.get("date_to"):
-        try:
-            date_to = datetime.strptime(request.args.get("date_to"), "%Y-%m-%d").date()
-        except ValueError:
-            pass
+    try:
+        date_from = to_date(request.args.get("date_from"), field="date_from")
+        date_to = to_date(request.args.get("date_to"), field="date_to")
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     # Parse visual-local parameter (drill level)
     time_grain = request.args.get("timeGrain", "quarter")

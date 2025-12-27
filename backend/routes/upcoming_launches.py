@@ -20,6 +20,10 @@ from datetime import datetime
 from models.database import db
 from models.upcoming_launch import UpcomingLaunch
 from sqlalchemy import desc, asc
+from utils.normalize import (
+    to_int, to_bool,
+    ValidationError as NormalizeValidationError, validation_error_response
+)
 
 upcoming_launches_bp = Blueprint('upcoming_launches', __name__)
 
@@ -55,18 +59,23 @@ def get_all():
 
     market_segment = request.args.get("market_segment")
     district = request.args.get("district")
-    launch_year = request.args.get("launch_year")  # Optional - shows all years if not specified
     needs_review = request.args.get("needs_review", "").lower() == "true"
-    limit = int(request.args.get("limit", 100))
     sort_by = request.args.get("sort", "project_name")
     order = request.args.get("order", "asc")
+
+    try:
+        # Parse optional params that may fail - return 400 on validation error
+        launch_year = to_int(request.args.get("launch_year"), field="launch_year")  # Optional
+        limit = to_int(request.args.get("limit"), default=100, field="limit")
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     try:
         query = db.session.query(UpcomingLaunch)
 
         # Apply filters
         if launch_year:
-            query = query.filter(UpcomingLaunch.launch_year == int(launch_year))
+            query = query.filter(UpcomingLaunch.launch_year == launch_year)
 
         # Order by launch_year first if not filtered by year
         if not launch_year:
@@ -148,7 +157,7 @@ def get_by_segment():
     """
     start = time.time()
 
-    launch_year = int(request.args.get("launch_year", 2026))
+    launch_year = to_int(request.args.get("launch_year"), default=2026, field="launch_year")
 
     try:
         launches = db.session.query(UpcomingLaunch).filter(
@@ -199,7 +208,7 @@ def get_supply_pipeline():
     """
     start = time.time()
 
-    launch_year = int(request.args.get("launch_year", 2026))
+    launch_year = to_int(request.args.get("launch_year"), default=2026, field="launch_year")
     market_segment = request.args.get("market_segment")
 
     try:
@@ -332,7 +341,7 @@ def reset_data():
     """
     start = time.time()
 
-    year = int(request.args.get("year", 2026))
+    year = to_int(request.args.get("year"), default=2026, field="year")
     confirm = request.args.get("confirm", "").lower()
 
     if confirm != "yes":

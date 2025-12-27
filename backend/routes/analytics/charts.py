@@ -16,6 +16,10 @@ import time
 from flask import request, jsonify
 from routes.analytics import analytics_bp
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
+from utils.normalize import (
+    to_int, to_list, to_bool,
+    ValidationError as NormalizeValidationError, validation_error_response
+)
 
 
 @analytics_bp.route("/projects_by_district", methods=["GET"])
@@ -25,16 +29,20 @@ def projects_by_district():
     from services.data_processor import get_project_aggregation_by_district
 
     district = request.args.get("district")
-    bedroom_param = request.args.get("bedroom", "2,3,4")
     segment = request.args.get("segment")  # Optional: CCR, RCR, OCR
 
     if not district:
         return jsonify({"error": "district parameter is required"}), 400
 
     try:
-        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
-    except ValueError:
-        return jsonify({"error": "Invalid bedroom parameter"}), 400
+        bedroom_types = to_list(
+            request.args.get("bedroom"),
+            item_type=int,
+            default=[2, 3, 4],
+            field="bedroom"
+        )
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     # Normalize district
     d = str(district).strip().upper()
@@ -251,16 +259,19 @@ def floor_liquidity_heatmap():
 
     start = time.time()
 
-    # Parse parameters
-    window_months = int(request.args.get('window_months', 12))
-    if window_months not in [6, 12, 24]:
-        window_months = 12
+    try:
+        # Parse parameters
+        window_months = to_int(request.args.get('window_months'), default=12, field='window_months')
+        if window_months not in [6, 12, 24]:
+            window_months = 12
 
-    # Exclusion thresholds for reliable liquidity analysis
-    min_transactions = int(request.args.get('min_transactions', 30))  # Exclude projects with <30 resale txns
-    min_units = int(request.args.get('min_units', 100))  # Exclude boutique projects with <100 units
-    limit = int(request.args.get('limit', 0))  # 0 = no limit (show all projects)
-    skip_cache = request.args.get('skip_cache', '').lower() == 'true'
+        # Exclusion thresholds for reliable liquidity analysis
+        min_transactions = to_int(request.args.get('min_transactions'), default=30, field='min_transactions')
+        min_units = to_int(request.args.get('min_units'), default=100, field='min_units')
+        limit = to_int(request.args.get('limit'), default=0, field='limit')  # 0 = no limit
+        skip_cache = to_bool(request.args.get('skip_cache'), default=False)
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     # Build cache key
     cache_key = f"floor_liquidity_heatmap:{request.query_string.decode('utf-8')}"
@@ -305,11 +316,13 @@ def floor_liquidity_heatmap():
         filters_applied['district'] = normalized
 
     # Bedroom filter
-    bedroom_param = request.args.get('bedroom')
-    if bedroom_param:
-        bedrooms = [int(b.strip()) for b in bedroom_param.split(',') if b.strip()]
-        filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
-        filters_applied['bedroom'] = bedrooms
+    try:
+        bedrooms = to_list(request.args.get('bedroom'), item_type=int, field='bedroom')
+        if bedrooms:
+            filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
+            filters_applied['bedroom'] = bedrooms
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     try:
         # Query: Group by project and floor_level
@@ -574,21 +587,25 @@ def budget_heatmap():
 
     try:
         # Parse required budget
-        budget = request.args.get('budget', type=int)
+        budget = to_int(request.args.get('budget'), field='budget')
         if not budget:
-            return jsonify({"error": "budget parameter is required"}), 400
+            return jsonify({"error": "budget parameter is required", "type": "validation_error", "field": "budget"}), 400
 
         if budget < 100000 or budget > 50000000:
-            return jsonify({"error": "budget must be between $100K and $50M"}), 400
+            return jsonify({"error": "budget must be between $100K and $50M", "type": "validation_error", "field": "budget"}), 400
 
         # Parse optional filters
-        tolerance = request.args.get('tolerance', 100000, type=int)
-        bedroom = request.args.get('bedroom', type=int)
+        tolerance = to_int(request.args.get('tolerance'), default=100000, field='tolerance')
+        bedroom = to_int(request.args.get('bedroom'), field='bedroom')
         segment = request.args.get('segment')
         district = request.args.get('district')
         tenure = request.args.get('tenure')
-        months_lookback = request.args.get('months_lookback', 24, type=int)
-        skip_cache = request.args.get('skip_cache', 'false').lower() == 'true'
+        months_lookback = to_int(request.args.get('months_lookback'), default=24, field='months_lookback')
+        skip_cache = to_bool(request.args.get('skip_cache'), default=False)
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
+
+    try:
 
         # Validate tolerance
         if tolerance < 10000 or tolerance > 500000:

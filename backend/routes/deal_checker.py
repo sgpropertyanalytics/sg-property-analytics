@@ -17,6 +17,10 @@ from sqlalchemy import func, and_
 from db.sql import exclude_outliers
 import time
 import statistics
+from utils.normalize import (
+    to_float,
+    ValidationError as NormalizeValidationError, validation_error_response
+)
 
 deal_checker_bp = Blueprint('deal_checker', __name__)
 
@@ -239,7 +243,11 @@ def get_nearby_transactions():
     bedroom = request.args.get('bedroom')
     buyer_price = request.args.get('price')
     sqft = request.args.get('sqft')
-    radius_km = float(request.args.get('radius_km', 1.0))
+
+    try:
+        radius_km = to_float(request.args.get('radius_km'), default=1.0, field='radius_km')
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     if not all([project_name, bedroom, buyer_price]):
         return jsonify({

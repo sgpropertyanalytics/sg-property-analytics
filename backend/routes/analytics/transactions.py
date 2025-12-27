@@ -11,6 +11,10 @@ Endpoints:
 import time
 from flask import request, jsonify
 from routes.analytics import analytics_bp
+from utils.normalize import (
+    to_int, to_date,
+    ValidationError as NormalizeValidationError, validation_error_response
+)
 
 
 @analytics_bp.route("/transactions/price-growth", methods=["GET"])
@@ -49,34 +53,27 @@ def get_transaction_price_growth():
     """
     start = time.time()
     from services.price_growth_service import get_transaction_price_growth as compute_growth
-    from datetime import datetime
 
     try:
-        # Parse filter params
+        # Parse filter params using normalize utilities
         project_name = request.args.get('project')
-        bedroom_count = request.args.get('bedroom', type=int)
+        bedroom_count = to_int(request.args.get('bedroom'), field='bedroom')
         floor_level = request.args.get('floor_level')
         district = request.args.get('district')
         sale_type = request.args.get('sale_type')
 
         # Parse date params (must be Python date objects for SQL guardrails)
-        date_from = None
-        date_to = None
-        if request.args.get('date_from'):
-            try:
-                date_from = datetime.strptime(request.args.get('date_from'), '%Y-%m-%d').date()
-            except ValueError:
-                return jsonify({"error": "date_from must be YYYY-MM-DD format"}), 400
-
-        if request.args.get('date_to'):
-            try:
-                date_to = datetime.strptime(request.args.get('date_to'), '%Y-%m-%d').date()
-            except ValueError:
-                return jsonify({"error": "date_to must be YYYY-MM-DD format"}), 400
+        date_from = to_date(request.args.get('date_from'), field='date_from')
+        date_to = to_date(request.args.get('date_to'), field='date_to')
 
         # Parse pagination params
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 50, type=int)
+        page = to_int(request.args.get('page'), default=1, field='page')
+        per_page = to_int(request.args.get('per_page'), default=50, field='per_page')
+
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
+
+    try:
 
         # Check schema parameter for v2 strict mode
         schema_version = request.args.get('schema', '').lower()

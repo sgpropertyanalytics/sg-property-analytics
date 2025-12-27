@@ -12,6 +12,10 @@ import time
 from flask import request, jsonify
 from routes.analytics import analytics_bp
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
+from utils.normalize import (
+    to_int, to_float, to_date, to_list, to_bool,
+    ValidationError as NormalizeValidationError, validation_error_response
+)
 
 
 @analytics_bp.route("/dashboard", methods=["GET", "POST"])
@@ -85,101 +89,110 @@ def dashboard():
             options = body.get('options', {})
             skip_cache = body.get('skip_cache', False)
         else:
-            # Parse from query params
+            # Parse from query params using normalize utilities
             filters = {}
             options = {}
 
-            # Date filters - parse to Python date objects
-            from datetime import datetime
-            if request.args.get('date_from'):
-                try:
-                    filters['date_from'] = datetime.strptime(request.args.get('date_from'), "%Y-%m-%d").date()
-                except ValueError:
-                    pass
-            if request.args.get('date_to'):
-                try:
-                    filters['date_to'] = datetime.strptime(request.args.get('date_to'), "%Y-%m-%d").date()
-                except ValueError:
-                    pass
+            try:
+                # Date filters - parse to Python date objects
+                date_from = to_date(request.args.get('date_from'), field='date_from')
+                if date_from:
+                    filters['date_from'] = date_from
 
-            # District filter
-            if request.args.get('district'):
-                districts = [d.strip() for d in request.args.get('district').split(',') if d.strip()]
-                filters['districts'] = districts
+                date_to = to_date(request.args.get('date_to'), field='date_to')
+                if date_to:
+                    filters['date_to'] = date_to
 
-            # Bedroom filter
-            if request.args.get('bedroom'):
-                bedrooms = [int(b.strip()) for b in request.args.get('bedroom').split(',') if b.strip()]
-                filters['bedrooms'] = bedrooms
+                # District filter
+                districts = to_list(request.args.get('district'), field='district')
+                if districts:
+                    filters['districts'] = districts
 
-            # Segment filter - supports comma-separated values (e.g., "CCR,RCR")
-            if request.args.get('segment'):
-                segments = [s.strip().upper() for s in request.args.get('segment').split(',') if s.strip()]
-                filters['segments'] = segments
+                # Bedroom filter
+                bedrooms = to_list(request.args.get('bedroom'), item_type=int, field='bedroom')
+                if bedrooms:
+                    filters['bedrooms'] = bedrooms
 
-            # Sale type filter (v2: saleType, v1: sale_type)
-            sale_type = request.args.get('saleType') or request.args.get('sale_type')
-            if sale_type:
-                # Convert v2 enum to DB value if needed
-                from schemas.api_contract import SaleType
-                if sale_type in SaleType.ALL:
-                    filters['sale_type'] = SaleType.to_db(sale_type)
-                else:
-                    filters['sale_type'] = sale_type
+                # Segment filter - supports comma-separated values (e.g., "CCR,RCR")
+                segments = to_list(request.args.get('segment'), field='segment')
+                if segments:
+                    filters['segments'] = [s.upper() for s in segments]
 
-            # PSF range
-            if request.args.get('psf_min'):
-                filters['psf_min'] = float(request.args.get('psf_min'))
-            if request.args.get('psf_max'):
-                filters['psf_max'] = float(request.args.get('psf_max'))
+                # Sale type filter (v2: saleType, v1: sale_type)
+                sale_type = request.args.get('saleType') or request.args.get('sale_type')
+                if sale_type:
+                    # Convert v2 enum to DB value if needed
+                    from schemas.api_contract import SaleType
+                    if sale_type in SaleType.ALL:
+                        filters['sale_type'] = SaleType.to_db(sale_type)
+                    else:
+                        filters['sale_type'] = sale_type
 
-            # Size range
-            if request.args.get('size_min'):
-                filters['size_min'] = float(request.args.get('size_min'))
-            if request.args.get('size_max'):
-                filters['size_max'] = float(request.args.get('size_max'))
+                # PSF range
+                psf_min = to_float(request.args.get('psf_min'), field='psf_min')
+                if psf_min is not None:
+                    filters['psf_min'] = psf_min
 
-            # Tenure filter
-            if request.args.get('tenure'):
-                filters['tenure'] = request.args.get('tenure')
+                psf_max = to_float(request.args.get('psf_max'), field='psf_max')
+                if psf_max is not None:
+                    filters['psf_max'] = psf_max
 
-            # Property age filter (years since TOP/lease start)
-            # Note: This only applies to leasehold properties (freehold excluded)
-            if request.args.get('property_age_min'):
-                filters['property_age_min'] = int(request.args.get('property_age_min'))
-            if request.args.get('property_age_max'):
-                filters['property_age_max'] = int(request.args.get('property_age_max'))
+                # Size range
+                size_min = to_float(request.args.get('size_min'), field='size_min')
+                if size_min is not None:
+                    filters['size_min'] = size_min
 
-            # Property age bucket filter (v2: propertyAgeBucket, v1: property_age_bucket)
-            from schemas.api_contract import PropertyAgeBucket
-            property_age_bucket = request.args.get('propertyAgeBucket') or request.args.get('property_age_bucket')
-            if property_age_bucket and PropertyAgeBucket.is_valid(property_age_bucket):
-                filters['property_age_bucket'] = property_age_bucket
+                size_max = to_float(request.args.get('size_max'), field='size_max')
+                if size_max is not None:
+                    filters['size_max'] = size_max
 
-            # Project filter - supports both partial match (search) and exact match (drill-through)
-            if request.args.get('project_exact'):
-                filters['project_exact'] = request.args.get('project_exact')
-            elif request.args.get('project'):
-                filters['project'] = request.args.get('project')
+                # Tenure filter
+                if request.args.get('tenure'):
+                    filters['tenure'] = request.args.get('tenure')
 
-            # Panels
-            panels_param = request.args.get('panels', '')
-            if panels_param:
-                panels_param = [p.strip() for p in panels_param.split(',') if p.strip()]
-            else:
-                panels_param = None  # Will use default
+                # Property age filter (years since TOP/lease start)
+                # Note: This only applies to leasehold properties (freehold excluded)
+                property_age_min = to_int(request.args.get('property_age_min'), field='property_age_min')
+                if property_age_min is not None:
+                    filters['property_age_min'] = property_age_min
 
-            # Options
-            if request.args.get('time_grain'):
-                options['time_grain'] = request.args.get('time_grain')
-            if request.args.get('location_grain'):
-                options['location_grain'] = request.args.get('location_grain')
-            if request.args.get('histogram_bins'):
-                options['histogram_bins'] = int(request.args.get('histogram_bins'))
-            if request.args.get('show_full_range'):
-                options['show_full_range'] = request.args.get('show_full_range', '').lower() == 'true'
+                property_age_max = to_int(request.args.get('property_age_max'), field='property_age_max')
+                if property_age_max is not None:
+                    filters['property_age_max'] = property_age_max
 
-            skip_cache = request.args.get('skip_cache', '').lower() == 'true'
+                # Property age bucket filter (v2: propertyAgeBucket, v1: property_age_bucket)
+                from schemas.api_contract import PropertyAgeBucket
+                property_age_bucket = request.args.get('propertyAgeBucket') or request.args.get('property_age_bucket')
+                if property_age_bucket and PropertyAgeBucket.is_valid(property_age_bucket):
+                    filters['property_age_bucket'] = property_age_bucket
+
+                # Project filter - supports both partial match (search) and exact match (drill-through)
+                if request.args.get('project_exact'):
+                    filters['project_exact'] = request.args.get('project_exact')
+                elif request.args.get('project'):
+                    filters['project'] = request.args.get('project')
+
+                # Panels
+                panels_param = to_list(request.args.get('panels'), field='panels')
+                if not panels_param:
+                    panels_param = None  # Will use default
+
+                # Options
+                if request.args.get('time_grain'):
+                    options['time_grain'] = request.args.get('time_grain')
+                if request.args.get('location_grain'):
+                    options['location_grain'] = request.args.get('location_grain')
+
+                histogram_bins = to_int(request.args.get('histogram_bins'), field='histogram_bins')
+                if histogram_bins is not None:
+                    options['histogram_bins'] = histogram_bins
+
+                options['show_full_range'] = to_bool(request.args.get('show_full_range'), default=False)
+
+                skip_cache = to_bool(request.args.get('skip_cache'), default=False)
+
+            except NormalizeValidationError as e:
+                return validation_error_response(e)
 
         # Get dashboard data
         result = get_dashboard_data(

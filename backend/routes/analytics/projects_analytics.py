@@ -14,6 +14,10 @@ import time
 from flask import request, jsonify
 from routes.analytics import analytics_bp
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
+from utils.normalize import (
+    to_int, to_float,
+    ValidationError as NormalizeValidationError, validation_error_response
+)
 
 
 @analytics_bp.route("/projects/<path:project_name>/inventory", methods=["GET"])
@@ -127,16 +131,22 @@ def get_project_price_bands(project_name):
 
     try:
         # Parse query params
-        window_months = request.args.get('window_months', 24, type=int)
+        window_months = to_int(request.args.get('window_months'), default=24, field='window_months')
         window_months = min(max(window_months, 6), 60)  # Clamp to 6-60 months
 
-        unit_psf = request.args.get('unit_psf', type=float)
+        unit_psf = to_float(request.args.get('unit_psf'), field='unit_psf')
         if unit_psf is not None:
             # Validate PSF range
             if unit_psf < 300 or unit_psf > 10000:
                 return jsonify({
-                    "error": "unit_psf must be between 300 and 10000"
+                    "error": "unit_psf must be between 300 and 10000",
+                    "type": "validation_error",
+                    "field": "unit_psf"
                 }), 400
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
+
+    try:
 
         # Check schema parameter for v2 strict mode
         schema_version = request.args.get('schema', '').lower()

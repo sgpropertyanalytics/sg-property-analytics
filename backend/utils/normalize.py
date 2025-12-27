@@ -23,7 +23,10 @@ See: .claude/skills/input-boundary-guardrails/SKILL.md
 """
 
 from datetime import date, datetime
-from typing import Optional, Union
+from enum import Enum
+from typing import Optional, Type, TypeVar, Union
+
+E = TypeVar('E', bound=Enum)
 
 
 class ValidationError(ValueError):
@@ -244,7 +247,12 @@ def to_str(
     if value is None or value == "":
         return default
     result = str(value)
-    return result.strip() if strip else result
+    if strip:
+        result = result.strip()
+    # Treat whitespace-only as empty
+    if result == "":
+        return default
+    return result
 
 
 def to_list(
@@ -294,6 +302,80 @@ def to_list(
         )
 
 
+def to_enum(
+    value: Optional[str],
+    enum_class: Type[E],
+    *,
+    default: Optional[E] = None,
+    field: str = None
+) -> Optional[E]:
+    """
+    Convert string to enum member.
+
+    Args:
+        value: Input string (case-insensitive match against enum values)
+        enum_class: The enum class to convert to
+        default: Value to return if input is None or empty
+        field: Field name for error messages
+
+    Returns:
+        Enum member or default
+
+    Raises:
+        ValidationError: If value doesn't match any enum member
+    """
+    if value is None or value == "":
+        return default
+
+    # Try exact match first (by value)
+    for member in enum_class:
+        if member.value == value:
+            return member
+
+    # Try case-insensitive match by value
+    value_lower = value.lower()
+    for member in enum_class:
+        if str(member.value).lower() == value_lower:
+            return member
+
+    # Try match by name
+    try:
+        return enum_class[value.upper().replace(" ", "_").replace("-", "_")]
+    except KeyError:
+        pass
+
+    valid_values = [m.value for m in enum_class]
+    raise ValidationError(
+        f"Expected one of {valid_values}, got: {value!r}",
+        field=field,
+        received_value=value
+    )
+
+
+def validation_error_response(error: ValidationError) -> tuple:
+    """
+    Convert ValidationError to a structured 400 response tuple.
+
+    Usage:
+        try:
+            limit = to_int(request.args.get("limit"))
+        except ValidationError as e:
+            return validation_error_response(e)
+
+    Returns:
+        Tuple of (dict, 400) suitable for Flask response
+    """
+    response = {
+        "error": str(error),
+        "type": "validation_error"
+    }
+    if error.field:
+        response["field"] = error.field
+    if error.received_value is not None:
+        response["received_value"] = str(error.received_value)
+    return response, 400
+
+
 # Convenience aliases
 normalize_int = to_int
 normalize_float = to_float
@@ -302,3 +384,4 @@ normalize_date = to_date
 normalize_datetime = to_datetime
 normalize_str = to_str
 normalize_list = to_list
+normalize_enum = to_enum

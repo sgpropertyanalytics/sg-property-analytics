@@ -15,6 +15,10 @@ from constants import (
     SALE_TYPE_NEW, SALE_TYPE_RESALE,
     TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR
 )
+from utils.normalize import (
+    to_int, to_float, to_date, to_list, to_bool,
+    ValidationError as NormalizeValidationError, validation_error_response
+)
 
 
 @analytics_bp.route("/aggregate", methods=["GET"])
@@ -131,11 +135,13 @@ def aggregate():
         filters_applied["district"] = normalized
 
     # Bedroom filter
-    bedroom_param = request.args.get("bedroom")
-    if bedroom_param:
-        bedrooms = [int(b.strip()) for b in bedroom_param.split(",") if b.strip()]
-        filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
-        filters_applied["bedroom"] = bedrooms
+    try:
+        bedrooms = to_list(request.args.get("bedroom"), item_type=int, field="bedroom")
+        if bedrooms:
+            filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
+            filters_applied["bedroom"] = bedrooms
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     # Segment filter (supports comma-separated values e.g., "CCR,RCR")
     # OPTIMIZED: Use pre-computed district→segment mapping from constants
@@ -159,42 +165,43 @@ def aggregate():
         filters_applied["sale_type"] = sale_type
 
     # Date range filter
-    date_from = request.args.get("date_from")
-    date_to = request.args.get("date_to")
-    if date_from:
-        try:
-            from_dt = datetime.strptime(date_from, "%Y-%m-%d").date()
+    try:
+        from_dt = to_date(request.args.get("date_from"), field="date_from")
+        if from_dt:
             filter_conditions.append(Transaction.transaction_date >= from_dt)
-            filters_applied["date_from"] = date_from
-        except ValueError:
-            pass
-    if date_to:
-        try:
-            to_dt = datetime.strptime(date_to, "%Y-%m-%d").date()
+            filters_applied["date_from"] = from_dt.isoformat()
+
+        to_dt = to_date(request.args.get("date_to"), field="date_to")
+        if to_dt:
             filter_conditions.append(Transaction.transaction_date <= to_dt)
-            filters_applied["date_to"] = date_to
-        except ValueError:
-            pass
+            filters_applied["date_to"] = to_dt.isoformat()
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     # PSF range filter
-    psf_min = request.args.get("psf_min")
-    psf_max = request.args.get("psf_max")
-    if psf_min:
-        filter_conditions.append(Transaction.psf >= float(psf_min))
-        filters_applied["psf_min"] = float(psf_min)
-    if psf_max:
-        filter_conditions.append(Transaction.psf <= float(psf_max))
-        filters_applied["psf_max"] = float(psf_max)
+    try:
+        psf_min = to_float(request.args.get("psf_min"), field="psf_min")
+        if psf_min is not None:
+            filter_conditions.append(Transaction.psf >= psf_min)
+            filters_applied["psf_min"] = psf_min
 
-    # Size range filter
-    size_min = request.args.get("size_min")
-    size_max = request.args.get("size_max")
-    if size_min:
-        filter_conditions.append(Transaction.area_sqft >= float(size_min))
-        filters_applied["size_min"] = float(size_min)
-    if size_max:
-        filter_conditions.append(Transaction.area_sqft <= float(size_max))
-        filters_applied["size_max"] = float(size_max)
+        psf_max = to_float(request.args.get("psf_max"), field="psf_max")
+        if psf_max is not None:
+            filter_conditions.append(Transaction.psf <= psf_max)
+            filters_applied["psf_max"] = psf_max
+
+        # Size range filter
+        size_min = to_float(request.args.get("size_min"), field="size_min")
+        if size_min is not None:
+            filter_conditions.append(Transaction.area_sqft >= size_min)
+            filters_applied["size_min"] = size_min
+
+        size_max = to_float(request.args.get("size_max"), field="size_max")
+        if size_max is not None:
+            filter_conditions.append(Transaction.area_sqft <= size_max)
+            filters_applied["size_max"] = size_max
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     # Tenure filter
     tenure = request.args.get("tenure")
@@ -527,7 +534,10 @@ def aggregate_summary():
         return jsonify(cached)
 
     # Enforce bin limits
-    bin_count = min(int(request.args.get('bin_count', 10)), MAX_BIN_COUNT)
+    try:
+        bin_count = min(to_int(request.args.get('bin_count'), default=10, field='bin_count'), MAX_BIN_COUNT)
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     # Build base query with outlier exclusion
     query = Transaction.active_query()
@@ -577,35 +587,33 @@ def aggregate_summary():
         query = query.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
 
     # Date range filter
-    date_from = request.args.get("date_from")
-    date_to = request.args.get("date_to")
-    if date_from:
-        try:
-            from_dt = datetime.strptime(date_from, "%Y-%m-%d").date()
+    try:
+        from_dt = to_date(request.args.get("date_from"), field="date_from")
+        if from_dt:
             query = query.filter(Transaction.transaction_date >= from_dt)
-        except ValueError:
-            pass
-    if date_to:
-        try:
-            to_dt = datetime.strptime(date_to, "%Y-%m-%d").date()
+
+        to_dt = to_date(request.args.get("date_to"), field="date_to")
+        if to_dt:
             query = query.filter(Transaction.transaction_date <= to_dt)
-        except ValueError:
-            pass
 
-    # Price/PSF range filters
-    price_min = request.args.get("price_min")
-    price_max = request.args.get("price_max")
-    if price_min:
-        query = query.filter(Transaction.price >= float(price_min))
-    if price_max:
-        query = query.filter(Transaction.price <= float(price_max))
+        # Price/PSF range filters
+        price_min = to_float(request.args.get("price_min"), field="price_min")
+        if price_min is not None:
+            query = query.filter(Transaction.price >= price_min)
 
-    psf_min = request.args.get("psf_min")
-    psf_max = request.args.get("psf_max")
-    if psf_min:
-        query = query.filter(Transaction.psf >= float(psf_min))
-    if psf_max:
-        query = query.filter(Transaction.psf <= float(psf_max))
+        price_max = to_float(request.args.get("price_max"), field="price_max")
+        if price_max is not None:
+            query = query.filter(Transaction.price <= price_max)
+
+        psf_min = to_float(request.args.get("psf_min"), field="psf_min")
+        if psf_min is not None:
+            query = query.filter(Transaction.psf >= psf_min)
+
+        psf_max = to_float(request.args.get("psf_max"), field="psf_max")
+        if psf_max is not None:
+            query = query.filter(Transaction.psf <= psf_max)
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     # Get total count for K-anonymity check
     total_count = query.count()

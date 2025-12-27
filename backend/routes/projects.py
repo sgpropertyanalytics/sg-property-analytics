@@ -16,6 +16,10 @@ from models.database import db
 from constants import DISTRICT_NAMES, SALE_TYPE_NEW, SALE_TYPE_RESALE
 from services.school_distance import get_schools_within_distance
 from db.sql import OUTLIER_FILTER, exclude_outliers, get_outlier_filter_sql
+from utils.normalize import (
+    to_int,
+    ValidationError as NormalizeValidationError, validation_error_response
+)
 
 projects_bp = Blueprint('projects', __name__)
 
@@ -121,7 +125,7 @@ def get_projects_with_school():
             filters_applied["segment"] = segment.upper()
 
         # Limit
-        limit = int(request.args.get("limit", 100))
+        limit = to_int(request.args.get("limit"), default=100, field="limit")
 
         # Execute query
         projects = query.order_by(ProjectLocation.project_name).limit(limit).all()
@@ -207,8 +211,8 @@ def get_project_locations():
         total_count = query.count()
 
         # Pagination
-        limit = int(request.args.get("limit", 100))
-        offset = int(request.args.get("offset", 0))
+        limit = to_int(request.args.get("limit"), default=100, field="limit")
+        offset = to_int(request.args.get("offset"), default=0, field="offset")
 
         projects = query.order_by(ProjectLocation.project_name).offset(offset).limit(limit).all()
 
@@ -409,7 +413,7 @@ def get_hot_projects():
         from constants import get_region_for_district, get_districts_for_region
 
         # Get filter params
-        limit = int(request.args.get("limit", 100))
+        limit = to_int(request.args.get("limit"), default=100, field="limit")
 
         # Filter params
         market_segment = request.args.get("market_segment") or request.args.get("region")

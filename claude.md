@@ -425,3 +425,60 @@ src/lib/
 ---
 
 **Final Principle:** We are building a product that survives iteration. Optimize for stable contracts, reusable primitives, clean feature boundaries, safe refactors, and clear decision-oriented visuals.
+
+---
+
+# 9. ROUTE INPUT NORMALIZATION (Required)
+
+All API routes MUST normalize query/body inputs using shared `utils/normalize.py` helpers.
+
+## Rules
+
+1. **No direct parsing in routes** - `int()`, `float()`, `datetime.strptime()`, `request.args.get(..., type=...)` are **FORBIDDEN** in route files
+2. **Use normalize utilities** - Import from `utils.normalize`:
+   - `to_int()`, `to_float()`, `to_bool()`
+   - `to_date()`, `to_datetime()`, `to_str()`
+   - `to_list()`, `to_enum()`
+3. **Invalid input → 400** - Parse errors return structured 400 response, never 500
+4. **Preserve defaults** - Migration must not change default values or behavior
+
+## Pattern
+
+```python
+from utils.normalize import (
+    to_int, to_float, to_date, to_list,
+    ValidationError as NormalizeValidationError,
+    validation_error_response
+)
+
+@app.route("/data")
+def get_data():
+    try:
+        # Parse at boundary
+        limit = to_int(request.args.get("limit"), default=100, field="limit")
+        date_from = to_date(request.args.get("date_from"), field="date_from")
+        bedrooms = to_list(request.args.get("bedroom"), item_type=int, field="bedroom")
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
+
+    # Now types are guaranteed
+    return service.get_data(limit=limit, date_from=date_from, bedrooms=bedrooms)
+```
+
+## CI Guard
+
+Run before commits to check for violations:
+```bash
+bash scripts/check_normalize_violations.sh
+```
+
+## Canonical Types
+
+| Concept | Type | Helper |
+|---------|------|--------|
+| Date | `datetime.date` | `to_date()` |
+| Timestamp | `datetime.datetime` | `to_datetime()` |
+| Money | `int` (cents) | `to_int()` |
+| Percent | `float` (0-1) | `to_float()` |
+| IDs | `str` | `to_str()` |
+| Flags | `bool` | `to_bool()` |

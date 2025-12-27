@@ -13,6 +13,10 @@ from datetime import datetime
 from models.database import db
 from models.gls_tender import GLSTender
 from sqlalchemy import desc, asc, extract
+from utils.normalize import (
+    to_int, to_bool,
+    ValidationError as NormalizeValidationError, validation_error_response
+)
 
 gls_bp = Blueprint('gls', __name__)
 
@@ -48,7 +52,7 @@ def get_upcoming():
 
     market_segment = request.args.get("market_segment")
     planning_area = request.args.get("planning_area")
-    limit = int(request.args.get("limit", 50))
+    limit = to_int(request.args.get("limit"), default=50, field="limit")
 
     try:
         query = db.session.query(GLSTender).filter(
@@ -99,7 +103,7 @@ def get_awarded():
 
     market_segment = request.args.get("market_segment")
     planning_area = request.args.get("planning_area")
-    limit = int(request.args.get("limit", 50))
+    limit = to_int(request.args.get("limit"), default=50, field="limit")
 
     try:
         query = db.session.query(GLSTender).filter(
@@ -154,7 +158,7 @@ def get_all():
     market_segment = request.args.get("market_segment")
     status = request.args.get("status")
     planning_area = request.args.get("planning_area")
-    limit = int(request.args.get("limit", 100))
+    limit = to_int(request.args.get("limit"), default=100, field="limit")
     sort_by = request.args.get("sort", "release_date")
     order = request.args.get("order", "desc")
 
@@ -346,7 +350,7 @@ def trigger_scrape():
     """
     start = time.time()
 
-    year = int(request.args.get("year", 2025))
+    year = to_int(request.args.get("year"), default=2025, field="year")
     dry_run = request.args.get("dry_run", "").lower() == "true"
 
     try:
@@ -388,7 +392,7 @@ def reset_and_rescrape():
     import os
     start = time.time()
 
-    year = int(request.args.get("year", 2025))
+    year = to_int(request.args.get("year"), default=2025, field="year")
     confirm = request.args.get("confirm", "").lower()
 
     if confirm != "yes":
@@ -499,7 +503,7 @@ def cron_refresh():
     import os
     start = time.time()
 
-    year = int(request.args.get("year", 2025))
+    year = to_int(request.args.get("year"), default=2025, field="year")
     secret = request.args.get("secret", "")
 
     # Optional security check - if GLS_CRON_SECRET is set, require it
@@ -575,7 +579,7 @@ def trigger_background_refresh():
     """
     start = time.time()
 
-    year = int(request.args.get("year", 2025))
+    year = to_int(request.args.get("year"), default=2025, field="year")
     force = request.args.get("force", "").lower() == "true"
 
     try:
