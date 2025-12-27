@@ -143,7 +143,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "low_confidence": low_confidence,
             "sale_type": "resale",
             "description": (
-                "Resale Median PSF compares the median price from the latest 3 full months "
+                "Compares the resale median PSF from the latest 3 full months "
                 "against the previous 3 months (QoQ), using resale transactions only. "
                 "Prices are calculated from pooled transactions (not median-of-medians), "
                 "with outliers excluded. A minimum sample size is enforced, and results "

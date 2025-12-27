@@ -150,27 +150,13 @@ export function SupplyWaterfallChart({
       >
         {/* Header */}
         <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-                {chartTitle}
-              </h3>
-              <p className="text-xs text-[#547792] mt-0.5">
-                {chartData?.displayMeta?.subtitle || 'Supply pipeline breakdown'}
-              </p>
-            </div>
-
-            {/* Total Units Badge */}
-            {chartData?.totals && (
-              <div className="shrink-0 bg-[#EAE0CF]/50 px-3 py-1.5 rounded-lg">
-                <div className="text-[10px] uppercase tracking-wide text-[#547792]">
-                  Total Supply
-                </div>
-                <div className="text-base md:text-lg font-bold text-[#213448]">
-                  {chartData.totals.totalEffectiveSupply?.toLocaleString() || 0}
-                </div>
-              </div>
-            )}
+          <div className="min-w-0">
+            <h3 className="font-semibold text-[#213448] text-sm md:text-base">
+              {chartTitle}
+            </h3>
+            <p className="text-xs text-[#547792] mt-0.5">
+              {chartData?.displayMeta?.subtitle || 'Supply pipeline breakdown'}
+            </p>
           </div>
         </div>
 
