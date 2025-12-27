@@ -41,16 +41,32 @@ def test_supply():
             return jsonify({"step": 2, "message": "Import works"})
 
         elif step == "3":
+            # Test new_launch_units service import
+            from services.new_launch_units import get_new_launch_projects
+            return jsonify({"step": 3, "message": "new_launch_units import works"})
+
+        elif step == "3a":
+            # Test get_new_launch_projects call
+            from services.new_launch_units import get_new_launch_projects
+            projects = get_new_launch_projects()
+            return jsonify({"step": "3a", "message": "get_new_launch_projects works", "count": len(projects)})
+
+        elif step == "3b":
             # Test just unsold inventory
             from services.supply_service import _get_unsold_inventory_by_district
             result = _get_unsold_inventory_by_district()
-            return jsonify({"step": 3, "message": "Unsold inventory works", "count": len(result), "sample": dict(list(result.items())[:3])})
+            return jsonify({"step": "3b", "message": "Unsold inventory works", "count": len(result), "sample": dict(list(result.items())[:3])})
 
         elif step == "4":
-            # Test just upcoming launches
+            # Test UpcomingLaunch model import
+            from models.upcoming_launch import UpcomingLaunch
+            return jsonify({"step": 4, "message": "UpcomingLaunch import works"})
+
+        elif step == "4a":
+            # Test just upcoming launches query
             from services.supply_service import _get_upcoming_launches_by_district
             result = _get_upcoming_launches_by_district(2026)
-            return jsonify({"step": 4, "message": "Upcoming launches works", "count": len(result), "sample": dict(list(result.items())[:3])})
+            return jsonify({"step": "4a", "message": "Upcoming launches works", "count": len(result), "sample": dict(list(result.items())[:3])})
 
         elif step == "5":
             # Test just GLS
