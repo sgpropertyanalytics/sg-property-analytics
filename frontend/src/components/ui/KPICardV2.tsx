@@ -42,18 +42,6 @@ export function KPICardV2({
   loading = false,
   className = '',
 }: KPICardV2Props) {
-  // Trend badge colors (up = green/positive, down = red/negative)
-  const getTrendStyles = (direction: 'up' | 'down' | 'neutral') => {
-    switch (direction) {
-      case 'up':
-        return { text: 'text-green-600', bg: 'bg-green-50', arrow: '▲' };
-      case 'down':
-        return { text: 'text-red-500', bg: 'bg-red-50', arrow: '▼' };
-      default:
-        return { text: 'text-[#547792]', bg: 'bg-[#94B4C1]/10', arrow: '―' };
-    }
-  };
-
   return (
     <div
       className={`
@@ -82,27 +70,13 @@ export function KPICardV2({
       </div>
 
       {/* Layer 2: Hero Data - centered by justify-between */}
-      <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
+      <div>
         {loading ? (
           <div className="h-8 bg-[#94B4C1]/30 rounded w-24 animate-pulse" />
         ) : (
-          <>
-            <span className="text-[22px] sm:text-[32px] font-bold text-[#213448] font-mono tabular-nums leading-none">
-              {value}
-            </span>
-            {trend && trend.value !== 0 && (
-              <span
-                className={`
-                  text-[10px] sm:text-xs font-medium px-1 sm:px-1.5 py-0.5 rounded whitespace-nowrap
-                  ${getTrendStyles(trend.direction).text}
-                  ${getTrendStyles(trend.direction).bg}
-                `}
-              >
-                {getTrendStyles(trend.direction).arrow}
-                {Math.abs(trend.value).toFixed(1)}%
-              </span>
-            )}
-          </>
+          <span className="text-[22px] sm:text-[32px] font-bold text-[#213448] font-mono tabular-nums leading-none">
+            {value}
+          </span>
         )}
       </div>
 
