@@ -104,8 +104,8 @@ export function MacroOverviewContent() {
 
   return (
     <div className="h-full">
-      {/* Main Content Area - Scrollable */}
-      <div className="h-full overflow-auto">
+      {/* Main Content Area - Scrollable (vertical only, no horizontal) */}
+      <div className="h-full overflow-y-auto overflow-x-hidden">
         <div className="p-3 md:p-4 lg:p-6">
           {/* Header */}
           <div className="mb-4 md:mb-6">
@@ -256,18 +256,25 @@ export function MacroOverviewContent() {
                   value={(() => {
                     const kpi = getKpi('resale_velocity');
                     if (!kpi?.value && kpi?.value !== 0) return '—';
-                    const { current_txns, total_units } = kpi.meta || {};
+                    const { current_txns, total_units, annualized_velocity } = kpi.meta || {};
                     const direction = kpi.trend?.direction;
                     const label = kpi.trend?.label;
                     const colorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
+                    // Abbreviate large numbers (257603 -> 258K)
+                    const formatCompact = (n) => n >= 1000 ? `${Math.round(n / 1000)}K` : n?.toLocaleString();
                     return (
                       <>
                         <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
                           {kpi.formatted_value} <span className={`text-xs font-bold uppercase tracking-wider ${colorClass}`}>{label}</span>
                         </div>
+                        {annualized_velocity != null && (
+                          <div className="text-[12px] sm:text-[14px] text-gray-600">
+                            {annualized_velocity}% annualized
+                          </div>
+                        )}
                         {current_txns != null && total_units != null && (
-                          <div className="text-[10px] sm:text-[12px] text-gray-500">
-                            {current_txns?.toLocaleString()} txns / {total_units?.toLocaleString()} units
+                          <div className="text-[10px] sm:text-[12px] text-gray-500 truncate">
+                            {formatCompact(current_txns)} txns / {formatCompact(total_units)} units
                           </div>
                         )}
                       </>

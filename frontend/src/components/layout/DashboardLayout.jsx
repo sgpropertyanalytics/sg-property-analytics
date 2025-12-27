@@ -218,7 +218,7 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
 
           {/* Main Content - Wrapped with ErrorBoundary to prevent blank page crashes */}
           {/* min-w-0 on main and wrapper prevents nested grid overflow */}
-          <main className="flex-1 min-w-0 overflow-auto flex flex-col">
+          <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col">
             <ErrorBoundary name="Page Content">
               <div className="flex-1 min-w-0">
                 {content}

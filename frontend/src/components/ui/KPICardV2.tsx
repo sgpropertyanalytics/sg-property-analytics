@@ -55,7 +55,7 @@ export function KPICardV2({
     <div
       className={`
         bg-white border border-[#94B4C1]/50 rounded-lg p-4 sm:p-5
-        h-36 flex flex-col
+        h-36 flex flex-col overflow-hidden
         shadow-sm hover:shadow-md transition-shadow duration-200
         ${className}
       `.trim()}
