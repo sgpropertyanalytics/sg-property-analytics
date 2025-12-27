@@ -72,118 +72,6 @@ export function KPICardV2({
     }
   };
 
-  // Visual Slot: Trend (Sparkline)
-  const renderTrendSlot = () => {
-    const points = trend?.direction === 'up'
-      ? [[0, 28], [20, 26], [40, 24], [60, 20], [80, 22], [100, 16], [120, 18], [140, 12], [160, 14], [180, 8], [200, 10], [220, 4]]
-      : trend?.direction === 'down'
-      ? [[0, 4], [20, 8], [40, 6], [60, 12], [80, 10], [100, 16], [120, 14], [140, 20], [160, 18], [180, 24], [200, 22], [220, 28]]
-      : [[0, 16], [20, 14], [40, 18], [60, 16], [80, 15], [100, 17], [120, 16], [140, 14], [160, 16], [180, 15], [200, 17], [220, 16]];
-
-    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ');
-    const lastPoint = points[points.length - 1];
-
-    return (
-      <svg className="w-full h-full" viewBox="0 0 220 32" preserveAspectRatio="none">
-        <path
-          d={pathD}
-          fill="none"
-          stroke="#547792"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          vectorEffect="non-scaling-stroke"
-        />
-        <circle
-          cx={lastPoint[0]}
-          cy={lastPoint[1]}
-          r="4"
-          fill="#547792"
-        />
-      </svg>
-    );
-  };
-
-  // Visual Slot: Comparison (Bullet Chart)
-  const renderComparisonSlot = () => {
-    if (!comparison) return null;
-    const maxVal = Math.max(comparison.primary.value, comparison.secondary.value);
-    const primaryPct = (comparison.primary.value / maxVal) * 100;
-    const secondaryPct = (comparison.secondary.value / maxVal) * 100;
-
-    return (
-      <div className="w-full h-full flex flex-col justify-center gap-1.5">
-        {/* Primary line (Navy) */}
-        <div className="flex items-center gap-2">
-          <span className="text-[9px] text-[#547792] w-8 shrink-0">{comparison.primary.label}</span>
-          <div className="flex-1 h-0.5 bg-[#94B4C1]/30 relative">
-            <div
-              className="absolute top-0 left-0 h-0.5 bg-[#213448]"
-              style={{ width: `${primaryPct}%` }}
-            />
-          </div>
-        </div>
-        {/* Secondary line (Grey) */}
-        <div className="flex items-center gap-2">
-          <span className="text-[9px] text-[#94B4C1] w-8 shrink-0">{comparison.secondary.label}</span>
-          <div className="flex-1 h-0.5 bg-[#94B4C1]/30 relative">
-            <div
-              className="absolute top-0 left-0 h-0.5 bg-[#94B4C1]"
-              style={{ width: `${secondaryPct}%` }}
-            />
-          </div>
-        </div>
-        {/* Vertical tick showing difference */}
-        <div className="flex-1 relative">
-          <div
-            className="absolute top-0 w-px h-full bg-[#213448]"
-            style={{ left: `${Math.min(primaryPct, secondaryPct) + 32}%` }}
-          />
-        </div>
-      </div>
-    );
-  };
-
-  // Visual Slot: Composition (Stacked Bar)
-  const renderCompositionSlot = () => {
-    if (!composition) return null;
-    const { segments, total } = composition;
-
-    return (
-      <div className="w-full h-full flex items-center">
-        <div className="w-full h-2 flex rounded-sm overflow-hidden bg-[#94B4C1]/20">
-          {segments.map((seg, i) => (
-            <div
-              key={i}
-              className="h-full transition-all duration-500"
-              style={{
-                width: `${(seg.value / total) * 100}%`,
-                backgroundColor: seg.color,
-              }}
-              title={`${seg.label}: ${seg.value.toLocaleString()}`}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // Render the appropriate visual slot
-  const renderVisualSlot = () => {
-    if (loading) {
-      return <div className="w-full h-full bg-[#94B4C1]/10 rounded animate-pulse" />;
-    }
-    switch (variant) {
-      case 'comparison':
-        return renderComparisonSlot();
-      case 'composition':
-        return renderCompositionSlot();
-      case 'trend':
-      default:
-        return renderTrendSlot();
-    }
-  };
-
   return (
     <div
       className={`
@@ -229,9 +117,15 @@ export function KPICardV2({
         )}
       </div>
 
-      {/* Layer 3: Visual Slot (h-8 = 32px) */}
+      {/* Layer 3: Context (h-8 = 32px) */}
       <div className="h-8 w-full flex items-end">
-        {renderVisualSlot()}
+        {loading ? (
+          <div className="h-3 bg-[#94B4C1]/20 rounded w-1/2 animate-pulse" />
+        ) : (
+          <span className="text-[10px] text-[#94B4C1] leading-none">
+            {transition || trend?.label || footerMeta}
+          </span>
+        )}
       </div>
     </div>
   );
