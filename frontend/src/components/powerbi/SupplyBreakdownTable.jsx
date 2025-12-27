@@ -59,7 +59,7 @@ export function SupplyBreakdownTable({
       .filter(([, data]) => !selectedRegion || data.region === selectedRegion)
       .sort(([a], [b]) => a.localeCompare(b));
 
-    // Group by region for subtotals
+    // Group by region for subtotals, include projects
     const districts = filteredDistricts.map(([district, data]) => ({
       district,
       region: data.region,
@@ -67,6 +67,7 @@ export function SupplyBreakdownTable({
       upcoming: data.upcomingLaunches || 0,
       gls: data.glsPipeline || 0,
       total: data.totalEffectiveSupply || 0,
+      projects: data.projects || [],  // Include project-level data
     }));
 
     // Calculate max for bar scaling
@@ -79,12 +80,12 @@ export function SupplyBreakdownTable({
     };
   }, [apiResponse, selectedRegion]);
 
-  // Auto-expand all districts when data loads
+  // Start collapsed by default (less overwhelming with projects)
   useEffect(() => {
     if (tableData.districts.length > 0) {
-      setExpandedDistricts(new Set(tableData.districts.map(d => d.district)));
+      setExpandedDistricts(new Set());  // Start collapsed
     }
-  }, [tableData.districts]);
+  }, [tableData.districts.length]);
 
   // Toggle district expansion
   const toggleDistrict = (district) => {
@@ -193,64 +194,123 @@ export function SupplyBreakdownTable({
               {tableData.districts.map((row, idx) => {
                 const isExpanded = expandedDistricts.has(row.district);
                 const barWidth = (row.total / tableData.maxTotal) * 100;
+                const hasProjects = row.projects && row.projects.length > 0;
 
                 return (
-                  <tr
-                    key={row.district}
-                    className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} hover:bg-[#547792]/10 cursor-pointer transition-colors`}
-                    onClick={() => toggleDistrict(row.district)}
-                  >
-                    {/* District */}
-                    <td className={`sticky left-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-3 py-2 font-medium text-[#213448] border-r border-[#94B4C1]/20`}>
-                      <div className="flex items-center gap-2">
-                        <svg
-                          className={`w-3 h-3 text-[#547792] transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                        <span>{row.district}</span>
-                        <span className="text-[10px] text-[#94B4C1] font-normal">({row.region})</span>
-                      </div>
-                    </td>
-
-                    {/* Unsold */}
-                    <td className="text-right px-3 py-2 font-mono" style={{ color: COLORS.unsold }}>
-                      {formatNum(row.unsold)}
-                    </td>
-
-                    {/* Upcoming */}
-                    <td className="text-right px-3 py-2 font-mono" style={{ color: COLORS.upcoming }}>
-                      {formatNum(row.upcoming)}
-                    </td>
-
-                    {/* GLS */}
-                    {includeGls && (
-                      <td className="text-right px-3 py-2 font-mono" style={{ color: COLORS.gls }}>
-                        {formatNum(row.gls)}
-                      </td>
-                    )}
-
-                    {/* Total with bar */}
-                    <td className="text-right px-3 py-2">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 h-2 bg-gray-100 rounded overflow-hidden">
-                          <div
-                            className="h-full rounded"
-                            style={{
-                              width: `${barWidth}%`,
-                              background: `linear-gradient(to right, ${COLORS.unsold}, ${COLORS.upcoming})`
-                            }}
-                          />
+                  <React.Fragment key={row.district}>
+                    {/* District Row */}
+                    <tr
+                      className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} hover:bg-[#547792]/10 cursor-pointer transition-colors`}
+                      onClick={() => toggleDistrict(row.district)}
+                    >
+                      {/* District */}
+                      <td className={`sticky left-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-3 py-2 font-medium text-[#213448] border-r border-[#94B4C1]/20`}>
+                        <div className="flex items-center gap-2">
+                          {hasProjects ? (
+                            <svg
+                              className={`w-3 h-3 text-[#547792] transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          ) : (
+                            <div className="w-3 h-3" />
+                          )}
+                          <span>{row.district}</span>
+                          <span className="text-[10px] text-[#94B4C1] font-normal">({row.region})</span>
                         </div>
-                        <span className="font-mono font-semibold text-[#213448] min-w-[50px]">
-                          {formatNum(row.total)}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+
+                      {/* Unsold */}
+                      <td className="text-right px-3 py-2 font-mono" style={{ color: COLORS.unsold }}>
+                        {formatNum(row.unsold)}
+                      </td>
+
+                      {/* Upcoming */}
+                      <td className="text-right px-3 py-2 font-mono" style={{ color: COLORS.upcoming }}>
+                        {formatNum(row.upcoming)}
+                      </td>
+
+                      {/* GLS */}
+                      {includeGls && (
+                        <td className="text-right px-3 py-2 font-mono" style={{ color: COLORS.gls }}>
+                          {formatNum(row.gls)}
+                        </td>
+                      )}
+
+                      {/* Total with bar */}
+                      <td className="text-right px-3 py-2">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="w-16 h-2 bg-gray-100 rounded overflow-hidden">
+                            <div
+                              className="h-full rounded"
+                              style={{
+                                width: `${barWidth}%`,
+                                background: `linear-gradient(to right, ${COLORS.unsold}, ${COLORS.upcoming})`
+                              }}
+                            />
+                          </div>
+                          <span className="font-mono font-semibold text-[#213448] min-w-[50px]">
+                            {formatNum(row.total)}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Project Rows (when expanded) */}
+                    {isExpanded && hasProjects && row.projects.map((project, pIdx) => (
+                      <tr
+                        key={`${row.district}-${pIdx}`}
+                        className="bg-[#EAE0CF]/5 text-[11px]"
+                      >
+                        {/* Project Name */}
+                        <td className="sticky left-0 bg-[#EAE0CF]/5 px-3 py-1.5 border-r border-[#94B4C1]/20">
+                          <div className="flex items-center gap-2 pl-5">
+                            <span
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{
+                                backgroundColor: project.category === 'unsold' ? COLORS.unsold : COLORS.upcoming
+                              }}
+                            />
+                            <span className="text-[#547792] truncate" title={project.name}>
+                              {project.name}
+                            </span>
+                            {project.category === 'upcoming' && project.launch_quarter && (
+                              <span className="text-[9px] text-[#94B4C1] shrink-0">
+                                Q{project.launch_quarter}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Unsold column */}
+                        <td className="text-right px-3 py-1.5 font-mono" style={{ color: COLORS.unsold }}>
+                          {project.category === 'unsold' ? formatNum(project.units) : '–'}
+                        </td>
+
+                        {/* Upcoming column */}
+                        <td className="text-right px-3 py-1.5 font-mono" style={{ color: COLORS.upcoming }}>
+                          {project.category === 'upcoming' ? formatNum(project.units) : '–'}
+                        </td>
+
+                        {/* GLS column */}
+                        {includeGls && (
+                          <td className="text-right px-3 py-1.5 font-mono text-[#94B4C1]">
+                            –
+                          </td>
+                        )}
+
+                        {/* Total column */}
+                        <td className="text-right px-3 py-1.5">
+                          <span className="font-mono text-[#547792]">
+                            {formatNum(project.units)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
                 );
               })}
 
@@ -282,7 +342,7 @@ export function SupplyBreakdownTable({
 
         {/* Footer */}
         <div className="shrink-0 px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
-          Launch Year: {launchYear} • Click row to expand
+          Launch Year: {launchYear} • Click district to see projects
         </div>
       </div>
     </QueryState>

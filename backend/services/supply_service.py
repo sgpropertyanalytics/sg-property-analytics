@@ -81,20 +81,23 @@ def get_supply_summary(
                 "OCR": { ... }
             },
             "byDistrict": {
-                "D01": { unsoldInventory, upcomingLaunches, glsPipeline, totalEffectiveSupply, region },
+                "D01": { unsoldInventory, upcomingLaunches, glsPipeline, totalEffectiveSupply, region, projects },
                 ...
             },
             "totals": { unsoldInventory, upcomingLaunches, glsPipeline, totalEffectiveSupply },
             "meta": { launchYear, includeGls, computedAs, asOfDate, warnings }
         }
     """
-    # Fetch each category (mutually exclusive)
-    unsold_by_district = _get_unsold_inventory_by_district()
-    upcoming_by_district = _get_upcoming_launches_by_district(launch_year)
+    # Fetch each category with project-level detail
+    unsold_by_district, unsold_projects = _get_unsold_inventory_with_projects()
+    upcoming_by_district, upcoming_projects = _get_upcoming_launches_with_projects(launch_year)
     gls_by_region = _get_gls_pipeline_by_region() if include_gls else {}
 
-    # Merge into district-level data
-    by_district = _merge_district_data(unsold_by_district, upcoming_by_district)
+    # Merge into district-level data (includes projects)
+    by_district = _merge_district_data_with_projects(
+        unsold_by_district, upcoming_by_district,
+        unsold_projects, upcoming_projects
+    )
 
     # Rollup to region level
     by_region = _rollup_by_region(by_district, gls_by_region, include_gls)
@@ -468,3 +471,229 @@ def _build_meta(
         "asOfDate": date.today().isoformat(),
         "warnings": warnings
     }
+
+
+# =============================================================================
+# PROJECT-LEVEL HELPERS
+# =============================================================================
+
+def _get_unsold_inventory_with_projects() -> tuple:
+    """
+    Get unsold inventory with project-level breakdown.
+
+    Returns:
+        Tuple of (district_totals: Dict[str, int], projects: List[Dict])
+        projects: [{ name, district, region, unsold, total_units, sold }]
+    """
+    try:
+        imports = _get_imports()
+        db = imports['db']
+        func = imports['func']
+        SALE_TYPE_NEW = imports['SALE_TYPE_NEW']
+        get_region_for_district = imports['get_region_for_district']
+
+        from services.new_launch_units import get_new_launch_projects
+        from models.transaction import Transaction
+
+        # Get all projects that are still new launches (no resales yet)
+        new_launch_projects = get_new_launch_projects()
+
+        if not new_launch_projects:
+            return {}, []
+
+        # Build project name → (total_units, district) mapping
+        project_data = {}
+        for project_info in new_launch_projects:
+            project_name = project_info.get('project_name')
+            total_units = project_info.get('total_units') or 0
+            district = project_info.get('district')
+
+            if not project_name or not district:
+                continue
+
+            # Normalize district format
+            d = district.upper().strip()
+            if not d.startswith('D'):
+                d = f'D{d.zfill(2)}'
+
+            project_data[project_name.upper()] = {
+                'original_name': project_name,
+                'total_units': total_units,
+                'district': d
+            }
+
+        if not project_data:
+            return {}, []
+
+        # Get all project names as a list
+        project_names = list(project_data.keys())
+
+        # Single bulk query: count New Sale transactions per project
+        results = db.session.query(
+            func.upper(Transaction.project_name).label('project_name'),
+            func.count(Transaction.id).label('sold_count')
+        ).filter(
+            func.upper(Transaction.project_name).in_(project_names),
+            Transaction.sale_type == SALE_TYPE_NEW,
+        ).group_by(
+            func.upper(Transaction.project_name)
+        ).all()
+
+        # Build sold count lookup
+        sold_counts = {row.project_name: row.sold_count for row in results}
+
+        # Calculate unsold per district AND build project list
+        district_totals = defaultdict(int)
+        projects = []
+
+        for project_name_upper, data in project_data.items():
+            sold = sold_counts.get(project_name_upper, 0)
+            unsold = max(0, data['total_units'] - sold)
+            district = data['district']
+            region = get_region_for_district(district)
+
+            if unsold > 0:
+                district_totals[district] += unsold
+                projects.append({
+                    'name': data['original_name'],
+                    'district': district,
+                    'region': region,
+                    'unsold': unsold,
+                    'total_units': data['total_units'],
+                    'sold': sold,
+                    'category': 'unsold'
+                })
+
+        return dict(district_totals), projects
+    except Exception as e:
+        logger.warning(f"Could not fetch unsold inventory with projects: {e}")
+        import traceback
+        logger.warning(traceback.format_exc())
+        return {}, []
+
+
+def _get_upcoming_launches_with_projects(launch_year: int) -> tuple:
+    """
+    Get upcoming launches with project-level breakdown.
+
+    Args:
+        launch_year: Filter by launch year
+
+    Returns:
+        Tuple of (district_totals: Dict[str, int], projects: List[Dict])
+        projects: [{ name, district, region, units, launch_quarter }]
+    """
+    imports = _get_imports()
+    db = imports['db']
+    func = imports['func']
+    get_region_for_district = imports['get_region_for_district']
+
+    try:
+        from models.upcoming_launch import UpcomingLaunch
+
+        # Query all projects for the year
+        results = db.session.query(
+            UpcomingLaunch.project_name,
+            UpcomingLaunch.district,
+            UpcomingLaunch.total_units,
+            UpcomingLaunch.launch_quarter
+        ).filter(
+            UpcomingLaunch.launch_year == launch_year
+        ).all()
+
+        district_totals = defaultdict(int)
+        projects = []
+
+        for row in results:
+            if not row.district or not row.total_units:
+                continue
+
+            # Normalize district format
+            d = row.district.upper().strip()
+            if not d.startswith('D'):
+                d = f'D{d.zfill(2)}'
+
+            units = int(row.total_units)
+            region = get_region_for_district(d)
+
+            district_totals[d] += units
+            projects.append({
+                'name': row.project_name or 'Unknown Project',
+                'district': d,
+                'region': region,
+                'units': units,
+                'launch_quarter': row.launch_quarter,
+                'category': 'upcoming'
+            })
+
+        return dict(district_totals), projects
+    except Exception as e:
+        logger.warning(f"Could not fetch upcoming launches with projects: {e}")
+        return {}, []
+
+
+def _merge_district_data_with_projects(
+    unsold_by_district: Dict[str, int],
+    upcoming_by_district: Dict[str, int],
+    unsold_projects: List[Dict],
+    upcoming_projects: List[Dict]
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Merge unsold inventory and upcoming launches into district-level records
+    with project-level breakdown.
+
+    Returns:
+        {
+            "D01": {
+                unsoldInventory, upcomingLaunches, glsPipeline, totalEffectiveSupply,
+                region, projects: [{ name, units, category }, ...]
+            },
+            ...
+        }
+    """
+    imports = _get_imports()
+    get_region_for_district = imports['get_region_for_district']
+
+    # Collect all districts
+    all_districts = set(unsold_by_district.keys()) | set(upcoming_by_district.keys())
+
+    # Group projects by district
+    projects_by_district = defaultdict(list)
+    for project in unsold_projects:
+        projects_by_district[project['district']].append({
+            'name': project['name'],
+            'units': project['unsold'],
+            'category': 'unsold',
+            'total_units': project.get('total_units'),
+            'sold': project.get('sold')
+        })
+    for project in upcoming_projects:
+        projects_by_district[project['district']].append({
+            'name': project['name'],
+            'units': project['units'],
+            'category': 'upcoming',
+            'launch_quarter': project.get('launch_quarter')
+        })
+
+    result = {}
+    for district in sorted(all_districts):  # Sorted for deterministic output
+        unsold = unsold_by_district.get(district, 0)
+        upcoming = upcoming_by_district.get(district, 0)
+
+        # Sort projects: unsold first, then upcoming, then by units desc
+        district_projects = projects_by_district.get(district, [])
+        district_projects.sort(key=lambda p: (
+            0 if p['category'] == 'unsold' else 1,
+            -p['units']
+        ))
+
+        result[district] = {
+            "unsoldInventory": unsold,
+            "upcomingLaunches": upcoming,
+            "glsPipeline": 0,  # GLS is region-level only
+            "totalEffectiveSupply": unsold + upcoming,
+            "region": get_region_for_district(district),
+            "projects": district_projects
+        }
+
+    return result
