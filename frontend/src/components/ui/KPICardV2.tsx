@@ -91,7 +91,7 @@ export function KPICardV2({
       </div>
 
       {/* Layer 2: Hero Data - fills remaining space, aligned to bottom */}
-      <div className="flex-1 flex items-end pb-1 overflow-hidden">
+      <div className="flex-1 flex items-end pb-1 min-w-0">
         {loading ? (
           <div className="h-8 bg-[#94B4C1]/30 rounded w-24 animate-pulse" />
         ) : typeof value === 'string' ? (
@@ -139,7 +139,7 @@ export function KPICardV2Group({
   };
 
   return (
-    <div className={`grid gap-3 md:gap-4 ${gridCols[columns]} ${className}`}>
+    <div className={`grid gap-3 md:gap-4 ${gridCols[columns]} ${className} overflow-visible`}>
       {children}
     </div>
   );
