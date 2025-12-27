@@ -68,14 +68,10 @@ export const NAV_ITEMS = [
     path: '/supply-insights',
     label: 'Supply & Inventory',
     icon: (
-      // "Ghost Building" icon - solid base + dashed top = supply pipeline
+      // Building with upward arrow - supply pipeline / incoming inventory
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        {/* Solid base - existing/sold units */}
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 21V12h14v9" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 15h2m4 0h2M8 18h2m4 0h2" />
-        {/* Dashed top - pipeline/under construction */}
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} strokeDasharray="2 2" d="M5 12V5a1 1 0 011-1h12a1 1 0 011 1v7" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} strokeDasharray="2 2" d="M8 7h2m4 0h2" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4M9 9h.01M15 9h.01M9 13h.01M15 13h.01" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 8l-2-2m0 0l-2 2m2-2v6" />
       </svg>
     ),
   },
