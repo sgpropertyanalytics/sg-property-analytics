@@ -47,20 +47,17 @@ export function SupplyInsightsContent() {
         {/* Content */}
         <div className="animate-view-enter space-y-4 md:space-y-6">
 
-          {/* ===== Controls Row ===== */}
-          <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-3 md:p-4 space-y-3">
-            {/* Row 1: Region Filter Pills */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-[#547792] mr-1">Region:</span>
+          {/* ===== Controls Row (Single Row) ===== */}
+          <div className="flex flex-wrap items-center gap-3 bg-white rounded-lg border border-[#94B4C1]/50 p-3 md:p-4">
+            {/* Region Pills */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setSelectedRegion(null)}
-                className={`
-                  px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200
-                  ${selectedRegion === null
-                    ? 'bg-[#213448] text-white shadow-md'
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  selectedRegion === null
+                    ? 'bg-[#213448] text-white'
                     : 'bg-[#EAE0CF] text-[#213448] hover:bg-[#94B4C1]/30'
-                  }
-                `}
+                }`}
               >
                 All
               </button>
@@ -68,51 +65,44 @@ export function SupplyInsightsContent() {
                 <button
                   key={region}
                   onClick={() => handleRegionSelect(region)}
-                  className={`
-                    px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200
-                    ${selectedRegion === region
-                      ? 'bg-[#213448] text-white shadow-md'
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    selectedRegion === region
+                      ? 'bg-[#213448] text-white'
                       : 'bg-[#EAE0CF] text-[#213448] hover:bg-[#94B4C1]/30'
-                    }
-                  `}
+                  }`}
                 >
                   {region}
                 </button>
               ))}
             </div>
 
-            {/* Row 2: Other Controls */}
-            <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-[#94B4C1]/20">
-              {/* GLS Toggle */}
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={includeGls}
-                  onChange={(e) => setIncludeGls(e.target.checked)}
-                  className="w-4 h-4 rounded border-[#94B4C1] text-[#213448] focus:ring-[#547792] cursor-pointer"
-                />
-                <span className="text-sm text-[#213448] group-hover:text-[#547792]">
-                  Include GLS Pipeline
-                </span>
-              </label>
+            {/* Divider */}
+            <div className="w-px h-6 bg-[#94B4C1]/30" />
 
-              {/* Divider */}
-              <div className="hidden sm:block w-px h-6 bg-[#94B4C1]/30" />
+            {/* GLS Toggle */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeGls}
+                onChange={(e) => setIncludeGls(e.target.checked)}
+                className="w-4 h-4 rounded border-[#94B4C1] text-[#213448] focus:ring-[#547792]"
+              />
+              <span className="text-sm text-[#213448]">GLS</span>
+            </label>
 
-              {/* Launch Year Select */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-[#547792]">Launch Year:</label>
-                <select
-                  value={launchYear}
-                  onChange={(e) => setLaunchYear(parseInt(e.target.value, 10))}
-                  className="px-3 py-1.5 rounded-lg border border-[#94B4C1]/50 bg-white text-sm text-[#213448] focus:ring-2 focus:ring-[#547792]/20 focus:border-[#547792] cursor-pointer"
-                >
-                  <option value={2025}>2025</option>
-                  <option value={2026}>2026</option>
-                  <option value={2027}>2027</option>
-                </select>
-              </div>
-            </div>
+            {/* Divider */}
+            <div className="w-px h-6 bg-[#94B4C1]/30" />
+
+            {/* Launch Year */}
+            <select
+              value={launchYear}
+              onChange={(e) => setLaunchYear(parseInt(e.target.value, 10))}
+              className="px-2 py-1.5 rounded-lg border border-[#94B4C1]/50 bg-white text-sm text-[#213448] focus:ring-2 focus:ring-[#547792]/20"
+            >
+              <option value={2025}>2025</option>
+              <option value={2026}>2026</option>
+              <option value={2027}>2027</option>
+            </select>
           </div>
 
           {/* ===== Two-Chart Grid (Always side by side) ===== */}
