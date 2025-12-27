@@ -34,6 +34,9 @@ export function SupplyBreakdownTable({
   // Collapsible state
   const [expandedDistricts, setExpandedDistricts] = useState(new Set());
 
+  // Sort state
+  const [sortConfig, setSortConfig] = useState({ column: 'district', order: 'asc' });
+
   // Build filter key for caching
   const filterKey = useMemo(() =>
     `${selectedRegion || 'all'}:${includeGls}:${launchYear}`,
@@ -115,6 +118,56 @@ export function SupplyBreakdownTable({
     return DISTRICT_NAMES[district] || '';
   };
 
+  // Sort handler
+  const handleSort = (column) => {
+    setSortConfig(prev => ({
+      column,
+      order: prev.column === column && prev.order === 'desc' ? 'asc' : 'desc'
+    }));
+  };
+
+  // Sort districts based on sortConfig
+  const sortedDistricts = useMemo(() => {
+    const sorted = [...tableData.districts];
+    sorted.sort((a, b) => {
+      let aVal, bVal;
+      if (sortConfig.column === 'district') {
+        aVal = a.district;
+        bVal = b.district;
+      } else {
+        aVal = a[sortConfig.column] ?? 0;
+        bVal = b[sortConfig.column] ?? 0;
+      }
+      if (typeof aVal === 'string') {
+        return sortConfig.order === 'desc'
+          ? bVal.localeCompare(aVal)
+          : aVal.localeCompare(bVal);
+      }
+      return sortConfig.order === 'desc' ? bVal - aVal : aVal - bVal;
+    });
+    return sorted;
+  }, [tableData.districts, sortConfig]);
+
+  // Sort icon component
+  const SortIcon = ({ column }) => {
+    if (sortConfig.column !== column) {
+      return (
+        <svg className="w-3 h-3 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return sortConfig.order === 'asc' ? (
+      <svg className="w-3 h-3 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-3 h-3 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  };
+
   return (
     <QueryState
       loading={loading}
@@ -181,27 +234,57 @@ export function SupplyBreakdownTable({
           <table className="w-full border-collapse text-xs min-w-[600px]">
             <thead className="sticky top-0 bg-white z-10">
               <tr>
-                <th className="sticky left-0 bg-[#EAE0CF]/50 text-left px-3 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[320px]">
-                  District
+                <th
+                  className="sticky left-0 bg-[#EAE0CF]/50 text-left px-3 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[320px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                  onClick={() => handleSort('district')}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>District</span>
+                    <SortIcon column="district" />
+                  </div>
                 </th>
-                <th className="bg-[#EAE0CF]/50 text-center px-2 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[100px]">
-                  Total
+                <th
+                  className="bg-[#EAE0CF]/50 text-center px-2 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[100px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                  onClick={() => handleSort('total')}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Total</span>
+                    <SortIcon column="total" />
+                  </div>
                 </th>
-                <th className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#213448] border-b border-[#94B4C1]/30 min-w-[80px]">
-                  Unsold
+                <th
+                  className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#213448] border-b border-[#94B4C1]/30 min-w-[80px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                  onClick={() => handleSort('unsold')}
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Unsold</span>
+                    <SortIcon column="unsold" />
+                  </div>
                 </th>
-                <th className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#547792] border-b border-[#94B4C1]/30 min-w-[80px]">
-                  Upcoming
+                <th
+                  className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#547792] border-b border-[#94B4C1]/30 min-w-[80px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                  onClick={() => handleSort('upcoming')}
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Upcoming</span>
+                    <SortIcon column="upcoming" />
+                  </div>
                 </th>
                 {includeGls && (
-                  <th className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#94B4C1] border-b border-[#94B4C1]/30 min-w-[80px]">
-                    GLS
+                  <th
+                    className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#94B4C1] border-b border-[#94B4C1]/30 min-w-[80px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                    onClick={() => handleSort('gls')}
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>GLS</span>
+                      <SortIcon column="gls" />
+                    </div>
                   </th>
                 )}
               </tr>
             </thead>
             <tbody>
-              {tableData.districts.map((row) => {
+              {sortedDistricts.map((row) => {
                 const isExpanded = expandedDistricts.has(row.district);
                 const hasProjects = row.projects && row.projects.length > 0;
                 const areaName = getAreaName(row.district);
@@ -232,9 +315,6 @@ export function SupplyBreakdownTable({
                           <span className="text-[#547792] font-normal">–</span>
                           <span className="text-[#547792] font-normal truncate">
                             {areaName}
-                          </span>
-                          <span className="text-[10px] text-[#94B4C1] font-normal ml-auto shrink-0">
-                            ({row.projects.length})
                           </span>
                         </div>
                       </td>
