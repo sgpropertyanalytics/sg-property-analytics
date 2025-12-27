@@ -17,10 +17,10 @@
  * RULE: Chart component receives this and renders. No math in component.
  */
 
-// Colors from design system
+// Colors for supply charts (warm tones for unsold/upcoming)
 const COLORS = {
-  unsoldInventory: '#213448',  // Deep Navy
-  upcomingLaunches: '#547792', // Ocean Blue
+  unsoldInventory: '#92400e',  // Warm brown
+  upcomingLaunches: '#c2410c', // Warm orange
   glsPipeline: '#94B4C1',      // Sky Blue
   glsExcluded: 'rgba(148, 180, 193, 0.3)',  // Sky Blue @ 30% opacity
   total: '#EAE0CF',            // Sand/Cream
@@ -30,8 +30,8 @@ const COLORS = {
 
 // Border colors for better definition
 const BORDER_COLORS = {
-  unsoldInventory: '#1a2936',
-  upcomingLaunches: '#456680',
+  unsoldInventory: '#7a3309',  // Darker brown
+  upcomingLaunches: '#a3350a', // Darker orange
   glsPipeline: '#7a9dab',
   glsExcluded: 'rgba(122, 157, 171, 0.5)',
   total: '#d4c9b8',
