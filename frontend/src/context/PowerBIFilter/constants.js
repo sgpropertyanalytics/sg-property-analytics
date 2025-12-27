@@ -68,25 +68,6 @@ export const INITIAL_BREADCRUMBS = {
 };
 
 /**
- * Default highlight state.
- * Used for highlighting specific data points on charts.
- */
-export const INITIAL_HIGHLIGHT = {
-  type: null,    // 'time' | 'location' | null
-  value: null,   // The highlighted value
-};
-
-/**
- * Default cross-filter state.
- * NOTE: Cross-filtering removed but kept for safety during transition.
- */
-export const INITIAL_CROSS_FILTER = {
-  source: null,       // Chart that initiated the cross-filter
-  dimension: null,    // 'time' | 'location' | 'project'
-  value: null,        // The selected value
-};
-
-/**
  * Default filter options state.
  */
 export const INITIAL_FILTER_OPTIONS = {

@@ -275,7 +275,7 @@ const findBestValueZone = (transformedData) => {
  */
 export function PsfByPriceBandChart({ height = 350 }) {
   const chartRef = useRef(null);
-  const { buildApiParams, debouncedFilterKey, applyCrossFilter } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
 
   // Mobile: bedroom selector state
   const [selectedBedroom, setSelectedBedroom] = useState(null);
@@ -505,21 +505,8 @@ export function PsfByPriceBandChart({ height = 350 }) {
           },
         },
       },
-      onClick: (event, elements) => {
-        if (elements.length > 0) {
-          const datasetIndex = elements[0].datasetIndex;
-          const bedroom = chartData.datasets[datasetIndex]?.label;
-          if (bedroom) {
-            // Extract bedroom count from label (e.g., "2BR" -> 2)
-            const match = bedroom.match(/(\d+)/);
-            if (match) {
-              applyCrossFilter('bedroom', 'bedroom', parseInt(match[1], 10));
-            }
-          }
-        }
-      },
     }),
-    [isMobile, transformedData, chartData, shortLabels, bestValue, applyCrossFilter]
+    [isMobile, transformedData, chartData, shortLabels, bestValue]
   );
 
   // Calculate stats for footer

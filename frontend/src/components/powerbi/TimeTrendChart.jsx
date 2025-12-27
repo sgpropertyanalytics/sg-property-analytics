@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useCallback } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import {
@@ -41,29 +41,24 @@ ChartJS.register(
  * X-axis: Month (drillable up to Quarter/Year)
  * Y1 (bars): Transaction Count
  * Y2 (line): Median PSF
- *
- * Supports:
- * - Cross-highlighting: clicking a bar highlights it and dims others (no data filtering)
- * - Drill-down: double-click to drill into finer time granularity
  */
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
-export function TimeTrendChart({ onCrossFilter: _onCrossFilter, onDrillThrough: _onDrillThrough, height = 300 }) {
+export function TimeTrendChart({ height = 300 }) {
   // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
   const chartRef = useRef(null);
 
   // Fetch and transform data using adapter pattern
   // useAbortableQuery handles: abort controller, stale request protection, loading/error states
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
-      // Build params with excludeHighlight: true so chart shows ALL periods
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},sale_type`,
         metrics: 'count,total_value'
-      }, { excludeHighlight: true });
+      });
 
       const response = await getAggregate(params, { signal });
 
@@ -88,24 +83,6 @@ export function TimeTrendChart({ onCrossFilter: _onCrossFilter, onDrillThrough: 
     { initialData: [] }
   );
 
-  const handleClick = useCallback((event) => {
-    const chart = chartRef.current;
-    if (!chart) return;
-
-    const elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
-    if (elements.length > 0) {
-      const index = elements[0].index;
-      const clickedItem = data[index];
-      if (clickedItem) {
-        const timeValue = clickedItem.period;
-
-        // Apply highlight - this triggers cross-filter for OTHER charts
-        // TimeTrendChart itself uses excludeHighlight:true to preserve full timeline
-        applyHighlight('time', timeGrouping, timeValue);
-      }
-    }
-  }, [data, timeGrouping, applyHighlight]);
-
   // Use the time grain that matches the current data to avoid "Unknown" labels during drill transitions
   const labels = data.map(d => d.period ?? '');
   const newSaleCounts = data.map(d => d.newSaleCount || 0);
@@ -119,16 +96,6 @@ export function TimeTrendChart({ onCrossFilter: _onCrossFilter, onDrillThrough: 
   // Extend y axis (count) slightly to leave room for line above
   const yAxisMax = Math.ceil(maxCount * 1.4); // Bars occupy ~70% of chart height
 
-  // Determine which bars should be highlighted based on highlight state
-  const highlightedIndex = highlight.source === 'time' && highlight.value
-    ? labels.indexOf(String(highlight.value))
-    : -1;
-
-  // Get bar opacity based on highlight state
-  const getBarOpacity = (index) => {
-    return highlightedIndex === -1 || highlightedIndex === index ? 0.9 : 0.3;
-  };
-
   const chartData = {
     labels,
     datasets: [
@@ -136,7 +103,7 @@ export function TimeTrendChart({ onCrossFilter: _onCrossFilter, onDrillThrough: 
         type: 'bar',
         label: SaleTypeLabels[SaleType.NEW_SALE],
         data: newSaleCounts,
-        backgroundColor: newSaleCounts.map((_, i) => `rgba(33, 52, 72, ${getBarOpacity(i)})`),  // Deep Navy #213448
+        backgroundColor: 'rgba(33, 52, 72, 0.9)',  // Deep Navy #213448
         borderColor: 'rgba(33, 52, 72, 1)',
         borderWidth: 1,
         yAxisID: 'y',
@@ -147,7 +114,7 @@ export function TimeTrendChart({ onCrossFilter: _onCrossFilter, onDrillThrough: 
         type: 'bar',
         label: SaleTypeLabels[SaleType.RESALE],
         data: resaleCounts,
-        backgroundColor: resaleCounts.map((_, i) => `rgba(84, 119, 146, ${getBarOpacity(i)})`),  // Ocean Blue #547792
+        backgroundColor: 'rgba(84, 119, 146, 0.9)',  // Ocean Blue #547792
         borderColor: 'rgba(84, 119, 146, 1)',
         borderWidth: 1,
         yAxisID: 'y',
@@ -180,7 +147,6 @@ export function TimeTrendChart({ onCrossFilter: _onCrossFilter, onDrillThrough: 
       mode: 'index',
       intersect: false,
     },
-    onClick: handleClick,
     plugins: {
       legend: {
         position: 'top',
@@ -265,7 +231,7 @@ export function TimeTrendChart({ onCrossFilter: _onCrossFilter, onDrillThrough: 
         },
       },
     },
-  }), [handleClick, data, yAxisMax]);
+  }), [data, yAxisMax]);
 
   // Card layout: flex column with fixed height, header shrink-0, chart fills remaining
   const cardHeight = height + 90; // height prop for chart + ~90px for header

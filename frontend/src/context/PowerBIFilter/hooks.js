@@ -12,8 +12,6 @@ import {
   INITIAL_FILTER_OPTIONS,
   INITIAL_DRILL_PATH,
   INITIAL_BREADCRUMBS,
-  INITIAL_HIGHLIGHT,
-  INITIAL_CROSS_FILTER,
   INITIAL_FACT_FILTER,
   INITIAL_SELECTED_PROJECT,
 } from './constants';
@@ -73,8 +71,6 @@ export function useFilterOptions() {
 export function useRouteReset({
   setDrillPath,
   setBreadcrumbs,
-  setHighlight,
-  setCrossFilter,
   setFactFilter,
   setSelectedProject,
 }) {
@@ -86,12 +82,10 @@ export function useRouteReset({
       previousPathnameRef.current = location.pathname;
       setDrillPath(INITIAL_DRILL_PATH);
       setBreadcrumbs(INITIAL_BREADCRUMBS);
-      setHighlight(INITIAL_HIGHLIGHT);
-      setCrossFilter(INITIAL_CROSS_FILTER);
       setFactFilter(INITIAL_FACT_FILTER);
       setSelectedProject(INITIAL_SELECTED_PROJECT);
     }
-  }, [location.pathname, setDrillPath, setBreadcrumbs, setHighlight, setCrossFilter, setFactFilter, setSelectedProject]);
+  }, [location.pathname, setDrillPath, setBreadcrumbs, setFactFilter, setSelectedProject]);
 }
 
 // =============================================================================

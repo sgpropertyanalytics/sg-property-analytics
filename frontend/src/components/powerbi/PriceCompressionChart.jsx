@@ -62,12 +62,11 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * - Local drill: Year → Quarter → Month (visual-local only)
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
- * Uses excludeHighlight: true (time-series chart pattern).
  */
 export function PriceCompressionChart({ height = 380 }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
 
   // UI state (not data state - that comes from useAbortableQuery)
@@ -105,11 +104,11 @@ export function PriceCompressionChart({ height = 380 }) {
   // Data fetching with useAbortableQuery - automatic abort/stale handling
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
-      // Use global timeGrouping via TIME_GROUP_BY mapping, excludeHighlight for time-series pattern
+      // Use global timeGrouping via TIME_GROUP_BY mapping
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count'
-      }, { excludeHighlight: true });
+      });
 
       const response = await getAggregate(params, { signal });
 
@@ -133,20 +132,6 @@ export function PriceCompressionChart({ height = 380 }) {
     { initialData: [], enabled: shouldFetch }
   );
 
-  // Click handler for highlight
-  const handleChartClick = (event) => {
-    const chart = chartRef.current;
-    if (!chart) return;
-
-    const elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
-    if (elements.length > 0) {
-      const index = elements[0].index;
-      const period = data[index]?.period;
-      if (period) {
-        applyHighlight('time', timeGrouping, period);
-      }
-    }
-  };
 
   // Computed values - use historical baseline for stable min/max
   const compressionScore = useMemo(
@@ -158,13 +143,8 @@ export function PriceCompressionChart({ height = 380 }) {
   const averageSpreads = useMemo(() => calculateAverageSpreads(data), [data]);
   const latestData = data[data.length - 1] || {};
 
-  // Highlighted index for visual emphasis
-  const highlightedIndex = useMemo(() => {
-    if (highlight.source === 'time' && highlight.value) {
-      return data.findIndex(d => String(d.period) === String(highlight.value));
-    }
-    return -1;
-  }, [highlight, data]);
+  // No highlight - cross-filtering removed
+  const highlightedIndex = -1;
 
   // Chart data for spread lines
   const spreadChartData = {

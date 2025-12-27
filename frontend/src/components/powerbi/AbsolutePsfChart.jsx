@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import {
@@ -53,10 +53,9 @@ const REGION_COLORS = {
  * Market Compression chart.
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
- * Uses excludeHighlight: true (time-series chart pattern).
  */
 export function AbsolutePsfChart({ height = 300 }) {
-  const { buildApiParams, debouncedFilterKey, highlight, applyHighlight, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
   const chartRef = useRef(null);
 
@@ -75,7 +74,7 @@ export function AbsolutePsfChart({ height = 300 }) {
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count'
-      }, { excludeHighlight: true });
+      });
 
       const response = await getAggregate(params, { signal });
       assertKnownVersion(response.data, '/api/aggregate');
@@ -93,29 +92,6 @@ export function AbsolutePsfChart({ height = 300 }) {
     [debouncedFilterKey, timeGrouping],
     { initialData: [], enabled: shouldFetch }
   );
-
-  // Click handler for highlight
-  const handleChartClick = (event) => {
-    const chart = chartRef.current;
-    if (!chart) return;
-
-    const elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
-    if (elements.length > 0) {
-      const index = elements[0].index;
-      const period = data[index]?.period;
-      if (period) {
-        applyHighlight('time', timeGrouping, period);
-      }
-    }
-  };
-
-  // Highlighted index for visual emphasis
-  const highlightedIndex = useMemo(() => {
-    if (highlight.source === 'time' && highlight.value) {
-      return data.findIndex(d => String(d.period) === String(highlight.value));
-    }
-    return -1;
-  }, [highlight, data]);
 
   // Latest values for KPI display
   const latestData = data[data.length - 1] || {};
@@ -142,12 +118,8 @@ export function AbsolutePsfChart({ height = 300 }) {
         borderColor: REGION_COLORS.CCR,
         backgroundColor: 'rgba(33, 52, 72, 0.1)',
         borderWidth: 2,
-        pointRadius: data.map((_, i) => highlightedIndex === i ? 6 : 3),
-        pointBackgroundColor: data.map((_, i) =>
-          highlightedIndex === -1 || highlightedIndex === i
-            ? REGION_COLORS.CCR
-            : 'rgba(33, 52, 72, 0.4)'
-        ),
+        pointRadius: 3,
+        pointBackgroundColor: REGION_COLORS.CCR,
         pointBorderColor: '#fff',
         pointBorderWidth: 1,
         tension: 0.3,
@@ -160,12 +132,8 @@ export function AbsolutePsfChart({ height = 300 }) {
         borderColor: REGION_COLORS.RCR,
         backgroundColor: 'rgba(84, 119, 146, 0.1)',
         borderWidth: 2,
-        pointRadius: data.map((_, i) => highlightedIndex === i ? 6 : 3),
-        pointBackgroundColor: data.map((_, i) =>
-          highlightedIndex === -1 || highlightedIndex === i
-            ? REGION_COLORS.RCR
-            : 'rgba(84, 119, 146, 0.4)'
-        ),
+        pointRadius: 3,
+        pointBackgroundColor: REGION_COLORS.RCR,
         pointBorderColor: '#fff',
         pointBorderWidth: 1,
         tension: 0.3,
@@ -178,12 +146,8 @@ export function AbsolutePsfChart({ height = 300 }) {
         borderColor: REGION_COLORS.OCR,
         backgroundColor: 'rgba(148, 180, 193, 0.1)',
         borderWidth: 2,
-        pointRadius: data.map((_, i) => highlightedIndex === i ? 6 : 3),
-        pointBackgroundColor: data.map((_, i) =>
-          highlightedIndex === -1 || highlightedIndex === i
-            ? REGION_COLORS.OCR
-            : 'rgba(148, 180, 193, 0.4)'
-        ),
+        pointRadius: 3,
+        pointBackgroundColor: REGION_COLORS.OCR,
         pointBorderColor: '#fff',
         pointBorderWidth: 1,
         tension: 0.3,
@@ -197,7 +161,6 @@ export function AbsolutePsfChart({ height = 300 }) {
   const chartOptions = {
     ...baseChartJsOptions,
     interaction: { mode: 'index', intersect: false },
-    onClick: handleChartClick,
     plugins: {
       legend: {
         display: true,
@@ -312,7 +275,7 @@ export function AbsolutePsfChart({ height = 300 }) {
 
         {/* Footer */}
         <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">
-          <span className="truncate">{data.length} periods | Click to highlight</span>
+          <span className="truncate">{data.length} periods</span>
           <span className="text-[10px]">
             {latestData.counts
               ? `${(latestData.counts.CCR || 0) + (latestData.counts.RCR || 0) + (latestData.counts.OCR || 0)} total txns`

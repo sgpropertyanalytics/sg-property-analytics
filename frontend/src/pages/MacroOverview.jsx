@@ -37,13 +37,7 @@ import { useChartHeight, MOBILE_CAPS } from '../hooks';
  */
 export function MacroOverviewContent() {
   const { apiMetadata } = useData();
-  const {
-    filters,
-    crossFilter,
-    highlight,
-    clearCrossFilter,
-    clearHighlight,
-  } = usePowerBIFilters();
+  const { filters } = usePowerBIFilters();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
@@ -144,35 +138,6 @@ export function MacroOverviewContent() {
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 {/* Time Grouping Toggle - View context control (not a filter) */}
                 <TimeGranularityToggle />
-
-                {/* Highlight indicator (visual emphasis on time, no filtering) */}
-                {highlight.value && (
-                  <button
-                    onClick={clearHighlight}
-                    className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-[#213448]/10 text-[#213448] rounded-lg hover:bg-[#213448]/20 transition-colors text-xs sm:text-sm border border-[#213448]/20"
-                  >
-                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    <span className="truncate max-w-[100px] sm:max-w-none">{highlight.value}</span>
-                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-                {/* Cross-filter indicator (actual data filtering) */}
-                {crossFilter.value && (
-                  <button
-                    onClick={clearCrossFilter}
-                    className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-[#547792]/20 text-[#213448] rounded-lg hover:bg-[#547792]/30 transition-colors text-xs sm:text-sm"
-                  >
-                    <span className="truncate max-w-[100px] sm:max-w-none">{crossFilter.value}</span>
-                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
               </div>
             </div>
 

@@ -19,7 +19,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
   const {
     filters,
     filterOptions,
-    crossFilter,
     activeFilterCount,
     setDateRange,
     setDistricts,
@@ -27,7 +26,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
     toggleSegment,
     setSaleType,
     resetFilters,
-    clearCrossFilter,
   } = usePowerBIFilters();
 
   const [expandedSections, setExpandedSections] = useState({
@@ -178,25 +176,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
         )}
       </div>
 
-      {/* Cross-filter indicator */}
-      {crossFilter.value && (
-        <div className="px-4 py-2 bg-[#547792]/20 border-b border-[#547792]/30 flex items-center justify-between">
-          <div className="text-xs">
-            <span className="text-[#547792]">Cross-filter: </span>
-            <span className="font-medium text-[#213448]">{crossFilter.value}</span>
-          </div>
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); clearCrossFilter(); }}
-            className="text-[#547792] hover:text-[#213448] p-1"
-            title="Clear selection"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
 
       {/* Filter sections */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
