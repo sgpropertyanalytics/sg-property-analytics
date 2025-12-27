@@ -125,15 +125,15 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     else:
         formatted_value = "—"
 
-    # Build insight - show the underlying PSF values
+    # Build insight - show rolling 90D context with PSF values
     if prev and prev_count > 0:
-        insight = f"${round(prev):,} → ${round(current):,}"
+        insight = f"Rolling 90D Q-o-Q (Current: ${round(current):,} | Previous: ${round(prev):,})"
     else:
-        insight = f"Now ${round(current):,}"
+        insight = f"Rolling 90D (Current: ${round(current):,})"
 
     # Add confidence warning to insight if low sample
     if confidence_label:
-        insight = f"{insight} ({confidence_label})"
+        insight += f" [{confidence_label}]"
 
     return KPIResult(
         kpi_id="median_psf",
