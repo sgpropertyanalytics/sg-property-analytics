@@ -331,13 +331,14 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "used_fallback": use_fallback,
             "sale_type": "resale",
             "description": (
-                "Market Momentum measures whether recent price changes are "
-                "stronger or weaker than normal.\n\n"
-                "Score Range:\n"
-                "60-70: Buyers have leverage\n"
-                "~50: Stable/balanced market\n"
-                "30-40: Sellers have leverage\n\n"
-                "It reflects price movement, not whether homes are cheap or expensive."
+                "Shows whether recent resale price movements favor buyers or sellers.\n\n"
+                "Market Momentum\n"
+                "• 60–70: Buyer advantage\n"
+                "• 45–55: Balanced\n"
+                "• 30–40: Seller advantage\n\n"
+                "Based on rolling 90-day price changes, adjusted for market volatility. "
+                "This does not indicate whether housing prices are cheap or expensive, "
+                "it is a reflection of pricing pressure and direction."
             )
         }
     )
