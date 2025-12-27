@@ -147,9 +147,17 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "pct_change": round(pct_change, 1),
             "direction": direction,
             "description": (
-                "Number of resale transactions in the last 3 months.\n"
-                "Q-o-Q change indicates whether market activity is "
-                "increasing or slowing."
+                "Resale Volume (QoQ) measures the change in resale transaction volume "
+                "over the latest 3 full months versus the previous 3 months. "
+                "Only resale transactions are included, with outliers excluded.\n\n"
+                "Trend Interpretation\n"
+                "• > +10%: Strong Growth – clear demand expansion\n"
+                "• +5% to +10%: Growing – healthy market momentum\n"
+                "• +2% to +5%: Mild Uptick – early signs of recovery\n"
+                "• –2% to +2%: Neutral – normal market noise\n"
+                "• –5% to –2%: Softening – demand cooling\n"
+                "• –10% to –5%: Weak – reduced activity\n"
+                "• < –10%: Sharp Decline – market slowdown / low liquidity"
             )
         }
     )
