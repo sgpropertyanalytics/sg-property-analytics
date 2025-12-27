@@ -166,7 +166,8 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
         )}
 
         {/* ===== MAIN CONTENT AREA ===== */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* min-w-0 prevents flex children from overflowing - critical for nested grids */}
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
           {/* Mobile Header */}
           <header className="lg:hidden sticky top-0 z-40 bg-[#213448] px-3 py-2 flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
@@ -213,9 +214,10 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
           </header>
 
           {/* Main Content - Wrapped with ErrorBoundary to prevent blank page crashes */}
-          <main className="flex-1 overflow-auto flex flex-col">
+          {/* min-w-0 on main and wrapper prevents nested grid overflow */}
+          <main className="flex-1 min-w-0 overflow-auto flex flex-col">
             <ErrorBoundary name="Page Content">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 {children}
               </div>
             </ErrorBoundary>
