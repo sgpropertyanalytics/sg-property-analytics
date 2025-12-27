@@ -88,7 +88,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     if not row or not row.current_psf:
         return KPIResult(
             kpi_id="median_psf",
-            title="Resale PSF Growth",
+            title="Resale Median PSF Growth %",
             value=0,
             formatted_value="—",
             subtitle="Q-o-Q (resale only)",
@@ -137,7 +137,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 
     return KPIResult(
         kpi_id="median_psf",
-        title="Resale PSF Growth",
+        title="Resale Median PSF Growth %",
         value=round(pct_change, 1) if pct_change is not None else None,
         formatted_value=formatted_value,
         subtitle="Q-o-Q (resale only)",
@@ -158,7 +158,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 # Note: SQL is built dynamically, so we wrap it
 class MedianPsfSpec:
     kpi_id = "median_psf"
-    title = "Resale PSF Growth"
+    title = "Resale Median PSF Growth %"
     subtitle = "Q-o-Q (resale only)"
 
     @staticmethod
