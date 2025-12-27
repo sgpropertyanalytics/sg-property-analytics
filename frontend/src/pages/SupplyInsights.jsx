@@ -92,7 +92,6 @@ export function SupplyInsightsContent() {
             <SupplyBreakdownTable
               includeGls={true}
               launchYear={launchYear}
-              height={tableHeight}
             />
           </ErrorBoundary>
 

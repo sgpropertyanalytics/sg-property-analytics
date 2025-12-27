@@ -29,7 +29,6 @@ export function SupplyBreakdownTable({
   selectedRegion = null,
   includeGls = true,
   launchYear = 2026,
-  height = 400,
 }) {
   // Collapsible state
   const [expandedDistricts, setExpandedDistricts] = useState(new Set());
@@ -175,7 +174,6 @@ export function SupplyBreakdownTable({
       onRetry={refetch}
       empty={tableData.districts.length === 0}
       skeleton="table"
-      height={height}
     >
       <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
         {/* Header */}
@@ -230,7 +228,7 @@ export function SupplyBreakdownTable({
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto max-w-full" style={{ maxHeight: height - 180 }}>
+        <div className="overflow-x-auto max-w-full">
           <table className="w-full border-collapse text-xs min-w-[600px]">
             <thead className="sticky top-0 bg-white z-10">
               <tr>
