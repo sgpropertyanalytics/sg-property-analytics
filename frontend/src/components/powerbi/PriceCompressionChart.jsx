@@ -143,9 +143,6 @@ export function PriceCompressionChart({ height = 380 }) {
   const averageSpreads = useMemo(() => calculateAverageSpreads(data), [data]);
   const latestData = data[data.length - 1] || {};
 
-  // No highlight - cross-filtering removed
-  const highlightedIndex = -1;
-
   // Chart data for spread lines
   const spreadChartData = {
     labels: data.map(d => d.period),
@@ -156,12 +153,8 @@ export function PriceCompressionChart({ height = 380 }) {
         borderColor: '#213448',
         backgroundColor: 'rgba(33, 52, 72, 0.15)',
         borderWidth: 2,
-        pointRadius: data.map((_, i) => highlightedIndex === i ? 6 : 3),
-        pointBackgroundColor: data.map((_, i) =>
-          highlightedIndex === -1 || highlightedIndex === i
-            ? '#213448'
-            : 'rgba(33, 52, 72, 0.4)'
-        ),
+        pointRadius: 3,
+        pointBackgroundColor: '#213448',
         pointBorderColor: '#fff',
         pointBorderWidth: 1,
         fill: true,
@@ -175,12 +168,8 @@ export function PriceCompressionChart({ height = 380 }) {
         backgroundColor: 'rgba(84, 119, 146, 0.15)',
         borderWidth: 2,
         borderDash: [5, 5],
-        pointRadius: data.map((_, i) => highlightedIndex === i ? 6 : 3),
-        pointBackgroundColor: data.map((_, i) =>
-          highlightedIndex === -1 || highlightedIndex === i
-            ? '#547792'
-            : 'rgba(84, 119, 146, 0.4)'
-        ),
+        pointRadius: 3,
+        pointBackgroundColor: '#547792',
         pointBorderColor: '#fff',
         pointBorderWidth: 1,
         fill: true,
@@ -194,7 +183,6 @@ export function PriceCompressionChart({ height = 380 }) {
   const spreadChartOptions = {
     ...baseChartJsOptions,
     interaction: { mode: 'index', intersect: false },
-    onClick: handleChartClick,
     plugins: {
       legend: {
         display: true,
@@ -357,7 +345,7 @@ export function PriceCompressionChart({ height = 380 }) {
 
       {/* Footer - fixed height h-11 for consistent alignment */}
       <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-end gap-3 text-xs text-[#547792]">
-        <span className="truncate">{data.length} periods | Click to highlight</span>
+        <span className="truncate">{data.length} periods</span>
       </div>
       </div>
     </QueryState>

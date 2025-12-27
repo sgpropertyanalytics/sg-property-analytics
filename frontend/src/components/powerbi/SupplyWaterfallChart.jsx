@@ -60,7 +60,6 @@ ChartJS.register(
  * @param {string|null} props.selectedRegion - For district view, which region to show
  * @param {boolean} props.includeGls - Whether to include GLS pipeline in calculations
  * @param {number} props.launchYear - Year filter for upcoming launches
- * @param {Function} props.onRegionClick - Callback when a region bar is clicked
  * @param {number} props.height - Chart height in pixels
  */
 export function SupplyWaterfallChart({
@@ -68,7 +67,6 @@ export function SupplyWaterfallChart({
   selectedRegion = null,
   includeGls = true,
   launchYear = 2026,
-  onRegionClick,
   height = 350,
 }) {
   const chartRef = useRef(null);
@@ -123,9 +121,9 @@ export function SupplyWaterfallChart({
     // Waterfall view: no legend, custom tooltip
     return {
       ...baseChartJsOptions,
-      ...getWaterfallChartOptions(onRegionClick, chartData.totals, includeGls),
+      ...getWaterfallChartOptions(chartData.totals, includeGls),
     };
-  }, [chartData, view, onRegionClick, includeGls]);
+  }, [chartData, view, includeGls]);
 
   // Chart title based on view
   // TRUE waterfall: title shows what we're looking at

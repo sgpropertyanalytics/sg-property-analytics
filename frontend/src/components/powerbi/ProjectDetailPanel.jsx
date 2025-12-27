@@ -43,7 +43,7 @@ ChartJS.register(
  * It uses its own API queries filtered to the selected project only.
  */
 export function ProjectDetailPanel() {
-  const { selectedProject, clearSelectedProject, filters, highlight } = usePowerBIFilters();
+  const { selectedProject, clearSelectedProject, filters } = usePowerBIFilters();
   const [trendData, setTrendData] = useState([]);
   const [priceData, setPriceData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +59,6 @@ export function ProjectDetailPanel() {
       selectedProject={selectedProject}
       clearSelectedProject={clearSelectedProject}
       filters={filters}
-      highlight={highlight}
       trendData={trendData}
       setTrendData={setTrendData}
       priceData={priceData}
@@ -77,7 +76,6 @@ function ProjectDetailPanelInner({
   selectedProject,
   clearSelectedProject,
   filters,
-  highlight: _highlight,
   trendData,
   setTrendData,
   priceData,

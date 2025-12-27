@@ -6,7 +6,6 @@ import { SupplyKpiCards } from '../components/powerbi/SupplyKpiCards';
 import { SupplyBreakdownTable } from '../components/powerbi/SupplyBreakdownTable';
 import { ErrorBoundary } from '../components/ui';
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
-import { REGIONS } from '../constants';
 
 /**
  * Supply & Inventory Insights Page
@@ -24,14 +23,8 @@ export function SupplyInsightsContent() {
   const chartHeight = useChartHeight(350, MOBILE_CAPS.medium);
 
   // Local state for waterfall chart controls
-  const [selectedRegion, setSelectedRegion] = useState(null);
   const [includeGls, setIncludeGls] = useState(true);
   const [launchYear, setLaunchYear] = useState(2026);
-
-  // Handle region selection (toggle behavior)
-  const handleRegionSelect = (region) => {
-    setSelectedRegion(region === selectedRegion ? null : region);
-  };
 
   return (
     <div className="h-full overflow-auto">
@@ -59,36 +52,6 @@ export function SupplyInsightsContent() {
 
           {/* ===== Controls Row (Single Row) ===== */}
           <div className="flex flex-wrap items-center gap-3 bg-white rounded-lg border border-[#94B4C1]/50 p-3 md:p-4">
-            {/* Region Pills */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setSelectedRegion(null)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  selectedRegion === null
-                    ? 'bg-[#213448] text-white'
-                    : 'bg-[#EAE0CF] text-[#213448] hover:bg-[#94B4C1]/30'
-                }`}
-              >
-                All
-              </button>
-              {REGIONS.map((region) => (
-                <button
-                  key={region}
-                  onClick={() => handleRegionSelect(region)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    selectedRegion === region
-                      ? 'bg-[#213448] text-white'
-                      : 'bg-[#EAE0CF] text-[#213448] hover:bg-[#94B4C1]/30'
-                  }`}
-                >
-                  {region}
-                </button>
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div className="w-px h-6 bg-[#94B4C1]/30" />
-
             {/* GLS Toggle */}
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -122,10 +85,8 @@ export function SupplyInsightsContent() {
             <ErrorBoundary name="Supply Accumulator Chart" compact>
               <SupplyWaterfallChart
                 view="regional"
-                selectedRegion={selectedRegion}
                 includeGls={includeGls}
                 launchYear={launchYear}
-                onRegionClick={handleRegionSelect}
                 height={chartHeight}
               />
             </ErrorBoundary>
@@ -134,7 +95,6 @@ export function SupplyInsightsContent() {
             <ErrorBoundary name="District Supply Chart" compact>
               <SupplyWaterfallChart
                 view="district"
-                selectedRegion={selectedRegion}
                 includeGls={includeGls}
                 launchYear={launchYear}
                 height={chartHeight}
@@ -145,7 +105,6 @@ export function SupplyInsightsContent() {
           {/* ===== Supply Breakdown Table ===== */}
           <ErrorBoundary name="Supply Breakdown Table" compact>
             <SupplyBreakdownTable
-              selectedRegion={selectedRegion}
               includeGls={includeGls}
               launchYear={launchYear}
               height={tableHeight}

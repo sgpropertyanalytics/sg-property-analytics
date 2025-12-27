@@ -72,11 +72,10 @@ export function NewVsResaleChart({ height = 350 }) {
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // Use buildApiParams to include GLOBAL filters from sidebar
-      // excludeHighlight: true - this is a time-series chart, preserve full timeline
       // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
       const params = buildApiParams({
         timeGrain: TIME_GROUP_BY[timeGrouping],
-      }, { excludeHighlight: true });
+      });
 
       const response = await getNewVsResale(params, { signal });
 

@@ -394,17 +394,13 @@ export const waterfallConnectorPlugin = {
 /**
  * Get chart options for the TRUE waterfall chart.
  */
-export function getWaterfallChartOptions(onBarClick, totals, includeGls) {
+export function getWaterfallChartOptions(totals, includeGls) {
   return {
     responsive: true,
     maintainAspectRatio: false,
     interaction: {
       intersect: true,
       mode: 'nearest',
-    },
-    onClick: (event, elements) => {
-      // Waterfall doesn't support drill-down (it's showing stages, not regions)
-      // The region selector is separate
     },
     plugins: {
       legend: {
