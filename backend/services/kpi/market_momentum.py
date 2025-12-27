@@ -371,6 +371,8 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "current_score": round(score),
             "prev_score": round(prev_score) if prev_score else None,
             "score_change_pct": round(score_change, 1) if score_change is not None else None,
+            "direction": direction,
+            "label": label,
             "volatility": round(volatility, 2) if volatility else None,
             "volatility_quarters": volatility_quarters,
             "current_count": current_count,

@@ -152,8 +152,31 @@ export function MacroOverviewContent() {
                 {/* Card 1: Market Momentum */}
                 <KPICardV2
                   title="Market Momentum"
-                  value={getKpi('market_momentum')?.formatted_value || '—'}
-                  trend={getKpi('market_momentum')?.trend}
+                  value={(() => {
+                    const kpi = getKpi('market_momentum');
+                    if (!kpi?.meta?.current_score) return '—';
+                    const { current_score, prev_score, score_change_pct, direction, label } = kpi.meta;
+                    const arrow = direction === 'up' ? '▲' : direction === 'down' ? '▼' : '—';
+                    const colorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
+                    const pctStr = score_change_pct != null ? (score_change_pct >= 0 ? `+${score_change_pct}%` : `${score_change_pct}%`) : '';
+                    return (
+                      <>
+                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
+                          {current_score} <span className={`text-[14px] sm:text-[16px] font-normal ${colorClass}`}>{label}</span>
+                        </div>
+                        {score_change_pct != null && (
+                          <div className={`text-[12px] sm:text-[14px] font-medium ${colorClass}`}>
+                            {arrow} {pctStr} QoQ
+                          </div>
+                        )}
+                        {prev_score && (
+                          <div className="text-[10px] sm:text-[12px] text-gray-500">
+                            Prev: {prev_score}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                   footnote={getKpi('market_momentum')?.insight}
                   tooltip={getKpi('market_momentum')?.meta?.description}
                   loading={kpis.loading}
