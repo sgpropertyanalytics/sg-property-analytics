@@ -37,6 +37,7 @@ const PAGE_CONFIG = {
   'floor-dispersion': { showFilterSidebar: false },
   'district-deep-dive': { showFilterSidebar: false },
   'project-deep-dive': { showFilterSidebar: false },
+  'supply-insights': { showFilterSidebar: false },
 };
 
 export function DashboardLayout({ children, activePage: propActivePage }) {
@@ -53,6 +54,7 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
     if (pathname.startsWith('/floor-dispersion')) return 'floor-dispersion';
     if (pathname.startsWith('/district-deep-dive')) return 'district-deep-dive';
     if (pathname.startsWith('/project-deep-dive')) return 'project-deep-dive';
+    if (pathname.startsWith('/supply-insights')) return 'supply-insights';
     return 'market-pulse';
   };
 
