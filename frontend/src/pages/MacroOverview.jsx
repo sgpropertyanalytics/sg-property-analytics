@@ -224,14 +224,14 @@ export function MacroOverviewContent() {
                   value={(() => {
                     const kpi = getKpi('total_transactions');
                     if (!kpi?.meta?.current_count && kpi?.meta?.current_count !== 0) return '—';
-                    const { current_count, previous_count, pct_change, direction } = kpi.meta;
+                    const { current_count, previous_count, pct_change, direction, label } = kpi.meta;
                     const arrow = direction === 'up' ? '▲' : direction === 'down' ? '▼' : '—';
                     const colorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
                     const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
                     return (
                       <>
                         <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
-                          {current_count?.toLocaleString()} <span className="text-[14px] sm:text-[16px] font-normal">txns</span>
+                          {current_count?.toLocaleString()} <span className={`text-xs font-bold uppercase tracking-wider ${colorClass}`}>{label}</span>
                         </div>
                         {pct_change != null && (
                           <div className={`text-[12px] sm:text-[14px] font-medium ${colorClass}`}>
