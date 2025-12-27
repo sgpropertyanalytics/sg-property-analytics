@@ -23,12 +23,32 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
     """Build params for total transactions query."""
     max_date = filters.get('max_date') or date.today()
 
-    # Rolling 90-day windows (not calendar quarters)
-    # Current period: last 90 days
-    # Previous period: 90-180 days ago (for QoQ comparison)
-    max_exclusive = max_date + timedelta(days=1)
-    current_min = max_date - timedelta(days=90)
-    prev_min = current_min - timedelta(days=90)
+    # Use MONTH boundaries because URA data is month-level (all txns dated 1st of month)
+    # Current period: last 3 months (including current month)
+    # Previous period: 3 months before that
+    #
+    # Example: if max_date is Dec 27, 2025:
+    #   max_exclusive = Jan 1, 2026
+    #   current_min = Oct 1, 2025 (3 months: Oct, Nov, Dec)
+    #   prev_min = Jul 1, 2025 (3 months: Jul, Aug, Sep)
+
+    # max_exclusive is the first of next month
+    if max_date.month == 12:
+        max_exclusive = date(max_date.year + 1, 1, 1)
+    else:
+        max_exclusive = date(max_date.year, max_date.month + 1, 1)
+
+    # Current period starts 3 months before max_exclusive
+    if max_exclusive.month <= 3:
+        current_min = date(max_exclusive.year - 1, max_exclusive.month + 9, 1)
+    else:
+        current_min = date(max_exclusive.year, max_exclusive.month - 3, 1)
+
+    # Previous period starts 3 months before current_min
+    if current_min.month <= 3:
+        prev_min = date(current_min.year - 1, current_min.month + 9, 1)
+    else:
+        prev_min = date(current_min.year, current_min.month - 3, 1)
 
     params = {
         'current_min_date': current_min,
@@ -79,10 +99,23 @@ def get_sql(params: Dict[str, Any]) -> str:
 
 def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     """Map query result to KPIResult."""
-    # Calculate date windows for debug output
+    # Calculate date windows for debug output (must match build_params logic)
     max_date = filters.get('max_date') or date.today()
-    current_min = max_date - timedelta(days=90)
-    prev_min = current_min - timedelta(days=90)
+
+    if max_date.month == 12:
+        max_exclusive = date(max_date.year + 1, 1, 1)
+    else:
+        max_exclusive = date(max_date.year, max_date.month + 1, 1)
+
+    if max_exclusive.month <= 3:
+        current_min = date(max_exclusive.year - 1, max_exclusive.month + 9, 1)
+    else:
+        current_min = date(max_exclusive.year, max_exclusive.month - 3, 1)
+
+    if current_min.month <= 3:
+        prev_min = date(current_min.year - 1, current_min.month + 9, 1)
+    else:
+        prev_min = date(current_min.year, current_min.month - 3, 1)
 
     if not row:
         return KPIResult(
@@ -90,7 +123,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             title="Total Transactions",
             value=0,
             formatted_value="—",
-            subtitle="Rolling 90 days",
+            subtitle="Last 3 months",
             insight="Insufficient data"
         )
 
@@ -113,16 +146,16 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 
     # Format the change label
     if pct_change >= 0:
-        change_label = f"+{round(pct_change)}% vs previous 90 days"
+        change_label = f"+{round(pct_change)}% Q-o-Q"
     else:
-        change_label = f"{round(pct_change)}% vs previous 90 days"
+        change_label = f"{round(pct_change)}% Q-o-Q"
 
     return KPIResult(
         kpi_id="total_transactions",
         title="Total Transactions",
         value=current_count,
         formatted_value=f"{current_count:,}",
-        subtitle="Rolling 90 days",
+        subtitle="Last 3 months",
         trend={
             "value": round(pct_change, 1),
             "direction": direction,
@@ -134,9 +167,9 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "previous_count": previous_count,
             "pct_change": round(pct_change, 1),
             "description": (
-                "Number of resale transactions in the last 90 days.\n"
-                "The change vs the previous period indicates whether "
-                "market activity is increasing or slowing."
+                "Number of resale transactions in the last 3 months.\n"
+                "Q-o-Q change indicates whether market activity is "
+                "increasing or slowing."
             ),
             # Debug: show actual date windows used
             "debug_dates": {
@@ -151,7 +184,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 class TotalTransactionsSpec:
     kpi_id = "total_transactions"
     title = "Total Transactions"
-    subtitle = "Rolling 90 days"
+    subtitle = "Last 3 months"
 
     @staticmethod
     def build_params(filters):
