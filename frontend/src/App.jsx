@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
@@ -46,19 +46,7 @@ const SupplyInsightsContent = lazyWithRetry(() =>
   import('./pages/SupplyInsights').then(m => ({ default: m.SupplyInsightsContent }))
 );
 
-// Loading fallback for lazy-loaded pages
-// min-h-[50vh] ensures the fallback doesn't collapse during transitions
-// which could cause layout recalculation and nav rail flicker
-function DashboardLoadingFallback() {
-  return (
-    <div className="h-full min-h-[50vh] flex items-center justify-center bg-[#EAE0CF]/30">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm text-[#547792]">Loading dashboard...</span>
-      </div>
-    </div>
-  );
-}
+// Note: Loading fallback moved to DashboardLayout to keep nav rail persistent
 
 /**
  * App Component with Landing Page and Dashboard Navigation
@@ -104,66 +92,34 @@ function App() {
           {/* The layout stays mounted while only the Outlet content changes during navigation */}
           <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             {/* Market Pulse - Main analytics dashboard (Lazy-loaded) */}
-            <Route
-              path="/market-pulse"
-              element={
-                <Suspense fallback={<DashboardLoadingFallback />}>
-                  <MacroOverviewContent />
-                </Suspense>
-              }
-            />
+            <Route path="/market-pulse" element={<MacroOverviewContent />} />
 
             {/* Value Parity Tool - No filter sidebar (Lazy-loaded) */}
             <Route
               path="/value-parity"
               element={
-                <Suspense fallback={<DashboardLoadingFallback />}>
-                  <div className="h-full overflow-auto">
-                    <div className="p-3 md:p-4 lg:p-6">
-                      {/* Header with Preview Mode badge */}
-                      <PageHeader
-                        title="Value Parity Tool"
-                        subtitle="Find properties within your budget and compare value across districts"
-                      />
-                      {/* Value Parity Panel - existing component */}
-                      <div className="animate-view-enter">
-                        <ValueParityPanel />
-                      </div>
+                <div className="h-full overflow-auto">
+                  <div className="p-3 md:p-4 lg:p-6">
+                    <PageHeader
+                      title="Value Parity Tool"
+                      subtitle="Find properties within your budget and compare value across districts"
+                    />
+                    <div className="animate-view-enter">
+                      <ValueParityPanel />
                     </div>
                   </div>
-                </Suspense>
+                </div>
               }
             />
 
             {/* District Deep Dive (Lazy-loaded) */}
-            <Route
-              path="/district-deep-dive"
-              element={
-                <Suspense fallback={<DashboardLoadingFallback />}>
-                  <DistrictDeepDiveContent />
-                </Suspense>
-              }
-            />
+            <Route path="/district-deep-dive" element={<DistrictDeepDiveContent />} />
 
             {/* Project Deep Dive (Lazy-loaded) */}
-            <Route
-              path="/project-deep-dive"
-              element={
-                <Suspense fallback={<DashboardLoadingFallback />}>
-                  <ProjectDeepDiveContent />
-                </Suspense>
-              }
-            />
+            <Route path="/project-deep-dive" element={<ProjectDeepDiveContent />} />
 
             {/* Supply & Inventory Insights (Lazy-loaded) */}
-            <Route
-              path="/supply-insights"
-              element={
-                <Suspense fallback={<DashboardLoadingFallback />}>
-                  <SupplyInsightsContent />
-                </Suspense>
-              }
-            />
+            <Route path="/supply-insights" element={<SupplyInsightsContent />} />
           </Route>
 
           {/* Legacy route redirects */}

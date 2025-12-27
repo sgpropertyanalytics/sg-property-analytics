@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useLocation, Outlet } from 'react-router-dom';
 import { GlobalNavRail, NAV_ITEMS } from './GlobalNavRail';
 import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
@@ -6,6 +6,19 @@ import { ErrorBoundary } from '../ui';
 import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PricingModal } from '../PricingModal';
+
+// Loading fallback for lazy-loaded page content
+// This is INSIDE the layout so nav rail stays visible during loading
+function ContentLoadingFallback() {
+  return (
+    <div className="h-full min-h-[50vh] flex items-center justify-center bg-[#EAE0CF]/30">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm text-[#547792]">Loading...</span>
+      </div>
+    </div>
+  );
+}
 
 /**
  * DashboardLayout - Double Sidebar Navigation System
@@ -216,13 +229,16 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
             </div>
           </header>
 
-          {/* Main Content - Wrapped with ErrorBoundary to prevent blank page crashes */}
+          {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
+          {/* IMPORTANT: Suspense is HERE so nav rail stays mounted during lazy loading */}
           {/* min-w-0 on main and wrapper prevents nested grid overflow */}
           <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col">
             <ErrorBoundary name="Page Content">
-              <div className="flex-1 min-w-0">
-                {content}
-              </div>
+              <Suspense fallback={<ContentLoadingFallback />}>
+                <div className="flex-1 min-w-0">
+                  {content}
+                </div>
+              </Suspense>
             </ErrorBoundary>
 
             {/* Upgrade CTA - Sticky footer for free users */}

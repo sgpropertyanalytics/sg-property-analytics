@@ -4,7 +4,7 @@
  * Shows detailed breakdown of supply pipeline by district and project.
  * Collapsible rows grouped by district.
  *
- * Columns: District | Total | Unsold | Upcoming | GLS
+ * Columns: District | Region | Total | Unsold | Upcoming | GLS
  *
  * Styled to match FloorLiquidityHeatmap for consistency.
  */
@@ -13,7 +13,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import { getSupplySummary } from '../../api/client';
-import { DISTRICT_NAMES } from '../../constants';
+import { DISTRICT_NAMES, getRegionForDistrict, getRegionBadgeClass } from '../../constants';
 
 // Colors from design system
 const COLORS = {
@@ -129,6 +129,9 @@ export function SupplyBreakdownTable({
       if (sortConfig.column === 'district') {
         aVal = a.district;
         bVal = b.district;
+      } else if (sortConfig.column === 'region') {
+        aVal = getRegionForDistrict(a.district);
+        bVal = getRegionForDistrict(b.district);
       } else {
         aVal = a[sortConfig.column] ?? 0;
         bVal = b[sortConfig.column] ?? 0;
@@ -210,6 +213,15 @@ export function SupplyBreakdownTable({
                   </div>
                 </th>
                 <th
+                  className="bg-[#EAE0CF]/50 text-center px-2 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[60px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                  onClick={() => handleSort('region')}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Region</span>
+                    <SortIcon column="region" />
+                  </div>
+                </th>
+                <th
                   className="bg-[#EAE0CF]/50 text-center px-2 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[100px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
                   onClick={() => handleSort('total')}
                 >
@@ -285,7 +297,14 @@ export function SupplyBreakdownTable({
                         </div>
                       </td>
 
-                      {/* Total with Bar - Now second column */}
+                      {/* Region */}
+                      <td className="px-2 py-1.5 border-r border-[#94B4C1]/30 bg-[#547792]/10 text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium ${getRegionBadgeClass(getRegionForDistrict(row.district))}`}>
+                          {getRegionForDistrict(row.district)}
+                        </span>
+                      </td>
+
+                      {/* Total with Bar */}
                       <td className="px-2 py-1.5 border-r border-[#94B4C1]/30 bg-[#547792]/10">
                         <div className="flex items-center gap-1">
                           <div className="flex-1 h-3 bg-gray-100 rounded overflow-hidden flex">
@@ -360,6 +379,9 @@ export function SupplyBreakdownTable({
                           </div>
                         </td>
 
+                        {/* Region - empty for project rows */}
+                        <td className={`${pIdx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-2 py-1 border-r border-[#94B4C1]/30`} />
+
                         {/* Project Total */}
                         <td className={`${pIdx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-2 py-1 border-r border-[#94B4C1]/30 text-center`}>
                           <span className="text-[10px] text-[#547792] font-mono">
@@ -395,6 +417,7 @@ export function SupplyBreakdownTable({
                   <td className="sticky left-0 bg-[#213448] px-3 py-2.5 border-t border-[#547792]">
                     TOTAL
                   </td>
+                  <td className="px-2 py-2.5 border-t border-[#547792]" />
                   <td className="px-2 py-2.5 font-mono border-t border-[#547792] text-center">
                     {formatNum(tableData.totals.totalEffectiveSupply)}
                   </td>
