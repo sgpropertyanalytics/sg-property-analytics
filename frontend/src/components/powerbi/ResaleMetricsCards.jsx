@@ -2,8 +2,8 @@
  * ResaleMetricsCards - Key resale activity metrics display
  *
  * Shows three cards:
- * - Unique Units Resold (total count)
- * - Active Pressure (12m activity %)
+ * - Resale Transactions (total count)
+ * - Exit Pressure (12m activity %)
  * - Absorption Speed (median days between transactions)
  */
 
@@ -84,15 +84,15 @@ export default function ResaleMetricsCards({
     return <ResaleMetricsSkeleton compact={compact} />;
   }
 
-  // Format unique units display
-  const formatUnitsResold = () => {
-    if (uniqueResaleUnitsTotal === null || uniqueResaleUnitsTotal === undefined) {
+  // Format total resale transactions display
+  const formatResaleTransactions = () => {
+    if (totalResaleTransactions === null || totalResaleTransactions === undefined) {
       return { value: 'N/A', subtext: 'Data unavailable', isUnavailable: true };
     }
-    const pctText = resaleMaturityPct !== null ? ` (${resaleMaturityPct}% of total)` : '';
+    const pctText = transactionsPer100Units !== null ? ` (${transactionsPer100Units} per 100 units)` : '';
     return {
-      value: uniqueResaleUnitsTotal.toLocaleString(),
-      subtext: `Unique units resold${pctText}`
+      value: totalResaleTransactions.toLocaleString(),
+      subtext: `Total resale transactions${pctText}`
     };
   };
 
@@ -149,7 +149,7 @@ export default function ResaleMetricsCards({
     };
   };
 
-  const unitsData = formatUnitsResold();
+  const transactionsData = formatResaleTransactions();
   const pressureData = formatPressure();
   const absorptionData = formatAbsorption();
 
@@ -163,10 +163,10 @@ export default function ResaleMetricsCards({
       {/* Metrics Grid - responsive based on compact mode */}
       <div className={`grid gap-3 flex-1 ${compact ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 md:grid-cols-3'}`}>
         <MetricCard
-          label="Units Resold"
-          value={unitsData.value}
-          subtext={unitsData.subtext}
-          isUnavailable={unitsData.isUnavailable}
+          label="Resale Transactions"
+          value={transactionsData.value}
+          subtext={transactionsData.subtext}
+          isUnavailable={transactionsData.isUnavailable}
         />
         <MetricCard
           label="Exit Pressure (12m)"
