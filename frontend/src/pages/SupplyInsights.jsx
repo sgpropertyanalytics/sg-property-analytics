@@ -23,7 +23,6 @@ export function SupplyInsightsContent() {
   const chartHeight = useChartHeight(350, MOBILE_CAPS.medium);
 
   // Local state for waterfall chart controls
-  const [includeGls, setIncludeGls] = useState(true);
   const [launchYear, setLaunchYear] = useState(2026);
 
   return (
@@ -45,27 +44,13 @@ export function SupplyInsightsContent() {
           {/* ===== KPI Cards (3 equal columns) ===== */}
           <ErrorBoundary name="Supply KPI Cards" compact>
             <SupplyKpiCards
-              includeGls={includeGls}
+              includeGls={true}
               launchYear={launchYear}
             />
           </ErrorBoundary>
 
           {/* ===== Controls Row (Single Row) ===== */}
           <div className="flex flex-wrap items-center gap-3 bg-white rounded-lg border border-[#94B4C1]/50 p-3 md:p-4">
-            {/* GLS Toggle */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeGls}
-                onChange={(e) => setIncludeGls(e.target.checked)}
-                className="w-4 h-4 rounded border-[#94B4C1] text-[#213448] focus:ring-[#547792]"
-              />
-              <span className="text-sm text-[#213448]">GLS</span>
-            </label>
-
-            {/* Divider */}
-            <div className="w-px h-6 bg-[#94B4C1]/30" />
-
             {/* Launch Year */}
             <select
               value={launchYear}
@@ -85,7 +70,7 @@ export function SupplyInsightsContent() {
             <ErrorBoundary name="Supply Accumulator Chart" compact>
               <SupplyWaterfallChart
                 view="regional"
-                includeGls={includeGls}
+                includeGls={true}
                 launchYear={launchYear}
                 height={chartHeight}
               />
@@ -95,7 +80,7 @@ export function SupplyInsightsContent() {
             <ErrorBoundary name="District Supply Chart" compact>
               <SupplyWaterfallChart
                 view="district"
-                includeGls={includeGls}
+                includeGls={true}
                 launchYear={launchYear}
                 height={chartHeight}
               />
@@ -105,7 +90,7 @@ export function SupplyInsightsContent() {
           {/* ===== Supply Breakdown Table ===== */}
           <ErrorBoundary name="Supply Breakdown Table" compact>
             <SupplyBreakdownTable
-              includeGls={includeGls}
+              includeGls={true}
               launchYear={launchYear}
               height={tableHeight}
             />
