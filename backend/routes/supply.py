@@ -59,23 +59,31 @@ def get_supply_summary():
     Example:
         GET /api/supply/summary?includeGls=true&launchYear=2026
     """
-    start = time.time()
-
-    # ========== PARSE & NORMALIZE INPUT ==========
-    # Frontend sends camelCase, we normalize here
+    # Wrap entire function in try/except to guarantee JSON error response
     try:
-        from utils.normalize import (
-            to_int, to_bool,
-            ValidationError as NormalizeValidationError, validation_error_response
-        )
+        start = time.time()
 
-        # includeGls (default True)
-        include_gls_raw = request.args.get("includeGls", request.args.get("include_gls", "true"))
-        include_gls = to_bool(include_gls_raw, default=True, field="includeGls")
+        # ========== PARSE & NORMALIZE INPUT ==========
+        # Frontend sends camelCase, we normalize here
+        try:
+            from utils.normalize import to_int, to_bool
 
-        # launchYear (default 2026)
-        launch_year_raw = request.args.get("launchYear", request.args.get("launch_year"))
-        launch_year = to_int(launch_year_raw, default=2026, field="launchYear")
+            # includeGls (default True)
+            include_gls_raw = request.args.get("includeGls", request.args.get("include_gls", "true"))
+            include_gls = to_bool(include_gls_raw, default=True, field="includeGls")
+
+            # launchYear (default 2026)
+            launch_year_raw = request.args.get("launchYear", request.args.get("launch_year"))
+            launch_year = to_int(launch_year_raw, default=2026, field="launchYear")
+
+        except ImportError:
+            # Fallback if normalize module not available
+            include_gls = request.args.get("includeGls", "true").lower() == "true"
+            launch_year_str = request.args.get("launchYear", "2026")
+            try:
+                launch_year = int(launch_year_str)
+            except (ValueError, TypeError):
+                launch_year = 2026
 
         # Validate launch year range
         if launch_year < 2020 or launch_year > 2035:
@@ -86,15 +94,7 @@ def get_supply_summary():
                 "received": launch_year
             }), 400
 
-    except ImportError as e:
-        # Fallback if normalize module not available
-        include_gls = request.args.get("includeGls", "true").lower() == "true"
-        launch_year = int(request.args.get("launchYear", "2026"))
-    except Exception as e:
-        return jsonify({"error": f"Input validation error: {str(e)}"}), 400
-
-    # ========== CALL SERVICE ==========
-    try:
+        # ========== CALL SERVICE ==========
         from services.supply_service import get_supply_summary as fetch_summary
 
         result = fetch_summary(
@@ -108,8 +108,13 @@ def get_supply_summary():
         return jsonify(result)
 
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/supply/summary ERROR (took {elapsed:.4f}s): {e}")
+        # Catch ALL errors and return JSON
         import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e), "type": type(e).__name__}), 500
+        error_traceback = traceback.format_exc()
+        print(f"GET /api/supply/summary FATAL ERROR: {e}")
+        print(error_traceback)
+        return jsonify({
+            "error": str(e),
+            "type": type(e).__name__,
+            "traceback": error_traceback.split('\n')[-5:]  # Last 5 lines of traceback
+        }), 500
