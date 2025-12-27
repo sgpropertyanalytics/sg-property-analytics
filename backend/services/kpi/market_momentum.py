@@ -282,8 +282,11 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
 
     # Step 2 & 3: Normalize by volatility and compute score
     z_score = None
+    z_score_raw = None
     if volatility and volatility > 0 and volatility_quarters >= MIN_VOLATILITY_QUARTERS:
-        z_score = psf_change / volatility
+        z_score_raw = psf_change / volatility
+        # Cap extreme z-scores to prevent weird data from blowing up the score
+        z_score = max(-3, min(z_score_raw, 3))
         score = 50 - (z_score * 10)
         score = max(30, min(70, score))  # Clamp to 30-70
     else:
@@ -343,7 +346,8 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "prev_count": prev_count,
             "confidence": confidence,
             "used_fallback": use_fallback,
-            "sale_type": "resale"
+            "sale_type": "resale",
+            "description": "Market Momentum measures whether recent price changes are stronger or weaker than normal. A higher score indicates buyer advantage, while a lower score indicates seller advantage. It reflects price movement, not whether homes are cheap or expensive."
         }
     )
 
