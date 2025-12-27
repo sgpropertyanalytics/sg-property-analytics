@@ -138,6 +138,12 @@ export function transformRegionalWaterfall(apiResponse, options = {}) {
  * - Total spacer: 0 (full bar from bottom)
  */
 function buildTrueWaterfallDatasets(unsold, upcoming, gls, total, includeGls) {
+  // Tight gaps: bars nearly touch for solid visual flow
+  // barPercentage: width of bar within its category slot
+  // categoryPercentage: width of category slot within available space
+  const BAR_PERCENTAGE = 0.92;      // Wide bars
+  const CATEGORY_PERCENTAGE = 0.88; // Minimal gap between categories
+
   if (includeGls) {
     // With GLS: 4 bars
     return [
@@ -147,8 +153,8 @@ function buildTrueWaterfallDatasets(unsold, upcoming, gls, total, includeGls) {
         data: [0, unsold, unsold + upcoming, 0],
         backgroundColor: COLORS.spacer,
         borderWidth: 0,
-        barPercentage: 0.6,
-        categoryPercentage: 0.7,
+        barPercentage: BAR_PERCENTAGE,
+        categoryPercentage: CATEGORY_PERCENTAGE,
       },
       // Value bars (visible)
       {
@@ -166,9 +172,9 @@ function buildTrueWaterfallDatasets(unsold, upcoming, gls, total, includeGls) {
           BORDER_COLORS.glsPipeline,
           BORDER_COLORS.total,
         ],
-        borderWidth: 2,
-        barPercentage: 0.6,
-        categoryPercentage: 0.7,
+        borderWidth: 1,
+        barPercentage: BAR_PERCENTAGE,
+        categoryPercentage: CATEGORY_PERCENTAGE,
       },
     ];
   } else {
@@ -179,8 +185,8 @@ function buildTrueWaterfallDatasets(unsold, upcoming, gls, total, includeGls) {
         data: [0, unsold, 0],
         backgroundColor: COLORS.spacer,
         borderWidth: 0,
-        barPercentage: 0.6,
-        categoryPercentage: 0.7,
+        barPercentage: BAR_PERCENTAGE,
+        categoryPercentage: CATEGORY_PERCENTAGE,
       },
       {
         label: 'Supply',
@@ -195,9 +201,9 @@ function buildTrueWaterfallDatasets(unsold, upcoming, gls, total, includeGls) {
           BORDER_COLORS.upcomingLaunches,
           BORDER_COLORS.total,
         ],
-        borderWidth: 2,
-        barPercentage: 0.6,
-        categoryPercentage: 0.7,
+        borderWidth: 1,
+        barPercentage: BAR_PERCENTAGE,
+        categoryPercentage: CATEGORY_PERCENTAGE,
       },
     ];
   }
@@ -339,6 +345,7 @@ export function getWaterfallTooltip(context, totals, includeGls) {
 
 /**
  * Chart.js plugin to draw bridge connector lines between waterfall bars.
+ * With tight gaps, these become short, punchy connectors.
  */
 export const waterfallConnectorPlugin = {
   id: 'waterfallConnector',
@@ -351,15 +358,23 @@ export const waterfallConnectorPlugin = {
     const xScale = scales.x;
     const yScale = scales.y;
 
+    // Calculate bar width based on tight percentages
+    const categoryWidth = xScale.getPixelForValue(1) - xScale.getPixelForValue(0);
+    const barWidth = categoryWidth * 0.88 * 0.92; // categoryPercentage * barPercentage
+    const halfBar = barWidth / 2;
+
     ctx.save();
     ctx.strokeStyle = COLORS.connector;
     ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]); // Dotted line
+    ctx.setLineDash([3, 3]); // Shorter dash for tighter look
 
     connectorPoints.forEach(({ from, to, y }) => {
-      // Get x positions for bar centers
-      const x1 = xScale.getPixelForValue(from) + (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) * 0.3;
-      const x2 = xScale.getPixelForValue(to) - (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) * 0.3;
+      // Get bar edge positions (right edge of 'from' bar, left edge of 'to' bar)
+      const fromCenter = xScale.getPixelForValue(from);
+      const toCenter = xScale.getPixelForValue(to);
+
+      const x1 = fromCenter + halfBar;  // Right edge of 'from' bar
+      const x2 = toCenter - halfBar;    // Left edge of 'to' bar
       const yPos = yScale.getPixelForValue(y);
 
       ctx.beginPath();
