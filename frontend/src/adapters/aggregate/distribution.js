@@ -24,28 +24,35 @@ export const formatPrice = (value) => {
 };
 
 /**
- * Format price range compactly for KPI cards (e.g., "$1.2–2.3M")
+ * Format price range for KPI cards
  *
  * Bloomberg-style: Single currency symbol, unit suffix at end only.
- * Saves ~8 characters vs "${formatPrice(low)} – ${formatPrice(high)}".
  *
  * @param {number} low - Lower bound
  * @param {number} high - Upper bound
- * @returns {string} Compact range string
+ * @param {Object} options - Formatting options
+ * @param {boolean} options.compact - Use 1 decimal (tight spaces) vs 2 decimals (default)
+ * @returns {string} Range string
+ *
+ * Examples:
+ *   formatPriceRange(1220000, 2270000)                  → "$1.22–2.27M"
+ *   formatPriceRange(1220000, 2270000, { compact: true }) → "$1.2–2.3M"
  */
-export const formatPriceRange = (low, high) => {
+export const formatPriceRange = (low, high, { compact = false } = {}) => {
   if (low == null || high == null) return '-';
+
+  const decimals = compact ? 1 : 2;
 
   // Both in millions
   if (low >= 1000000 && high >= 1000000) {
-    return `$${(low / 1000000).toFixed(1)}–${(high / 1000000).toFixed(1)}M`;
+    return `$${(low / 1000000).toFixed(decimals)}–${(high / 1000000).toFixed(decimals)}M`;
   }
-  // Both in thousands
+  // Both in thousands (no decimals needed)
   if (low < 1000000 && high < 1000000) {
     return `$${(low / 1000).toFixed(0)}–${(high / 1000).toFixed(0)}K`;
   }
   // Mixed (low in K, high in M)
-  return `$${(low / 1000).toFixed(0)}K–${(high / 1000000).toFixed(1)}M`;
+  return `$${(low / 1000).toFixed(0)}K–${(high / 1000000).toFixed(decimals)}M`;
 };
 
 /**
@@ -94,7 +101,7 @@ export const transformDistributionSeries = (rawHistogram) => {
     return {
       start,
       end,
-      label: formatPriceRange(start, end),
+      label: formatPriceRange(start, end, { compact: true }),
       count,
     };
   });

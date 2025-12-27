@@ -270,7 +270,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
             <InlineCard label="Median" value={formatPrice(stats.median)} size="compact" />
           )}
           {stats?.p25 && stats?.p75 && (
-            <InlineCard label="Q1–Q3" value={formatPriceRange(stats.p25, stats.p75)} size="compact" />
+            <InlineCard label="Q1–Q3" value={formatPriceRange(stats.p25, stats.p75, { compact: true })} size="compact" />
           )}
           {stats?.iqr && (
             <InlineCard label="IQR" value={formatPrice(stats.iqr)} size="compact" />
