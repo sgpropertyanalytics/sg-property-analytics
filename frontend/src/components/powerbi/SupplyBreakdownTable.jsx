@@ -174,11 +174,24 @@ export function SupplyBreakdownTable({
       <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#94B4C1]/30">
-          <div>
-            <h3 className="font-bold text-lg text-[#213448]">Supply Pipeline Breakdown</h3>
-            <p className="text-sm text-[#547792] mt-0.5">
-              {selectedRegion || 'All Regions'} • {tableData.districts.length} districts
-            </p>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h3 className="font-bold text-lg text-[#213448]">Supply Pipeline Breakdown</h3>
+              <p className="text-sm text-[#547792] mt-0.5">
+                {selectedRegion || 'All Regions'} • {tableData.districts.length} districts
+              </p>
+            </div>
+            {/* Mini legend for bar colors */}
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.unsold }} />
+                <span className="text-[#547792]">Unsold</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.upcoming }} />
+                <span className="text-[#547792]">Upcoming</span>
+              </div>
+            </div>
           </div>
         </div>
 
