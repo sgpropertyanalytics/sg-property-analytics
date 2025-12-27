@@ -105,10 +105,6 @@ export function SupplyBreakdownTable({
     });
   };
 
-  // Expand/collapse all
-  const expandAll = () => setExpandedDistricts(new Set(tableData.districts.map(d => d.district)));
-  const collapseAll = () => setExpandedDistricts(new Set());
-
   // Format number with commas
   const formatNum = (n) => n?.toLocaleString() || '0';
 
@@ -178,31 +174,11 @@ export function SupplyBreakdownTable({
       <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#94B4C1]/30">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h3 className="font-bold text-lg text-[#213448]">Supply Pipeline Breakdown</h3>
-              <p className="text-sm text-[#547792] mt-0.5">
-                {selectedRegion || 'All Regions'} • {tableData.districts.length} districts
-              </p>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                onClick={expandAll}
-                className="px-2 py-1 text-xs text-[#547792] hover:bg-[#EAE0CF]/50 rounded transition-colors"
-                title="Expand all districts"
-              >
-                Expand All
-              </button>
-              <span className="text-[#547792]">|</span>
-              <button
-                onClick={collapseAll}
-                className="px-2 py-1 text-xs text-[#547792] hover:bg-[#EAE0CF]/50 rounded transition-colors"
-                title="Collapse all districts"
-              >
-                Collapse
-              </button>
-            </div>
+          <div>
+            <h3 className="font-bold text-lg text-[#213448]">Supply Pipeline Breakdown</h3>
+            <p className="text-sm text-[#547792] mt-0.5">
+              {selectedRegion || 'All Regions'} • {tableData.districts.length} districts
+            </p>
           </div>
         </div>
 
