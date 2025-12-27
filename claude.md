@@ -537,3 +537,78 @@ bash scripts/check_normalize_violations.sh
 | Percent | `float` (0-1) | `to_float()` |
 | IDs | `str` | `to_str()` |
 | Flags | `bool` | `to_bool()` |
+
+---
+
+# 10. API ERROR HANDLING (Golden Rules)
+
+**400s must be intentional, explainable, and recoverable. 500s must never be caused by user input.**
+
+## Preventing Unnecessary 400s
+
+1. **Normalize at boundary** - Parse once, convert to canonical types, reject invalid early
+2. **Accept loose input, enforce strict output** - Trim whitespace, handle empty strings as None
+3. **Provide defaults for optional params** - `limit=100`, `page=1`, `date_from=None`
+4. **Return allowed values in errors** - `{"error": "Invalid value", "field": "bedroom", "allowed": [1,2,3,4,5]}`
+5. **Normalize empty values** - Treat `None`, `""`, `" "`, `"null"` as equivalent → `None`
+
+## Error Response Format
+
+```python
+# Good - clear, actionable
+{
+  "error": "Invalid date format",
+  "field": "date_from",
+  "expected": "YYYY-MM-DD",
+  "received": "01-01-2024"
+}
+
+# Bad - unhelpful
+{"error": "bad request"}
+```
+
+## Dashboard Safe Mode
+
+For exploratory dashboards, prefer empty results over crashes:
+
+```python
+# Instead of raising, return empty with warning
+if no_data_matches_filters:
+    return {"data": [], "warning": "No transactions match filters"}
+```
+
+---
+
+# 11. CHART.JS COMPONENT CHECKLIST
+
+When creating Chart.js components, always:
+
+```
+[ ] Register ALL required controllers (BubbleController, LineController, etc.)
+[ ] Register ALL required elements (PointElement, BarElement, etc.)
+[ ] Register ALL required scales (LinearScale, CategoryScale, etc.)
+[ ] Spread baseChartJsOptions (maintainAspectRatio: false)
+[ ] Handle 4 states: loading, error, empty, success
+[ ] Use ChartSlot wrapper for flex layout
+```
+
+## Controller Registration Examples
+
+```jsx
+// Bubble Chart
+import { BubbleController, LinearScale, PointElement, Tooltip, Legend } from 'chart.js';
+ChartJS.register(BubbleController, LinearScale, PointElement, Tooltip, Legend);
+
+// Bar Chart
+import { BarController, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
+ChartJS.register(BarController, CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+
+// Line Chart
+import { LineController, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend } from 'chart.js';
+ChartJS.register(LineController, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
+```
+
+**Common 404/Error causes:**
+- Missing controller registration (e.g., `BubbleController` for Bubble charts)
+- Missing element registration (e.g., `PointElement` for scatter/bubble)
+- Missing scale registration (e.g., `CategoryScale` for categorical axes)

@@ -5,6 +5,7 @@ import {
   Chart as ChartJS,
   LinearScale,
   PointElement,
+  BubbleController,
   Tooltip,
   Legend,
 } from 'chart.js';
@@ -21,7 +22,7 @@ import {
   assertKnownVersion,
 } from '../../adapters';
 
-ChartJS.register(LinearScale, PointElement, Tooltip, Legend);
+ChartJS.register(LinearScale, PointElement, BubbleController, Tooltip, Legend);
 
 /**
  * Beads on String Chart - Volume-Weighted Median Prices by Region & Bedroom
