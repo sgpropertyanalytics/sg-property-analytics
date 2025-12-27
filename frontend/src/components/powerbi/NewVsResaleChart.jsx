@@ -88,7 +88,7 @@ export function NewVsResaleChart({ height = 350 }) {
       logFetchDebug('NewVsResaleChart', {
         endpoint: '/api/new-vs-resale',
         timeGrain: timeGrouping,
-        response: response.data,
+        appliedFilters: response.data?.appliedFilters,
         rowCount: response.data?.chartData?.length || 0,
       });
 
@@ -114,8 +114,9 @@ export function NewVsResaleChart({ height = 350 }) {
     if (filters?.districts?.length > 0) {
       parts.push(filters.districts.length === 1 ? filters.districts[0] : `${filters.districts.length} districts`);
     }
-    if (filters?.segment) {
-      parts.push(filters.segment);
+    // FIX: Use segments (plural) not segment (singular) - matches context state
+    if (filters?.segments?.length > 0) {
+      parts.push(filters.segments.join(', '));
     }
     if (filters?.bedroomTypes?.length > 0 && filters.bedroomTypes.length < 5) {
       parts.push(`${filters.bedroomTypes.join(',')}BR`);
