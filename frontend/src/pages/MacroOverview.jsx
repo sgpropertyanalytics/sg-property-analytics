@@ -159,9 +159,9 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
 
-                {/* Card 2: Resale PSF Growth (Q-o-Q) */}
+                {/* Card 2: Resale Median PSF Growth % (Q-o-Q) */}
                 <KPICardV2
-                  title="Resale PSF Growth"
+                  title="Resale Median PSF Growth %"
                   value={getKpi('median_psf')?.formatted_value || '—'}
                   trend={getKpi('median_psf')?.trend}
                   footnote={getKpi('median_psf')?.insight}
