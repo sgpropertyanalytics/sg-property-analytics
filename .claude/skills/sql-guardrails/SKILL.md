@@ -163,7 +163,43 @@ const isNew = isSaleType.newSale(row.saleType);
 
 ---
 
-## Part 6: Testing Requirements
+## Part 6: Placeholder/Param Validation
+
+### The Problem
+
+SQL placeholders (`:param`) are strings. Python dict keys are strings. No compiler catches mismatches.
+
+```python
+# BUG: SQL uses :max_date but params dict doesn't have it
+sql = "WHERE date < :max_date_exclusive AND date > :max_date - INTERVAL '12 months'"
+params = {"max_date_exclusive": tomorrow}  # ❌ Missing max_date!
+```
+
+### The Fix: Validate Before Execute
+
+```python
+import re
+
+def validate_sql_params(sql: str, params: dict) -> None:
+    """Fail fast if SQL placeholders don't match params."""
+    placeholders = set(re.findall(r':([a-zA-Z_][a-zA-Z0-9_]*)', sql))
+    param_keys = set(params.keys())
+
+    missing = placeholders - param_keys
+    if missing:
+        raise ValueError(f"SQL placeholders missing from params: {missing}")
+
+    unused = param_keys - placeholders
+    if unused:
+        # Warning only - unused params are safe but wasteful
+        logger.warning(f"Unused params (not in SQL): {unused}")
+```
+
+**Where to add:** In your DB helper so ALL queries benefit automatically.
+
+---
+
+## Part 7: Testing Requirements
 
 ### Required Tests for SQL Changes
 
@@ -199,6 +235,8 @@ SQL GUARDRAILS CHECKLIST
 [ ] COALESCE(is_outlier, false) = false
 [ ] Parameterized numeric values
 [ ] SQL in service files
+[ ] Placeholders match params.keys()
+[ ] Exclusive bounds only (:max_date_exclusive, not :max_date)
 [ ] v2 endpoint support
 [ ] Tests for v1, v2, edge cases
 ```

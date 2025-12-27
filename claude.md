@@ -39,6 +39,24 @@ WHERE COALESCE(is_outlier, false) = false  -- EVERY transaction query
   - Required for: window functions, cumulative sums, first/last row
   - Safe to skip: GROUP BY aggregations
 
+## Date Bounds Convention
+**Rule:** Always use exclusive upper bound. Never have both `:max_date` and `:max_date_exclusive`.
+
+```sql
+-- CORRECT: Exclusive upper bound
+WHERE transaction_date >= :min_date
+  AND transaction_date < :max_date_exclusive
+
+-- For "last 12 months":
+WHERE transaction_date >= :max_date_exclusive - INTERVAL '12 months'
+  AND transaction_date < :max_date_exclusive
+
+-- WRONG: Creates param confusion
+AND transaction_date <= :max_date  -- ❌ Don't use alongside _exclusive
+```
+
+**Why:** Mixing `max_date` and `max_date_exclusive` in same query → easy to forget one in params dict → silent query failure.
+
 ## Input Boundary
 **Rule:** Normalize ONCE at boundary → trust internally
 
@@ -192,7 +210,35 @@ def get_data():
 
 ---
 
-# 4. FILE STRUCTURE
+# 4. KPI PATTERN
+
+**Mental Model:** KPI code should be ADDITIVE (new file), not EDITING (shared SQL).
+
+```
+KPI Spec → Param Builder → SQL → Mapper → Card UI
+```
+
+## Rules
+
+1. **Each KPI owns its SQL** — Don't share SQL between KPIs
+2. **Shared logic → functions** — `build_date_bounds(filters)`, not copy-paste
+3. **One param dict per query** — No mixing `:max_date` and `:max_date_exclusive`
+4. **Validate placeholders** — Compare SQL `:placeholders` to `params.keys()` before execute
+
+## Adding New KPI
+
+```
+1. Copy KPI template file
+2. Define: spec, SQL, mapper
+3. Run: placeholder validation + smoke test
+4. Wire to UI
+```
+
+**Never:** Edit existing KPI's SQL when adding new one.
+
+---
+
+# 5. FILE STRUCTURE
 
 ```
 backend/
