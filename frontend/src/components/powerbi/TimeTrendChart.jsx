@@ -250,9 +250,6 @@ export function TimeTrendChart({ height = 300 }) {
           <p className="text-xs text-[#547792] mt-1">
             Volume and price by {TIME_LABELS[timeGrouping]}
           </p>
-          <div className="text-xs text-[#547792] text-center mt-1">
-            {data.length} periods | {data.reduce((sum, d) => sum + d.newSaleCount, 0).toLocaleString()} new + {data.reduce((sum, d) => sum + d.resaleCount, 0).toLocaleString()} resale
-          </div>
         </div>
         {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
         {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
