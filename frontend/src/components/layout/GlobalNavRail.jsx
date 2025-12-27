@@ -68,15 +68,15 @@ export const NAV_ITEMS = [
     path: '/supply-insights',
     label: 'Supply & Inventory',
     icon: (
-      // Clean gear with dotted circle - construction/pipeline in progress
-      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        {/* Dotted outer circle - faded for subtlety */}
-        <circle cx="12" cy="12" r="10" strokeDasharray="2 3" opacity="0.6" />
+      // Gear with dotted ring - normalized visual weight to match other icons
+      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        {/* Dotted outer ring */}
+        <circle cx="12" cy="12" r="9" strokeDasharray="2 2" opacity="0.9" />
         {/* Gear spokes */}
-        <path d="M12 8.5v-1.5M12 17v-1.5M8.5 12h-1.5M17 12h-1.5" />
-        <path d="M15.5 8.5l-1 1M9.5 14.5l-1 1M15.5 15.5l-1-1M9.5 9.5l-1-1" />
+        <path d="M12 7.8v-1.8M12 18v-1.8M7.8 12H6M18 12h-1.8" />
+        <path d="M15.3 8.7l-1.2 1.2M9.9 14.1l-1.2 1.2M15.3 15.3l-1.2-1.2M9.9 9.9l-1.2-1.2" />
         {/* Gear center */}
-        <circle cx="12" cy="12" r="2.5" />
+        <circle cx="12" cy="12" r="3" />
       </svg>
     ),
   },
