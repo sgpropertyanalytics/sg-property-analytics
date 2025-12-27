@@ -117,11 +117,10 @@ export function InlineCard({
   };
   const currentSize = sizeStyles[size];
 
-  // Background and label color (only for default variant)
+  // Background color - consistent grey for all cards (only for default variant)
+  // Label uses the color prop, but background is always neutral grey
   const bgStyle = variant === 'default'
-    ? (color
-        ? { backgroundColor: `${color}10` }
-        : { backgroundColor: 'rgba(33, 52, 72, 0.05)' }) // #213448 at 5%
+    ? { backgroundColor: 'rgba(33, 52, 72, 0.05)' } // #213448 at 5% - consistent grey
     : undefined;
 
   const labelStyle = variant === 'default' && color ? { color } : undefined;

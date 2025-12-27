@@ -115,19 +115,28 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     else:
         pct_change = 0.0 if current_count == 0 else 100.0
 
-    # Determine trend direction
-    if pct_change > 2:
+    # Determine trend direction and label based on interpretation thresholds
+    if pct_change > 10:
         direction = "up"
-    elif pct_change < -2:
-        direction = "down"
-    else:
+        label = "Strong Growth"
+    elif pct_change > 5:
+        direction = "up"
+        label = "Growing"
+    elif pct_change > 2:
+        direction = "up"
+        label = "Mild Uptick"
+    elif pct_change >= -2:
         direction = "neutral"
-
-    # Format the change label
-    if pct_change >= 0:
-        change_label = f"+{round(pct_change)}% Q-o-Q"
+        label = "Neutral"
+    elif pct_change >= -5:
+        direction = "down"
+        label = "Softening"
+    elif pct_change >= -10:
+        direction = "down"
+        label = "Weak"
     else:
-        change_label = f"{round(pct_change)}% Q-o-Q"
+        direction = "down"
+        label = "Sharp Decline"
 
     return KPIResult(
         kpi_id="total_transactions",
@@ -138,7 +147,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
         trend={
             "value": round(pct_change, 1),
             "direction": direction,
-            "label": change_label
+            "label": label
         },
         insight="Resale transactions only",
         meta={
@@ -146,6 +155,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "previous_count": previous_count,
             "pct_change": round(pct_change, 1),
             "direction": direction,
+            "label": label,
             "description": (
                 "Resale Volume (QoQ) measures the change in resale transaction volume "
                 "over the latest 3 full months versus the previous 3 months. "

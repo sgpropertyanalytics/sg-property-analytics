@@ -240,7 +240,7 @@ export function SupplyBreakdownTable({
                   </div>
                 </th>
                 <th
-                  className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#547792] border-b border-[#94B4C1]/30 min-w-[80px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                  className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#213448] border-b border-[#94B4C1]/30 min-w-[80px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
                   onClick={() => handleSort('upcoming')}
                 >
                   <div className="flex items-center justify-end gap-1">
@@ -250,7 +250,7 @@ export function SupplyBreakdownTable({
                 </th>
                 {includeGls && (
                   <th
-                    className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#94B4C1] border-b border-[#94B4C1]/30 min-w-[80px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                    className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#213448] border-b border-[#94B4C1]/30 min-w-[80px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
                     onClick={() => handleSort('gls')}
                   >
                     <div className="flex items-center justify-end gap-1">
@@ -336,18 +336,18 @@ export function SupplyBreakdownTable({
                       </td>
 
                       {/* Unsold */}
-                      <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10" style={{ color: COLORS.unsold }}>
+                      <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10 text-[#213448]">
                         {formatNum(row.unsold)}
                       </td>
 
                       {/* Upcoming */}
-                      <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10" style={{ color: COLORS.upcoming }}>
+                      <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10 text-[#213448]">
                         {formatNum(row.upcoming)}
                       </td>
 
                       {/* GLS */}
                       {includeGls && (
-                        <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10" style={{ color: COLORS.gls }}>
+                        <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10 text-[#213448]">
                           {formatNum(row.gls)}
                         </td>
                       )}
@@ -390,18 +390,18 @@ export function SupplyBreakdownTable({
                         </td>
 
                         {/* Unsold column */}
-                        <td className="text-right px-3 py-1 font-mono text-[11px]" style={{ color: COLORS.unsold }}>
+                        <td className="text-right px-3 py-1 font-mono text-[11px] text-[#213448]">
                           {project.category === 'unsold' ? formatNum(project.units) : '–'}
                         </td>
 
                         {/* Upcoming column */}
-                        <td className="text-right px-3 py-1 font-mono text-[11px]" style={{ color: COLORS.upcoming }}>
+                        <td className="text-right px-3 py-1 font-mono text-[11px] text-[#213448]">
                           {project.category === 'upcoming' ? formatNum(project.units) : '–'}
                         </td>
 
                         {/* GLS column */}
                         {includeGls && (
-                          <td className="text-right px-3 py-1 font-mono text-[11px] text-[#94B4C1]">
+                          <td className="text-right px-3 py-1 font-mono text-[11px] text-[#213448]">
                             –
                           </td>
                         )}
