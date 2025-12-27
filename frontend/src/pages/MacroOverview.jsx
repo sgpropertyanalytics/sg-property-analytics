@@ -149,9 +149,19 @@ export function MacroOverviewContent() {
           <div className="animate-view-enter">
               {/* KPI Summary Cards - Using standardized KPICardV2 */}
               <KPICardV2Group columns={4} className="mb-4 md:mb-6">
-                {/* Card 1: Market Median PSF */}
+                {/* Card 1: Market Momentum */}
                 <KPICardV2
-                  title="Market Median PSF"
+                  title="Market Momentum"
+                  value={getKpi('market_momentum')?.formatted_value || '—'}
+                  trend={getKpi('market_momentum')?.trend}
+                  transition={getKpi('market_momentum')?.insight}
+                  loading={kpis.loading}
+                />
+
+                {/* Card 2: Median PSF Trend % (Q-o-Q) */}
+                <KPICardV2
+                  title="Median PSF Trend %"
+                  subtitle="% change vs previous 3 months"
                   value={getKpi('median_psf')?.formatted_value || '—'}
                   trend={getKpi('median_psf')?.trend}
                   transition={getKpi('median_psf')?.insight}
@@ -159,7 +169,7 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
 
-                {/* Card 2: Price Spread (IQR) */}
+                {/* Card 3: Price Spread (IQR) */}
                 <KPICardV2
                   title="Price Spread (IQR)"
                   value={getKpi('price_spread')?.formatted_value || '—'}
@@ -168,20 +178,11 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
 
-                {/* Card 3: New Launch Premium */}
+                {/* Card 4: New Launch Premium */}
                 <KPICardV2
                   title="New Launch Premium"
                   value={getKpi('new_launch_premium')?.formatted_value || '—'}
                   transition={getKpi('new_launch_premium')?.insight}
-                  loading={kpis.loading}
-                />
-
-                {/* Card 4: Market Momentum */}
-                <KPICardV2
-                  title="Market Momentum"
-                  value={getKpi('market_momentum')?.formatted_value || '—'}
-                  trend={getKpi('market_momentum')?.trend}
-                  transition={getKpi('market_momentum')?.insight}
                   loading={kpis.loading}
                 />
               </KPICardV2Group>

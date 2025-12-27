@@ -17,6 +17,8 @@ import React from 'react';
 
 interface KPICardV2Props {
   title: string;
+  /** Subtitle shown below title (methodology context) */
+  subtitle?: string;
   value: string;
   trend?: {
     value: number;
@@ -32,6 +34,7 @@ interface KPICardV2Props {
 
 export function KPICardV2({
   title,
+  subtitle,
   value,
   trend,
   transition,
@@ -65,9 +68,16 @@ export function KPICardV2({
         {loading ? (
           <div className="h-3 bg-[#94B4C1]/30 rounded w-2/3 animate-pulse" />
         ) : (
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#547792]">
-            {title}
-          </span>
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#547792]">
+              {title}
+            </span>
+            {subtitle && (
+              <p className="text-[9px] text-[#94B4C1] mt-0.5 leading-tight">
+                {subtitle}
+              </p>
+            )}
+          </div>
         )}
       </div>
 
