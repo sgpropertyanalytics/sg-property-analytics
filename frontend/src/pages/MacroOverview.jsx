@@ -148,7 +148,7 @@ export function MacroOverviewContent() {
           {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">
               {/* KPI Summary Cards - Using standardized KPICardV2 */}
-              <KPICardV2Group columns={4} className="mb-4 md:mb-6">
+              <KPICardV2Group columns={3} className="mb-4 md:mb-6">
                 {/* Card 1: Market Momentum */}
                 <KPICardV2
                   title="Market Momentum"
@@ -168,16 +168,7 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
 
-                {/* Card 3: Price Spread (IQR) */}
-                <KPICardV2
-                  title="Price Spread (IQR)"
-                  value={getKpi('price_spread')?.formatted_value || '—'}
-                  trend={getKpi('price_spread')?.trend}
-                  footnote={getKpi('price_spread')?.insight}
-                  loading={kpis.loading}
-                />
-
-                {/* Card 4: New Launch Premium */}
+                {/* Card 3: New Launch Premium */}
                 <KPICardV2
                   title="New Launch Premium"
                   value={getKpi('new_launch_premium')?.formatted_value || '—'}
