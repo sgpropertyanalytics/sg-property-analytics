@@ -13,7 +13,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { Bubble } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
-import { ChartSlot } from '../ui';
+import { KeyInsightBox, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformBeadsChartSeries,
@@ -110,10 +110,18 @@ export function BeadsChart({ height = 300 }) {
     return annotations;
   }, [stringRanges]);
 
-  // Chart.js configuration
+  // Chart.js configuration - layout.padding aligns plot area with sibling charts
   const options = useMemo(
     () => ({
       ...baseChartJsOptions,
+      layout: {
+        padding: {
+          top: 8,
+          right: 16,
+          bottom: 8,
+          left: 8,
+        },
+      },
       plugins: {
         legend: {
           position: 'bottom',
@@ -208,7 +216,8 @@ export function BeadsChart({ height = 300 }) {
     [stats?.priceRange?.max, stringAnnotations]
   );
 
-  const cardHeight = height + 100;
+  // Match PriceDistributionChart card height: height + 190 for header/stats/note/footer
+  const cardHeight = height + 190;
 
   return (
     <QueryState
@@ -218,13 +227,13 @@ export function BeadsChart({ height = 300 }) {
       empty={!hasData && !loading}
       emptyMessage="No transaction data available for the selected filters"
       skeleton="bar"
-      height={height}
+      height={350}
     >
       <div
         className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
       >
-        {/* Header */}
+        {/* Header - shrink-0 */}
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
           <h3 className="font-semibold text-[#213448]">
             Price by Region & Bedroom
@@ -234,13 +243,25 @@ export function BeadsChart({ height = 300 }) {
           </p>
         </div>
 
+        {/* How to Interpret - shrink-0 (matches PriceDistributionChart) */}
+        <div className="shrink-0">
+          <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+              <div><span className="font-semibold text-[#213448]">X-Position</span> — Volume-weighted median price.</div>
+              <div><span className="font-semibold text-[#213448]">Bubble Size</span> — Number of transactions.</div>
+              <div><span className="font-semibold text-[#213448]">Color</span> — Bedroom type (1BR to 5BR+).</div>
+              <div><span className="font-semibold text-[#213448]">String Line</span> — Price range for that region.</div>
+            </div>
+          </KeyInsightBox>
+        </div>
+
         {/* Chart */}
         <ChartSlot>
           <Bubble ref={chartRef} data={chartData} options={options} />
         </ChartSlot>
 
-        {/* Footer */}
-        <div className="shrink-0 h-9 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between text-xs text-[#547792]">
+        {/* Footer - h-11 matches PriceDistributionChart */}
+        <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between text-xs text-[#547792]">
           <span>
             {stats?.totalTransactions?.toLocaleString() || 0} transactions
           </span>

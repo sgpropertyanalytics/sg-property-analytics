@@ -178,6 +178,15 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
 
   const options = useMemo(() => ({
     ...baseChartJsOptions,
+    // layout.padding aligns plot area with sibling charts
+    layout: {
+      padding: {
+        top: 8,
+        right: 16,
+        bottom: 8,
+        left: 8,
+      },
+    },
     // NO onClick - histogram is for context, not filtering
     plugins: {
       legend: {
