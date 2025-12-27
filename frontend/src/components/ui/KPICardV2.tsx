@@ -59,26 +59,26 @@ export function KPICardV2({
         {loading ? (
           <div className="h-3 bg-[#94B4C1]/30 rounded w-2/3 animate-pulse" />
         ) : (
-          <div className="flex items-start justify-between">
-            <div>
+          <div>
+            <div className="flex items-center gap-1">
               <span className="text-xs font-bold uppercase tracking-wider text-[#547792]">
                 {title}
               </span>
-              {subtitle && (
-                <p className="text-[9px] text-[#94B4C1] mt-0.5 leading-tight">
-                  {subtitle}
-                </p>
+              {tooltip && (
+                <div className="relative group">
+                  <span className="w-3.5 h-3.5 flex items-center justify-center text-[9px] text-[#94B4C1] hover:text-[#547792] cursor-help transition-colors border border-[#94B4C1] rounded-full">
+                    ?
+                  </span>
+                  <div className="absolute left-0 top-5 z-50 hidden group-hover:block w-48 p-2 bg-[#213448] text-white text-[10px] leading-relaxed rounded shadow-lg">
+                    {tooltip}
+                  </div>
+                </div>
               )}
             </div>
-            {tooltip && (
-              <div className="relative group">
-                <span className="w-4 h-4 flex items-center justify-center text-[10px] text-[#94B4C1] hover:text-[#547792] cursor-help transition-colors">
-                  ?
-                </span>
-                <div className="absolute right-0 top-5 z-50 hidden group-hover:block w-48 p-2 bg-[#213448] text-white text-[10px] leading-relaxed rounded shadow-lg">
-                  {tooltip}
-                </div>
-              </div>
+            {subtitle && (
+              <p className="text-[9px] text-[#94B4C1] mt-0.5 leading-tight">
+                {subtitle}
+              </p>
             )}
           </div>
         )}
