@@ -20,9 +20,49 @@ def debug_supply():
     """Debug endpoint to verify code is deployed."""
     return jsonify({
         "status": "ok",
-        "version": "2.0",
+        "version": "2.1",
         "message": "Supply route is working with lazy imports"
     })
+
+
+@supply_bp.route("/test", methods=["GET"])
+def test_supply():
+    """Test endpoint to isolate issues step by step."""
+    step = request.args.get("step", "1")
+
+    try:
+        if step == "1":
+            # Just return static data
+            return jsonify({"step": 1, "message": "Static response works"})
+
+        elif step == "2":
+            # Test imports
+            from services.supply_service import get_supply_summary
+            return jsonify({"step": 2, "message": "Import works"})
+
+        elif step == "3":
+            # Test service call
+            from services.supply_service import get_supply_summary
+            result = get_supply_summary(include_gls=False, launch_year=2026)
+            return jsonify({"step": 3, "message": "Service works", "totals": result.get("totals", {})})
+
+        elif step == "4":
+            # Full call with GLS
+            from services.supply_service import get_supply_summary
+            result = get_supply_summary(include_gls=True, launch_year=2026)
+            return jsonify(result)
+
+        else:
+            return jsonify({"error": "Unknown step"})
+
+    except Exception as e:
+        import traceback
+        return jsonify({
+            "step": step,
+            "error": str(e),
+            "type": type(e).__name__,
+            "traceback": traceback.format_exc()
+        }), 500
 
 
 @supply_bp.after_request
