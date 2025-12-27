@@ -77,7 +77,8 @@ export function SupplyKpiCards({
       <KPICardV2
         title="Unsold Inventory"
         value={formatUnits(unsoldInventory)}
-        transition="Developer stock from launched projects"
+        trend={{ value: 0, direction: 'neutral', label: 'Developer stock' }}
+        transition="From launched projects"
         loading={loading}
       />
 
@@ -85,7 +86,8 @@ export function SupplyKpiCards({
       <KPICardV2
         title="Upcoming Launches"
         value={formatUnits(upcomingLaunches)}
-        transition={`Pre-launch projects targeting ${launchYear}`}
+        trend={{ value: 0, direction: 'up', label: 'Pipeline' }}
+        transition={`Targeting ${launchYear}`}
         loading={loading}
       />
 
@@ -93,7 +95,8 @@ export function SupplyKpiCards({
       <KPICardV2
         title="GLS Pipeline"
         value={includeGls ? formatUnits(glsPipeline) : '—'}
-        transition={includeGls ? 'Open government land sale tenders' : 'GLS data excluded'}
+        trend={includeGls ? { value: 0, direction: 'neutral', label: 'Open tenders' } : undefined}
+        transition={includeGls ? 'Government land sales' : 'GLS data excluded'}
         loading={loading}
       />
     </KPICardV2Group>

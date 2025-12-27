@@ -285,7 +285,7 @@ export function KPICardV2({
         <div className="flex items-center gap-2 mt-2">
           {loading ? (
             <div className="h-5 bg-[#94B4C1]/20 rounded w-16 animate-pulse" />
-          ) : trend ? (
+          ) : trend && trend.value !== 0 ? (
             <>
               <span
                 className={`
@@ -305,7 +305,7 @@ export function KPICardV2({
             </>
           ) : hasContext ? (
             <span className="text-[#94B4C1] text-[10px]">
-              {transition || footerMeta}
+              {transition || (trend?.label) || footerMeta}
             </span>
           ) : null}
         </div>
