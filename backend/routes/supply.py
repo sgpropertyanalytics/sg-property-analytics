@@ -15,6 +15,16 @@ from flask import Blueprint, request, jsonify
 supply_bp = Blueprint('supply', __name__)
 
 
+@supply_bp.route("/debug", methods=["GET"])
+def debug_supply():
+    """Debug endpoint to verify code is deployed."""
+    return jsonify({
+        "status": "ok",
+        "version": "2.0",
+        "message": "Supply route is working with lazy imports"
+    })
+
+
 @supply_bp.after_request
 def add_contract_version_header(response):
     """Add X-API-Contract-Version header to all supply responses."""

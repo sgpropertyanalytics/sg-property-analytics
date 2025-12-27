@@ -300,8 +300,14 @@ def create_app():
     app.register_blueprint(insights_bp, url_prefix='/api/insights')
 
     # Supply Pipeline routes (waterfall chart data)
-    from routes.supply import supply_bp
-    app.register_blueprint(supply_bp, url_prefix='/api/supply')
+    try:
+        from routes.supply import supply_bp
+        app.register_blueprint(supply_bp, url_prefix='/api/supply')
+        print("   ✓ Supply routes registered")
+    except Exception as e:
+        print(f"   ⚠️ Failed to register supply routes: {e}")
+        import traceback
+        traceback.print_exc()
 
     # Serve dashboard.html at root
     @app.route("/", methods=["GET"])
