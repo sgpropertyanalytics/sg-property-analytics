@@ -45,7 +45,7 @@ export function KPICardV2({
   return (
     <div
       className={`
-        bg-white border border-[#94B4C1]/50 rounded-lg p-4 sm:p-5
+        bg-white border border-[#94B4C1]/50 rounded-lg pt-3 px-4 pb-4 sm:pt-3.5 sm:px-5 sm:pb-5
         h-36 flex flex-col justify-between
         shadow-sm hover:shadow-md transition-shadow duration-200
         ${className}
@@ -57,7 +57,7 @@ export function KPICardV2({
           <div className="h-3 bg-[#94B4C1]/30 rounded w-2/3 animate-pulse" />
         ) : (
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#547792]">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#547792]">
               {title}
             </span>
             {subtitle && (
