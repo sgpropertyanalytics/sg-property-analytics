@@ -637,7 +637,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 Rank
               </th>
               <th
-                className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                className="px-3 py-3 min-h-[44px] text-center font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('liquidity_score')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -650,7 +650,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                className="px-3 py-3 min-h-[44px] text-left font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('district_id')}
               >
                 <span className="inline-flex items-center gap-1">
@@ -659,7 +659,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                className="px-3 py-3 min-h-[44px] text-center font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('region')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -668,7 +668,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                className="px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('project_count')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -678,7 +678,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
+                className="px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('tx_count')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -688,7 +688,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 select-none"
+                className="px-3 py-3 min-h-[44px] text-center font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
                 onClick={() => handleSort('liquidity_tier')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -697,7 +697,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 select-none"
+                className="px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
                 onClick={() => handleSort('monthly_velocity')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -710,7 +710,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 select-none"
+                className="px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
                 onClick={() => handleSort('z_score')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -723,7 +723,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-center font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 select-none"
+                className="px-3 py-3 min-h-[44px] text-center font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
                 onClick={() => handleSort('fragility_label')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -736,7 +736,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 select-none"
+                className="px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
                 onClick={() => handleSort('concentration_gini')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -749,7 +749,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 select-none"
+                className="px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
                 onClick={() => handleSort('top_project_share')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -815,7 +815,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   </td>
 
                   {/* Project Count (Market Structure - Combined) */}
-                  <td className="px-3 py-2 text-right text-[#213448]">{m.project_count || 0}</td>
+                  <td className="px-3 py-2 text-right text-[#213448] font-mono tabular-nums">{m.project_count || 0}</td>
 
                   {/* Transaction Count (Market Structure - Combined) with inline bar */}
                   <td className="px-3 py-2 text-[#213448]">
@@ -828,7 +828,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                         />
                       </div>
                       {/* Number value */}
-                      <span className="text-right min-w-[45px]">
+                      <span className="text-right min-w-[45px] font-mono tabular-nums">
                         {m.tx_count?.toLocaleString() || '0'}
                       </span>
                     </div>
@@ -844,12 +844,12 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   </td>
 
                   {/* Exit Safety Group - Monthly Velocity (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-[#213448] bg-emerald-50/40">
+                  <td className="px-3 py-2 text-right text-[#213448] bg-emerald-50/40 font-mono tabular-nums">
                     {m.monthly_velocity?.toFixed(1) || '0'}
                   </td>
 
                   {/* Exit Safety Group - Z-Score (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-[#213448] bg-emerald-50/40">
+                  <td className="px-3 py-2 text-right text-[#213448] bg-emerald-50/40 font-mono tabular-nums">
                     <span
                       className={
                         (m.z_score || 0) >= 0.5
@@ -869,12 +869,12 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   </td>
 
                   {/* Concentration Risks Group - Gini Index (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-[#213448] bg-rose-50/40">
+                  <td className="px-3 py-2 text-right text-[#213448] bg-rose-50/40 font-mono tabular-nums">
                     {m.concentration_gini?.toFixed(2) || '-'}
                   </td>
 
                   {/* Concentration Risks Group - Top Project Share (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-[#213448] bg-rose-50/40">
+                  <td className="px-3 py-2 text-right text-[#213448] bg-rose-50/40 font-mono tabular-nums">
                     {m.top_project_share?.toFixed(0) || '0'}%
                   </td>
                 </tr>
