@@ -72,7 +72,8 @@ export const transformNewVsResaleSeries = (rawData) => {
  *   {
  *     chartData: [{ district, startPsf, endPsf, startQuarter, endQuarter, growthPercent }],
  *     startQuarter: string,  // Global earliest quarter (same for all)
- *     endQuarter: string     // Global latest quarter (same for all)
+ *     endQuarter: string,    // Global latest quarter (same for all)
+ *     excludedDistricts: [{ district, reason }]  // Districts excluded due to missing data
  *   }
  */
 export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
@@ -123,6 +124,7 @@ export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
 
   // Calculate growth for each district using the SAME time period
   const chartData = [];
+  const excludedDistricts = [];
 
   Object.entries(districtQuarterMap).forEach(([district, quarterData]) => {
     const startPsf = quarterData[globalStartQuarter];
@@ -140,12 +142,23 @@ export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
         endQuarter: globalEndQuarter,
         growthPercent,
       });
-    } else if (isDev) {
-      // Log districts excluded due to missing data
-      const missing = [];
-      if (!startPsf) missing.push(globalStartQuarter);
-      if (!endPsf) missing.push(globalEndQuarter);
-      console.log(`[transformGrowthDumbbellSeries] Excluding ${district}: missing data for ${missing.join(', ')}`);
+    } else {
+      // Track excluded districts with reason
+      const missingStart = !startPsf || startPsf <= 0;
+      const missingEnd = !endPsf || endPsf <= 0;
+      let reason;
+      if (missingStart && missingEnd) {
+        reason = `No data for ${globalStartQuarter} or ${globalEndQuarter}`;
+      } else if (missingStart) {
+        reason = `No data for ${globalStartQuarter}`;
+      } else {
+        reason = `No data for ${globalEndQuarter}`;
+      }
+      excludedDistricts.push({ district, reason });
+
+      if (isDev) {
+        console.log(`[transformGrowthDumbbellSeries] Excluding ${district}: ${reason}`);
+      }
     }
   });
 
@@ -153,5 +166,6 @@ export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
     chartData,
     startQuarter: globalStartQuarter,
     endQuarter: globalEndQuarter,
+    excludedDistricts,
   };
 };

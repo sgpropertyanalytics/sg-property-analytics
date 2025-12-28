@@ -136,11 +136,11 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
       return transformGrowthDumbbellSeries(rawData, { districts: ALL_DISTRICTS });
     },
     [filterKey],
-    { initialData: { chartData: [], startQuarter: '', endQuarter: '' } }
+    { initialData: { chartData: [], startQuarter: '', endQuarter: '', excludedDistricts: [] } }
   );
 
   // Extract transformed data and add display metadata
-  const { chartData: baseChartData, startQuarter, endQuarter } = data;
+  const { chartData: baseChartData, startQuarter, endQuarter, excludedDistricts = [] } = data;
 
   // Add region and areaNames (display-only metadata) to chart data
   const chartData = useMemo(() => {
@@ -468,6 +468,18 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
           <div className="text-[10px] text-[#94B4C1]">
             <p>Increment = absolute PSF change. Larger dot & thicker line = stronger movement. Click headers to sort.</p>
           </div>
+
+          {/* Excluded districts note */}
+          {excludedDistricts.length > 0 && (
+            <div className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1.5 rounded border border-amber-200">
+              <span className="font-medium">Excluded ({excludedDistricts.length}):</span>{' '}
+              {excludedDistricts.map((item, idx) => (
+                <span key={item.district}>
+                  {item.district} ({item.reason}){idx < excludedDistricts.length - 1 ? ', ' : ''}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
