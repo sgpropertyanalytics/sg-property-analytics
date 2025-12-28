@@ -13,7 +13,6 @@
  * - chartTransforms.js: Chart-specific transforms
  * - transactions.js: Transaction table adapter
  * - observability.js: Debug logging utilities
- * - psfByPriceBand.js: PSF by price band transforms
  */
 
 // Re-export everything from the modular structure
@@ -51,9 +50,6 @@ export {
   // Observability
   logFetchDebug,
   logTransformError,
-  // PSF by Price Band
-  transformPsfByPriceBand,
-  toPsfByPriceBandChartData,
   // Beads Chart
   transformBeadsChartSeries,
   filterBedroomDatasets,

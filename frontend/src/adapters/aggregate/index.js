@@ -28,7 +28,6 @@
  * - chartTransforms.js: Chart-specific transforms (newVsResale, growthDumbbell)
  * - transactions.js: Transaction table adapter
  * - observability.js: Debug logging utilities
- * - psfByPriceBand.js: PSF by price band transforms
  */
 
 // Import everything locally first
@@ -69,11 +68,6 @@ import {
 import { transformTransactionsList } from './transactions';
 
 import { logFetchDebug, logTransformError } from './observability';
-
-import {
-  transformPsfByPriceBand,
-  toPsfByPriceBandChartData,
-} from './psfByPriceBand';
 
 import {
   transformBeadsChartSeries,
@@ -123,9 +117,6 @@ export {
   // Observability
   logFetchDebug,
   logTransformError,
-  // PSF by Price Band
-  transformPsfByPriceBand,
-  toPsfByPriceBandChartData,
   // Beads Chart
   transformBeadsChartSeries,
   filterBedroomDatasets,
@@ -155,8 +146,6 @@ export default {
   transformNewVsResaleSeries,
   transformGrowthDumbbellSeries,
   transformTransactionsList,
-  transformPsfByPriceBand,
-  toPsfByPriceBandChartData,
   // Compression analysis
   calculateCompressionScore,
   calculateAverageSpreads,
