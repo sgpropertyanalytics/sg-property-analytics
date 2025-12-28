@@ -128,12 +128,12 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         type: 'line',
         label: 'Total Transaction Value',
         data: totalValues,
-        borderColor: '#EAE0CF',  // Sand - warm contrast
-        backgroundColor: 'rgba(234, 224, 207, 0.1)',
+        borderColor: '#213448',  // Navy - high contrast
+        backgroundColor: 'rgba(33, 52, 72, 0.1)',
         borderWidth: 3,
         pointRadius: 0,  // Hide points by default
         pointHoverRadius: 6,
-        pointHoverBackgroundColor: '#EAE0CF',
+        pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: '#213448',
         pointHoverBorderWidth: 2,
         tension: 0.3,
@@ -220,7 +220,7 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         },
         ticks: {
           callback: (value) => Math.round(value).toLocaleString(),
-          color: '#94B4C1',
+          color: '#1a1a1a',  // Near-black for readability
           font: { size: 11 },
           padding: 8,
         },
@@ -245,7 +245,7 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
             }
             return `$${(value / 1000000).toFixed(0)}M`;
           },
-          color: '#94B4C1',
+          color: '#1a1a1a',  // Near-black for readability
           font: { size: 11 },
           padding: 8,
         },
