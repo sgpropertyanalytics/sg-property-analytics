@@ -187,7 +187,9 @@ export function PriceCompressionChart({ height = 380, saleType = null }) {
         display: true,
         position: 'bottom',
         labels: {
-          usePointStyle: true,
+          usePointStyle: false,
+          boxWidth: 40,
+          boxHeight: 2,
           padding: 16,
           font: { size: 11 },
         },
