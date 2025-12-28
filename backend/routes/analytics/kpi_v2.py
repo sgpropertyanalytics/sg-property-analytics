@@ -9,12 +9,13 @@ Endpoints:
 """
 
 import time
-from flask import request, jsonify
+from flask import request, jsonify, g
 from sqlalchemy import text
 from routes.analytics import analytics_bp
 from models.database import db
 from db.sql import OUTLIER_FILTER
 from utils.normalize import to_date
+from api.contracts import api_contract
 
 
 def _get_max_transaction_date():
@@ -28,9 +29,15 @@ def _get_max_transaction_date():
 
 
 @analytics_bp.route("/kpi-summary-v2", methods=["GET"])
+@api_contract("kpi-summary-v2")
 def kpi_summary_v2():
     """
     New KPI endpoint using registry pattern.
+
+    Contract enforcement via @api_contract decorator:
+    - Validates params against schema (WARN mode by default)
+    - Injects requestId and elapsedMs into meta
+    - Logs contract violations for observability
 
     Returns standardized KPIResult format:
     {
@@ -47,7 +54,11 @@ def kpi_summary_v2():
             },
             ...
         ],
-        "meta": {"elapsed_ms": 45.2}
+        "meta": {
+            "elapsed_ms": 45.2,
+            "requestId": "uuid",
+            "apiVersion": "v3"
+        }
     }
     """
     from services.kpi import run_all_kpis

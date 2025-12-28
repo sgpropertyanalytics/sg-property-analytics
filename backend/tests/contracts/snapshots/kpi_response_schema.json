@@ -1,0 +1,30 @@
+{
+  "kpi_item_fields": [
+    "kpi_id",
+    "title",
+    "value",
+    "formatted_value",
+    "subtitle",
+    "trend",
+    "insight",
+    "meta"
+  ],
+  "required_kpi_fields": [
+    "kpi_id",
+    "title"
+  ],
+  "meta_fields": [
+    "requestId",
+    "elapsedMs",
+    "filtersApplied",
+    "apiVersion"
+  ],
+  "required_meta": [
+    "requestId",
+    "elapsedMs",
+    "apiVersion"
+  ],
+  "_version": "v3",
+  "_created": "2025-12-28",
+  "_note": "Breaking changes require version bump and migration"
+}

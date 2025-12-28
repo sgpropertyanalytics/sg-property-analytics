@@ -74,9 +74,21 @@ def create_app():
     CORS(app,
          resources={r"/api/*": {"origins": "*"}},
          methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-         allow_headers=["Content-Type", "Authorization"],
+         allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
          supports_credentials=False,
          send_wildcard=True)  # Always send '*' instead of echoing Origin header
+
+    # === API CONTRACT MIDDLEWARE ===
+    # Request ID injection for request correlation and debugging
+    from api.middleware import setup_request_id_middleware
+    setup_request_id_middleware(app)
+
+    # Load contract schemas (registers contracts on import)
+    try:
+        from api.contracts import schemas  # noqa: F401
+        print("   ✓ API contracts loaded")
+    except ImportError as e:
+        print(f"   ⚠️  API contracts not loaded: {e}")
 
     # Global error handlers to ensure CORS headers are present on error responses
     from werkzeug.exceptions import HTTPException
@@ -87,15 +99,28 @@ def create_app():
         Handle HTTP exceptions (404, 405, etc.) - preserve their status codes.
         DO NOT convert these to 500.
         """
+        from flask import g
+
+        # Get request ID for correlation
+        request_id = getattr(g, 'request_id', None)
+
+        # Standardized error envelope
         response = jsonify({
-            "error": error.name,
-            "details": error.description,
-            "status_code": error.code
+            "error": {
+                "code": error.name.upper().replace(' ', '_'),
+                "message": error.description,
+                "requestId": request_id,
+            }
         })
         response.status_code = error.code
+
+        # Add request ID to response headers
+        if request_id:
+            response.headers['X-Request-ID'] = request_id
+
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID'
         return response
 
     @app.errorhandler(Exception)
@@ -103,6 +128,8 @@ def create_app():
         """
         Handle non-HTTP exceptions (real 500s) - actual internal errors.
         """
+        from flask import g
+
         # Log the error for debugging
         import traceback
         traceback.print_exc()
@@ -111,23 +138,47 @@ def create_app():
         if isinstance(error, HTTPException):
             return handle_http_exception(error)
 
-        response = jsonify({"error": "Internal server error", "details": str(error)})
+        # Get request ID for correlation
+        request_id = getattr(g, 'request_id', None)
+
+        # Standardized error envelope
+        response = jsonify({
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "An unexpected error occurred",
+                "requestId": request_id,
+            }
+        })
         response.status_code = 500
+
+        # Add request ID to response headers
+        if request_id:
+            response.headers['X-Request-ID'] = request_id
+
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID'
         return response
 
     # Ensure CORS headers are present on ALL responses (including errors from routes)
     @app.after_request
     def add_cors_headers(response):
+        from flask import g
+
         # Only add if not already present (avoid duplicates)
         if 'Access-Control-Allow-Origin' not in response.headers:
             response.headers['Access-Control-Allow-Origin'] = '*'
         if 'Access-Control-Allow-Methods' not in response.headers:
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
         if 'Access-Control-Allow-Headers' not in response.headers:
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID'
+
+        # Ensure X-Request-ID is in response (for correlation)
+        if 'X-Request-ID' not in response.headers:
+            request_id = getattr(g, 'request_id', None)
+            if request_id:
+                response.headers['X-Request-ID'] = request_id
+
         return response
 
     # SECURITY: Prevent caching of tier-sensitive API responses

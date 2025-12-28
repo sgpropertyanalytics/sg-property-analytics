@@ -9,7 +9,7 @@ Endpoints:
 """
 
 import time
-from flask import request, jsonify
+from flask import request, jsonify, g
 from routes.analytics import analytics_bp
 from constants import (
     SALE_TYPE_NEW, SALE_TYPE_RESALE,
@@ -20,15 +20,22 @@ from utils.normalize import (
     to_int, to_float, to_date, to_list, to_bool, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
+from api.contracts import api_contract
 
 
 @analytics_bp.route("/aggregate", methods=["GET"])
+@api_contract("aggregate")
 def aggregate():
     """
     Flexible aggregation endpoint for Power BI-style dynamic filtering.
     Uses SQL-level aggregation for memory efficiency.
 
     Now includes server-side caching for faster repeated queries.
+
+    Contract enforcement via @api_contract decorator:
+    - Validates params against schema (WARN mode by default)
+    - Injects requestId and elapsedMs into meta
+    - Logs contract violations for observability
 
     API Parameter Convention:
       All filter parameters use SINGULAR form with comma-separated values for multiple selections.
@@ -66,7 +73,10 @@ def aggregate():
           "filters_applied": {...},
           "group_by": [...],
           "metrics": [...],
-          "cache_hit": bool
+          "cache_hit": bool,
+          "requestId": "uuid",
+          "elapsedMs": 45.2,
+          "apiVersion": "v3"
         }
       }
     """

@@ -1,0 +1,31 @@
+{
+  "data_fields": [
+    "period",
+    "periodGrain",
+    "count",
+    "medianPsf",
+    "avgPsf",
+    "totalValue",
+    "district",
+    "bedroom",
+    "saleType",
+    "region"
+  ],
+  "meta_fields": [
+    "requestId",
+    "elapsedMs",
+    "cacheHit",
+    "filtersApplied",
+    "totalRecords",
+    "apiVersion"
+  ],
+  "required_meta": [
+    "requestId",
+    "elapsedMs",
+    "filtersApplied",
+    "apiVersion"
+  ],
+  "_version": "v3",
+  "_created": "2025-12-28",
+  "_note": "Breaking changes require version bump and migration"
+}
