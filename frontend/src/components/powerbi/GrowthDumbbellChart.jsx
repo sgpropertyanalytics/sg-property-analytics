@@ -51,14 +51,6 @@ const getLineThickness = (growthPercent) => {
   return 1;  // Minimal movement
 };
 
-// End dot size - larger for strong growth
-const getEndDotSize = (growthPercent) => {
-  const absGrowth = Math.abs(growthPercent);
-  if (absGrowth >= 50) return 20;  // Extra large
-  if (absGrowth >= 30) return 18;  // Large
-  return 16;  // Standard
-};
-
 // Get area names (2-3 areas max, respecting space)
 const getAreaNames = (district) => {
   const fullName = DISTRICT_NAMES[district] || district;
