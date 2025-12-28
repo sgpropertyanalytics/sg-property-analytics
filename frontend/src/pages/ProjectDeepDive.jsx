@@ -560,7 +560,7 @@ export function ProjectDeepDiveContent() {
             )}
 
             {/* Charts Grid - 2 Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-start">
 
               {/* ===== LEFT COLUMN ===== */}
               <div className="space-y-4 lg:space-y-6">

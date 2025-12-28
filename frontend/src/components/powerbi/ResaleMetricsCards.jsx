@@ -66,7 +66,7 @@ function MetricCard({ label, value, subtext, zone = 'default', isUnavailable = f
 // Skeleton loader
 function ResaleMetricsSkeleton({ compact = false }) {
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 animate-pulse h-full">
+    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 animate-pulse">
       <div className="h-4 bg-[#94B4C1]/30 rounded w-1/2 mb-4" />
       <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 md:grid-cols-3'}`}>
         {[...Array(3)].map((_, i) => (
@@ -153,14 +153,14 @@ export default function ResaleMetricsCards({
   const recentTurnoverData = formatRecentTurnover();
 
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-full flex flex-col">
+    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
       {/* Header */}
       <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-3 md:mb-4">
         Resale Activity Metrics
       </h3>
 
       {/* Metrics Grid - responsive based on compact mode */}
-      <div className={`grid gap-3 flex-1 ${compact ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 md:grid-cols-3'}`}>
+      <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 md:grid-cols-3'}`}>
         <MetricCard
           label="Resale Transactions"
           value={transactionsData.value}
