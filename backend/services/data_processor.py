@@ -25,6 +25,7 @@ from services.classifier_extended import (
     classify_remaining_lease_band,
 )
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
+from schemas.api_contract import PropertyAgeBucket
 
 # Table name constant for reference
 MASTER_TABLE = "transactions"  # Use SQLAlchemy transactions table
@@ -1714,13 +1715,17 @@ def get_new_vs_resale_comparison(
     # Using avg as approximation for true median (memory-efficient)
     # Returns median PRICE (total quantum) instead of PSF
     #
-    # Young Resale definition (4-9 years age):
+    # Recently TOP definition (canonical from PropertyAgeBucket.AGE_RANGES):
     # - Property age = YEAR(transaction_date) - lease_start_year
-    # - Must be between 4 and 9 years old
+    # - Age range: [min_age, max_age) using exclusive upper bound
     # - Project must have at least one Resale transaction (excludes delayed construction projects)
     # - Excludes NULL lease_start_year (require known age for precise filtering)
     # Import outlier filter constant for raw SQL
     from db.sql import OUTLIER_FILTER
+
+    # Get canonical age range for Recently TOP bucket
+    recently_top_range = PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP)
+    age_min, age_max = recently_top_range  # (4, 8) = ages 4, 5, 6, 7
 
     sql = text(f"""
         WITH projects_with_resale AS (
@@ -1751,7 +1756,8 @@ def get_new_vs_resale_comparison(
             WHERE sale_type = '{SALE_TYPE_RESALE}'
               AND {OUTLIER_FILTER}
               AND lease_start_year IS NOT NULL
-              AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) BETWEEN 4 AND 9
+              AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) >= {age_min}
+              AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) < {age_max}
               AND project_name IN (SELECT project_name FROM projects_with_resale)
               AND {where_clause}
             GROUP BY DATE_TRUNC('{date_trunc_grain}', transaction_date)
