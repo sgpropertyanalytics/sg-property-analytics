@@ -11,6 +11,7 @@
 | `/api-endpoint-guardrails` | New endpoints |
 | `/api-contract-guardrails` | API contract changes |
 | `/frontend-design` | Building UI components/pages |
+| `/lazy-import-guardrails` | React.lazy() / dynamic imports |
 
 ## Agents
 | Agent | Trigger |
@@ -723,6 +724,19 @@ Regions: CCR=#213448, RCR=#547792, OCR=#94B4C1
 - [ ] Uses `useAbortableQuery`
 - [ ] Uses constants (REGIONS, BEDROOM_ORDER)
 - [ ] Query key includes ALL data-affecting state
+
+## Lazy Import (React.lazy)
+**CRITICAL: Import syntax must match export style. Mismatch = runtime crash.**
+
+| Export Style | Lazy Syntax |
+|--------------|-------------|
+| `export default X` | `lazy(() => import('./X'))` |
+| `export function X` | `lazy(() => import('./X').then(m => ({ default: m.X })))` |
+
+- [ ] Checked target file's export style first
+- [ ] Syntax matches export style
+- [ ] Tested component loads in browser
+- [ ] Suspense fallback provided
 
 ## Problem-Solving
 1. Fix the class of problem (check parallel code paths)

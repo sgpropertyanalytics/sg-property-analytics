@@ -8,13 +8,14 @@
  *
  * IMPORTANT: This component does NOT use usePowerBIFilters().
  * Per CLAUDE.md Card 13, Supply Insights page uses local state, not sidebar filters.
- * All filters are passed as props from the parent component.
+ *
+ * PERFORMANCE: Uses shared SupplyDataContext to eliminate duplicate API calls.
+ * When useSharedContext=true (default), consumes data from SupplyDataProvider.
  */
 
-import React, { useMemo } from 'react';
-import { useAbortableQuery } from '../../hooks';
-import { getSupplySummary } from '../../api/client';
-import { KPICardV2, KPICardV2Skeleton, KPICardV2Group } from '../ui';
+import React from 'react';
+import { useSupplyData } from '../../context/SupplyDataContext';
+import { KPICardV2, KPICardV2Group } from '../ui';
 
 /**
  * Format large numbers with commas and K/M suffixes for readability
@@ -31,30 +32,16 @@ function formatUnits(value) {
  * Supply KPI Cards Component
  *
  * @param {Object} props
- * @param {boolean} props.includeGls - Whether to include GLS pipeline in the display
- * @param {number} props.launchYear - Year filter for upcoming launches
+ * @param {boolean} props.includeGls - Whether to include GLS pipeline in the display (from context)
+ * @param {number} props.launchYear - Year filter for upcoming launches (from context)
  */
 export function SupplyKpiCards({
-  includeGls = true,
-  launchYear = 2026,
+  // Props are kept for documentation but values come from shared context
+  includeGls: _includeGls,
+  launchYear: _launchYear,
 }) {
-  // Build filter key for cache/refetch
-  const filterKey = useMemo(() =>
-    `kpi:${includeGls}:${launchYear}`,
-    [includeGls, launchYear]
-  );
-
-  // Fetch supply summary data
-  const { data, loading, error } = useAbortableQuery(
-    async (signal) => {
-      const response = await getSupplySummary(
-        { includeGls, launchYear },
-        { signal }
-      );
-      return response.data;
-    },
-    [filterKey]
-  );
+  // Consume shared data from context (single fetch for all supply components)
+  const { data, loading, error, includeGls, launchYear } = useSupplyData();
 
   // Extract totals from response
   const totals = data?.totals || {};

@@ -6,13 +6,14 @@
  *
  * Columns: District | Region | Total | Unsold | Upcoming | GLS
  *
+ * PERFORMANCE: Uses shared SupplyDataContext to eliminate duplicate API calls.
+ *
  * Styled to match FloorLiquidityHeatmap for consistency.
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAbortableQuery } from '../../hooks';
+import { useSupplyData } from '../../context/SupplyDataContext';
 import { QueryState } from '../common/QueryState';
-import { getSupplySummary } from '../../api/client';
 import { DISTRICT_NAMES, getRegionForDistrict, getRegionBadgeClass } from '../../constants';
 
 // Colors for volume bars (muted warm tones)
@@ -27,8 +28,9 @@ const COLORS = {
  */
 export function SupplyBreakdownTable({
   selectedRegion = null,
-  includeGls = true,
-  launchYear = 2026,
+  // Props kept for documentation but values come from shared context
+  includeGls: _includeGls,
+  launchYear: _launchYear,
 }) {
   // Collapsible state
   const [expandedDistricts, setExpandedDistricts] = useState(new Set());
@@ -36,22 +38,8 @@ export function SupplyBreakdownTable({
   // Sort state
   const [sortConfig, setSortConfig] = useState({ column: 'district', order: 'asc' });
 
-  // Build filter key for caching
-  const filterKey = useMemo(() =>
-    `${selectedRegion || 'all'}:${includeGls}:${launchYear}`,
-    [selectedRegion, includeGls, launchYear]
-  );
-
-  // Fetch supply data
-  const { data: apiResponse, loading, error, refetch } = useAbortableQuery(
-    async (signal) => {
-      const params = { includeGls, launchYear };
-      const response = await getSupplySummary(params, { signal });
-      return response.data;
-    },
-    [filterKey],
-    { initialData: null }
-  );
+  // Consume shared data from context (single fetch for all supply components)
+  const { data: apiResponse, loading, error, refetch, includeGls } = useSupplyData();
 
   // Process data into table format
   const tableData = useMemo(() => {

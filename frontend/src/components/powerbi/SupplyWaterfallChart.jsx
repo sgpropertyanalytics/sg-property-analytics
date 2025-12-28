@@ -9,7 +9,9 @@
  *
  * IMPORTANT: This component does NOT use usePowerBIFilters().
  * Per CLAUDE.md Card 13, Supply Insights page uses local state, not sidebar filters.
- * All filters are passed as props from the parent component.
+ *
+ * PERFORMANCE: Uses shared SupplyDataContext to eliminate duplicate API calls.
+ * Multiple instances of this chart (regional + district views) share the same data.
  *
  * The adapter (waterfallAdapter.js) handles ALL data transformation and spacer math.
  * This component is a pure renderer - no business logic.
@@ -27,10 +29,9 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { useAbortableQuery } from '../../hooks';
+import { useSupplyData } from '../../context/SupplyDataContext';
 import { QueryState } from '../common/QueryState';
 import { ChartSlot } from '../ui';
-import { getSupplySummary } from '../../api/client';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformRegionalWaterfall,
@@ -58,38 +59,22 @@ ChartJS.register(
  * @param {Object} props
  * @param {'regional'|'district'} props.view - Chart view mode
  * @param {string|null} props.selectedRegion - For district view, which region to show
- * @param {boolean} props.includeGls - Whether to include GLS pipeline in calculations
- * @param {number} props.launchYear - Year filter for upcoming launches
+ * @param {boolean} props.includeGls - Whether to include GLS pipeline (from context)
+ * @param {number} props.launchYear - Year filter for upcoming launches (from context)
  * @param {number} props.height - Chart height in pixels
  */
 export function SupplyWaterfallChart({
   view = 'regional',
   selectedRegion = null,
-  includeGls = true,
-  launchYear = 2026,
+  // Props kept for documentation but values come from shared context
+  includeGls: _includeGls,
+  launchYear: _launchYear,
   height = 350,
 }) {
   const chartRef = useRef(null);
 
-  // Build filter key for caching/refetch
-  const filterKey = useMemo(() =>
-    `${view}:${selectedRegion || 'all'}:${includeGls}:${launchYear}`,
-    [view, selectedRegion, includeGls, launchYear]
-  );
-
-  // Fetch supply data
-  const { data: apiResponse, loading, error, refetch } = useAbortableQuery(
-    async (signal) => {
-      const params = {
-        includeGls,
-        launchYear,
-      };
-      const response = await getSupplySummary(params, { signal });
-      return response.data;
-    },
-    [filterKey], // Refetch when filters change
-    { initialData: null }
-  );
+  // Consume shared data from context (single fetch for all supply components)
+  const { data: apiResponse, loading, error, refetch, includeGls } = useSupplyData();
 
   // Transform data based on view mode
   // For TRUE waterfall: X-axis is supply stages, region is a filter
