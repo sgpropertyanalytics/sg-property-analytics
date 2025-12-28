@@ -34,7 +34,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
   // Local state for window toggle
   const [windowMonths, setWindowMonths] = useState(12);
 
-  // Collapsible district state - default expanded
+  // Collapsible district state - initialized empty, useEffect expands all on data load
   const [expandedDistricts, setExpandedDistricts] = useState(new Set());
 
   // Tooltip state
@@ -139,11 +139,10 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
     return { grouped, sortedDistricts, districtAggregates, maxVolume };
   }, [data.projects, windowMonths]);
 
-  // Default to collapsed - user can expand as needed
-  // This prevents the heatmap from becoming excessively tall with many projects
+  // Default to expanded - show all projects immediately
   useEffect(() => {
     if (projectsByDistrict.sortedDistricts.length > 0) {
-      setExpandedDistricts(new Set());
+      setExpandedDistricts(new Set(projectsByDistrict.sortedDistricts));
     }
   }, [projectsByDistrict.sortedDistricts]);
 
