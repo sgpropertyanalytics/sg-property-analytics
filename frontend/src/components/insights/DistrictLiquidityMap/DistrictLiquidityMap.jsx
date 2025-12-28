@@ -47,7 +47,7 @@ export default function DistrictLiquidityMap({ saleType = SaleType.RESALE }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
-  const [selectedPeriod, setSelectedPeriod] = useState('12m');
+  const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
   // Abort/stale request protection
