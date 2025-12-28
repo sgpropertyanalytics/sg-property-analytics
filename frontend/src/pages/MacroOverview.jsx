@@ -6,6 +6,7 @@ import { BeadsChart } from '../components/powerbi/BeadsChart';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { PriceCompressionChart } from '../components/powerbi/PriceCompressionChart';
 import { AbsolutePsfChart } from '../components/powerbi/AbsolutePsfChart';
+import { MarketValueOscillator } from '../components/powerbi/MarketValueOscillator';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TimeGranularityToggle } from '../components/powerbi/TimeGranularityToggle';
@@ -313,6 +314,15 @@ export function MacroOverviewContent() {
                   <ErrorBoundary name="Absolute PSF" compact>
                     <ChartWatermark>
                       <AbsolutePsfChart height={compressionHeight} />
+                    </ChartWatermark>
+                  </ErrorBoundary>
+                </div>
+
+                {/* Market Value Oscillator - Full width, Z-score normalized spread analysis */}
+                <div className="lg:col-span-2">
+                  <ErrorBoundary name="Market Value Oscillator" compact>
+                    <ChartWatermark>
+                      <MarketValueOscillator height={compressionHeight} />
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>

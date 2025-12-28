@@ -80,6 +80,14 @@ import {
   filterBedroomDatasets,
 } from './beadsChart';
 
+import {
+  transformOscillatorSeries,
+  calculateZScoreStats,
+  getZScoreLabel,
+  getZScoreShortLabel,
+  getZScoreColor,
+} from './oscillator';
+
 // Named exports
 export {
   // Validation
@@ -121,6 +129,12 @@ export {
   // Beads Chart
   transformBeadsChartSeries,
   filterBedroomDatasets,
+  // Z-Score Oscillator
+  transformOscillatorSeries,
+  calculateZScoreStats,
+  getZScoreLabel,
+  getZScoreShortLabel,
+  getZScoreColor,
 };
 
 // Default export for backwards compatibility
@@ -159,4 +173,10 @@ export default {
   // Beads Chart
   transformBeadsChartSeries,
   filterBedroomDatasets,
+  // Z-Score Oscillator
+  transformOscillatorSeries,
+  calculateZScoreStats,
+  getZScoreLabel,
+  getZScoreShortLabel,
+  getZScoreColor,
 };

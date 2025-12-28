@@ -57,6 +57,12 @@ export {
   // Beads Chart
   transformBeadsChartSeries,
   filterBedroomDatasets,
+  // Z-Score Oscillator
+  transformOscillatorSeries,
+  calculateZScoreStats,
+  getZScoreLabel,
+  getZScoreShortLabel,
+  getZScoreColor,
 } from './aggregate';
 
 // Re-export default for backwards compatibility
