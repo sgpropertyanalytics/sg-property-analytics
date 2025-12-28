@@ -130,23 +130,115 @@ Skeleton and empty states MUST occupy the same height as the data-loaded state.
 </div>
 ```
 
-### INV-7: Chart Wrapper Has Bounded Height
+### INV-7: Chart Wrapper Has CAPPED Height (Not minHeight)
 
-Every chart container MUST have an explicit height constraint from one of:
-- Direct `height` or `minHeight` style
-- `h-full` with ALL ancestors up to a height-constrained parent
-- `flex-1 min-h-0` inside a flex parent with `h-full`
+**CRITICAL:** Chart containers MUST have a **capped** height, NOT just a minimum.
 
-**Fail condition:** Chart uses `height: 100%` but no ancestor defines height → infinite expansion.
+**Why:** `minHeight` allows infinite growth. Charts react to container growth. This creates a feedback loop where the chart expands → container grows → chart expands again.
 
-**Check for layout feedback loops:**
-- Chart height changing >2 times per render cycle
-- ResizeObserver firing repeatedly
-- Y-axis domain recalculating on each render
+**Allowed:**
+```jsx
+style={{ height: 400 }}           // ✅ Fixed height
+className="h-[400px]"              // ✅ Fixed height
+style={{ height: 400, maxHeight: 500 }}  // ✅ Capped range
+```
+
+**Forbidden on chart containers:**
+```jsx
+style={{ minHeight: 400 }}         // ❌ Allows infinite growth
+className="min-h-[400px]"          // ❌ Allows infinite growth
+className="h-full"                 // ❌ Unless ancestor has capped height
+```
+
+**Fail condition:** Chart container uses `minHeight` without `maxHeight` or `height`.
+
+### INV-8: h-full Requires Bounded Ancestor
+
+Never apply `h-full` unless the parent height is explicitly bounded.
+
+**Rule:** If a node has `h-full`, ALL ancestors up to a fixed-height container must have deterministic heights.
+
+**Invalid:**
+```jsx
+<div className="flex flex-col">
+  <div className="h-full">  {/* ❌ Parent has no height */}
+```
+
+**Valid:**
+```jsx
+<div className="h-[420px] flex flex-col">
+  <div className="h-full">  {/* ✅ Parent has fixed height */}
+```
+
+**Valid (flex chain):**
+```jsx
+<div className="h-screen flex flex-col">
+  <div className="flex-1 min-h-0 flex flex-col">
+    <div className="h-full">  {/* ✅ Bounded by h-screen ancestor */}
+```
+
+**Fail condition:** `h-full` where no ancestor defines height → infinite expansion.
+
+### INV-9: space-y-* + h-full Is Illegal
+
+This combination is dangerous because:
+- `space-y-*` uses margins (not layout context)
+- `h-full` requires layout constraints
+- Together they create phantom space that can't be filled
+
+**Rule:** If `h-full` exists in a child, parent MUST be `flex` or `grid`, NEVER `space-y-*`.
+
+**Invalid:**
+```jsx
+<div className="space-y-4">
+  <div className="h-full">  {/* ❌ space-y is margin-based */}
+```
+
+**Valid:**
+```jsx
+<div className="flex flex-col gap-4 h-full">
+  <div className="flex-1 min-h-0">  {/* ✅ flex distributes height */}
+```
+
+**Fail condition:** Child has `h-full` or `flex-1` inside `space-y-*` parent.
 
 ---
 
-## 3. ROOT CAUSE DIAGNOSIS FLOW
+## 3. FORBIDDEN LAYOUT MUTATIONS
+
+The UI Layout Validator MUST NOT suggest or apply these fixes:
+
+### ❌ Never Do
+
+| Mutation | Why It's Dangerous |
+|----------|-------------------|
+| Apply `h-full` without verifying ancestor height | Creates infinite expansion |
+| Replace `height` with `minHeight` on charts | Removes cap → feedback loop |
+| Apply stretch behavior inside `space-y-*` | Margins don't distribute height |
+| Add `flex-1` without `min-h-0` | Content pushes height unbounded |
+| Use `auto-rows-fr` without `items-stretch` | Rows don't actually equalize |
+
+### ✅ Required Checks Before Applying Any Layout Fix
+
+1. **Verify parent has bounded height**
+   - Fixed: `h-[X]`, `h-screen`, `style={{ height }}`
+   - Flex chain: every ancestor to root has `flex-1 min-h-0` or fixed height
+
+2. **Verify child is not a chart/canvas**
+   - Charts need CAPPED height, not flexible
+   - Never suggest `h-full` or `flex-1` directly on chart containers
+
+3. **Verify layout uses flex/grid, not margins**
+   - Parent must be `flex` or `grid`
+   - Never `space-y-*` with height-dependent children
+
+4. **Verify no infinite height propagation**
+   - Every `h-full` must terminate at a fixed ancestor
+   - Every `flex-1` must have `min-h-0` sibling class
+
+---
+
+## 4. ROOT CAUSE DIAGNOSIS FLOW
 
 When cards/panels are misaligned, follow this decision tree:
 
@@ -197,7 +289,7 @@ Q: Do loading/empty states match data state height?
 
 ---
 
-## 4. FIX HIERARCHY
+## 5. FIX HIERARCHY
 
 **Rule:** Fix shared primitives FIRST. Never apply per-card hacks.
 
@@ -237,7 +329,7 @@ Q: Do loading/empty states match data state height?
 
 ---
 
-## 5. PROGRAMMATIC CHECK SPEC
+## 6. PROGRAMMATIC CHECK SPEC
 
 ### Sibling Height Variance Check
 
@@ -296,7 +388,7 @@ THRESHOLD: 4px
 
 ---
 
-## 6. OVERFLOW SAFETY STRATEGY
+## 7. OVERFLOW SAFETY STRATEGY
 
 **Rule:** NEVER allow horizontal scroll at any viewport.
 
@@ -360,7 +452,7 @@ Apply at **page shell** and **card shell** only.
 
 ---
 
-## 7. RESPONSIVE BREAKPOINT MATRIX
+## 8. RESPONSIVE BREAKPOINT MATRIX
 
 ### Required Viewports to Verify
 
@@ -391,7 +483,7 @@ Refer to `dashboard-layout` skill for canonical patterns:
 
 ---
 
-## 8. CONTAINER CONSTRAINTS
+## 9. CONTAINER CONSTRAINTS
 
 ### Chart Wrapper Requirements
 
@@ -418,7 +510,7 @@ Required components vary by chart type. Check that controller, elements, and sca
 
 ---
 
-## 9. VISUAL ROBUSTNESS TESTS
+## 10. VISUAL ROBUSTNESS TESTS
 
 ### Long Label Handling
 
@@ -453,7 +545,7 @@ Refer to `dashboard-design` skill for empty state pattern. Verify:
 
 ---
 
-## 10. ANTI-PATTERNS TO FLAG
+## 11. ANTI-PATTERNS TO FLAG
 
 ### Immediate Rejects (Blocker)
 
@@ -484,7 +576,7 @@ className="grid-cols-5"  // May overflow on mobile
 
 ---
 
-## 11. VALIDATION WORKFLOW
+## 12. VALIDATION WORKFLOW
 
 ### Step 1: Identify Target Files
 
@@ -527,7 +619,7 @@ Output findings with required fields (see output format).
 
 ---
 
-## 12. OUTPUT FORMAT
+## 13. OUTPUT FORMAT
 
 ### Required Fields Per Issue
 
@@ -606,7 +698,7 @@ Output findings with required fields (see output format).
 
 ---
 
-## 13. QUICK REFERENCE CHECKLIST
+## 14. QUICK REFERENCE CHECKLIST
 
 ### Before Marking Component Complete
 
@@ -637,7 +729,7 @@ ROBUSTNESS:
 
 ---
 
-## 14. INTEGRATION WITH OTHER TOOLS
+## 15. INTEGRATION WITH OTHER TOOLS
 
 ### When to Hand Off
 
