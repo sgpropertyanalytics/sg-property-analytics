@@ -1,23 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
+import React, { useState, lazy, Suspense } from 'react';
+import { PowerBIFilterProvider, usePowerBIFilters, TIME_GROUP_BY } from '../context/PowerBIFilterContext';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { BeadsChart } from '../components/powerbi/BeadsChart';
 // NewVsResaleChart moved to Primary Market page
-import { PriceCompressionChart } from '../components/powerbi/PriceCompressionChart';
 import { SaleType } from '../schemas/apiContract';
-import { AbsolutePsfChart } from '../components/powerbi/AbsolutePsfChart';
-import { MarketValueOscillator } from '../components/powerbi/MarketValueOscillator';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TimeGranularityToggle } from '../components/powerbi/TimeGranularityToggle';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
-import { getKpiSummaryV2 } from '../api/client';
+import { getKpiSummaryV2, getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
+import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
 import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
-import { useChartHeight, MOBILE_CAPS } from '../hooks';
+import { useChartHeight, MOBILE_CAPS, useAbortableQuery } from '../hooks';
+
+// Lazy-loaded below-fold charts (reduces initial bundle by ~150KB)
+// These charts are not immediately visible and can load on demand
+const PriceCompressionChart = lazy(() => import('../components/powerbi/PriceCompressionChart').then(m => ({ default: m.PriceCompressionChart })));
+const AbsolutePsfChart = lazy(() => import('../components/powerbi/AbsolutePsfChart').then(m => ({ default: m.AbsolutePsfChart })));
+const MarketValueOscillator = lazy(() => import('../components/powerbi/MarketValueOscillator').then(m => ({ default: m.MarketValueOscillator })));
+
+// Lazy loading fallback - matches chart container style
+const ChartLoadingFallback = ({ height }) => (
+  <div
+    className="bg-white rounded-lg border border-gray-200 animate-pulse flex items-center justify-center"
+    style={{ height: height || 380 }}
+  >
+    <div className="text-gray-400 text-sm">Loading chart...</div>
+  </div>
+);
 
 /**
  * Macro Overview Page - Power BI-style Dashboard (Market Core)
@@ -48,7 +62,7 @@ const SALE_TYPE = SaleType.RESALE;
 
 export function MacroOverviewContent() {
   const { apiMetadata } = useData();
-  const { filters } = usePowerBIFilters();
+  const { filters, buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
@@ -62,51 +76,55 @@ export function MacroOverviewContent() {
   const oscillatorHeight = useChartHeight(420, MOBILE_CAPS.tall);         // 420px desktop, max 320px mobile (full-width chart)
 
   // Summary KPIs - Deal detection metrics with trend indicators
-  // Uses v2 standardized API format
+  // Uses v2 standardized API format with useAbortableQuery for stale request protection
   // Reacts to: Location filters (district, bedroom, segment)
   // Ignores: Date range filters (always shows "current market" status)
-  const [kpis, setKpis] = useState({ items: [], loading: true });
-
-  // Fetch KPIs using v2 standardized API
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchKpis = async () => {
-      try {
-        setKpis(prev => ({ ...prev, loading: true }));
-
-        // Build location/property filters (react to sidebar, but NOT date range)
-        const params = {};
-        if (filters.districts?.length > 0) {
-          params.district = filters.districts.join(',');
-        }
-        if (filters.bedroomTypes?.length > 0) {
-          params.bedroom = filters.bedroomTypes.join(',');
-        }
-        if (filters.segment) {
-          params.segment = filters.segment;
-        }
-
-        // Single API call for all KPI metrics (v2 format)
-        const response = await getKpiSummaryV2(params, { signal: controller.signal });
-
-        setKpis({
-          items: response.data.kpis || [],
-          loading: false,
-        });
-      } catch (err) {
-        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
-        console.error('Error fetching KPIs:', err);
-        setKpis(prev => ({ ...prev, loading: false }));
+  const { data: kpiData, loading: kpisLoading } = useAbortableQuery(
+    async (signal) => {
+      // Build location/property filters (react to sidebar, but NOT date range)
+      const params = {};
+      if (filters.districts?.length > 0) {
+        params.district = filters.districts.join(',');
       }
-    };
+      if (filters.bedroomTypes?.length > 0) {
+        params.bedroom = filters.bedroomTypes.join(',');
+      }
+      if (filters.segment) {
+        params.segment = filters.segment;
+      }
 
-    fetchKpis();
-    return () => controller.abort();
-  }, [filters.districts, filters.bedroomTypes, filters.segment]); // Re-fetch when location filters change
+      // Single API call for all KPI metrics (v2 format)
+      const response = await getKpiSummaryV2(params, { signal });
+      return response.data.kpis || [];
+    },
+    [filters.districts, filters.bedroomTypes, filters.segment],
+    { initialData: [], keepPreviousData: true }
+  );
+
+  // Backwards-compatible kpis object for getKpi helper
+  const kpis = { items: kpiData, loading: kpisLoading };
 
   // Helper to get KPI by ID from the array
   const getKpi = (kpiId) => kpis.items.find(k => k.kpi_id === kpiId);
+
+  // SHARED DATA FETCH: Compression/Absolute PSF charts use identical API call
+  // Hoisted to parent to eliminate duplicate request (W4 performance fix)
+  // Both PriceCompressionChart and AbsolutePsfChart consume this data
+  const { data: compressionData, loading: compressionLoading } = useAbortableQuery(
+    async (signal) => {
+      const params = buildApiParams({
+        group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
+        metrics: 'median_psf,count',
+        sale_type: SALE_TYPE,
+      }, { excludeOwnDimension: 'segment' });
+
+      const response = await getAggregate(params, { signal });
+      const rawData = response.data?.data || [];
+      return transformCompressionSeries(rawData, timeGrouping);
+    },
+    [debouncedFilterKey, timeGrouping],
+    { initialData: [], keepPreviousData: true }
+  );
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
     setModalTitle(title);
@@ -316,24 +334,43 @@ export function MacroOverviewContent() {
 
                 {/* Market Compression + Absolute PSF - Side by side (Watermarked for free users) */}
                 {/* Desktop/Tablet: 50/50 grid | Mobile: Stacked */}
+                {/* Lazy-loaded with Suspense for faster initial page load */}
+                {/* SHARED DATA: Both charts receive pre-fetched compressionData (W4 fix) */}
                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <ErrorBoundary name="Price Compression" compact>
                     <ChartWatermark>
-                      <PriceCompressionChart height={compressionHeight} saleType={SALE_TYPE} />
+                      <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
+                        <PriceCompressionChart
+                          height={compressionHeight}
+                          saleType={SALE_TYPE}
+                          sharedData={compressionData}
+                          sharedLoading={compressionLoading}
+                        />
+                      </Suspense>
                     </ChartWatermark>
                   </ErrorBoundary>
                   <ErrorBoundary name="Absolute PSF" compact>
                     <ChartWatermark>
-                      <AbsolutePsfChart height={compressionHeight} saleType={SALE_TYPE} />
+                      <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
+                        <AbsolutePsfChart
+                          height={compressionHeight}
+                          saleType={SALE_TYPE}
+                          sharedData={compressionData}
+                          sharedLoading={compressionLoading}
+                        />
+                      </Suspense>
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>
 
                 {/* Market Value Oscillator - Full width, Z-score normalized spread analysis */}
+                {/* Lazy-loaded with Suspense for faster initial page load */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Market Value Oscillator" compact>
                     <ChartWatermark>
-                      <MarketValueOscillator height={oscillatorHeight} saleType={SALE_TYPE} />
+                      <Suspense fallback={<ChartLoadingFallback height={oscillatorHeight} />}>
+                        <MarketValueOscillator height={oscillatorHeight} saleType={SALE_TYPE} />
+                      </Suspense>
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>

@@ -59,8 +59,14 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * - Local drill: Year → Quarter → Month (visual-local only)
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
+ *
+ * @param {Object} props
+ * @param {number} [props.height=380] - Chart height in pixels
+ * @param {string} [props.saleType=null] - Sale type filter from page level
+ * @param {Array} [props.sharedData=null] - Pre-fetched data from parent (skips internal fetch if provided)
+ * @param {boolean} [props.sharedLoading=false] - Loading state from parent when using sharedData
  */
-export function PriceCompressionChart({ height = 380, saleType = null }) {
+export function PriceCompressionChart({ height = 380, saleType = null, sharedData = null, sharedLoading = false }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
@@ -68,6 +74,9 @@ export function PriceCompressionChart({ height = 380, saleType = null }) {
 
   // UI state (not data state - that comes from useAbortableQuery)
   const chartRef = useRef(null);
+
+  // Skip internal fetch if parent provides sharedData (eliminates duplicate API call)
+  const useSharedData = sharedData !== null;
 
   // Defer fetch until chart is visible (low priority - below the fold)
   // IMPORTANT: filterKey must include ALL state that affects the query data
@@ -95,11 +104,12 @@ export function PriceCompressionChart({ height = 380, saleType = null }) {
       return calculateHistoricalBaseline(transformed);
     },
     [], // Empty deps = fetch once on mount
-    { initialData: { min: 0, max: 1000 }, enabled: shouldFetch, keepPreviousData: true }
+    { initialData: { min: 0, max: 1000 }, enabled: shouldFetch && !useSharedData, keepPreviousData: true }
   );
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data, loading, error, refetch } = useAbortableQuery(
+  // Skip if parent provides sharedData (W4 fix: eliminates duplicate API call with AbsolutePsfChart)
+  const { data: internalData, loading: internalLoading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison
@@ -128,8 +138,12 @@ export function PriceCompressionChart({ height = 380, saleType = null }) {
       return transformCompressionSeries(rawData, timeGrouping);
     },
     [debouncedFilterKey, timeGrouping, saleType],
-    { initialData: [], enabled: shouldFetch, keepPreviousData: true }
+    { initialData: [], enabled: shouldFetch && !useSharedData, keepPreviousData: true }
   );
+
+  // Use shared data from parent if provided, otherwise use internal fetch
+  const data = useSharedData ? sharedData : internalData;
+  const loading = useSharedData ? sharedLoading : internalLoading;
 
 
   // Computed values - use historical baseline for stable min/max
