@@ -11,6 +11,7 @@ This is a THIN route handler - all business logic is in services/supply_service.
 
 import time
 from flask import Blueprint, request, jsonify
+from api.contracts.wrapper import api_contract
 
 supply_bp = Blueprint('supply', __name__)
 
@@ -27,6 +28,7 @@ def add_contract_version_header(response):
 
 
 @supply_bp.route("/summary", methods=["GET"])
+@api_contract("supply/summary")
 def get_supply_summary():
     """
     Get aggregated supply pipeline data for waterfall visualization.

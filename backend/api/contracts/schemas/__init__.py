@@ -12,5 +12,6 @@ from . import dashboard
 from . import filter_options
 from . import transactions
 from . import insights
+from . import supply
 
-__all__ = ['aggregate', 'kpi_summary', 'dashboard', 'filter_options', 'transactions', 'insights']
+__all__ = ['aggregate', 'kpi_summary', 'dashboard', 'filter_options', 'transactions', 'insights', 'supply']

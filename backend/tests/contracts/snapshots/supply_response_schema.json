@@ -1,0 +1,8 @@
+{
+  "supply_summary": {
+    "response_structure": "byRegion + byDistrict + totals + meta objects",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "_version": "v3",
+  "_created": "2025-12-28"
+}
