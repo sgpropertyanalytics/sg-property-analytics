@@ -7,7 +7,7 @@ import {
   BEDROOM_THRESHOLDS_TIER3,
   BEDROOM_ORDER_NUMERIC,
 } from '../../constants';
-import { SaleType, SaleTypeLabels } from '../../schemas/apiContract';
+// SaleType filter removed - Market Core is Resale-only
 
 /**
  * Power BI-style Filter Sidebar
@@ -24,7 +24,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
     setDistricts,
     toggleBedroomType,
     toggleSegment,
-    setSaleType,
     resetFilters,
   } = usePowerBIFilters();
 
@@ -424,44 +423,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
               Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
             </div>
           )}
-        </FilterSection>
-
-        {/* Sale Type Section */}
-        <FilterSection
-          title="Sale Type"
-          icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          }
-          expanded={expandedSections.propertyDetails}
-          onToggle={() => toggleSection('propertyDetails')}
-          activeCount={filters.saleType ? 1 : 0}
-        >
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { value: null, label: 'All' },
-              { value: SaleType.NEW_SALE, label: SaleTypeLabels[SaleType.NEW_SALE] },
-              { value: SaleType.RESALE, label: SaleTypeLabels[SaleType.RESALE] },
-            ].map(option => {
-              const isSelected = filters.saleType === option.value;
-
-              return (
-                <button
-                  type="button"
-                  key={option.value ?? 'all'}
-                  onClick={(e) => { e.preventDefault(); setSaleType(option.value); }}
-                  className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
-                    isSelected
-                      ? 'bg-[#547792] text-white border-[#547792]'
-                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
         </FilterSection>
       </div>
 

@@ -59,9 +59,11 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
       // Use dashboard endpoint with price_histogram panel
       // excludeLocationDrill: true - Price Distribution should NOT be affected by
       // location drill (Power BI best practice: Drill ≠ Filter, drill is visual-local)
+      // Market Core is Resale-only - explicit page-level enforcement
       const params = buildApiParams({
         panels: 'price_histogram',
         histogram_bins: numBins,
+        sale_type: 'Resale',
         // Only send show_full_range when true (backend defaults to false)
         ...(showFullRange && { show_full_range: 'true' })
       }, { excludeLocationDrill: true });

@@ -51,8 +51,9 @@ export function BeadsChart({ height = 300 }) {
   // Data fetching with useAbortableQuery
   const { data: chartData, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
+      // Market Core is Resale-only - explicit page-level enforcement
       const params = buildApiParams(
-        { panels: 'beads_chart' },
+        { panels: 'beads_chart', sale_type: 'Resale' },
         { excludeLocationDrill: true }
       );
 

@@ -39,6 +39,7 @@ export const AggField = {
   TOTAL_UNITS: 'totalUnits',      // v1: total_units
   TOTAL_UNITS_SOURCE: 'totalUnitsSource',    // v1: total_units_source
   TOTAL_UNITS_CONFIDENCE: 'totalUnitsConfidence', // v1: total_units_confidence
+  TOP_YEAR: 'topYear',            // v1: top_year - TOP year for age calculation
 };
 
 // =============================================================================
@@ -66,6 +67,7 @@ const V1_AGG_FIELD_MAP = {
   totalUnits: 'total_units',
   totalUnitsSource: 'total_units_source',
   totalUnitsConfidence: 'total_units_confidence',
+  topYear: 'top_year',
 };
 
 // =============================================================================

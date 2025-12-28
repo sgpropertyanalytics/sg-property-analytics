@@ -19,7 +19,7 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
-import { SaleType, SaleTypeLabels } from '../../schemas/apiContract';
+// SaleType imports removed - Market Core is Resale-only
 import { transformTimeSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
 
 ChartJS.register(
@@ -55,9 +55,12 @@ export function TimeTrendChart({ height = 300 }) {
   // useAbortableQuery handles: abort controller, stale request protection, loading/error states
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
+      // Market Core is Resale-only - explicit page-level enforcement
+      // See CLAUDE.md "Business Logic Enforcement" for architectural rationale
       const params = buildApiParams({
-        group_by: `${TIME_GROUP_BY[timeGrouping]},sale_type`,
-        metrics: 'count,total_value'
+        group_by: TIME_GROUP_BY[timeGrouping],
+        metrics: 'count,total_value',
+        sale_type: 'Resale',
       });
 
       const response = await getAggregate(params, { signal });
@@ -83,15 +86,14 @@ export function TimeTrendChart({ height = 300 }) {
     { initialData: [] }
   );
 
-  // Use the time grain that matches the current data to avoid "Unknown" labels during drill transitions
+  // Market Core is Resale-only - single transaction count bar + total value line
   const labels = data.map(d => d.period ?? '');
-  const newSaleCounts = data.map(d => d.newSaleCount || 0);
-  const resaleCounts = data.map(d => d.resaleCount || 0);
-  const totalCounts = data.map(d => d.totalCount || 0);
+  // Since we're Resale-only, totalCount IS the resale count (no sale_type grouping)
+  const transactionCounts = data.map(d => d.totalCount || 0);
   const totalValues = data.map(d => d.totalValue || 0);
 
-  // Find peak values for gradient coloring
-  const maxCount = Math.max(...totalCounts, 1);
+  // Find peak values for axis scaling
+  const maxCount = Math.max(...transactionCounts, 1);
 
   // Extend y axis (count) slightly to leave room for line above
   const yAxisMax = Math.ceil(maxCount * 1.4); // Bars occupy ~70% of chart height
@@ -101,24 +103,12 @@ export function TimeTrendChart({ height = 300 }) {
     datasets: [
       {
         type: 'bar',
-        label: SaleTypeLabels[SaleType.NEW_SALE],
-        data: newSaleCounts,
-        backgroundColor: 'rgba(33, 52, 72, 0.9)',  // Deep Navy #213448
-        borderColor: 'rgba(33, 52, 72, 1)',
-        borderWidth: 1,
-        yAxisID: 'y',
-        stack: 'transactions',
-        order: 2,
-      },
-      {
-        type: 'bar',
-        label: SaleTypeLabels[SaleType.RESALE],
-        data: resaleCounts,
+        label: 'Resale Transactions',
+        data: transactionCounts,
         backgroundColor: 'rgba(84, 119, 146, 0.9)',  // Ocean Blue #547792
         borderColor: 'rgba(84, 119, 146, 1)',
         borderWidth: 1,
         yAxisID: 'y',
-        stack: 'transactions',
         order: 2,
       },
       {
@@ -169,21 +159,11 @@ export function TimeTrendChart({ height = 300 }) {
             }
             return `${label}: ${value.toLocaleString()}`;
           },
-          afterBody: (tooltipItems) => {
-            // Show total transaction count after the individual items
-            const index = tooltipItems[0]?.dataIndex;
-            if (index !== undefined && data[index]) {
-              const total = data[index].totalCount;
-              return [`Total: ${total.toLocaleString()}`];
-            }
-            return [];
-          },
         },
       },
     },
     scales: {
       x: {
-        stacked: true,  // Enable stacking on x-axis for bar grouping
         grid: {
           display: false,
         },
@@ -196,7 +176,6 @@ export function TimeTrendChart({ height = 300 }) {
         type: 'linear',
         display: true,
         position: 'left',
-        stacked: true,  // Enable stacking for New Sale + Resale bars
         max: yAxisMax, // Extended max to push bars lower, leaving room for line above
         title: {
           display: true,

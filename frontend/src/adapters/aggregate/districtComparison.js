@@ -2,30 +2,38 @@
  * District Comparison Transformations
  *
  * Transforms /api/aggregate responses for the district comparison chart.
- * Filters projects by minimum unit count and highlights selected project.
+ * Groups projects by age bucket, with selected project's age cohort first.
  *
  * Used by: DistrictComparisonChart on Project Deep Dive page
  */
 
 import { isDev } from './validation';
 import { getAggField, AggField } from '../../schemas/apiContract';
+import { getAgeBandKey, AGE_BAND_LABELS_SHORT } from '../../constants';
 
 // Minimum units threshold for non-boutique projects
 const DEFAULT_MIN_UNITS = 100;
 
+// Age band order (newest to oldest)
+const AGE_BAND_ORDER = ['new_sale', 'recently_top', 'young_resale', 'resale', 'mature_resale', 'unknown'];
+
 /**
  * Transform raw aggregate data for district comparison horizontal bar chart.
  *
- * Filters projects to >= minUnits OR selected project, sorts by median PSF descending,
- * and marks the selected project for highlighting.
+ * Groups projects by age band, shows selected project's age cohort first,
+ * then other age buckets ordered by age (newest → oldest).
+ * Within each bucket: sorted by median PSF descending.
  *
  * @param {Object} apiResponse - Raw API response from /api/aggregate
  * @param {string} selectedProjectName - The project to highlight
  * @param {number} minUnits - Minimum units threshold (default 100)
  * @returns {Object} Transformed data:
  *   {
- *     projects: [{ projectName, medianPsf, count, totalUnits, isSelected, isBoutique }, ...],
- *     stats: { maxPsf, minPsf, projectCount, selectedRank }
+ *     groups: [
+ *       { band, label, isSelectedBand, projects: [...] },
+ *       ...
+ *     ],
+ *     stats: { maxPsf, minPsf, projectCount, selectedRank, selectedAgeBand }
  *   }
  */
 export const transformDistrictComparison = (apiResponse, selectedProjectName, minUnits = DEFAULT_MIN_UNITS) => {
@@ -34,17 +42,19 @@ export const transformDistrictComparison = (apiResponse, selectedProjectName, mi
   if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
     if (isDev) console.warn('[transformDistrictComparison] Empty or invalid input');
     return {
-      projects: [],
+      groups: [],
       stats: {
         maxPsf: 0,
         minPsf: 0,
         projectCount: 0,
         selectedRank: null,
+        selectedAgeBand: null,
       },
     };
   }
 
   const normalizedSelected = selectedProjectName?.toUpperCase()?.trim();
+  const currentYear = new Date().getFullYear();
 
   // Filter: >= minUnits OR is selected project
   const filtered = rawData.filter((row) => {
@@ -65,20 +75,21 @@ export const transformDistrictComparison = (apiResponse, selectedProjectName, mi
     return count >= 10;
   });
 
-  // Sort by median PSF descending
-  const sorted = [...filtered].sort((a, b) => {
-    const psfA = getAggField(a, AggField.MEDIAN_PSF) || 0;
-    const psfB = getAggField(b, AggField.MEDIAN_PSF) || 0;
-    return psfB - psfA;
-  });
-
-  // Transform to output structure
-  const projects = sorted.map((row) => {
+  // Classify each project with age band
+  const classified = filtered.map((row) => {
     const projectName = getAggField(row, AggField.PROJECT);
+    const topYear = getAggField(row, AggField.TOP_YEAR);
     const totalUnits = getAggField(row, AggField.TOTAL_UNITS);
     const normalizedProject = projectName?.toUpperCase()?.trim();
     const isSelected = normalizedProject === normalizedSelected;
     const isBoutique = totalUnits !== null && totalUnits !== undefined && totalUnits < minUnits;
+
+    // Calculate age and determine age band
+    const age = topYear ? currentYear - topYear : null;
+    // For age band classification: isFreehold=false, isNewSale=false since we're
+    // classifying by property age, not transaction type
+    const ageBand = getAgeBandKey(age, false, false) || 'unknown';
+    const ageBandLabel = AGE_BAND_LABELS_SHORT[ageBand] || 'Unknown Age';
 
     return {
       projectName,
@@ -87,27 +98,64 @@ export const transformDistrictComparison = (apiResponse, selectedProjectName, mi
       totalUnits,
       totalUnitsSource: getAggField(row, AggField.TOTAL_UNITS_SOURCE),
       totalUnitsConfidence: getAggField(row, AggField.TOTAL_UNITS_CONFIDENCE),
+      topYear,
+      age,
+      ageBand,
+      ageBandLabel,
       isSelected,
       isBoutique,
     };
   });
 
+  // Find selected project's age band
+  const selectedProject = classified.find((p) => p.isSelected);
+  const selectedAgeBand = selectedProject?.ageBand || null;
+
+  // Group by age band
+  const groupedMap = AGE_BAND_ORDER.reduce((acc, band) => {
+    const projectsInBand = classified
+      .filter((p) => p.ageBand === band)
+      .sort((a, b) => (b.medianPsf || 0) - (a.medianPsf || 0));
+
+    if (projectsInBand.length > 0) {
+      acc.push({
+        band,
+        label: AGE_BAND_LABELS_SHORT[band] || 'Unknown Age',
+        isSelectedBand: band === selectedAgeBand,
+        projects: projectsInBand,
+      });
+    }
+    return acc;
+  }, []);
+
+  // Reorder: selected band first, then others in age order
+  const selectedGroup = groupedMap.find((g) => g.isSelectedBand);
+  const otherGroups = groupedMap.filter((g) => !g.isSelectedBand);
+  const groups = selectedGroup ? [selectedGroup, ...otherGroups] : otherGroups;
+
   // Calculate stats
-  const psfValues = projects.map((p) => p.medianPsf).filter((v) => v != null);
+  const allProjects = classified;
+  const psfValues = allProjects.map((p) => p.medianPsf).filter((v) => v != null);
   const maxPsf = psfValues.length > 0 ? Math.max(...psfValues) : 0;
   const minPsf = psfValues.length > 0 ? Math.min(...psfValues) : 0;
 
-  // Find selected project rank (1-indexed)
-  const selectedIndex = projects.findIndex((p) => p.isSelected);
-  const selectedRank = selectedIndex >= 0 ? selectedIndex + 1 : null;
+  // Find selected project rank within its age band (1-indexed)
+  let selectedRank = null;
+  if (selectedGroup && selectedProject) {
+    const rankInBand = selectedGroup.projects.findIndex((p) => p.isSelected);
+    selectedRank = rankInBand >= 0 ? rankInBand + 1 : null;
+  }
 
   return {
-    projects,
+    groups,
     stats: {
       maxPsf,
       minPsf,
-      projectCount: projects.length,
+      projectCount: allProjects.length,
       selectedRank,
+      selectedAgeBand,
+      selectedAgeBandLabel: selectedAgeBand ? (AGE_BAND_LABELS_SHORT[selectedAgeBand] || 'Unknown Age') : null,
+      groupCount: groups.length,
     },
   };
 };

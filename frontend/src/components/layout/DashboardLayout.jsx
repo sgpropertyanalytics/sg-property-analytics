@@ -36,17 +36,18 @@ function ContentLoadingFallback() {
  * - Mobile: Both sidebars hidden, hamburger menu + filter button
  *
  * Sidebar Behavior by Page:
- * - Market Pulse: Filter sidebar VISIBLE (Power BI filters for analytics)
+ * - Market Core: Filter sidebar VISIBLE (Power BI filters for analytics)
  * - All Other Pages: Filter sidebar HIDDEN (full-width canvas)
  *
- * NOTE: The Power BI filter functionality is specific to Market Pulse.
+ * NOTE: The Power BI filter functionality is specific to Market Core.
  * Other pages get a clean, full-width canvas for their content.
  */
 
 // Page configurations for sidebar behavior
-// Only Market Pulse uses the Power BI filter sidebar
+// Only Market Core uses the Power BI filter sidebar
 const PAGE_CONFIG = {
-  'market-pulse': { showFilterSidebar: true },
+  'market-core': { showFilterSidebar: true },
+  'primary-market': { showFilterSidebar: false },
   'value-parity': { showFilterSidebar: false },
   'floor-dispersion': { showFilterSidebar: false },
   'district-deep-dive': { showFilterSidebar: false },
@@ -64,19 +65,20 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
   // Determine active page from URL or prop
   const getActivePageFromPath = (pathname) => {
     // Map paths to page IDs
-    if (pathname.startsWith('/market-pulse') || pathname === '/analytics' || pathname === '/') {
-      return 'market-pulse';
+    if (pathname.startsWith('/market-core') || pathname === '/analytics' || pathname === '/') {
+      return 'market-core';
     }
+    if (pathname.startsWith('/primary-market')) return 'primary-market';
     if (pathname.startsWith('/value-parity')) return 'value-parity';
     if (pathname.startsWith('/floor-dispersion')) return 'floor-dispersion';
     if (pathname.startsWith('/district-deep-dive')) return 'district-deep-dive';
     if (pathname.startsWith('/project-deep-dive')) return 'project-deep-dive';
     if (pathname.startsWith('/supply-insights')) return 'supply-insights';
-    return 'market-pulse';
+    return 'market-core';
   };
 
   const activePage = propActivePage || getActivePageFromPath(location.pathname);
-  const pageConfig = PAGE_CONFIG[activePage] || PAGE_CONFIG['market-pulse'];
+  const pageConfig = PAGE_CONFIG[activePage] || PAGE_CONFIG['market-core'];
 
   // Sidebar states
   const [filterSidebarCollapsed, setFilterSidebarCollapsed] = useState(false);
@@ -228,7 +230,7 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
             <div className="mt-2 flex justify-center">
               <div className="inline-flex rounded-lg bg-[#547792]/20 px-3 py-1.5">
                 <span className="text-[#EAE0CF] text-xs font-medium">
-                  {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Market Pulse'}
+                  {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Market Core'}
                 </span>
               </div>
             </div>

@@ -45,10 +45,9 @@ const ValueParityPanel = lazyWithRetry(() =>
 const SupplyInsightsContent = lazyWithRetry(() =>
   import('./pages/SupplyInsights').then(m => ({ default: m.SupplyInsightsContent }))
 );
-// TODO: PrimaryMarket page not yet implemented
-// const PrimaryMarketContent = lazyWithRetry(() =>
-//   import('./pages/PrimaryMarket').then(m => ({ default: m.PrimaryMarketContent }))
-// );
+const PrimaryMarketContent = lazyWithRetry(() =>
+  import('./pages/PrimaryMarket').then(m => ({ default: m.PrimaryMarketContent }))
+);
 
 // Note: Loading fallback moved to DashboardLayout to keep nav rail persistent
 
@@ -100,7 +99,7 @@ function App() {
             <Route path="/market-core" element={<MacroOverviewContent />} />
 
             {/* Primary Market - New Sale vs Resale comparison (Lazy-loaded) */}
-            {/* <Route path="/primary-market" element={<PrimaryMarketContent />} /> */}
+            <Route path="/primary-market" element={<PrimaryMarketContent />} />
 
             {/* Value Parity Tool - No filter sidebar (Lazy-loaded) */}
             <Route

@@ -146,7 +146,8 @@ export function buildApiParamsFromState(
     }
   }
 
-  // Sale type
+  // Sale type - pass through from filters (page/chart layer enforces business rules)
+  // See CLAUDE.md "Business Logic Enforcement" for why this is NOT hardcoded here
   if (excludeOwnDimension !== 'sale_type' && activeFilters.saleType) {
     params.sale_type = activeFilters.saleType;
   }

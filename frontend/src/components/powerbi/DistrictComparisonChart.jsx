@@ -28,12 +28,14 @@ ChartJS.register(
   Legend
 );
 
-// Color palette
+// Color palette - age band differentiated
 const COLORS = {
-  selected: '#213448', // Navy - selected project
-  other: '#94B4C1',    // Sky - other projects
+  selected: '#213448',        // Navy - selected project
+  sameAgeBand: '#547792',     // Blue - same age cohort
+  otherBand: '#94B4C1',       // Sky - other age cohorts
   selectedHover: '#2d4660',
-  otherHover: '#a8c5d4',
+  sameAgeBandHover: '#6889a6',
+  otherBandHover: '#a8c5d4',
 };
 
 /**
@@ -42,7 +44,8 @@ const COLORS = {
  * "How Does This Project Compare?"
  *
  * Horizontal bar chart comparing the selected project's median PSF against
- * other projects in the same district (100+ units, excluding boutiques).
+ * other projects in the same district, grouped by age band.
+ * Shows selected project's age cohort first, then other age buckets.
  *
  * IMPORTANT: This component does NOT use PowerBIFilterContext.
  * It receives filters as props from the parent component (ProjectDeepDive).
@@ -69,7 +72,7 @@ export function DistrictComparisonChart({
   const { data: transformedData, loading, error } = useAbortableQuery(
     async (signal) => {
       if (!district) {
-        return { projects: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } };
+        return { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } };
       }
 
       const params = {
@@ -84,43 +87,93 @@ export function DistrictComparisonChart({
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/aggregate');
 
-      // Transform through adapter
+      // Transform through adapter - now returns grouped data
       return transformDistrictComparison(response.data, selectedProject, minUnits);
     },
     [filterKey, minUnits],
-    { initialData: { projects: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } } }
+    { initialData: { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } } }
   );
 
-  const { projects, stats } = transformedData || { projects: [], stats: {} };
+  const { groups, stats } = transformedData || { groups: [], stats: {} };
 
-  // Dynamic height based on project count
-  const chartHeight = propHeight || Math.max(300, Math.min(600, projects.length * 28));
+  // Calculate total projects for dynamic height
+  const totalProjects = groups.reduce((sum, g) => sum + g.projects.length, 0);
+  const sectionHeaders = groups.length;
+  const chartHeight = propHeight || Math.max(300, Math.min(800, (totalProjects * 28) + (sectionHeaders * 40)));
+
+  // Flatten groups into chart data with section breaks
+  const { labels, flatData, colors, hoverColors, projectMeta } = useMemo(() => {
+    const labels = [];
+    const flatData = [];
+    const colors = [];
+    const hoverColors = [];
+    const projectMeta = [];
+
+    groups.forEach((group, groupIndex) => {
+      // Add section header as a label (with empty bar)
+      if (groupIndex > 0) {
+        // Add visual separator between groups
+        labels.push('');
+        flatData.push(0);
+        colors.push('transparent');
+        hoverColors.push('transparent');
+        projectMeta.push({ isSeparator: true });
+      }
+
+      // Add group header label
+      const headerLabel = group.isSelectedBand
+        ? `▸ ${group.label} (Your Project's Age)`
+        : `▸ ${group.label}`;
+      labels.push(headerLabel);
+      flatData.push(0); // Empty bar for header
+      colors.push('transparent');
+      hoverColors.push('transparent');
+      projectMeta.push({ isHeader: true, group });
+
+      // Add projects in this group
+      group.projects.forEach((p) => {
+        labels.push(`   ${truncateProjectName(p.projectName, 26)}`);
+        flatData.push(p.medianPsf || 0);
+
+        // Color coding
+        if (p.isSelected) {
+          colors.push(COLORS.selected);
+          hoverColors.push(COLORS.selectedHover);
+        } else if (group.isSelectedBand) {
+          colors.push(COLORS.sameAgeBand);
+          hoverColors.push(COLORS.sameAgeBandHover);
+        } else {
+          colors.push(COLORS.otherBand);
+          hoverColors.push(COLORS.otherBandHover);
+        }
+        projectMeta.push({ project: p, group });
+      });
+    });
+
+    return { labels, flatData, colors, hoverColors, projectMeta };
+  }, [groups]);
 
   // Prepare Chart.js data
   const chartData = useMemo(() => {
-    if (!projects || projects.length === 0) {
+    if (labels.length === 0) {
       return { labels: [], datasets: [] };
     }
 
     return {
-      labels: projects.map((p) => truncateProjectName(p.projectName, 28)),
+      labels,
       datasets: [
         {
           label: 'Median PSF',
-          data: projects.map((p) => p.medianPsf || 0),
-          backgroundColor: projects.map((p) =>
-            p.isSelected ? COLORS.selected : COLORS.other
-          ),
-          hoverBackgroundColor: projects.map((p) =>
-            p.isSelected ? COLORS.selectedHover : COLORS.otherHover
-          ),
+          data: flatData,
+          backgroundColor: colors,
+          hoverBackgroundColor: hoverColors,
           borderWidth: 0,
           borderRadius: 4,
-          barPercentage: 0.8,
+          barPercentage: 0.75,
         },
       ],
     };
-  }, [projects]);
+  }, [labels, flatData, colors, hoverColors]);
 
   // Chart options
   const chartOptions = useMemo(() => ({
@@ -130,23 +183,28 @@ export function DistrictComparisonChart({
     plugins: {
       legend: { display: false },
       tooltip: {
+        filter: (tooltipItem) => {
+          // Don't show tooltip for headers and separators
+          const meta = projectMeta[tooltipItem.dataIndex];
+          return meta && !meta.isHeader && !meta.isSeparator && meta.project;
+        },
         callbacks: {
           label: (context) => {
-            const project = projects[context.dataIndex];
-            const psf = project?.medianPsf;
-            const count = project?.count;
-            const units = project?.totalUnits;
+            const meta = projectMeta[context.dataIndex];
+            if (!meta || !meta.project) return [];
 
-            const parts = [`Median PSF: $${psf?.toLocaleString() || 'N/A'}`];
-            if (count) parts.push(`Transactions: ${count}`);
-            if (units) parts.push(`Total Units: ${units}`);
-            if (project?.isBoutique) parts.push('(Boutique)');
+            const p = meta.project;
+            const parts = [`Median PSF: $${p.medianPsf?.toLocaleString() || 'N/A'}`];
+            if (p.count) parts.push(`Transactions: ${p.count}`);
+            if (p.totalUnits) parts.push(`Total Units: ${p.totalUnits}`);
+            if (p.age !== null) parts.push(`Age: ${p.age} years`);
+            if (p.isBoutique) parts.push('(Boutique)');
 
             return parts;
           },
           title: (tooltipItems) => {
-            const project = projects[tooltipItems[0]?.dataIndex];
-            return project?.projectName || '';
+            const meta = projectMeta[tooltipItems[0]?.dataIndex];
+            return meta?.project?.projectName || '';
           },
         },
         displayColors: false,
@@ -177,15 +235,20 @@ export function DistrictComparisonChart({
         grid: { display: false },
         ticks: {
           color: (context) => {
-            const project = projects[context.index];
-            return project?.isSelected ? COLORS.selected : '#64748b';
+            const meta = projectMeta[context.index];
+            if (meta?.isHeader) return '#374151'; // Gray-700 for headers
+            if (meta?.project?.isSelected) return COLORS.selected;
+            return '#64748b';
           },
           font: (context) => {
-            const project = projects[context.index];
-            return {
-              weight: project?.isSelected ? 'bold' : 'normal',
-              size: 11,
-            };
+            const meta = projectMeta[context.index];
+            if (meta?.isHeader) {
+              return { weight: 'bold', size: 12 };
+            }
+            if (meta?.project?.isSelected) {
+              return { weight: 'bold', size: 11 };
+            }
+            return { weight: 'normal', size: 11 };
           },
         },
       },
@@ -193,7 +256,7 @@ export function DistrictComparisonChart({
     layout: {
       padding: { left: 0, right: 20, top: 10, bottom: 10 },
     },
-  }), [projects]);
+  }), [projectMeta]);
 
   // Render
   return (
@@ -204,10 +267,15 @@ export function DistrictComparisonChart({
           How Does This Project Compare?
         </h3>
         <p className="text-xs text-gray-500 mt-0.5">
-          Median PSF vs. other projects in {district} (100+ units)
-          {stats.selectedRank && stats.projectCount && (
+          Median PSF vs. projects in {district}, grouped by age
+          {stats.selectedRank && stats.selectedAgeBandLabel && (
             <span className="ml-2 text-gray-700 font-medium">
-              #{stats.selectedRank} of {stats.projectCount}
+              #{stats.selectedRank} in {stats.selectedAgeBandLabel}
+            </span>
+          )}
+          {stats.projectCount > 0 && (
+            <span className="ml-2 text-gray-400">
+              ({stats.projectCount} projects, {stats.groupCount} age groups)
             </span>
           )}
         </p>
@@ -218,7 +286,7 @@ export function DistrictComparisonChart({
         <QueryState
           loading={loading}
           error={error}
-          isEmpty={!projects || projects.length === 0}
+          isEmpty={!groups || groups.length === 0}
           emptyMessage={`No projects with ${minUnits}+ units found in ${district}`}
           loadingHeight={chartHeight}
         >
@@ -228,9 +296,9 @@ export function DistrictComparisonChart({
         </QueryState>
       </div>
 
-      {/* Legend/footnote */}
-      {projects.length > 0 && !loading && (
-        <div className="px-4 pb-3 flex items-center gap-4 text-xs text-gray-500">
+      {/* Legend */}
+      {groups.length > 0 && !loading && (
+        <div className="px-4 pb-3 flex flex-wrap items-center gap-4 text-xs text-gray-500">
           <div className="flex items-center gap-1.5">
             <div
               className="w-3 h-3 rounded-sm"
@@ -241,9 +309,16 @@ export function DistrictComparisonChart({
           <div className="flex items-center gap-1.5">
             <div
               className="w-3 h-3 rounded-sm"
-              style={{ backgroundColor: COLORS.other }}
+              style={{ backgroundColor: COLORS.sameAgeBand }}
             />
-            <span>Other Projects</span>
+            <span>Same Age Cohort</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div
+              className="w-3 h-3 rounded-sm"
+              style={{ backgroundColor: COLORS.otherBand }}
+            />
+            <span>Other Age Cohorts</span>
           </div>
         </div>
       )}

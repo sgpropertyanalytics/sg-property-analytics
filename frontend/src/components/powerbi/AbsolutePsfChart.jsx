@@ -71,9 +71,11 @@ export function AbsolutePsfChart({ height = 300 }) {
   // Data fetching - same as PriceCompressionChart for consistency
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
+      // Market Core is Resale-only - explicit page-level enforcement
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
-        metrics: 'median_psf,count'
+        metrics: 'median_psf,count',
+        sale_type: 'Resale',
       });
 
       const response = await getAggregate(params, { signal });

@@ -3,7 +3,7 @@ import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilt
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { BeadsChart } from '../components/powerbi/BeadsChart';
-import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
+// NewVsResaleChart moved to Primary Market page
 import { PriceCompressionChart } from '../components/powerbi/PriceCompressionChart';
 import { AbsolutePsfChart } from '../components/powerbi/AbsolutePsfChart';
 import { MarketValueOscillator } from '../components/powerbi/MarketValueOscillator';
@@ -19,7 +19,7 @@ import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group } from '../com
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
 /**
- * Macro Overview Page - Power BI-style Dashboard (Market Pulse)
+ * Macro Overview Page - Power BI-style Dashboard (Market Core)
  *
  * Features:
  * - Dynamic filtering with sidebar controls
@@ -347,14 +347,6 @@ export function MacroOverviewContent() {
                   </ErrorBoundary>
                 </div>
 
-                {/* New Launch vs Resale Comparison - Full width (Watermarked for free users) */}
-                <div className="lg:col-span-2">
-                  <ErrorBoundary name="New vs Resale Chart" compact>
-                    <ChartWatermark>
-                      <NewVsResaleChart height={standardChartHeight} />
-                    </ChartWatermark>
-                  </ErrorBoundary>
-                </div>
               </div>
 
           </div>

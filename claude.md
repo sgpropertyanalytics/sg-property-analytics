@@ -138,11 +138,54 @@ classifyBedroomThreeTier(area, saleType, date)
 | Cross-filters | ALL charts |
 | Fact filters | Transaction table ONLY |
 
-- `usePowerBIFilters()` → Market Pulse page ONLY
+- `usePowerBIFilters()` → Market Core page ONLY
 - Other pages → receive filters as props
 - Each chart has LOCAL drill state
 - `buildApiParams()` for ALL API calls
 - Time X-axis → `excludeHighlight: true`
+
+## Business Logic Enforcement
+**Rule:** Enforce business constraints at the page/chart layer, NOT in shared utils.
+
+```
+Layer         │ Responsibility
+──────────────┼───────────────────────────────────────
+UI            │ Displays data
+Page/Chart    │ Declares data intent (e.g., resale-only)
+API           │ Enforces rules (safest for analytics)
+Utils         │ Pure helpers (no business logic)
+```
+
+**✅ CORRECT: Page-level enforcement**
+```jsx
+// MarketCoreChart.jsx - explicit, self-documenting
+const params = buildApiParams({
+  group_by: 'month',
+  sale_type: 'Resale',  // Market Core is resale-only
+});
+```
+
+**✅ BETTER: API-level enforcement (for critical analytics)**
+```python
+# backend/routes/market_core.py
+if route == "market_core":
+    params["sale_type"] = "resale"  # Backend guarantees integrity
+```
+
+**❌ WRONG: Hardcoded in utils**
+```js
+// utils.js - DON'T DO THIS
+export function buildApiParams(...) {
+  params.sale_type = 'Resale';  // Hidden, affects ALL pages
+}
+```
+
+**Why page-level is best:**
+- Explicit and self-documenting
+- Easy to override for different pages
+- Keeps utils reusable
+- Matches mental model ("this page is resale-only")
+- No hidden side effects
 
 ## Dates
 - UI date ranges must NEVER exceed today (clamp future dates)

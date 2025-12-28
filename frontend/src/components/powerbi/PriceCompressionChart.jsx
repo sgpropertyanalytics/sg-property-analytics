@@ -103,10 +103,11 @@ export function PriceCompressionChart({ height = 380 }) {
   // Data fetching with useAbortableQuery - automatic abort/stale handling
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
-      // Use global timeGrouping via TIME_GROUP_BY mapping
+      // Market Core is Resale-only - explicit page-level enforcement
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
-        metrics: 'median_psf,count'
+        metrics: 'median_psf,count',
+        sale_type: 'Resale',
       });
 
       const response = await getAggregate(params, { signal });

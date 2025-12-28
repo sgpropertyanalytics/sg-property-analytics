@@ -244,6 +244,9 @@ AGGREGATE_RESPONSE_SCHEMA = ResponseSchema(
         "total_units_source": FieldSpec(name="total_units_source", type=str, nullable=True),
         "totalUnitsConfidence": FieldSpec(name="totalUnitsConfidence", type=str, nullable=True),
         "total_units_confidence": FieldSpec(name="total_units_confidence", type=str, nullable=True),
+        # TOP year for age calculation (when group_by=project and metrics includes total_units)
+        "topYear": FieldSpec(name="topYear", type=int, nullable=True),
+        "top_year": FieldSpec(name="top_year", type=int, nullable=True),
     },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
@@ -289,6 +292,7 @@ AGGREGATE_COMPAT_MAP = CompatMap(
         "total_units": "totalUnits",
         "total_units_source": "totalUnitsSource",
         "total_units_confidence": "totalUnitsConfidence",
+        "top_year": "topYear",
     }
 )
 

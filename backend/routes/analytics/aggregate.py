@@ -458,7 +458,7 @@ def aggregate():
 
         data.append(clean_dict)
 
-    # Post-processing: Add total_units from project inventory data
+    # Post-processing: Add total_units and top_year from project inventory data
     if needs_total_units and data:
         from services.new_launch_units import get_project_units
         for row in data:
@@ -466,6 +466,7 @@ def aggregate():
             if project_name:
                 units_info = get_project_units(project_name)
                 row['total_units'] = units_info.get('total_units')
+                row['top_year'] = units_info.get('top')  # TOP year for age calculation
                 # Also include confidence for transparency
                 row['total_units_source'] = units_info.get('unit_source')
                 row['total_units_confidence'] = units_info.get('confidence')
