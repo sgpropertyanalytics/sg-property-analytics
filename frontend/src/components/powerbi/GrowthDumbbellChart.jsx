@@ -5,7 +5,6 @@ import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
 import { isSaleType } from '../../schemas/apiContract';
 import { transformGrowthDumbbellSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
-import { nicePsfMin, nicePsfMax } from '../../utils/niceAxisMax';
 
 // All districts
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
@@ -40,15 +39,6 @@ const getLineColor = (growthPercent) => {
   if (growthPercent <= -20) return 'rgba(220, 38, 38, 0.5)';  // Red
   if (growthPercent <= -5) return 'rgba(248, 113, 113, 0.4)'; // Soft coral
   return 'rgba(100, 116, 139, 0.3)';  // Slate grey
-};
-
-// Line thickness based on growth magnitude
-const getLineThickness = (growthPercent) => {
-  const absGrowth = Math.abs(growthPercent);
-  if (absGrowth >= 50) return 6;   // Very strong movement
-  if (absGrowth >= 30) return 4;   // Strong movement
-  if (absGrowth >= 10) return 2;   // Moderate movement
-  return 1;  // Minimal movement
 };
 
 // Get area names (2-3 areas max, respecting space)
@@ -190,20 +180,6 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
     return sorted;
   }, [chartData, sortConfig]);
 
-  // Calculate scale for the chart with nice boundaries (INV-11)
-  const { minPsf, maxPsf } = useMemo(() => {
-    if (chartData.length === 0) return { minPsf: 0, maxPsf: 3000 };
-
-    const allPsf = chartData.flatMap(d => [d.startPsf, d.endPsf]);
-    const min = Math.min(...allPsf);
-    const max = Math.max(...allPsf);
-
-    return {
-      minPsf: nicePsfMin(min),
-      maxPsf: nicePsfMax(max),
-    };
-  }, [chartData]);
-
   // Handle sort
   const handleSort = (column) => {
     setSortConfig(prev => ({
@@ -220,11 +196,6 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
         {isActive ? (sortConfig.order === 'asc' ? '↑' : '↓') : '↕'}
       </span>
     );
-  };
-
-  // Convert PSF to percentage position
-  const psfToPercent = (psf) => {
-    return ((psf - minPsf) / (maxPsf - minPsf)) * 100;
   };
 
   // Format price
@@ -274,7 +245,7 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
       <div className="px-3 md:px-4 py-2 bg-slate-50 border-b border-slate-200">
         <div
           className="grid items-center gap-x-3 text-xs font-medium text-slate-600"
-          style={{ gridTemplateColumns: 'minmax(100px, 180px) 1fr 65px 65px 55px' }}
+          style={{ gridTemplateColumns: 'minmax(100px, 160px) 1fr 60px 60px 55px 50px' }}
         >
           <div
             className="cursor-pointer hover:text-slate-800 select-none truncate"
@@ -284,6 +255,13 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
           </div>
           <div className="text-center text-slate-400 text-[10px]">
             {startQuarter} → {endQuarter}
+          </div>
+          <div
+            className="text-right cursor-pointer hover:text-slate-800 select-none"
+            onClick={() => handleSort('startPsf')}
+            title="Baseline Quarter PSF"
+          >
+            Base<SortIcon column="startPsf" />
           </div>
           <div
             className="text-right cursor-pointer hover:text-slate-800 select-none"
@@ -311,15 +289,14 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
       {/* Dumbbell Rows */}
       <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
         {sortedData.map((item) => {
-          const startPercent = psfToPercent(item.startPsf);
-          const endPercent = psfToPercent(item.endPsf);
-          const leftPercent = Math.min(startPercent, endPercent);
-          const rightPercent = Math.max(startPercent, endPercent);
+          // Left-aligned dumbbell: baseline at 0%, latest position based on growth
+          // Scale: 0% growth = 10%, 100% growth = 100%
+          const growthClamped = Math.max(0, Math.min(item.growthPercent, 100));
+          const latestDotPosition = 10 + (growthClamped / 100) * 90; // 10% to 100%
 
           // Clean state-based styling
           const endDotColor = getEndDotColor(item.growthPercent);
           const lineColor = getLineColor(item.growthPercent);
-          const lineThickness = getLineThickness(item.growthPercent);
 
           const regionBg = REGION_HEADER_BG[item.region] || REGION_HEADER_BG.OCR;
           const regionText = REGION_HEADER_TEXT[item.region] || REGION_HEADER_TEXT.OCR;
@@ -341,7 +318,7 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
               {/* CSS Grid row - matches header */}
               <div
                 className="grid items-center gap-x-3"
-                style={{ gridTemplateColumns: 'minmax(100px, 180px) 1fr 65px 65px 55px' }}
+                style={{ gridTemplateColumns: 'minmax(100px, 160px) 1fr 60px 60px 55px 50px' }}
               >
                 {/* Column 1: District */}
                 <div className="flex items-center gap-1.5 overflow-hidden">
@@ -353,65 +330,72 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
                   </span>
                 </div>
 
-                {/* Column 2: Dumbbell (visual only - no labels) */}
-                <div className="relative h-6">
+                {/* Column 2: Dumbbell (left-aligned, baseline at left) */}
+                <div className="relative h-5">
                   {/* Background track */}
-                  <div className="absolute left-0 right-0 bg-slate-100 rounded-full" style={{ top: '50%', height: '3px', transform: 'translateY(-50%)' }} />
+                  <div className="absolute left-0 right-0 bg-slate-100 rounded-full" style={{ top: '50%', height: '2px', transform: 'translateY(-50%)' }} />
 
-                  {/* Connecting line - colored by direction */}
+                  {/* Connecting line from baseline to latest */}
                   <div
-                    className="absolute rounded-full transition-all"
+                    className="absolute rounded-full"
                     style={{
-                      left: `${leftPercent}%`,
-                      width: `${Math.max(rightPercent - leftPercent, 1)}%`,
-                      height: `${lineThickness}px`,
+                      left: '0',
+                      width: `${latestDotPosition}%`,
+                      height: '3px',
                       top: '50%',
                       transform: 'translateY(-50%)',
                       backgroundColor: lineColor,
                     }}
                   />
 
-                  {/* Start dot (baseline) - light gray */}
+                  {/* Baseline dot (always at left) */}
                   <div
-                    className="absolute rounded-full bg-slate-300 border-2 border-white shadow-sm group-hover:scale-110 transition-transform"
+                    className="absolute rounded-full bg-slate-400 border border-white shadow-sm"
                     style={{
-                      left: `${startPercent}%`,
+                      left: '0',
                       top: '50%',
-                      width: '10px',
-                      height: '10px',
-                      transform: 'translate(-50%, -50%)',
+                      width: '8px',
+                      height: '8px',
+                      transform: 'translateY(-50%)',
                     }}
                   />
 
-                  {/* End dot (latest) - colored by growth */}
+                  {/* Latest dot (position based on growth) */}
                   <div
-                    className="absolute rounded-full border-2 border-white shadow-md group-hover:scale-110 transition-transform z-10"
+                    className="absolute rounded-full border-2 border-white shadow-md z-10"
                     style={{
-                      left: `${endPercent}%`,
+                      left: `${latestDotPosition}%`,
                       top: '50%',
-                      width: '12px',
-                      height: '12px',
+                      width: '10px',
+                      height: '10px',
                       transform: 'translate(-50%, -50%)',
                       backgroundColor: endDotColor,
                     }}
                   />
                 </div>
 
-                {/* Column 3: Latest PSF */}
+                {/* Column 3: Baseline PSF */}
+                <div className="text-right">
+                  <span className="text-xs text-slate-500">
+                    {formatPrice(item.startPsf)}
+                  </span>
+                </div>
+
+                {/* Column 4: Latest PSF */}
                 <div className="text-right">
                   <span className="text-xs font-medium text-slate-700">
                     {formatPrice(item.endPsf)}
                   </span>
                 </div>
 
-                {/* Column 4: Δ PSF (Increment) */}
+                {/* Column 5: Δ PSF (Increment) */}
                 <div className="text-right">
                   <span className={`text-xs font-medium ${item.growthPercent >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                     {item.growthPercent >= 0 ? '+' : ''}{formatPrice(item.endPsf - item.startPsf)}
                   </span>
                 </div>
 
-                {/* Column 5: Growth % */}
+                {/* Column 6: Growth % */}
                 <div className="text-right">
                   <span className={`text-xs font-bold ${textColorClass}`}>
                     {item.growthPercent >= 0 ? '+' : ''}{item.growthPercent.toFixed(0)}%
