@@ -30,6 +30,7 @@ export {
   calculateHistoricalBaseline,
   calculateAverageSpreads,
   detectMarketSignals,
+  calculateSpreadPercentiles,
   detectInversionZones,
   // Distribution / histogram transformations
   transformDistributionSeries,

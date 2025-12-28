@@ -214,6 +214,42 @@ export const detectMarketSignals = (data) => {
  * @param {Array} data - Output from transformCompressionSeries
  * @returns {{ ccrDiscountZones: Array, ocrOverheatedZones: Array }}
  */
+/**
+ * Calculate percentile thresholds for spread coloring.
+ * Returns 25th and 75th percentile for each spread type.
+ *
+ * @param {Array} data - Output from transformCompressionSeries
+ * @returns {{ ccrRcr: { p25: number, p75: number }, rcrOcr: { p25: number, p75: number } }}
+ */
+export const calculateSpreadPercentiles = (data) => {
+  if (!Array.isArray(data) || data.length < 4) {
+    return {
+      ccrRcr: { p25: 200, p75: 600 },
+      rcrOcr: { p25: 100, p75: 400 },
+    };
+  }
+
+  const percentile = (arr, p) => {
+    const sorted = [...arr].sort((a, b) => a - b);
+    const idx = Math.floor(sorted.length * p);
+    return sorted[Math.min(idx, sorted.length - 1)];
+  };
+
+  const ccrRcrSpreads = data.map(d => d.ccrRcrSpread).filter(v => v != null);
+  const rcrOcrSpreads = data.map(d => d.rcrOcrSpread).filter(v => v != null);
+
+  return {
+    ccrRcr: {
+      p25: ccrRcrSpreads.length >= 4 ? percentile(ccrRcrSpreads, 0.25) : 200,
+      p75: ccrRcrSpreads.length >= 4 ? percentile(ccrRcrSpreads, 0.75) : 600,
+    },
+    rcrOcr: {
+      p25: rcrOcrSpreads.length >= 4 ? percentile(rcrOcrSpreads, 0.25) : 100,
+      p75: rcrOcrSpreads.length >= 4 ? percentile(rcrOcrSpreads, 0.75) : 400,
+    },
+  };
+};
+
 export const detectInversionZones = (data) => {
   if (!Array.isArray(data)) {
     return { ccrDiscountZones: [], ocrOverheatedZones: [] };

@@ -50,6 +50,7 @@ import {
   calculateHistoricalBaseline,
   calculateAverageSpreads,
   detectMarketSignals,
+  calculateSpreadPercentiles,
   detectInversionZones,
 } from './compression';
 
@@ -99,6 +100,7 @@ export {
   calculateHistoricalBaseline,
   calculateAverageSpreads,
   detectMarketSignals,
+  calculateSpreadPercentiles,
   detectInversionZones,
   // Distribution / Histogram
   formatPrice,
@@ -145,6 +147,7 @@ export default {
   calculateCompressionScore,
   calculateAverageSpreads,
   detectMarketSignals,
+  calculateSpreadPercentiles,
   detectInversionZones,
   // Distribution helpers
   formatPrice,

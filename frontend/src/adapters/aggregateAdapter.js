@@ -36,6 +36,7 @@ export {
   calculateHistoricalBaseline,
   calculateAverageSpreads,
   detectMarketSignals,
+  calculateSpreadPercentiles,
   detectInversionZones,
   // Distribution / Histogram
   formatPrice,

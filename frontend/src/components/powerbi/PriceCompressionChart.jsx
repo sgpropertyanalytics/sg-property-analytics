@@ -26,7 +26,7 @@ import {
   calculateHistoricalBaseline,
   calculateAverageSpreads,
   detectMarketSignals,
-  detectInversionZones,
+  calculateSpreadPercentiles,
   logFetchDebug,
   assertKnownVersion,
 } from '../../adapters';
@@ -139,9 +139,49 @@ export function PriceCompressionChart({ height = 380 }) {
     [data, baselineData]
   );
   const marketSignals = useMemo(() => detectMarketSignals(data), [data]);
-  const inversionZones = useMemo(() => detectInversionZones(data), [data]);
   const averageSpreads = useMemo(() => calculateAverageSpreads(data), [data]);
+  const spreadPercentiles = useMemo(() => calculateSpreadPercentiles(data), [data]);
   const latestData = data[data.length - 1] || {};
+
+  // Segment color functions based on percentiles
+  // CCR-RCR: Green (<0 discount), Yellow (<p25 undervalued), Normal (p25-p75), Red (>p75 overvalued)
+  const getCcrRcrSegmentColor = (ctx) => {
+    const value = ctx.p1.parsed.y;
+    if (value === null || value === undefined) return '#213448';
+    if (value < 0) return '#10B981'; // Green - CCR discount
+    if (value < spreadPercentiles.ccrRcr.p25) return '#F59E0B'; // Amber - CCR undervalued
+    if (value > spreadPercentiles.ccrRcr.p75) return '#EF4444'; // Red - CCR overvalued
+    return '#213448'; // Navy - normal
+  };
+
+  // RCR-OCR: Dark Red (<0 OCR overheated), Yellow (<p25 OCR catching up), Normal, Red (>p75 RCR overvalued)
+  const getRcrOcrSegmentColor = (ctx) => {
+    const value = ctx.p1.parsed.y;
+    if (value === null || value === undefined) return '#547792';
+    if (value < 0) return '#DC2626'; // Dark Red - OCR overheated
+    if (value < spreadPercentiles.rcrOcr.p25) return '#F59E0B'; // Amber - OCR catching up
+    if (value > spreadPercentiles.rcrOcr.p75) return '#EF4444'; // Red - RCR overvalued
+    return '#547792'; // Ocean blue - normal
+  };
+
+  // Point colors follow same logic
+  const ccrRcrPointColors = data.map(d => {
+    const value = d.ccrRcrSpread;
+    if (value === null) return '#213448';
+    if (value < 0) return '#10B981';
+    if (value < spreadPercentiles.ccrRcr.p25) return '#F59E0B';
+    if (value > spreadPercentiles.ccrRcr.p75) return '#EF4444';
+    return '#213448';
+  });
+
+  const rcrOcrPointColors = data.map(d => {
+    const value = d.rcrOcrSpread;
+    if (value === null) return '#547792';
+    if (value < 0) return '#DC2626';
+    if (value < spreadPercentiles.rcrOcr.p25) return '#F59E0B';
+    if (value > spreadPercentiles.rcrOcr.p75) return '#EF4444';
+    return '#547792';
+  });
 
   // Chart data for spread lines
   const spreadChartData = {
@@ -154,12 +194,15 @@ export function PriceCompressionChart({ height = 380 }) {
         backgroundColor: 'rgba(33, 52, 72, 0.15)',
         borderWidth: 2,
         pointRadius: 3,
-        pointBackgroundColor: '#213448',
+        pointBackgroundColor: ccrRcrPointColors,
         pointBorderColor: '#fff',
         pointBorderWidth: 1,
-        fill: true,
+        fill: false,
         tension: 0.3,
         spanGaps: true,
+        segment: {
+          borderColor: getCcrRcrSegmentColor,
+        },
       },
       {
         label: 'RCR-OCR Spread',
@@ -169,12 +212,15 @@ export function PriceCompressionChart({ height = 380 }) {
         borderWidth: 2,
         borderDash: [5, 5],
         pointRadius: 3,
-        pointBackgroundColor: '#547792',
+        pointBackgroundColor: rcrOcrPointColors,
         pointBorderColor: '#fff',
         pointBorderWidth: 1,
-        fill: true,
+        fill: false,
         tension: 0.3,
         spanGaps: true,
+        segment: {
+          borderColor: getRcrOcrSegmentColor,
+        },
       },
     ],
   };
@@ -189,12 +235,12 @@ export function PriceCompressionChart({ height = 380 }) {
         position: 'bottom',
         labels: {
           usePointStyle: true,
-          padding: 15,
-          font: { size: 11 },
+          padding: 12,
+          font: { size: 10 },
           generateLabels: (_chart) => {
             return [
               {
-                text: 'CCR > RCR Premium',
+                text: 'CCR-RCR Spread',
                 fillStyle: '#213448',
                 strokeStyle: '#213448',
                 lineWidth: 2,
@@ -203,7 +249,7 @@ export function PriceCompressionChart({ height = 380 }) {
                 datasetIndex: 0,
               },
               {
-                text: 'RCR > OCR Premium',
+                text: 'RCR-OCR Spread',
                 fillStyle: '#547792',
                 strokeStyle: '#547792',
                 lineWidth: 2,
@@ -211,6 +257,30 @@ export function PriceCompressionChart({ height = 380 }) {
                 pointStyle: 'line',
                 hidden: false,
                 datasetIndex: 1,
+              },
+              {
+                text: '🟢 Undervalued',
+                fillStyle: '#10B981',
+                strokeStyle: '#10B981',
+                pointStyle: 'rectRounded',
+                hidden: false,
+                datasetIndex: null,
+              },
+              {
+                text: '🟡 Catching Up',
+                fillStyle: '#F59E0B',
+                strokeStyle: '#F59E0B',
+                pointStyle: 'rectRounded',
+                hidden: false,
+                datasetIndex: null,
+              },
+              {
+                text: '🔴 Overvalued',
+                fillStyle: '#EF4444',
+                strokeStyle: '#EF4444',
+                pointStyle: 'rectRounded',
+                hidden: false,
+                datasetIndex: null,
               },
             ];
           },
@@ -243,7 +313,25 @@ export function PriceCompressionChart({ height = 380 }) {
         },
       },
       annotation: {
-        annotations: buildInversionZones(inversionZones, data),
+        annotations: {
+          zeroLine: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(0, 0, 0, 0.3)',
+            borderWidth: 1,
+            borderDash: [4, 4],
+            label: {
+              display: true,
+              content: '$0',
+              position: 'start',
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              color: '#fff',
+              font: { size: 9 },
+              padding: 3,
+            },
+          },
+        },
       },
     },
     scales: {
@@ -319,11 +407,12 @@ export function PriceCompressionChart({ height = 380 }) {
 
       {/* How to Interpret - shrink-0 */}
       <div className="shrink-0">
-        <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
+        <KeyInsightBox title="Line Color Guide" variant="info" compact>
           <p>
-            <span className="font-semibold text-[#213448]">Compression Score</span> tells you how compressed or stretched the price gap is between CCR ↔ RCR ↔ OCR relative to history.
-            <span className="font-semibold text-[#213448]"> Higher</span> means prices across regions are converging (tight market).
-            <span className="font-semibold text-[#213448]"> Lower</span> means they're drifting apart (fragmented market).
+            <span className="font-semibold text-emerald-600">Green</span> = undervalued (below $0 or &lt;25th percentile).{' '}
+            <span className="font-semibold text-amber-600">Amber</span> = catching up (25th-75th percentile, low end).{' '}
+            <span className="font-semibold text-red-600">Red</span> = overvalued (&gt;75th percentile or inversion risk).{' '}
+            Normal color = healthy spread range.
           </p>
         </KeyInsightBox>
       </div>
@@ -351,59 +440,6 @@ export function PriceCompressionChart({ height = 380 }) {
     </QueryState>
     </div>
   );
-}
-
-// ============================================
-// UI HELPER FUNCTIONS (Chart-specific, not data transforms)
-// ============================================
-
-/**
- * Build Chart.js annotation boxes for inversion zones
- */
-function buildInversionZones(zones, _data) {
-  const result = {};
-
-  // CCR Discount zones (green background - opportunity signal)
-  zones.ccrDiscountZones?.forEach((zone, idx) => {
-    result[`ccr_discount_${idx}`] = {
-      type: 'box',
-      xMin: zone.start - 0.5,
-      xMax: zone.end + 0.5,
-      backgroundColor: 'rgba(16, 185, 129, 0.15)', // emerald-500 with low opacity
-      borderColor: 'rgba(16, 185, 129, 0.4)',
-      borderWidth: 1,
-      borderDash: [4, 4],
-      label: {
-        content: 'Prime Discount',
-        display: zone.end - zone.start >= 1, // Only show label if zone spans 2+ periods
-        position: 'start',
-        color: 'rgba(5, 150, 105, 0.9)', // emerald-600
-        font: { size: 9, weight: 'bold' },
-      },
-    };
-  });
-
-  // OCR Overheated zones (red background)
-  zones.ocrOverheatedZones?.forEach((zone, idx) => {
-    result[`ocr_overheated_${idx}`] = {
-      type: 'box',
-      xMin: zone.start - 0.5,
-      xMax: zone.end + 0.5,
-      backgroundColor: 'rgba(239, 68, 68, 0.12)', // red-500 with low opacity
-      borderColor: 'rgba(239, 68, 68, 0.3)',
-      borderWidth: 1,
-      borderDash: [4, 4],
-      label: {
-        content: 'OCR Overheated',
-        display: zone.end - zone.start >= 1,
-        position: 'start',
-        color: 'rgba(185, 28, 28, 0.8)',
-        font: { size: 9, weight: 'bold' },
-      },
-    };
-  });
-
-  return result;
 }
 
 // ============================================
