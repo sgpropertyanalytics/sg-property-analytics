@@ -312,13 +312,13 @@ export function PriceCompressionChart({ height = 380, saleType = null }) {
       <div className="flex justify-center gap-6 py-2 shrink-0">
         <div className="flex items-center gap-2">
           <svg width="32" height="8">
-            <line x1="0" y1="4" x2="32" y2="4" stroke="#213448" strokeWidth={2.5} />
+            <line x1="0" y1="4" x2="32" y2="4" stroke="#213448" strokeWidth={2} />
           </svg>
           <span className="text-xs text-[#374151]">CCR-RCR Spread</span>
         </div>
         <div className="flex items-center gap-2">
           <svg width="32" height="8">
-            <line x1="0" y1="4" x2="32" y2="4" stroke="#547792" strokeWidth={2.5} strokeDasharray="8 4" />
+            <line x1="0" y1="4" x2="32" y2="4" stroke="#547792" strokeWidth={2} strokeDasharray="8 4" />
           </svg>
           <span className="text-xs text-[#374151]">RCR-OCR Spread</span>
         </div>
