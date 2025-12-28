@@ -130,12 +130,11 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
         )}
 
         {/* ===== FILTER SIDEBAR (Secondary Sidebar - Market Pulse Only) ===== */}
-        {/* Desktop: Always mounted, CSS-hidden when not needed to prevent layout flash */}
+        {/* Desktop: Always mounted, instant show/hide to prevent navigation flash */}
         {/* Mobile: Drawer (unchanged) */}
         <div
           className={`
             hidden lg:flex flex-shrink-0 relative
-            transition-all duration-200 ease-in-out
             ${showFilterSidebar ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden pointer-events-none'}
           `}
         >
