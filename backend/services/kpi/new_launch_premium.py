@@ -1,12 +1,14 @@
 """
 KPI: New Launch Premium
 
-Shows price premium of new launches vs young resales (4-9 years).
+Shows price premium of new launches vs recently TOP resales (4-8 years).
+Uses canonical PropertyAgeBucket.RECENTLY_TOP age range.
 """
 
 from typing import Dict, Any
 from db.sql import OUTLIER_FILTER
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
+from schemas.api_contract import PropertyAgeBucket
 from services.kpi.base import (
     KPIResult, build_date_bounds, build_filter_clause
 )
@@ -35,6 +37,9 @@ def get_sql(params: Dict[str, Any]) -> str:
     if filter_parts:
         base_filter += " AND " + " AND ".join(filter_parts)
 
+    # Get canonical age range for Recently TOP bucket
+    age_min, age_max = PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP)
+
     return f"""
         WITH new_sales AS (
             SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
@@ -51,7 +56,8 @@ def get_sql(params: Dict[str, Any]) -> str:
               AND sale_type = :sale_type_resale
               AND transaction_date >= :min_date
               AND transaction_date < :max_date_exclusive
-              AND EXTRACT(YEAR FROM transaction_date) - COALESCE(lease_start_year, EXTRACT(YEAR FROM transaction_date) - 5) BETWEEN 4 AND 9
+              AND EXTRACT(YEAR FROM transaction_date) - COALESCE(lease_start_year, EXTRACT(YEAR FROM transaction_date) - 5) >= {age_min}
+              AND EXTRACT(YEAR FROM transaction_date) - COALESCE(lease_start_year, EXTRACT(YEAR FROM transaction_date) - 5) < {age_max}
         )
         SELECT
             n.median_psf as new_psf,
@@ -69,7 +75,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             title="New Launch Premium",
             value=0,
             formatted_value="—",
-            subtitle="vs 4-9yr resale",
+            subtitle="vs 4-8yr resale",
             insight="Insufficient data"
         )
 

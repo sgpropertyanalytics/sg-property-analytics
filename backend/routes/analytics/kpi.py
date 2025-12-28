@@ -103,6 +103,9 @@ def kpi_summary():
                 filter_sql += f" AND district IN :segment_districts"
                 params['segment_districts'] = tuple(segment_districts)
 
+        # Get canonical age range for Recently TOP bucket
+        age_min, age_max = PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP)
+
         # Single optimized query using CTEs
         sql = text(f"""
             WITH current_period AS (
@@ -138,7 +141,8 @@ def kpi_summary():
                 WHERE {filter_sql}
                   AND sale_type = '{SALE_TYPE_RESALE}'
                   AND transaction_date > :max_date - INTERVAL '12 months'
-                  AND EXTRACT(YEAR FROM transaction_date) - COALESCE(lease_start_year, EXTRACT(YEAR FROM transaction_date) - 5) BETWEEN 4 AND 9
+                  AND EXTRACT(YEAR FROM transaction_date) - COALESCE(lease_start_year, EXTRACT(YEAR FROM transaction_date) - 5) >= {age_min}
+                  AND EXTRACT(YEAR FROM transaction_date) - COALESCE(lease_start_year, EXTRACT(YEAR FROM transaction_date) - 5) < {age_max}
             )
             SELECT
                 c.median_psf as current_psf,
