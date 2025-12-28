@@ -11,6 +11,13 @@
 | `/api-endpoint-guardrails` | New endpoints |
 | `/api-contract-guardrails` | API contract changes |
 
+## Agents
+| Agent | Trigger |
+|-------|---------|
+| `regression-snapshot-guard` | "verify no regressions", "before deploy", "numbers shifted" |
+| `ui-layout-validator` | "check layout", "verify responsive", "overflow issues" |
+| `data-integrity-validator` | "validate data", "check filters", "wrong counts" |
+
 Docs: `docs/backend.md`, `docs/frontend.md`, `docs/architecture.md`
 
 ---
@@ -525,3 +532,61 @@ Regions: CCR=#213448, RCR=#547792, OCR=#94B4C1
 3. No hidden side effects
 4. Assume messier data in future
 5. If unsure → ask
+
+---
+
+# 11. TESTING & CI
+
+## Regression Snapshot Tests
+**Mission:** Catch silent correctness drift after refactors—when code "works" but numbers subtly change.
+
+**Slices monitored:**
+- Segment metrics: CCR/RCR/OCR × last 3 complete months
+- District metrics: D09/D10/D15 × last quarter
+
+**Tolerances:**
+| Metric | Tolerance |
+|--------|-----------|
+| `count` | ±0 (exact) |
+| `median_psf` | ±0.5% or ±$15 |
+| `avg_psf` | ±0.5% or ±$15 |
+
+**Run tests:**
+```bash
+cd backend && pytest tests/test_regression_snapshots.py -v
+```
+
+**Update snapshots** (after intentional changes only):
+```bash
+pytest tests/test_regression_snapshots.py --update-snapshots
+```
+
+**Root cause categories for failures:**
+- `BOUNDARY_CHANGE`: Date filter inclusive/exclusive flip
+- `FILTER_DRIFT`: Segment/district mapping changed
+- `METRIC_DRIFT`: Calculation method changed (median→avg)
+- `OUTLIER_CHANGE`: Outlier exclusion rule modified
+
+## CI Workflow
+**File:** `.github/workflows/backend-tests.yml`
+
+Triggers on push/PR to `main` when `backend/**` changes:
+1. Runs unit tests (no DB required)
+2. Runs regression snapshot tests (requires `DATABASE_URL` secret)
+
+**GitHub Secrets required:**
+- `DATABASE_URL`: PostgreSQL connection string for regression tests
+
+## Files
+```
+backend/tests/
+├── conftest.py                      # --update-snapshots flag
+├── test_regression_snapshots.py     # Regression tests
+└── snapshots/regression/
+    ├── segment_metrics.json         # CCR/RCR/OCR golden data
+    ├── district_metrics.json        # D09/D10/D15 golden data
+    └── README.md
+
+.claude/agents/
+└── regression-snapshot-guard.md     # Agent definition
+```
