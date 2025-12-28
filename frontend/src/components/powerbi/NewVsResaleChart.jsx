@@ -418,7 +418,7 @@ export function NewVsResaleChart({ height = 350 }) {
         </div>
         <div className="flex items-center gap-2">
           <svg width="32" height="8">
-            <line x1="0" y1="4" x2="32" y2="4" stroke="#547792" strokeWidth={2} strokeDasharray="5 5" />
+            <line x1="0" y1="4" x2="32" y2="4" stroke="#547792" strokeWidth={2} strokeDasharray="8 4" />
           </svg>
           <span className="text-xs text-[#374151]">{PropertyAgeBucketLabels[PropertyAgeBucket.RECENTLY_TOP]}</span>
         </div>
