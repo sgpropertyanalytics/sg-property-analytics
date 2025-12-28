@@ -526,27 +526,21 @@ export function ProjectDeepDiveContent() {
 
         {/* Loading State */}
         {loading && (
-          <div className="space-y-6 animate-fade-in">
-            {/* 2-Column Layout Skeleton */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-start">
-              {/* Left Column */}
-              <div className="flex flex-col gap-4 lg:gap-6">
-                <div>
-                  <ProjectFundamentalsPanel loading={true} compact />
-                </div>
-                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[350px] animate-pulse" />
-                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
-              </div>
-              {/* Right Column */}
-              <div className="flex flex-col gap-4 lg:gap-6">
-                <div>
-                  <ResaleMetricsCards loading={true} compact />
-                </div>
-                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
-                <div>
-                  <ExitRiskDashboard loading={true} />
-                </div>
-              </div>
+          <div className="space-y-4 lg:space-y-6 animate-fade-in">
+            {/* Row 1: KPI Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <ProjectFundamentalsPanel loading={true} compact />
+              <ResaleMetricsCards loading={true} compact />
+            </div>
+            {/* Row 2: Price Growth + Floor Liquidity */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[350px] animate-pulse" />
+              <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
+            </div>
+            {/* Row 3: Price Band + Exit Risk */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
+              <ExitRiskDashboard loading={true} />
             </div>
           </div>
         )}
@@ -563,106 +557,86 @@ export function ProjectDeepDiveContent() {
               </div>
             )}
 
-            {/* Charts Grid - 2 Column Layout */}
-            {/* items-start: align cards at top (don't stretch - charts have fixed heights) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-start">
+            {/* Charts Grid - Row-based Layout for cross-column alignment */}
+            <div className="space-y-4 lg:space-y-6">
 
-              {/* ===== LEFT COLUMN ===== */}
-              <div className="flex flex-col gap-4 lg:gap-6">
-                {/* Property Fundamentals */}
-                <div>
-                  <ProjectFundamentalsPanel
+              {/* Row 1: KPI Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <ProjectFundamentalsPanel
+                  totalUnits={exitQueueData.fundamentals?.total_units}
+                  topYear={exitQueueData.fundamentals?.top_year}
+                  propertyAgeYears={exitQueueData.fundamentals?.property_age_years}
+                  ageSource={exitQueueData.fundamentals?.age_source}
+                  firstResaleDate={exitQueueData.fundamentals?.first_resale_date}
+                  compact
+                />
+                {exitQueueData.resale_metrics ? (
+                  <ResaleMetricsCards
+                    totalResaleTransactions={exitQueueData.resale_metrics?.total_resale_transactions}
+                    resales12m={exitQueueData.resale_metrics?.resales_12m}
+                    marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
+                    recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
                     totalUnits={exitQueueData.fundamentals?.total_units}
-                    topYear={exitQueueData.fundamentals?.top_year}
-                    propertyAgeYears={exitQueueData.fundamentals?.property_age_years}
-                    ageSource={exitQueueData.fundamentals?.age_source}
-                    firstResaleDate={exitQueueData.fundamentals?.first_resale_date}
                     compact
                   />
-                </div>
-
-                {/* Price Growth Analysis */}
-                <div>
-                  <PriceGrowthChart
-                    data={priceGrowthData}
-                    loading={priceGrowthLoading}
-                    error={priceGrowthError}
-                    projectName={selectedProject?.name}
-                    district={selectedProject?.district}
-                    height={350}
-                  />
-                </div>
-
-                {/* Historical Downside Protection */}
-                <div>
-                  <PriceBandChart
-                    bands={priceBandsData?.bands || []}
-                    latest={priceBandsData?.latest}
-                    trend={priceBandsData?.trend}
-                    verdict={priceBandsData?.verdict}
-                    unitPsf={unitPsf}
-                    dataSource={priceBandsData?.data_source}
-                    proxyLabel={priceBandsData?.proxy_label}
-                    dataQuality={priceBandsData?.data_quality}
-                    totalResaleTransactions={exitQueueData?.resale_metrics?.total_resale_transactions}
-                    loading={priceBandsLoading}
-                    error={priceBandsError}
-                    projectName={selectedProject?.name}
-                    height={400}
-                  />
-                </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6 flex flex-col">
+                    <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-4">
+                      Resale Activity Metrics
+                    </h3>
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className="text-sm text-[#94B4C1] text-center">
+                        No resale data available yet
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* ===== RIGHT COLUMN ===== */}
-              <div className="flex flex-col gap-4 lg:gap-6">
-                {/* Resale Activity Metrics */}
-                <div>
-                  {exitQueueData.resale_metrics ? (
-                    <ResaleMetricsCards
-                      totalResaleTransactions={exitQueueData.resale_metrics?.total_resale_transactions}
-                      resales12m={exitQueueData.resale_metrics?.resales_12m}
-                      marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
-                      recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
-                      totalUnits={exitQueueData.fundamentals?.total_units}
-                      compact
-                    />
-                  ) : (
-                    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6 flex flex-col">
-                      <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-4">
-                        Resale Activity Metrics
-                      </h3>
-                      <div className="flex-1 flex items-center justify-center">
-                        <p className="text-sm text-[#94B4C1] text-center">
-                          No resale data available yet
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Which Floors Sell Faster + Liquidity Assessment (only if resale data exists) */}
+              {/* Row 2: Price Growth + Floor Liquidity */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <PriceGrowthChart
+                  data={priceGrowthData}
+                  loading={priceGrowthLoading}
+                  error={priceGrowthError}
+                  projectName={selectedProject?.name}
+                  district={selectedProject?.district}
+                  height={350}
+                />
                 {exitQueueData.resale_metrics && (
-                  <>
-                    {/* Floor Liquidity */}
-                    <div>
-                      <FloorLiquidityHeatmap
-                        district={selectedProject?.district}
-                        highlightProject={selectedProject?.name}
-                      />
-                    </div>
+                  <FloorLiquidityHeatmap
+                    district={selectedProject?.district}
+                    highlightProject={selectedProject?.name}
+                  />
+                )}
+              </div>
 
-                    {/* Liquidity Assessment */}
-                    <div>
-                      <ExitRiskDashboard
-                        marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
-                        recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
-                        marketTurnoverZone={exitQueueData.risk_assessment?.market_turnover_zone}
-                        recentTurnoverZone={exitQueueData.risk_assessment?.recent_turnover_zone}
-                        overallRisk={exitQueueData.risk_assessment?.overall_risk}
-                        interpretation={exitQueueData.risk_assessment?.interpretation}
-                      />
-                    </div>
-                  </>
+              {/* Row 3: Price Band + Exit Risk */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <PriceBandChart
+                  bands={priceBandsData?.bands || []}
+                  latest={priceBandsData?.latest}
+                  trend={priceBandsData?.trend}
+                  verdict={priceBandsData?.verdict}
+                  unitPsf={unitPsf}
+                  dataSource={priceBandsData?.data_source}
+                  proxyLabel={priceBandsData?.proxy_label}
+                  dataQuality={priceBandsData?.data_quality}
+                  totalResaleTransactions={exitQueueData?.resale_metrics?.total_resale_transactions}
+                  loading={priceBandsLoading}
+                  error={priceBandsError}
+                  projectName={selectedProject?.name}
+                  height={400}
+                />
+                {exitQueueData.resale_metrics && (
+                  <ExitRiskDashboard
+                    marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
+                    recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
+                    marketTurnoverZone={exitQueueData.risk_assessment?.market_turnover_zone}
+                    recentTurnoverZone={exitQueueData.risk_assessment?.recent_turnover_zone}
+                    overallRisk={exitQueueData.risk_assessment?.overall_risk}
+                    interpretation={exitQueueData.risk_assessment?.interpretation}
+                  />
                 )}
               </div>
 
