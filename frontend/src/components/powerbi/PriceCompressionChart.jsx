@@ -253,6 +253,8 @@ export function PriceCompressionChart({ height = 380, saleType = null }) {
       },
       y: {
         title: { display: true, text: 'Spread ($/PSF)', font: { size: 11 } },
+        beginAtZero: false,
+        grace: '10%',
         ticks: {
           callback: (v) => `$${v.toLocaleString()}`,
           font: { size: 10 },
