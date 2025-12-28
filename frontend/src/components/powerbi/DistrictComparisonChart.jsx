@@ -94,7 +94,7 @@ export function DistrictComparisonChart({
       return transformDistrictComparison(response.data, selectedProject, minUnits);
     },
     [filterKey, minUnits],
-    { initialData: { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } } }
+    { initialData: { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } }, keepPreviousData: true }
   );
 
   const { groups, stats } = transformedData || { groups: [], stats: {} };
