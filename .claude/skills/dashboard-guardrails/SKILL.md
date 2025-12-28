@@ -6,6 +6,7 @@ description: Protection and verification system for dashboard development. ALWAY
 # Dashboard Guardrails
 
 > **Filter patterns reference**: See [POWER_BI_PATTERNS.md](../../../POWER_BI_PATTERNS.md#8-guardrails---what-not-to-touch) for complete filter guardrails.
+> **Automated validation**: Run `/validate-layout` to check overflow and responsiveness programmatically.
 
 ## Purpose
 

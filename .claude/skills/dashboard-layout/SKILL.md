@@ -7,6 +7,8 @@ description: Responsive layout system for dashboards. Covers breakpoints, overfl
 
 **Philosophy:** Desktop (1440px+) is PRIMARY. Mobile must be USABLE—not a clone.
 
+> **Automated validation**: Run `/validate-layout` to check overflow and responsiveness programmatically.
+
 ---
 
 ## 1. Breakpoints
