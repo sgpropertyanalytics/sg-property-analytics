@@ -16,9 +16,11 @@ Endpoints:
 import time
 from flask import request, jsonify
 from routes.analytics import analytics_bp, reader
+from api.contracts.wrapper import api_contract
 
 
 @analytics_bp.route("/resale_stats", methods=["GET"])
+@api_contract("precomputed/resale-stats")
 def resale_stats():
     """
     Get resale statistics for 2, 3, 4-Bedroom condos.
@@ -53,6 +55,7 @@ def resale_stats():
 
 
 @analytics_bp.route("/price_trends", methods=["GET"])
+@api_contract("precomputed/price-trends")
 def price_trends():
     """Get price trends by district and month, broken down by bedroom type."""
     start = time.time()
@@ -69,6 +72,7 @@ def price_trends():
 
 
 @analytics_bp.route("/total_volume", methods=["GET"])
+@api_contract("precomputed/total-volume")
 def total_volume():
     """Get total transacted amount by district, broken down by bedroom type."""
     start = time.time()
@@ -85,6 +89,7 @@ def total_volume():
 
 
 @analytics_bp.route("/avg_psf", methods=["GET"])
+@api_contract("precomputed/avg-psf")
 def avg_psf():
     """Get average PSF by district, broken down by bedroom type."""
     start = time.time()
@@ -101,6 +106,7 @@ def avg_psf():
 
 
 @analytics_bp.route("/districts", methods=["GET"])
+@api_contract("precomputed/districts")
 def get_districts():
     """Get list of all districts with transactions."""
     start = time.time()
@@ -117,6 +123,7 @@ def get_districts():
 
 
 @analytics_bp.route("/market_stats", methods=["GET"])
+@api_contract("precomputed/market-stats")
 def market_stats():
     """
     Get dual-view market analysis: Short-Term vs Long-Term months.

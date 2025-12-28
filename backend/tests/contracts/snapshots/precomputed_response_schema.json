@@ -1,0 +1,28 @@
+{
+  "resale_stats": {
+    "response_structure": "precomputed resale statistics",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "price_trends": {
+    "response_structure": "price trends by district and month",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "total_volume": {
+    "response_structure": "total volume by district",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "avg_psf": {
+    "response_structure": "average PSF by district",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "districts": {
+    "response_structure": "list of available districts",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "market_stats": {
+    "response_structure": "dual-view market stats",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "_version": "v3",
+  "_created": "2025-12-28"
+}

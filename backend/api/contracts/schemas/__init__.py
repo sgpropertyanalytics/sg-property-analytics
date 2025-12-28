@@ -13,5 +13,12 @@ from . import filter_options
 from . import transactions
 from . import insights
 from . import supply
+from . import charts
+from . import trends
+from . import precomputed
 
-__all__ = ['aggregate', 'kpi_summary', 'dashboard', 'filter_options', 'transactions', 'insights', 'supply']
+__all__ = [
+    'aggregate', 'kpi_summary', 'dashboard', 'filter_options',
+    'transactions', 'insights', 'supply',
+    'charts', 'trends', 'precomputed',
+]

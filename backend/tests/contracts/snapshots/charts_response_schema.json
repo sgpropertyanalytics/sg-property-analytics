@@ -1,0 +1,24 @@
+{
+  "projects_by_district": {
+    "response_structure": "projects array + meta",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "price_projects_by_district": {
+    "response_structure": "projects array with price quartiles",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "floor_liquidity_heatmap": {
+    "response_structure": "data object with projects + meta",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "psf_by_price_band": {
+    "response_structure": "data array + meta with kAnonymity",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "budget_heatmap": {
+    "response_structure": "matrix of transaction percentages + meta",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "_version": "v3",
+  "_created": "2025-12-28"
+}

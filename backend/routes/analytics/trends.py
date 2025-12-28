@@ -24,9 +24,11 @@ from utils.normalize import (
     to_int, to_date, to_list, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
+from api.contracts.wrapper import api_contract
 
 
 @analytics_bp.route("/price_trends_by_district", methods=["GET"])
+@api_contract("trends/price-trends-by-district")
 def price_trends_by_district():
     """Get median price trends over time by district (top N districts)."""
     start = time.time()
@@ -43,6 +45,7 @@ def price_trends_by_district():
 
 
 @analytics_bp.route("/market_stats_by_district", methods=["GET"])
+@api_contract("trends/market-stats-by-district")
 def market_stats_by_district():
     """
     Get dual-view market analysis by district: Short-Term vs Long-Term months.
@@ -113,6 +116,7 @@ def market_stats_by_district():
 
 
 @analytics_bp.route("/sale_type_trends", methods=["GET"])
+@api_contract("trends/sale-type-trends")
 def sale_type_trends():
     """
     Get transaction counts by sale type (New Sale vs Resale) over time by quarter.
@@ -158,6 +162,7 @@ def sale_type_trends():
 
 
 @analytics_bp.route("/price_trends_by_sale_type", methods=["GET"])
+@api_contract("trends/price-trends-by-sale-type")
 def price_trends_by_sale_type():
     """
     Get median price trends by sale type (New Sale vs Resale) over time by quarter, separated by bedroom type.
@@ -215,6 +220,7 @@ def price_trends_by_sale_type():
 
 
 @analytics_bp.route("/price_trends_by_region", methods=["GET"])
+@api_contract("trends/price-trends-by-region")
 def price_trends_by_region():
     """
     Get median price trends by region (CCR, RCR, OCR) over time by quarter.
@@ -253,6 +259,7 @@ def price_trends_by_region():
 
 
 @analytics_bp.route("/psf_trends_by_region", methods=["GET"])
+@api_contract("trends/psf-trends-by-region")
 def psf_trends_by_region():
     """
     Get median PSF trends by region (CCR, RCR, OCR) over time by quarter.
@@ -291,6 +298,7 @@ def psf_trends_by_region():
 
 
 @analytics_bp.route("/new-vs-resale", methods=["GET"])
+@api_contract("trends/new-vs-resale")
 def new_vs_resale():
     """
     New Sale vs Young Resale (4-9 years age) comparison.

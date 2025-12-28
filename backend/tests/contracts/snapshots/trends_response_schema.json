@@ -1,0 +1,32 @@
+{
+  "price_trends_by_district": {
+    "response_structure": "time-series data by district",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "market_stats_by_district": {
+    "response_structure": "dual-view stats (short-term vs long-term)",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "sale_type_trends": {
+    "response_structure": "quarterly volume by sale type",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "price_trends_by_sale_type": {
+    "response_structure": "quarterly PSF by sale type and bedroom",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "price_trends_by_region": {
+    "response_structure": "quarterly PSF by region",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "psf_trends_by_region": {
+    "response_structure": "quarterly median PSF by region",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "new_vs_resale": {
+    "response_structure": "chartData + summary + appliedFilters",
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "_version": "v3",
+  "_created": "2025-12-28"
+}

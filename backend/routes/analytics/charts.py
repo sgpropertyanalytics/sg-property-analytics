@@ -20,9 +20,11 @@ from utils.normalize import (
     to_int, to_list, to_bool,
     ValidationError as NormalizeValidationError, validation_error_response
 )
+from api.contracts.wrapper import api_contract
 
 
 @analytics_bp.route("/projects_by_district", methods=["GET"])
+@api_contract("charts/projects-by-district")
 def projects_by_district():
     """Get project-level volume and quantity breakdown for a specific district."""
     start = time.time()
@@ -115,6 +117,7 @@ def projects_by_district():
 
 
 @analytics_bp.route("/price_projects_by_district", methods=["GET"])
+@api_contract("charts/price-projects-by-district")
 def price_projects_by_district():
     """
     Project-level price / PSF quartiles for a given district and timeframe.
@@ -213,6 +216,7 @@ def price_projects_by_district():
 
 
 @analytics_bp.route("/floor-liquidity-heatmap", methods=["GET"])
+@api_contract("charts/floor-liquidity-heatmap")
 def floor_liquidity_heatmap():
     """
     Floor liquidity heatmap data - shows which floor zones resell faster by project.
@@ -463,6 +467,7 @@ def floor_liquidity_heatmap():
 
 
 @analytics_bp.route("/psf-by-price-band", methods=["GET"])
+@api_contract("charts/psf-by-price-band")
 def psf_by_price_band():
     """
     PSF percentiles grouped by price band and bedroom type.
@@ -559,6 +564,7 @@ def psf_by_price_band():
 
 
 @analytics_bp.route("/budget-heatmap", methods=["GET"])
+@api_contract("charts/budget-heatmap")
 def budget_heatmap():
     """
     Market activity heatmap by bedroom type and property age.
