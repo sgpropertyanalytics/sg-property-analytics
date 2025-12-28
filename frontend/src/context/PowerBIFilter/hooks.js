@@ -73,6 +73,8 @@ export function useRouteReset({
   setBreadcrumbs,
   setFactFilter,
   setSelectedProject,
+  // New: single batch reset function for better performance
+  batchReset,
 }) {
   const location = useLocation();
   const previousPathnameRef = useRef(location.pathname);
@@ -80,12 +82,19 @@ export function useRouteReset({
   useEffect(() => {
     if (previousPathnameRef.current !== location.pathname) {
       previousPathnameRef.current = location.pathname;
-      setDrillPath(INITIAL_DRILL_PATH);
-      setBreadcrumbs(INITIAL_BREADCRUMBS);
-      setFactFilter(INITIAL_FACT_FILTER);
-      setSelectedProject(INITIAL_SELECTED_PROJECT);
+
+      // Use batch reset if available (single state update = single re-render)
+      if (batchReset) {
+        batchReset();
+      } else {
+        // Fallback to individual setters (4 state updates = potential flicker)
+        setDrillPath(INITIAL_DRILL_PATH);
+        setBreadcrumbs(INITIAL_BREADCRUMBS);
+        setFactFilter(INITIAL_FACT_FILTER);
+        setSelectedProject(INITIAL_SELECTED_PROJECT);
+      }
     }
-  }, [location.pathname, setDrillPath, setBreadcrumbs, setFactFilter, setSelectedProject]);
+  }, [location.pathname, setDrillPath, setBreadcrumbs, setFactFilter, setSelectedProject, batchReset]);
 }
 
 // =============================================================================

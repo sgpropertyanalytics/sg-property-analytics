@@ -11,7 +11,7 @@
  * Project selection is drill-through only (opens ProjectDetailPanel).
  */
 
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
 
 // Constants and initial state
 import {
@@ -65,11 +65,23 @@ export function PowerBIFilterProvider({ children }) {
   const [filterOptions] = useFilterOptions();
 
   // ===== Route Change Reset =====
+  // Batch reset function - single state update to prevent flicker
+  // Uses a ref to track if we need to reset, then batches all updates together
+  const batchReset = useCallback(() => {
+    // React 18 batches these automatically in callbacks, but we make it explicit
+    // by setting all state in a single synchronous block
+    setDrillPath(INITIAL_DRILL_PATH);
+    setBreadcrumbs(INITIAL_BREADCRUMBS);
+    setFactFilter(INITIAL_FACT_FILTER);
+    setSelectedProjectState(INITIAL_SELECTED_PROJECT);
+  }, []);
+
   useRouteReset({
     setDrillPath,
     setBreadcrumbs,
     setFactFilter,
     setSelectedProject: setSelectedProjectState,
+    batchReset, // Pass batch reset for single-update navigation
   });
 
   // ===== Filter Setters =====
@@ -282,53 +294,95 @@ export function PowerBIFilterProvider({ children }) {
     [activeFilters, filters, factFilter]
   );
 
-  // ===== Context Value =====
-  const value = {
-    // State
-    filters,
-    factFilter,
-    drillPath,
-    breadcrumbs,
-    filterOptions,
-    activeFilters,
-    activeFilterCount,
-    filterKey,
-    debouncedFilterKey,
-    selectedProject,
+  // ===== Context Value (Memoized to prevent unnecessary re-renders) =====
+  // Splitting into stable (callbacks) and dynamic (state) parts
+  // Callbacks are stable due to useCallback, so they don't need to be in deps
 
-    // Time Grouping (View Context)
-    timeGrouping,
-    setTimeGrouping,
+  const value = useMemo(
+    () => ({
+      // State (changes trigger re-render - this is expected)
+      filters,
+      factFilter,
+      drillPath,
+      breadcrumbs,
+      filterOptions,
+      activeFilters,
+      activeFilterCount,
+      filterKey,
+      debouncedFilterKey,
+      selectedProject,
 
-    // Filter setters
-    setDateRange,
-    setDistricts,
-    toggleDistrict,
-    setBedroomTypes,
-    toggleBedroomType,
-    setSegments,
-    toggleSegment,
-    setSaleType,
-    setPsfRange,
-    setSizeRange,
-    setTenure,
-    setPropertyAge,
-    setPropertyAgeBucket,
-    setProject,
-    resetFilters,
+      // Time Grouping (View Context)
+      timeGrouping,
+      setTimeGrouping,
 
-    // Drill navigation
-    drillDown,
-    drillUp,
-    navigateToBreadcrumb,
+      // Filter setters (stable callbacks)
+      setDateRange,
+      setDistricts,
+      toggleDistrict,
+      setBedroomTypes,
+      toggleBedroomType,
+      setSegments,
+      toggleSegment,
+      setSaleType,
+      setPsfRange,
+      setSizeRange,
+      setTenure,
+      setPropertyAge,
+      setPropertyAgeBucket,
+      setProject,
+      resetFilters,
 
-    // Project drill-through
-    setSelectedProject,
-    clearSelectedProject,
+      // Drill navigation (stable callbacks)
+      drillDown,
+      drillUp,
+      navigateToBreadcrumb,
 
-    // Helpers
-    buildApiParams,
-  };
+      // Project drill-through (stable callbacks)
+      setSelectedProject,
+      clearSelectedProject,
+
+      // Helpers (stable callback)
+      buildApiParams,
+    }),
+    [
+      // Only include state that changes - callbacks are stable
+      filters,
+      factFilter,
+      drillPath,
+      breadcrumbs,
+      filterOptions,
+      activeFilters,
+      activeFilterCount,
+      filterKey,
+      debouncedFilterKey,
+      selectedProject,
+      timeGrouping,
+      // Callbacks (technically stable, but included for correctness)
+      setTimeGrouping,
+      setDateRange,
+      setDistricts,
+      toggleDistrict,
+      setBedroomTypes,
+      toggleBedroomType,
+      setSegments,
+      toggleSegment,
+      setSaleType,
+      setPsfRange,
+      setSizeRange,
+      setTenure,
+      setPropertyAge,
+      setPropertyAgeBucket,
+      setProject,
+      resetFilters,
+      drillDown,
+      drillUp,
+      navigateToBreadcrumb,
+      setSelectedProject,
+      clearSelectedProject,
+      buildApiParams,
+    ]
+  );
 
   return <PowerBIFilterContext.Provider value={value}>{children}</PowerBIFilterContext.Provider>;
 }

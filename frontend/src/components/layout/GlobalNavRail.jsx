@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { UserProfileMenu } from './UserProfileMenu';
@@ -96,6 +96,11 @@ export function GlobalNavRail({ activePage, onPageChange, expanded = false }) {
   const { showPaywall } = useSubscription();
   const [showAccountSettings, setShowAccountSettings] = useState(false);
 
+  // useTransition for non-urgent navigation - prevents Suspense fallback flash
+  // When navigating to a cached page, this keeps the current view visible
+  // instead of briefly showing the loading spinner
+  const [isPending, startTransition] = useTransition();
+
   // Determine active page from URL or prop
   const currentPath = location.pathname;
   const activeItem = activePage ||
@@ -106,17 +111,22 @@ export function GlobalNavRail({ activePage, onPageChange, expanded = false }) {
     if (onPageChange) {
       onPageChange(item.id);
     }
-    navigate(item.path);
+    // Wrap navigation in startTransition to prevent Suspense fallback flash
+    // This marks the navigation as non-urgent, allowing React to keep
+    // showing the current page while the new page loads
+    startTransition(() => {
+      navigate(item.path);
+    });
   };
 
   return (
     <nav
-      className={`bg-[#213448] flex flex-col py-4 flex-shrink-0 h-full ${expanded ? 'w-64 px-3' : 'w-16 items-center'}`}
+      className={`bg-[#213448] flex flex-col py-4 flex-shrink-0 h-full ${expanded ? 'w-64 px-3' : 'w-16 items-center'} ${isPending ? 'opacity-90' : ''}`}
       aria-label="Main navigation"
     >
       {/* Logo / Home - Links to Market Core */}
       <button
-        onClick={() => navigate('/market-core')}
+        onClick={() => startTransition(() => navigate('/market-core'))}
         className={`group relative mb-8 flex items-center ${expanded ? 'gap-3 w-full px-2' : 'justify-center'}`}
         aria-label="Go to Market Core"
       >
