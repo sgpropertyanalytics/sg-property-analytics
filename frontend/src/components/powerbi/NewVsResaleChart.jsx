@@ -69,7 +69,9 @@ export function NewVsResaleChart({ height = 350 }) {
   });
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data, loading, error, refetch } = useAbortableQuery(
+  // keepPreviousData: true prevents loading flash when filters change - chart stays visible
+  // and smoothly transitions to new data via Chart.js animations
+  const { data, loading, error, isFetching, refetch } = useAbortableQuery(
     async (signal) => {
       // Use buildApiParams to include GLOBAL filters from sidebar
       // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
@@ -95,7 +97,11 @@ export function NewVsResaleChart({ height = 350 }) {
       return transformNewVsResaleSeries(response.data);
     },
     [debouncedFilterKey, timeGrouping],
-    { initialData: { chartData: [], summary: {}, hasData: false }, enabled: shouldFetch }
+    {
+      initialData: { chartData: [], summary: {}, hasData: false },
+      enabled: shouldFetch,
+      keepPreviousData: true, // Instant filter updates - no loading flash
+    }
   );
 
   // Extract transformed data
@@ -142,10 +148,10 @@ export function NewVsResaleChart({ height = 350 }) {
         borderColor: '#213448',  // Deep Navy - primary palette color
         backgroundColor: 'rgba(33, 52, 72, 0.1)',
         borderWidth: 2,
-        pointRadius: 4,
-        pointBackgroundColor: '#213448',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 1,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: '#213448',
+        pointHoverBorderColor: '#fff',
         tension: 0.3,
         fill: false,
         spanGaps: true, // Connect line through null/missing data points
@@ -157,10 +163,10 @@ export function NewVsResaleChart({ height = 350 }) {
         backgroundColor: 'rgba(84, 119, 146, 0.1)',
         borderWidth: 2,
         borderDash: [5, 5],
-        pointRadius: 4,
-        pointBackgroundColor: '#547792',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 1,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: '#547792',
+        pointHoverBorderColor: '#fff',
         tension: 0.3,
         fill: false,
         spanGaps: true, // Connect line through null/missing data points
@@ -170,6 +176,18 @@ export function NewVsResaleChart({ height = 350 }) {
 
   const options = useMemo(() => ({
     ...baseChartJsOptions,
+    // Smooth animation when data updates (filter changes)
+    animation: {
+      duration: 400, // Fast but visible transition
+      easing: 'easeOutQuart',
+    },
+    transitions: {
+      active: {
+        animation: {
+          duration: 200,
+        },
+      },
+    },
     interaction: {
       mode: 'index',
       intersect: false,
@@ -305,8 +323,12 @@ export function NewVsResaleChart({ height = 350 }) {
       {/* Header - shrink-0 */}
       <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="min-w-0">
-          <h3 className="font-semibold text-[#213448] text-sm md:text-base">
+          <h3 className="font-semibold text-[#213448] text-sm md:text-base flex items-center gap-2">
             New Sale vs Recently TOP (4-7 yrs)
+            {/* Subtle spinner when fetching new data in background */}
+            {isFetching && (
+              <span className="w-3 h-3 border-2 border-[#547792]/30 border-t-[#547792] rounded-full animate-spin" />
+            )}
           </h3>
           <p className="text-xs text-[#547792] mt-0.5">
             {getFilterSummary()} · by {TIME_LABELS[timeGrouping].toLowerCase()}

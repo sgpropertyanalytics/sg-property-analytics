@@ -82,7 +82,7 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
       return transformTimeSeries(rawData, timeGrouping);
     },
     [debouncedFilterKey, timeGrouping, saleType],
-    { initialData: [] }
+    { initialData: [], keepPreviousData: true }
   );
 
   // Market Core is Resale-only - single transaction count bar + total value line

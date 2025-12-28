@@ -78,6 +78,7 @@ export function BeadsChart({ height = 300, saleType = null }) {
         stats: { priceRange: { min: 0, max: 0 }, volumeRange: { min: 0, max: 0 }, totalTransactions: 0 },
         stringRanges: { CCR: { min: 0, max: 0 }, RCR: { min: 0, max: 0 }, OCR: { min: 0, max: 0 } },
       },
+      keepPreviousData: true,
     }
   );
 

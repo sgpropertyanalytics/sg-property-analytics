@@ -93,7 +93,7 @@ export function AbsolutePsfChart({ height = 300, saleType = null }) {
       return transformCompressionSeries(rawData, timeGrouping);
     },
     [debouncedFilterKey, timeGrouping, saleType],
-    { initialData: [], enabled: shouldFetch }
+    { initialData: [], enabled: shouldFetch, keepPreviousData: true }
   );
 
   // Latest values for KPI display

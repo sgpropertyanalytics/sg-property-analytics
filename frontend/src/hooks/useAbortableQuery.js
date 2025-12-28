@@ -61,7 +61,7 @@ const isRetryableError = (err) => {
  * );
  *
  * // With options
- * const { data, loading, error } = useAbortableQuery(
+ * const { data, loading, error, isFetching } = useAbortableQuery(
  *   fetchFunction,
  *   dependencies,
  *   {
@@ -70,6 +70,7 @@ const isRetryableError = (err) => {
  *     onSuccess: (data) => {}, // Callback on success
  *     onError: (err) => {},    // Callback on error (excludes abort)
  *     retries: 1,              // Number of retries on network failure (default: 1)
+ *     keepPreviousData: true,  // Keep showing previous data while fetching (no loading flash)
  *   }
  * );
  * ```
@@ -77,7 +78,7 @@ const isRetryableError = (err) => {
  * @param {Function} queryFn - Async function that receives AbortSignal and returns data
  * @param {Array} deps - Dependencies that trigger refetch (like useEffect deps)
  * @param {Object} options - Optional configuration
- * @returns {Object} { data, loading, error, refetch }
+ * @returns {Object} { data, loading, error, isFetching, refetch }
  */
 export function useAbortableQuery(queryFn, deps = [], options = {}) {
   const {
@@ -86,11 +87,14 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
     onSuccess,
     onError,
     retries = 1, // Default: 1 retry for cold start resilience
+    keepPreviousData = false, // When true, keep showing previous data while fetching (no loading flash)
   } = options;
 
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(null);
+  // Track if we're fetching in background (for keepPreviousData mode)
+  const [isFetching, setIsFetching] = useState(false);
 
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
   const mountedRef = useRef(true);
@@ -112,7 +116,15 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
     const requestId = startRequest();
     const signal = getSignal();
 
-    setLoading(true);
+    // keepPreviousData: Only show loading state if we have no data yet
+    // This prevents loading flash when filters change - chart stays visible
+    const hasExistingData = data !== null && data !== initialData;
+    if (keepPreviousData && hasExistingData) {
+      setIsFetching(true); // Background fetch indicator
+      // Don't set loading=true - keep showing previous data
+    } else {
+      setLoading(true);
+    }
     setError(null);
 
     // Retry loop for network failures (cold start resilience)
@@ -139,6 +151,7 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
 
         setData(result);
         setLoading(false);
+        setIsFetching(false);
 
         if (onSuccess) {
           onSuccess(result);
@@ -172,12 +185,13 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
     if (lastError && !isStale(requestId) && mountedRef.current) {
       setError(lastError);
       setLoading(false);
+      setIsFetching(false);
 
       if (onError) {
         onError(lastError);
       }
     }
-  }, [queryFn, enabled, startRequest, getSignal, isStale, onSuccess, onError, retries]);
+  }, [queryFn, enabled, startRequest, getSignal, isStale, onSuccess, onError, retries, keepPreviousData, data, initialData]);
 
   // Execute query when dependencies change
   useEffect(() => {
@@ -189,6 +203,7 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
     data,
     loading,
     error,
+    isFetching, // True when fetching in background (keepPreviousData mode)
     refetch: executeQuery,
   };
 }

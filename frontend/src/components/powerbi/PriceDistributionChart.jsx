@@ -89,7 +89,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20, saleType = 
       return transformDistributionSeries(apiData.price_histogram);
     },
     [debouncedFilterKey, numBins, showFullRange, saleType],
-    { initialData: { bins: [], stats: {}, tail: {}, totalCount: 0 } }
+    { initialData: { bins: [], stats: {}, tail: {}, totalCount: 0 }, keepPreviousData: true }
   );
 
   // Extract transformed data

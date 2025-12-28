@@ -95,7 +95,8 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
     [saleType], // Refetch if saleType changes (rare - usually constant from page)
     {
       initialData: { ccrRcr: { mean: 400, stdDev: 200 }, rcrOcr: { mean: 200, stdDev: 100 } },
-      enabled: shouldFetch
+      enabled: shouldFetch,
+      keepPreviousData: true,
     }
   );
 
@@ -128,7 +129,7 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
       return transformOscillatorSeries(rawData, timeGrouping, baselineStats);
     },
     [debouncedFilterKey, timeGrouping, baselineStats, saleType],
-    { initialData: [], enabled: shouldFetch }
+    { initialData: [], enabled: shouldFetch, keepPreviousData: true }
   );
 
   // Get latest values for KPI cards
@@ -329,13 +330,16 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
     },
   };
 
+  // Card owns its height explicitly (header ~100px + insight ~60px + footer ~44px = 204px overhead)
+  const cardHeight = height + 204;
+
   // CRITICAL: containerRef must be OUTSIDE QueryState
   return (
     <div ref={containerRef}>
       <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={height}>
         <div
-          className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col h-full"
-          style={{ minHeight: height + 160 }}
+          className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+          style={{ height: cardHeight }}
         >
           {/* Header */}
           <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">

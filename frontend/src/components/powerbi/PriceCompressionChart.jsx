@@ -95,7 +95,7 @@ export function PriceCompressionChart({ height = 380, saleType = null }) {
       return calculateHistoricalBaseline(transformed);
     },
     [], // Empty deps = fetch once on mount
-    { initialData: { min: 0, max: 1000 }, enabled: shouldFetch }
+    { initialData: { min: 0, max: 1000 }, enabled: shouldFetch, keepPreviousData: true }
   );
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
@@ -128,7 +128,7 @@ export function PriceCompressionChart({ height = 380, saleType = null }) {
       return transformCompressionSeries(rawData, timeGrouping);
     },
     [debouncedFilterKey, timeGrouping, saleType],
-    { initialData: [], enabled: shouldFetch }
+    { initialData: [], enabled: shouldFetch, keepPreviousData: true }
   );
 
 
