@@ -116,13 +116,13 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         type: 'line',
         label: 'Total Transaction Value',
         data: totalValues,
-        borderColor: '#8B7355',  // Dark tan/brown for better visibility
-        backgroundColor: 'rgba(139, 115, 85, 0.1)',
+        borderColor: '#2D6A4F',  // Dark green
+        backgroundColor: 'rgba(45, 106, 79, 0.1)',
         borderWidth: 2,
         pointRadius: 2,
         pointHoverRadius: 4,
-        pointBackgroundColor: '#A89078',  // Medium tan fill
-        pointBorderColor: '#8B7355',  // Dark tan border
+        pointBackgroundColor: '#40916C',  // Medium green fill
+        pointBorderColor: '#2D6A4F',  // Dark green border
         pointBorderWidth: 1,
         tension: 0.4,  // Smooth curve
         fill: false,
@@ -225,10 +225,10 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         {/* Header - shrink-0 */}
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[#213448]">Transaction Trend</h3>
+            <h3 className="font-semibold text-[#213448]">Total Resale Volume & Quantum Trend</h3>
           </div>
           <p className="text-xs text-[#547792] mt-1">
-            Volume and price by {TIME_LABELS[timeGrouping]}
+            Volume and value by {TIME_LABELS[timeGrouping]}
           </p>
         </div>
         {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
