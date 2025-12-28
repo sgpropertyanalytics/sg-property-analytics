@@ -432,50 +432,30 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
         })}
       </div>
 
-      {/* Footer with explanatory notes */}
-      <div className="px-4 py-3 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
-        <div className="flex flex-col gap-2">
-          {/* Data indicator */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px]">
-            <span className="text-[#547792] font-medium">
-              Data: {isSaleType.resale(saleType) ? 'Resale Only' : isSaleType.newSale(saleType) ? 'New Sale Only' : 'All Transactions (New Sale + Resale)'}
-            </span>
-            <span className="text-[#94B4C1]">{chartData.length} districts</span>
-            <span className="text-[#94B4C1]">• Full database range (not affected by date filters)</span>
-          </div>
-
-          {/* Visual legend */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-[#547792]">
+      {/* Footer - minimal legend */}
+      <div className="px-4 py-2 bg-slate-50 border-t border-slate-200">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500">
+          {/* Legend */}
+          <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-300 border border-white"></span>
-              <span>Earliest Quarter ({startQuarter})</span>
+              <span className="w-2 h-2 rounded-full bg-slate-300"></span>
+              <span>Baseline ({startQuarter})</span>
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-emerald-500 border border-white"></span>
-              <span>Latest Quarter ({endQuarter}) - Growth</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-red-400 border border-white"></span>
-              <span>Decline</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span>Latest ({endQuarter})</span>
             </span>
           </div>
 
-          {/* Additional notes */}
-          <div className="text-[10px] text-[#94B4C1]">
-            <p>Increment = absolute PSF change. Larger dot & thicker line = stronger movement. Click headers to sort.</p>
+          {/* Stats */}
+          <div className="flex items-center gap-3">
+            <span>{chartData.length} districts</span>
+            {excludedDistricts.length > 0 && (
+              <span className="text-amber-600" title={excludedDistricts.map(d => `${d.district}: ${d.reason}`).join(', ')}>
+                {excludedDistricts.length} excluded
+              </span>
+            )}
           </div>
-
-          {/* Excluded districts note */}
-          {excludedDistricts.length > 0 && (
-            <div className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1.5 rounded border border-amber-200">
-              <span className="font-medium">Excluded ({excludedDistricts.length}):</span>{' '}
-              {excludedDistricts.map((item, idx) => (
-                <span key={item.district}>
-                  {item.district} ({item.reason}){idx < excludedDistricts.length - 1 ? ', ' : ''}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>
