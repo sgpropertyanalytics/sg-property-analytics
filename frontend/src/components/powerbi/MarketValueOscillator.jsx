@@ -142,6 +142,25 @@ export function MarketValueOscillator({ height = 380 }) {
     return latestZCcrRcr - latestZRcrOcr;
   }, [latestZCcrRcr, latestZRcrOcr]);
 
+  // Calculate dynamic Y-axis bounds based on actual data (minimum ±3)
+  const yAxisBounds = useMemo(() => {
+    const allZScores = [
+      ...data.map(d => d.zCcrRcr),
+      ...data.map(d => d.zRcrOcr),
+    ].filter(v => v !== null && !isNaN(v));
+
+    if (allZScores.length === 0) return { min: -3, max: 3 };
+
+    const minZ = Math.min(...allZScores);
+    const maxZ = Math.max(...allZScores);
+
+    // Ensure minimum range of ±3, but expand if data exceeds
+    return {
+      min: Math.min(-3, Math.floor(minZ) - 0.5),
+      max: Math.max(3, Math.ceil(maxZ) + 0.5),
+    };
+  }, [data]);
+
   // Calculate rolling averages with configurable window
   const rollingWindowLabel = ROLLING_AVG_OPTIONS.find(o => o.value === rollingWindow)?.label || `${rollingWindow}M`;
   const rollingAverages = useMemo(() => {
@@ -272,18 +291,18 @@ export function MarketValueOscillator({ height = 380 }) {
       },
       annotation: {
         annotations: {
-          // Premium zone (overvalued)
+          // Premium zone (overvalued) - extends to dynamic max
           premiumZone: {
             type: 'box',
             yMin: 1.0,
-            yMax: 3,
+            yMax: yAxisBounds.max,
             backgroundColor: 'rgba(239, 68, 68, 0.08)',
             borderWidth: 0,
           },
-          // Value zone (undervalued)
+          // Value zone (undervalued) - extends to dynamic min
           valueZone: {
             type: 'box',
-            yMin: -3,
+            yMin: yAxisBounds.min,
             yMax: -1.0,
             backgroundColor: 'rgba(16, 185, 129, 0.08)',
             borderWidth: 0,
@@ -355,8 +374,8 @@ export function MarketValueOscillator({ height = 380 }) {
         },
       },
       y: {
-        min: -3,
-        max: 3,
+        min: yAxisBounds.min,
+        max: yAxisBounds.max,
         title: { display: true, text: 'σ (Standard Deviation)', font: { size: 11 } },
         ticks: {
           callback: (v) => `${v > 0 ? '+' : ''}${v}σ`,
@@ -368,8 +387,8 @@ export function MarketValueOscillator({ height = 380 }) {
     },
   };
 
-  // Card height with header + expanded insight box
-  const cardHeight = height + 280;
+  // Card height with header + insight box
+  const cardHeight = height + 240;
 
   // CRITICAL: containerRef must be OUTSIDE QueryState
   return (
@@ -455,12 +474,6 @@ export function MarketValueOscillator({ height = 380 }) {
                   <div><span className="font-semibold text-sky-600">–0.5σ to –1.0σ</span> — Below average, improving value.</div>
                   <div><span className="font-semibold text-emerald-600">&lt; –1.0σ</span> — Significantly undervalued, mean-reversion potential.</div>
                 </div>
-              </div>
-              <div>
-                <div className="font-semibold text-[#213448] mb-0.5">How to Read Movement</div>
-                <p className="text-xs">
-                  The direction of the line reflects market momentum, while the distance from zero indicates valuation risk. This metric is best used as a relative valuation gauge, not a short-term timing tool.
-                </p>
               </div>
             </KeyInsightBox>
           </div>
