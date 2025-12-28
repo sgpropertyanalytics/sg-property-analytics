@@ -320,7 +320,6 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
           const endDotColor = getEndDotColor(item.growthPercent);
           const lineColor = getLineColor(item.growthPercent);
           const lineThickness = getLineThickness(item.growthPercent);
-          const endDotSize = getEndDotSize(item.growthPercent);
 
           const regionBg = REGION_HEADER_BG[item.region] || REGION_HEADER_BG.OCR;
           const regionText = REGION_HEADER_TEXT[item.region] || REGION_HEADER_TEXT.OCR;
