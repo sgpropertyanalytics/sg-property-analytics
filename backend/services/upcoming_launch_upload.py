@@ -14,8 +14,8 @@ Usage:
 """
 import os
 import csv
-from datetime import datetime
 from typing import Dict, Any, List
+from utils.normalize import coerce_to_date
 
 
 # =============================================================================
@@ -354,10 +354,10 @@ def _create_from_csv(row: Dict[str, Any], default_year: int = None):
         # Parse launch_date (expects YYYY-MM-DD format)
         try:
             date_str = str(row['launch_date']).strip()
-            from datetime import datetime
-            expected_launch_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-            launch_year = expected_launch_date.year
-        except (ValueError, IndexError):
+            expected_launch_date = coerce_to_date(date_str)
+            if expected_launch_date:
+                launch_year = expected_launch_date.year
+        except ValueError:
             pass
 
     if row.get('launch_year') and not launch_year:

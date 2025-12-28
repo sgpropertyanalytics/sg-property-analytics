@@ -15,6 +15,7 @@ import pandas as pd
 from typing import Optional, Dict, Any, List, Union
 from datetime import datetime, timedelta, date
 from calendar import monthrange
+from utils.normalize import coerce_to_date
 from services.classifier import get_bedroom_label
 from services.classifier_extended import (
     classify_tenure,
@@ -179,17 +180,16 @@ def get_filtered_transactions(
     # Apply date range filters in SQL (more efficient than pandas filtering)
     if start_date:
         start_filter = f"{start_date}-01" if len(start_date) == 7 else start_date
-        start_dt = datetime.strptime(start_filter, "%Y-%m-%d")
+        start_dt = coerce_to_date(start_filter)
         query = query.filter(Transaction.transaction_date >= start_dt)
-    
+
     if end_date:
         # Get last day of month for end_date
         end_filter = f"{end_date}-01" if len(end_date) == 7 else end_date
-        year, month = map(int, end_filter.split("-")[:2])
-        last_day = monthrange(year, month)[1]
-        end_dt = datetime(year, month, last_day)
+        parsed_date = coerce_to_date(end_filter)
+        last_day = monthrange(parsed_date.year, parsed_date.month)[1]
+        end_dt = date(parsed_date.year, parsed_date.month, last_day)
         # Use < next_day instead of <= end_dt to include all transactions on end_dt
-        # PostgreSQL treats datetime as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
         query = query.filter(Transaction.transaction_date < end_dt + timedelta(days=1))
     
     # Apply limit at database level if specified

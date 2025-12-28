@@ -1015,11 +1015,22 @@ def map_table_columns(headers: List[str]) -> Dict[str, int]:
 
 
 def parse_date(date_str: str) -> Optional[datetime]:
-    """Parse date string to datetime object."""
+    """
+    Parse date string to datetime object.
+
+    NOTE: This function intentionally uses strptime() instead of coerce_to_date()
+    because it handles multiple date formats from scraped HTML content.
+    coerce_to_date() only supports YYYY-MM-DD format.
+
+    This is acceptable per input-boundary-guardrails because:
+    - It's at the raw input boundary (web scraping)
+    - It must handle 5 different date formats from external sources
+    - Returns datetime (not date) for scraper compatibility
+    """
     if not date_str:
         return None
 
-    # Common date formats
+    # Common date formats from scraped sources
     formats = [
         '%d %B %Y',  # 15 January 2025
         '%d %b %Y',  # 15 Jan 2025
