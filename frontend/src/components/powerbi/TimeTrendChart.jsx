@@ -21,6 +21,7 @@ import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 // SaleType imports removed - Market Core is Resale-only
 import { transformTimeSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
+import { niceMax } from '../../utils/niceAxisMax';
 
 ChartJS.register(
   CategoryScale,
@@ -95,7 +96,8 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
   const maxCount = Math.max(...transactionCounts, 1);
 
   // Extend y axis (count) slightly to leave room for line above
-  const yAxisMax = Math.ceil(maxCount * 1.4); // Bars occupy ~70% of chart height
+  // Use niceMax to ensure human-readable tick boundaries (INV-11)
+  const yAxisMax = niceMax(Math.ceil(maxCount * 1.4));
 
   const chartData = {
     labels,

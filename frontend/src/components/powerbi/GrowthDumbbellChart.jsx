@@ -5,6 +5,7 @@ import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
 import { isSaleType } from '../../schemas/apiContract';
 import { transformGrowthDumbbellSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
+import { nicePsfMin, nicePsfMax } from '../../utils/niceAxisMax';
 
 // All districts
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
@@ -219,18 +220,17 @@ export function GrowthDumbbellChart({ period = '12m', bedroom = 'all', saleType 
     return sorted;
   }, [chartData, sortConfig]);
 
-  // Calculate scale for the chart
+  // Calculate scale for the chart with nice boundaries (INV-11)
   const { minPsf, maxPsf } = useMemo(() => {
     if (chartData.length === 0) return { minPsf: 0, maxPsf: 3000 };
 
     const allPsf = chartData.flatMap(d => [d.startPsf, d.endPsf]);
     const min = Math.min(...allPsf);
     const max = Math.max(...allPsf);
-    const padding = (max - min) * 0.1;
 
     return {
-      minPsf: Math.max(0, min - padding),
-      maxPsf: max + padding,
+      minPsf: nicePsfMin(min),
+      maxPsf: nicePsfMax(max),
     };
   }, [chartData]);
 
