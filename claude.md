@@ -10,6 +10,7 @@
 | `/data-standards` | Classifications/labels |
 | `/api-endpoint-guardrails` | New endpoints |
 | `/api-contract-guardrails` | API contract changes |
+| `/frontend-design` | Building UI components/pages |
 
 ## Agents
 | Agent | Trigger |
