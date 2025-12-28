@@ -542,7 +542,10 @@ Regions: CCR=#213448, RCR=#547792, OCR=#94B4C1
 
 **Slices monitored:**
 - Segment metrics: CCR/RCR/OCR × last 3 complete months
-- District metrics: D09/D10/D15 × last quarter
+- District metrics: 7 districts × last quarter
+  - CCR: D01 (CBD), D09 (Orchard), D10 (Tanglin)
+  - RCR: D03 (Queenstown), D15 (East Coast)
+  - OCR: D19 (Serangoon), D23 (Hillview)
 
 **Tolerances:**
 | Metric | Tolerance |
