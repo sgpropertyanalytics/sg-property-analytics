@@ -45,6 +45,10 @@ const ValueParityPanel = lazyWithRetry(() =>
 const SupplyInsightsContent = lazyWithRetry(() =>
   import('./pages/SupplyInsights').then(m => ({ default: m.SupplyInsightsContent }))
 );
+// TODO: PrimaryMarket page not yet implemented
+// const PrimaryMarketContent = lazyWithRetry(() =>
+//   import('./pages/PrimaryMarket').then(m => ({ default: m.PrimaryMarketContent }))
+// );
 
 // Note: Loading fallback moved to DashboardLayout to keep nav rail persistent
 
@@ -61,7 +65,8 @@ const SupplyInsightsContent = lazyWithRetry(() =>
  * - /: Landing page (public)
  * - /landing: Landing page (public)
  * - /login: User authentication
- * - /market-pulse: Market analytics dashboard (premium)
+ * - /market-core: Resale market analytics dashboard (premium)
+ * - /primary-market: New Sale vs Resale comparison (premium)
  * - /district-deep-dive: District deep dive analysis (premium)
  * - /project-deep-dive: Project analysis with exit queue risk & floor liquidity (premium)
  * - /value-parity: Budget search tool (premium) - includes New Launches + Resale
@@ -91,8 +96,11 @@ function App() {
           {/* All dashboard routes share a single DashboardLayout to prevent nav rail flickering */}
           {/* The layout stays mounted while only the Outlet content changes during navigation */}
           <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-            {/* Market Pulse - Main analytics dashboard (Lazy-loaded) */}
-            <Route path="/market-pulse" element={<MacroOverviewContent />} />
+            {/* Market Core - Resale analytics dashboard (Lazy-loaded) */}
+            <Route path="/market-core" element={<MacroOverviewContent />} />
+
+            {/* Primary Market - New Sale vs Resale comparison (Lazy-loaded) */}
+            {/* <Route path="/primary-market" element={<PrimaryMarketContent />} /> */}
 
             {/* Value Parity Tool - No filter sidebar (Lazy-loaded) */}
             <Route
@@ -130,9 +138,10 @@ function App() {
           {/* ===== Redirects ===== */}
 
           {/* Legacy route redirects */}
-          <Route path="/analytics" element={<Navigate to="/market-pulse" replace />} />
-          <Route path="/dashboard" element={<Navigate to="/market-pulse" replace />} />
-          <Route path="/macro-overview" element={<Navigate to="/market-pulse" replace />} />
+          <Route path="/analytics" element={<Navigate to="/market-core" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/market-core" replace />} />
+          <Route path="/macro-overview" element={<Navigate to="/market-core" replace />} />
+          <Route path="/market-pulse" element={<Navigate to="/market-core" replace />} />
 
               {/* Catch-all -> Landing Page */}
               <Route path="*" element={<Navigate to="/" replace />} />

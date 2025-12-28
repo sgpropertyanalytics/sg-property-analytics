@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useInView } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useRef, useState } from 'react';
 import {
@@ -267,18 +267,28 @@ const LandingPage = () => {
 /**
  * Hero Section - Outcome-driven design
  * Addresses buyer fear: "Am I overpaying?"
+ *
+ * Uses Intersection Observer (useInView) instead of scroll-linked transforms
+ * for smoother, more natural scrolling without per-frame updates.
  */
 function HeroSection({ navigate }) {
-  const { scrollY } = useScroll();
-  // Gradual fade: stays visible longer, then eases out smoothly
-  const opacity = useTransform(scrollY, [0, 150, 500], [1, 1, 0]);
+  const heroRef = useRef(null);
+  // Trigger fade when hero is less than 20% visible
+  const isInView = useInView(heroRef, { amount: 0.2 });
 
   return (
     // Paper layering effect for dashboard to pop
-    <section className="relative pt-28 sm:pt-32 overflow-hidden min-h-screen flex flex-col items-center bg-[#EAE0CF]/30">
+    <section
+      ref={heroRef}
+      className="relative pt-28 sm:pt-32 overflow-hidden min-h-screen flex flex-col items-center bg-[#EAE0CF]/30"
+    >
 
-      {/* All hero content fades on scroll */}
-      <motion.div style={{ opacity }} className="w-full flex flex-col items-center">
+      {/* All hero content fades based on visibility - single transition, not per-frame */}
+      <motion.div
+        animate={{ opacity: isInView ? 1 : 0 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="w-full flex flex-col items-center"
+      >
 
         {/* Text Content */}
         <div className="relative z-20 text-center max-w-4xl px-6 flex flex-col items-center mb-16">
