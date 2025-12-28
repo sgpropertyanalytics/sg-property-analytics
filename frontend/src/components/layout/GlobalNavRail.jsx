@@ -217,54 +217,28 @@ export function GlobalNavRail({ activePage, onPageChange, expanded = false }) {
         {/* Separator */}
         <div className={`border-t border-[#547792]/30 mb-3 ${expanded ? 'mx-2' : 'mx-1'}`} />
 
-        {/* Info Links */}
-        <div className="flex flex-col gap-1 mb-3">
-          {/* Methodology */}
-          <button
-            onClick={() => startTransition(() => navigate('/methodology'))}
-            className={`
-              group relative flex items-center
-              ${expanded ? 'gap-3 px-3 py-2 rounded-lg' : 'justify-center py-2'}
-              text-[#94B4C1]/70 hover:bg-[#547792]/20 hover:text-[#EAE0CF]
-              transition-colors duration-200
-            `}
-            aria-label="Methodology"
-          >
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {expanded && <span className="text-sm">Methodology</span>}
-            {!expanded && (
-              <div className="absolute left-full ml-4 px-3 py-2 bg-[#213448] text-[#EAE0CF] text-sm font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible pointer-events-none transition-all duration-200 delay-100 whitespace-nowrap z-50 border border-[#94B4C1]/30">
-                Methodology
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-[#213448] rotate-45 border-l border-b border-[#94B4C1]/30" />
-              </div>
-            )}
-          </button>
-
-          {/* Data Sources */}
-          <button
-            onClick={() => startTransition(() => navigate('/methodology#data-sources'))}
-            className={`
-              group relative flex items-center
-              ${expanded ? 'gap-3 px-3 py-2 rounded-lg' : 'justify-center py-2'}
-              text-[#94B4C1]/70 hover:bg-[#547792]/20 hover:text-[#EAE0CF]
-              transition-colors duration-200
-            `}
-            aria-label="Data Sources"
-          >
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-            {expanded && <span className="text-sm">Data Sources</span>}
-            {!expanded && (
-              <div className="absolute left-full ml-4 px-3 py-2 bg-[#213448] text-[#EAE0CF] text-sm font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible pointer-events-none transition-all duration-200 delay-100 whitespace-nowrap z-50 border border-[#94B4C1]/30">
-                Data Sources
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-[#213448] rotate-45 border-l border-b border-[#94B4C1]/30" />
-              </div>
-            )}
-          </button>
-        </div>
+        {/* Methodology Link */}
+        <button
+          onClick={() => startTransition(() => navigate('/methodology'))}
+          className={`
+            group relative flex items-center mb-3
+            ${expanded ? 'gap-3 px-3 py-2 rounded-lg' : 'justify-center py-2'}
+            text-[#94B4C1]/70 hover:bg-[#547792]/20 hover:text-[#EAE0CF]
+            transition-colors duration-200
+          `}
+          aria-label="Methodology"
+        >
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {expanded && <span className="text-sm">Methodology</span>}
+          {!expanded && (
+            <div className="absolute left-full ml-4 px-3 py-2 bg-[#213448] text-[#EAE0CF] text-sm font-medium rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible pointer-events-none transition-all duration-200 delay-100 whitespace-nowrap z-50 border border-[#94B4C1]/30">
+              Methodology
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-[#213448] rotate-45 border-l border-b border-[#94B4C1]/30" />
+            </div>
+          )}
+        </button>
 
         {/* User Profile */}
         <UserProfileMenu
