@@ -107,48 +107,6 @@ function DistrictVolumeContent() {
       <ChartWatermark>
         <DistrictLiquidityMap />
       </ChartWatermark>
-
-      {/* Coming Soon Features */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-5">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#EAE0CF]/50 flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-sm font-semibold text-[#213448]">New Launch vs Resale</h3>
-                <span className="text-[9px] px-1.5 py-0.5 bg-[#EAE0CF] text-[#547792] rounded-full font-medium">Coming</span>
-              </div>
-              <p className="text-xs text-[#547792]">
-                Compare pricing and volume dynamics between new launches and resale market
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 p-5">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#EAE0CF]/50 flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-              </svg>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-sm font-semibold text-[#213448]">Project Quality Distribution</h3>
-                <span className="text-[9px] px-1.5 py-0.5 bg-[#EAE0CF] text-[#547792] rounded-full font-medium">Coming</span>
-              </div>
-              <p className="text-xs text-[#547792]">
-                Distribution of project tiers and quality ratings across districts
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
