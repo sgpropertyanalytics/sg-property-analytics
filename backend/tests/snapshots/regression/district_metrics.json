@@ -1,11 +1,37 @@
 {
   "_metadata": {
-    "generated_at": "2025-12-28T03:43:24.072975Z",
-    "git_sha": "8ced001",
+    "generated_at": "2025-12-28T04:28:40.718480+00:00",
+    "git_sha": "fbdfe2c",
     "api_version": "v3",
-    "slice_count": 3
+    "slice_count": 7
   },
   "slices": {
+    "district_D01_2025-Q3": {
+      "params": {
+        "segment": null,
+        "district": "D01",
+        "date_from": "2025-07-01",
+        "date_to": "2025-10-01"
+      },
+      "metrics": {
+        "count": 136,
+        "median_psf": 2522.25,
+        "avg_psf": 2514.249705882353
+      }
+    },
+    "district_D03_2025-Q3": {
+      "params": {
+        "segment": null,
+        "district": "D03",
+        "date_from": "2025-07-01",
+        "date_to": "2025-10-01"
+      },
+      "metrics": {
+        "count": 1553,
+        "median_psf": 2875.007083065035,
+        "avg_psf": 2838.656690276883
+      }
+    },
     "district_D09_2025-Q3": {
       "params": {
         "segment": null,
@@ -43,6 +69,32 @@
         "count": 529,
         "median_psf": 2314.7315689981097,
         "avg_psf": 2228.318922495274
+      }
+    },
+    "district_D19_2025-Q3": {
+      "params": {
+        "segment": null,
+        "district": "D19",
+        "date_from": "2025-07-01",
+        "date_to": "2025-10-01"
+      },
+      "metrics": {
+        "count": 546,
+        "median_psf": 1702.2472527472528,
+        "avg_psf": 1709.917564102564
+      }
+    },
+    "district_D23_2025-Q3": {
+      "params": {
+        "segment": null,
+        "district": "D23",
+        "date_from": "2025-07-01",
+        "date_to": "2025-10-01"
+      },
+      "metrics": {
+        "count": 285,
+        "median_psf": 1559.0526315789473,
+        "avg_psf": 1534.4184210526316
       }
     }
   }

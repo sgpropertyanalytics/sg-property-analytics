@@ -5,7 +5,10 @@ Validates API responses against golden snapshots to catch silent correctness dri
 
 Slices monitored:
 - Segment metrics: CCR/RCR/OCR x last 3 complete months
-- District metrics: D09/D10/D15 x last quarter
+- District metrics: D01/D03/D09/D10/D15/D19/D23 x last quarter
+  - CCR: D01 (CBD), D09 (Orchard), D10 (Tanglin)
+  - RCR: D03 (Queenstown), D15 (East Coast)
+  - OCR: D19 (Serangoon), D23 (Hillview)
 
 Tolerances:
 - counts: ±0 (exact)
@@ -36,7 +39,11 @@ if str(backend_path) not in sys.path:
 
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots" / "regression"
 SEGMENTS = ["CCR", "RCR", "OCR"]
-KEY_DISTRICTS = ["D09", "D10", "D15"]
+# Districts covering all segments:
+# CCR: D01 (CBD), D09 (Orchard), D10 (Tanglin)
+# RCR: D03 (Queenstown), D15 (East Coast)
+# OCR: D19 (Serangoon), D23 (Hillview)
+KEY_DISTRICTS = ["D01", "D03", "D09", "D10", "D15", "D19", "D23"]
 METRICS = ["count", "median_psf", "avg_psf"]
 
 
