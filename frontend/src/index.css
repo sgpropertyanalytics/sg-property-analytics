@@ -1,19 +1,83 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  /* Editorial Typography System */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans: "Source Sans 3", system-ui, -apple-system, sans-serif;
+
+  /* Editorial accent color */
+  --color-terracotta: #C17F59;
 }
 
-/* Force modern sans-serif font instead of Times New Roman */
+/* Force modern typography */
 :root {
   font-family: var(--font-sans);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 body {
   @apply bg-gray-50 text-gray-900;
   margin: 0;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ====== Editorial Typography Utilities ====== */
+
+/* Display font for headlines */
+.font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+}
+
+/* Editorial headline styles */
+.editorial-headline {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+/* Stat callout - large numbers with editorial flair */
+.stat-callout {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 3.5rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+/* Stat label - uppercase tracking */
+.stat-label {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #547792;
+}
+
+/* Pull quote style */
+.pull-quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.25rem;
+  line-height: 1.4;
+  color: #547792;
+}
+
+/* Terracotta accent */
+.text-terracotta {
+  color: var(--color-terracotta);
+}
+
+.bg-terracotta {
+  background-color: var(--color-terracotta);
+}
+
+.border-terracotta {
+  border-color: var(--color-terracotta);
 }
 
 /* Make chart canvases responsive */
