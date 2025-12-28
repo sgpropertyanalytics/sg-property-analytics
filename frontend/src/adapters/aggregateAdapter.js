@@ -60,6 +60,9 @@ export {
   getZScoreShortLabel,
   getZScoreColor,
   calculateRollingAverage,
+  // District Comparison
+  transformDistrictComparison,
+  truncateProjectName,
 } from './aggregate';
 
 // Re-export default for backwards compatibility

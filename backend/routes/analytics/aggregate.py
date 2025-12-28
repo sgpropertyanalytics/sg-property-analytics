@@ -386,6 +386,10 @@ def aggregate():
         # True median PSF using percentile_cont(0.5)
         select_columns.append(func.percentile_cont(0.5).within_group(Transaction.psf).label("median_psf_actual"))
 
+    # total_units is handled via post-processing (not SQL aggregate)
+    # It requires joining with project inventory data from CSV/database
+    needs_total_units = "total_units" in metrics and "project" in group_by
+
     # Build the query
     if select_columns:
         query = db.session.query(*select_columns)
@@ -453,6 +457,18 @@ def aggregate():
                 clean_dict[key] = value
 
         data.append(clean_dict)
+
+    # Post-processing: Add total_units from project inventory data
+    if needs_total_units and data:
+        from services.new_launch_units import get_project_units
+        for row in data:
+            project_name = row.get('project')
+            if project_name:
+                units_info = get_project_units(project_name)
+                row['total_units'] = units_info.get('total_units')
+                # Also include confidence for transparency
+                row['total_units_source'] = units_info.get('unit_source')
+                row['total_units_confidence'] = units_info.get('confidence')
 
     elapsed = time.time() - start
     print(f"GET /api/aggregate took: {elapsed:.4f} seconds (returned {len(data)} groups from {total_records} records)")

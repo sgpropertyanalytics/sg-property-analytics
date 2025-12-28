@@ -56,4 +56,7 @@ export {
   getZScoreShortLabel,
   getZScoreColor,
   calculateRollingAverage,
+  // District Comparison
+  transformDistrictComparison,
+  truncateProjectName,
 } from './aggregateAdapter';

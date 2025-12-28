@@ -90,6 +90,11 @@ import {
   getBudgetZoneStyle,
 } from './priceRange';
 
+import {
+  transformDistrictComparison,
+  truncateProjectName,
+} from './districtComparison';
+
 // Named exports
 export {
   // Validation
@@ -140,6 +145,9 @@ export {
   formatPriceShort,
   formatPsf,
   getBudgetZoneStyle,
+  // District Comparison
+  transformDistrictComparison,
+  truncateProjectName,
 };
 
 // Default export for backwards compatibility
@@ -188,4 +196,7 @@ export default {
   formatPriceShort,
   formatPsf,
   getBudgetZoneStyle,
+  // District Comparison
+  transformDistrictComparison,
+  truncateProjectName,
 };

@@ -35,6 +35,10 @@ export const AggField = {
   TOTAL_VALUE: 'totalValue',      // v1: total_value
   AVG_PRICE: 'avgPrice',          // v1: avg_price
   MEDIAN_PRICE: 'medianPrice',    // v1: median_price
+  // Project inventory fields (group_by=project only)
+  TOTAL_UNITS: 'totalUnits',      // v1: total_units
+  TOTAL_UNITS_SOURCE: 'totalUnitsSource',    // v1: total_units_source
+  TOTAL_UNITS_CONFIDENCE: 'totalUnitsConfidence', // v1: total_units_confidence
 };
 
 // =============================================================================
@@ -58,6 +62,10 @@ const V1_AGG_FIELD_MAP = {
   totalValue: 'total_value',
   avgPrice: 'avg_price',
   medianPrice: 'median_price',
+  // Project inventory fields
+  totalUnits: 'total_units',
+  totalUnitsSource: 'total_units_source',
+  totalUnitsConfidence: 'total_units_confidence',
 };
 
 // =============================================================================

@@ -24,6 +24,7 @@ import PriceGrowthChart from '../components/powerbi/PriceGrowthChart';
 import UnitPsfInput from '../components/powerbi/UnitPsfInput';
 import { KeyInsightBox } from '../components/ui/KeyInsightBox';
 import { FloorLiquidityHeatmap } from '../components/powerbi/FloorLiquidityHeatmap';
+import { DistrictComparisonChart } from '../components/powerbi/DistrictComparisonChart';
 
 // Random project name generator for loading animation
 const generateRandomProjectName = () => {
@@ -639,6 +640,14 @@ export function ProjectDeepDiveContent() {
                   />
                 )}
               </div>
+
+              {/* Row 4: District Comparison (Full Width) */}
+              {selectedProject?.district && (
+                <DistrictComparisonChart
+                  district={selectedProject.district}
+                  selectedProject={selectedProject.name}
+                />
+              )}
 
             </div>
 

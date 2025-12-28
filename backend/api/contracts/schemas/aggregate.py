@@ -236,6 +236,14 @@ AGGREGATE_RESPONSE_SCHEMA = ResponseSchema(
         "avg_price": FieldSpec(name="avg_price", type=float, nullable=True),
         "medianPrice": FieldSpec(name="medianPrice", type=float, nullable=True),
         "median_price": FieldSpec(name="median_price", type=float, nullable=True),
+
+        # Project inventory fields (when group_by=project and metrics includes total_units)
+        "totalUnits": FieldSpec(name="totalUnits", type=int, nullable=True),
+        "total_units": FieldSpec(name="total_units", type=int, nullable=True),
+        "totalUnitsSource": FieldSpec(name="totalUnitsSource", type=str, nullable=True),
+        "total_units_source": FieldSpec(name="total_units_source", type=str, nullable=True),
+        "totalUnitsConfidence": FieldSpec(name="totalUnitsConfidence", type=str, nullable=True),
+        "total_units_confidence": FieldSpec(name="total_units_confidence", type=str, nullable=True),
     },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
@@ -277,6 +285,10 @@ AGGREGATE_COMPAT_MAP = CompatMap(
         "cache_hit": "cacheHit",
         "filters_applied": "filtersApplied",
         "total_records": "totalRecords",
+        # Project inventory fields
+        "total_units": "totalUnits",
+        "total_units_source": "totalUnitsSource",
+        "total_units_confidence": "totalUnitsConfidence",
     }
 )
 
