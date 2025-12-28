@@ -15,12 +15,101 @@ from constants import (
     SALE_TYPE_NEW, SALE_TYPE_RESALE,
     TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR
 )
-from datetime import timedelta
+from datetime import timedelta, date
+from typing import Optional, Tuple
 from utils.normalize import (
     to_int, to_float, to_date, to_list, to_bool, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
+from schemas.api_contract import PropertyAgeBucket
+
+
+def _get_project_lease_info(project_name: str) -> Tuple[Optional[int], Optional[str]]:
+    """
+    Get representative lease_start_year and dominant tenure for a project.
+
+    Uses MODE (most common) lease_start_year from transactions.
+
+    Returns:
+        (lease_start_year, tenure_type) - either may be None
+    """
+    try:
+        from models.database import db
+        from sqlalchemy import text
+        from db.sql import OUTLIER_FILTER
+
+        # Get mode (most common) lease_start_year and tenure
+        result = db.session.execute(text(f"""
+            SELECT
+                lease_start_year,
+                tenure,
+                COUNT(*) as cnt
+            FROM transactions
+            WHERE UPPER(project_name) = :project_name
+              AND {OUTLIER_FILTER}
+              AND lease_start_year IS NOT NULL
+            GROUP BY lease_start_year, tenure
+            ORDER BY cnt DESC
+            LIMIT 1
+        """), {"project_name": project_name.upper().strip()}).fetchone()
+
+        if result:
+            return (result[0], result[1])
+        return (None, None)
+    except Exception:
+        return (None, None)
+
+
+def _classify_age_band(
+    lease_start_year: Optional[int],
+    tenure: Optional[str],
+    sale_type: Optional[str],
+    as_of_year: int
+) -> str:
+    """
+    Classify project into age band using canonical PropertyAgeBucket logic.
+
+    Age = as_of_year - lease_start_year (lease age, not building age)
+
+    Args:
+        lease_start_year: Year lease commenced (from transactions)
+        tenure: Tenure string (e.g., "Freehold", "99-year...")
+        sale_type: Dominant sale type for the project
+        as_of_year: Year to calculate age as-of (from query filters or current)
+
+    Returns:
+        Age band key matching frontend constants
+    """
+    # Freehold: special category (no depreciation)
+    if tenure and 'freehold' in tenure.lower():
+        return PropertyAgeBucket.FREEHOLD
+
+    # Missing lease data
+    if lease_start_year is None:
+        return 'unknown'
+
+    # Calculate lease age
+    age = as_of_year - lease_start_year
+
+    # Classify using canonical age ranges
+    # just_top: 0-4 years (before typical MOP)
+    if age >= 0 and age < 4:
+        return 'just_top'
+    # recently_top: 4-8 years
+    if age >= 4 and age < 8:
+        return PropertyAgeBucket.RECENTLY_TOP
+    # young_resale: 8-15 years
+    if age >= 8 and age < 15:
+        return PropertyAgeBucket.YOUNG_RESALE
+    # resale: 15-25 years
+    if age >= 15 and age < 25:
+        return PropertyAgeBucket.RESALE
+    # mature_resale: 25+ years
+    if age >= 25:
+        return PropertyAgeBucket.MATURE_RESALE
+
+    return 'unknown'
 
 
 @analytics_bp.route("/aggregate", methods=["GET"])
@@ -458,18 +547,34 @@ def aggregate():
 
         data.append(clean_dict)
 
-    # Post-processing: Add total_units and top_year from project inventory data
+    # Post-processing: Add total_units, top_year, and age_band for project grouping
     if needs_total_units and data:
         from services.new_launch_units import get_project_units
+
+        # Determine "as-of" year for age calculation
+        # If date_to filter provided, use that year; otherwise use current year
+        as_of_year = to_dt.year if to_dt else date.today().year
+
         for row in data:
             project_name = row.get('project')
             if project_name:
+                # Get unit inventory data
                 units_info = get_project_units(project_name)
                 row['total_units'] = units_info.get('total_units')
-                row['top_year'] = units_info.get('top')  # TOP year for age calculation
-                # Also include confidence for transparency
+                row['top_year'] = units_info.get('top')
                 row['total_units_source'] = units_info.get('unit_source')
                 row['total_units_confidence'] = units_info.get('confidence')
+
+                # Get lease info and classify age band
+                lease_start_year, tenure = _get_project_lease_info(project_name)
+                row['lease_start_year'] = lease_start_year
+                if lease_start_year:
+                    row['property_age_years'] = as_of_year - lease_start_year
+                else:
+                    row['property_age_years'] = None
+                row['age_band'] = _classify_age_band(
+                    lease_start_year, tenure, row.get('sale_type'), as_of_year
+                )
 
     elapsed = time.time() - start
     print(f"GET /api/aggregate took: {elapsed:.4f} seconds (returned {len(data)} groups from {total_records} records)")

@@ -40,6 +40,10 @@ export const AggField = {
   TOTAL_UNITS_SOURCE: 'totalUnitsSource',    // v1: total_units_source
   TOTAL_UNITS_CONFIDENCE: 'totalUnitsConfidence', // v1: total_units_confidence
   TOP_YEAR: 'topYear',            // v1: top_year - TOP year for age calculation
+  // Lease info and age band (group_by=project only)
+  LEASE_START_YEAR: 'leaseStartYear',       // v1: lease_start_year
+  PROPERTY_AGE_YEARS: 'propertyAgeYears',   // v1: property_age_years
+  AGE_BAND: 'ageBand',                      // v1: age_band - canonical age band from backend
 };
 
 // =============================================================================
@@ -68,6 +72,10 @@ const V1_AGG_FIELD_MAP = {
   totalUnitsSource: 'total_units_source',
   totalUnitsConfidence: 'total_units_confidence',
   topYear: 'top_year',
+  // Lease info and age band
+  leaseStartYear: 'lease_start_year',
+  propertyAgeYears: 'property_age_years',
+  ageBand: 'age_band',
 };
 
 // =============================================================================

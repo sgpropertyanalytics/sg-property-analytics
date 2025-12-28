@@ -9,13 +9,14 @@
 
 import { isDev } from './validation';
 import { getAggField, AggField } from '../../schemas/apiContract';
-import { getAgeBandKey, AGE_BAND_LABELS_SHORT } from '../../constants';
+import { AGE_BAND_LABELS_SHORT } from '../../constants';
 
 // Minimum units threshold for non-boutique projects
 const DEFAULT_MIN_UNITS = 100;
 
 // Age band order: New Sale first, then age ascending (youngest to oldest)
-const AGE_BAND_ORDER = ['new_sale', 'recently_top', 'young_resale', 'resale', 'mature_resale', 'unknown'];
+// Matches backend PropertyAgeBucket classification
+const AGE_BAND_ORDER = ['new_sale', 'just_top', 'recently_top', 'young_resale', 'resale', 'mature_resale', 'freehold', 'unknown'];
 
 /**
  * Transform raw aggregate data for district comparison horizontal bar chart.
@@ -54,7 +55,6 @@ export const transformDistrictComparison = (apiResponse, selectedProjectName, mi
   }
 
   const normalizedSelected = selectedProjectName?.toUpperCase()?.trim();
-  const currentYear = new Date().getFullYear();
 
   // Filter: >= minUnits OR is selected project
   const filtered = rawData.filter((row) => {
@@ -75,20 +75,17 @@ export const transformDistrictComparison = (apiResponse, selectedProjectName, mi
     return count >= 10;
   });
 
-  // Classify each project with age band
+  // Map each project using age_band from API (canonical, lease-based classification)
   const classified = filtered.map((row) => {
     const projectName = getAggField(row, AggField.PROJECT);
-    const topYear = getAggField(row, AggField.TOP_YEAR);
     const totalUnits = getAggField(row, AggField.TOTAL_UNITS);
     const normalizedProject = projectName?.toUpperCase()?.trim();
     const isSelected = normalizedProject === normalizedSelected;
     const isBoutique = totalUnits !== null && totalUnits !== undefined && totalUnits < minUnits;
 
-    // Calculate age and determine age band
-    const age = topYear ? currentYear - topYear : null;
-    // For age band classification: isFreehold=false, isNewSale=false since we're
-    // classifying by property age, not transaction type
-    const ageBand = getAgeBandKey(age, false, false) || 'unknown';
+    // Use age_band from API (calculated from lease_start_year on backend)
+    const ageBand = getAggField(row, AggField.AGE_BAND) || 'unknown';
+    const propertyAge = getAggField(row, AggField.PROPERTY_AGE_YEARS);
     const ageBandLabel = AGE_BAND_LABELS_SHORT[ageBand] || 'Unknown Age';
 
     return {
@@ -98,8 +95,8 @@ export const transformDistrictComparison = (apiResponse, selectedProjectName, mi
       totalUnits,
       totalUnitsSource: getAggField(row, AggField.TOTAL_UNITS_SOURCE),
       totalUnitsConfidence: getAggField(row, AggField.TOTAL_UNITS_CONFIDENCE),
-      topYear,
-      age,
+      leaseStartYear: getAggField(row, AggField.LEASE_START_YEAR),
+      age: propertyAge,
       ageBand,
       ageBandLabel,
       isSelected,

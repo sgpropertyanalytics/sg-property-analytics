@@ -247,6 +247,13 @@ AGGREGATE_RESPONSE_SCHEMA = ResponseSchema(
         # TOP year for age calculation (when group_by=project and metrics includes total_units)
         "topYear": FieldSpec(name="topYear", type=int, nullable=True),
         "top_year": FieldSpec(name="top_year", type=int, nullable=True),
+        # Lease info and age band (when group_by=project)
+        "leaseStartYear": FieldSpec(name="leaseStartYear", type=int, nullable=True),
+        "lease_start_year": FieldSpec(name="lease_start_year", type=int, nullable=True),
+        "propertyAgeYears": FieldSpec(name="propertyAgeYears", type=int, nullable=True),
+        "property_age_years": FieldSpec(name="property_age_years", type=int, nullable=True),
+        "ageBand": FieldSpec(name="ageBand", type=str, nullable=True),
+        "age_band": FieldSpec(name="age_band", type=str, nullable=True),
     },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
@@ -293,6 +300,10 @@ AGGREGATE_COMPAT_MAP = CompatMap(
         "total_units_source": "totalUnitsSource",
         "total_units_confidence": "totalUnitsConfidence",
         "top_year": "topYear",
+        # Lease info and age band
+        "lease_start_year": "leaseStartYear",
+        "property_age_years": "propertyAgeYears",
+        "age_band": "ageBand",
     }
 )
 
