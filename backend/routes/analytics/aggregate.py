@@ -490,6 +490,7 @@ def _make_aggregate_cache_key():
 
 
 @analytics_bp.route("/aggregate-summary", methods=["GET"])
+@api_contract("aggregate-summary")
 def aggregate_summary():
     """
     URA-Compliant aggregate summary endpoint.

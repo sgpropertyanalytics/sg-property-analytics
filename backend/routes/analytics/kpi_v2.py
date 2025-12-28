@@ -115,6 +115,7 @@ def kpi_summary_v2():
 
 
 @analytics_bp.route("/kpi-summary-v2/<kpi_id>", methods=["GET"])
+@api_contract("kpi-summary-v2/single")
 def kpi_single(kpi_id: str):
     """
     Get a single KPI by ID.

@@ -11,9 +11,12 @@ import time
 from flask import request, jsonify
 from routes.analytics import analytics_bp
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
+from api.contracts.wrapper import api_contract
+from schemas.api_contract import PropertyAgeBucket
 
 
 @analytics_bp.route("/kpi-summary", methods=["GET"])
+@api_contract("kpi-summary")
 def kpi_summary():
     """
     Single optimized endpoint for KPI cards - returns all metrics in one call.

@@ -160,3 +160,122 @@ class TestKpiSnapshots:
 
         for field in snapshot.get("required_meta", []):
             assert field in current_required_meta, f"Required meta '{field}' removed"
+
+
+# =============================================================================
+# KPI-SUMMARY-V2/SINGLE CONTRACT TESTS
+# =============================================================================
+
+
+class TestKpiSingleContractSchema:
+    """Test that kpi-summary-v2/single contract schema is properly registered."""
+
+    def test_kpi_single_contract_registered(self, contract_registry):
+        """Contract should be registered on import."""
+        assert "kpi-summary-v2/single" in contract_registry
+        contract = contract_registry["kpi-summary-v2/single"]
+        assert contract.version == "v3"
+        assert contract.endpoint == "kpi-summary-v2/single"
+
+    def test_param_schema_has_filter_fields(self, contract_registry):
+        """ParamSchema should define filter fields."""
+        contract = contract_registry["kpi-summary-v2/single"]
+        fields = contract.param_schema.fields
+
+        assert "district" in fields
+        assert "bedroom" in fields
+        assert "segment" in fields
+
+    def test_service_schema_has_kpi_id(self, contract_registry):
+        """ServiceSchema should include kpi_id."""
+        contract = contract_registry["kpi-summary-v2/single"]
+        fields = contract.service_schema.fields
+
+        assert "kpi_id" in fields
+        assert fields["kpi_id"].required is True
+
+
+class TestKpiSingleValidation:
+    """Test kpi-summary-v2/single param validation."""
+
+    def test_validate_valid_segment(self, contract_registry):
+        """Valid segment should pass validation."""
+        from api.contracts.validate import validate_public_params
+
+        contract = contract_registry["kpi-summary-v2/single"]
+        params = {"segment": "RCR"}
+
+        # Should not raise
+        validate_public_params(params, contract.param_schema)
+
+    def test_validate_invalid_segment(self, contract_registry):
+        """Invalid segment should fail validation."""
+        from api.contracts.validate import validate_public_params, ContractViolation
+
+        contract = contract_registry["kpi-summary-v2/single"]
+        params = {"segment": "INVALID"}
+
+        with pytest.raises(ContractViolation):
+            validate_public_params(params, contract.param_schema)
+
+
+# =============================================================================
+# KPI-SUMMARY (LEGACY) CONTRACT TESTS
+# =============================================================================
+
+
+class TestKpiSummaryLegacyContractSchema:
+    """Test that kpi-summary (legacy) contract schema is properly registered."""
+
+    def test_kpi_summary_legacy_contract_registered(self, contract_registry):
+        """Contract should be registered on import."""
+        assert "kpi-summary" in contract_registry
+        contract = contract_registry["kpi-summary"]
+        assert contract.version == "v3"
+        assert contract.endpoint == "kpi-summary"
+
+    def test_param_schema_has_filter_fields(self, contract_registry):
+        """ParamSchema should define filter fields."""
+        contract = contract_registry["kpi-summary"]
+        fields = contract.param_schema.fields
+
+        assert "district" in fields
+        assert "bedroom" in fields
+        assert "segment" in fields
+
+    def test_response_schema_has_required_meta(self, contract_registry):
+        """ResponseSchema should require meta fields."""
+        contract = contract_registry["kpi-summary"]
+        required = contract.response_schema.required_meta
+
+        assert "requestId" in required
+        assert "elapsedMs" in required
+        assert "apiVersion" in required
+
+
+class TestKpiSummaryLegacyValidation:
+    """Test kpi-summary (legacy) param validation."""
+
+    def test_validate_valid_segment(self, contract_registry):
+        """Valid segment should pass validation."""
+        from api.contracts.validate import validate_public_params
+
+        contract = contract_registry["kpi-summary"]
+        params = {"segment": "OCR"}
+
+        # Should not raise
+        validate_public_params(params, contract.param_schema)
+
+    def test_validate_with_filters(self, contract_registry):
+        """Multiple filters should pass validation."""
+        from api.contracts.validate import validate_public_params
+
+        contract = contract_registry["kpi-summary"]
+        params = {
+            "district": "D09,D10",
+            "bedroom": "2,3,4",
+            "segment": "CCR",
+        }
+
+        # Should not raise
+        validate_public_params(params, contract.param_schema)

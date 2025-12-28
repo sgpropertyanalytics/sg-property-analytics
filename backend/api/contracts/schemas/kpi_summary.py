@@ -198,3 +198,122 @@ KPI_SUMMARY_CONTRACT = EndpointContract(
 
 # Register on import
 register_contract(KPI_SUMMARY_CONTRACT)
+
+
+# =============================================================================
+# KPI-SUMMARY-V2/<KPI_ID> ENDPOINT - Single KPI
+# =============================================================================
+
+KPI_SINGLE_PARAM_SCHEMA = ParamSchema(
+    fields={
+        "district": FieldSpec(
+            name="district",
+            type=str,
+            nullable=True,
+            description="Comma-separated district codes"
+        ),
+        "bedroom": FieldSpec(
+            name="bedroom",
+            type=str,
+            nullable=True,
+            description="Comma-separated bedroom counts"
+        ),
+        "segment": FieldSpec(
+            name="segment",
+            type=str,
+            nullable=True,
+            allowed_values=["CCR", "RCR", "OCR"],
+            description="Market segment filter"
+        ),
+    },
+    aliases={}
+)
+
+KPI_SINGLE_SERVICE_SCHEMA = ServiceBoundarySchema(
+    fields={
+        "kpi_id": FieldSpec(name="kpi_id", type=str, required=True),
+        "districts": FieldSpec(name="districts", type=str, nullable=True),
+        "bedrooms": FieldSpec(name="bedrooms", type=str, nullable=True),
+        "segment": FieldSpec(name="segment", type=str, nullable=True),
+    }
+)
+
+KPI_SINGLE_RESPONSE_SCHEMA = ResponseSchema(
+    data_fields={},
+    meta_fields={
+        "requestId": FieldSpec(name="requestId", type=str, required=True),
+        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
+        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
+    },
+    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    data_is_list=False,
+)
+
+KPI_SINGLE_CONTRACT = EndpointContract(
+    endpoint="kpi-summary-v2/single",
+    version="v3",
+    param_schema=KPI_SINGLE_PARAM_SCHEMA,
+    service_schema=KPI_SINGLE_SERVICE_SCHEMA,
+    response_schema=KPI_SINGLE_RESPONSE_SCHEMA,
+)
+
+register_contract(KPI_SINGLE_CONTRACT)
+
+
+# =============================================================================
+# KPI-SUMMARY (Legacy) ENDPOINT
+# =============================================================================
+
+KPI_SUMMARY_LEGACY_PARAM_SCHEMA = ParamSchema(
+    fields={
+        "district": FieldSpec(
+            name="district",
+            type=str,
+            nullable=True,
+            description="Comma-separated district codes"
+        ),
+        "bedroom": FieldSpec(
+            name="bedroom",
+            type=str,
+            nullable=True,
+            description="Comma-separated bedroom counts"
+        ),
+        "segment": FieldSpec(
+            name="segment",
+            type=str,
+            nullable=True,
+            allowed_values=["CCR", "RCR", "OCR"],
+            description="Market segment filter"
+        ),
+    },
+    aliases={}
+)
+
+KPI_SUMMARY_LEGACY_SERVICE_SCHEMA = ServiceBoundarySchema(
+    fields={
+        "districts": FieldSpec(name="districts", type=list, nullable=True),
+        "bedrooms": FieldSpec(name="bedrooms", type=list, nullable=True),
+        "segment": FieldSpec(name="segment", type=str, nullable=True),
+    }
+)
+
+KPI_SUMMARY_LEGACY_RESPONSE_SCHEMA = ResponseSchema(
+    data_fields={},
+    meta_fields={
+        "requestId": FieldSpec(name="requestId", type=str, required=True),
+        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
+        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
+    },
+    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    data_is_list=False,
+)
+
+KPI_SUMMARY_LEGACY_CONTRACT = EndpointContract(
+    endpoint="kpi-summary",
+    version="v3",
+    param_schema=KPI_SUMMARY_LEGACY_PARAM_SCHEMA,
+    service_schema=KPI_SUMMARY_LEGACY_SERVICE_SCHEMA,
+    response_schema=KPI_SUMMARY_LEGACY_RESPONSE_SCHEMA,
+)
+
+register_contract(KPI_SUMMARY_LEGACY_CONTRACT)
