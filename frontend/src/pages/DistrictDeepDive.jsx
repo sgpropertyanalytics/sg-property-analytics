@@ -1,8 +1,17 @@
-import { useState, useCallback } from 'react';
-import { DistrictLiquidityMap, MarketStrategyMap } from '../components/insights';
+import { useState, useCallback, lazy, Suspense } from 'react';
 import { ChartWatermark } from '../components/ui';
 import { MarketMomentumGrid, GrowthDumbbellChart } from '../components/powerbi';
 import { SaleType } from '../schemas/apiContract';
+import { ChartSkeleton } from '../components/common/ChartSkeleton';
+
+// Lazy-load heavy map components (~450KB MapLibre + 98KB GeoJSON)
+// Only loaded when user navigates to the respective tab
+const DistrictLiquidityMap = lazy(() =>
+  import('../components/insights/DistrictLiquidityMap').then(m => ({ default: m.DistrictLiquidityMap }))
+);
+const MarketStrategyMap = lazy(() =>
+  import('../components/insights/MarketStrategyMap').then(m => ({ default: m.MarketStrategyMap }))
+);
 
 /**
  * District Deep Dive Page
@@ -106,9 +115,11 @@ export function DistrictDeepDiveContent() {
 function DistrictVolumeContent() {
   return (
     <div className="space-y-6">
-      {/* District Liquidity Map */}
+      {/* District Liquidity Map - Lazy-loaded with map skeleton */}
       <ChartWatermark>
-        <DistrictLiquidityMap saleType={SaleType.RESALE} />
+        <Suspense fallback={<ChartSkeleton type="map" height={600} />}>
+          <DistrictLiquidityMap saleType={SaleType.RESALE} />
+        </Suspense>
       </ChartWatermark>
     </div>
   );
@@ -144,14 +155,16 @@ function DistrictPriceContent() {
 
   return (
     <div className="space-y-6">
-      {/* District Price Map - controls the shared filters */}
+      {/* District Price Map - controls the shared filters, lazy-loaded */}
       <ChartWatermark>
-        <MarketStrategyMap
-          selectedPeriod={selectedPeriod}
-          selectedBed={selectedBed}
-          selectedSaleType={SaleType.RESALE}
-          onFilterChange={handleFilterChange}
-        />
+        <Suspense fallback={<ChartSkeleton type="map" height={600} />}>
+          <MarketStrategyMap
+            selectedPeriod={selectedPeriod}
+            selectedBed={selectedBed}
+            selectedSaleType={SaleType.RESALE}
+            onFilterChange={handleFilterChange}
+          />
+        </Suspense>
       </ChartWatermark>
 
       {/* Market Momentum Grid - uses shared filters (no PowerBIFilterContext) */}
