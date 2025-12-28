@@ -11,8 +11,9 @@ Slices monitored:
   - OCR: D19 (Serangoon), D23 (Hillview)
 
 Tolerances:
-- counts: ±0 (exact)
+- count: ±0 (exact)
 - median_psf/avg_psf: ±0.5% or ±$15 psf
+- total_value: ±0.5% (transaction volume)
 
 Run: cd backend && pytest tests/test_regression_snapshots.py -v
 Update: pytest tests/test_regression_snapshots.py --update-snapshots
@@ -44,7 +45,7 @@ SEGMENTS = ["CCR", "RCR", "OCR"]
 # RCR: D03 (Queenstown), D15 (East Coast)
 # OCR: D19 (Serangoon), D23 (Hillview)
 KEY_DISTRICTS = ["D01", "D03", "D09", "D10", "D15", "D19", "D23"]
-METRICS = ["count", "median_psf", "avg_psf"]
+METRICS = ["count", "median_psf", "avg_psf", "total_value"]
 
 
 class ResultStatus(Enum):
@@ -133,6 +134,20 @@ def is_within_tolerance(metric: str, expected: Optional[float], actual: Optional
             return True, ResultStatus.PASS
         elif pct_diff <= 0.02 or abs_diff <= 50:
             # Within warning threshold
+            return True, ResultStatus.WARN
+        else:
+            return False, ResultStatus.FAIL
+
+    elif metric == "total_value":
+        # Total transaction value - percentage tolerance only
+        if expected == 0:
+            return actual == 0, ResultStatus.PASS if actual == 0 else ResultStatus.FAIL
+
+        pct_diff = abs(actual - expected) / expected
+
+        if pct_diff <= 0.005:  # ±0.5%
+            return True, ResultStatus.PASS
+        elif pct_diff <= 0.02:  # ±2%
             return True, ResultStatus.WARN
         else:
             return False, ResultStatus.FAIL
@@ -328,10 +343,12 @@ def extract_metrics_from_response(response: Dict[str, Any]) -> Dict[str, Optiona
             "count": row.get("count"),
             "median_psf": row.get("medianPsf") or row.get("median_psf"),
             "avg_psf": row.get("avgPsf") or row.get("avg_psf"),
+            "total_value": row.get("totalValue") or row.get("total_value"),
         }
 
-    # Multiple rows - sum counts, use weighted PSF average if possible
+    # Multiple rows - sum counts and total_value, use weighted PSF average
     total_count = sum(r.get("count", 0) or 0 for r in data)
+    total_value = sum(r.get("totalValue") or r.get("total_value") or 0 for r in data)
 
     # For PSF, use count-weighted average
     psf_weighted_sum = 0.0
@@ -353,6 +370,7 @@ def extract_metrics_from_response(response: Dict[str, Any]) -> Dict[str, Optiona
         "count": total_count,
         "median_psf": psf_weighted_sum / total_weight if total_weight > 0 else None,
         "avg_psf": avg_weighted_sum / total_weight if total_weight > 0 else None,
+        "total_value": total_value if total_value > 0 else None,
     }
 
 

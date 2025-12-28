@@ -1,7 +1,7 @@
 {
   "_metadata": {
-    "generated_at": "2025-12-28T04:28:40.718480+00:00",
-    "git_sha": "fbdfe2c",
+    "generated_at": "2025-12-28T04:33:09.012096+00:00",
+    "git_sha": "9cfee24",
     "api_version": "v3",
     "slice_count": 7
   },
@@ -16,7 +16,8 @@
       "metrics": {
         "count": 136,
         "median_psf": 2522.25,
-        "avg_psf": 2514.249705882353
+        "avg_psf": 2514.249705882353,
+        "total_value": 320149061.0
       }
     },
     "district_D03_2025-Q3": {
@@ -29,7 +30,8 @@
       "metrics": {
         "count": 1553,
         "median_psf": 2875.007083065035,
-        "avg_psf": 2838.656690276883
+        "avg_psf": 2838.656690276883,
+        "total_value": 3928056245.0
       }
     },
     "district_D09_2025-Q3": {
@@ -42,7 +44,8 @@
       "metrics": {
         "count": 935,
         "median_psf": 3032.068449197861,
-        "avg_psf": 2920.580941176471
+        "avg_psf": 2920.580941176471,
+        "total_value": 2251439278.0
       }
     },
     "district_D10_2025-Q3": {
@@ -55,7 +58,8 @@
       "metrics": {
         "count": 1082,
         "median_psf": 2950.125693160813,
-        "avg_psf": 2834.365563770795
+        "avg_psf": 2834.365563770795,
+        "total_value": 3013674031.0
       }
     },
     "district_D15_2025-Q3": {
@@ -68,7 +72,8 @@
       "metrics": {
         "count": 529,
         "median_psf": 2314.7315689981097,
-        "avg_psf": 2228.318922495274
+        "avg_psf": 2228.318922495274,
+        "total_value": 1433653268.0
       }
     },
     "district_D19_2025-Q3": {
@@ -81,7 +86,8 @@
       "metrics": {
         "count": 546,
         "median_psf": 1702.2472527472528,
-        "avg_psf": 1709.917564102564
+        "avg_psf": 1709.917564102564,
+        "total_value": 881256448.0
       }
     },
     "district_D23_2025-Q3": {
@@ -94,7 +100,8 @@
       "metrics": {
         "count": 285,
         "median_psf": 1559.0526315789473,
-        "avg_psf": 1534.4184210526316
+        "avg_psf": 1534.4184210526316,
+        "total_value": 451248878.0
       }
     }
   }
