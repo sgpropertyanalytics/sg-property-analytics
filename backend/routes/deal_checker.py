@@ -26,6 +26,7 @@ deal_checker_bp = Blueprint('deal_checker', __name__)
 
 # Import contract versioning for HTTP header
 from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+from api.contracts.wrapper import api_contract
 
 
 @deal_checker_bp.after_request
@@ -212,6 +213,7 @@ def get_bedroom_filter(bedroom):
 
 
 @deal_checker_bp.route("/deal-checker/nearby-transactions", methods=["GET"])
+@api_contract("deal-checker/nearby-transactions")
 def get_nearby_transactions():
     """
     Find transactions within radius of a project, filtered by bedroom type.
@@ -408,6 +410,7 @@ def compute_scope_stats(project_names, bedroom, buyer_price, sqft=None):
 
 
 @deal_checker_bp.route("/deal-checker/multi-scope", methods=["GET"])
+@api_contract("deal-checker/multi-scope")
 def get_multi_scope_comparison():
     """
     Enhanced endpoint with multi-scope comparison.
@@ -606,6 +609,7 @@ def get_multi_scope_comparison():
 
 
 @deal_checker_bp.route("/projects/names", methods=["GET"])
+@api_contract("deal-checker/project-names")
 def get_project_names():
     """
     Get list of all project names for dropdown.

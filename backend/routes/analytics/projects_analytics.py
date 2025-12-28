@@ -18,9 +18,11 @@ from utils.normalize import (
     to_int, to_float,
     ValidationError as NormalizeValidationError, validation_error_response
 )
+from api.contracts.wrapper import api_contract
 
 
 @analytics_bp.route("/projects/<path:project_name>/inventory", methods=["GET"])
+@api_contract("projects/inventory")
 def get_project_inventory(project_name):
     """
     Get inventory data for a specific project.
@@ -94,6 +96,7 @@ def get_project_inventory(project_name):
 
 
 @analytics_bp.route("/projects/<path:project_name>/price-bands", methods=["GET"])
+@api_contract("projects/price-bands")
 def get_project_price_bands(project_name):
     """
     Get historical price bands (P25/P50/P75) for downside protection analysis.
@@ -186,6 +189,7 @@ def get_project_price_bands(project_name):
 # =============================================================================
 
 @analytics_bp.route("/projects/resale-projects", methods=["GET"])
+@api_contract("projects/resale-projects")
 def get_resale_projects():
     """
     Get list of all projects from transactions table for dropdown.
@@ -250,6 +254,7 @@ def get_resale_projects():
 
 
 @analytics_bp.route("/projects/<path:project_name>/exit-queue", methods=["GET"])
+@api_contract("projects/exit-queue")
 def get_project_exit_queue(project_name):
     """
     Get exit queue risk analysis for a specific project.

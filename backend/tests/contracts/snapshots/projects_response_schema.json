@@ -1,0 +1,28 @@
+{
+  "_version": "v3",
+  "_description": "Response schema snapshots for project endpoints",
+  "school_flag": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "with_school": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "locations": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "school_flags": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "schools": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "school_by_id": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "hot": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "inventory_status": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "_version": "v3",
+  "_description": "Response schema snapshots for deal checker endpoints",
+  "nearby_transactions": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "multi_scope": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "project_names": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  }
+}

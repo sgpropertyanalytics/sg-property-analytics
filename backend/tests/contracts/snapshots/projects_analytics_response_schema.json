@@ -1,0 +1,16 @@
+{
+  "_version": "v3",
+  "_description": "Response schema snapshots for project analytics endpoints",
+  "inventory": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "price_bands": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "resale_projects": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "exit_queue": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  }
+}

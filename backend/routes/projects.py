@@ -25,6 +25,7 @@ projects_bp = Blueprint('projects', __name__)
 
 # Import contract versioning for HTTP header
 from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+from api.contracts.wrapper import api_contract
 
 
 @projects_bp.after_request
@@ -35,6 +36,7 @@ def add_contract_version_header(response):
 
 
 @projects_bp.route("/projects/<path:project_name>/school-flag", methods=["GET"])
+@api_contract("projects/school-flag")
 def get_project_school_flag(project_name: str):
     """
     Get school proximity flag for a specific project.
@@ -80,6 +82,7 @@ def get_project_school_flag(project_name: str):
 
 
 @projects_bp.route("/projects/with-school", methods=["GET"])
+@api_contract("projects/with-school")
 def get_projects_with_school():
     """
     Get list of projects with popular school within 1km.
@@ -147,6 +150,7 @@ def get_projects_with_school():
 
 
 @projects_bp.route("/projects/locations", methods=["GET"])
+@api_contract("projects/locations")
 def get_project_locations():
     """
     Get list of all project locations with geocoding status.
@@ -255,6 +259,7 @@ def get_project_locations():
 
 
 @projects_bp.route("/projects/school-flags", methods=["GET"])
+@api_contract("projects/school-flags")
 def get_school_flags_batch():
     """
     Get school flags for multiple projects at once.
@@ -312,6 +317,7 @@ def get_school_flags_batch():
 
 
 @projects_bp.route("/schools", methods=["GET"])
+@api_contract("projects/schools")
 def get_schools():
     """
     Get list of all popular schools.
@@ -343,6 +349,7 @@ def get_schools():
 
 
 @projects_bp.route("/schools/<int:school_id>", methods=["GET"])
+@api_contract("projects/school-by-id")
 def get_school(school_id: int):
     """Get a specific school by ID"""
     try:
@@ -371,6 +378,7 @@ DISTRICT_TO_REGION = {
 
 
 @projects_bp.route("/projects/hot", methods=["GET"])
+@api_contract("projects/hot")
 def get_hot_projects():
     """
     Get ACTIVE NEW SALES projects - projects with New Sale transactions but NO resales yet.
@@ -697,6 +705,7 @@ def get_hot_projects():
 
 
 @projects_bp.route("/projects/inventory/status", methods=["GET"])
+@api_contract("projects/inventory-status")
 def get_inventory_status():
     """
     Get inventory data coverage status.

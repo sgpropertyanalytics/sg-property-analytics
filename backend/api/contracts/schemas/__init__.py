@@ -16,9 +16,13 @@ from . import supply
 from . import charts
 from . import trends
 from . import precomputed
+from . import projects
+from . import projects_analytics
+from . import deal_checker
 
 __all__ = [
     'aggregate', 'kpi_summary', 'dashboard', 'filter_options',
     'transactions', 'insights', 'supply',
     'charts', 'trends', 'precomputed',
+    'projects', 'projects_analytics', 'deal_checker',
 ]
