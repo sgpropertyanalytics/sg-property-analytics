@@ -553,6 +553,7 @@ Regions: CCR=#213448, RCR=#547792, OCR=#94B4C1
 | `count` | ±0 (exact) |
 | `median_psf` | ±0.5% or ±$15 |
 | `avg_psf` | ±0.5% or ±$15 |
+| `total_value` | ±0.5% |
 
 **Run tests:**
 ```bash
