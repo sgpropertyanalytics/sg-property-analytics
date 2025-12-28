@@ -1,4 +1,5 @@
 import React from 'react';
+import { PowerBIFilterProvider, usePowerBIFilters } from '../context/PowerBIFilterContext';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { ErrorBoundary, ChartWatermark } from '../components/ui';
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
@@ -10,9 +11,11 @@ import { PageHeader } from '../components/ui';
  * This page is dedicated to comparing New Sale and Resale market segments.
  * Unlike Market Core (which is Resale-only), this page shows both sale types.
  *
- * No filter sidebar - the chart fetches its own data independently.
+ * Uses the same PowerBI filter sidebar as Market Core for consistent filtering.
  */
 export function PrimaryMarketContent() {
+  // Connect to filter context (sidebar is provided by DashboardLayout)
+  const { filters } = usePowerBIFilters();
   // Desktop-first chart height with mobile guardrail
   const chartHeight = useChartHeight(400, MOBILE_CAPS.tall);
 
@@ -40,8 +43,17 @@ export function PrimaryMarketContent() {
 }
 
 /**
- * Standalone PrimaryMarket (for direct usage without DashboardLayout)
+ * Standalone PrimaryMarket (Legacy Support)
+ *
+ * This export provides backward compatibility for direct usage without DashboardLayout.
+ * Wraps content with its own PowerBIFilterProvider.
+ *
+ * For new code, prefer using PrimaryMarketContent inside DashboardLayout.
  */
 export default function PrimaryMarket() {
-  return <PrimaryMarketContent />;
+  return (
+    <PowerBIFilterProvider>
+      <PrimaryMarketContent />
+    </PowerBIFilterProvider>
+  );
 }

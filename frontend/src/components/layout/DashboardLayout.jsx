@@ -47,7 +47,7 @@ function ContentLoadingFallback() {
 // Only Market Core uses the Power BI filter sidebar
 const PAGE_CONFIG = {
   'market-core': { showFilterSidebar: true },
-  'primary-market': { showFilterSidebar: false },
+  'primary-market': { showFilterSidebar: true },
   'value-parity': { showFilterSidebar: false },
   'floor-dispersion': { showFilterSidebar: false },
   'district-deep-dive': { showFilterSidebar: false },
