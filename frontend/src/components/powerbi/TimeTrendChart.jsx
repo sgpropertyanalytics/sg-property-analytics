@@ -99,6 +99,17 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
   // Use niceMax to ensure human-readable tick boundaries (INV-11)
   const yAxisMax = niceMax(Math.ceil(maxCount * 1.4));
 
+  // Create gradient for bars (computed once per render)
+  const createBarGradient = (context) => {
+    const chart = context.chart;
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return 'rgba(84, 119, 146, 0.7)';
+    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+    gradient.addColorStop(0, 'rgba(84, 119, 146, 0.5)');   // #547792 Blue (base)
+    gradient.addColorStop(1, 'rgba(33, 52, 72, 0.95)');    // #213448 Navy (top)
+    return gradient;
+  };
+
   const chartData = {
     labels,
     datasets: [
@@ -106,9 +117,10 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         type: 'bar',
         label: 'Resale Transactions',
         data: transactionCounts,
-        backgroundColor: 'rgba(84, 119, 146, 0.9)',  // Ocean Blue #547792
-        borderColor: 'rgba(84, 119, 146, 1)',
+        backgroundColor: createBarGradient,
+        borderColor: 'rgba(33, 52, 72, 0.8)',  // Navy border
         borderWidth: 1,
+        borderRadius: 3,  // Subtle rounded corners
         yAxisID: 'y',
         order: 2,
       },
@@ -116,15 +128,15 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         type: 'line',
         label: 'Total Transaction Value',
         data: totalValues,
-        borderColor: '#2D6A4F',  // Dark green
-        backgroundColor: 'rgba(45, 106, 79, 0.1)',
-        borderWidth: 2,
-        pointRadius: 2,
-        pointHoverRadius: 4,
-        pointBackgroundColor: '#40916C',  // Medium green fill
-        pointBorderColor: '#2D6A4F',  // Dark green border
-        pointBorderWidth: 1,
-        tension: 0.4,  // Smooth curve
+        borderColor: '#EAE0CF',  // Sand - warm contrast
+        backgroundColor: 'rgba(234, 224, 207, 0.1)',
+        borderWidth: 3,
+        pointRadius: 0,  // Hide points by default
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#EAE0CF',
+        pointHoverBorderColor: '#213448',
+        pointHoverBorderWidth: 2,
+        tension: 0.3,
         fill: false,
         yAxisID: 'y1',
         order: 1,
@@ -140,67 +152,92 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
     },
     plugins: {
       legend: {
-        position: 'top',
+        position: 'bottom',
+        align: 'start',
         labels: {
           usePointStyle: true,
-          padding: 15,
+          pointStyle: 'rectRounded',
+          padding: 20,
+          font: { size: 12, weight: '500' },
+          color: '#547792',
+          boxWidth: 12,
+          boxHeight: 12,
         },
       },
       tooltip: {
+        backgroundColor: 'rgba(33, 52, 72, 0.95)',  // Navy
+        titleColor: '#EAE0CF',  // Sand
+        bodyColor: '#94B4C1',   // Sky
+        borderColor: 'rgba(148, 180, 193, 0.3)',
+        borderWidth: 1,
+        cornerRadius: 8,
+        padding: 12,
+        titleFont: { weight: '600', size: 13 },
+        bodyFont: { size: 12 },
+        displayColors: true,
+        boxPadding: 6,
         callbacks: {
           label: (context) => {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
             if (label === 'Total Transaction Value') {
-              // Format in millions or billions
               if (value >= 1000000000) {
-                return `${label}: $${(value / 1000000000).toFixed(2)}B`;
+                return `  ${label}: $${(value / 1000000000).toFixed(2)}B`;
               }
-              return `${label}: $${(value / 1000000).toFixed(0)}M`;
+              return `  ${label}: $${(value / 1000000).toFixed(0)}M`;
             }
-            return `${label}: ${value.toLocaleString()}`;
+            return `  ${label}: ${value.toLocaleString()}`;
           },
         },
       },
     },
     scales: {
       x: {
-        grid: {
-          display: false,
-        },
+        grid: { display: false },
+        border: { display: false },
         ticks: {
           maxRotation: 45,
           minRotation: 45,
+          font: { size: 11, weight: '500' },
+          color: '#547792',
         },
       },
       y: {
         type: 'linear',
         display: true,
         position: 'left',
-        max: yAxisMax, // Extended max to push bars lower, leaving room for line above
+        max: yAxisMax,
+        border: { display: false },
         title: {
           display: true,
           text: 'Transaction Count',
+          color: '#213448',
+          font: { size: 11, weight: '600' },
         },
         grid: {
-          drawOnChartArea: true,
+          color: 'rgba(148, 180, 193, 0.15)',  // Sky at 15%
+          drawTicks: false,
         },
         ticks: {
-          callback: (value) => Math.round(value).toLocaleString(), // Fix floating point precision
+          callback: (value) => Math.round(value).toLocaleString(),
+          color: '#94B4C1',
+          font: { size: 11 },
+          padding: 8,
         },
       },
       y1: {
         type: 'linear',
         display: true,
         position: 'right',
-        min: 0, // Grounded at $0M
+        min: 0,
+        border: { display: false },
         title: {
           display: true,
-          text: 'Total Transaction Value ($)',
+          text: 'Total Value ($)',
+          color: '#213448',
+          font: { size: 11, weight: '600' },
         },
-        grid: {
-          drawOnChartArea: false,
-        },
+        grid: { drawOnChartArea: false },
         ticks: {
           callback: (value) => {
             if (value >= 1000000000) {
@@ -208,28 +245,34 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
             }
             return `$${(value / 1000000).toFixed(0)}M`;
           },
+          color: '#94B4C1',
+          font: { size: 11 },
+          padding: 8,
         },
       },
     },
-  }), [data, yAxisMax]);
+  }), [yAxisMax]);
 
   // Card layout: flex column with fixed height, header shrink-0, chart fills remaining
-  const cardHeight = height + 90; // height prop for chart + ~90px for header
+  // Added extra height for bottom legend
+  const cardHeight = height + 120;
 
   return (
     <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="bar" height={height + 80}>
       <div
-        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        className="bg-white rounded-lg border border-[#94B4C1]/30 overflow-hidden flex flex-col shadow-sm"
         style={{ height: cardHeight }}
       >
-        {/* Header - shrink-0 */}
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-[#213448]">Total Resale Volume & Quantum Trend</h3>
+        {/* Header - refined typography */}
+        <div className="px-5 py-4 border-b border-[#94B4C1]/20 shrink-0">
+          <div className="flex items-baseline justify-between">
+            <h3 className="text-base font-semibold text-[#213448] tracking-tight">
+              Resale Volume & Quantum
+            </h3>
+            <span className="text-[10px] font-medium text-[#94B4C1] uppercase tracking-wider">
+              {TIME_LABELS[timeGrouping]}
+            </span>
           </div>
-          <p className="text-xs text-[#547792] mt-1">
-            Volume and value by {TIME_LABELS[timeGrouping]}
-          </p>
         </div>
         {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
         {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
