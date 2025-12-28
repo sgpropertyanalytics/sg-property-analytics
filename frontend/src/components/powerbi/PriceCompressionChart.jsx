@@ -194,7 +194,7 @@ export function PriceCompressionChart({ height = 380 }) {
           generateLabels: (_chart) => {
             return [
               {
-                text: 'CCR ↔ RCR Spread (solid)',
+                text: 'CCR > RCR Premium',
                 fillStyle: '#213448',
                 strokeStyle: '#213448',
                 lineWidth: 2,
@@ -203,7 +203,7 @@ export function PriceCompressionChart({ height = 380 }) {
                 datasetIndex: 0,
               },
               {
-                text: 'RCR ↔ OCR Spread (dashed)',
+                text: 'RCR > OCR Premium',
                 fillStyle: '#547792',
                 strokeStyle: '#547792',
                 lineWidth: 2,
