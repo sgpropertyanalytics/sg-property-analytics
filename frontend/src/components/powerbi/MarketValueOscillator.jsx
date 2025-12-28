@@ -222,9 +222,9 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
           generateLabels: (chart) => {
             return chart.data.datasets.map((dataset, i) => ({
               text: dataset.label,
-              fillStyle: dataset.borderColor,
+              fillStyle: dataset.borderDash ? 'transparent' : dataset.borderColor,
               strokeStyle: dataset.borderColor,
-              lineWidth: dataset.borderWidth,
+              lineWidth: dataset.borderDash ? 2 : 0,
               lineDash: dataset.borderDash || [],
               hidden: !chart.isDatasetVisible(i),
               datasetIndex: i,
