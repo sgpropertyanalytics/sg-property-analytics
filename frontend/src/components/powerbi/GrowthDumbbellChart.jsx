@@ -278,22 +278,23 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
         </div>
       </div>
 
-      {/* Column Headers - Sortable (matching other table styling) */}
+      {/* Column Headers - CSS Grid layout */}
       <div className="px-3 md:px-4 py-2 bg-slate-50 border-b border-slate-200">
-        <div className="flex items-center text-xs font-medium text-slate-600">
+        <div
+          className="grid items-center gap-x-4 text-xs font-medium text-slate-600"
+          style={{ gridTemplateColumns: 'minmax(120px, 200px) 1fr 70px 60px' }}
+        >
           <div
-            className="w-12 md:w-48 shrink-0 cursor-pointer hover:text-slate-800 select-none"
+            className="cursor-pointer hover:text-slate-800 select-none truncate"
             onClick={() => handleSort('district')}
           >
-            <span className="md:hidden">Dist</span>
-            <span className="hidden md:inline">District</span>
-            <SortIcon column="district" />
+            District<SortIcon column="district" />
           </div>
-          <div className="flex-1 text-center">
-            <span className="text-slate-500">Median PSF</span>
+          <div className="text-center">
+            <span className="text-slate-500">Median PSF Growth</span>
           </div>
           <div
-            className="w-16 md:w-20 shrink-0 text-right cursor-pointer hover:text-slate-800 select-none"
+            className="text-right cursor-pointer hover:text-slate-800 select-none"
             onClick={() => handleSort('increment')}
             title="Absolute PSF change"
           >
@@ -302,7 +303,7 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
             <SortIcon column="increment" />
           </div>
           <div
-            className="w-14 md:w-16 shrink-0 text-right cursor-pointer hover:text-slate-800 select-none"
+            className="text-right cursor-pointer hover:text-slate-800 select-none"
             onClick={() => handleSort('growth')}
           >
             Growth<SortIcon column="growth" />
@@ -341,88 +342,82 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
               onClick={() => handleDistrictClick(item.district)}
               title={`${DISTRICT_NAMES[item.district]}\n${item.startQuarter}: ${formatPrice(item.startPsf)} → ${item.endQuarter}: ${formatPrice(item.endPsf)}`}
             >
-              <div className="flex items-center">
-                {/* Combined District + Area column - responsive */}
-                <div className="w-12 md:w-48 shrink-0">
+              {/* CSS Grid row - matches header */}
+              <div
+                className="grid items-center gap-x-4"
+                style={{ gridTemplateColumns: 'minmax(120px, 200px) 1fr 70px 60px' }}
+              >
+                {/* Column 1: District label (fixed width, never clips) */}
+                <div className="overflow-hidden">
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded shrink-0 ${regionBg} ${regionText}`}>
                       {item.district}
                     </span>
-                    {/* Area names - hidden on mobile */}
-                    <span className="hidden md:block text-sm text-slate-600 truncate" title={DISTRICT_NAMES[item.district]}>
+                    <span className="text-xs md:text-sm text-slate-600 truncate" title={DISTRICT_NAMES[item.district]}>
                       {item.areaNames}
                     </span>
                   </div>
                 </div>
 
-                {/* Dumbbell Chart Area with labels beside dots */}
-                <div className="flex-1 relative h-10 mx-1 md:mx-0">
-                  {/* Background track */}
-                  <div className="absolute left-0 right-0 bg-slate-100 rounded-full" style={{ top: '50%', height: '4px', transform: 'translateY(-50%)' }} />
-
-                  {/* Connecting line - thickness varies by growth magnitude */}
-                  <div
-                    className="absolute rounded-full transition-all"
-                    style={{
-                      left: `${leftPercent}%`,
-                      width: `${Math.max(rightPercent - leftPercent, 1)}%`,
-                      height: `${lineThickness}px`,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      backgroundColor: lineColor,
-                    }}
-                  />
-
-                  {/* Start dot - Earliest Quarter (neutral grey) */}
-                  <div
-                    className="absolute rounded-full bg-slate-300 border-2 border-white shadow-sm transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform"
-                    style={{
-                      left: `${startPercent}%`,
-                      top: '50%',
-                      width: '12px',
-                      height: '12px',
-                    }}
-                  />
-
-                  {/* Start label - positioned beside dot */}
-                  <span
-                    className="absolute text-[9px] md:text-[10px] text-slate-500 whitespace-nowrap"
-                    style={{
-                      left: `${startPercent}%`,
-                      top: '50%',
-                      transform: startPercent > 15 ? 'translate(calc(-100% - 16px), -50%)' : 'translate(16px, -50%)',
-                    }}
-                  >
-                    Baseline {formatPrice(item.startPsf)}
+                {/* Column 2: Dumbbell chart with fixed label areas */}
+                <div className="flex items-center h-10 gap-2">
+                  {/* Start PSF label - fixed width */}
+                  <span className="text-[9px] md:text-[10px] text-slate-500 w-12 md:w-14 text-right shrink-0">
+                    {formatPrice(item.startPsf)}
                   </span>
 
-                  {/* End dot - Latest Quarter (colored by outcome) */}
-                  <div
-                    className="absolute rounded-full border-2 border-white shadow-md transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform z-10"
-                    style={{
-                      left: `${endPercent}%`,
-                      top: '50%',
-                      width: `${Math.max(endDotSize - 2, 14)}px`,
-                      height: `${Math.max(endDotSize - 2, 14)}px`,
-                      backgroundColor: endDotColor,
-                    }}
-                  />
+                  {/* Track area - flexes */}
+                  <div className="flex-1 relative h-full">
+                    {/* Background track */}
+                    <div className="absolute left-0 right-0 bg-slate-100 rounded-full" style={{ top: '50%', height: '4px', transform: 'translateY(-50%)' }} />
 
-                  {/* End label - positioned beside dot */}
-                  <span
-                    className={`absolute text-[9px] md:text-[10px] font-medium whitespace-nowrap ${textColorClass}`}
-                    style={{
-                      left: `${endPercent}%`,
-                      top: '50%',
-                      transform: endPercent < 85 ? 'translate(16px, -50%)' : 'translate(calc(-100% - 16px), -50%)',
-                    }}
-                  >
-                    Latest {formatPrice(item.endPsf)}
+                    {/* Connecting line */}
+                    <div
+                      className="absolute rounded-full transition-all"
+                      style={{
+                        left: `${leftPercent}%`,
+                        width: `${Math.max(rightPercent - leftPercent, 1)}%`,
+                        height: `${lineThickness}px`,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        backgroundColor: lineColor,
+                      }}
+                    />
+
+                    {/* Start dot */}
+                    <div
+                      className="absolute rounded-full bg-slate-300 border-2 border-white shadow-sm group-hover:scale-110 transition-transform"
+                      style={{
+                        left: `${startPercent}%`,
+                        top: '50%',
+                        width: '12px',
+                        height: '12px',
+                        transform: 'translate(-50%, -50%)',
+                      }}
+                    />
+
+                    {/* End dot */}
+                    <div
+                      className="absolute rounded-full border-2 border-white shadow-md group-hover:scale-110 transition-transform z-10"
+                      style={{
+                        left: `${endPercent}%`,
+                        top: '50%',
+                        width: `${Math.max(endDotSize - 2, 14)}px`,
+                        height: `${Math.max(endDotSize - 2, 14)}px`,
+                        transform: 'translate(-50%, -50%)',
+                        backgroundColor: endDotColor,
+                      }}
+                    />
+                  </div>
+
+                  {/* End PSF label - fixed width */}
+                  <span className={`text-[9px] md:text-[10px] font-medium w-12 md:w-14 shrink-0 ${textColorClass}`}>
+                    {formatPrice(item.endPsf)}
                   </span>
                 </div>
 
-                {/* Absolute PSF Increment */}
-                <div className="w-16 md:w-20 shrink-0 text-right">
+                {/* Column 3: Increment */}
+                <div className="text-right">
                   {(() => {
                     const increment = item.endPsf - item.startPsf;
                     const incrementClass = increment >= 0 ? 'text-emerald-600' : 'text-red-500';
@@ -434,8 +429,8 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
                   })()}
                 </div>
 
-                {/* Growth Percentage */}
-                <div className="w-14 md:w-16 shrink-0 text-right">
+                {/* Column 4: Growth % */}
+                <div className="text-right">
                   <span className={`text-xs md:text-sm font-bold ${textColorClass}`}>
                     {item.growthPercent >= 0 ? '+' : ''}{item.growthPercent.toFixed(0)}%
                   </span>
