@@ -407,13 +407,20 @@ export function PriceCompressionChart({ height = 380 }) {
 
       {/* How to Interpret - shrink-0 */}
       <div className="shrink-0">
-        <KeyInsightBox title="Line Color Guide" variant="info" compact>
-          <p>
-            <span className="font-semibold text-emerald-600">Green</span> = undervalued (below $0 or &lt;25th percentile).{' '}
-            <span className="font-semibold text-amber-600">Amber</span> = catching up (25th-75th percentile, low end).{' '}
-            <span className="font-semibold text-red-600">Red</span> = overvalued (&gt;75th percentile or inversion risk).{' '}
-            Normal color = healthy spread range.
-          </p>
+        <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
+          <div className="space-y-1.5">
+            <p><span className="font-semibold text-[#213448]">CCR-RCR Spread (solid line):</span> How much more CCR costs vs RCR.</p>
+            <p><span className="font-semibold text-[#547792]">RCR-OCR Spread (dashed line):</span> How much more RCR costs vs OCR.</p>
+            <div className="pt-1 border-t border-[#94B4C1]/30 mt-1">
+              <p className="text-[10px] uppercase tracking-wide text-[#547792] mb-1">Line Color = Valuation Signal</p>
+              <p>
+                <span className="font-semibold text-emerald-600">Green</span> = undervalued (discount).{' '}
+                <span className="font-semibold text-amber-600">Amber</span> = below average.{' '}
+                <span className="font-semibold text-red-600">Red</span> = overvalued.{' '}
+                Below $0 line = price inversion (anomaly).
+              </p>
+            </div>
+          </div>
         </KeyInsightBox>
       </div>
 
