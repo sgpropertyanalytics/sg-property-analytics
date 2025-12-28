@@ -24,6 +24,37 @@ import { SaleType, SaleTypeLabels, PremiumTrendLabels, isPremiumTrend, PropertyA
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
+// =============================================================================
+// DEBUG LOGGING - Persistent logging to diagnose recurring empty resale line issue
+// =============================================================================
+const DEBUG_NEW_VS_RESALE = true; // Set to false to disable verbose logging
+
+function debugLog(stage, data) {
+  if (!DEBUG_NEW_VS_RESALE) return;
+  const timestamp = new Date().toISOString().slice(11, 23);
+  console.log(`[NewVsResale ${timestamp}] ${stage}:`, data);
+}
+
+function debugWarn(stage, data) {
+  const timestamp = new Date().toISOString().slice(11, 23);
+  console.warn(`[NewVsResale ${timestamp}] ⚠️ ${stage}:`, data);
+}
+
+// Summary diagnostic - call this to get a quick status in console
+// Usage: window.__debugNewVsResale?.()
+if (typeof window !== 'undefined') {
+  window.__debugNewVsResale = () => {
+    console.log('%c[NewVsResale] Debug enabled. Watch for these log stages:', 'color: blue; font-weight: bold');
+    console.log('  1. MOUNT - Component mounted with initial filters');
+    console.log('  2. API_PARAMS - Params being sent to API');
+    console.log('  3. API_RESPONSE - Raw response from backend');
+    console.log('  4. TRANSFORMED_DATA - After adapter transformation');
+    console.log('  5. CHART_ARRAYS - Final arrays for Chart.js');
+    console.log('  6. RENDER - Rendering decision');
+    console.log('%c⚠️ Watch for warnings: RESALE_DATA_MISSING, EMPTY_RESALE_LINE', 'color: orange');
+  };
+}
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -57,6 +88,19 @@ export function NewVsResaleChart({ height = 350 }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, filters, timeGrouping } = usePowerBIFilters();
 
+  // DEBUG: Log on mount
+  React.useEffect(() => {
+    debugLog('MOUNT', {
+      initialFilters: {
+        dateRange: filters?.dateRange,
+        districts: filters?.districts?.length || 0,
+        segments: filters?.segments?.length || 0,
+      },
+      timeGrouping,
+    });
+    return () => debugLog('UNMOUNT', { reason: 'Component unmounting' });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const chartRef = useRef(null);
 
   // Defer fetch until chart is visible (low priority - below the fold)
@@ -79,7 +123,43 @@ export function NewVsResaleChart({ height = 350 }) {
         timeGrain: TIME_GROUP_BY[timeGrouping],
       });
 
+      // DEBUG: Log params being sent to API
+      debugLog('API_PARAMS', {
+        params,
+        filterContext: {
+          dateRange: filters?.dateRange,
+          districts: filters?.districts,
+          segments: filters?.segments,
+          bedroomTypes: filters?.bedroomTypes,
+        },
+        debouncedFilterKey: debouncedFilterKey?.slice(0, 100) + '...',
+      });
+
       const response = await getNewVsResale(params, { signal });
+
+      // DEBUG: Log raw API response
+      const rawChartData = response.data?.chartData || [];
+      const resalePrices = rawChartData.map(r => r.resalePrice);
+      const hasAnyResaleData = resalePrices.some(p => p !== null && p !== undefined);
+
+      debugLog('API_RESPONSE', {
+        status: response.status,
+        totalPeriods: rawChartData.length,
+        resalePricesWithData: resalePrices.filter(p => p !== null).length,
+        hasAnyResaleData,
+        sampleData: rawChartData.slice(0, 3),
+        summary: response.data?.summary,
+      });
+
+      // CRITICAL WARNING: Log if resale data is completely missing
+      if (rawChartData.length > 0 && !hasAnyResaleData) {
+        debugWarn('RESALE_DATA_MISSING', {
+          message: 'API returned chart data but ALL resalePrice values are null!',
+          periods: rawChartData.map(r => r.period),
+          resaleCounts: rawChartData.map(r => r.resaleCount),
+          appliedFilters: response.data?.appliedFilters,
+        });
+      }
 
       // Validate API contract version (dev/test only)
       // Pass response.data (API body with meta), not response (axios wrapper)
@@ -94,7 +174,17 @@ export function NewVsResaleChart({ height = 350 }) {
       });
 
       // Use adapter for transformation
-      return transformNewVsResaleSeries(response.data);
+      const transformed = transformNewVsResaleSeries(response.data);
+
+      // DEBUG: Log transformed data
+      debugLog('TRANSFORMED_DATA', {
+        chartDataLength: transformed.chartData?.length,
+        hasData: transformed.hasData,
+        resalePricesAfterTransform: transformed.chartData?.map(r => r.resalePrice),
+        summary: transformed.summary,
+      });
+
+      return transformed;
     },
     [debouncedFilterKey, timeGrouping],
     {
@@ -141,6 +231,37 @@ export function NewVsResaleChart({ height = 350 }) {
   const resaleCompleteness = totalPoints > 0 ? resaleDataPoints / totalPoints : 1;
   const hasSignificantGaps = resaleGaps > totalPoints * 0.2; // >20% gaps
   const isSeverelySparse = totalPoints > 0 && resaleCompleteness < 0.75; // <75% data completeness
+
+  // DEBUG: Log chart data arrays
+  if (DEBUG_NEW_VS_RESALE && chartData.length > 0) {
+    const allResaleNull = resalePrice.every(v => v === null);
+    const allNewNull = newLaunchPrice.every(v => v === null);
+
+    debugLog('CHART_ARRAYS', {
+      labels,
+      newLaunchPrice,
+      resalePrice,
+      resaleGaps,
+      resaleDataPoints,
+      resaleCompleteness: `${Math.round(resaleCompleteness * 100)}%`,
+      isSeverelySparse,
+    });
+
+    // Critical warning for empty lines
+    if (allResaleNull) {
+      debugWarn('EMPTY_RESALE_LINE', {
+        message: 'Resale line will be EMPTY - all resalePrice values are null',
+        totalPoints,
+        chartDataSample: chartData.slice(0, 3),
+      });
+    }
+    if (allNewNull) {
+      debugWarn('EMPTY_NEW_SALE_LINE', {
+        message: 'New Sale line will be EMPTY - all newLaunchPrice values are null',
+        totalPoints,
+      });
+    }
+  }
 
   const chartConfig = {
     labels,
@@ -305,6 +426,18 @@ export function NewVsResaleChart({ height = 350 }) {
   // Card layout: flex column with fixed height, header/note shrink-0, chart fills remaining
   // Add extra height when sparse warning is shown
   const cardHeight = height + 180 + (isSeverelySparse ? 60 : 0);
+
+  // DEBUG: Log render decision
+  debugLog('RENDER', {
+    loading,
+    error: error?.message || null,
+    hasData,
+    chartDataLength: chartData.length,
+    isFetching,
+    shouldFetch,
+    willShowEmptyState: !loading && !error && !hasData,
+    willShowChart: !loading && !error && hasData && chartData.length > 0,
+  });
 
   // CRITICAL: containerRef must be OUTSIDE QueryState for IntersectionObserver to work
   // QueryState only renders children when not loading, so ref would be null during load
