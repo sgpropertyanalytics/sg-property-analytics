@@ -103,11 +103,12 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
+      // Exclude segment filter - this chart always shows all regions for comparison
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count',
         ...(saleType && { sale_type: saleType }),
-      });
+      }, { excludeOwnDimension: 'segment' });
 
       const response = await getAggregate(params, { signal });
 
