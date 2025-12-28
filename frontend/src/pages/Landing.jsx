@@ -143,7 +143,8 @@ const LandingPage = () => {
  */
 function HeroSection({ navigate }) {
   const { scrollY } = useScroll();
-  const opacity = useTransform(scrollY, [0, 300], [1, 0]);
+  // Gradual fade: stays visible longer, then eases out smoothly
+  const opacity = useTransform(scrollY, [0, 150, 500], [1, 1, 0]);
 
   return (
     // Paper layering effect for dashboard to pop
