@@ -9,9 +9,10 @@ import { PricingModal } from '../PricingModal';
 
 // Loading fallback for lazy-loaded page content
 // This is INSIDE the layout so nav rail stays visible during loading
+// Uses delayed fade-in to prevent flash on fast navigations
 function ContentLoadingFallback() {
   return (
-    <div className="h-full min-h-[50vh] flex items-center justify-center bg-[#EAE0CF]/30">
+    <div className="h-full min-h-[50vh] flex items-center justify-center bg-transparent animate-fade-in">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
         <span className="text-sm text-[#547792]">Loading...</span>
@@ -129,39 +130,44 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
         )}
 
         {/* ===== FILTER SIDEBAR (Secondary Sidebar - Market Pulse Only) ===== */}
-        {/* Desktop: Visible with collapse handle | Mobile: Drawer */}
-        {showFilterSidebar && (
-          <div className="hidden lg:flex flex-shrink-0 relative">
-            {/* Filter Sidebar */}
-            <div
-              className={`
-                min-w-0
-                ${filterSidebarCollapsed ? 'w-12' : 'w-72'}
-              `}
-            >
-              <PowerBIFilterSidebar
-                collapsed={filterSidebarCollapsed}
-                onToggle={() => setFilterSidebarCollapsed(!filterSidebarCollapsed)}
-              />
-            </div>
-
-            {/* Collapse Handle - Chevron at border top (Sand/Cream styling) */}
-            <button
-              onClick={() => setFilterSidebarCollapsed(!filterSidebarCollapsed)}
-              className="absolute -right-3 top-3 z-10 w-6 h-10 bg-[#EAE0CF] border border-[#94B4C1]/30 rounded-r-lg shadow-sm flex items-center justify-center hover:bg-[#94B4C1]/30 transition-colors"
-              aria-label={filterSidebarCollapsed ? 'Expand filters' : 'Collapse filters'}
-            >
-              <svg
-                className={`w-4 h-4 text-[#547792] transition-transform duration-200 ${filterSidebarCollapsed ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+        {/* Desktop: Always mounted, CSS-hidden when not needed to prevent layout flash */}
+        {/* Mobile: Drawer (unchanged) */}
+        <div
+          className={`
+            hidden lg:flex flex-shrink-0 relative
+            transition-all duration-200 ease-in-out
+            ${showFilterSidebar ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden pointer-events-none'}
+          `}
+        >
+          {/* Filter Sidebar */}
+          <div
+            className={`
+              min-w-0
+              ${filterSidebarCollapsed ? 'w-12' : 'w-72'}
+            `}
+          >
+            <PowerBIFilterSidebar
+              collapsed={filterSidebarCollapsed}
+              onToggle={() => setFilterSidebarCollapsed(!filterSidebarCollapsed)}
+            />
           </div>
-        )}
+
+          {/* Collapse Handle - Chevron at border top (Sand/Cream styling) */}
+          <button
+            onClick={() => setFilterSidebarCollapsed(!filterSidebarCollapsed)}
+            className="absolute -right-3 top-3 z-10 w-6 h-10 bg-[#EAE0CF] border border-[#94B4C1]/30 rounded-r-lg shadow-sm flex items-center justify-center hover:bg-[#94B4C1]/30 transition-colors"
+            aria-label={filterSidebarCollapsed ? 'Expand filters' : 'Collapse filters'}
+          >
+            <svg
+              className={`w-4 h-4 text-[#547792] transition-transform duration-200 ${filterSidebarCollapsed ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </div>
 
         {/* Mobile Filter Drawer Overlay */}
         {mobileFilterOpen && showFilterSidebar && (
