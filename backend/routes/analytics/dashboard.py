@@ -16,9 +16,11 @@ from utils.normalize import (
     to_int, to_float, to_date, to_list, to_bool, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
+from api.contracts import api_contract
 
 
 @analytics_bp.route("/dashboard", methods=["GET", "POST"])
+@api_contract("dashboard")
 def dashboard():
     """
     Unified dashboard endpoint - returns all chart datasets in one response.
