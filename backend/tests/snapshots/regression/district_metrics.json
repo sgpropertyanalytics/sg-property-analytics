@@ -1,0 +1,49 @@
+{
+  "_metadata": {
+    "generated_at": "2025-12-28T03:43:24.072975Z",
+    "git_sha": "8ced001",
+    "api_version": "v3",
+    "slice_count": 3
+  },
+  "slices": {
+    "district_D09_2025-Q3": {
+      "params": {
+        "segment": null,
+        "district": "D09",
+        "date_from": "2025-07-01",
+        "date_to": "2025-10-01"
+      },
+      "metrics": {
+        "count": 935,
+        "median_psf": 3032.068449197861,
+        "avg_psf": 2920.580941176471
+      }
+    },
+    "district_D10_2025-Q3": {
+      "params": {
+        "segment": null,
+        "district": "D10",
+        "date_from": "2025-07-01",
+        "date_to": "2025-10-01"
+      },
+      "metrics": {
+        "count": 1082,
+        "median_psf": 2950.125693160813,
+        "avg_psf": 2834.365563770795
+      }
+    },
+    "district_D15_2025-Q3": {
+      "params": {
+        "segment": null,
+        "district": "D15",
+        "date_from": "2025-07-01",
+        "date_to": "2025-10-01"
+      },
+      "metrics": {
+        "count": 529,
+        "median_psf": 2314.7315689981097,
+        "avg_psf": 2228.318922495274
+      }
+    }
+  }
+}

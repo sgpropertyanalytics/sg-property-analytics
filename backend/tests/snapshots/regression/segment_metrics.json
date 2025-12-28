@@ -1,0 +1,127 @@
+{
+  "_metadata": {
+    "generated_at": "2025-12-28T03:42:57.799886Z",
+    "git_sha": "de5f2d2",
+    "api_version": "v3",
+    "slice_count": 9
+  },
+  "slices": {
+    "segment_CCR_2025-09": {
+      "params": {
+        "segment": "CCR",
+        "district": null,
+        "date_from": "2025-09-01",
+        "date_to": "2025-10-01"
+      },
+      "metrics": {
+        "count": 1171,
+        "median_psf": 2733.381725021349,
+        "avg_psf": 2675.702211784799
+      }
+    },
+    "segment_CCR_2025-10": {
+      "params": {
+        "segment": "CCR",
+        "district": null,
+        "date_from": "2025-10-01",
+        "date_to": "2025-11-01"
+      },
+      "metrics": {
+        "count": 1081,
+        "median_psf": 2783.6975023126734,
+        "avg_psf": 2711.5675948196117
+      }
+    },
+    "segment_CCR_2025-11": {
+      "params": {
+        "segment": "CCR",
+        "district": null,
+        "date_from": "2025-11-01",
+        "date_to": "2025-12-01"
+      },
+      "metrics": {
+        "count": 191,
+        "median_psf": 2307.0,
+        "avg_psf": 2426.57
+      }
+    },
+    "segment_RCR_2025-09": {
+      "params": {
+        "segment": "RCR",
+        "district": null,
+        "date_from": "2025-09-01",
+        "date_to": "2025-10-01"
+      },
+      "metrics": {
+        "count": 2228,
+        "median_psf": 2583.2603231597845,
+        "avg_psf": 2463.1837881508077
+      }
+    },
+    "segment_RCR_2025-10": {
+      "params": {
+        "segment": "RCR",
+        "district": null,
+        "date_from": "2025-10-01",
+        "date_to": "2025-11-01"
+      },
+      "metrics": {
+        "count": 2118,
+        "median_psf": 2637.2223796033995,
+        "avg_psf": 2512.133975448536
+      }
+    },
+    "segment_RCR_2025-11": {
+      "params": {
+        "segment": "RCR",
+        "district": null,
+        "date_from": "2025-11-01",
+        "date_to": "2025-12-01"
+      },
+      "metrics": {
+        "count": 422,
+        "median_psf": 2083.5,
+        "avg_psf": 2124.2
+      }
+    },
+    "segment_OCR_2025-09": {
+      "params": {
+        "segment": "OCR",
+        "district": null,
+        "date_from": "2025-09-01",
+        "date_to": "2025-10-01"
+      },
+      "metrics": {
+        "count": 1154,
+        "median_psf": 1643.9064124783363,
+        "avg_psf": 1679.890485268631
+      }
+    },
+    "segment_OCR_2025-10": {
+      "params": {
+        "segment": "OCR",
+        "district": null,
+        "date_from": "2025-10-01",
+        "date_to": "2025-11-01"
+      },
+      "metrics": {
+        "count": 1062,
+        "median_psf": 1681.8483992467043,
+        "avg_psf": 1738.166177024482
+      }
+    },
+    "segment_OCR_2025-11": {
+      "params": {
+        "segment": "OCR",
+        "district": null,
+        "date_from": "2025-11-01",
+        "date_to": "2025-12-01"
+      },
+      "metrics": {
+        "count": 466,
+        "median_psf": 1724.5,
+        "avg_psf": 1778.5
+      }
+    }
+  }
+}
