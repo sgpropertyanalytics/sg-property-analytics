@@ -670,9 +670,9 @@ def aggregate_summary():
         psf_stats = psf_stats.filter(Transaction.bedroom_count.in_(bedrooms))
     if sale_type_param:
         psf_stats = psf_stats.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
-    if date_from:
+    if from_dt:
         psf_stats = psf_stats.filter(Transaction.transaction_date >= from_dt)
-    if date_to:
+    if to_dt:
         # Use < next_day instead of <= to_dt to include all transactions on to_dt
         psf_stats = psf_stats.filter(Transaction.transaction_date < to_dt + timedelta(days=1))
 
@@ -698,9 +698,9 @@ def aggregate_summary():
         price_stats = price_stats.filter(Transaction.bedroom_count.in_(bedrooms))
     if sale_type_param:
         price_stats = price_stats.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
-    if date_from:
+    if from_dt:
         price_stats = price_stats.filter(Transaction.transaction_date >= from_dt)
-    if date_to:
+    if to_dt:
         # Use < next_day instead of <= to_dt to include all transactions on to_dt
         price_stats = price_stats.filter(Transaction.transaction_date < to_dt + timedelta(days=1))
 
@@ -721,9 +721,9 @@ def aggregate_summary():
         bedroom_mix_query = bedroom_mix_query.filter(Transaction.district.in_(segment_districts))
     if sale_type_param:
         bedroom_mix_query = bedroom_mix_query.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
-    if date_from:
+    if from_dt:
         bedroom_mix_query = bedroom_mix_query.filter(Transaction.transaction_date >= from_dt)
-    if date_to:
+    if to_dt:
         # Use < next_day instead of <= to_dt to include all transactions on to_dt
         bedroom_mix_query = bedroom_mix_query.filter(Transaction.transaction_date < to_dt + timedelta(days=1))
 
@@ -753,9 +753,9 @@ def aggregate_summary():
         sale_mix_query = sale_mix_query.filter(Transaction.district.in_(segment_districts))
     if bedroom_param:
         sale_mix_query = sale_mix_query.filter(Transaction.bedroom_count.in_(bedrooms))
-    if date_from:
+    if from_dt:
         sale_mix_query = sale_mix_query.filter(Transaction.transaction_date >= from_dt)
-    if date_to:
+    if to_dt:
         # Use < next_day instead of <= to_dt to include all transactions on to_dt
         sale_mix_query = sale_mix_query.filter(Transaction.transaction_date < to_dt + timedelta(days=1))
 
