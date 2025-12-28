@@ -5,7 +5,6 @@ import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
 import { ErrorBoundary } from '../ui';
 import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { useAuth } from '../../context/AuthContext';
 import { PricingModal } from '../PricingModal';
 
 // Loading fallback for lazy-loaded page content
@@ -62,7 +61,6 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
   const content = children || <Outlet />;
   const location = useLocation();
   const { showPricingModal, hidePaywall } = useSubscription();
-  const { initialized: authInitialized = true } = useAuth();
 
   // Determine active page from URL or prop
   const getActivePageFromPath = (pathname) => {
@@ -243,16 +241,11 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
           {/* min-w-0 on main and wrapper prevents nested grid overflow */}
           <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col">
             <ErrorBoundary name="Page Content">
-              {/* Show loading during auth initialization - navbar stays visible */}
-              {!authInitialized ? (
-                <ContentLoadingFallback />
-              ) : (
-                <Suspense fallback={<ContentLoadingFallback />}>
-                  <div className="flex-1 min-w-0">
-                    {content}
-                  </div>
-                </Suspense>
-              )}
+              <Suspense fallback={<ContentLoadingFallback />}>
+                <div className="flex-1 min-w-0">
+                  {content}
+                </div>
+              </Suspense>
             </ErrorBoundary>
 
             {/* Upgrade CTA - Sticky footer for free users */}

@@ -6,12 +6,9 @@ import { ChartSkeleton } from '../components/common/ChartSkeleton';
 
 // Lazy-load heavy map components (~450KB MapLibre + 98KB GeoJSON)
 // Only loaded when user navigates to the respective tab
-const DistrictLiquidityMap = lazy(() =>
-  import('../components/insights/DistrictLiquidityMap').then(m => ({ default: m.DistrictLiquidityMap }))
-);
-const MarketStrategyMap = lazy(() =>
-  import('../components/insights/MarketStrategyMap').then(m => ({ default: m.MarketStrategyMap }))
-);
+// These use default exports, so we can import directly
+const DistrictLiquidityMap = lazy(() => import('../components/insights/DistrictLiquidityMap'));
+const MarketStrategyMap = lazy(() => import('../components/insights/MarketStrategyMap'));
 
 /**
  * District Deep Dive Page
