@@ -13,13 +13,29 @@ import {
 import YouVsMarketVisual from '../components/landing/YouVsMarketVisual';
 
 /**
+ * Custom cursor SVGs (data URIs)
+ * Following frontend-design skill: "Custom cursors" for distinctive visual details
+ */
+const CUSTOM_CURSORS = {
+  // Key cursor for "Log In" - suggests unlocking access
+  key: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='7.5' cy='7.5' r='5.5'/%3E%3Cpath d='m21 21-5.2-5.2'/%3E%3Cpath d='M15 11l2 2'/%3E%3Cpath d='M18 14l2 2'/%3E%3C/svg%3E") 4 4, pointer`,
+
+  // Arrow cursor for CTAs - suggests forward motion/action
+  arrow: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m12 5 7 7-7 7'/%3E%3C/svg%3E") 16 12, pointer`,
+
+  // Chart cursor alternative for data CTAs
+  chart: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3v18h18'/%3E%3Cpath d='m19 9-5 5-4-4-3 3'/%3E%3C/svg%3E") 4 4, pointer`,
+};
+
+/**
  * MagneticButton - Interactive button with magnetic pull + spotlight blob
  *
  * Effects:
  * 1. Magnetic pull: Button subtly moves toward cursor on hover
  * 2. Spotlight blob: Glowing orb follows cursor within button
+ * 3. Custom cursor: Context-specific cursor icon on hover
  */
-function MagneticButton({ children, onClick, className, variant = 'primary' }) {
+function MagneticButton({ children, onClick, className, variant = 'primary', cursorType = 'arrow' }) {
   const buttonRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [spotlightPos, setSpotlightPos] = useState({ x: 0, y: 0 });
@@ -67,6 +83,9 @@ function MagneticButton({ children, onClick, className, variant = 'primary' }) {
     ? 'bg-[#213448] text-[#EAE0CF] shadow-lg shadow-[#213448]/20'
     : 'bg-[#213448] text-[#EAE0CF] shadow-lg shadow-[#213448]/10';
 
+  // Get custom cursor for this button type
+  const customCursor = CUSTOM_CURSORS[cursorType] || CUSTOM_CURSORS.arrow;
+
   return (
     <motion.button
       ref={buttonRef}
@@ -74,9 +93,13 @@ function MagneticButton({ children, onClick, className, variant = 'primary' }) {
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={{ x: xSpring, y: ySpring }}
+      style={{
+        x: xSpring,
+        y: ySpring,
+        cursor: isHovered ? customCursor : 'pointer',
+      }}
       whileTap={{ scale: 0.98 }}
-      className={`relative overflow-hidden cursor-pointer ${baseClasses} ${className}`}
+      className={`relative overflow-hidden ${baseClasses} ${className}`}
     >
       {/* Spotlight blob - follows cursor with soft glow */}
       <div
@@ -147,6 +170,7 @@ const LandingPage = () => {
               onClick={() => navigate('/login')}
               className="px-4 md:px-5 py-2 text-sm font-medium rounded-lg min-h-[44px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
               variant="secondary"
+              cursorType="key"
             >
               Log In
             </MagneticButton>
@@ -196,6 +220,7 @@ const LandingPage = () => {
                 onClick={() => navigate('/login')}
                 className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-medium min-h-[48px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none hover:shadow-2xl transition-shadow"
                 variant="primary"
+                cursorType="chart"
               >
                 View Market Data
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -303,6 +328,7 @@ function HeroSection({ navigate }) {
             onClick={() => navigate('/login')}
             className="group px-8 py-4 rounded-xl font-semibold min-h-[48px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none hover:shadow-xl transition-shadow duration-300"
             variant="primary"
+            cursorType="chart"
           >
             <Database className="w-4 h-4" />
             <span>View Market Data</span>
