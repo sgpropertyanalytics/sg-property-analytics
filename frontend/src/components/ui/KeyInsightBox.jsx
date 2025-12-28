@@ -1,4 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
+import {
+  useFloating,
+  offset,
+  flip,
+  shift,
+  autoUpdate,
+  useHover,
+  useFocus,
+  useInteractions,
+  useRole,
+  useDismiss,
+  FloatingPortal,
+} from '@floating-ui/react';
 
 /**
  * KeyInsightBox - Plain English summary for chart insights
@@ -7,6 +20,7 @@ import React from 'react';
  * that helps users understand what the data means.
  *
  * @param {boolean} compact - Use smaller text/padding for chart explanations
+ * @param {string} tooltip - Optional tooltip content shown when hovering the icon
  */
 export function KeyInsightBox({
   icon = null,
@@ -14,7 +28,8 @@ export function KeyInsightBox({
   children,
   variant = 'default',
   compact = false,
-  className = ''
+  className = '',
+  tooltip = null,
 }) {
   const variants = {
     default: 'bg-gradient-to-r from-[#213448]/5 to-[#547792]/5',
@@ -69,12 +84,56 @@ export function KeyInsightBox({
     className: iconSvgSize
   });
 
+  // Tooltip state and floating UI setup
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+  const { refs, floatingStyles, context } = useFloating({
+    open: isTooltipOpen,
+    onOpenChange: setIsTooltipOpen,
+    placement: 'bottom-start',
+    whileElementsMounted: autoUpdate,
+    middleware: [
+      offset(8),
+      flip({ fallbackPlacements: ['bottom-end', 'top-start', 'top-end', 'right'] }),
+      shift({ padding: 12 }),
+    ],
+  });
+
+  const hover = useHover(context, { move: false });
+  const focus = useFocus(context);
+  const dismiss = useDismiss(context);
+  const role = useRole(context, { role: 'tooltip' });
+  const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, dismiss, role]);
+
   return (
     <div className={`${padding} ${variants[variant]} border-b border-[#94B4C1]/30 ${className}`}>
       <div className={`flex items-start ${gap}`}>
-        <div className={`${iconSize} rounded-full flex items-center justify-center flex-shrink-0 ${iconColors[variant]}`}>
-          {sizedIcon}
-        </div>
+        {tooltip ? (
+          <>
+            <div
+              ref={refs.setReference}
+              {...getReferenceProps()}
+              className={`${iconSize} rounded-full flex items-center justify-center flex-shrink-0 ${iconColors[variant]} cursor-help transition-opacity hover:opacity-80`}
+            >
+              {sizedIcon}
+            </div>
+            {isTooltipOpen && (
+              <FloatingPortal>
+                <div
+                  ref={refs.setFloating}
+                  style={floatingStyles}
+                  {...getFloatingProps()}
+                  className="z-[9999] w-72 max-w-[calc(100vw-2rem)] p-3 bg-[#213448] text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line"
+                >
+                  {tooltip}
+                </div>
+              </FloatingPortal>
+            )}
+          </>
+        ) : (
+          <div className={`${iconSize} rounded-full flex items-center justify-center flex-shrink-0 ${iconColors[variant]}`}>
+            {sizedIcon}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           {title && (
             <h4 className={`font-semibold text-[#213448] ${titleSize} mb-0.5`}>{title}</h4>

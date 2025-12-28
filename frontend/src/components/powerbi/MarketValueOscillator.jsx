@@ -17,7 +17,7 @@ import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { HelpTooltip, KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformOscillatorSeries,
@@ -376,17 +376,17 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
 
           {/* Insight Box */}
           <div className="shrink-0">
-            <KeyInsightBox title="How to Read this Chart" variant="info" compact>
-              <div className="flex items-start gap-2">
-                <p className="text-xs text-[#547792] flex-1">
-                  Shows relative price premium between regions using resale transactions, expressed as Z-score against historical spreads. A Z-score near 0 = fair value.
-                </p>
-                <HelpTooltip content="±0σ to ±1σ: Normal range, fair value
+            <KeyInsightBox
+              title="How to Read this Chart"
+              variant="info"
+              compact
+              tooltip={`±0σ to ±1σ: Normal range, fair value
 +1σ to +2σ: Elevated premium, watch closely
 > +2σ: Extreme overvaluation
 -1σ to -2σ: Compressed premium, improving value
-< -2σ: Extreme compression, potential opportunity" />
-              </div>
+< -2σ: Extreme compression, potential opportunity`}
+            >
+              Shows relative price premium between regions using resale transactions, expressed as Z-score against historical spreads. A Z-score near 0 = fair value.
             </KeyInsightBox>
           </div>
 

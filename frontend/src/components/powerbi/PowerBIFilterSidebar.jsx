@@ -22,10 +22,36 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
     activeFilterCount,
     setDateRange,
     setDistricts,
+    setBedroomTypes,
     toggleBedroomType,
+    setSegments,
     toggleSegment,
     resetFilters,
   } = usePowerBIFilters();
+
+  /**
+   * Handle filter button click with switch/multi-select behavior
+   * - Normal click: Switch to this value only (deselect others)
+   * - Shift+click: Add/remove from selection (multi-select)
+   * - Click on already-selected single item: Deselect (show all)
+   */
+  const handleFilterClick = useCallback((e, value, currentSelection, setSingle, toggleMulti) => {
+    e.preventDefault();
+
+    if (e.shiftKey) {
+      // Shift+click: toggle (add/remove)
+      toggleMulti(value);
+    } else {
+      // Normal click: switch to single selection
+      if (currentSelection.length === 1 && currentSelection[0] === value) {
+        // Clicking the only selected item → deselect (show all)
+        setSingle([]);
+      } else {
+        // Switch to this item only
+        setSingle([value]);
+      }
+    }
+  }, []);
 
   const [expandedSections, setExpandedSections] = useState({
     location: true,
@@ -194,14 +220,14 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
             (filters.districts.length > 0 ? 1 : 0)
           }
         >
-          {/* Market Segment Buttons - multi-select like bedroom types */}
+          {/* Market Segment Buttons - click to switch, shift+click to multi-select */}
           <FilterGroup label="Market Segment">
             <div className="grid grid-cols-3 gap-2">
               {['CCR', 'RCR', 'OCR'].map(seg => (
                 <button
                   type="button"
                   key={seg}
-                  onClick={(e) => { e.preventDefault(); toggleSegment(seg); }}
+                  onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
                   className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
                     filters.segments.includes(seg)
                       ? 'bg-[#547792] text-white border-[#547792]'
@@ -215,7 +241,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
               ))}
             </div>
             <p className="text-[10px] text-slate-500 mt-2 italic">
-              CCR/RCR/OCR follows market convention; select areas may differ at planning-area level.
+              Click to switch, Shift+click to multi-select
             </p>
           </FilterGroup>
 
@@ -250,13 +276,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
           onToggle={() => toggleSection('roomSize')}
           activeCount={filters.bedroomTypes.length > 0 ? 1 : 0}
         >
-          {/* Bedroom Type Buttons - centered with consistent width */}
+          {/* Bedroom Type Buttons - click to switch, shift+click to multi-select */}
           <div className="grid grid-cols-5 gap-1.5">
             {[1, 2, 3, 4, 5].map(br => (
               <button
                 type="button"
                 key={br}
-                onClick={(e) => { e.preventDefault(); toggleBedroomType(br); }}
+                onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
                 className={`min-h-[44px] py-2.5 text-xs rounded-md border transition-colors ${
                   filters.bedroomTypes.includes(br)
                     ? 'bg-[#547792] text-white border-[#547792]'
@@ -269,6 +295,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
               </button>
             ))}
           </div>
+          <p className="text-[10px] text-slate-500 mt-1 italic">
+            Click to switch, Shift+click to multi-select
+          </p>
 
           {/* Classification Tiers Info - Generated from constants */}
           <div className="text-[10px] text-slate-500 mt-2 space-y-1.5 italic overflow-hidden">
