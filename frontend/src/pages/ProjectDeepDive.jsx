@@ -528,17 +528,17 @@ export function ProjectDeepDiveContent() {
         {loading && (
           <div className="space-y-6 animate-fade-in">
             {/* 2-Column Layout Skeleton */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 lg:auto-rows-fr lg:items-stretch">
               {/* Left Column */}
               <div className="space-y-4 lg:space-y-6">
                 <ProjectFundamentalsPanel loading={true} compact />
+                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[350px] animate-pulse" />
                 <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
-                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[450px] animate-pulse" />
               </div>
               {/* Right Column */}
               <div className="space-y-4 lg:space-y-6">
                 <ResaleMetricsCards loading={true} compact />
-                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[350px] animate-pulse" />
+                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
                 <ExitRiskDashboard loading={true} />
               </div>
             </div>
@@ -558,7 +558,7 @@ export function ProjectDeepDiveContent() {
             )}
 
             {/* Charts Grid - 2 Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 lg:auto-rows-fr lg:items-stretch">
 
               {/* ===== LEFT COLUMN ===== */}
               <div className="space-y-4 lg:space-y-6">

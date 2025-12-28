@@ -335,8 +335,8 @@ export function PriceBandChart({
   // Main chart view
   return (
     <div
-      className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
-      style={{ height }}
+      className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden h-full"
+      style={{ minHeight: height }}
     >
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
