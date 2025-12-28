@@ -68,6 +68,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
 
   // Calculate date range for a preset relative to the latest data date
   // Fix: Fallback to today if maxDate not loaded yet (prevents silent no-op)
+  // Fix: Snap to 1st of month because URA data is month-level only
   const calculatePresetDateRange = useCallback((preset, maxDateStr) => {
     // Fallback to today if filter options haven't loaded yet
     const effectiveMaxDate = maxDateStr || new Date().toISOString().split('T')[0];
@@ -94,6 +95,12 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
       default:
         return { start: null, end: null };
     }
+
+    // CRITICAL: Snap to 1st of month for URA data compatibility
+    // URA transaction data is month-level only - all transactions within a month
+    // are dated to the 1st of that month. Without this, a date like "2024-12-28"
+    // would exclude December 2024 transactions (dated 2024-12-01).
+    startDate.setDate(1);
 
     // Format as YYYY-MM-DD
     const formatDate = (d) => {
