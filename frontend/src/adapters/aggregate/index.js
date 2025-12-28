@@ -80,6 +80,7 @@ import {
   getZScoreLabel,
   getZScoreShortLabel,
   getZScoreColor,
+  calculateRollingAverage,
 } from './oscillator';
 
 // Named exports
@@ -126,6 +127,7 @@ export {
   getZScoreLabel,
   getZScoreShortLabel,
   getZScoreColor,
+  calculateRollingAverage,
 };
 
 // Default export for backwards compatibility
@@ -168,4 +170,5 @@ export default {
   getZScoreLabel,
   getZScoreShortLabel,
   getZScoreColor,
+  calculateRollingAverage,
 };

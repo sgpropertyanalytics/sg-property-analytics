@@ -59,6 +59,7 @@ export {
   getZScoreLabel,
   getZScoreShortLabel,
   getZScoreColor,
+  calculateRollingAverage,
 } from './aggregate';
 
 // Re-export default for backwards compatibility

@@ -55,4 +55,5 @@ export {
   getZScoreLabel,
   getZScoreShortLabel,
   getZScoreColor,
+  calculateRollingAverage,
 } from './aggregateAdapter';

@@ -150,3 +150,32 @@ export const getZScoreColor = (z) => {
   if (z < -1.0) return 'text-emerald-600';
   return 'text-[#213448]';
 };
+
+/**
+ * Calculate rolling average for an array of values.
+ *
+ * @param {Array<number|null>} values - Array of values (can contain nulls)
+ * @param {number} window - Rolling window size (default 12)
+ * @returns {Array<number|null>} Rolling averages (null for insufficient data)
+ */
+export const calculateRollingAverage = (values, window = 12) => {
+  if (!Array.isArray(values) || values.length === 0) {
+    return [];
+  }
+
+  return values.map((_, idx) => {
+    // Need at least 'window' data points to calculate
+    if (idx < window - 1) return null;
+
+    // Get the window of values
+    const windowValues = values
+      .slice(idx - window + 1, idx + 1)
+      .filter(v => v !== null && v !== undefined && !isNaN(v));
+
+    // Need at least half the window to be valid
+    if (windowValues.length < window / 2) return null;
+
+    const sum = windowValues.reduce((a, b) => a + b, 0);
+    return sum / windowValues.length;
+  });
+};

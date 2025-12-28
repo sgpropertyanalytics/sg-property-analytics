@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import {
@@ -27,6 +27,7 @@ import {
   transformCompressionSeries,
   logFetchDebug,
   assertKnownVersion,
+  calculateRollingAverage,
 } from '../../adapters';
 
 ChartJS.register(
@@ -43,6 +44,13 @@ ChartJS.register(
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
+
+// Rolling average window options
+const ROLLING_AVG_OPTIONS = [
+  { value: 6, label: '6M' },
+  { value: 12, label: '12M' },
+  { value: 24, label: '24M' },
+];
 
 /**
  * Market Value Oscillator Chart
@@ -63,6 +71,8 @@ export function MarketValueOscillator({ height = 380 }) {
   const { isPremium } = useSubscription();
 
   const chartRef = useRef(null);
+  const [rollingWindow, setRollingWindow] = useState(12);
+  const [showMA, setShowMA] = useState(true);
 
   // Defer fetch until chart is visible
   const { shouldFetch, containerRef } = useDeferredFetch({
@@ -132,7 +142,18 @@ export function MarketValueOscillator({ height = 380 }) {
     return latestZCcrRcr - latestZRcrOcr;
   }, [latestZCcrRcr, latestZRcrOcr]);
 
-  // Chart data
+  // Calculate rolling averages with configurable window
+  const rollingWindowLabel = ROLLING_AVG_OPTIONS.find(o => o.value === rollingWindow)?.label || `${rollingWindow}M`;
+  const rollingAverages = useMemo(() => {
+    const ccrRcrValues = data.map(d => d.zCcrRcr);
+    const rcrOcrValues = data.map(d => d.zRcrOcr);
+    return {
+      ccrRcr: calculateRollingAverage(ccrRcrValues, rollingWindow),
+      rcrOcr: calculateRollingAverage(rcrOcrValues, rollingWindow),
+    };
+  }, [data, rollingWindow]);
+
+  // Chart data - conditionally include MA lines
   const chartData = {
     labels: data.map(d => d.period),
     datasets: [
@@ -167,6 +188,33 @@ export function MarketValueOscillator({ height = 380 }) {
         tension: 0.3,
         spanGaps: true,
       },
+      ...(showMA ? [
+        {
+          label: `CCR-RCR ${rollingWindowLabel} Avg`,
+          data: rollingAverages.ccrRcr,
+          borderColor: 'rgba(33, 52, 72, 0.5)', // Navy, lighter
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          fill: false,
+          tension: 0.4,
+          spanGaps: true,
+        },
+        {
+          label: `RCR-OCR ${rollingWindowLabel} Avg`,
+          data: rollingAverages.rcrOcr,
+          borderColor: 'rgba(84, 119, 146, 0.5)', // Ocean blue, lighter
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          fill: false,
+          tension: 0.4,
+          spanGaps: true,
+        },
+      ] : []),
     ],
   };
 
@@ -190,9 +238,18 @@ export function MarketValueOscillator({ height = 380 }) {
           label: (context) => {
             const idx = context.dataIndex;
             const d = data[idx];
+            const z = context.parsed.y;
+
+            // Rolling average datasets (indices 2, 3)
+            if (context.datasetIndex === 2) {
+              return z !== null ? `CCR-RCR ${rollingWindowLabel} Avg: ${z.toFixed(2)}σ` : '';
+            }
+            if (context.datasetIndex === 3) {
+              return z !== null ? `RCR-OCR ${rollingWindowLabel} Avg: ${z.toFixed(2)}σ` : '';
+            }
+
             if (!d) return '';
 
-            const z = context.parsed.y;
             const signal = getZScoreLabel(z);
 
             if (context.datasetIndex === 0) {
@@ -332,6 +389,30 @@ export function MarketValueOscillator({ height = 380 }) {
                 <p className="text-xs text-[#547792] mt-0.5">
                   Z-Score normalized spread analysis ({TIME_LABELS[timeGrouping]})
                 </p>
+              </div>
+              {/* Rolling Average Controls */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setShowMA(!showMA)}
+                  className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                    showMA
+                      ? 'bg-[#213448] text-white border-[#213448]'
+                      : 'bg-white text-[#547792] border-[#94B4C1]/50 hover:border-[#547792]'
+                  }`}
+                >
+                  MA
+                </button>
+                {showMA && (
+                  <select
+                    value={rollingWindow}
+                    onChange={(e) => setRollingWindow(Number(e.target.value))}
+                    className="text-xs bg-white border border-[#94B4C1]/50 rounded px-1.5 py-0.5 text-[#213448] focus:outline-none focus:ring-1 focus:ring-[#547792]"
+                  >
+                    {ROLLING_AVG_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
 
