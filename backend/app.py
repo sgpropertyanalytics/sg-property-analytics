@@ -75,6 +75,7 @@ def create_app():
          resources={r"/api/*": {"origins": "*"}},
          methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
          allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
+         expose_headers=["X-Request-ID", "X-DB-Time-Ms", "X-Query-Count"],
          supports_credentials=False,
          send_wildcard=True)  # Always send '*' instead of echoing Origin header
 
@@ -82,6 +83,10 @@ def create_app():
     # Request ID injection for request correlation and debugging
     from api.middleware import setup_request_id_middleware
     setup_request_id_middleware(app)
+
+    # Query timing instrumentation (production-safe, no EXPLAIN)
+    from api.middleware import setup_query_timing_middleware
+    setup_query_timing_middleware(app)
 
     # Load contract schemas (registers contracts on import)
     try:

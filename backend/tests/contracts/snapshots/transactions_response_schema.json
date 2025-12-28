@@ -1,0 +1,48 @@
+{
+  "price_growth": {
+    "data_fields": [
+      "transactionId",
+      "project",
+      "bedroomCount",
+      "floorLevel",
+      "transactionDate",
+      "price",
+      "psf",
+      "cumulativeGrowthPct",
+      "incrementalGrowthPct",
+      "daysSincePrevious",
+      "annualizedGrowthPct"
+    ],
+    "meta_fields": [
+      "requestId",
+      "elapsedMs",
+      "apiVersion",
+      "page",
+      "perPage",
+      "totalRecords",
+      "totalPages"
+    ],
+    "required_meta": [
+      "requestId",
+      "elapsedMs",
+      "apiVersion"
+    ]
+  },
+  "segments": {
+    "data_fields": [
+      "project",
+      "bedroomCount",
+      "floorLevel",
+      "transactionCount",
+      "avgCumulativeGrowthPct",
+      "avgAnnualizedGrowthPct"
+    ],
+    "required_meta": [
+      "requestId",
+      "elapsedMs",
+      "apiVersion"
+    ]
+  },
+  "_version": "v3",
+  "_created": "2025-12-28"
+}

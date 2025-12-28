@@ -15,9 +15,11 @@ from utils.normalize import (
     to_int, to_date, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
+from api.contracts import api_contract
 
 
 @analytics_bp.route("/transactions/price-growth", methods=["GET"])
+@api_contract("transactions/price-growth")
 def get_transaction_price_growth():
     """
     Get transaction-level price growth metrics partitioned by market segments.
@@ -116,6 +118,7 @@ def get_transaction_price_growth():
 
 
 @analytics_bp.route("/transactions/price-growth/segments", methods=["GET"])
+@api_contract("transactions/price-growth/segments")
 def get_price_growth_segments():
     """
     Get aggregated price growth summary by market segment.

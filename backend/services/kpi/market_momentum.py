@@ -12,10 +12,14 @@ Methodology:
 CRITICAL: Uses month boundaries because URA data is month-level.
 All transactions within a month are dated to the 1st of that month.
 
+PERFORMANCE OPTIMIZATION:
+Fallback data (6-month windows) is fetched ONLY when primary confidence is "low".
+This reduces PERCENTILE_CONT calls from 10 to 4 in the common case (high/medium confidence).
+
 Confidence Levels (based on resale deals per quarter):
 - High: ≥20 deals per quarter consistently
 - Medium: 10-19 deals
-- Low: <10 deals (fallback to rolling 6-month window)
+- Low: <10 deals (triggers fallback to 6-month windows)
 
 Score Interpretation:
 - Score > 55: Buyer advantage (prices falling unusually fast)
@@ -26,9 +30,11 @@ This does NOT mean cheap or expensive - only momentum relative to historical nor
 """
 
 from datetime import date
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
+from sqlalchemy import text
 from db.sql import OUTLIER_FILTER
 from constants import SALE_TYPE_RESALE
+from models.database import db
 from services.kpi.base import (
     KPIResult, build_filter_clause, _months_back
 )
@@ -76,14 +82,12 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
         'max_date': max_date,
     }
 
-    # Fallback for low-confidence: 6-month windows
-    params['fallback_current_start'] = _months_back(max_exclusive, 6)
-    params['fallback_prev_start'] = _months_back(max_exclusive, 12)
-    params['fallback_prev_end'] = _months_back(max_exclusive, 6)
-
     filter_parts, filter_params = build_filter_clause(filters)
     params.update(filter_params)
     params['_filter_parts'] = filter_parts
+    # Store for fallback query
+    params['_max_exclusive'] = max_exclusive
+    params['_base_filters'] = filters.copy()
 
     return params
 
@@ -95,9 +99,15 @@ def get_sql(params: Dict[str, Any]) -> str:
     2. Previous quarter median PSF (resale only) - Q1
     3. Older quarter median PSF (resale only) - Q2 (for previous momentum)
     4. Quarterly median PSF over last 12 quarters for volatility
-    5. Fallback 180-day windows for low-confidence scenarios
+
+    PERFORMANCE: Fallback CTEs removed - computed lazily only when needed.
+    This reduces PERCENTILE_CONT from 10 to 4 in high/medium confidence cases.
     """
     filter_parts = params.pop('_filter_parts', [])
+    # Remove internal params not used in SQL
+    params.pop('_max_exclusive', None)
+    params.pop('_base_filters', None)
+
     base_filter = OUTLIER_FILTER
     if filter_parts:
         base_filter += " AND " + " AND ".join(filter_parts)
@@ -125,7 +135,6 @@ def get_sql(params: Dict[str, Any]) -> str:
               AND transaction_date >= :prev_start
               AND transaction_date < :prev_end
         ),
-        -- Older quarter (180-270 days ago) for calculating previous momentum score
         older_quarter AS (
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
@@ -136,8 +145,85 @@ def get_sql(params: Dict[str, Any]) -> str:
               AND transaction_date >= :older_start
               AND transaction_date < :older_end
         ),
-        -- Fallback: 180-day windows for low-confidence
-        fallback_current AS (
+        quarterly_psf AS (
+            SELECT
+                DATE_TRUNC('quarter', transaction_date) as quarter,
+                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
+                COUNT(*) as txn_count
+            FROM transactions
+            WHERE {base_filter}
+              AND {resale_filter}
+              AND transaction_date >= :volatility_start
+              AND transaction_date < :current_end
+            GROUP BY DATE_TRUNC('quarter', transaction_date)
+            HAVING COUNT(*) >= 5
+        ),
+        quarterly_changes AS (
+            SELECT
+                quarter,
+                median_psf,
+                txn_count,
+                LAG(median_psf) OVER (ORDER BY quarter) as prev_quarter_psf,
+                CASE
+                    WHEN LAG(median_psf) OVER (ORDER BY quarter) > 0
+                    THEN ((median_psf - LAG(median_psf) OVER (ORDER BY quarter))
+                          / LAG(median_psf) OVER (ORDER BY quarter)) * 100
+                    ELSE NULL
+                END as pct_change
+            FROM quarterly_psf
+        ),
+        volatility AS (
+            SELECT
+                STDDEV(pct_change) as quarterly_stddev,
+                COUNT(pct_change) as quarters_count,
+                AVG(txn_count) as avg_deals_per_quarter,
+                MIN(txn_count) as min_deals_per_quarter
+            FROM quarterly_changes
+            WHERE pct_change IS NOT NULL
+        )
+        SELECT
+            c.median_psf as current_psf,
+            c.txn_count as current_count,
+            p.median_psf as prev_psf,
+            p.txn_count as prev_count,
+            o.median_psf as older_psf,
+            o.txn_count as older_count,
+            v.quarterly_stddev as volatility,
+            v.quarters_count as volatility_quarters,
+            v.avg_deals_per_quarter,
+            v.min_deals_per_quarter
+        FROM current_quarter c
+        CROSS JOIN previous_quarter p
+        CROSS JOIN older_quarter o
+        CROSS JOIN volatility v
+    """
+
+
+def _fetch_fallback_data(filters: Dict[str, Any], max_exclusive: date) -> Tuple[Optional[float], int, Optional[float], int]:
+    """
+    Fetch 6-month fallback data ONLY when primary confidence is low.
+
+    This is called lazily from map_result to avoid expensive PERCENTILE_CONT
+    calls when not needed.
+
+    Returns:
+        (fallback_current_psf, fallback_current_count, fallback_prev_psf, fallback_prev_count)
+    """
+    # Build filter clause
+    filter_parts, filter_params = build_filter_clause(filters)
+    base_filter = OUTLIER_FILTER
+    if filter_parts:
+        base_filter += " AND " + " AND ".join(filter_parts)
+
+    resale_filter = f"sale_type = '{SALE_TYPE_RESALE}'"
+
+    # 6-month windows
+    fallback_current_start = _months_back(max_exclusive, 6)
+    fallback_prev_start = _months_back(max_exclusive, 12)
+    fallback_prev_end = _months_back(max_exclusive, 6)
+
+    sql = f"""
+        WITH fallback_current AS (
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
@@ -156,68 +242,34 @@ def get_sql(params: Dict[str, Any]) -> str:
               AND {resale_filter}
               AND transaction_date >= :fallback_prev_start
               AND transaction_date < :fallback_prev_end
-        ),
-        -- Quarterly medians over last 12 quarters (3 years) for volatility
-        quarterly_psf AS (
-            SELECT
-                DATE_TRUNC('quarter', transaction_date) as quarter,
-                PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
-                COUNT(*) as txn_count
-            FROM transactions
-            WHERE {base_filter}
-              AND {resale_filter}
-              AND transaction_date >= :volatility_start
-              AND transaction_date < :current_end
-            GROUP BY DATE_TRUNC('quarter', transaction_date)
-            HAVING COUNT(*) >= 5  -- Minimum 5 txns per quarter for reliable median
-        ),
-        -- Calculate quarter-over-quarter % changes
-        quarterly_changes AS (
-            SELECT
-                quarter,
-                median_psf,
-                txn_count,
-                LAG(median_psf) OVER (ORDER BY quarter) as prev_quarter_psf,
-                CASE
-                    WHEN LAG(median_psf) OVER (ORDER BY quarter) > 0
-                    THEN ((median_psf - LAG(median_psf) OVER (ORDER BY quarter))
-                          / LAG(median_psf) OVER (ORDER BY quarter)) * 100
-                    ELSE NULL
-                END as pct_change
-            FROM quarterly_psf
-        ),
-        -- Volatility = standard deviation of Q-o-Q % changes
-        volatility AS (
-            SELECT
-                STDDEV(pct_change) as quarterly_stddev,
-                COUNT(pct_change) as quarters_count,
-                AVG(txn_count) as avg_deals_per_quarter,
-                MIN(txn_count) as min_deals_per_quarter
-            FROM quarterly_changes
-            WHERE pct_change IS NOT NULL
         )
         SELECT
-            c.median_psf as current_psf,
-            c.txn_count as current_count,
-            p.median_psf as prev_psf,
-            p.txn_count as prev_count,
-            o.median_psf as older_psf,
-            o.txn_count as older_count,
             fc.median_psf as fallback_current_psf,
             fc.txn_count as fallback_current_count,
             fp.median_psf as fallback_prev_psf,
-            fp.txn_count as fallback_prev_count,
-            v.quarterly_stddev as volatility,
-            v.quarters_count as volatility_quarters,
-            v.avg_deals_per_quarter,
-            v.min_deals_per_quarter
-        FROM current_quarter c
-        CROSS JOIN previous_quarter p
-        CROSS JOIN older_quarter o
-        CROSS JOIN fallback_current fc
+            fp.txn_count as fallback_prev_count
+        FROM fallback_current fc
         CROSS JOIN fallback_previous fp
-        CROSS JOIN volatility v
     """
+
+    params = {
+        'fallback_current_start': fallback_current_start,
+        'current_end': max_exclusive,
+        'fallback_prev_start': fallback_prev_start,
+        'fallback_prev_end': fallback_prev_end,
+        **filter_params
+    }
+
+    result = db.session.execute(text(sql), params).fetchone()
+
+    if result:
+        return (
+            float(result.fallback_current_psf) if result.fallback_current_psf else None,
+            int(result.fallback_current_count or 0),
+            float(result.fallback_prev_psf) if result.fallback_prev_psf else None,
+            int(result.fallback_prev_count or 0)
+        )
+    return None, 0, None, 0
 
 
 def _determine_confidence(
@@ -274,6 +326,9 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     """
     Map query result to KPIResult using volatility-normalized momentum.
 
+    PERFORMANCE: Fallback data is fetched ONLY when confidence is "low".
+    This avoids 2 additional PERCENTILE_CONT calls in the common case.
+
     Formula:
     1. psf_change = (current - prev) / prev × 100
     2. z = psf_change / volatility
@@ -302,12 +357,6 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     prev_count = int(row.prev_count or 0)
     older_count = int(row.older_count or 0)
 
-    # Extract fallback (180-day) data
-    fallback_current_psf = float(row.fallback_current_psf) if row.fallback_current_psf else None
-    fallback_prev_psf = float(row.fallback_prev_psf) if row.fallback_prev_psf else None
-    fallback_current_count = int(row.fallback_current_count or 0)
-    fallback_prev_count = int(row.fallback_prev_count or 0)
-
     # Extract volatility data
     volatility = float(row.volatility) if row.volatility else None
     volatility_quarters = int(row.volatility_quarters or 0)
@@ -317,16 +366,26 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     # Determine confidence level
     confidence = _determine_confidence(current_count, prev_count, min_deals)
 
-    # Use fallback if low confidence on primary data
+    # LAZY FALLBACK: Only fetch 6-month data if confidence is "low"
     use_fallback = False
-    if confidence == "low" and fallback_current_psf and fallback_prev_psf:
-        if fallback_current_count >= MEDIUM_CONFIDENCE_MIN and fallback_prev_count >= MEDIUM_CONFIDENCE_MIN:
-            current_psf = fallback_current_psf
-            prev_psf = fallback_prev_psf
-            current_count = fallback_current_count
-            prev_count = fallback_prev_count
-            confidence = _determine_confidence(current_count, prev_count, None)
-            use_fallback = True
+    if confidence == "low":
+        # Get max_exclusive from filters (stored during build_params)
+        max_date = filters.get('max_date') or date.today()
+        max_exclusive = date(max_date.year, max_date.month, 1)
+
+        # Fetch fallback data (2 additional PERCENTILE_CONT calls)
+        fallback_current_psf, fallback_current_count, fallback_prev_psf, fallback_prev_count = \
+            _fetch_fallback_data(filters, max_exclusive)
+
+        # Use fallback if it provides better confidence
+        if fallback_current_psf and fallback_prev_psf:
+            if fallback_current_count >= MEDIUM_CONFIDENCE_MIN and fallback_prev_count >= MEDIUM_CONFIDENCE_MIN:
+                current_psf = fallback_current_psf
+                prev_psf = fallback_prev_psf
+                current_count = fallback_current_count
+                prev_count = fallback_prev_count
+                confidence = _determine_confidence(current_count, prev_count, None)
+                use_fallback = True
 
     # Check if we have enough data
     if not current_psf or not prev_psf or prev_psf <= 0:
