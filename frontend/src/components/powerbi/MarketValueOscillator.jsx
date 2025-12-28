@@ -17,7 +17,7 @@ import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
+import { HelpTooltip, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformOscillatorSeries,
@@ -58,7 +58,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
  */
-export function MarketValueOscillator({ height = 380, saleType = null }) {
+export function MarketValueOscillator({ height = 420, saleType = null }) {
   // Get GLOBAL filters and timeGrouping from context
   const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
@@ -289,23 +289,6 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
             backgroundColor: 'rgba(16, 185, 129, 0.20)',
             borderWidth: 0,
           },
-          // Zero line (historical average) - prominent solid line
-          zeroLine: {
-            type: 'line',
-            yMin: 0,
-            yMax: 0,
-            borderColor: '#213448',
-            borderWidth: 1.5,
-            label: {
-              display: true,
-              content: '0',
-              position: 'start',
-              backgroundColor: '#213448',
-              color: '#fff',
-              font: { size: 9, weight: 'bold' },
-              padding: 3,
-            },
-          },
         },
       },
     },
@@ -332,8 +315,8 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
     },
   };
 
-  // Card height with header + insight box
-  const cardHeight = height + 240;
+  // Card height - more space for chart now that insight box is removed
+  const cardHeight = height + 80;
 
   // CRITICAL: containerRef must be OUTSIDE QueryState
   return (
@@ -345,13 +328,22 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
         >
           {/* Header */}
           <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-                Market Value Oscillator
-              </h3>
-              <p className="text-xs text-[#547792] mt-0.5">
-                Z-Score normalized spread analysis ({TIME_LABELS[timeGrouping]})
-              </p>
+            <div className="flex items-start gap-1.5">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-[#213448] text-sm md:text-base">
+                  Market Value Oscillator
+                </h3>
+                <p className="text-xs text-[#547792] mt-0.5">
+                  Z-Score normalized spread analysis ({TIME_LABELS[timeGrouping]})
+                </p>
+              </div>
+              <HelpTooltip content="Z-score shows how far current spreads are from historical average.
+
+±0σ to ±1σ: Normal range, fair value
++1σ to +2σ: Elevated premium, watch closely
+> +2σ: Extreme overvaluation
+-1σ to -2σ: Compressed premium, improving value
+< -2σ: Extreme compression, potential opportunity" />
             </div>
 
             {/* KPI Row */}
@@ -376,25 +368,6 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
                 />
               )}
             </InlineCardRow>
-          </div>
-
-          {/* Insight Box */}
-          <div className="shrink-0">
-            <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-              <p className="mb-2">
-                This chart shows the relative price premium between regions (CCR–RCR and RCR–OCR) using <strong>resale transactions only</strong>, expressed as a Z-score against historical spreads. A Z-score near 0 indicates fair value and normal market conditions.
-              </p>
-              <div className="mb-2">
-                <div className="font-semibold text-[#213448] mb-1">Interpretation Guide</div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
-                  <div><span className="font-semibold text-[#547792]">±0σ to ±1.0σ</span> — Normal range, fair value.</div>
-                  <div><span className="font-semibold text-amber-600">+1.0σ to +2.0σ</span> — Elevated premium, watch closely.</div>
-                  <div><span className="font-semibold text-red-600">&gt; +2.0σ</span> — Extreme disparity, significant overvaluation.</div>
-                  <div><span className="font-semibold text-sky-600">–1.0σ to –2.0σ</span> — Compressed premium, improving value.</div>
-                  <div><span className="font-semibold text-emerald-600">&lt; –2.0σ</span> — Extreme compression, potential opportunity.</div>
-                </div>
-              </div>
-            </KeyInsightBox>
           </div>
 
           {/* Chart */}
