@@ -441,7 +441,11 @@ def get_hot_projects():
         # Filter clauses - affect project visibility and median calculations, NOT units_sold
         filter_clauses = []
         outer_where_clauses = []
-        params = {"limit": limit}
+        params = {
+            "limit": limit,
+            "sale_type_new": SALE_TYPE_NEW,
+            "sale_type_resale": SALE_TYPE_RESALE,
+        }
 
         # Bedroom filter - affects which projects are shown (must have sales in this bedroom type)
         # but does NOT affect the units_sold count
@@ -514,7 +518,7 @@ def get_hot_projects():
                     MAX(t.transaction_date) as last_new_sale
                 FROM transactions t
                 WHERE {get_outlier_filter_sql('t')}
-                  AND t.sale_type = '{SALE_TYPE_NEW}'
+                  AND t.sale_type = :sale_type_new
                 GROUP BY t.project_name, t.district
             ),
             filtered_stats AS (
@@ -523,16 +527,16 @@ def get_hot_projects():
                 SELECT
                     t.project_name,
                     t.district,
-                    COUNT(CASE WHEN t.sale_type = '{SALE_TYPE_NEW}' THEN 1 END) as filtered_count,
-                    COUNT(CASE WHEN t.sale_type = '{SALE_TYPE_RESALE}' THEN 1 END) as resale_count,
-                    AVG(CASE WHEN t.sale_type = '{SALE_TYPE_NEW}' THEN t.psf END) as avg_psf,
-                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = '{SALE_TYPE_NEW}' THEN t.price END) as median_price,
-                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = '{SALE_TYPE_NEW}' THEN t.psf END) as median_psf
+                    COUNT(CASE WHEN t.sale_type = :sale_type_new THEN 1 END) as filtered_count,
+                    COUNT(CASE WHEN t.sale_type = :sale_type_resale THEN 1 END) as resale_count,
+                    AVG(CASE WHEN t.sale_type = :sale_type_new THEN t.psf END) as avg_psf,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = :sale_type_new THEN t.price END) as median_price,
+                    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = :sale_type_new THEN t.psf END) as median_psf
                 FROM transactions t
                 WHERE {filter_where_sql}
                 GROUP BY t.project_name, t.district
-                HAVING COUNT(CASE WHEN t.sale_type = '{SALE_TYPE_NEW}' THEN 1 END) > 0
-                   AND COUNT(CASE WHEN t.sale_type = '{SALE_TYPE_RESALE}' THEN 1 END) = 0
+                HAVING COUNT(CASE WHEN t.sale_type = :sale_type_new THEN 1 END) > 0
+                   AND COUNT(CASE WHEN t.sale_type = :sale_type_resale THEN 1 END) = 0
             )
             SELECT
                 tps.project_name,

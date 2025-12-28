@@ -204,17 +204,20 @@ def get_resale_projects():
         from db.sql import OUTLIER_FILTER
 
         # Get all projects from transactions table
-        result = db.session.execute(text(f"""
-            SELECT
-                project_name,
-                district,
-                COUNT(*) as transaction_count,
-                COUNT(CASE WHEN sale_type = '{SALE_TYPE_RESALE}' THEN 1 END) as resale_count
-            FROM transactions
-            WHERE {OUTLIER_FILTER}
-            GROUP BY project_name, district
-            ORDER BY project_name
-        """)).fetchall()
+        result = db.session.execute(
+            text(f"""
+                SELECT
+                    project_name,
+                    district,
+                    COUNT(*) as transaction_count,
+                    COUNT(CASE WHEN sale_type = :sale_type_resale THEN 1 END) as resale_count
+                FROM transactions
+                WHERE {OUTLIER_FILTER}
+                GROUP BY project_name, district
+                ORDER BY project_name
+            """),
+            {"sale_type_resale": SALE_TYPE_RESALE}
+        ).fetchall()
 
         projects = []
         for row in result:
