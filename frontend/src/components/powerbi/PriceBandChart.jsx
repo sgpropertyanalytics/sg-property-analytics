@@ -66,6 +66,7 @@ export function PriceBandChart({
   dataSource: _dataSource = 'project',
   proxyLabel,
   dataQuality,
+  totalResaleTransactions,
   loading = false,
   error = null,
   projectName = '',
@@ -411,15 +412,21 @@ export function PriceBandChart({
 
       {/* Footer */}
       <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between text-xs text-[#547792]">
-        <span>
-          {dataQuality?.total_trades || 0} resale trades •{' '}
-          {dataQuality?.months_with_data || 0} months with data
+        <span className="min-w-0 truncate flex-1">
+          {totalResaleTransactions != null && totalResaleTransactions !== dataQuality?.total_trades ? (
+            <>
+              {totalResaleTransactions} total resales • {dataQuality?.total_trades || 0} in price bands
+            </>
+          ) : (
+            <>{dataQuality?.total_trades || 0} resale trades</>
+          )}
+          {' '}• {dataQuality?.months_with_data || 0} months with data
           {dataQuality?.smoothing && (
             <span className="opacity-75 ml-1">• 3-month smoothed</span>
           )}
         </span>
         {latest && (
-          <span className="text-[#213448]">
+          <span className="text-[#213448] shrink-0 hidden sm:block">
             Latest: P25 ${latest.p25_s?.toLocaleString() || '-'} |
             Median ${latest.p50_s?.toLocaleString() || '-'} |
             P75 ${latest.p75_s?.toLocaleString() || '-'}

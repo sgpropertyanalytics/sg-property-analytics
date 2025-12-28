@@ -139,10 +139,11 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
     return { grouped, sortedDistricts, districtAggregates, maxVolume };
   }, [data.projects, windowMonths]);
 
-  // Auto-expand all districts when data loads
+  // Default to collapsed - user can expand as needed
+  // This prevents the heatmap from becoming excessively tall with many projects
   useEffect(() => {
     if (projectsByDistrict.sortedDistricts.length > 0) {
-      setExpandedDistricts(new Set(projectsByDistrict.sortedDistricts));
+      setExpandedDistricts(new Set());
     }
   }, [projectsByDistrict.sortedDistricts]);
 
@@ -184,7 +185,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
 
   return (
     <QueryState loading={loading} error={error} onRetry={refetch} empty={data.projects.length === 0} skeleton="grid" height={400}>
-    <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ maxHeight: 500 }}>
       {/* Header */}
       <div className="px-6 py-4 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -285,7 +286,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden p-3 space-y-2 max-h-[500px] overflow-y-auto">
+      <div className="md:hidden p-3 space-y-2 overflow-y-auto flex-1 min-h-0">
         {projectsByDistrict.sortedDistricts.map((district) => {
           const projects = projectsByDistrict.grouped[district];
           const isExpanded = expandedDistricts.has(district);
@@ -396,7 +397,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto max-w-full">
+      <div className="hidden md:block overflow-x-auto overflow-y-auto max-w-full flex-1 min-h-0">
         <table className="w-full border-collapse text-xs min-w-[700px]">
           <thead className="sticky top-0 bg-white z-10">
             <tr>
