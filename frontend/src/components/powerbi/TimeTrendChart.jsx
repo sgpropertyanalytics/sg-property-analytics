@@ -99,17 +99,6 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
   // Use niceMax to ensure human-readable tick boundaries (INV-11)
   const yAxisMax = niceMax(Math.ceil(maxCount * 1.4));
 
-  // Create gradient for bars (computed once per render)
-  const createBarGradient = (context) => {
-    const chart = context.chart;
-    const { ctx, chartArea } = chart;
-    if (!chartArea) return 'rgba(84, 119, 146, 0.7)';
-    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-    gradient.addColorStop(0, 'rgba(84, 119, 146, 0.5)');   // #547792 Blue (base)
-    gradient.addColorStop(1, 'rgba(33, 52, 72, 0.95)');    // #213448 Navy (top)
-    return gradient;
-  };
-
   const chartData = {
     labels,
     datasets: [
@@ -117,10 +106,10 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         type: 'bar',
         label: 'Resale Transactions',
         data: transactionCounts,
-        backgroundColor: createBarGradient,
-        borderColor: 'rgba(33, 52, 72, 0.8)',  // Navy border
+        backgroundColor: 'rgba(148, 180, 193, 0.7)',  // Sky #94B4C1 - light, recedes
+        borderColor: '#547792',  // Blue border for definition
         borderWidth: 1,
-        borderRadius: 3,  // Subtle rounded corners
+        borderRadius: 3,
         yAxisID: 'y',
         order: 2,
       },
@@ -128,12 +117,12 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         type: 'line',
         label: 'Total Transaction Value',
         data: totalValues,
-        borderColor: '#213448',  // Navy - high contrast
-        backgroundColor: 'rgba(33, 52, 72, 0.1)',
+        borderColor: '#213448',  // Navy - bold, pops forward
+        backgroundColor: 'rgba(33, 52, 72, 0.05)',
         borderWidth: 3,
-        pointRadius: 0,  // Hide points by default
+        pointRadius: 0,
         pointHoverRadius: 6,
-        pointHoverBackgroundColor: '#fff',
+        pointHoverBackgroundColor: '#EAE0CF',  // Sand fill on hover
         pointHoverBorderColor: '#213448',
         pointHoverBorderWidth: 2,
         tension: 0.3,
