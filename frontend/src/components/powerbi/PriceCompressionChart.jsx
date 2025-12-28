@@ -192,6 +192,17 @@ export function PriceCompressionChart({ height = 380, saleType = null }) {
           boxHeight: 2,
           padding: 16,
           font: { size: 11 },
+          generateLabels: (chart) => {
+            return chart.data.datasets.map((dataset, i) => ({
+              text: dataset.label,
+              fillStyle: dataset.borderColor,
+              strokeStyle: dataset.borderColor,
+              lineWidth: dataset.borderWidth,
+              lineDash: dataset.borderDash || [],
+              hidden: !chart.isDatasetVisible(i),
+              datasetIndex: i,
+            }));
+          },
         },
       },
       tooltip: {
