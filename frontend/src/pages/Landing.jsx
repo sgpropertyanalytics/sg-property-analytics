@@ -4,47 +4,53 @@ import {
   ArrowRight,
   BarChart3,
   Building2,
+  Database,
   Map,
   ShieldCheck,
   LineChart,
-  TrendingUp,
 } from 'lucide-react';
 import YouVsMarketVisual from '../components/landing/YouVsMarketVisual';
 
 /**
- * Landing Page - Editorial/Data Journalism Design
+ * Landing Page - "Warm Precision" Design System
  *
- * Aesthetic: Bloomberg, The Economist, Financial Times
- * Typography: Fraunces (display) + Source Sans 3 (body)
- * Key: Bold headlines, asymmetric layout, data as hero
+ * Performance Optimizations Applied:
+ * - Staggered animation delays for orchestrated reveals
+ * - whileInView with once:true for scroll-triggered animations
+ * - viewport margin for early trigger
+ * - GPU-friendly transforms (opacity, translateY)
  */
 const LandingPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="relative min-h-screen selection:bg-[#94B4C1]/30 text-[#213448] bg-[#FDFBF7] overflow-x-hidden">
-      {/* Subtle texture overlay */}
+    <div className="relative min-h-screen font-sans selection:bg-[#94B4C1]/30 text-[#213448] bg-[#FDFBF7] overflow-x-hidden">
+      {/* Global Noise Texture */}
       <div
-        className="fixed inset-0 pointer-events-none opacity-[0.04] z-0"
+        className="fixed inset-0 pointer-events-none opacity-[0.08] z-0 mix-blend-multiply"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
         }}
       />
 
+      {/* Ambient Orbs */}
+      <div className="fixed top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#94B4C1]/20 rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[800px] h-[600px] bg-[#EAE0CF]/40 rounded-full blur-[100px] pointer-events-none z-0" />
+
       {/* Navigation */}
-      <nav className="fixed w-full z-50 px-4 md:px-8 lg:px-12 py-4 backdrop-blur-md border-b border-[#213448]/5 bg-[#FDFBF7]/90">
+      <nav className="fixed w-full z-50 px-4 md:px-6 py-3 md:py-4 backdrop-blur-md border-b border-[#94B4C1]/10 bg-[#FDFBF7]/80">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-[#213448] rounded-lg flex items-center justify-center">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-[#213448] rounded-lg flex items-center justify-center shadow-lg shadow-[#213448]/20">
               <LineChart className="w-5 h-5 text-[#EAE0CF]" />
             </div>
-            <span className="font-display font-semibold text-xl text-[#213448]">
-              PropAnalytics
+            <span className="font-bold tracking-tighter text-lg md:text-xl text-[#213448]">
+              PropAnalytics.sg
             </span>
           </div>
           <button
             onClick={() => navigate('/login')}
-            className="px-5 py-2.5 text-sm font-semibold bg-[#213448] text-[#EAE0CF] rounded-lg hover:bg-[#547792] active:scale-[0.98] transition-all min-h-[44px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+            className="px-4 md:px-5 py-2 text-sm font-medium bg-[#213448] text-[#EAE0CF] rounded-lg hover:bg-[#547792] hover:shadow-lg active:scale-[0.98] transition-all shadow-lg shadow-[#213448]/10 min-h-[44px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
           >
             Log In
           </button>
@@ -54,339 +60,523 @@ const LandingPage = () => {
       {/* Content */}
       <div className="relative z-10">
         <HeroSection navigate={navigate} />
-        <FeaturesSection />
-        <CTASection navigate={navigate} />
-        <Footer />
+
+        {/* Bento Grid */}
+        <section className="pt-24 md:pt-32 pb-16 md:pb-24 px-4 md:px-6 relative z-10">
+          <div className="max-w-7xl mx-auto">
+            {/* Section Header - scroll triggered */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-100px' }}
+              transition={{ duration: 0.5 }}
+              className="mb-10 md:mb-16 text-center"
+            >
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-3 md:mb-4 tracking-tight">
+                Everything you need to
+                <br className="hidden sm:block" /> underwrite a deal.
+              </h2>
+              <p className="text-[#547792] text-base md:text-lg max-w-xl mx-auto">
+                Move beyond simple PSF trends. Layer multiple datasets to find
+                hidden value.
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 auto-rows-[280px] md:auto-rows-[320px]">
+              <HeatmapCard />
+              <SupplyCliffCard />
+              <UnitMixCard />
+              <DataValidationCard />
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-16 md:py-24 px-4 md:px-6 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-100px' }}
+            transition={{ duration: 0.5 }}
+            className="max-w-4xl mx-auto text-center p-8 md:p-12 rounded-3xl bg-white/50 border border-white/50 backdrop-blur-sm shadow-xl shadow-[#94B4C1]/10"
+          >
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#213448] mb-4 tracking-tight">
+              Ready to get started?
+            </h2>
+            <p className="text-[#547792] text-base md:text-lg mb-8 max-w-xl mx-auto">
+              Join investors who use institutional-grade analytics to make
+              data-driven property decisions.
+            </p>
+            <button
+              onClick={() => navigate('/login')}
+              className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#547792] hover:shadow-2xl active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center gap-2 mx-auto min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+            >
+              View Market Data
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </motion.div>
+        </section>
+
+        {/* Footer */}
+        <footer className="py-8 md:py-12 border-t border-[#94B4C1]/20 bg-white/40 backdrop-blur-md relative z-10">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-[#213448] rounded-md flex items-center justify-center">
+                <LineChart className="w-4 h-4 text-[#EAE0CF]" />
+              </div>
+              <p className="text-[#547792] text-sm">&copy; 2025 PropAnalytics.sg</p>
+            </div>
+            <div className="flex gap-6 md:gap-8">
+              {['Methodology', 'Pricing', 'Contact'].map((link) => (
+                <a
+                  key={link}
+                  href="#"
+                  className="text-[#547792] hover:text-[#213448] text-sm font-medium transition-colors min-h-[44px] flex items-center focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:rounded focus:outline-none"
+                >
+                  {link}
+                </a>
+              ))}
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );
 };
 
 /**
- * Hero Section - Editorial asymmetric layout
- * Stats on left, content + data viz on right
+ * Hero Section with staggered animations
  */
 function HeroSection({ navigate }) {
   const { scrollY } = useScroll();
-  const opacity = useTransform(scrollY, [0, 400], [1, 0]);
+  const opacity = useTransform(scrollY, [0, 300], [1, 0]);
 
-  const stats = [
-    { value: '103,379', label: 'Transactions Analyzed' },
-    { value: '28', label: 'Districts Covered' },
-    { value: '99.2%', label: 'Data Accuracy' },
+  return (
+    <section className="relative pt-28 sm:pt-32 overflow-hidden min-h-screen flex flex-col items-center bg-[#EAE0CF]/30">
+      {/* Text Content */}
+      <motion.div
+        style={{ opacity }}
+        className="relative z-20 text-center max-w-4xl px-6 flex flex-col items-center mb-16"
+      >
+        {/* Trust Badge - stagger: 0s */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0 }}
+          className="mb-6 px-4 py-1.5 rounded-full border border-[#94B4C1]/50 bg-white/50 backdrop-blur-sm"
+        >
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-xs font-semibold tracking-wide uppercase text-[#213448]">
+              Official URA Data Source
+            </span>
+          </div>
+        </motion.div>
+
+        {/* Headline - stagger: 0.1s */}
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-center max-w-4xl mx-auto mb-4"
+        >
+          <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#213448] tracking-tight leading-[1.1]">
+            Singapore Condo{' '}
+            <span className="text-[#547792] whitespace-nowrap">
+              Market Intelligence
+            </span>
+          </span>
+        </motion.h1>
+
+        {/* Subtitle - stagger: 0.2s */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="text-center max-w-2xl mx-auto mb-10 text-lg md:text-xl text-[#547792] leading-relaxed"
+        >
+          Data-driven price benchmarking across projects, locations, and market
+          segments — based on 100,000+ private property transactions.
+        </motion.p>
+
+        {/* CTA - stagger: 0.3s */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <button
+            onClick={() => navigate('/login')}
+            className="group px-8 py-4 rounded-lg bg-[#213448] text-[#EAE0CF] font-semibold shadow-lg shadow-[#213448]/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+          >
+            <Database className="w-4 h-4" />
+            <span>View Market Data</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </motion.div>
+      </motion.div>
+
+      {/* Dashboard + YouVsMarket Visual */}
+      <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10 mt-8 sm:mt-12 mb-8">
+        {/* Desktop: Side by side */}
+        <div className="hidden lg:grid lg:grid-cols-5 gap-6 items-stretch">
+          {/* Dashboard Screenshot - stagger: 0.4s */}
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="col-span-3 flex"
+            style={{ perspective: '2000px' }}
+          >
+            <div
+              className="relative rounded-xl overflow-hidden shadow-2xl shadow-[#213448]/15 bg-white ring-1 ring-[#213448]/5 w-full"
+              style={{
+                transformStyle: 'preserve-3d',
+                transform: 'rotateY(3deg) rotateX(1deg)',
+                transformOrigin: 'center center',
+              }}
+            >
+              <img
+                src="/dashboard-screenshot.png"
+                alt="PropAnalytics Dashboard"
+                className="w-full h-full object-cover object-top"
+              />
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/20 pointer-events-none" />
+            </div>
+          </motion.div>
+
+          {/* YouVsMarket Card - stagger: 0.5s */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="col-span-2 flex"
+          >
+            <YouVsMarketVisual compact fillHeight />
+          </motion.div>
+        </div>
+
+        {/* Mobile: Stacked */}
+        <div className="lg:hidden relative">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 0.4, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="absolute inset-x-0 top-0 -z-10"
+          >
+            <div className="rounded-xl overflow-hidden shadow-xl">
+              <img
+                src="/dashboard-screenshot.png"
+                alt="PropAnalytics Dashboard"
+                className="w-full h-auto object-cover opacity-60 blur-[1px]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#EAE0CF]/50 to-[#EAE0CF]" />
+            </div>
+          </motion.div>
+          <div className="relative pt-8">
+            <YouVsMarketVisual />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Heatmap Card - scroll triggered
+ */
+function HeatmapCard() {
+  const heatmapData = [
+    [0.9, 0.8, 0.5, 0.3, 0.2, 0.3, 0.4],
+    [0.7, 0.9, 0.6, 0.4, 0.3, 0.2, 0.3],
+    [0.5, 0.7, 0.8, 0.6, 0.4, 0.3, 0.2],
+    [0.3, 0.5, 0.6, 0.7, 0.5, 0.4, 0.3],
+    [0.2, 0.3, 0.4, 0.5, 0.6, 0.5, 0.4],
   ];
 
   return (
-    <section className="relative pt-24 md:pt-28 min-h-screen">
-      {/* Warm gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#EAE0CF]/40 via-[#FDFBF7] to-[#FDFBF7]" />
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
-        {/* Mobile: Stacked layout */}
-        <div className="lg:hidden pt-8 pb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            {/* Trust badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#94B4C1]/40 bg-white/60 mb-6">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-              <span className="text-xs font-semibold uppercase tracking-wide text-[#547792]">
-                Official URA Data
-              </span>
-            </div>
-
-            {/* Headline */}
-            <h1 className="editorial-headline text-4xl sm:text-5xl text-[#213448] mb-4">
-              Singapore Condo
-              <br />
-              <span className="text-[#547792]">Market Intelligence</span>
-            </h1>
-
-            <p className="text-lg text-[#547792] mb-8 max-w-lg leading-relaxed">
-              Data-driven price benchmarking across projects, locations, and
-              market segments.
-            </p>
-
-            {/* Stats row */}
-            <div className="flex gap-6 mb-8">
-              {stats.map((stat, i) => (
-                <div key={i}>
-                  <div className="font-display text-2xl font-light text-[#213448]">
-                    {stat.value}
-                  </div>
-                  <div className="stat-label text-[10px]">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* CTA */}
-            <button
-              onClick={() => navigate('/login')}
-              className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[#213448] text-[#EAE0CF] font-semibold hover:bg-[#547792] active:scale-[0.98] transition-all min-h-[48px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
-            >
-              <TrendingUp className="w-4 h-4" />
-              <span>Explore Market Data</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </motion.div>
-
-          {/* Data visualization */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-12"
-          >
-            <YouVsMarketVisual />
-          </motion.div>
-        </div>
-
-        {/* Desktop: Asymmetric 2-column layout */}
-        <motion.div
-          style={{ opacity }}
-          className="hidden lg:grid lg:grid-cols-12 gap-8 pt-12 pb-24 min-h-[calc(100vh-7rem)]"
-        >
-          {/* Left column: Stats */}
-          <div className="col-span-3 flex flex-col justify-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="space-y-8"
-            >
-              {stats.map((stat, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 + i * 0.1 }}
-                  className="border-l-2 border-[#C17F59] pl-4"
-                >
-                  <div className="stat-callout text-[#213448]">{stat.value}</div>
-                  <div className="stat-label mt-1">{stat.label}</div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-
-          {/* Right column: Content + Data viz */}
-          <div className="col-span-9 flex flex-col justify-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="max-w-2xl"
-            >
-              {/* Trust badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#94B4C1]/40 bg-white/60 mb-6">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span className="text-xs font-semibold uppercase tracking-wide text-[#547792]">
-                  Official URA Data Source
-                </span>
-              </div>
-
-              {/* Headline */}
-              <h1 className="editorial-headline text-5xl xl:text-6xl text-[#213448] mb-6">
-                Singapore Condo
-                <br />
-                <span className="text-[#547792]">Market Intelligence</span>
-              </h1>
-
-              <p className="text-xl text-[#547792] mb-8 leading-relaxed max-w-xl">
-                Data-driven price benchmarking across projects, locations, and
-                market segments — powered by 100,000+ private property
-                transactions.
-              </p>
-
-              {/* CTA */}
-              <button
-                onClick={() => navigate('/login')}
-                className="group inline-flex items-center gap-3 px-8 py-4 rounded-lg bg-[#213448] text-[#EAE0CF] font-semibold hover:bg-[#547792] active:scale-[0.98] transition-all min-h-[52px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
-              >
-                <TrendingUp className="w-5 h-5" />
-                <span>Explore Market Data</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </motion.div>
-
-            {/* Data visualization card */}
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.4 }}
-              className="mt-12 max-w-2xl"
-            >
-              <YouVsMarketVisual compact />
-            </motion.div>
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-/**
- * Features Section - Editorial card layout
- */
-function FeaturesSection() {
-  return (
-    <section className="py-20 md:py-28 px-4 md:px-8 lg:px-12 bg-white">
-      <div className="max-w-7xl mx-auto">
-        {/* Section header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
-          transition={{ duration: 0.6 }}
-          className="mb-16 max-w-2xl"
-        >
-          <h2 className="editorial-headline text-3xl md:text-4xl lg:text-5xl text-[#213448] mb-4">
-            Everything you need to
-            <br />
-            underwrite a deal.
-          </h2>
-          <p className="text-lg text-[#547792] leading-relaxed">
-            Move beyond simple PSF trends. Layer multiple datasets to find
-            hidden value.
-          </p>
-        </motion.div>
-
-        {/* Feature cards - editorial grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-          <FeatureCard
-            icon={Map}
-            title="District Heatmaps"
-            description="Visualize rental yield and price compression across CCR, RCR, and OCR instantly."
-            accent
-            delay={0}
-          />
-          <FeatureCard
-            icon={BarChart3}
-            title="Supply Cliffs"
-            description="Predict price impact based on upcoming project TOP dates and supply waves."
-            delay={0.1}
-          />
-          <FeatureCard
-            icon={Building2}
-            title="Unit Mix Analysis"
-            description="Compare profitability of different unit types within any project."
-            delay={0.2}
-          />
-          <FeatureCard
-            icon={ShieldCheck}
-            title="Cleaned Data"
-            description="103,379 transactions with outliers automatically flagged and removed."
-            delay={0.3}
-          />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/**
- * Feature Card - Editorial style with subtle border
- */
-function FeatureCard({ icon: Icon, title, description, accent, delay = 0 }) {
-  return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.5, delay }}
-      className={`group p-6 md:p-8 rounded-xl border transition-all duration-300 ${
-        accent
-          ? 'bg-[#FDFBF7] border-[#C17F59]/30 hover:border-[#C17F59]'
-          : 'bg-[#FDFBF7] border-[#94B4C1]/30 hover:border-[#547792]'
-      }`}
+      transition={{ duration: 0.5, delay: 0 }}
+      whileHover={{ y: -5 }}
+      className="col-span-1 md:col-span-2 rounded-2xl md:rounded-3xl border border-[#94B4C1]/30 bg-white p-6 md:p-8 relative overflow-hidden transition-shadow duration-300 hover:shadow-xl hover:shadow-[#94B4C1]/20 group"
     >
-      <div
-        className={`w-12 h-12 rounded-lg flex items-center justify-center mb-5 transition-colors ${
-          accent
-            ? 'bg-[#C17F59]/10 text-[#C17F59] group-hover:bg-[#C17F59]/20'
-            : 'bg-[#547792]/10 text-[#547792] group-hover:bg-[#547792]/20'
-        }`}
-      >
-        <Icon className="w-6 h-6" />
+      <div className="absolute top-6 md:top-8 right-6 md:right-8 p-2 md:p-3 bg-[#FDFBF7] rounded-xl md:rounded-2xl shadow-sm border border-[#EAE0CF] z-10">
+        <Map className="w-5 h-5 md:w-6 md:h-6 text-[#547792]" />
       </div>
 
-      <h3 className="font-display text-xl font-semibold text-[#213448] mb-2">
-        {title}
+      <h3 className="text-xl md:text-2xl font-bold text-[#213448] mb-2 tracking-tight pr-16">
+        District Heatmaps
       </h3>
-      <p className="text-[#547792] leading-relaxed">{description}</p>
+      <p className="text-[#547792] text-sm md:text-base max-w-sm">
+        Visualize rental yield and price compression across CCR, RCR, and OCR
+        instantly.
+      </p>
+
+      <div className="absolute bottom-4 md:bottom-6 right-4 md:right-6 bg-[#FDFBF7] rounded-xl md:rounded-2xl border border-[#94B4C1]/30 shadow-lg p-3 md:p-4 group-hover:scale-105 transition-transform duration-500">
+        <div className="flex gap-0.5 md:gap-1">
+          {heatmapData[0].map((_, colIndex) => (
+            <div key={colIndex} className="flex flex-col gap-0.5 md:gap-1">
+              {heatmapData.map((row, rowIndex) => {
+                const intensity = row[colIndex];
+                const bgColor =
+                  intensity > 0.7
+                    ? 'bg-[#213448]'
+                    : intensity > 0.5
+                      ? 'bg-[#547792]'
+                      : intensity > 0.3
+                        ? 'bg-[#94B4C1]'
+                        : 'bg-[#EAE0CF]';
+                return (
+                  <div
+                    key={rowIndex}
+                    className={`w-4 h-4 md:w-5 md:h-5 rounded-sm ${bgColor} transition-all duration-300`}
+                    style={{ opacity: 0.3 + intensity * 0.7 }}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center justify-between mt-2 text-[8px] md:text-[10px] text-[#94B4C1]">
+          <span>Low</span>
+          <div className="flex gap-0.5">
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-sm bg-[#EAE0CF]" />
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-sm bg-[#94B4C1]" />
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-sm bg-[#547792]" />
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-sm bg-[#213448]" />
+          </div>
+          <span>High</span>
+        </div>
+      </div>
     </motion.div>
   );
 }
 
 /**
- * CTA Section - Clean, editorial
+ * Supply Cliff Card - scroll triggered with stagger
  */
-function CTASection({ navigate }) {
+function SupplyCliffCard() {
+  const barData = [
+    { height: 65, label: '2024' },
+    { height: 80, label: '2025' },
+    { height: 45, label: '2026', isCliff: true },
+    { height: 70, label: '2027' },
+    { height: 55, label: '2028' },
+  ];
+  const avgHeight = 60;
+
   return (
-    <section className="py-20 md:py-28 px-4 md:px-8 lg:px-12 bg-[#FDFBF7]">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
-        transition={{ duration: 0.6 }}
-        className="max-w-3xl mx-auto text-center"
-      >
-        <h2 className="editorial-headline text-3xl md:text-4xl lg:text-5xl text-[#213448] mb-4">
-          Ready to get started?
-        </h2>
-        <p className="text-lg text-[#547792] mb-10 leading-relaxed max-w-xl mx-auto">
-          Join investors who use institutional-grade analytics to make
-          data-driven property decisions.
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+      whileHover={{ y: -5 }}
+      className="col-span-1 rounded-2xl md:rounded-3xl bg-[#213448] p-6 md:p-8 relative overflow-hidden text-[#EAE0CF] flex flex-col justify-between transition-shadow duration-300 hover:shadow-xl hover:shadow-[#213448]/30"
+    >
+      <div>
+        <BarChart3 className="w-6 h-6 md:w-8 md:h-8 mb-3 md:mb-4 text-[#94B4C1]" />
+        <h3 className="text-xl md:text-2xl font-bold mb-2 tracking-tight">
+          Supply Cliffs
+        </h3>
+        <p className="text-[#94B4C1]/80 text-sm md:text-base">
+          Predict price impact based on upcoming project TOP dates.
         </p>
-        <button
-          onClick={() => navigate('/login')}
-          className="group inline-flex items-center gap-3 px-8 py-4 rounded-lg bg-[#213448] text-[#EAE0CF] font-semibold hover:bg-[#547792] active:scale-[0.98] transition-all min-h-[52px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+      </div>
+
+      <div className="relative w-full h-28 md:h-36 mt-4">
+        <div
+          className="absolute left-0 right-0 border-t-2 border-dashed border-[#94B4C1]/50 z-10"
+          style={{ bottom: `${avgHeight}%` }}
         >
-          <span>View Market Data</span>
-          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-        </button>
-      </motion.div>
-    </section>
+          <span className="absolute -top-3 right-0 text-[8px] md:text-[10px] text-[#94B4C1]">
+            Avg Supply
+          </span>
+        </div>
+
+        <div className="absolute inset-0 flex items-end gap-1.5 md:gap-2">
+          {barData.map((bar, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center">
+              <div
+                className={`w-full rounded-t-md transition-all duration-300 ${
+                  bar.isCliff
+                    ? 'bg-gradient-to-t from-[#EAE0CF] to-[#d4c5ad] animate-pulse'
+                    : 'bg-gradient-to-t from-[#547792] to-[#6b8da8]'
+                }`}
+                style={{
+                  height: `${bar.height}%`,
+                  boxShadow: 'inset -2px 0 4px rgba(0,0,0,0.1)',
+                }}
+              />
+              <span className="text-[8px] md:text-[10px] text-[#94B4C1] mt-1">
+                {bar.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
 /**
- * Footer - Minimal, editorial
+ * Unit Mix Card - scroll triggered with stagger
  */
-function Footer() {
+function UnitMixCard() {
   return (
-    <footer className="py-10 px-4 md:px-8 lg:px-12 border-t border-[#94B4C1]/20 bg-white">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[#213448] rounded-md flex items-center justify-center">
-            <LineChart className="w-4 h-4 text-[#EAE0CF]" />
-          </div>
-          <span className="text-[#547792] text-sm">
-            &copy; 2025 PropAnalytics.sg
-          </span>
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+      whileHover={{ y: -5 }}
+      className="col-span-1 rounded-2xl md:rounded-3xl border border-[#94B4C1]/30 bg-white p-6 md:p-8 relative overflow-hidden transition-shadow duration-300 hover:shadow-xl hover:shadow-[#94B4C1]/20"
+    >
+      <div className="absolute top-6 md:top-8 right-6 md:right-8 p-2 md:p-3 bg-[#FDFBF7] rounded-xl md:rounded-2xl border border-[#EAE0CF]">
+        <Building2 className="w-5 h-5 md:w-6 md:h-6 text-[#547792]" />
+      </div>
+
+      <h3 className="text-xl md:text-2xl font-bold text-[#213448] mb-2 tracking-tight pr-14">
+        Unit Mix Analysis
+      </h3>
+      <p className="text-[#547792] text-sm md:text-base">
+        Compare profitability of different unit types within a project.
+      </p>
+
+      <div className="mt-8 md:mt-12 space-y-3">
+        <div className="w-full h-10 md:h-12 bg-[#FDFBF7] rounded-lg overflow-hidden flex border border-[#EAE0CF] shadow-inner">
+          <div
+            className="h-full bg-gradient-to-b from-[rgba(247,190,129,0.95)] to-[rgba(237,170,100,0.95)]"
+            style={{ width: '28%' }}
+          />
+          <div
+            className="h-full bg-gradient-to-b from-[rgba(79,129,189,0.95)] to-[rgba(60,105,160,0.95)]"
+            style={{ width: '47%' }}
+          />
+          <div
+            className="h-full bg-gradient-to-b from-[rgba(40,82,122,0.95)] to-[rgba(30,62,95,0.95)]"
+            style={{ width: '25%' }}
+          />
         </div>
 
-        <div className="flex gap-8">
-          {['Methodology', 'Pricing', 'Contact'].map((link) => (
-            <a
-              key={link}
-              href="#"
-              className="text-[#547792] hover:text-[#213448] text-sm font-medium transition-colors min-h-[44px] flex items-center focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:rounded focus:outline-none"
+        <div className="flex justify-between text-xs md:text-sm font-medium text-[#547792]">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-[rgba(247,190,129,0.9)]" />
+            <span>1BR</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-[rgba(79,129,189,0.9)]" />
+            <span>2BR</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-[rgba(40,82,122,0.9)]" />
+            <span>3BR</span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/**
+ * Data Validation Card - scroll triggered with stagger
+ */
+function DataValidationCard() {
+  const logEntries = [
+    { id: 'TXN_9918', status: 'VALID' },
+    { id: 'TXN_9919', status: 'VALID' },
+    { id: 'TXN_9920', status: 'VALID' },
+    { id: 'TXN_9921', status: 'EXCLUDED', reason: 'Outlier' },
+    { id: 'TXN_9922', status: 'VALID' },
+    { id: 'TXN_9923', status: 'VALID' },
+    { id: 'TXN_9924', status: 'EXCLUDED', reason: 'Non-market' },
+    { id: 'TXN_9925', status: 'VALID' },
+    { id: 'TXN_9926', status: 'VALID' },
+    { id: 'TXN_9927', status: 'VALID' },
+    { id: 'TXN_9928', status: 'VALID' },
+    { id: 'TXN_9929', status: 'EXCLUDED', reason: 'Outlier' },
+    { id: 'TXN_9930', status: 'VALID' },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{ duration: 0.5, delay: 0.3 }}
+      whileHover={{ y: -5 }}
+      className="col-span-1 md:col-span-2 rounded-2xl md:rounded-3xl border border-[#94B4C1]/30 bg-white p-6 md:p-8 relative overflow-hidden transition-shadow duration-300 hover:shadow-xl hover:shadow-[#94B4C1]/20 group"
+    >
+      <div className="absolute top-6 md:top-8 right-6 md:right-8 p-2 md:p-3 bg-[#FDFBF7] rounded-xl md:rounded-2xl shadow-sm border border-[#EAE0CF] z-10">
+        <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-[#547792]" />
+      </div>
+
+      <div className="relative z-10">
+        <h3 className="text-xl md:text-2xl font-bold text-[#213448] mb-2 tracking-tight pr-16">
+          Cleaned & Validated Data
+        </h3>
+        <p className="text-[#547792] text-sm md:text-base max-w-md">
+          We automatically flag and remove non-market outliers from{' '}
+          <span className="font-semibold text-[#213448]">103,379</span>{' '}
+          transaction records.
+        </p>
+      </div>
+
+      <div className="absolute right-0 top-0 w-1/2 md:w-2/5 h-full opacity-40 group-hover:opacity-60 transition-opacity pointer-events-none select-none overflow-hidden font-mono text-[9px] md:text-[10px] leading-relaxed text-[#213448] p-4 text-right">
+        <div className="animate-scroll-up space-y-1">
+          {[...logEntries, ...logEntries].map((entry, i) => (
+            <p
+              key={i}
+              className={
+                entry.status === 'EXCLUDED'
+                  ? 'text-red-600/80 font-semibold'
+                  : 'text-[#547792]/60'
+              }
             >
-              {link}
-            </a>
+              {entry.id}...{' '}
+              {entry.status === 'EXCLUDED' ? (
+                <span>EXCLUDED ({entry.reason})</span>
+              ) : (
+                'VALID'
+              )}
+            </p>
           ))}
         </div>
       </div>
-    </footer>
+
+      <div className="absolute bottom-6 md:bottom-8 left-6 md:left-8 right-6 md:right-8 flex flex-wrap gap-4 md:gap-8">
+        <div className="min-w-0">
+          <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">
+            Records Processed
+          </div>
+          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono tabular-nums">
+            103,379
+          </div>
+        </div>
+        <div className="min-w-0">
+          <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">
+            Outliers Removed
+          </div>
+          <div className="text-lg md:text-2xl font-bold text-[#213448] font-mono tabular-nums">
+            789
+          </div>
+        </div>
+        <div className="min-w-0">
+          <div className="text-[10px] md:text-xs text-[#94B4C1] uppercase tracking-wide">
+            Accuracy
+          </div>
+          <div className="text-lg md:text-2xl font-bold text-[#547792] font-mono tabular-nums">
+            99.2%
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
