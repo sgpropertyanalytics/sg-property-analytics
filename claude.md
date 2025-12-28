@@ -9,6 +9,7 @@
 | `/dashboard-guardrails` | Chart modifications |
 | `/data-standards` | Classifications/labels |
 | `/api-endpoint-guardrails` | New endpoints |
+| `/api-contract-guardrails` | API contract changes |
 
 Docs: `docs/backend.md`, `docs/frontend.md`, `docs/architecture.md`
 
@@ -204,6 +205,50 @@ if (!data?.length) return <EmptyState />;
 return <Chart data={data} />;
 ```
 
+## API Contracts
+**Rule:** Routes with `@api_contract` decorator enforce param/response schemas automatically.
+
+```python
+from api.contracts import api_contract
+
+@analytics_bp.route("/aggregate", methods=["GET"])
+@api_contract("aggregate")  # Validates params + injects meta fields
+def aggregate():
+    params = g.normalized_params  # Access validated, normalized params
+    ...
+```
+
+**What the decorator does:**
+1. Validates public params against `ParamSchema`
+2. Normalizes params (district→districts[], date_to→date_to_exclusive)
+3. Validates normalized params against `ServiceBoundarySchema`
+4. After handler, validates response against `ResponseSchema`
+5. Injects meta fields: `requestId`, `elapsedMs`, `apiVersion`
+6. Adds headers: `X-Request-ID`, `X-API-Contract-Version`
+
+**Contract modes:**
+- `WARN` (default): Log violations, don't fail
+- `STRICT`: Fail on violations (use in dev/staging)
+
+**Standardized error envelope:**
+```json
+{
+  "error": {
+    "code": "INVALID_PARAMS",
+    "message": "bedroom must be integer",
+    "field": "bedroom",
+    "requestId": "req_abc123"
+  }
+}
+```
+
+**Adding new contract:**
+1. Create schema in `api/contracts/schemas/`
+2. Define `ParamSchema`, `ServiceBoundarySchema`, `ResponseSchema`
+3. Call `register_contract()` at module import
+4. Add `@api_contract("endpoint_name")` to route
+5. Add snapshot test in `tests/contracts/snapshots/`
+
 ---
 
 # 3. CODE PATTERNS
@@ -263,6 +308,28 @@ def get_data():
     return service.get_data(limit=limit, date_from=date_from, bedrooms=bedrooms)
 ```
 
+## Contract-Enabled Route Handler
+```python
+from api.contracts import api_contract
+from flask import g, jsonify
+
+@analytics_bp.route("/aggregate", methods=["GET"])
+@api_contract("aggregate")
+def aggregate():
+    # Params already validated + normalized by decorator
+    params = g.normalized_params
+
+    # Call service with clean params
+    result = dashboard_service.get_aggregated_data(
+        districts=params.get('districts'),
+        bedrooms=params.get('bedrooms'),
+        date_from=params.get('date_from'),
+    )
+
+    # Return data - decorator injects meta fields automatically
+    return jsonify({"data": result})
+```
+
 ---
 
 # 4. KPI PATTERN
@@ -297,6 +364,18 @@ KPI Spec → Param Builder → SQL → Mapper → Card UI
 
 ```
 backend/
+├── api/
+│   ├── contracts/
+│   │   ├── registry.py    # Contract registry + dataclasses
+│   │   ├── validate.py    # Schema validation logic
+│   │   ├── normalize.py   # Param normalization adapters
+│   │   ├── wrapper.py     # @api_contract decorator
+│   │   └── schemas/       # Per-endpoint contracts
+│   │       ├── aggregate.py
+│   │       └── kpi_summary.py
+│   └── middleware/
+│       ├── request_id.py  # X-Request-ID injection
+│       └── error_envelope.py
 ├── constants.py           # District/region mappings
 ├── schemas/api_contract.py # Enums, field names
 ├── services/*_service.py  # Business logic + SQL
