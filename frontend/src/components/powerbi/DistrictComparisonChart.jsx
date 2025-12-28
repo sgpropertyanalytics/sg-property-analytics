@@ -38,6 +38,9 @@ const COLORS = {
   otherBandHover: '#a8c5d4',
 };
 
+// Row height for alignment between table and chart
+const ROW_HEIGHT = 28;
+
 /**
  * District Comparison Chart
  *
@@ -98,95 +101,106 @@ export function DistrictComparisonChart({
 
   // Calculate total projects for dynamic height
   const totalProjects = groups.reduce((sum, g) => sum + g.projects.length, 0);
-  const sectionHeaders = groups.length;
-  const chartHeight = propHeight || Math.max(300, Math.min(800, (totalProjects * 28) + (sectionHeaders * 40)));
+  const chartHeight = propHeight || Math.max(300, Math.min(800, totalProjects * ROW_HEIGHT + 60));
 
-  // Flatten groups into chart data with dual category axis (Age Band | Project Name)
-  const { labels, flatData, colors, hoverColors, projectMeta } = useMemo(() => {
-    const labels = [];
-    const flatData = [];
-    const colors = [];
-    const hoverColors = [];
-    const projectMeta = [];
+  // Flatten groups into rows for table + chart alignment
+  const { rows, chartLabels, chartData, chartColors, chartHoverColors } = useMemo(() => {
+    const rows = [];
+    const chartLabels = [];
+    const chartData = [];
+    const chartColors = [];
+    const chartHoverColors = [];
 
     groups.forEach((group) => {
-      // Add projects in this group with dual-axis labels [AgeBand, ProjectName]
       group.projects.forEach((p, idx) => {
-        // Show age band label only for first project in each group
+        // Age band label only on first row of each group
         const ageBandLabel = idx === 0 ? group.label : '';
-        labels.push([ageBandLabel, truncateProjectName(p.projectName, 24)]);
-        flatData.push(p.medianPsf || 0);
+        const rowSpan = idx === 0 ? group.projects.length : 0;
 
-        // Color coding
+        // Determine colors
+        let bgColor, hoverColor;
         if (p.isSelected) {
-          colors.push(COLORS.selected);
-          hoverColors.push(COLORS.selectedHover);
+          bgColor = COLORS.selected;
+          hoverColor = COLORS.selectedHover;
         } else if (group.isSelectedBand) {
-          colors.push(COLORS.sameAgeBand);
-          hoverColors.push(COLORS.sameAgeBandHover);
+          bgColor = COLORS.sameAgeBand;
+          hoverColor = COLORS.sameAgeBandHover;
         } else {
-          colors.push(COLORS.otherBand);
-          hoverColors.push(COLORS.otherBandHover);
+          bgColor = COLORS.otherBand;
+          hoverColor = COLORS.otherBandHover;
         }
-        projectMeta.push({ project: p, group });
+
+        rows.push({
+          ageBandLabel,
+          rowSpan,
+          projectName: p.projectName,
+          medianPsf: p.medianPsf,
+          isSelected: p.isSelected,
+          isSelectedBand: group.isSelectedBand,
+          project: p,
+          group,
+          bgColor,
+        });
+
+        // Chart data (simple labels, bars only)
+        chartLabels.push(truncateProjectName(p.projectName, 20));
+        chartData.push(p.medianPsf || 0);
+        chartColors.push(bgColor);
+        chartHoverColors.push(hoverColor);
       });
     });
 
-    return { labels, flatData, colors, hoverColors, projectMeta };
+    return { rows, chartLabels, chartData, chartColors, chartHoverColors };
   }, [groups]);
 
-  // Prepare Chart.js data
-  const chartData = useMemo(() => {
-    if (labels.length === 0) {
+  // Prepare Chart.js data (bars only, no Y-axis labels - table handles that)
+  const barChartData = useMemo(() => {
+    if (chartLabels.length === 0) {
       return { labels: [], datasets: [] };
     }
 
     return {
-      labels,
+      labels: chartLabels,
       datasets: [
         {
           label: 'Median PSF',
-          data: flatData,
-          backgroundColor: colors,
-          hoverBackgroundColor: hoverColors,
+          data: chartData,
+          backgroundColor: chartColors,
+          hoverBackgroundColor: chartHoverColors,
           borderWidth: 0,
           borderRadius: 4,
-          barPercentage: 0.75,
+          barPercentage: 0.85,
+          categoryPercentage: 0.95,
         },
       ],
     };
-  }, [labels, flatData, colors, hoverColors]);
+  }, [chartLabels, chartData, chartColors, chartHoverColors]);
 
-  // Chart options
+  // Chart options - hide Y-axis labels (table provides them)
   const chartOptions = useMemo(() => ({
-    indexAxis: 'y', // Horizontal bars
+    indexAxis: 'y',
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
       tooltip: {
-        filter: (tooltipItem) => {
-          // Don't show tooltip for headers and separators
-          const meta = projectMeta[tooltipItem.dataIndex];
-          return meta && !meta.isHeader && !meta.isSeparator && meta.project;
-        },
         callbacks: {
           label: (context) => {
-            const meta = projectMeta[context.dataIndex];
-            if (!meta || !meta.project) return [];
+            const row = rows[context.dataIndex];
+            if (!row) return [];
 
-            const p = meta.project;
+            const p = row.project;
             const parts = [`Median PSF: $${p.medianPsf?.toLocaleString() || 'N/A'}`];
             if (p.count) parts.push(`Transactions: ${p.count}`);
             if (p.totalUnits) parts.push(`Total Units: ${p.totalUnits}`);
-            if (p.age !== null) parts.push(`Age: ${p.age} years`);
+            if (p.age !== null && p.age !== undefined) parts.push(`Age: ${p.age} years`);
             if (p.isBoutique) parts.push('(Boutique)');
 
             return parts;
           },
           title: (tooltipItems) => {
-            const meta = projectMeta[tooltipItems[0]?.dataIndex];
-            return meta?.project?.projectName || '';
+            const row = rows[tooltipItems[0]?.dataIndex];
+            return row?.projectName || '';
           },
         },
         displayColors: false,
@@ -213,32 +227,16 @@ export function DistrictComparisonChart({
         beginAtZero: false,
       },
       y: {
-        title: { display: false },
-        grid: { display: false },
-        ticks: {
-          color: (context) => {
-            const meta = projectMeta[context.index];
-            if (meta?.isHeader) return '#374151'; // Gray-700 for headers
-            if (meta?.project?.isSelected) return COLORS.selected;
-            return '#64748b';
-          },
-          font: (context) => {
-            const meta = projectMeta[context.index];
-            if (meta?.isHeader) {
-              return { weight: 'bold', size: 12 };
-            }
-            if (meta?.project?.isSelected) {
-              return { weight: 'bold', size: 11 };
-            }
-            return { weight: 'normal', size: 11 };
-          },
-        },
+        display: false, // Hide Y-axis - table provides labels
       },
     },
     layout: {
-      padding: { left: 0, right: 20, top: 10, bottom: 10 },
+      padding: { left: 0, right: 20, top: 0, bottom: 0 },
     },
-  }), [projectMeta]);
+  }), [rows]);
+
+  // Calculate the actual bar area height (excluding X-axis)
+  const barAreaHeight = rows.length * ROW_HEIGHT;
 
   // Render
   return (
@@ -263,7 +261,7 @@ export function DistrictComparisonChart({
         </p>
       </div>
 
-      {/* Chart */}
+      {/* Chart with dual-column labels */}
       <div className="p-4">
         <QueryState
           loading={loading}
@@ -272,8 +270,52 @@ export function DistrictComparisonChart({
           emptyMessage={`No projects with ${minUnits}+ units found in ${district}`}
           loadingHeight={chartHeight}
         >
-          <div style={{ height: chartHeight }}>
-            <Bar data={chartData} options={chartOptions} />
+          {/* Column headers */}
+          <div className="flex mb-1 text-xs font-medium text-gray-500 border-b border-gray-100 pb-1">
+            <div className="w-24 shrink-0 pl-1">Age Band</div>
+            <div className="w-40 shrink-0">Project</div>
+            <div className="flex-1 text-center">Median PSF</div>
+          </div>
+
+          {/* Dual-column table + chart layout */}
+          <div className="flex">
+            {/* Left: Two-column table (Age Band | Project Name) */}
+            <div
+              className="shrink-0 flex flex-col"
+              style={{ height: barAreaHeight }}
+            >
+              {rows.map((row, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center border-b border-gray-50"
+                  style={{ height: ROW_HEIGHT }}
+                >
+                  {/* Age Band column */}
+                  <div
+                    className={`w-24 shrink-0 text-xs pl-1 pr-2 truncate ${
+                      row.ageBandLabel ? 'font-semibold text-gray-700' : 'text-transparent'
+                    }`}
+                  >
+                    {row.ageBandLabel || '-'}
+                  </div>
+
+                  {/* Project Name column */}
+                  <div
+                    className={`w-40 shrink-0 text-xs pr-2 truncate ${
+                      row.isSelected ? 'font-bold text-gray-900' : 'text-gray-600'
+                    }`}
+                    title={row.projectName}
+                  >
+                    {truncateProjectName(row.projectName, 22)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Right: Chart bars only */}
+            <div className="flex-1 min-w-0" style={{ height: chartHeight }}>
+              <Bar data={barChartData} options={chartOptions} />
+            </div>
           </div>
         </QueryState>
       </div>
