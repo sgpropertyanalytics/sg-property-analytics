@@ -138,8 +138,9 @@ export function NewVsResaleChart({ height = 350 }) {
   const resaleGaps = resalePrice.filter(v => v === null).length;
   const totalPoints = chartData.length;
   const resaleDataPoints = totalPoints - resaleGaps;
+  const resaleCompleteness = totalPoints > 0 ? resaleDataPoints / totalPoints : 1;
   const hasSignificantGaps = resaleGaps > totalPoints * 0.2; // >20% gaps
-  const isSeverelySparse = totalPoints > 0 && resaleDataPoints <= 2; // Only 0-2 data points
+  const isSeverelySparse = totalPoints > 0 && resaleCompleteness < 0.5; // <50% data completeness
 
   const chartConfig = {
     labels,
@@ -195,16 +196,7 @@ export function NewVsResaleChart({ height = 350 }) {
       intersect: false,
     },
     plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          usePointStyle: true,
-          padding: 15,
-          font: {
-            size: 11,
-          },
-        },
-      },
+      legend: { display: false },
       tooltip: {
         callbacks: {
           label: (context) => {
@@ -388,7 +380,7 @@ export function NewVsResaleChart({ height = 350 }) {
               {resaleDataPoints === 0 ? (
                 <span>: No "Recently TOP (4-7 yrs)" transactions found. </span>
               ) : (
-                <span>: Only {resaleDataPoints} month{resaleDataPoints > 1 ? 's' : ''} with data. </span>
+                <span>: Only {resaleDataPoints} of {totalPoints} periods ({Math.round(resaleCompleteness * 100)}%) have data. </span>
               )}
               <span className="text-amber-700">
                 This bucket requires resales from properties aged 4-7 years, which may be rare for certain district/time combinations.
@@ -415,6 +407,22 @@ export function NewVsResaleChart({ height = 350 }) {
           </div>
         )}
       </ChartSlot>
+
+      {/* Custom SVG Legend */}
+      <div className="flex justify-center gap-6 py-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <svg width="32" height="8">
+            <line x1="0" y1="4" x2="32" y2="4" stroke="#213448" strokeWidth={2} />
+          </svg>
+          <span className="text-xs text-[#374151]">{SaleTypeLabels[SaleType.NEW_SALE]}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <svg width="32" height="8">
+            <line x1="0" y1="4" x2="32" y2="4" stroke="#547792" strokeWidth={2} strokeDasharray="5 5" />
+          </svg>
+          <span className="text-xs text-[#374151]">{PropertyAgeBucketLabels[PropertyAgeBucket.RECENTLY_TOP]}</span>
+        </div>
+      </div>
       </div>
     </QueryState>
     </div>
