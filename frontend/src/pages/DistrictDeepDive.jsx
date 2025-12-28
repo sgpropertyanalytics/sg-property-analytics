@@ -125,7 +125,7 @@ function DistrictVolumeContent() {
 function DistrictPriceContent() {
   // Shared filter state for all charts in this tab
   // NOTE: saleType is fixed to SaleType.RESALE (page-level enforcement, no UI toggle)
-  const [selectedPeriod, setSelectedPeriod] = useState('12m');
+  const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [selectedBed, setSelectedBed] = useState('all');
 
   // Callback for filter changes from MarketStrategyMap
@@ -163,10 +163,9 @@ function DistrictPriceContent() {
         />
       </ChartWatermark>
 
-      {/* Growth Leaderboard - uses shared filters (no PowerBIFilterContext) */}
+      {/* Growth Dumbbell Chart - NOT affected by date filters (uses fixed date range) */}
       <ChartWatermark>
         <GrowthDumbbellChart
-          period={selectedPeriod}
           bedroom={selectedBed}
           saleType={SaleType.RESALE}
         />

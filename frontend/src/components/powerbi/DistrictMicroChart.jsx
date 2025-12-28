@@ -60,20 +60,21 @@ export function DistrictMicroChart({ district, data, onClick }) {
   const lineColor = '#1f2937'; // Dark gray/black
 
   // Calculate local min/max and growth metrics
-  const { latestPsf, paddedMin, paddedMax, growthPercent } = useMemo(() => {
+  const { latestPsf, paddedMin, paddedMax, growthPercent, isSparse } = useMemo(() => {
     if (!data || data.length === 0) {
-      return { latestPsf: null, paddedMin: 0, paddedMax: 0, growthPercent: null };
+      return { latestPsf: null, paddedMin: 0, paddedMax: 0, growthPercent: null, isSparse: false };
     }
 
     const psfValues = data.map(d => d.medianPsf).filter(v => v > 0);
     if (psfValues.length === 0) {
-      return { latestPsf: null, paddedMin: 0, paddedMax: 0, growthPercent: null };
+      return { latestPsf: null, paddedMin: 0, paddedMax: 0, growthPercent: null, isSparse: false };
     }
 
     const min = Math.min(...psfValues);
     const max = Math.max(...psfValues);
     const range = max - min;
-    const padding = range * 0.1; // 10% padding on each side
+    // Use 10% of range for padding, or 5% of value if range is 0 (single data point)
+    const padding = range > 0 ? range * 0.1 : max * 0.05;
 
     // Get first and last valid PSF for growth calculation
     const firstPsf = data.find(d => d.medianPsf > 0)?.medianPsf;
@@ -85,6 +86,7 @@ export function DistrictMicroChart({ district, data, onClick }) {
       paddedMin: Math.max(0, min - padding),
       paddedMax: max + padding,
       growthPercent: growth,
+      isSparse: psfValues.length === 1, // Flag for sparse data
     };
   }, [data]);
 
@@ -152,8 +154,9 @@ export function DistrictMicroChart({ district, data, onClick }) {
           data: data.map(d => d.medianPsf),
           borderColor: lineColor, // Standard black line for all charts
           borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 3,
+          // Show visible point for sparse data (1-2 data points), otherwise hide for cleaner lines
+          pointRadius: isSparse ? 4 : 0,
+          pointHoverRadius: 4,
           pointBackgroundColor: lineColor,
           tension: 0.3,
           yAxisID: 'y1',
@@ -161,7 +164,7 @@ export function DistrictMicroChart({ district, data, onClick }) {
         },
       ],
     };
-  }, [data, lineColor]);
+  }, [data, lineColor, isSparse]);
 
   // Chart options - LOCAL SCALING with padded min/max
   const options = useMemo(() => ({
