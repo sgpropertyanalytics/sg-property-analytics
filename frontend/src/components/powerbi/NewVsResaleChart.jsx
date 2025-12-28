@@ -27,7 +27,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 // =============================================================================
 // DEBUG LOGGING - Persistent logging to diagnose recurring empty resale line issue
 // =============================================================================
-const DEBUG_NEW_VS_RESALE = true; // Set to false to disable verbose logging
+const DEBUG_NEW_VS_RESALE = import.meta.env.DEV; // Only enable in development
 
 function debugLog(stage, data) {
   if (!DEBUG_NEW_VS_RESALE) return;
@@ -83,7 +83,7 @@ ChartJS.register(
  *
  * Power BI Pattern: Global slicers MUST apply to ALL visuals.
  */
-export function NewVsResaleChart({ height = 350 }) {
+export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 350 }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, filters, timeGrouping } = usePowerBIFilters();
@@ -402,7 +402,8 @@ export function NewVsResaleChart({ height = 350 }) {
         },
       },
     },
-  }), [chartData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [timeGrouping]); // Options structure doesn't depend on chartData values; callbacks access via closure
 
   // Trend indicator icon - using palette colors
   const getTrendIcon = (trend) => {
@@ -560,6 +561,6 @@ export function NewVsResaleChart({ height = 350 }) {
     </QueryState>
     </div>
   );
-}
+});
 
 export default NewVsResaleChart;
