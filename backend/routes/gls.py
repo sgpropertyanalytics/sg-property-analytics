@@ -17,6 +17,7 @@ from utils.normalize import (
     to_int, to_bool,
     ValidationError as NormalizeValidationError, validation_error_response
 )
+from api.contracts import api_contract
 
 gls_bp = Blueprint('gls', __name__)
 
@@ -36,6 +37,7 @@ MIN_DISPLAY_YEAR = 2025
 
 
 @gls_bp.route("/upcoming", methods=["GET"])
+@api_contract("gls/upcoming")
 def get_upcoming():
     """
     Get upcoming (launched) GLS tenders.
@@ -87,6 +89,7 @@ def get_upcoming():
 
 
 @gls_bp.route("/awarded", methods=["GET"])
+@api_contract("gls/awarded")
 def get_awarded():
     """
     Get awarded GLS tenders.
@@ -138,6 +141,7 @@ def get_awarded():
 
 
 @gls_bp.route("/all", methods=["GET"])
+@api_contract("gls/all")
 def get_all():
     """
     Get all GLS tenders (both launched and awarded).
@@ -210,6 +214,7 @@ def get_all():
 
 
 @gls_bp.route("/supply-pipeline", methods=["GET"])
+@api_contract("gls/supply-pipeline")
 def get_supply_pipeline():
     """
     Get aggregate upcoming supply pipeline.
@@ -243,6 +248,7 @@ def get_supply_pipeline():
 
 
 @gls_bp.route("/price-floor", methods=["GET"])
+@api_contract("gls/price-floor")
 def get_price_floor():
     """
     Get aggregate awarded price floor data.
@@ -276,6 +282,7 @@ def get_price_floor():
 
 
 @gls_bp.route("/tender/<release_id>", methods=["GET"])
+@api_contract("gls/tender")
 def get_tender_detail(release_id: str):
     """
     Get details for a specific tender by release ID.
@@ -308,6 +315,7 @@ def get_tender_detail(release_id: str):
 
 
 @gls_bp.route("/needs-review", methods=["GET"])
+@api_contract("gls/needs-review")
 def get_needs_review():
     """
     Get tenders that need manual review.
@@ -614,6 +622,7 @@ def trigger_background_refresh():
 
 
 @gls_bp.route("/stats", methods=["GET"])
+@api_contract("gls/stats")
 def get_stats():
     """
     Get summary statistics for GLS data.
