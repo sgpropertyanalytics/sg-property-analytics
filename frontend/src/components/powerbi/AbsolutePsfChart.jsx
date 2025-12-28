@@ -172,6 +172,9 @@ export function AbsolutePsfChart({ height = 300, saleType = null }) {
         position: 'bottom',
         labels: {
           usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 8,
+          boxHeight: 8,
           padding: 15,
           font: { size: 11 },
         },
