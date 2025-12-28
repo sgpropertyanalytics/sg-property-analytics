@@ -38,7 +38,7 @@ interface InlineCardProps {
   /** Trend direction for subtext styling */
   trend?: 'up' | 'down' | 'neutral';
   /** Visual variant for alert states */
-  variant?: 'default' | 'warning' | 'danger';
+  variant?: 'default' | 'success' | 'warning' | 'danger';
   /** Size variant - compact for tighter layouts */
   size?: 'default' | 'compact';
   /** Loading state */
@@ -63,6 +63,7 @@ export function InlineCard({
 
   // Subtext color based on trend (price context: up = good/green, down = bad/red for PSF)
   const getSubtextColor = () => {
+    if (variant === 'success') return 'text-emerald-700 font-semibold';
     if (variant === 'warning') return 'text-amber-700 font-semibold';
     if (variant === 'danger') return 'text-red-700 font-semibold';
     if (!trend) return 'text-[#547792]';
@@ -79,6 +80,12 @@ export function InlineCard({
   // Variant-based styling
   const getVariantStyles = () => {
     switch (variant) {
+      case 'success':
+        return {
+          container: 'bg-emerald-50 border-2 border-emerald-400',
+          label: 'text-emerald-800 font-bold',
+          value: 'text-emerald-900',
+        };
       case 'warning':
         return {
           container: 'bg-amber-100 border-2 border-amber-400',

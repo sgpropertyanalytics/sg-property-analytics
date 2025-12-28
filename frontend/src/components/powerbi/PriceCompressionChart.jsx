@@ -363,21 +363,21 @@ export function PriceCompressionChart({ height = 380 }) {
 function buildInversionZones(zones, _data) {
   const result = {};
 
-  // CCR Discount zones (green/amber background)
+  // CCR Discount zones (green background - opportunity signal)
   zones.ccrDiscountZones?.forEach((zone, idx) => {
     result[`ccr_discount_${idx}`] = {
       type: 'box',
       xMin: zone.start - 0.5,
       xMax: zone.end + 0.5,
-      backgroundColor: 'rgba(251, 191, 36, 0.15)', // amber-400 with low opacity
-      borderColor: 'rgba(251, 191, 36, 0.4)',
+      backgroundColor: 'rgba(16, 185, 129, 0.15)', // emerald-500 with low opacity
+      borderColor: 'rgba(16, 185, 129, 0.4)',
       borderWidth: 1,
       borderDash: [4, 4],
       label: {
         content: 'Prime Discount',
         display: zone.end - zone.start >= 1, // Only show label if zone spans 2+ periods
         position: 'start',
-        color: 'rgba(180, 83, 9, 0.8)',
+        color: 'rgba(5, 150, 105, 0.9)', // emerald-600
         font: { size: 9, weight: 'bold' },
       },
     };
@@ -433,10 +433,10 @@ function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
       // CCR < RCR: Prime Discount (opportunity)
       return (
         <InlineCard
-          label="Market Anomaly"
+          label="Market Opportunity"
           value={`−$${Math.abs(spread).toLocaleString()} PSF`}
           subtext="Prime Discount"
-          variant="warning"
+          variant="success"
         />
       );
     }
