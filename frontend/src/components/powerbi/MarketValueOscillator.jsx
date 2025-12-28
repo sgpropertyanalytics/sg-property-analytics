@@ -17,7 +17,7 @@ import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { HelpTooltip, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
+import { HelpTooltip, KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformOscillatorSeries,
@@ -315,8 +315,8 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
     },
   };
 
-  // Card height - more space for chart now that insight box is removed
-  const cardHeight = height + 80;
+  // Card height with header + insight box
+  const cardHeight = height + 140;
 
   // CRITICAL: containerRef must be OUTSIDE QueryState
   return (
@@ -328,22 +328,13 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
         >
           {/* Header */}
           <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
-            <div className="flex items-start gap-1.5">
-              <div className="min-w-0">
-                <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-                  Market Value Oscillator
-                </h3>
-                <p className="text-xs text-[#547792] mt-0.5">
-                  Z-Score normalized spread analysis ({TIME_LABELS[timeGrouping]})
-                </p>
-              </div>
-              <HelpTooltip content="Z-score shows how far current spreads are from historical average.
-
-±0σ to ±1σ: Normal range, fair value
-+1σ to +2σ: Elevated premium, watch closely
-> +2σ: Extreme overvaluation
--1σ to -2σ: Compressed premium, improving value
-< -2σ: Extreme compression, potential opportunity" />
+            <div className="min-w-0">
+              <h3 className="font-semibold text-[#213448] text-sm md:text-base">
+                Market Value Oscillator
+              </h3>
+              <p className="text-xs text-[#547792] mt-0.5">
+                Z-Score normalized spread analysis ({TIME_LABELS[timeGrouping]})
+              </p>
             </div>
 
             {/* KPI Row */}
@@ -368,6 +359,22 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
                 />
               )}
             </InlineCardRow>
+          </div>
+
+          {/* Insight Box */}
+          <div className="shrink-0">
+            <KeyInsightBox title="How to Read this Chart" variant="info" compact>
+              <div className="flex items-start gap-2">
+                <p className="text-xs text-[#547792] flex-1">
+                  Shows relative price premium between regions using resale transactions, expressed as Z-score against historical spreads. A Z-score near 0 = fair value.
+                </p>
+                <HelpTooltip content="±0σ to ±1σ: Normal range, fair value
++1σ to +2σ: Elevated premium, watch closely
+> +2σ: Extreme overvaluation
+-1σ to -2σ: Compressed premium, improving value
+< -2σ: Extreme compression, potential opportunity" />
+              </div>
+            </KeyInsightBox>
           </div>
 
           {/* Chart */}
