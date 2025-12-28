@@ -23,6 +23,19 @@ const isValueLabelFormat = (item) =>
   item && typeof item === 'object' && 'value' in item && 'label' in item;
 
 /**
+ * Safe wrapper for array.map() - catches errors and returns empty array
+ */
+const safeMap = (arr, mapFn, fallback = []) => {
+  if (!arr || !Array.isArray(arr)) return fallback;
+  try {
+    return arr.map(mapFn);
+  } catch (err) {
+    console.error('[filterOptions] safeMap error:', err);
+    return fallback;
+  }
+};
+
+/**
  * Normalize sale types to {value, label} format.
  * v1: ['New Sale', 'Resale'] → v2 format with enums
  * v2: [{value: 'new_sale', label: 'New Sale'}] → pass through
@@ -30,7 +43,7 @@ const isValueLabelFormat = (item) =>
 const normalizeSaleTypes = (saleTypes) => {
   if (!saleTypes || !Array.isArray(saleTypes)) return [];
 
-  return saleTypes.map((item) => {
+  return safeMap(saleTypes, (item) => {
     if (isValueLabelFormat(item)) return item;
 
     // v1 format: DB string
@@ -41,7 +54,7 @@ const normalizeSaleTypes = (saleTypes) => {
     };
     return {
       value: dbToEnum[item] || item,
-      label: item,
+      label: typeof item === 'string' ? item : String(item),
     };
   });
 };
@@ -54,7 +67,7 @@ const normalizeSaleTypes = (saleTypes) => {
 const normalizeTenures = (tenures) => {
   if (!tenures || !Array.isArray(tenures)) return [];
 
-  return tenures.map((item) => {
+  return safeMap(tenures, (item) => {
     if (isValueLabelFormat(item)) return item;
 
     // v1 format: DB string
@@ -68,10 +81,11 @@ const normalizeTenures = (tenures) => {
       '99-year': '99yr',
       '999-year': '999yr',
     };
+    const itemStr = typeof item === 'string' ? item : String(item);
     return {
-      value: dbToEnum[item] || item,
-      label: shortLabels[item] || item,
-      fullLabel: item, // Keep original for tooltips
+      value: dbToEnum[itemStr] || itemStr,
+      label: shortLabels[itemStr] || itemStr,
+      fullLabel: itemStr, // Keep original for tooltips
     };
   });
 };
@@ -108,9 +122,10 @@ const normalizeRegions = (regions) => {
 const normalizeDistricts = (districts) => {
   if (!districts || !Array.isArray(districts)) return [];
 
-  return districts.map((item) => {
+  return safeMap(districts, (item) => {
     if (isValueLabelFormat(item)) return item;
-    return { value: item, label: item };
+    const itemStr = typeof item === 'string' ? item : String(item);
+    return { value: itemStr, label: itemStr };
   });
 };
 
@@ -122,14 +137,18 @@ const normalizeDistricts = (districts) => {
 const normalizeBedrooms = (bedrooms) => {
   if (!bedrooms || !Array.isArray(bedrooms)) return [];
 
-  return bedrooms.map((item) => {
+  return safeMap(bedrooms, (item) => {
     if (isValueLabelFormat(item)) return item;
 
     // v1 format: integer
-    if (item >= 5) {
+    const num = typeof item === 'number' ? item : parseInt(item, 10);
+    if (isNaN(num)) {
+      return { value: item, label: String(item) };
+    }
+    if (num >= 5) {
       return { value: Bedroom.FIVE_PLUS, label: '5+' };
     }
-    return { value: item, label: String(item) };
+    return { value: num, label: String(num) };
   });
 };
 
@@ -138,12 +157,13 @@ const normalizeBedrooms = (bedrooms) => {
  */
 const normalizePropertyAgeBuckets = (buckets) => {
   if (!buckets || !Array.isArray(buckets)) return [];
-  return buckets.map((item) => {
+  return safeMap(buckets, (item) => {
     if (isValueLabelFormat(item)) return item;
     // Raw enum string → create {value, label}
+    const itemStr = typeof item === 'string' ? item : String(item);
     return {
-      value: item,
-      label: PropertyAgeBucketLabels[item] || item,
+      value: itemStr,
+      label: PropertyAgeBucketLabels[itemStr] || itemStr,
     };
   });
 };
@@ -165,40 +185,79 @@ const normalizePropertyAgeBuckets = (buckets) => {
  * // normalized.regions = [{value: 'ccr', label: 'CCR'}, ...]
  */
 export const normalizeFilterOptions = (apiResponse) => {
-  if (!apiResponse) return null;
+  // Defensive: return safe defaults if apiResponse is falsy or not an object
+  if (!apiResponse || typeof apiResponse !== 'object') {
+    console.warn('[filterOptions] Invalid apiResponse, returning defaults');
+    return {
+      saleTypes: [],
+      tenures: [],
+      regions: [],
+      districts: [],
+      bedrooms: [],
+      marketSegments: [],
+      propertyAgeBuckets: [],
+      dateRange: { min: null, max: null },
+      psfRange: { min: null, max: null },
+      sizeRange: { min: null, max: null },
+      districtsRaw: [],
+      regionsLegacy: null,
+      apiContractVersion: 'v1',
+    };
+  }
 
-  // Prefer v2 fields (camelCase), fallback to v1 (snake_case)
-  const saleTypesRaw = apiResponse.saleTypes || apiResponse.sale_types || [];
-  const tenuresRaw = apiResponse.tenures || [];
-  const regionsRaw = apiResponse.regions || apiResponse.regions_legacy || {};
-  const districtsRaw = apiResponse.districts || [];
-  const bedroomsRaw = apiResponse.bedrooms || [];
-  const marketSegmentsRaw = apiResponse.marketSegments || regionsRaw;
-  const propertyAgeBucketsRaw = apiResponse.propertyAgeBuckets || apiResponse.property_age_buckets || [];
+  try {
+    // Prefer v2 fields (camelCase), fallback to v1 (snake_case)
+    const saleTypesRaw = apiResponse.saleTypes || apiResponse.sale_types || [];
+    const tenuresRaw = apiResponse.tenures || [];
+    const regionsRaw = apiResponse.regions || apiResponse.regions_legacy || {};
+    const districtsRaw = apiResponse.districts || [];
+    const bedroomsRaw = apiResponse.bedrooms || [];
+    const marketSegmentsRaw = apiResponse.marketSegments || regionsRaw;
+    const propertyAgeBucketsRaw = apiResponse.propertyAgeBuckets || apiResponse.property_age_buckets || [];
 
-  // Date/PSF/Size ranges (same structure in v1 and v2)
-  const dateRange = apiResponse.dateRange || apiResponse.date_range || { min: null, max: null };
-  const psfRange = apiResponse.psfRange || apiResponse.psf_range || { min: null, max: null };
-  const sizeRange = apiResponse.sizeRange || apiResponse.size_range || { min: null, max: null };
+    // Date/PSF/Size ranges (same structure in v1 and v2)
+    const dateRange = apiResponse.dateRange || apiResponse.date_range || { min: null, max: null };
+    const psfRange = apiResponse.psfRange || apiResponse.psf_range || { min: null, max: null };
+    const sizeRange = apiResponse.sizeRange || apiResponse.size_range || { min: null, max: null };
 
-  return {
-    saleTypes: normalizeSaleTypes(saleTypesRaw),
-    tenures: normalizeTenures(tenuresRaw),
-    regions: normalizeRegions(regionsRaw),
-    districts: normalizeDistricts(districtsRaw),
-    bedrooms: normalizeBedrooms(bedroomsRaw),
-    marketSegments: normalizeRegions(marketSegmentsRaw),
-    propertyAgeBuckets: normalizePropertyAgeBuckets(propertyAgeBucketsRaw),
-    dateRange,
-    psfRange,
-    sizeRange,
-    // Keep raw districts list for legacy compatibility
-    districtsRaw: Array.isArray(districtsRaw)
-      ? districtsRaw.map((d) => (isValueLabelFormat(d) ? d.value : d))
-      : [],
-    // Keep raw regions dict for legacy compatibility
-    regionsLegacy: apiResponse.regions_legacy || (typeof regionsRaw === 'object' && !Array.isArray(regionsRaw) ? regionsRaw : null),
-    // API contract version
-    apiContractVersion: apiResponse.apiContractVersion || 'v1',
-  };
+    return {
+      saleTypes: normalizeSaleTypes(saleTypesRaw),
+      tenures: normalizeTenures(tenuresRaw),
+      regions: normalizeRegions(regionsRaw),
+      districts: normalizeDistricts(districtsRaw),
+      bedrooms: normalizeBedrooms(bedroomsRaw),
+      marketSegments: normalizeRegions(marketSegmentsRaw),
+      propertyAgeBuckets: normalizePropertyAgeBuckets(propertyAgeBucketsRaw),
+      dateRange,
+      psfRange,
+      sizeRange,
+      // Keep raw districts list for legacy compatibility
+      districtsRaw: safeMap(
+        Array.isArray(districtsRaw) ? districtsRaw : [],
+        (d) => (isValueLabelFormat(d) ? d.value : d)
+      ),
+      // Keep raw regions dict for legacy compatibility
+      regionsLegacy: apiResponse.regions_legacy || (typeof regionsRaw === 'object' && !Array.isArray(regionsRaw) ? regionsRaw : null),
+      // API contract version
+      apiContractVersion: apiResponse.apiContractVersion || 'v1',
+    };
+  } catch (err) {
+    // Catastrophic fallback - log error and return safe defaults
+    console.error('[filterOptions] normalizeFilterOptions crashed:', err);
+    return {
+      saleTypes: [],
+      tenures: [],
+      regions: [],
+      districts: [],
+      bedrooms: [],
+      marketSegments: [],
+      propertyAgeBuckets: [],
+      dateRange: { min: null, max: null },
+      psfRange: { min: null, max: null },
+      sizeRange: { min: null, max: null },
+      districtsRaw: [],
+      regionsLegacy: null,
+      apiContractVersion: 'v1',
+    };
+  }
 };
