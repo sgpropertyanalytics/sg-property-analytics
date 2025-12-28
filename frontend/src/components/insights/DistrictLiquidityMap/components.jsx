@@ -588,8 +588,8 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </div>
               </div>
 
-              {/* Secondary row: Z-score, New/Resale % */}
-              <div className="flex justify-between mt-2 text-[10px] text-[#213448]">
+              {/* Secondary row: Z-score */}
+              <div className="flex justify-start mt-2 text-[10px] text-[#213448]">
                 <span>
                   Z:{' '}
                   <span
@@ -600,8 +600,6 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                     {m.z_score?.toFixed(2) || '-'}
                   </span>
                 </span>
-                <span>New: {m.new_sale_pct?.toFixed(0) || 0}%</span>
-                <span>Resale: {m.resale_pct?.toFixed(0) || 0}%</span>
               </div>
             </div>
           );
@@ -614,7 +612,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
           <thead>
             {/* Group Header Row - Exit Safety + Concentration */}
             <tr className="bg-[#EAE0CF]/20">
-              <th colSpan={8} className="border-b border-[#94B4C1]/20"></th>
+              <th colSpan={6} className="border-b border-[#94B4C1]/20"></th>
               <th
                 colSpan={3}
                 className="px-3 py-1.5 text-center text-[10px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-100/70"
@@ -676,26 +674,6 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   Projects
                   <SortIcon column="project_count" />
                   <InfoTooltip text="Number of distinct condo projects with transactions in this period. Higher = more market breadth." />
-                </span>
-              </th>
-              <th
-                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
-                onClick={() => handleSort('new_sale_pct')}
-              >
-                <span className="inline-flex items-center justify-end gap-1">
-                  New %
-                  <SortIcon column="new_sale_pct" />
-                  <InfoTooltip text="Percentage of transactions that are new launches (developer sales). High % = supply-driven market." />
-                </span>
-              </th>
-              <th
-                className="px-3 py-2 text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 select-none"
-                onClick={() => handleSort('resale_pct')}
-              >
-                <span className="inline-flex items-center justify-end gap-1">
-                  Resale %
-                  <SortIcon column="resale_pct" />
-                  <InfoTooltip text="Percentage of transactions that are resales (secondary market). High % = organic demand." />
                 </span>
               </th>
               <th
@@ -835,16 +813,6 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
 
                   {/* Project Count (Market Structure - Combined) */}
                   <td className="px-3 py-2 text-right text-[#213448]">{m.project_count || 0}</td>
-
-                  {/* New Sale % (Market Structure - Combined) */}
-                  <td className="px-3 py-2 text-right text-[#213448]">
-                    {m.new_sale_pct?.toFixed(0) || '0'}%
-                  </td>
-
-                  {/* Resale % (Market Structure - Combined) */}
-                  <td className="px-3 py-2 text-right text-[#213448]">
-                    {m.resale_pct?.toFixed(0) || '0'}%
-                  </td>
 
                   {/* Transaction Count (Market Structure - Combined) with inline bar */}
                   <td className="px-3 py-2 text-[#213448]">
