@@ -83,11 +83,13 @@ export function MarketValueOscillator({ height = 380 }) {
 
   // HISTORICAL BASELINE: Fetch full historical data once (no date filters)
   // This provides stable mean/stdDev for Z-score calculation
+  // NOTE: Uses RESALE ONLY - excludes new sale data which can be artificially priced
   const { data: baselineStats } = useAbortableQuery(
     async (signal) => {
       const params = {
         group_by: 'quarter,region',
         metrics: 'median_psf,count',
+        sale_type: 'Resale',  // Exclude new sales for more accurate market signal
       };
 
       const response = await getAggregate(params, { signal });
@@ -103,11 +105,13 @@ export function MarketValueOscillator({ height = 380 }) {
   );
 
   // Main filtered data fetching
+  // NOTE: Uses RESALE ONLY - excludes new sale data which can be artificially priced
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
-        metrics: 'median_psf,count'
+        metrics: 'median_psf,count',
+        sale_type: 'Resale',  // Exclude new sales for more accurate market signal
       });
 
       const response = await getAggregate(params, { signal });
@@ -506,7 +510,7 @@ export function MarketValueOscillator({ height = 380 }) {
           <div className="shrink-0">
             <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
               <p className="mb-2">
-                This chart shows the relative price premium between regions (CCR–RCR and RCR–OCR), expressed as a Z-score against historical spreads. A Z-score near 0 indicates fair value and normal market conditions.
+                This chart shows the relative price premium between regions (CCR–RCR and RCR–OCR) using <strong>resale transactions only</strong>, expressed as a Z-score against historical spreads. A Z-score near 0 indicates fair value and normal market conditions.
               </p>
               <div className="mb-2">
                 <div className="font-semibold text-[#213448] mb-1">Interpretation Guide</div>
