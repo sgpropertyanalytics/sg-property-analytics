@@ -1,6 +1,5 @@
-import { motion, useMotionValue, useSpring, useInView } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useRef, useState } from 'react';
 import {
   ArrowRight,
   BarChart3,
@@ -11,118 +10,6 @@ import {
   LineChart,
 } from 'lucide-react';
 import YouVsMarketVisual from '../components/landing/YouVsMarketVisual';
-
-/**
- * Custom cursor SVGs (data URIs)
- * Following frontend-design skill: "Custom cursors" for distinctive visual details
- */
-const CUSTOM_CURSORS = {
-  // Key cursor for "Log In" - suggests unlocking access
-  key: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='7.5' cy='7.5' r='5.5'/%3E%3Cpath d='m21 21-5.2-5.2'/%3E%3Cpath d='M15 11l2 2'/%3E%3Cpath d='M18 14l2 2'/%3E%3C/svg%3E") 4 4, pointer`,
-
-  // Hand/pointer cursor for CTAs
-  hand: 'pointer',
-};
-
-/**
- * MagneticButton - Interactive button with magnetic pull + spotlight blob
- *
- * Effects:
- * 1. Magnetic pull: Button subtly moves toward cursor on hover
- * 2. Spotlight blob: Glowing orb follows cursor within button
- * 3. Custom cursor: Context-specific cursor icon on hover
- */
-function MagneticButton({ children, onClick, className, variant = 'primary', cursorType = 'arrow' }) {
-  const buttonRef = useRef(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const [spotlightPos, setSpotlightPos] = useState({ x: 0, y: 0 });
-
-  // Magnetic pull position
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  // Spring physics for smooth magnetic effect
-  const springConfig = { damping: 15, stiffness: 150 };
-  const xSpring = useSpring(x, springConfig);
-  const ySpring = useSpring(y, springConfig);
-
-  const handleMouseMove = (e) => {
-    if (!buttonRef.current) return;
-
-    const rect = buttonRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    // Magnetic pull (button moves toward cursor)
-    const deltaX = (e.clientX - centerX) * 0.2;
-    const deltaY = (e.clientY - centerY) * 0.3;
-    x.set(deltaX);
-    y.set(deltaY);
-
-    // Spotlight position (cursor position within button)
-    setSpotlightPos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-    setIsHovered(false);
-  };
-
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-  };
-
-  const baseClasses = variant === 'primary'
-    ? 'bg-[#213448] text-[#EAE0CF] shadow-lg shadow-[#213448]/20'
-    : 'bg-[#213448] text-[#EAE0CF] shadow-lg shadow-[#213448]/10';
-
-  // Get custom cursor for this button type
-  const customCursor = CUSTOM_CURSORS[cursorType] || CUSTOM_CURSORS.arrow;
-
-  return (
-    <motion.button
-      ref={buttonRef}
-      onClick={onClick}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        x: xSpring,
-        y: ySpring,
-        cursor: isHovered ? customCursor : 'pointer',
-      }}
-      whileTap={{ scale: 0.98 }}
-      className={`relative overflow-hidden ${baseClasses} ${className}`}
-    >
-      {/* Spotlight blob - follows cursor with soft glow */}
-      <div
-        className="pointer-events-none absolute inset-0 transition-opacity duration-200"
-        style={{
-          opacity: isHovered ? 1 : 0,
-          background: `radial-gradient(80px circle at ${spotlightPos.x}px ${spotlightPos.y}px, rgba(148, 180, 193, 0.5), transparent 50%)`,
-        }}
-      />
-
-      {/* Inner highlight layer */}
-      <div
-        className="pointer-events-none absolute inset-0 transition-opacity duration-200"
-        style={{
-          opacity: isHovered ? 1 : 0,
-          background: `radial-gradient(60px circle at ${spotlightPos.x}px ${spotlightPos.y}px, rgba(255, 255, 255, 0.2), transparent 40%)`,
-        }}
-      />
-
-      {/* Button content */}
-      <span className="relative z-10 flex items-center justify-center gap-2">
-        {children}
-      </span>
-    </motion.button>
-  );
-}
 
 /**
  * Landing Page - "Warm Precision" Design System with Unified Texture
@@ -139,7 +26,7 @@ const LandingPage = () => {
     // Master canvas with global background color
     <div className="relative min-h-screen font-sans selection:bg-[#94B4C1]/30 text-[#213448] bg-[#FDFBF7] overflow-x-hidden">
 
-      {/* Global Noise Texture - Optimized with will-change for GPU layer */}
+      {/* Global Noise Texture - GPU optimized for smooth scroll */}
       <div
         className="fixed inset-0 pointer-events-none opacity-[0.06] z-0"
         style={{
@@ -149,7 +36,7 @@ const LandingPage = () => {
         }}
       />
 
-      {/* Global Ambient Orbs - GPU optimized with reduced blur */}
+      {/* Global Ambient Orbs - GPU optimized with reduced blur for performance */}
       <div
         className="fixed top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#94B4C1]/15 rounded-full blur-[80px] pointer-events-none z-0"
         style={{ willChange: 'transform', transform: 'translateZ(0)' }}
@@ -171,14 +58,12 @@ const LandingPage = () => {
             </span>
           </div>
           <div className="flex gap-2 md:gap-4">
-            <MagneticButton
+            <button
               onClick={() => navigate('/login')}
-              className="px-4 md:px-5 py-2 text-sm font-medium rounded-lg min-h-[44px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
-              variant="secondary"
-              cursorType="key"
+              className="px-4 md:px-5 py-2 text-sm font-medium bg-[#213448] text-[#EAE0CF] rounded-lg hover:bg-[#547792] hover:shadow-lg active:scale-[0.98] transition-all shadow-lg shadow-[#213448]/10 min-h-[44px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
             >
               Log In
-            </MagneticButton>
+            </button>
           </div>
         </div>
       </nav>
@@ -220,17 +105,13 @@ const LandingPage = () => {
               Join investors who use institutional-grade analytics to make
               data-driven property decisions.
             </p>
-            <div className="flex justify-center">
-              <MagneticButton
-                onClick={() => navigate('/login')}
-                className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-medium min-h-[48px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none hover:shadow-2xl transition-shadow"
-                variant="primary"
-                cursorType="hand"
-              >
-                View Market Data
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </MagneticButton>
-            </div>
+            <button
+              onClick={() => navigate('/login')}
+              className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#547792] hover:shadow-2xl active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center gap-2 mx-auto min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+            >
+              View Market Data
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
           </div>
         </section>
 
@@ -267,33 +148,19 @@ const LandingPage = () => {
 /**
  * Hero Section - Outcome-driven design
  * Addresses buyer fear: "Am I overpaying?"
- *
- * Uses Intersection Observer (useInView) instead of scroll-linked transforms
- * for smoother, more natural scrolling without per-frame updates.
  */
 function HeroSection({ navigate }) {
-  const heroRef = useRef(null);
-  // Trigger fade when hero is less than 20% visible
-  const isInView = useInView(heroRef, { amount: 0.2 });
+  const { scrollY } = useScroll();
+  const opacity = useTransform(scrollY, [0, 300], [1, 0]);
 
   return (
     // Paper layering effect for dashboard to pop
-    <section
-      ref={heroRef}
-      className="relative pt-28 sm:pt-32 overflow-hidden min-h-screen flex flex-col items-center bg-[#EAE0CF]/30"
-    >
+    <section className="relative pt-28 sm:pt-32 overflow-hidden min-h-screen flex flex-col items-center bg-[#EAE0CF]/30">
 
-      {/* All hero content fades based on visibility - single transition, not per-frame */}
-      <motion.div
-        animate={{ opacity: isInView ? 1 : 0 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="w-full flex flex-col items-center"
-      >
+      {/* Text Content with fade on scroll */}
+      <motion.div style={{ opacity }} className="relative z-20 text-center max-w-4xl px-6 flex flex-col items-center mb-16">
 
-        {/* Text Content */}
-        <div className="relative z-20 text-center max-w-4xl px-6 flex flex-col items-center mb-16">
-
-          {/* Trust Badge - Emerald ping animation */}
+        {/* Trust Badge - Emerald ping animation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -339,21 +206,19 @@ function HeroSection({ navigate }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <MagneticButton
+          <button
             onClick={() => navigate('/login')}
-            className="group px-8 py-4 rounded-xl font-semibold min-h-[48px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none hover:shadow-xl transition-shadow duration-300"
-            variant="primary"
-            cursorType="hand"
+            className="group px-8 py-4 rounded-lg bg-[#213448] text-[#EAE0CF] font-semibold shadow-lg shadow-[#213448]/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
           >
             <Database className="w-4 h-4" />
             <span>View Market Data</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </MagneticButton>
+          </button>
         </motion.div>
-        </div>
+      </motion.div>
 
-        {/* Combined Visual: Dashboard + YouVsMarket Card */}
-        <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10 mt-8 sm:mt-12 mb-8">
+      {/* Combined Visual: Dashboard + YouVsMarket Card */}
+      <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10 mt-8 sm:mt-12 mb-8">
 
         {/* Desktop: Side by side layout - aligned heights */}
         <div className="hidden lg:grid lg:grid-cols-5 gap-6 items-stretch">
@@ -418,8 +283,7 @@ function HeroSection({ navigate }) {
             <YouVsMarketVisual />
           </div>
         </div>
-        </div>
-      </motion.div>
+      </div>
 
     </section>
   );
