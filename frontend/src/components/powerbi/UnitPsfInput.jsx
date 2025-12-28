@@ -19,8 +19,8 @@ export function UnitPsfInput({
   value,
   onChange,
   disabled = false,
-  placeholder = 'Enter your unit PSF',
-  label = 'Your Unit PSF',
+  placeholder = 'e.g. 2500',
+  label = 'Enter the PSF you paid or are considering',
   showLabel = true,
   compact = false
 }) {
@@ -153,13 +153,6 @@ export function UnitPsfInput({
       {/* Error message */}
       {error && (
         <p className="text-xs text-red-500 mt-1">{error}</p>
-      )}
-
-      {/* Helper text */}
-      {!error && !compact && (
-        <p className="text-xs text-[#94B4C1]">
-          Enter the PSF you paid or are considering (${PSF_MIN.toLocaleString()} - ${PSF_MAX.toLocaleString()})
-        </p>
       )}
     </div>
   );

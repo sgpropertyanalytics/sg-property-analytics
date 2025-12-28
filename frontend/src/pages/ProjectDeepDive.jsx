@@ -479,8 +479,6 @@ export function ProjectDeepDiveContent() {
               <UnitPsfInput
                 value={unitPsf}
                 onChange={setUnitPsf}
-                label="Your Unit PSF"
-                placeholder="e.g., 2500"
                 disabled={!selectedProject}
               />
 
