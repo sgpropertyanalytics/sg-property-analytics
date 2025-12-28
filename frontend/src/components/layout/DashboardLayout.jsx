@@ -62,7 +62,7 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
   const content = children || <Outlet />;
   const location = useLocation();
   const { showPricingModal, hidePaywall } = useSubscription();
-  const { initialized: authInitialized } = useAuth();
+  const { initialized: authInitialized = true } = useAuth();
 
   // Determine active page from URL or prop
   const getActivePageFromPath = (pathname) => {
