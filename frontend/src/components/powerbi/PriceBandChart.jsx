@@ -332,11 +332,14 @@ export function PriceBandChart({
     );
   }
 
+  // Card owns its height explicitly (header ~80px + chart area + footer ~44px)
+  const cardHeight = height + 124;
+
   // Main chart view
   return (
     <div
-      className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden h-full"
-      style={{ minHeight: height }}
+      className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
+      style={{ height: cardHeight }}
     >
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
