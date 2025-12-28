@@ -54,9 +54,10 @@ export function BeadsChart({ height = 300, saleType = null }) {
   const { data: chartData, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
+      // excludeOwnDimension: 'segment' - this chart shows all regions, so ignore segment filter
       const params = buildApiParams(
         { panels: 'beads_chart', ...(saleType && { sale_type: saleType }) },
-        { excludeLocationDrill: true }
+        { excludeLocationDrill: true, excludeOwnDimension: 'segment' }
       );
 
       const response = await getDashboard(params, { signal });
@@ -259,13 +260,7 @@ export function BeadsChart({ height = 300, saleType = null }) {
               const labels = { 0: 'CCR', 1: 'RCR', 2: 'OCR' };
               return labels[value] || '';
             },
-            color: (context) => {
-              const value = context.tick?.value;
-              if (value === 0) return REGION_COLORS.CCR;
-              if (value === 1) return REGION_COLORS.RCR;
-              if (value === 2) return REGION_COLORS.OCR;
-              return '#547792';
-            },
+            color: '#213448', // All labels same color (black/navy)
             font: { size: 13, weight: 'bold' },
             padding: 8,
           },
