@@ -10,28 +10,6 @@ import { nicePsfMin, nicePsfMax } from '../../utils/niceAxisMax';
 // All districts
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
 
-/**
- * Calculate fixed date range for last 3 completed months.
- * This chart is NOT affected by date filters - always uses fixed baseline comparison.
- *
- * @returns {Object} { dateFrom, dateTo } for API params
- */
-function getFixedDateRange() {
-  const today = new Date();
-
-  // Get first day of current month (incomplete month - exclude)
-  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-
-  // Latest quarter = last 3 completed months (e.g., if Dec 2024, use Sep-Nov)
-  // We need enough historical data for comparison, so fetch 2 years
-  const twoYearsAgo = new Date(currentMonthStart);
-  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-
-  return {
-    dateFrom: twoYearsAgo.toISOString().split('T')[0],
-    dateTo: currentMonthStart.toISOString().split('T')[0], // Exclusive upper bound
-  };
-}
 
 // Region header colors (matching micro-charts)
 const REGION_HEADER_BG = {
@@ -109,8 +87,8 @@ const getAreaNames = (district) => {
  * with sortable columns and absolute PSF increment.
  *
  * IMPORTANT: This chart is NOT affected by date filters.
- * It always compares the last 3 completed months (latest quarter) against
- * the baseline quarter from 1 year prior.
+ * It compares the earliest 3 completed months (baseline quarter) against
+ * the latest 3 completed months (current quarter) across the FULL database.
  *
  * @param {string} bedroom - 'all', '1', '2', '3', '4', '5' (still respects bedroom filter)
  * @param {string} saleType - 'all', 'New Sale', 'Resale' (still respects sale type filter)
@@ -123,15 +101,10 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
   // Data fetching with useAbortableQuery - automatic abort/stale handling
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
-      // Get fixed date range (NOT affected by date filters)
-      const { dateFrom, dateTo } = getFixedDateRange();
-
-      // Build API params
+      // Build API params - NO date filters, uses full database range
       const params = {
         group_by: 'quarter,district',
         metrics: 'median_psf',
-        date_from: dateFrom,
-        date_to: dateTo,
       };
 
       // Add bedroom filter
@@ -288,14 +261,14 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
               Dumbbell Chart of Median PSF Growth %
             </h3>
             <p className="text-xs text-[#547792] mt-0.5">
-              Comparing {startQuarter} (baseline) → {endQuarter} (latest) • Click headers to sort
+              Comparing {startQuarter} (earliest) → {endQuarter} (latest) • Click headers to sort
             </p>
           </div>
           {/* Dot Legend */}
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-slate-300 border border-white shadow-sm" />
-              <span className="text-[#547792]">Baseline Quarter</span>
+              <span className="text-[#547792]">Earliest Quarter</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-white shadow-sm" />
@@ -316,22 +289,8 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
             <span className="hidden md:inline">District</span>
             <SortIcon column="district" />
           </div>
-          <div className="flex-1 flex justify-between px-1 md:px-2">
-            <span
-              className="cursor-pointer hover:text-slate-800 select-none text-[10px] md:text-xs"
-              onClick={() => handleSort('startPsf')}
-              title="Baseline Quarter Median PSF"
-            >
-              <span className="hidden lg:inline">Baseline </span>{startQuarter}<SortIcon column="startPsf" />
-            </span>
-            <span className="text-slate-500 hidden sm:inline">Median PSF</span>
-            <span
-              className="cursor-pointer hover:text-slate-800 select-none text-[10px] md:text-xs"
-              onClick={() => handleSort('endPsf')}
-              title="Latest Quarter Median PSF"
-            >
-              <span className="hidden lg:inline">Latest </span>{endQuarter}<SortIcon column="endPsf" />
-            </span>
+          <div className="flex-1 text-center">
+            <span className="text-slate-500">Median PSF</span>
           </div>
           <div
             className="w-16 md:w-20 shrink-0 text-right cursor-pointer hover:text-slate-800 select-none"
@@ -396,47 +355,60 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
                   </div>
                 </div>
 
-                {/* Dumbbell Chart Area */}
-                <div className="flex-1 relative h-7 mx-1 md:mx-0">
-                  {/* Background track */}
-                  <div className="absolute inset-y-2.5 left-0 right-0 bg-slate-100 rounded-full" />
+                {/* Dumbbell Chart Area with inline labels */}
+                <div className="flex-1 flex items-center gap-1 mx-1 md:mx-0">
+                  {/* Start PSF label (earliest quarter) */}
+                  <span className="text-[10px] md:text-xs text-slate-500 w-12 md:w-14 text-right shrink-0">
+                    {formatPrice(item.startPsf)}
+                  </span>
 
-                  {/* Connecting line - thickness varies by growth magnitude */}
-                  <div
-                    className="absolute rounded-full transition-all"
-                    style={{
-                      left: `${leftPercent}%`,
-                      width: `${Math.max(rightPercent - leftPercent, 1)}%`,
-                      height: `${lineThickness}px`,
-                      top: `calc(50% - ${lineThickness / 2}px)`,
-                      backgroundColor: lineColor,
-                    }}
-                  />
+                  {/* Dumbbell visualization */}
+                  <div className="flex-1 relative h-7">
+                    {/* Background track */}
+                    <div className="absolute inset-y-2.5 left-0 right-0 bg-slate-100 rounded-full" />
 
-                  {/* Start dot - Baseline Quarter (neutral grey) */}
-                  <div
-                    className="absolute rounded-full bg-slate-300 border-2 border-white shadow-sm transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform"
-                    style={{
-                      left: `${startPercent}%`,
-                      top: '50%',
-                      width: '12px',
-                      height: '12px',
-                    }}
-                    title={`Baseline Quarter Median PSF: ${formatPrice(item.startPsf)}`}
-                  />
+                    {/* Connecting line - thickness varies by growth magnitude */}
+                    <div
+                      className="absolute rounded-full transition-all"
+                      style={{
+                        left: `${leftPercent}%`,
+                        width: `${Math.max(rightPercent - leftPercent, 1)}%`,
+                        height: `${lineThickness}px`,
+                        top: `calc(50% - ${lineThickness / 2}px)`,
+                        backgroundColor: lineColor,
+                      }}
+                    />
 
-                  {/* End dot - Latest Quarter (colored by outcome) */}
-                  <div
-                    className="absolute rounded-full border-2 border-white shadow-md transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform z-10"
-                    style={{
-                      left: `${endPercent}%`,
-                      top: '50%',
-                      width: `${Math.max(endDotSize - 2, 14)}px`,
-                      height: `${Math.max(endDotSize - 2, 14)}px`,
-                      backgroundColor: endDotColor,
-                    }}
-                    title={`Latest Quarter Median PSF: ${formatPrice(item.endPsf)}`}
-                  />
+                    {/* Start dot - Earliest Quarter (neutral grey) */}
+                    <div
+                      className="absolute rounded-full bg-slate-300 border-2 border-white shadow-sm transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform"
+                      style={{
+                        left: `${startPercent}%`,
+                        top: '50%',
+                        width: '12px',
+                        height: '12px',
+                      }}
+                      title={`${startQuarter}: ${formatPrice(item.startPsf)}`}
+                    />
+
+                    {/* End dot - Latest Quarter (colored by outcome) */}
+                    <div
+                      className="absolute rounded-full border-2 border-white shadow-md transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform z-10"
+                      style={{
+                        left: `${endPercent}%`,
+                        top: '50%',
+                        width: `${Math.max(endDotSize - 2, 14)}px`,
+                        height: `${Math.max(endDotSize - 2, 14)}px`,
+                        backgroundColor: endDotColor,
+                      }}
+                      title={`${endQuarter}: ${formatPrice(item.endPsf)}`}
+                    />
+                  </div>
+
+                  {/* End PSF label (latest quarter) */}
+                  <span className={`text-[10px] md:text-xs font-medium w-12 md:w-14 shrink-0 ${textColorClass}`}>
+                    {formatPrice(item.endPsf)}
+                  </span>
                 </div>
 
                 {/* Absolute PSF Increment */}
@@ -473,18 +445,18 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
               Data: {isSaleType.resale(saleType) ? 'Resale Only' : isSaleType.newSale(saleType) ? 'New Sale Only' : 'All Transactions (New Sale + Resale)'}
             </span>
             <span className="text-[#94B4C1]">{chartData.length} districts</span>
-            <span className="text-[#94B4C1]">• Fixed date range (not affected by filters)</span>
+            <span className="text-[#94B4C1]">• Full database range (not affected by date filters)</span>
           </div>
 
           {/* Visual legend */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-[#547792]">
             <span className="flex items-center gap-1">
               <span className="w-2.5 h-2.5 rounded-full bg-slate-300 border border-white"></span>
-              <span>Baseline Quarter Median PSF ({startQuarter})</span>
+              <span>Earliest Quarter ({startQuarter})</span>
             </span>
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 rounded-full bg-emerald-500 border border-white"></span>
-              <span>Latest Quarter Median PSF ({endQuarter}) - Growth</span>
+              <span>Latest Quarter ({endQuarter}) - Growth</span>
             </span>
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 rounded-full bg-red-400 border border-white"></span>
