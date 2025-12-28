@@ -199,6 +199,38 @@ def validate_sql_params(sql: str, params: dict) -> None:
 
 ---
 
+## Part 6b: Common Mistakes Quick Reference
+
+| Anti-Pattern | Symptom | Grep to Find | Fix |
+|--------------|---------|--------------|-----|
+| `%(param)s` style | Works locally, breaks in prod | `grep -rn "%(.*)" backend/` | Use `:param` style |
+| String dates | Query returns wrong results | `grep -rn '"20[0-9][0-9]-' backend/services/` | Use Python `date()` objects |
+| Hardcoded enums | Filter mismatches | `grep -rn "'Resale'\|'New Sale'" backend/` | Use `SaleType.to_db()` |
+| Missing COALESCE | Outliers included | `grep -rn "is_outlier = false" backend/` | Use `COALESCE(is_outlier, false) = false` |
+| Mixed date params | Silent data gaps | `grep -rn "max_date.*max_date_exclusive" backend/` | Pick ONE convention per query |
+| SQL in routes | Scattered logic | `grep -rn "text\(" backend/routes/` | Move to services/ |
+
+### Quick Audit Commands
+
+```bash
+# Find psycopg2-style params (FORBIDDEN)
+grep -rn "%(" backend/services/ backend/routes/
+
+# Find hardcoded date strings
+grep -rn '"20[0-9][0-9]-[0-9][0-9]' backend/
+
+# Find hardcoded sale type strings
+grep -rn "'Resale'\|'New Sale'\|'Sub Sale'" backend/
+
+# Find missing COALESCE on outliers
+grep -rn "is_outlier = false" backend/ | grep -v COALESCE
+
+# Find f-string interpolation in SQL (DANGEROUS)
+grep -rn 'f".*WHERE\|f".*SELECT\|f".*FROM' backend/
+```
+
+---
+
 ## Part 7: Testing Requirements
 
 ### Required Tests for SQL Changes

@@ -282,6 +282,38 @@ WHEN RECEIVING FILTER DICTS:
 
 ---
 
+## Part 4c: Common Mistakes Quick Reference
+
+| Anti-Pattern | Symptom | Grep to Find | Fix |
+|--------------|---------|--------------|-----|
+| `strptime()` in service | TypeError when route passes date | `grep -rn "strptime" backend/services/` | Use `coerce_to_date()` |
+| `int()` without try/catch | 500 on invalid input | `grep -rn "= int(request" backend/routes/` | Use `to_int()` from normalize.py |
+| Missing None check | 500 on empty param | `grep -rn "int(.*\.get(" backend/` | Use `to_int(value, default=X)` |
+| Scattered parsing | Inconsistent validation | `grep -rn "strptime\|int(" backend/services/` | Centralize in route handler |
+| Datetime vs Date | Comparison crashes | `grep -rn "datetime.strptime" backend/` | Use `to_date()` → pure `date` objects |
+| No field in error | Can't debug which param failed | `grep -rn "raise ValidationError" backend/` | Include `field=` in error |
+
+### Quick Audit Commands
+
+```bash
+# Find strptime in services (should use coerce_to_date)
+grep -rn "strptime" backend/services/
+
+# Find bare int() calls that can crash
+grep -rn "int(request\|int(filters" backend/
+
+# Find missing None guards
+grep -rn "\.get(" backend/routes/ | grep "int(\|float(" | grep -v "default"
+
+# Find parsing logic in wrong layer
+grep -rn "strptime\|int(\|float(" backend/services/ | grep -v coerce
+
+# Find ValidationError without field context
+grep -rn "ValidationError(" backend/ | grep -v "field="
+```
+
+---
+
 ## Part 5: Centralized Normalize Utilities
 
 ### Create `/backend/utils/normalize.py`

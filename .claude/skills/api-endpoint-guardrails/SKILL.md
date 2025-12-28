@@ -162,6 +162,34 @@ def distribution_by_type():
 
 ---
 
+## Part 5b: Common Mistakes Quick Reference
+
+| Anti-Pattern | Symptom | Grep to Find | Fix |
+|--------------|---------|--------------|-----|
+| Dedicated endpoint for aggregates | Endpoint proliferation | `grep -rn "@.*_bp.route" backend/routes/analytics.py` | Extend `/aggregate` |
+| Duplicate SQL logic | Numbers don't match between endpoints | `grep -rn "SELECT.*median" backend/routes/` | Centralize in service |
+| Missing `?schema=v2` support | Frontend crashes on new field | `grep -rn "def.*():" backend/routes/analytics.py -A5 \| grep -v schema` | Add v2 response mode |
+| Creating `/api/trends_*` | Redundant with aggregate | `grep -rn "trends_\|by_bedroom\|by_region" backend/routes/` | Use `/aggregate?group_by=` |
+| Hard-delete endpoints | Frontend 404s | `git log --diff-filter=D --name-only backend/routes/` | Use 410 tombstone |
+
+### Quick Audit Commands
+
+```bash
+# Find potential endpoint proliferation
+grep -rn "@.*_bp.route\|@app.route" backend/routes/ | wc -l
+
+# Find endpoints that could be /aggregate
+grep -rn "group_by\|GROUP BY" backend/routes/
+
+# Find endpoints missing v2 support
+grep -rn "def .*():" backend/routes/analytics.py -A10 | grep -v "schema=v2\|?schema"
+
+# Find deprecated endpoints without 410
+grep -rn "@.*_bp.route" backend/routes/ -A3 | grep -v "410\|jsonify"
+```
+
+---
+
 ## Part 6: Pre-Commit Checklist
 
 Before adding ANY backend endpoint:

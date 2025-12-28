@@ -171,17 +171,35 @@ const psf = getTxnField(row, 'psf');
 
 ---
 
-## Part 5: Quick Audit Commands
+## Part 5: Common Mistakes Quick Reference
+
+| Anti-Pattern | Symptom | Grep to Find | Fix |
+|--------------|---------|--------------|-----|
+| Raw useEffect + fetch | Race conditions, stale data | `grep -rn "useEffect.*fetch" frontend/src/` | Use `useAbortableQuery` |
+| Missing signal prop | Requests continue after unmount | `grep -rn "\.get(\|\.post(" frontend/src/ \| grep -v signal` | Pass `{ signal }` to all fetches |
+| AbortError shown as error | "Request aborted" toast on filter change | `grep -rn "setError(err)" frontend/src/` | Check `err.name === 'AbortError'` first |
+| Direct response.data access | v1/v2 breaks on API change | `grep -rn "response\.data\[" frontend/src/` | Pass through adapter |
+| Hardcoded enum strings | Filter mismatch | `grep -rn "'New Sale'\|'Resale'" frontend/src/components/` | Use `isSaleType.*()` |
+| containerRef inside QueryState | Visibility fetch never triggers | `grep -rn "ref={containerRef}" frontend/src/ -A5 \| grep QueryState` | Move ref OUTSIDE QueryState |
+| Missing query key state | Stale data on toggle | Compare `filterKey` to `useAbortableQuery` deps | Include ALL data-affecting state |
+
+### Quick Audit Commands
 
 ```bash
 # Find components with raw fetch/axios in useEffect
-grep -rn "useEffect.*\n.*fetch\|axios" frontend/src/components/
+grep -rn "useEffect.*fetch\|axios" frontend/src/components/
 
 # Find hardcoded enum strings
 grep -rn "'New Sale'\|'Resale'\|'Freehold'" frontend/src/components/
 
 # Find direct response.data access
 grep -rn "response\.data\[" frontend/src/components/
+
+# Find missing signal in API calls
+grep -rn "getAggregate\|apiClient\.get" frontend/src/ | grep -v signal
+
+# Find containerRef inside conditional rendering
+grep -rn "ref={containerRef}" frontend/src/components/ -A10 | grep -E "QueryState|loading \?"
 
 # Full async safety audit
 bash frontend/scripts/audit-async-safety.sh

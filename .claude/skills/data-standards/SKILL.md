@@ -400,6 +400,41 @@ import { getBedroomColor } from '../constants'; // Add if missing
 
 ---
 
+## Part 10b: Common Mistakes Quick Reference
+
+| Anti-Pattern | Symptom | Grep to Find | Fix |
+|--------------|---------|--------------|-----|
+| Hardcoded region array | Out-of-sync with constants | `grep -rn "\['CCR'.*'RCR'.*'OCR'\]" frontend/src/` | Use `REGIONS` from constants |
+| Hardcoded bedroom threshold | Wrong classification | `grep -rn "< 580\|< 600\|< 780" frontend/src/` | Use `classifyBedroomThreeTier()` |
+| String enum comparison | Case mismatch breaks filter | `grep -rn "=== 'New Sale'\|=== 'Resale'" frontend/src/` | Use `isSaleType.newSale()` |
+| Plural API params | Backend doesn't parse | `grep -rn "districts=\|bedrooms=" frontend/src/` | Use singular: `district=`, `bedroom=` |
+| Hardcoded floor levels | Missing levels, wrong order | `grep -rn "\['Low'.*'Mid'\]" frontend/src/` | Use `FLOOR_LEVELS` from constants |
+| Inline color hex | Inconsistent palette | `grep -rn "#[0-9A-Fa-f]{6}" frontend/src/components/` | Use constants (REGION_COLORS) |
+
+### Quick Audit Commands
+
+```bash
+# Find hardcoded region arrays
+grep -rn "'CCR'\|'RCR'\|'OCR'" frontend/src/components/ | grep -v "import\|from"
+
+# Find hardcoded bedroom thresholds
+grep -rn "< 580\|< 600\|< 780\|< 950" frontend/src/
+
+# Find hardcoded sale type strings
+grep -rn "'New Sale'\|'Resale'\|'Sub Sale'" frontend/src/ backend/
+
+# Find plural API params (should be singular)
+grep -rn "districts=\|bedrooms=\|segments=" frontend/src/
+
+# Find hardcoded color hex
+grep -rn "\"#[0-9A-Fa-f]\{6\}\"" frontend/src/components/powerbi/
+
+# Find floor level hardcoding
+grep -rn "'Low'\|'Mid'\|'High'\|'Luxury'" frontend/src/ | grep -v import
+```
+
+---
+
 ## Part 11: Pre-Commit Checklist
 
 Before any chart/filter/data change:

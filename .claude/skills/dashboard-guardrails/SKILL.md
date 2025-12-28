@@ -442,6 +442,38 @@ Date: [date]
 
 ---
 
+## Part 8b: Common Mistakes Quick Reference
+
+| Anti-Pattern | Symptom | Grep to Find | Fix |
+|--------------|---------|--------------|-----|
+| Modifying chart axis config | Chart breaks at certain data | `git diff HEAD~1 \| grep -E "domain\|range\|tickCount"` | Use wrapper approach |
+| Responsive chart props | Mobile layout wrong | `grep -rn "isMobile.*height\|isMobile.*show" frontend/src/` | Let ResponsiveContainer handle |
+| CSS affecting chart internals | Tooltip clipped | `grep -rn "\.recharts\|\.chartjs" frontend/src/` | Scope to wrapper only |
+| usePowerBIFilters outside Market Pulse | Filters affect wrong page | `grep -rn "usePowerBIFilters" frontend/src/pages/` | Use props for non-Market Pulse |
+| Touch target < 44px | Button untappable on mobile | Manual check + Playwright test | Add `min-h-[44px] min-w-[44px]` |
+| Horizontal overflow | Page scrolls sideways | Chrome DevTools → Responsive mode | Use `overflow-hidden` + `max-w-full` |
+
+### Quick Audit Commands
+
+```bash
+# Find chart config being modified in wrappers
+grep -rn "isMobile.*tickCount\|isMobile.*showLegend" frontend/src/
+
+# Find usePowerBIFilters in non-Market Pulse pages
+grep -rn "usePowerBIFilters" frontend/src/pages/ | grep -v MacroOverview
+
+# Find CSS targeting chart internals
+grep -rn "\.recharts-\|\.chartjs-" frontend/src/
+
+# Find potentially small touch targets
+grep -rn "p-1\|p-0\|px-1\|py-1" frontend/src/components/ | grep -i button
+
+# Find filter logic in chart components
+grep -rn "useState.*filter\|setFilter" frontend/src/components/powerbi/
+```
+
+---
+
 ## Quick Reference: What Can I Change?
 
 | Element | Safe to Change? | Notes |
