@@ -10,9 +10,11 @@ Endpoints:
 from datetime import date
 from flask import request, jsonify
 from routes.analytics import analytics_bp
+from api.contracts import api_contract
 
 
 @analytics_bp.route("/filter-options", methods=["GET"])
+@api_contract("filter-options")
 def filter_options():
     """
     Get available filter options based on current data.

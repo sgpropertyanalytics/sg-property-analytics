@@ -1,0 +1,27 @@
+{
+  "response_fields": [
+    "districts",
+    "regions",
+    "bedrooms",
+    "saleTypes",
+    "projects",
+    "dateRange",
+    "psfRange",
+    "sizeRange",
+    "tenures",
+    "propertyAgeBuckets"
+  ],
+  "meta_fields": [
+    "requestId",
+    "elapsedMs",
+    "apiVersion"
+  ],
+  "required_meta": [
+    "requestId",
+    "elapsedMs",
+    "apiVersion"
+  ],
+  "_version": "v3",
+  "_created": "2025-12-28",
+  "_note": "Filter options returns flat object, not data array"
+}

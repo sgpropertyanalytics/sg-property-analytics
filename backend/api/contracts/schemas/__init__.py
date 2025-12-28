@@ -9,5 +9,6 @@ Import all schema modules here to auto-register contracts.
 from . import aggregate
 from . import kpi_summary
 from . import dashboard
+from . import filter_options
 
-__all__ = ['aggregate', 'kpi_summary', 'dashboard']
+__all__ = ['aggregate', 'kpi_summary', 'dashboard', 'filter_options']
