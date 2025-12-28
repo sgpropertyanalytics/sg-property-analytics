@@ -13,6 +13,7 @@ import os
 from models.database import db
 from models.user import User
 from config import Config
+from api.contracts import api_contract
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -68,6 +69,7 @@ def verify_token(token):
 
 
 @auth_bp.route("/register", methods=["POST"])
+@api_contract("auth/register")
 def register():
     """Register a new user"""
     try:
@@ -114,6 +116,7 @@ def register():
 
 
 @auth_bp.route("/login", methods=["POST"])
+@api_contract("auth/login")
 def login():
     """Login user and return JWT token"""
     try:
@@ -145,6 +148,7 @@ def login():
 
 
 @auth_bp.route("/me", methods=["GET"])
+@api_contract("auth/me")
 def get_current_user():
     """Get current user info (requires authentication)"""
     try:
@@ -172,6 +176,7 @@ def get_current_user():
 
 
 @auth_bp.route("/firebase-sync", methods=["POST"])
+@api_contract("auth/firebase-sync")
 def firebase_sync():
     """
     Sync Firebase user with backend User model.
@@ -267,6 +272,7 @@ def firebase_sync():
 
 
 @auth_bp.route("/subscription", methods=["GET"])
+@api_contract("auth/subscription")
 def get_subscription():
     """Get current user's subscription status"""
     try:
@@ -296,6 +302,7 @@ def get_subscription():
 
 
 @auth_bp.route("/delete-account", methods=["DELETE"])
+@api_contract("auth/delete-account")
 def delete_account():
     """
     Delete user account and cancel any active Stripe subscription.
