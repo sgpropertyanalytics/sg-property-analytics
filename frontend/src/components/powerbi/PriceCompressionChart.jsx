@@ -188,18 +188,18 @@ export function PriceCompressionChart({ height = 380, saleType = null }) {
         display: true,
         position: 'bottom',
         labels: {
-          usePointStyle: false,
-          boxWidth: 40,
-          boxHeight: 2,
+          boxWidth: 36,
+          boxHeight: 12,
           padding: 16,
           font: { size: 11 },
           generateLabels: (chart) => {
             return chart.data.datasets.map((dataset, i) => ({
               text: dataset.label,
-              fillStyle: dataset.borderDash ? 'transparent' : dataset.borderColor,
+              fillStyle: 'transparent',
               strokeStyle: dataset.borderColor,
-              lineWidth: dataset.borderDash ? 2 : 0,
-              lineDash: dataset.borderDash || [],
+              lineWidth: dataset.borderWidth ?? 2,
+              lineDash: dataset.borderDash ?? [],
+              lineDashOffset: dataset.borderDashOffset ?? 0,
               hidden: !chart.isDatasetVisible(i),
               datasetIndex: i,
             }));

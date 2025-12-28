@@ -37,6 +37,8 @@ description: Responsive layout system for dashboards. Covers breakpoints, overfl
 
 **NEVER allow horizontal scroll at any viewport.**
 
+### ✅ DO
+
 ```tsx
 // EVERY container:
 <div className="max-w-full overflow-x-hidden">
@@ -53,6 +55,24 @@ description: Responsive layout system for dashboards. Covers breakpoints, overfl
 <div className="overflow-x-auto max-w-full -mx-4 px-4">
   <table className="min-w-[600px]">...</table>
 </div>
+```
+
+### ❌ DON'T
+
+```tsx
+// ❌ Missing min-w-0 on flex child → causes overflow
+<div className="flex">
+  <div className="flex-1">Long content here...</div>
+</div>
+
+// ❌ Fixed width without max-w-full → breaks on mobile
+<div style={{ width: 600 }}>...</div>
+
+// ❌ Text without break-words → overflows container
+<p>{veryLongUserGeneratedContent}</p>
+
+// ❌ Table without overflow wrapper → horizontal scroll
+<table className="w-full">...</table>
 ```
 
 ---
@@ -122,24 +142,54 @@ description: Responsive layout system for dashboards. Covers breakpoints, overfl
 
 ## 6. Chart Container
 
+### ✅ DO
+
 ```tsx
 function ChartCard({ title, children, minHeight = 300 }) {
   return (
     <div className="bg-white rounded-lg border shadow-sm flex flex-col overflow-hidden">
-      <div className="p-3 md:p-4 border-b">
+      <div className="p-3 md:p-4 border-b shrink-0">  {/* Header: fixed */}
         <h3 className="font-semibold text-sm md:text-base truncate">{title}</h3>
       </div>
-      <div className="flex-1 p-3 md:p-4 overflow-hidden" style={{ minHeight }}>
-        {children}
+      <div className="flex-1 min-h-0 p-3 md:p-4 overflow-hidden" style={{ minHeight }}>
+        {children}  {/* minHeight on BODY, not wrapper */}
       </div>
     </div>
   );
 }
 
-// Chart.js usage
+// Chart.js usage - always set these options
 <ChartCard title="Distribution">
   <Bar data={data} options={{ responsive: true, maintainAspectRatio: false }} />
 </ChartCard>
+```
+
+### ❌ DON'T
+
+```tsx
+// ❌ Missing overflow-hidden → chart expands infinitely
+<div className="flex flex-col">
+  <Chart />
+</div>
+
+// ❌ Missing shrink-0 on header → header collapses
+<div className="flex flex-col">
+  <div className="p-4 border-b">Header</div>  {/* Will shrink! */}
+  <div className="flex-1"><Chart /></div>
+</div>
+
+// ❌ Missing min-h-0 on flex-1 child → scroll doesn't work
+<div className="flex-1 overflow-auto">  {/* min-h-0 needed */}
+  <LongContent />
+</div>
+
+// ❌ Chart without responsive options → breaks on resize
+<Bar data={data} />  {/* Missing responsive: true, maintainAspectRatio: false */}
+
+// ❌ minHeight on wrapper instead of body
+<div className="flex flex-col" style={{ minHeight: 300 }}>  {/* Wrong place */}
+  <Chart />
+</div>
 ```
 
 ---
@@ -382,6 +432,33 @@ Explicit heights for each row type.
 | 2x2 chart grid | Auto-rows-fr | Consistent row heights |
 | Bloomberg-style dense layout | Fixed | Predictable, compact |
 | Mixed KPI + chart rows | Stretch per row | Different row types |
+
+### ❌ DON'T
+
+```tsx
+// ❌ Mixing strategies in same row
+<div className="grid grid-cols-2 items-stretch h-[400px]">  {/* Conflicting! */}
+  <Card />
+  <Card />
+</div>
+
+// ❌ auto-rows-fr without defined container height
+<div className="grid auto-rows-fr">  {/* What height? */}
+  <Card />
+</div>
+
+// ❌ Fixed height on individual cards in stretch row
+<div className="grid grid-cols-2 items-stretch">
+  <Card style={{ height: 300 }} />  {/* Breaks stretch */}
+  <Card />
+</div>
+
+// ❌ Different height strategies for cards in same row
+<div className="grid grid-cols-2">
+  <Card className="h-full" />      {/* Fill parent */}
+  <Card style={{ height: 400 }} /> {/* Fixed - misaligned! */}
+</div>
+```
 
 ---
 
@@ -737,3 +814,54 @@ function CompactCard({ title, children }) {
 - Dashboard views with 10+ KPIs
 - Multi-chart comparison layouts
 - Financial/trading interfaces
+
+---
+
+## 16. Common Mistakes Quick Reference
+
+**Use this table to quickly identify and fix layout bugs.**
+
+| Mistake | Symptom | Fix |
+|---------|---------|-----|
+| `h-full` + `minHeight` | White space at bottom | Remove `h-full`, use explicit `height` |
+| `h-full` + `height` | Conflicting heights | Pick one owner |
+| `h-full` without parent height | Collapsed or zero height | Add explicit height to parent |
+| Missing `min-w-0` on flex child | Horizontal overflow | Add `min-w-0` |
+| Missing `overflow-hidden` on card | Chart expands infinitely | Add `overflow-hidden` |
+| Missing `shrink-0` on header | Header collapses | Add `shrink-0` or `flex-shrink-0` |
+| Missing `min-h-0` on flex-1 | Scroll doesn't work | Add `min-h-0` |
+| `minHeight` on wrapper | Height not respected | Move to body/content div |
+| Fixed width without max-w | Breaks on mobile | Use `max-w-full` |
+| Hover-only interactions | Doesn't work on touch | Add `:active` state |
+| Different height strategies in row | Cards misaligned | Use same strategy for all |
+
+### Grep Commands to Find Violations
+
+```bash
+# Height ownership violations
+grep -r "h-full.*minHeight\|minHeight.*h-full" src/components/
+grep -r 'className="[^"]*h-full[^"]*".*style=.*height' src/components/
+
+# Overflow risks
+grep -r "flex-1[^}]*>" src/components/ | grep -v "min-w-0"
+
+# Missing chart options
+grep -r "<Line\|<Bar\|<Pie\|<Doughnut" src/components/ | grep -v "maintainAspectRatio"
+```
+
+### Before Committing Checklist
+
+```
+LAYOUT BUGS:
+[ ] No h-full + minHeight/height combinations
+[ ] All flex-1 children have min-w-0 or min-h-0
+[ ] All card wrappers have overflow-hidden
+[ ] All headers have shrink-0
+[ ] Charts have responsive: true, maintainAspectRatio: false
+
+TESTED AT:
+[ ] 320px (small mobile)
+[ ] 375px (mobile)
+[ ] 768px (tablet)
+[ ] 1440px (desktop)
+```

@@ -56,7 +56,7 @@ RATE_LIMITS = {
 }
 
 # Default limits for unannotated endpoints
-DEFAULT_LIMITS = ["200 per day", "50 per hour"]
+DEFAULT_LIMITS = ["1000 per day", "300 per hour"]
 
 
 def init_limiter(app):
