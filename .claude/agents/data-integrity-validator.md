@@ -654,3 +654,351 @@ GET /api/debug/sanity-check?district=D09&bedroom=3&date_from=2024-01-01&date_to=
 1. Add `insufficient_sample` warning to D09 5BR response
 2. Consider hiding D09 5BR or showing "N/A"
 ```
+
+---
+
+## 15. PAGE-LEVEL VALIDATION PROTOCOL
+
+> **Goal:** Verify that a given page (or set of charts) is correct end-to-end and not a false positive.
+>
+> For EACH endpoint and chart on the page, run the validation protocol below and produce a report with:
+> - PASS/FAIL per check
+> - the exact SQL used (or pseudo-SQL if no DB access)
+> - sample rows / counts where relevant
+> - any discrepancies and likely root cause
+
+---
+
+### Mental Model: The Validation Funnel
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  PAGE INTENT                                                │
+│  "What data universe does this page represent?"             │
+│  Examples: Resale-only, CCR-only, Last 12 months, Premium   │
+└─────────────────────────────┬───────────────────────────────┘
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  SCOPE ENFORCEMENT                                          │
+│  "Is the intent enforced at every layer?"                   │
+│  Check: Page → Chart props → API params → SQL WHERE         │
+└─────────────────────────────┬───────────────────────────────┘
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  LEAKAGE DETECTION                                          │
+│  "Is ANY data from outside the scope leaking in?"           │
+│  Test: Zero-leak query, Negative control                    │
+└─────────────────────────────┬───────────────────────────────┘
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  CALCULATION VERIFICATION                                   │
+│  "Does API output match direct SQL computation?"            │
+│  Test: Side-by-side comparison, Aggregation method check    │
+└─────────────────────────────┬───────────────────────────────┘
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  STABILITY CONFIRMATION                                     │
+│  "Do filters, boundaries, and edge cases behave correctly?" │
+│  Test: Multi-filter combos, Time boundaries, Empty states   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Scope Definition Template
+
+Before running checks, define the page's data scope:
+
+| Attribute | Value | Column/Filter |
+|-----------|-------|---------------|
+| **Scope Name** | [e.g., "Resale Only", "CCR Premium", "New Launches"] | - |
+| **Primary Filter** | [e.g., sale_type=resale, region=CCR] | `<column>` |
+| **Secondary Filters** | [e.g., property_age<=3, bedroom=3] | `<column>` |
+| **Time Constraint** | [e.g., last 12 months, since 2020] | `transaction_date` |
+| **Exclusions** | [e.g., outliers, null values] | `is_outlier`, etc. |
+| **Baseline Scope** | [Same as above? Different?] | - |
+
+---
+
+### A) Data Scope & Leakage Checks (Critical)
+
+#### A1) Scope Assertion
+
+Confirm the intended data scope is enforced consistently across ALL layers.
+
+**Verification Checklist:**
+
+| Layer | What to Check | How to Verify |
+|-------|---------------|---------------|
+| **Page Component** | Scope constant defined | Read source: `const SCOPE = ...` |
+| **Chart Props** | Scope passed to all charts | Read source: `<Chart scope={SCOPE} />` |
+| **API Request** | Scope in query params | Network tab or curl |
+| **Backend Route** | Scope param received | Log or debug endpoint |
+| **SQL Query** | Scope in WHERE clause | Query logs or EXPLAIN |
+| **Baseline Query** | Same scope applied | Separate fetch with same filter |
+
+**Pattern:**
+```
+Frontend: const SCOPE_VALUE = CanonicalEnum.VALUE;
+          <Chart scopeFilter={SCOPE_VALUE} />
+
+API Call: GET /api/endpoint?scope_column=scope_value
+
+Backend:  WHERE <scope_column> = :scope_value
+```
+
+#### A2) Zero-Leak Query
+
+Run a query that MUST return 0 rows if scope is correctly applied.
+
+**Pattern:**
+```sql
+-- Zero-Leak Test: Replace placeholders with actual values
+SELECT COUNT(*) as leak_count
+FROM <table>
+WHERE COALESCE(is_outlier, false) = false
+  AND <all_endpoint_filters_applied>
+  AND <scope_column> != <intended_value>;  -- MUST return 0
+```
+
+**Examples by scope type:**
+
+| Scope Type | Zero-Leak Query Pattern |
+|------------|-------------------------|
+| Categorical | `WHERE col = 'A' AND col != 'A'` → 0 |
+| Range | `WHERE val <= 3 AND val > 3` → 0 |
+| Time | `WHERE date >= X AND date < X` → 0 |
+| Set | `WHERE col IN (A,B) AND col NOT IN (A,B)` → 0 |
+
+**Result:** `0` = ✅ PASS | `> 0` = ❌ FAIL (data leakage)
+
+#### A3) Negative Control
+
+Force the OPPOSITE scope and confirm outputs MATERIALLY CHANGE.
+
+**Pattern:**
+```bash
+# Test with intended scope
+curl -s "$API?<scope_column>=<intended_value>" | jq '<metric>'
+# Result: X
+
+# Test with opposite scope
+curl -s "$API?<scope_column>=<opposite_value>" | jq '<metric>'
+# Result: Y (MUST differ from X)
+```
+
+**Why:** If X == Y, the filter is NOT being applied (silent bug).
+
+**Result:** Outputs differ = ✅ PASS | Outputs identical = ❌ FAIL
+
+#### A4) Precedence / Override Check
+
+When multiple sources can set the same filter, verify precedence.
+
+**Standard Precedence (highest → lowest):**
+```
+1. Page-level constant (hardcoded intent)
+2. URL/route parameter (explicit override)
+3. UI filter selection (user choice)
+4. Context/global state (session default)
+5. Hardcoded default (fallback)
+```
+
+**Pattern:**
+```javascript
+// ✅ CORRECT: Earlier source takes precedence
+if (!params.<filter> && fallbackValue) {
+  params.<filter> = fallbackValue;
+}
+
+// ❌ WRONG: Later source overwrites
+params.<filter> = fallbackValue;  // Overwrites page intent!
+```
+
+**Determinism Check:** Run same query 3 times, hash results. All must match.
+
+---
+
+### B) Calculation Integrity Checks (Critical)
+
+#### B5) API vs SQL Equivalence
+
+For at least 2 time windows, recompute metrics in SQL and compare to API.
+
+**Pattern:**
+```sql
+SELECT <time_bucket> as period, <metric_1>, <metric_2>
+FROM <table>
+WHERE <scope_filters> AND <time_range>
+GROUP BY <time_bucket>;
+```
+
+**Comparison Table:**
+
+| Period | API Value | SQL Value | Match | Delta |
+|--------|-----------|-----------|-------|-------|
+| [Recent] | [val] | [val] | ✅/❌ | [diff] |
+| [Older] | [val] | [val] | ✅/❌ | [diff] |
+
+**Tolerances:** Count=exact, Avg=±0.01%, Median=±0.5 unit
+
+#### B6) Aggregation Correctness
+
+Verify aggregation method matches spec.
+
+| Method | Correct | Wrong |
+|--------|---------|-------|
+| Count | `COUNT(*)` with filters | Missing WHERE |
+| Weighted Avg | `SUM(val*wt)/SUM(wt)` | Simple `AVG()` |
+| Median | `PERCENTILE_CONT(0.5)` pooled | Median-of-medians |
+
+**Median-of-Medians Bug:** If API uses median of group medians instead of pooled median, results differ significantly.
+
+#### B7) Outlier & Exclusion Rules
+
+**Pattern - Cascading Exclusion Report:**
+```sql
+SELECT stage, count FROM (
+  SELECT 1, 'Total', COUNT(*) FROM <table>
+  UNION ALL
+  SELECT 2, 'After Exclusion 1', COUNT(*) FROM <table> WHERE <exc_1>
+  UNION ALL
+  SELECT 3, 'After All', COUNT(*) FROM <table> WHERE <all_exclusions>
+) ORDER BY 1;
+```
+
+**Healthy Ratios:** Outliers 0.5-3%, NULL 0%, Invalid 0%
+
+---
+
+### C) Stability & Boundary Condition Checks
+
+#### C8) Multi-Filter Combinations
+
+Test 5+ filter combinations. Each additional filter should reduce count.
+
+**Pattern:**
+```bash
+COMBOS=("<base>" "<base>&f1=v" "<base>&f1=v&f2=v" ...)
+for c in "${COMBOS[@]}"; do
+  curl -s "$API?${c}" | jq '<count>'
+done
+```
+
+**Expected:** Monotonic decrease. If count increases or stays same = bug.
+
+#### C9) Time Boundary Behavior
+
+**Checklist:**
+- [ ] Boundaries on period start (1st of month, quarter start)
+- [ ] Exclusive upper bound (`< date_to`, not `<=`)
+- [ ] Rolling windows use periods, not days ("3 months" not "90 days")
+- [ ] No partial periods included unintentionally
+
+#### C10) Edge Cases
+
+| Test | Expected |
+|------|----------|
+| Invalid filter value | 0 rows, no error |
+| Single-record group | Valid data returned |
+| NULL in filter column | Consistent handling |
+| Max/min values | Within valid range |
+
+---
+
+### D) Cross-Period & Baseline Consistency
+
+#### D12) Baseline Scope Consistency
+
+For Z-scores, baselines, or historical comparisons: verify baseline uses SAME scope as current data.
+
+**Common Baseline Bugs:**
+
+| Bug | Symptom | Fix |
+|-----|---------|-----|
+| Baseline ignores scope | Z-scores always ~0 | Add scope to baseline query |
+| Baseline uses all-time | Unstable scores | Align time windows |
+| Baseline cached | Stale after scope change | Add scope to cache key |
+
+#### D13) Cross-Window Sanity
+
+Compare outputs across 3M/6M/12M/24M windows. Trends should be directionally consistent.
+
+**Red Flag:** >10% discontinuity between windows = investigate.
+
+---
+
+### E) Report Format
+
+```markdown
+# Page Validation Report: [Page Name]
+
+**Page:** [Name]
+**Charts:** [Count]
+**Timestamp:** [ISO 8601]
+
+## Check Summary
+
+| Category | Check | Status | Evidence |
+|----------|-------|--------|----------|
+| **A) Scope** | A1. Assertion | ✅/❌ | [details] |
+| | A2. Zero-Leak | ✅/❌ | [0 rows] |
+| | A3. Negative Control | ✅/❌ | [outputs differ] |
+| | A4. Precedence | ✅/❌ | [order verified] |
+| **B) Calculation** | B5. API=SQL | ✅/❌ | [N/N match] |
+| | B6. Aggregation | ✅/❌ | [method correct] |
+| | B7. Exclusions | ✅/❌ | [X% excluded] |
+| **C) Stability** | C8. Multi-Filter | ✅/❌ | [monotonic] |
+| | C9. Boundaries | ✅/❌ | [aligned] |
+| | C10. Edge Cases | ✅/⚠️ | [handled] |
+| **D) Baseline** | D12. Scope Match | ✅/❌ | [same filters] |
+| | D13. Cross-Window | ✅/❌ | [consistent] |
+
+## Key Numbers
+
+| Metric | Value |
+|--------|-------|
+| Total (filtered) | [N] |
+| Excluded | [X] ([%]) |
+| Scope | [description] |
+
+## Spot Checks
+
+| Check | API | SQL | Match |
+|-------|-----|-----|-------|
+| [Recent period metric] | [val] | [val] | ✅/❌ |
+| [Older period metric] | [val] | [val] | ✅/❌ |
+
+## Discrepancies
+
+[None / List with root cause]
+
+## Recommendations
+
+1. [Action items]
+```
+
+---
+
+## 16. CHART-BY-CHART VALIDATION TEMPLATE
+
+For each chart, complete:
+
+```markdown
+### Chart: [Name]
+
+**Endpoint:** `/api/[endpoint]`
+**Scope:** [Primary filter]
+
+#### Checks
+- [ ] A1: Scope passed from page
+- [ ] A2: Zero-leak = 0
+- [ ] B5: API matches SQL
+- [ ] B6: Aggregation correct
+
+#### Sample Verification
+
+| Period | API | SQL | Match |
+|--------|-----|-----|-------|
+| [X] | [val] | [val] | ✅/❌ |
+
+#### Status: ✅ PASS / ❌ FAIL / ⚠️ WARN
+```
