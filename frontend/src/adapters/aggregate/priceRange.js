@@ -30,9 +30,9 @@ const MIN_CELL_COUNT = 5;
  */
 const AGE_BAND_ORDER = [
   'new_sale',
-  'recently_top',  // 4-8 years
-  'young_resale',  // 8-15 years
-  'resale',        // 15-25 years
+  'recently_top',  // 4-7 years
+  'young_resale',  // 8-14 years
+  'resale',        // 15-24 years
   'mature_resale', // 25+ years
   'freehold',      // Freehold properties
 ];

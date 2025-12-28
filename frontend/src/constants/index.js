@@ -664,8 +664,8 @@ export const isValidTenure = (tenure) => {
  * |---------------|-----------|-------------------------|
  * | new_sale      | N/A       | sale_type == 'New Sale' |
  * | recently_top  | 4-7 yrs   | age >= 4 AND age < 8    |
- * | young_resale  | 8-15 yrs  | age >= 8 AND age < 15   |
- * | resale        | 15-25 yrs | age >= 15 AND age < 25  |
+ * | young_resale  | 8-14 yrs  | age >= 8 AND age < 15   |
+ * | resale        | 15-24 yrs | age >= 15 AND age < 25  |
  * | mature_resale | 25+ yrs   | age >= 25               |
  * | freehold      | N/A       | tenure == 'Freehold'    |
  *
