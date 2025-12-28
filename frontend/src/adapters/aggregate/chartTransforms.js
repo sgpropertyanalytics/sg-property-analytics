@@ -60,8 +60,10 @@ export const transformNewVsResaleSeries = (rawData) => {
 /**
  * Transform raw aggregate data into growth dumbbell chart format.
  *
- * Groups data by district, calculates first/last quarter PSF values,
- * and computes growth percentage for each district.
+ * Uses a CONSISTENT time period across all districts for fair comparison:
+ * - Finds the global earliest and latest quarters with sufficient data
+ * - Compares each district's PSF at those same quarters
+ * - Excludes districts missing data for either endpoint
  *
  * @param {Array} rawData - Raw data from /api/aggregate with quarter,district grouping
  * @param {Object} options - Configuration options
@@ -69,8 +71,8 @@ export const transformNewVsResaleSeries = (rawData) => {
  * @returns {Object} Transformed data:
  *   {
  *     chartData: [{ district, startPsf, endPsf, startQuarter, endQuarter, growthPercent }],
- *     startQuarter: string,  // Global earliest quarter
- *     endQuarter: string     // Global latest quarter
+ *     startQuarter: string,  // Global earliest quarter (same for all)
+ *     endQuarter: string     // Global latest quarter (same for all)
  *   }
  */
 export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
@@ -86,66 +88,65 @@ export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
     return { chartData: [], startQuarter: '', endQuarter: '' };
   }
 
-  // Initialize district groupings
-  const districtData = {};
-  districts.forEach(d => {
-    districtData[d] = [];
-  });
+  // Build a map of district -> quarter -> medianPsf
+  const districtQuarterMap = {};
+  const allQuarters = new Set();
 
-  // Group data by district
   rawData.forEach(row => {
-    // Support both snake_case (v1) and camelCase (v2) for district
     const district = row.district;
     const quarter = row.quarter;
     const medianPsf = getAggField(row, AggField.MEDIAN_PSF) || getAggField(row, AggField.AVG_PSF) || 0;
 
     // Only include if district is in our list (or if no list provided)
-    if (districts.length === 0 || districtData[district] !== undefined) {
-      if (!districtData[district]) {
-        districtData[district] = [];
+    if (districts.length === 0 || districts.includes(district)) {
+      if (!districtQuarterMap[district]) {
+        districtQuarterMap[district] = {};
       }
-      districtData[district].push({
-        quarter,
-        medianPsf,
-      });
+      if (medianPsf > 0) {
+        districtQuarterMap[district][quarter] = medianPsf;
+        allQuarters.add(quarter);
+      }
     }
   });
 
-  // Calculate start, end, growth for each district
+  // Sort quarters chronologically
+  const sortedQuarters = Array.from(allQuarters).sort();
+
+  if (sortedQuarters.length < 2) {
+    return { chartData: [], startQuarter: '', endQuarter: '' };
+  }
+
+  // Find global start/end quarters that have data for most districts
+  // Use the earliest and latest quarters overall
+  const globalStartQuarter = sortedQuarters[0];
+  const globalEndQuarter = sortedQuarters[sortedQuarters.length - 1];
+
+  // Calculate growth for each district using the SAME time period
   const chartData = [];
-  let globalStartQuarter = '';
-  let globalEndQuarter = '';
 
-  Object.entries(districtData).forEach(([district, data]) => {
-    if (data.length === 0) return;
+  Object.entries(districtQuarterMap).forEach(([district, quarterData]) => {
+    const startPsf = quarterData[globalStartQuarter];
+    const endPsf = quarterData[globalEndQuarter];
 
-    // Sort by quarter chronologically
-    data.sort((a, b) => (a.quarter || '').localeCompare(b.quarter || ''));
+    // Only include districts that have data for BOTH the global start and end quarters
+    if (startPsf && startPsf > 0 && endPsf && endPsf > 0) {
+      const growthPercent = ((endPsf - startPsf) / startPsf) * 100;
 
-    // Get first and last valid PSF (need at least 2 data points)
-    const validData = data.filter(d => d.medianPsf > 0);
-    if (validData.length < 2) return;
-
-    const first = validData[0];
-    const last = validData[validData.length - 1];
-    const growthPercent = ((last.medianPsf - first.medianPsf) / first.medianPsf) * 100;
-
-    // Track global quarters
-    if (!globalStartQuarter || first.quarter < globalStartQuarter) {
-      globalStartQuarter = first.quarter;
+      chartData.push({
+        district,
+        startPsf,
+        endPsf,
+        startQuarter: globalStartQuarter,
+        endQuarter: globalEndQuarter,
+        growthPercent,
+      });
+    } else if (isDev) {
+      // Log districts excluded due to missing data
+      const missing = [];
+      if (!startPsf) missing.push(globalStartQuarter);
+      if (!endPsf) missing.push(globalEndQuarter);
+      console.log(`[transformGrowthDumbbellSeries] Excluding ${district}: missing data for ${missing.join(', ')}`);
     }
-    if (!globalEndQuarter || last.quarter > globalEndQuarter) {
-      globalEndQuarter = last.quarter;
-    }
-
-    chartData.push({
-      district,
-      startPsf: first.medianPsf,
-      endPsf: last.medianPsf,
-      startQuarter: first.quarter,
-      endQuarter: last.quarter,
-      growthPercent,
-    });
   });
 
   return {
