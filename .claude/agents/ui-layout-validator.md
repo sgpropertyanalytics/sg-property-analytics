@@ -238,6 +238,155 @@ The UI Layout Validator MUST NOT suggest or apply these fixes:
 
 ---
 
+## 3.5 VALIDATION GATE (MANDATORY)
+
+**CRITICAL:** This gate MUST be executed before suggesting ANY fix. Fixes that fail this gate MUST be rejected.
+
+### Pre-Fix Validation Gate
+
+Before suggesting a fix, run this checklist. ALL must pass:
+
+```
+PRE-FIX GATE CHECKLIST
+======================
+
+□ 1. CHART CONTAINER CHECK
+   Q: Does the fix target a chart/canvas container?
+   IF YES:
+     □ Fix does NOT add `h-full` (violates INV-8)
+     □ Fix does NOT add `minHeight` without `maxHeight` or `height` (violates INV-7)
+     □ Fix does NOT add `flex-1` directly on chart wrapper
+     □ Fix preserves existing `height` or `style={{ height }}` if present
+
+   REJECT if any box unchecked.
+
+□ 2. ANCESTOR CHAIN CHECK
+   Q: Does the fix add `h-full` to any element?
+   IF YES:
+     □ Traced ancestor chain to root
+     □ Found bounded height ancestor (h-[X], h-screen, style={{ height }})
+     □ Every intermediate ancestor has h-full or flex-1+min-h-0
+
+   REJECT if ancestor chain is unbounded.
+
+□ 3. SPACE-Y CONFLICT CHECK
+   Q: Does the fix add height-dependent classes (h-full, flex-1)?
+   IF YES:
+     □ Verified parent is NOT `space-y-*`
+     □ Parent uses `flex flex-col` or `grid`
+
+   REJECT if parent uses space-y-*.
+
+□ 4. FORBIDDEN MUTATION CHECK
+   Q: Does the fix match ANY forbidden mutation?
+   □ NOT: `height` → `minHeight` on charts
+   □ NOT: Adding `h-full` without bounded ancestor
+   □ NOT: Adding stretch inside `space-y-*`
+   □ NOT: Adding `flex-1` without `min-h-0`
+
+   REJECT if matches any forbidden mutation.
+
+□ 5. FIX HIERARCHY CHECK
+   Q: Is this fix at the correct level?
+   □ Row-level issue → Fix at grid container, NOT individual cards
+   □ Card-level issue → Fix at card primitive, NOT inline styles
+   □ Chart-level issue → Fix at ChartFrame, NOT per-chart
+
+   REJECT if fix is at wrong level (e.g., per-card hack for row issue).
+```
+
+### Post-Fix Validation Gate
+
+After generating a fix, RE-RUN all invariant checks on the modified code:
+
+```
+POST-FIX GATE CHECKLIST
+=======================
+
+□ 1. RE-CHECK ALL INVARIANTS
+   □ INV-1: Sibling cards still share height (or will after fix)
+   □ INV-2: All flex children have shrink safety
+   □ INV-3: Scrollable regions are contained
+   □ INV-4: Card body does not dictate card height
+   □ INV-5: Loading/empty states match data state height
+   □ INV-6: No space-y-* inside stretched columns
+   □ INV-7: Chart wrappers have CAPPED height
+   □ INV-8: h-full has bounded ancestor
+   □ INV-9: No space-y-* + h-full combination
+
+□ 2. REGRESSION CHECK
+   Q: Does the fix break any PASSING invariant?
+   □ Listed all invariants that PASSED before fix
+   □ Verified they still PASS after fix
+
+   REJECT if fix causes regression.
+
+□ 3. CONFLICT CHECK
+   Q: Does fixing one issue create another?
+   □ No new INV violations introduced
+   □ No new overflow issues
+   □ No new infinite expansion paths
+
+   REJECT if fix creates new issues.
+```
+
+### Gate Failure Response
+
+When a fix fails the validation gate:
+
+1. **DO NOT** suggest the fix
+2. **REPORT** which gate check failed
+3. **EXPLAIN** why the fix would cause harm
+4. **SUGGEST** alternative approach at correct level
+
+Example rejection:
+
+```markdown
+### ❌ FIX REJECTED BY VALIDATION GATE
+
+**Proposed Fix:** Add `h-full` + `minHeight` to PriceGrowthChart container
+**Failed Gate:** PRE-FIX GATE #1 (Chart Container Check)
+
+**Why Rejected:**
+- Target is a chart container (PriceGrowthChart.jsx)
+- Fix adds `minHeight` without `maxHeight` → violates INV-7
+- Fix adds `h-full` → parent has unbounded height → violates INV-8
+- This would cause infinite y-axis expansion
+
+**Alternative Approach:**
+Fix at ROW level instead of chart level:
+- Add `items-stretch` to parent grid container
+- Keep chart's fixed `height` property intact
+- Charts should NEVER have flexible height
+```
+
+### Validation Gate Logging
+
+Every fix suggestion MUST include gate status:
+
+```markdown
+### Suggested Fix: [Title]
+
+**Pre-Fix Gate:** ✅ PASSED (5/5 checks)
+**Post-Fix Gate:** ✅ PASSED (3/3 checks)
+
+[Fix details...]
+```
+
+Or if rejected:
+
+```markdown
+### Suggested Fix: [Title]
+
+**Pre-Fix Gate:** ❌ FAILED
+- Failed Check: #1 Chart Container Check
+- Reason: Adds minHeight to chart without cap
+
+**Fix NOT Applied** - See alternative approach above.
+```
+
+---
+
 ## 4. ROOT CAUSE DIAGNOSIS FLOW
 
 When cards/panels are misaligned, follow this decision tree:
@@ -604,8 +753,9 @@ For each component:
 
 For chart components:
 1. Verify using standard wrapper pattern
-2. Verify `minHeight` set
+2. Verify chart has CAPPED height (`height` or `maxHeight`), NOT just `minHeight`
 3. Verify Chart.js options include responsive settings
+4. Verify NO `h-full` on chart containers unless ancestor chain is bounded
 
 ### Step 5: Check Visual Robustness
 
@@ -613,9 +763,27 @@ For chart components:
 2. Find empty state handlers → verify proper layout
 3. Check tooltip/legend containment (not content)
 
-### Step 6: Generate Report
+### Step 6: Run Validation Gate on Proposed Fixes
+
+**MANDATORY before suggesting ANY fix:**
+
+1. Run Pre-Fix Gate Checklist (Section 3.5)
+2. If ANY check fails → REJECT the fix, suggest alternative
+3. If all checks pass → proceed to suggest fix
+
+### Step 7: Post-Fix Validation
+
+After suggesting a fix:
+
+1. Run Post-Fix Gate Checklist (Section 3.5)
+2. Verify fix doesn't violate ANY invariant (INV-1 through INV-9)
+3. Verify fix doesn't cause regression in previously passing checks
+4. If validation fails → WITHDRAW the fix suggestion
+
+### Step 8: Generate Report
 
 Output findings with required fields (see output format).
+Include gate status for EVERY suggested fix.
 
 ---
 
@@ -628,6 +796,7 @@ Output findings with required fields (see output format).
 - **Fix Confidence**: `Safe` / `Review` / `Risky`
 - **Impact**: What breaks and when
 - **Suggested Fix**: Specific code change
+- **Gate Status**: Pre-Fix and Post-Fix gate results (MANDATORY)
 
 ### Report Template
 
@@ -655,22 +824,40 @@ Output findings with required fields (see output format).
 **Severity:** Major
 **Fix Confidence:** Safe
 **Impact:** Horizontal scroll appears at 375px viewport
+
+**Pre-Fix Gate:** ✅ PASSED (5/5 checks)
+**Post-Fix Gate:** ✅ PASSED (3/3 checks)
+
 **Suggested Fix:**
 ```diff
 - <div className="flex-1">
 + <div className="flex-1 min-w-0">
 ```
 
-### 2. [Issue Title]
+### 2. [Issue Title] - FIX REJECTED
 **Location:** `path/to/file.jsx:78`
 **Category:** Container Constraints
-**Severity:** Minor
-**Fix Confidence:** Review
-**Impact:** Chart may collapse if data is empty
-**Suggested Fix:**
+**Severity:** Major
+**Impact:** Cards not aligned in row
+
+**Pre-Fix Gate:** ❌ FAILED
+- Failed Check: #1 Chart Container Check
+- Reason: Proposed fix adds `minHeight` to chart without cap
+
+**Original Proposed Fix (REJECTED):**
 ```diff
-- <div className="p-4">
-+ <div className="p-4" style={{ minHeight: 300 }}>
+- style={{ height: 400 }}
++ style={{ minHeight: 400 }}
++ className="h-full"
+```
+
+**Why Rejected:** This would violate INV-7 (charts need capped height) and INV-8 (h-full needs bounded ancestor). Would cause infinite y-axis expansion.
+
+**Alternative Approach:**
+Fix at grid container level instead:
+```diff
+- <div className="grid lg:grid-cols-2 gap-4">
++ <div className="grid lg:grid-cols-2 gap-4 items-start">
 ```
 
 ## Responsive Verification
