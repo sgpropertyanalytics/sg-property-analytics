@@ -105,6 +105,45 @@ Skeleton and empty states MUST occupy the same height as the data-loaded state.
 
 **Fail condition:** Loading skeleton is shorter/taller than final chart.
 
+### INV-6: No space-y-* Inside Stretched Columns
+
+**CRITICAL:** Never use `space-y-*` inside a column that receives stretched height from a grid/flex parent.
+
+**Why:** `space-y-*` uses margins, NOT flexbox. When parent stretches the column, the extra height cannot be distributed to children. Children with `h-full` become meaningless because the `space-y` parent has no explicit height.
+
+**Check:**
+- If parent grid/flex uses `items-stretch` or `auto-rows-fr`
+- AND column contains children with `h-full` or `flex-1`
+- THEN column MUST use `flex flex-col gap-* h-full`, NOT `space-y-*`
+
+**Fail condition:** `space-y-*` column inside stretched grid → children don't fill available space → huge empty gaps in charts.
+
+**Correct pattern:**
+```jsx
+{/* Grid stretches columns */}
+<div className="grid lg:grid-cols-2 lg:items-stretch">
+  {/* Column uses flex to distribute height */}
+  <div className="flex flex-col gap-4 h-full">
+    <div className="shrink-0">KPI Card</div>       {/* Fixed height */}
+    <div className="flex-1 min-h-0">Chart Card</div> {/* Fill remaining */}
+  </div>
+</div>
+```
+
+### INV-7: Chart Wrapper Has Bounded Height
+
+Every chart container MUST have an explicit height constraint from one of:
+- Direct `height` or `minHeight` style
+- `h-full` with ALL ancestors up to a height-constrained parent
+- `flex-1 min-h-0` inside a flex parent with `h-full`
+
+**Fail condition:** Chart uses `height: 100%` but no ancestor defines height → infinite expansion.
+
+**Check for layout feedback loops:**
+- Chart height changing >2 times per render cycle
+- ResizeObserver firing repeatedly
+- Y-axis domain recalculating on each render
+
 ---
 
 ## 3. ROOT CAUSE DIAGNOSIS FLOW
@@ -118,28 +157,38 @@ Q: Do sibling cards share the same row height?
 └─ YES → Continue to Step 2
 ```
 
-### Step 2: Check Card Internal Structure
+### Step 2: Check Column Layout (CRITICAL)
+```
+Q: Does the column use `space-y-*`?
+├─ YES → Q: Does parent grid use `items-stretch` or `auto-rows-fr`?
+│        ├─ YES → BUG! Fix: Change `space-y-*` to `flex flex-col gap-* h-full`
+│        │        Add `shrink-0` to KPI cards, `flex-1 min-h-0` to charts
+│        └─ NO → OK (space-y works when column isn't stretched)
+└─ NO → Continue to Step 3
+```
+
+### Step 3: Check Card Internal Structure
 ```
 Q: Does the card use header/body/footer grid structure?
 ├─ NO → Fix: Refactor to use DashboardCard primitive (see dashboard-layout skill)
-└─ YES → Continue to Step 3
-```
-
-### Step 3: Check Body Containment
-```
-Q: Does body have `min-h-0` + `overflow-auto` (or overflow-hidden)?
-├─ NO → Fix: Add `min-h-0` to body, set overflow behavior
 └─ YES → Continue to Step 4
 ```
 
-### Step 4: Check Dynamic Content
+### Step 4: Check Body Containment
+```
+Q: Does body have `min-h-0` + `overflow-auto` (or overflow-hidden)?
+├─ NO → Fix: Add `min-h-0` to body, set overflow behavior
+└─ YES → Continue to Step 5
+```
+
+### Step 5: Check Dynamic Content
 ```
 Q: Is there data-dependent content (controls, legends, subtitles)?
 ├─ YES → Fix: Constrain with fixed height or move outside card body
-└─ NO → Continue to Step 5
+└─ NO → Continue to Step 6
 ```
 
-### Step 5: Check State Heights
+### Step 6: Check State Heights
 ```
 Q: Do loading/empty states match data state height?
 ├─ NO → Fix: Use same height container for all states
@@ -182,6 +231,9 @@ Q: Do loading/empty states match data state height?
 | `!important` overrides | Fighting specificity | Fix primitive |
 | Inline `minHeight` per chart | Inconsistent | Fix ChartFrame |
 | `flex-grow` without `min-h-0` | Content pushes height | Add min-h-0 |
+| `space-y-*` in stretched column | Margins don't distribute height | `flex flex-col gap-* h-full` |
+| `h-full` without bounded ancestor | Infinite expansion | Ensure ancestor has height |
+| Chart without `min-h-0` wrapper | Y-axis expansion loop | Wrap in `flex-1 min-h-0` |
 
 ---
 
