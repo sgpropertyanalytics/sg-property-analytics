@@ -42,7 +42,7 @@ def aggregate():
       Example: ?district=D01,D02&bedroom=2,3 (NOT ?districts=...)
 
     Query params:
-      - group_by: comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region, floor_level)
+      - group_by: comma-separated dimensions (month, quarter, year, district, bedroom, sale_type, project, region, floor_level, age_band)
       - metrics: comma-separated metrics (count, median_psf, avg_psf, total_value, median_price, avg_price, min_psf, max_psf, price_25th, price_75th, psf_25th, psf_75th, median_psf_actual)
       - district: comma-separated districts (D01,D02,...)
       - bedroom: comma-separated bedroom counts (2,3,4)
@@ -324,6 +324,28 @@ def aggregate():
             # Group by floor level classification
             group_columns.append(Transaction.floor_level)
             select_columns.append(Transaction.floor_level.label("floor_level"))
+        elif g == "age_band":
+            # Group by property age band (for budget fair price analysis)
+            # Property age = year(transaction_date) - lease_start_year
+            from sqlalchemy import case, literal, and_
+            property_age = extract('year', Transaction.transaction_date) - Transaction.lease_start_year
+            age_band_case = case(
+                # New Sale: always 'new_sale' regardless of age
+                (func.lower(Transaction.sale_type) == 'new sale', literal('new_sale')),
+                # Freehold: treat as 'freehold' (no depreciation)
+                (Transaction.tenure.ilike('%freehold%'), literal('freehold')),
+                # Missing lease_start_year: unknown
+                (Transaction.lease_start_year.is_(None), literal('unknown')),
+                # Age bands for resale properties
+                (and_(property_age >= 0, property_age < 4), literal('just_top')),
+                (and_(property_age >= 4, property_age < 8), literal('recently_top')),
+                (and_(property_age >= 8, property_age < 15), literal('young_resale')),
+                (and_(property_age >= 15, property_age < 25), literal('resale')),
+                (property_age >= 25, literal('mature_resale')),
+                else_=literal('unknown')
+            )
+            group_columns.append(age_band_case)
+            select_columns.append(age_band_case.label("age_band"))
 
     # Add metric columns
     # ALWAYS include count - it's a row integrity field, not just a metric

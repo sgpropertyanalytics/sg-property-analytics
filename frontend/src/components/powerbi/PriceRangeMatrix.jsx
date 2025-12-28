@@ -1,0 +1,181 @@
+import React, { useMemo } from 'react';
+import { useAbortableQuery } from '../../hooks';
+import { getAggregate } from '../../api/client';
+import { transformPriceRangeMatrix } from '../../adapters/aggregate';
+import {
+  getBedroomLabelShort,
+  AGE_BAND_LABELS_SHORT,
+} from '../../constants';
+import { PriceCorridorCell, PriceCorridorLegend } from './PriceCorridorCell';
+import { ChartSkeleton } from '../common/ChartSkeleton';
+
+/**
+ * PriceRangeMatrix - Fair Price Range by Bedroom x Property Age
+ *
+ * Shows price corridor (Q1-Q3) for each bedroom × age band combination,
+ * helping users understand what's a "fair" price to pay.
+ *
+ * Uses /api/aggregate with:
+ *   group_by=bedroom,age_band
+ *   metrics=count,price_25th,price_75th,median_price,psf_25th,psf_75th,min_price,max_price
+ *
+ * @param {Object} props
+ * @param {number} props.budget - User's target budget (for corridor position marker)
+ * @param {number} props.tolerance - +/- range around budget (default $100K)
+ * @param {string} props.region - Optional segment filter (CCR/RCR/OCR)
+ * @param {string} props.district - Optional district filter (D01-D28)
+ * @param {string} props.tenure - Optional tenure filter
+ * @param {number} props.monthsLookback - Time window in months (default 24)
+ */
+export function PriceRangeMatrix({
+  budget,
+  tolerance = 100000,
+  region = null,
+  district = null,
+  tenure = null,
+  monthsLookback = 24,
+}) {
+  // Calculate date range based on months lookback
+  const dateFrom = useMemo(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - monthsLookback);
+    return d.toISOString().split('T')[0];
+  }, [monthsLookback]);
+
+  // Build API params
+  const apiParams = useMemo(() => {
+    const params = {
+      group_by: 'bedroom,age_band',
+      metrics: 'count,price_25th,price_75th,median_price,psf_25th,psf_75th,min_price,max_price',
+      date_from: dateFrom,
+    };
+
+    // Price filter based on budget + tolerance
+    if (budget) {
+      params.price_min = budget - tolerance;
+      params.price_max = budget + tolerance;
+    }
+
+    // Optional filters
+    if (region) params.segment = region;
+    if (district) params.district = district;
+    if (tenure) params.tenure = tenure;
+
+    return params;
+  }, [budget, tolerance, region, district, tenure, dateFrom]);
+
+  // Build stable filter key for query dependency
+  const filterKey = useMemo(() => JSON.stringify(apiParams), [apiParams]);
+
+  // Fetch data with abort handling
+  const { data, loading, error } = useAbortableQuery(
+    async (signal) => {
+      const response = await getAggregate(apiParams, { signal });
+      return transformPriceRangeMatrix(response.data, { budget });
+    },
+    [filterKey]
+  );
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <ChartSkeleton height={300} />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="text-red-600 text-sm">
+          Failed to load price range data
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (!data || data.totalCount === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="text-gray-500 text-sm text-center py-8">
+          No transactions found for the selected criteria
+        </div>
+      </div>
+    );
+  }
+
+  const { matrix, ageBands, bedrooms } = data;
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-[#213448]">
+              Fair Price Range
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Price corridors by bedroom and property age (Q1-Q3 = typical range)
+            </p>
+          </div>
+          <PriceCorridorLegend />
+        </div>
+      </div>
+
+      {/* Matrix Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                Property Age
+              </th>
+              {bedrooms.map((br) => (
+                <th
+                  key={br}
+                  className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  {getBedroomLabelShort(br)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {ageBands.map((band) => (
+              <tr key={band} className="hover:bg-gray-50">
+                <td className="px-3 py-2 text-xs font-medium text-gray-700 whitespace-nowrap">
+                  {AGE_BAND_LABELS_SHORT[band] || band}
+                </td>
+                {bedrooms.map((br) => (
+                  <td key={br} className="px-1 py-1 min-w-[140px]">
+                    <div className="h-24">
+                      <PriceCorridorCell
+                        cellData={matrix[band]?.[br]}
+                        budget={budget}
+                        compact={false}
+                      />
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
+        <p className="text-xs text-gray-500">
+          Based on {data.totalCount.toLocaleString()} transactions in the past{' '}
+          {monthsLookback} months within your budget range.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default PriceRangeMatrix;

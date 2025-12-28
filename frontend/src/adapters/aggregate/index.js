@@ -83,6 +83,13 @@ import {
   calculateRollingAverage,
 } from './oscillator';
 
+import {
+  transformPriceRangeMatrix,
+  formatPriceShort,
+  formatPsf,
+  getBudgetZoneStyle,
+} from './priceRange';
+
 // Named exports
 export {
   // Validation
@@ -128,6 +135,11 @@ export {
   getZScoreShortLabel,
   getZScoreColor,
   calculateRollingAverage,
+  // Price Range Matrix
+  transformPriceRangeMatrix,
+  formatPriceShort,
+  formatPsf,
+  getBudgetZoneStyle,
 };
 
 // Default export for backwards compatibility
@@ -171,4 +183,9 @@ export default {
   getZScoreShortLabel,
   getZScoreColor,
   calculateRollingAverage,
+  // Price Range Matrix
+  transformPriceRangeMatrix,
+  formatPriceShort,
+  formatPsf,
+  getBudgetZoneStyle,
 };

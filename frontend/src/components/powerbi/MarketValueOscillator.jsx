@@ -368,8 +368,8 @@ export function MarketValueOscillator({ height = 380 }) {
     },
   };
 
-  // Card height with header + insight box
-  const cardHeight = height + 200;
+  // Card height with header + expanded insight box
+  const cardHeight = height + 280;
 
   // CRITICAL: containerRef must be OUTSIDE QueryState
   return (
@@ -442,12 +442,26 @@ export function MarketValueOscillator({ height = 380 }) {
 
           {/* Insight Box */}
           <div className="shrink-0">
-            <KeyInsightBox title="Reading this Chart" variant="info" compact>
-              <p>
-                Lines above <span className="font-semibold text-red-600">+1σ</span> (red zone) = historically overvalued.
-                Lines below <span className="font-semibold text-emerald-600">-1σ</span> (green zone) = historically undervalued.
-                Hover for $ values.
+            <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
+              <p className="mb-2">
+                This chart shows the relative price premium between regions (CCR–RCR and RCR–OCR), expressed as a Z-score against historical spreads. A Z-score near 0 indicates fair value and normal market conditions.
               </p>
+              <div className="mb-2">
+                <div className="font-semibold text-[#213448] mb-1">Interpretation Guide</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+                  <div><span className="font-semibold text-amber-600">+0.5σ to +1.0σ</span> — Above average but healthy range.</div>
+                  <div><span className="font-semibold text-red-500">+1.0σ to +2.0σ</span> — Overvalued, risk of mean reversion.</div>
+                  <div><span className="font-semibold text-red-700">&gt; +2.0σ</span> — Extremely overvalued, stretched beyond norms.</div>
+                  <div><span className="font-semibold text-sky-600">–0.5σ to –1.0σ</span> — Below average, improving value.</div>
+                  <div><span className="font-semibold text-emerald-600">&lt; –1.0σ</span> — Significantly undervalued, mean-reversion potential.</div>
+                </div>
+              </div>
+              <div>
+                <div className="font-semibold text-[#213448] mb-0.5">How to Read Movement</div>
+                <p className="text-xs">
+                  The direction of the line reflects market momentum, while the distance from zero indicates valuation risk. This metric is best used as a relative valuation gauge, not a short-term timing tool.
+                </p>
+              </div>
             </KeyInsightBox>
           </div>
 
