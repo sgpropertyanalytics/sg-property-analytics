@@ -29,14 +29,14 @@ export function InfoTooltip({ text, color = '#94B4C1' }) {
       >
         i
       </span>
-      {/* Tooltip - positioned below icon, light theme */}
-      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 text-xs text-[#213448] bg-white border border-[#94B4C1]/40 rounded-lg shadow-lg whitespace-normal w-52 text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999]">
+      {/* Tooltip - positioned ABOVE icon to avoid clipping by overflow-x-auto containers */}
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-[#213448] bg-white border border-[#94B4C1]/40 rounded-lg shadow-lg whitespace-normal w-52 text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999]">
         {text}
-        {/* Arrow pointing up */}
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-b-white"></span>
+        {/* Arrow pointing down */}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-white"></span>
         <span
-          className="absolute bottom-full left-1/2 -translate-x-1/2 border-[7px] border-transparent border-b-[#94B4C1]/40"
-          style={{ marginBottom: '1px' }}
+          className="absolute top-full left-1/2 -translate-x-1/2 border-[7px] border-transparent border-t-[#94B4C1]/40"
+          style={{ marginTop: '1px' }}
         ></span>
       </span>
     </span>
@@ -519,7 +519,8 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
       </div>
 
       {/* Mobile/Tablet Card View - shown below lg breakpoint (1024px) */}
-      <div className="lg:hidden p-2 sm:p-3 space-y-2 max-h-[350px] sm:max-h-[400px] overflow-y-auto">
+      {/* Removed fixed max-height to avoid nested scroll containers on touch devices */}
+      <div className="lg:hidden p-2 sm:p-3 space-y-2">
         {sortedData.map((district, index) => {
           const m = district.liquidity_metrics || {};
           return (
@@ -793,13 +794,15 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                     </div>
                   </td>
 
-                  {/* District (ID + Area Name combined) */}
+                  {/* District (ID + Area Name combined) - truncated to prevent overflow */}
                   <td
-                    className="px-3 py-2 text-[#213448]"
+                    className="px-3 py-2 text-[#213448] max-w-[200px]"
                     title={`${district.district_id} - ${district.full_name}`}
                   >
-                    <span className="font-semibold">{district.district_id}</span>
-                    <span className="ml-1">- {district.full_name}</span>
+                    <div className="flex items-baseline gap-1 min-w-0">
+                      <span className="font-semibold flex-shrink-0">{district.district_id}</span>
+                      <span className="truncate text-[#547792]">- {district.full_name}</span>
+                    </div>
                   </td>
 
                   {/* Region Badge */}
