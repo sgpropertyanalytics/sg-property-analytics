@@ -137,7 +137,9 @@ export function NewVsResaleChart({ height = 350 }) {
   // Calculate data completeness for user awareness
   const resaleGaps = resalePrice.filter(v => v === null).length;
   const totalPoints = chartData.length;
+  const resaleDataPoints = totalPoints - resaleGaps;
   const hasSignificantGaps = resaleGaps > totalPoints * 0.2; // >20% gaps
+  const isSeverelySparse = totalPoints > 0 && resaleDataPoints <= 2; // Only 0-2 data points
 
   const chartConfig = {
     labels,
@@ -309,7 +311,8 @@ export function NewVsResaleChart({ height = 350 }) {
   };
 
   // Card layout: flex column with fixed height, header/note shrink-0, chart fills remaining
-  const cardHeight = height + 180; // height prop for chart + ~180px for header/KeyInsightBox
+  // Add extra height when sparse warning is shown
+  const cardHeight = height + 180 + (isSeverelySparse ? 60 : 0);
 
   // CRITICAL: containerRef must be OUTSIDE QueryState for IntersectionObserver to work
   // QueryState only renders children when not loading, so ref would be null during load
@@ -371,6 +374,29 @@ export function NewVsResaleChart({ height = 350 }) {
           Tracks the price gap between new launches and recently TOP units (4-7 years old) to highlight pricing discrepancies and relative value.
         </KeyInsightBox>
       </div>
+
+      {/* Sparse Data Warning - shown when resale data is severely limited */}
+      {isSeverelySparse && (
+        <div className="shrink-0 mx-3 md:mx-4 mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-md">
+          <div className="flex items-start gap-2">
+            <svg className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div className="text-xs text-amber-800">
+              <span className="font-medium">Limited resale data</span>
+              <span className="hidden sm:inline"> for this selection</span>
+              {resaleDataPoints === 0 ? (
+                <span>: No "Recently TOP (4-7 yrs)" transactions found. </span>
+              ) : (
+                <span>: Only {resaleDataPoints} month{resaleDataPoints > 1 ? 's' : ''} with data. </span>
+              )}
+              <span className="text-amber-700">
+                This bucket requires resales from properties aged 4-7 years, which may be rare for certain district/time combinations.
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
       <ChartSlot>
