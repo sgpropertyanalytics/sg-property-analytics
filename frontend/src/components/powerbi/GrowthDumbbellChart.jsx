@@ -3,7 +3,6 @@ import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
-import { isSaleType } from '../../schemas/apiContract';
 import { transformGrowthDumbbellSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
 
 // All districts
@@ -23,43 +22,22 @@ const REGION_HEADER_TEXT = {
   OCR: 'text-[#213448]',
 };
 
-// Clean state-based colors for end dot (the "target/outcome")
-const getEndDotColor = (growthPercent) => {
-  if (growthPercent >= 30) return '#059669';   // Vibrant emerald (strong growth)
-  if (growthPercent >= 10) return '#10b981';   // Emerald (growth)
-  if (growthPercent <= -20) return '#dc2626';  // Red (strong decline)
-  if (growthPercent <= -5) return '#f87171';   // Soft coral (decline)
-  return '#64748b';  // Slate grey (neutral)
-};
 
-// Line color matches end state but slightly muted
-const getLineColor = (growthPercent) => {
-  if (growthPercent >= 30) return 'rgba(5, 150, 105, 0.6)';   // Emerald
-  if (growthPercent >= 10) return 'rgba(16, 185, 129, 0.5)';  // Lighter emerald
-  if (growthPercent <= -20) return 'rgba(220, 38, 38, 0.5)';  // Red
-  if (growthPercent <= -5) return 'rgba(248, 113, 113, 0.4)'; // Soft coral
-  return 'rgba(100, 116, 139, 0.3)';  // Slate grey
-};
-
-// Get area names (2-3 areas max, respecting space)
+// Get full area names (no truncation for wide column)
 const getAreaNames = (district) => {
-  const fullName = DISTRICT_NAMES[district] || district;
-  const parts = fullName.split('/').map(s => s.trim());
+  return DISTRICT_NAMES[district] || district;
+};
 
-  let result = parts[0];
-  let count = 1;
-
-  for (let i = 1; i < parts.length && count < 3; i++) {
-    const potential = result + ' / ' + parts[i];
-    if (potential.length <= 40) {
-      result = potential;
-      count++;
-    } else {
-      break;
-    }
-  }
-
-  return result;
+// Gradient color based on rank position (0 = top, 1 = bottom)
+// Dark green (#047857) → Dark amber/yellow (#b45309)
+const getGradientColor = (rankPercent) => {
+  // HSL interpolation: Green (160°) → Amber (35°)
+  // Saturation: 85% → 75%
+  // Lightness: 25% → 32%
+  const hue = 160 - (rankPercent * 125); // 160 → 35
+  const sat = 85 - (rankPercent * 10);   // 85% → 75%
+  const lit = 25 + (rankPercent * 7);    // 25% → 32%
+  return `hsl(${hue}, ${sat}%, ${lit}%)`;
 };
 
 /**
@@ -198,12 +176,9 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
     );
   };
 
-  // Format price
+  // Format price as full number with commas (e.g., $1,436)
   const formatPrice = (value) => {
-    if (value >= 1000) {
-      return `$${(value / 1000).toFixed(1)}K`;
-    }
-    return `$${Math.round(value)}`;
+    return `$${Math.round(value).toLocaleString()}`;
   };
 
   // Handle district click - no cross-filter since we're not using PowerBIFilterContext
@@ -244,31 +219,35 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
       {/* Column Headers - CSS Grid layout */}
       <div className="px-3 md:px-4 py-2 bg-slate-50 border-b border-slate-200">
         <div
-          className="grid items-center gap-x-3 text-xs font-medium text-slate-600"
-          style={{ gridTemplateColumns: 'minmax(100px, 160px) 1fr 60px 60px 55px 50px' }}
+          className="grid items-center gap-x-3 text-[10px] md:text-xs font-medium text-slate-600"
+          style={{ gridTemplateColumns: 'minmax(180px, 280px) 1fr 90px 90px 70px 55px' }}
         >
           <div
-            className="cursor-pointer hover:text-slate-800 select-none truncate"
+            className="cursor-pointer hover:text-slate-800 select-none"
             onClick={() => handleSort('district')}
           >
             District<SortIcon column="district" />
           </div>
           <div className="text-center text-slate-400 text-[10px]">
-            {startQuarter} → {endQuarter}
+            Growth
           </div>
           <div
-            className="text-right cursor-pointer hover:text-slate-800 select-none"
+            className="text-right cursor-pointer hover:text-slate-800 select-none leading-tight"
             onClick={() => handleSort('startPsf')}
-            title="Baseline Quarter PSF"
+            title={`Baseline Median PSF (${startQuarter})`}
           >
-            Base<SortIcon column="startPsf" />
+            <span className="hidden md:inline">Baseline PSF</span>
+            <span className="md:hidden">Base</span>
+            <span className="block text-[9px] text-slate-400 font-normal">({startQuarter})</span>
           </div>
           <div
-            className="text-right cursor-pointer hover:text-slate-800 select-none"
+            className="text-right cursor-pointer hover:text-slate-800 select-none leading-tight"
             onClick={() => handleSort('endPsf')}
-            title="Latest Quarter PSF"
+            title={`Median PSF (${endQuarter})`}
           >
-            Latest<SortIcon column="endPsf" />
+            <span className="hidden md:inline">Latest PSF</span>
+            <span className="md:hidden">Latest</span>
+            <span className="block text-[9px] text-slate-400 font-normal">({endQuarter})</span>
           </div>
           <div
             className="text-right cursor-pointer hover:text-slate-800 select-none"
@@ -281,32 +260,28 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
             className="text-right cursor-pointer hover:text-slate-800 select-none"
             onClick={() => handleSort('growth')}
           >
-            %<SortIcon column="growth" />
+            Growth<SortIcon column="growth" />
           </div>
         </div>
       </div>
 
       {/* Dumbbell Rows */}
       <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
-        {sortedData.map((item) => {
+        {sortedData.map((item, index) => {
           // Left-aligned dumbbell: baseline at 0%, latest position based on growth
           // Scale: 0% growth = 10%, 100% growth = 100%
           const growthClamped = Math.max(0, Math.min(item.growthPercent, 100));
           const latestDotPosition = 10 + (growthClamped / 100) * 90; // 10% to 100%
 
-          // Clean state-based styling
-          const endDotColor = getEndDotColor(item.growthPercent);
-          const lineColor = getLineColor(item.growthPercent);
+          // Gradient color based on rank position (top = green, bottom = amber)
+          const rankPercent = sortedData.length > 1 ? index / (sortedData.length - 1) : 0;
+          const gradientColor = getGradientColor(rankPercent);
+
+          // Slightly muted version for the line
+          const lineOpacity = 0.7;
 
           const regionBg = REGION_HEADER_BG[item.region] || REGION_HEADER_BG.OCR;
           const regionText = REGION_HEADER_TEXT[item.region] || REGION_HEADER_TEXT.OCR;
-
-          // Text color matches end dot state
-          const textColorClass = item.growthPercent >= 30 ? 'text-emerald-700'
-            : item.growthPercent >= 10 ? 'text-emerald-600'
-            : item.growthPercent <= -20 ? 'text-red-600'
-            : item.growthPercent <= -5 ? 'text-red-400'
-            : 'text-slate-500';
 
           return (
             <div
@@ -318,14 +293,14 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
               {/* CSS Grid row - matches header */}
               <div
                 className="grid items-center gap-x-3"
-                style={{ gridTemplateColumns: 'minmax(100px, 160px) 1fr 60px 60px 55px 50px' }}
+                style={{ gridTemplateColumns: 'minmax(180px, 280px) 1fr 90px 90px 70px 55px' }}
               >
-                {/* Column 1: District */}
-                <div className="flex items-center gap-1.5 overflow-hidden">
+                {/* Column 1: District - full name, wider column */}
+                <div className="flex items-center gap-2 overflow-hidden">
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${regionBg} ${regionText}`}>
                     {item.district}
                   </span>
-                  <span className="text-xs text-slate-600 truncate" title={DISTRICT_NAMES[item.district]}>
+                  <span className="text-xs text-slate-600 leading-tight" title={DISTRICT_NAMES[item.district]}>
                     {item.areaNames}
                   </span>
                 </div>
@@ -335,16 +310,17 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
                   {/* Background track */}
                   <div className="absolute left-0 right-0 bg-slate-100 rounded-full" style={{ top: '50%', height: '2px', transform: 'translateY(-50%)' }} />
 
-                  {/* Connecting line from baseline to latest */}
+                  {/* Connecting line from baseline to latest - thicker (5px) with gradient color */}
                   <div
                     className="absolute rounded-full"
                     style={{
                       left: '0',
                       width: `${latestDotPosition}%`,
-                      height: '3px',
+                      height: '5px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      backgroundColor: lineColor,
+                      backgroundColor: gradientColor,
+                      opacity: lineOpacity,
                     }}
                   />
 
@@ -360,7 +336,7 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
                     }}
                   />
 
-                  {/* Latest dot (position based on growth) */}
+                  {/* Latest dot (position based on growth) - uses gradient color */}
                   <div
                     className="absolute rounded-full border-2 border-white shadow-md z-10"
                     style={{
@@ -369,19 +345,19 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
                       width: '10px',
                       height: '10px',
                       transform: 'translate(-50%, -50%)',
-                      backgroundColor: endDotColor,
+                      backgroundColor: gradientColor,
                     }}
                   />
                 </div>
 
-                {/* Column 3: Baseline PSF */}
+                {/* Column 3: Baseline PSF - full digits with commas */}
                 <div className="text-right">
                   <span className="text-xs text-slate-500">
                     {formatPrice(item.startPsf)}
                   </span>
                 </div>
 
-                {/* Column 4: Latest PSF */}
+                {/* Column 4: Latest PSF - full digits with commas */}
                 <div className="text-right">
                   <span className="text-xs font-medium text-slate-700">
                     {formatPrice(item.endPsf)}
@@ -390,14 +366,14 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
 
                 {/* Column 5: Δ PSF (Increment) */}
                 <div className="text-right">
-                  <span className={`text-xs font-medium ${item.growthPercent >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                  <span className="text-xs font-medium" style={{ color: gradientColor }}>
                     {item.growthPercent >= 0 ? '+' : ''}{formatPrice(item.endPsf - item.startPsf)}
                   </span>
                 </div>
 
                 {/* Column 6: Growth % */}
                 <div className="text-right">
-                  <span className={`text-xs font-bold ${textColorClass}`}>
+                  <span className="text-xs font-bold" style={{ color: gradientColor }}>
                     {item.growthPercent >= 0 ? '+' : ''}{item.growthPercent.toFixed(0)}%
                   </span>
                 </div>
