@@ -357,9 +357,9 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
 
                 {/* Dumbbell Chart Area with inline labels */}
                 <div className="flex-1 flex items-center gap-1 mx-1 md:mx-0">
-                  {/* Start PSF label (earliest quarter) */}
-                  <span className="text-[10px] md:text-xs text-slate-500 w-12 md:w-14 text-right shrink-0">
-                    {formatPrice(item.startPsf)}
+                  {/* Start quarter label */}
+                  <span className="text-[10px] md:text-xs text-slate-500 w-14 md:w-16 text-right shrink-0" title={formatPrice(item.startPsf)}>
+                    {startQuarter}
                   </span>
 
                   {/* Dumbbell visualization */}
@@ -405,9 +405,9 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
                     />
                   </div>
 
-                  {/* End PSF label (latest quarter) */}
-                  <span className={`text-[10px] md:text-xs font-medium w-12 md:w-14 shrink-0 ${textColorClass}`}>
-                    {formatPrice(item.endPsf)}
+                  {/* End quarter label */}
+                  <span className={`text-[10px] md:text-xs font-medium w-14 md:w-16 shrink-0 ${textColorClass}`} title={formatPrice(item.endPsf)}>
+                    {endQuarter}
                   </span>
                 </div>
 
