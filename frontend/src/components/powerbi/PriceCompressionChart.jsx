@@ -62,7 +62,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
  */
-export function PriceCompressionChart({ height = 380 }) {
+export function PriceCompressionChart({ height = 380, saleType = null }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
@@ -103,11 +103,11 @@ export function PriceCompressionChart({ height = 380 }) {
   // Data fetching with useAbortableQuery - automatic abort/stale handling
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
-      // Market Core is Resale-only - explicit page-level enforcement
+      // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count',
-        sale_type: 'Resale',
+        ...(saleType && { sale_type: saleType }),
       });
 
       const response = await getAggregate(params, { signal });
@@ -128,7 +128,7 @@ export function PriceCompressionChart({ height = 380 }) {
       // Use adapter for transformation - centralizes all data munging
       return transformCompressionSeries(rawData, timeGrouping);
     },
-    [debouncedFilterKey, timeGrouping],
+    [debouncedFilterKey, timeGrouping, saleType],
     { initialData: [], enabled: shouldFetch }
   );
 

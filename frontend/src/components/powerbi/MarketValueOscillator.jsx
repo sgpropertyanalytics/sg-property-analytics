@@ -65,7 +65,7 @@ const ROLLING_AVG_OPTIONS = [
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
  */
-export function MarketValueOscillator({ height = 380 }) {
+export function MarketValueOscillator({ height = 380, saleType = null }) {
   // Get GLOBAL filters and timeGrouping from context
   const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
@@ -108,10 +108,11 @@ export function MarketValueOscillator({ height = 380 }) {
   // NOTE: Uses RESALE ONLY - excludes new sale data which can be artificially priced
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
+      // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count',
-        sale_type: 'Resale',  // Exclude new sales for more accurate market signal
+        ...(saleType && { sale_type: saleType }),
       });
 
       const response = await getAggregate(params, { signal });
@@ -131,7 +132,7 @@ export function MarketValueOscillator({ height = 380 }) {
       // Transform to Z-scores using historical baseline
       return transformOscillatorSeries(rawData, timeGrouping, baselineStats);
     },
-    [debouncedFilterKey, timeGrouping, baselineStats],
+    [debouncedFilterKey, timeGrouping, baselineStats, saleType],
     { initialData: [], enabled: shouldFetch }
   );
 

@@ -45,7 +45,7 @@ ChartJS.register(
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
-export function TimeTrendChart({ height = 300 }) {
+export function TimeTrendChart({ height = 300, saleType = null }) {
   // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
@@ -55,12 +55,11 @@ export function TimeTrendChart({ height = 300 }) {
   // useAbortableQuery handles: abort controller, stale request protection, loading/error states
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
-      // Market Core is Resale-only - explicit page-level enforcement
-      // See CLAUDE.md "Business Logic Enforcement" for architectural rationale
+      // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       const params = buildApiParams({
         group_by: TIME_GROUP_BY[timeGrouping],
         metrics: 'count,total_value',
-        sale_type: 'Resale',
+        ...(saleType && { sale_type: saleType }),
       });
 
       const response = await getAggregate(params, { signal });
@@ -82,7 +81,7 @@ export function TimeTrendChart({ height = 300 }) {
       // getPeriod() handles v1/v2 field normalization automatically
       return transformTimeSeries(rawData, timeGrouping);
     },
-    [debouncedFilterKey, timeGrouping],
+    [debouncedFilterKey, timeGrouping, saleType],
     { initialData: [] }
   );
 

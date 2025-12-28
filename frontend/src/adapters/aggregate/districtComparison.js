@@ -14,7 +14,7 @@ import { getAgeBandKey, AGE_BAND_LABELS_SHORT } from '../../constants';
 // Minimum units threshold for non-boutique projects
 const DEFAULT_MIN_UNITS = 100;
 
-// Age band order (newest to oldest)
+// Age band order: New Sale first, then age ascending (youngest to oldest)
 const AGE_BAND_ORDER = ['new_sale', 'recently_top', 'young_resale', 'resale', 'mature_resale', 'unknown'];
 
 /**
@@ -128,10 +128,9 @@ export const transformDistrictComparison = (apiResponse, selectedProjectName, mi
     return acc;
   }, []);
 
-  // Reorder: selected band first, then others in age order
-  const selectedGroup = groupedMap.find((g) => g.isSelectedBand);
-  const otherGroups = groupedMap.filter((g) => !g.isSelectedBand);
-  const groups = selectedGroup ? [selectedGroup, ...otherGroups] : otherGroups;
+  // Keep groups in AGE_BAND_ORDER: New Sale first, then age ascending
+  // (No reordering - groupedMap is already in correct order from AGE_BAND_ORDER)
+  const groups = groupedMap;
 
   // Calculate stats
   const allProjects = classified;
@@ -141,6 +140,7 @@ export const transformDistrictComparison = (apiResponse, selectedProjectName, mi
 
   // Find selected project rank within its age band (1-indexed)
   let selectedRank = null;
+  const selectedGroup = groups.find((g) => g.isSelectedBand);
   if (selectedGroup && selectedProject) {
     const rankInBand = selectedGroup.projects.findIndex((p) => p.isSelected);
     selectedRank = rankInBand >= 0 ? rankInBand + 1 : null;

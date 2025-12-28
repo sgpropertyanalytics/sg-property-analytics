@@ -54,7 +54,7 @@ const REGION_COLORS = {
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
  */
-export function AbsolutePsfChart({ height = 300 }) {
+export function AbsolutePsfChart({ height = 300, saleType = null }) {
   const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
   const chartRef = useRef(null);
@@ -71,11 +71,11 @@ export function AbsolutePsfChart({ height = 300 }) {
   // Data fetching - same as PriceCompressionChart for consistency
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
-      // Market Core is Resale-only - explicit page-level enforcement
+      // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count',
-        sale_type: 'Resale',
+        ...(saleType && { sale_type: saleType }),
       });
 
       const response = await getAggregate(params, { signal });
@@ -91,7 +91,7 @@ export function AbsolutePsfChart({ height = 300 }) {
 
       return transformCompressionSeries(rawData, timeGrouping);
     },
-    [debouncedFilterKey, timeGrouping],
+    [debouncedFilterKey, timeGrouping, saleType],
     { initialData: [], enabled: shouldFetch }
   );
 

@@ -44,16 +44,16 @@ const REGION_COLORS = {
  * This chart answers ONE question:
  * "How much are 1BR, 2BR, 3BR, 4BR, 5BR selling for in CCR, RCR, and OCR?"
  */
-export function BeadsChart({ height = 300 }) {
+export function BeadsChart({ height = 300, saleType = null }) {
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const chartRef = useRef(null);
 
   // Data fetching with useAbortableQuery
   const { data: chartData, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
-      // Market Core is Resale-only - explicit page-level enforcement
+      // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       const params = buildApiParams(
-        { panels: 'beads_chart', sale_type: 'Resale' },
+        { panels: 'beads_chart', ...(saleType && { sale_type: saleType }) },
         { excludeLocationDrill: true }
       );
 
@@ -71,7 +71,7 @@ export function BeadsChart({ height = 300 }) {
 
       return transformBeadsChartSeries(apiData.beads_chart);
     },
-    [debouncedFilterKey],
+    [debouncedFilterKey, saleType],
     {
       initialData: {
         datasets: [],

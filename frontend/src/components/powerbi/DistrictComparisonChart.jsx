@@ -101,7 +101,7 @@ export function DistrictComparisonChart({
   const sectionHeaders = groups.length;
   const chartHeight = propHeight || Math.max(300, Math.min(800, (totalProjects * 28) + (sectionHeaders * 40)));
 
-  // Flatten groups into chart data with section breaks
+  // Flatten groups into chart data with dual category axis (Age Band | Project Name)
   const { labels, flatData, colors, hoverColors, projectMeta } = useMemo(() => {
     const labels = [];
     const flatData = [];
@@ -109,30 +109,12 @@ export function DistrictComparisonChart({
     const hoverColors = [];
     const projectMeta = [];
 
-    groups.forEach((group, groupIndex) => {
-      // Add section header as a label (with empty bar)
-      if (groupIndex > 0) {
-        // Add visual separator between groups
-        labels.push('');
-        flatData.push(0);
-        colors.push('transparent');
-        hoverColors.push('transparent');
-        projectMeta.push({ isSeparator: true });
-      }
-
-      // Add group header label
-      const headerLabel = group.isSelectedBand
-        ? `▸ ${group.label} (Your Project's Age)`
-        : `▸ ${group.label}`;
-      labels.push(headerLabel);
-      flatData.push(0); // Empty bar for header
-      colors.push('transparent');
-      hoverColors.push('transparent');
-      projectMeta.push({ isHeader: true, group });
-
-      // Add projects in this group
-      group.projects.forEach((p) => {
-        labels.push(`   ${truncateProjectName(p.projectName, 26)}`);
+    groups.forEach((group) => {
+      // Add projects in this group with dual-axis labels [AgeBand, ProjectName]
+      group.projects.forEach((p, idx) => {
+        // Show age band label only for first project in each group
+        const ageBandLabel = idx === 0 ? group.label : '';
+        labels.push([ageBandLabel, truncateProjectName(p.projectName, 24)]);
         flatData.push(p.medianPsf || 0);
 
         // Color coding

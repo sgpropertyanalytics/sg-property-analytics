@@ -47,7 +47,7 @@ ChartJS.register(
  *
  * This chart answers ONE question: "Where do most transactions happen?"
  */
-export function PriceDistributionChart({ height = 300, numBins = 20 }) {
+export function PriceDistributionChart({ height = 300, numBins = 20, saleType = null }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const [showFullRange, setShowFullRange] = useState(false);
@@ -59,11 +59,11 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
       // Use dashboard endpoint with price_histogram panel
       // excludeLocationDrill: true - Price Distribution should NOT be affected by
       // location drill (Power BI best practice: Drill ≠ Filter, drill is visual-local)
-      // Market Core is Resale-only - explicit page-level enforcement
+      // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       const params = buildApiParams({
         panels: 'price_histogram',
         histogram_bins: numBins,
-        sale_type: 'Resale',
+        ...(saleType && { sale_type: saleType }),
         // Only send show_full_range when true (backend defaults to false)
         ...(showFullRange && { show_full_range: 'true' })
       }, { excludeLocationDrill: true });
@@ -88,7 +88,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20 }) {
       // Use adapter for transformation - handles legacy vs new format
       return transformDistributionSeries(apiData.price_histogram);
     },
-    [debouncedFilterKey, numBins, showFullRange],
+    [debouncedFilterKey, numBins, showFullRange, saleType],
     { initialData: { bins: [], stats: {}, tail: {}, totalCount: 0 } }
   );
 

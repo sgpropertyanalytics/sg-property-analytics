@@ -17,6 +17,7 @@ import apiClient from '../../../api/client';
 import { singaporeDistrictsGeoJSON } from '../../../data/singaporeDistrictsGeoJSON';
 import { useSubscription } from '../../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../../hooks';
+import { SaleType } from '../../../schemas/apiContract';
 
 // Local imports
 import {
@@ -25,7 +26,6 @@ import {
   LIQUIDITY_FILLS,
   BEDROOM_OPTIONS,
   PERIOD_OPTIONS,
-  SALE_TYPE_OPTIONS,
   MARKER_OFFSETS,
 } from './constants';
 import { polylabel, getLiquidityFill } from './utils';
@@ -47,7 +47,7 @@ export default function DistrictLiquidityMap() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
-  const [selectedSaleType, setSelectedSaleType] = useState('all');
+  // NOTE: saleType is fixed to SaleType.RESALE (no UI toggle, resale-only for this page)
   const [selectedPeriod, setSelectedPeriod] = useState('12m');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
@@ -56,8 +56,8 @@ export default function DistrictLiquidityMap() {
 
   // Stable filter key for dependency tracking (avoids object reference issues)
   const filterKey = useMemo(
-    () => `${selectedPeriod}:${selectedBed}:${selectedSaleType}`,
-    [selectedPeriod, selectedBed, selectedSaleType]
+    () => `${selectedPeriod}:${selectedBed}`,
+    [selectedPeriod, selectedBed]
   );
 
   const [viewState, setViewState] = useState({
@@ -81,7 +81,7 @@ export default function DistrictLiquidityMap() {
         params: {
           period: selectedPeriod,
           bed: selectedBed,
-          saleType: selectedSaleType, // v2 API param
+          saleType: SaleType.RESALE, // Resale-only for District Deep Dive
         },
         signal, // Pass abort signal to cancel on filter change
       });
@@ -106,7 +106,7 @@ export default function DistrictLiquidityMap() {
       setError('Failed to load data');
       setLoading(false);
     }
-  }, [selectedBed, selectedSaleType, selectedPeriod, startRequest, getSignal, isStale]);
+  }, [selectedBed, selectedPeriod, startRequest, getSignal, isStale]);
 
   useEffect(() => {
     fetchData();
@@ -192,26 +192,6 @@ export default function DistrictLiquidityMap() {
                     px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
                     ${
                       selectedBed === option.value
-                        ? 'bg-white text-[#213448] shadow-sm'
-                        : 'text-[#547792] hover:text-[#213448]'
-                    }
-                  `}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Sale type filter */}
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
-              {SALE_TYPE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setSelectedSaleType(option.value)}
-                  className={`
-                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
-                    ${
-                      selectedSaleType === option.value
                         ? 'bg-white text-[#213448] shadow-sm'
                         : 'text-[#547792] hover:text-[#213448]'
                     }
@@ -505,7 +485,7 @@ export default function DistrictLiquidityMap() {
           <LiquidityRankingTable
             districtData={districtData}
             selectedBed={selectedBed}
-            selectedSaleType={selectedSaleType}
+            selectedSaleType={SaleType.RESALE}
             selectedPeriod={selectedPeriod}
           />
         </div>

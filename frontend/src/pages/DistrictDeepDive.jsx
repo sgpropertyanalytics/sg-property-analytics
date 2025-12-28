@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { DistrictLiquidityMap, MarketStrategyMap } from '../components/insights';
 import { ChartWatermark } from '../components/ui';
 import { MarketMomentumGrid, GrowthDumbbellChart } from '../components/powerbi';
+import { SaleType } from '../schemas/apiContract';
 
 /**
  * District Deep Dive Page
@@ -121,9 +122,9 @@ function DistrictVolumeContent() {
  */
 function DistrictPriceContent() {
   // Shared filter state for all charts in this tab
+  // NOTE: saleType is fixed to SaleType.RESALE (page-level enforcement, no UI toggle)
   const [selectedPeriod, setSelectedPeriod] = useState('12m');
   const [selectedBed, setSelectedBed] = useState('all');
-  const [selectedSaleType, setSelectedSaleType] = useState('all');
 
   // Callback for filter changes from MarketStrategyMap
   const handleFilterChange = useCallback((filterType, value) => {
@@ -133,9 +134,6 @@ function DistrictPriceContent() {
         break;
       case 'bed':
         setSelectedBed(value);
-        break;
-      case 'saleType':
-        setSelectedSaleType(value);
         break;
       default:
         break;
@@ -149,7 +147,7 @@ function DistrictPriceContent() {
         <MarketStrategyMap
           selectedPeriod={selectedPeriod}
           selectedBed={selectedBed}
-          selectedSaleType={selectedSaleType}
+          selectedSaleType={SaleType.RESALE}
           onFilterChange={handleFilterChange}
         />
       </ChartWatermark>
@@ -159,7 +157,7 @@ function DistrictPriceContent() {
         <MarketMomentumGrid
           period={selectedPeriod}
           bedroom={selectedBed}
-          saleType={selectedSaleType}
+          saleType={SaleType.RESALE}
         />
       </ChartWatermark>
 
@@ -168,7 +166,7 @@ function DistrictPriceContent() {
         <GrowthDumbbellChart
           period={selectedPeriod}
           bedroom={selectedBed}
-          saleType={selectedSaleType}
+          saleType={SaleType.RESALE}
         />
       </ChartWatermark>
     </div>

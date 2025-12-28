@@ -30,12 +30,20 @@ import { useChartHeight, MOBILE_CAPS } from '../hooks';
  * - Project drill-through: Opens ProjectDetailPanel without affecting global charts
  * - Drill-through to transaction details
  *
+ * DATA SCOPE: Resale transactions ONLY
+ * All charts on this page receive saleType="Resale" from page level.
+ * See CLAUDE.md "Business Logic Enforcement" for architectural rationale.
+ *
  * NOTE: This component is designed to be wrapped by DashboardLayout which provides:
  * - PowerBIFilterProvider context
  * - PowerBIFilterSidebar (secondary sidebar)
  * - GlobalNavRail (primary navigation)
  * - Mobile responsive header and drawers
  */
+
+// Page-level data scope - all charts inherit this
+const SALE_TYPE = 'Resale';
+
 export function MacroOverviewContent() {
   const { apiMetadata } = useData();
   const { filters } = usePowerBIFilters();
@@ -295,10 +303,10 @@ export function MacroOverviewContent() {
                 {/* Time Trend Chart - Full width on all screens */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Time Trend Chart" compact>
-                    {/* Chart component - DO NOT MODIFY PROPS (ui-freeze) */}
                     <TimeTrendChart
                       onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
                       height={trendChartHeight}
+                      saleType={SALE_TYPE}
                     />
                   </ErrorBoundary>
                 </div>
@@ -308,12 +316,12 @@ export function MacroOverviewContent() {
                 <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <ErrorBoundary name="Price Compression" compact>
                     <ChartWatermark>
-                      <PriceCompressionChart height={compressionHeight} />
+                      <PriceCompressionChart height={compressionHeight} saleType={SALE_TYPE} />
                     </ChartWatermark>
                   </ErrorBoundary>
                   <ErrorBoundary name="Absolute PSF" compact>
                     <ChartWatermark>
-                      <AbsolutePsfChart height={compressionHeight} />
+                      <AbsolutePsfChart height={compressionHeight} saleType={SALE_TYPE} />
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>
@@ -322,7 +330,7 @@ export function MacroOverviewContent() {
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Market Value Oscillator" compact>
                     <ChartWatermark>
-                      <MarketValueOscillator height={compressionHeight} />
+                      <MarketValueOscillator height={compressionHeight} saleType={SALE_TYPE} />
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>
@@ -334,6 +342,7 @@ export function MacroOverviewContent() {
                       <PriceDistributionChart
                         onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
                         height={standardChartHeight}
+                        saleType={SALE_TYPE}
                       />
                     </ChartWatermark>
                   </ErrorBoundary>
@@ -342,7 +351,7 @@ export function MacroOverviewContent() {
                 <div>
                   <ErrorBoundary name="Price by Region & Bedroom" compact>
                     <ChartWatermark>
-                      <BeadsChart height={standardChartHeight} />
+                      <BeadsChart height={standardChartHeight} saleType={SALE_TYPE} />
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>

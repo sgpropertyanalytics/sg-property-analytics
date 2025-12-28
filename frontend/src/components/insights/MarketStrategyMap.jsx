@@ -15,9 +15,10 @@ import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
-import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS, SALE_TYPE_FILTER_OPTIONS } from '../../constants';
+import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../hooks';
+import { SaleType } from '../../schemas/apiContract';
 
 // =============================================================================
 // CONFIGURATION
@@ -51,7 +52,6 @@ const VOLUME_GLOW = {
 // Use centralized filter options
 const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
 const PERIOD_OPTIONS = PERIOD_FILTER_OPTIONS;
-const SALE_TYPE_OPTIONS = SALE_TYPE_FILTER_OPTIONS;
 
 // Manual marker offsets for crowded central districts
 const MARKER_OFFSETS = {
@@ -392,13 +392,14 @@ function RegionSummaryBar({ districtData }) {
  * MarketStrategyMap Component
  *
  * Supports both controlled and uncontrolled modes:
- * - Controlled: Pass selectedPeriod, selectedBed, selectedSaleType, onFilterChange props
+ * - Controlled: Pass selectedPeriod, selectedBed, onFilterChange props
  * - Uncontrolled: Uses internal state (legacy behavior)
+ *
+ * NOTE: saleType is fixed to SaleType.RESALE (no UI toggle, resale-only for this page)
  */
 export default function MarketStrategyMap({
   selectedPeriod: controlledPeriod,
   selectedBed: controlledBed,
-  selectedSaleType: controlledSaleType,
   onFilterChange,
 }) {
   const { isPremium } = useSubscription();
@@ -409,13 +410,11 @@ export default function MarketStrategyMap({
 
   // Support both controlled and uncontrolled modes
   const [internalBed, setInternalBed] = useState('all');
-  const [internalSaleType, setInternalSaleType] = useState('all');
   const [internalPeriod, setInternalPeriod] = useState('12m');
 
   // Use controlled values if provided, otherwise use internal state
   const isControlled = onFilterChange !== undefined;
   const selectedBed = isControlled ? controlledBed : internalBed;
-  const selectedSaleType = isControlled ? controlledSaleType : internalSaleType;
   const selectedPeriod = isControlled ? controlledPeriod : internalPeriod;
 
   // Unified setter that works in both modes
@@ -424,14 +423,6 @@ export default function MarketStrategyMap({
       onFilterChange('bed', value);
     } else {
       setInternalBed(value);
-    }
-  };
-
-  const setSelectedSaleType = (value) => {
-    if (isControlled) {
-      onFilterChange('saleType', value);
-    } else {
-      setInternalSaleType(value);
     }
   };
 
@@ -448,8 +439,8 @@ export default function MarketStrategyMap({
 
   // Stable filter key for dependency tracking (avoids object reference issues)
   const filterKey = useMemo(
-    () => `${selectedPeriod}:${selectedBed}:${selectedSaleType}`,
-    [selectedPeriod, selectedBed, selectedSaleType]
+    () => `${selectedPeriod}:${selectedBed}`,
+    [selectedPeriod, selectedBed]
   );
 
   const [viewState, setViewState] = useState({
@@ -470,7 +461,7 @@ export default function MarketStrategyMap({
 
     try {
       const response = await apiClient.get('/insights/district-psf', {
-        params: { period: selectedPeriod, bed: selectedBed, sale_type: selectedSaleType },
+        params: { period: selectedPeriod, bed: selectedBed, sale_type: SaleType.RESALE },
         signal,  // Pass abort signal to cancel on filter change
       });
 
@@ -493,7 +484,7 @@ export default function MarketStrategyMap({
       setError('Failed to load data');
       setLoading(false);
     }
-  }, [selectedBed, selectedSaleType, selectedPeriod, startRequest, getSignal, isStale]);
+  }, [selectedBed, selectedPeriod, startRequest, getSignal, isStale]);
 
   useEffect(() => {
     fetchData();
@@ -575,25 +566,6 @@ export default function MarketStrategyMap({
                   className={`
                     px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
                     ${selectedBed === option.value
-                      ? 'bg-white text-[#213448] shadow-sm'
-                      : 'text-[#547792] hover:text-[#213448]'
-                    }
-                  `}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Sale type filter */}
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
-              {SALE_TYPE_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  onClick={() => setSelectedSaleType(option.value)}
-                  className={`
-                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
-                    ${selectedSaleType === option.value
                       ? 'bg-white text-[#213448] shadow-sm'
                       : 'text-[#547792] hover:text-[#213448]'
                     }
