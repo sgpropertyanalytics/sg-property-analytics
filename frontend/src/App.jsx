@@ -48,6 +48,9 @@ const SupplyInsightsContent = lazyWithRetry(() =>
 const PrimaryMarketContent = lazyWithRetry(() =>
   import('./pages/PrimaryMarket').then(m => ({ default: m.PrimaryMarketContent }))
 );
+const MethodologyContent = lazyWithRetry(() =>
+  import('./pages/Methodology').then(m => ({ default: m.MethodologyContent }))
+);
 
 // Note: Loading fallback moved to DashboardLayout to keep nav rail persistent
 
@@ -127,6 +130,9 @@ function App() {
 
             {/* Supply & Inventory Insights (Lazy-loaded) */}
             <Route path="/supply-insights" element={<SupplyInsightsContent />} />
+
+            {/* Methodology - Assumptions, classifications, data sources */}
+            <Route path="/methodology" element={<MethodologyContent />} />
           </Route>
 
           {/* Legacy route redirects */}
