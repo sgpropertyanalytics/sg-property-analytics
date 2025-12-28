@@ -210,18 +210,7 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
     ...baseChartJsOptions,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: {
-        display: true,
-        position: 'bottom',
-        labels: {
-          usePointStyle: true,
-          pointStyle: 'line',
-          boxWidth: 50,
-          boxHeight: 0,
-          padding: 16,
-          font: { size: 11 },
-        },
-      },
+      legend: { display: false },
       tooltip: {
         callbacks: {
           title: (items) => `${items[0].label}`,
@@ -396,6 +385,22 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
               </div>
             )}
           </ChartSlot>
+
+          {/* Custom SVG Legend */}
+          <div className="flex justify-center gap-6 py-2 shrink-0">
+            <div className="flex items-center gap-2">
+              <svg width="32" height="8">
+                <line x1="0" y1="4" x2="32" y2="4" stroke="#213448" strokeWidth={2.5} />
+              </svg>
+              <span className="text-xs text-[#374151]">CCR-RCR Z-Score</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg width="32" height="8">
+                <line x1="0" y1="4" x2="32" y2="4" stroke="#547792" strokeWidth={2.5} strokeDasharray="6 4" />
+              </svg>
+              <span className="text-xs text-[#374151]">RCR-OCR Z-Score</span>
+            </div>
+          </div>
 
           {/* Footer */}
           <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-end gap-3 text-xs text-[#547792]">
