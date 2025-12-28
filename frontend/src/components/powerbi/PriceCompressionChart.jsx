@@ -13,7 +13,6 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
-import annotationPlugin from 'chartjs-plugin-annotation';
 import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
@@ -39,8 +38,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler,
-  annotationPlugin
+  Filler
 );
 
 // Time level labels for display
@@ -217,27 +215,6 @@ export function PriceCompressionChart({ height = 380, saleType = null }) {
               return lines;
             }
             return [];
-          },
-        },
-      },
-      annotation: {
-        annotations: {
-          zeroLine: {
-            type: 'line',
-            yMin: 0,
-            yMax: 0,
-            borderColor: 'rgba(0, 0, 0, 0.3)',
-            borderWidth: 1,
-            borderDash: [4, 4],
-            label: {
-              display: true,
-              content: '$0',
-              position: 'start',
-              backgroundColor: 'rgba(0, 0, 0, 0.6)',
-              color: '#fff',
-              font: { size: 9 },
-              padding: 3,
-            },
           },
         },
       },
