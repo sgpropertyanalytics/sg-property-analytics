@@ -9,6 +9,8 @@ Tests:
 2. period normalization works for all time grains
 3. Enum values are valid
 4. Metrics are numbers (not null/string when data exists)
+5. PropertyAgeBucket.classify() returns only valid keys
+6. Enum key snapshots prevent unintended changes
 """
 
 import pytest
@@ -18,6 +20,7 @@ from schemas.api_contract import (
     AggregateFields,
     SaleType,
     Region,
+    PropertyAgeBucket,
     TIME_BUCKET_FIELDS,
     API_CONTRACT_VERSION,
 )
@@ -340,3 +343,150 @@ class TestContractSmokeTest:
         assert 'quarter' in result, "Missing v1 compat time field"
 
         print("✅ Contract smoke test PASSED")
+
+
+# =============================================================================
+# PROPERTY AGE BUCKET TESTS
+# =============================================================================
+
+class TestPropertyAgeBucket:
+    """
+    Tests for PropertyAgeBucket enum integrity.
+
+    These tests enforce the Taxonomy & Enum Integrity policy:
+    - All classify() outputs must be valid keys
+    - Enum keys must not change without explicit intent
+    """
+
+    # Snapshot of expected keys - update ONLY with deliberate intent
+    EXPECTED_KEYS = ['new_sale', 'recently_top', 'young_resale', 'resale', 'mature_resale', 'freehold']
+    EXPECTED_ALL_KEYS = EXPECTED_KEYS + ['unknown']
+
+    def test_classify_returns_valid_keys_only(self):
+        """
+        CRITICAL: PropertyAgeBucket.classify() must only return keys in ALL or 'unknown'.
+
+        This test catches if someone adds a new bucket in classify() without
+        adding it to the ALL list.
+        """
+        valid_keys = set(PropertyAgeBucket.all_keys())
+
+        # Test all age ranges
+        test_cases = [
+            # (age, sale_type, tenure, expected_in_valid)
+            (None, 'New Sale', None),      # new_sale
+            (None, 'Resale', 'Freehold'),  # freehold
+            (None, 'Resale', '99-year'),   # unknown (no age)
+            (2, 'Resale', '99-year'),      # unknown (0-4 years)
+            (5, 'Resale', '99-year'),      # recently_top
+            (10, 'Resale', '99-year'),     # young_resale
+            (20, 'Resale', '99-year'),     # resale
+            (30, 'Resale', '99-year'),     # mature_resale
+        ]
+
+        for age, sale_type, tenure in test_cases:
+            result = PropertyAgeBucket.classify(age=age, sale_type=sale_type, tenure=tenure)
+            assert result in valid_keys, \
+                f"classify(age={age}, sale_type={sale_type}, tenure={tenure}) " \
+                f"returned '{result}' which is not in valid keys: {valid_keys}"
+
+    def test_enum_key_snapshot(self):
+        """
+        SNAPSHOT TEST: Enum keys must match expected snapshot.
+
+        If this test fails, you must:
+        1. Verify the change was intentional
+        2. Update EXPECTED_KEYS in this test
+        3. Update frontend constants/index.js to match
+        4. Update any SQL that references bucket keys
+        """
+        actual_keys = sorted(PropertyAgeBucket.ALL)
+        expected_keys = sorted(self.EXPECTED_KEYS)
+
+        assert actual_keys == expected_keys, \
+            f"PropertyAgeBucket.ALL changed!\n" \
+            f"  Expected: {expected_keys}\n" \
+            f"  Actual:   {actual_keys}\n" \
+            f"If intentional, update EXPECTED_KEYS in test_api_contract.py"
+
+    def test_all_keys_includes_unknown(self):
+        """all_keys() should include 'unknown' as a valid fallback."""
+        all_keys = PropertyAgeBucket.all_keys()
+        assert 'unknown' in all_keys, "all_keys() must include 'unknown'"
+
+    def test_age_ranges_match_bucket_keys(self):
+        """AGE_RANGES keys must be subset of ALL."""
+        for bucket in PropertyAgeBucket.AGE_RANGES.keys():
+            assert bucket in PropertyAgeBucket.ALL, \
+                f"AGE_RANGES has key '{bucket}' not in ALL"
+
+    def test_classify_new_sale_priority(self):
+        """New Sale sale_type should always return 'new_sale', regardless of age."""
+        # Even with age=30, New Sale should return new_sale
+        result = PropertyAgeBucket.classify(age=30, sale_type='New Sale', tenure='99-year')
+        assert result == PropertyAgeBucket.NEW_SALE
+
+    def test_classify_freehold_priority(self):
+        """Freehold tenure should always return 'freehold', regardless of age."""
+        result = PropertyAgeBucket.classify(age=10, sale_type='Resale', tenure='Freehold')
+        assert result == PropertyAgeBucket.FREEHOLD
+
+    def test_classify_strict_mode_raises(self):
+        """In strict mode, classify() should raise for unknown buckets."""
+        with pytest.raises(ValueError):
+            PropertyAgeBucket.classify(age=None, sale_type='Resale', tenure='99-year', strict=True)
+
+        with pytest.raises(ValueError):
+            PropertyAgeBucket.classify(age=2, sale_type='Resale', tenure='99-year', strict=True)
+
+    def test_age_band_boundaries(self):
+        """Test exact boundary conditions for age bands."""
+        # recently_top: 4-8 (exclusive upper)
+        assert PropertyAgeBucket.classify(age=3, sale_type='Resale', tenure='99-year') == 'unknown'
+        assert PropertyAgeBucket.classify(age=4, sale_type='Resale', tenure='99-year') == 'recently_top'
+        assert PropertyAgeBucket.classify(age=7, sale_type='Resale', tenure='99-year') == 'recently_top'
+        assert PropertyAgeBucket.classify(age=8, sale_type='Resale', tenure='99-year') == 'young_resale'
+
+        # young_resale: 8-15
+        assert PropertyAgeBucket.classify(age=14, sale_type='Resale', tenure='99-year') == 'young_resale'
+        assert PropertyAgeBucket.classify(age=15, sale_type='Resale', tenure='99-year') == 'resale'
+
+        # resale: 15-25
+        assert PropertyAgeBucket.classify(age=24, sale_type='Resale', tenure='99-year') == 'resale'
+        assert PropertyAgeBucket.classify(age=25, sale_type='Resale', tenure='99-year') == 'mature_resale'
+
+        # mature_resale: 25+
+        assert PropertyAgeBucket.classify(age=50, sale_type='Resale', tenure='99-year') == 'mature_resale'
+
+
+class TestEnumIntegrityGuardrails:
+    """
+    Meta-tests to enforce the Taxonomy & Enum Integrity policy.
+
+    These tests ensure the codebase follows the "No Drift" rules.
+    """
+
+    def test_no_hardcoded_bucket_strings_in_classify(self):
+        """
+        Verify that classify() uses PropertyAgeBucket constants, not strings.
+
+        This is a design-time check - if classify() hardcodes strings,
+        renaming a bucket would silently break.
+        """
+        import inspect
+        source = inspect.getsource(PropertyAgeBucket.classify)
+
+        # The implementation should reference cls.NEW_SALE, not 'new_sale'
+        # (except in return statements for 'unknown')
+        forbidden_patterns = [
+            "'recently_top'",
+            "'young_resale'",
+            "'resale'",  # This one is tricky - 'resale' could be in Resale check
+            "'mature_resale'",
+            # 'new_sale' is returned via cls.NEW_SALE, 'freehold' via cls.FREEHOLD
+        ]
+
+        for pattern in ['recently_top', 'young_resale', 'mature_resale']:
+            # Should NOT have literal string, should use cls.CONSTANT
+            assert f"'{pattern}'" not in source or f"cls.{pattern.upper()}" in source, \
+                f"Found hardcoded '{pattern}' in classify() instead of cls.{pattern.upper()}"

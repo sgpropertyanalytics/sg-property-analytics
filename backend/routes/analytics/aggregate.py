@@ -68,9 +68,10 @@ def _classify_age_band(
     as_of_year: int
 ) -> str:
     """
-    Classify project into age band using canonical PropertyAgeBucket logic.
+    Classify project into age band using canonical PropertyAgeBucket.classify().
 
-    Age = as_of_year - lease_start_year (lease age, not building age)
+    IMPORTANT: This is a thin wrapper around PropertyAgeBucket.classify().
+    All classification logic lives in PropertyAgeBucket (single source of truth).
 
     Args:
         lease_start_year: Year lease commenced (from transactions)
@@ -79,37 +80,20 @@ def _classify_age_band(
         as_of_year: Year to calculate age as-of (from query filters or current)
 
     Returns:
-        Age band key matching frontend constants
+        Age band key from PropertyAgeBucket.ALL or 'unknown'
     """
-    # Freehold: special category (no depreciation)
-    if tenure and 'freehold' in tenure.lower():
-        return PropertyAgeBucket.FREEHOLD
+    # Calculate age if we have lease data
+    age = None
+    if lease_start_year is not None:
+        age = as_of_year - lease_start_year
 
-    # Missing lease data
-    if lease_start_year is None:
-        return 'unknown'
-
-    # Calculate lease age
-    age = as_of_year - lease_start_year
-
-    # Classify using canonical age ranges
-    # just_top: 0-4 years (before typical MOP)
-    if age >= 0 and age < 4:
-        return 'just_top'
-    # recently_top: 4-8 years
-    if age >= 4 and age < 8:
-        return PropertyAgeBucket.RECENTLY_TOP
-    # young_resale: 8-15 years
-    if age >= 8 and age < 15:
-        return PropertyAgeBucket.YOUNG_RESALE
-    # resale: 15-25 years
-    if age >= 15 and age < 25:
-        return PropertyAgeBucket.RESALE
-    # mature_resale: 25+ years
-    if age >= 25:
-        return PropertyAgeBucket.MATURE_RESALE
-
-    return 'unknown'
+    # Use canonical classifier (single source of truth)
+    return PropertyAgeBucket.classify(
+        age=age,
+        sale_type=sale_type,
+        tenure=tenure,
+        strict=False  # Return 'unknown' for edge cases
+    )
 
 
 @analytics_bp.route("/aggregate", methods=["GET"])
@@ -414,25 +398,31 @@ def aggregate():
             group_columns.append(Transaction.floor_level)
             select_columns.append(Transaction.floor_level.label("floor_level"))
         elif g == "age_band":
-            # Group by property age band (for budget fair price analysis)
-            # Property age = year(transaction_date) - lease_start_year
+            # Group by property age band using canonical PropertyAgeBucket
+            # IMPORTANT: CASE expression built dynamically from PropertyAgeBucket constants
+            # to ensure single source of truth (no hardcoded bucket strings)
             from sqlalchemy import case, literal, and_
             property_age = extract('year', Transaction.transaction_date) - Transaction.lease_start_year
-            age_band_case = case(
-                # New Sale: always 'new_sale' regardless of age
-                (func.lower(Transaction.sale_type) == 'new sale', literal('new_sale')),
-                # Freehold: treat as 'freehold' (no depreciation)
-                (Transaction.tenure.ilike('%freehold%'), literal('freehold')),
-                # Missing lease_start_year: unknown
+
+            # Build CASE conditions dynamically from PropertyAgeBucket
+            age_conditions = [
+                # Priority 1: New Sale (market state, not age-based)
+                (func.lower(Transaction.sale_type) == 'new sale', literal(PropertyAgeBucket.NEW_SALE)),
+                # Priority 2: Freehold (no depreciation)
+                (Transaction.tenure.ilike('%freehold%'), literal(PropertyAgeBucket.FREEHOLD)),
+                # Priority 3: Missing lease_start_year
                 (Transaction.lease_start_year.is_(None), literal('unknown')),
-                # Age bands for resale properties
-                (and_(property_age >= 0, property_age < 4), literal('just_top')),
-                (and_(property_age >= 4, property_age < 8), literal('recently_top')),
-                (and_(property_age >= 8, property_age < 15), literal('young_resale')),
-                (and_(property_age >= 15, property_age < 25), literal('resale')),
-                (property_age >= 25, literal('mature_resale')),
-                else_=literal('unknown')
-            )
+            ]
+
+            # Add age-based conditions from canonical AGE_RANGES
+            for bucket, (min_age, max_age) in PropertyAgeBucket.AGE_RANGES.items():
+                if max_age is None:
+                    condition = property_age >= min_age
+                else:
+                    condition = and_(property_age >= min_age, property_age < max_age)
+                age_conditions.append((condition, literal(bucket)))
+
+            age_band_case = case(*age_conditions, else_=literal('unknown'))
             group_columns.append(age_band_case)
             select_columns.append(age_band_case.label("age_band"))
 

@@ -15,8 +15,8 @@ import { AGE_BAND_LABELS_SHORT } from '../../constants';
 const DEFAULT_MIN_UNITS = 100;
 
 // Age band order: New Sale first, then age ascending (youngest to oldest)
-// Matches backend PropertyAgeBucket classification
-const AGE_BAND_ORDER = ['new_sale', 'just_top', 'recently_top', 'young_resale', 'resale', 'mature_resale', 'freehold', 'unknown'];
+// Matches canonical PropertyAgeBucket from backend/schemas/api_contract.py
+const AGE_BAND_ORDER = ['new_sale', 'recently_top', 'young_resale', 'resale', 'mature_resale', 'freehold', 'unknown'];
 
 /**
  * Transform raw aggregate data for district comparison horizontal bar chart.

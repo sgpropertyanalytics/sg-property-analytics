@@ -223,18 +223,18 @@ class PropertyAgeBucket:
 
     LABELS = {
         NEW_SALE: 'New Sale (No Resales Yet)',
-        RECENTLY_TOP: 'Recently TOP (4-8 years)',
-        YOUNG_RESALE: 'Young Resale (8-15 years)',
-        RESALE: 'Resale (15-25 years)',
+        RECENTLY_TOP: 'Recently TOP (4-7 years)',
+        YOUNG_RESALE: 'Young Resale (8-14 years)',
+        RESALE: 'Resale (15-24 years)',
         MATURE_RESALE: 'Mature Resale (25+ years)',
         FREEHOLD: 'Freehold',
     }
 
     LABELS_SHORT = {
         NEW_SALE: 'New',
-        RECENTLY_TOP: '4-8yr',
-        YOUNG_RESALE: '8-15yr',
-        RESALE: '15-25yr',
+        RECENTLY_TOP: '4-7yr',
+        YOUNG_RESALE: '8-14yr',
+        RESALE: '15-24yr',
         MATURE_RESALE: '25yr+',
         FREEHOLD: 'FH',
     }
@@ -273,6 +273,65 @@ class PropertyAgeBucket:
     def is_age_based(cls, value: str) -> bool:
         """Check if bucket is age-based (vs market-state like new_sale)."""
         return value in cls.AGE_RANGES
+
+    @classmethod
+    def classify(
+        cls,
+        age: Optional[int] = None,
+        sale_type: Optional[str] = None,
+        tenure: Optional[str] = None,
+        strict: bool = False
+    ) -> str:
+        """
+        CANONICAL classifier for property age buckets.
+
+        This is the ONLY place age → bucket mapping should occur.
+        All backend code must use this method.
+
+        Args:
+            age: Property age in years (lease age = as_of_year - lease_start_year)
+            sale_type: Sale type string (e.g., 'New Sale', 'Resale')
+            tenure: Tenure string (e.g., 'Freehold', '99-year')
+            strict: If True, raise ValueError for unknown buckets (dev mode)
+
+        Returns:
+            One of PropertyAgeBucket.ALL or 'unknown'
+
+        Raises:
+            ValueError: If strict=True and result would be 'unknown'
+        """
+        # Priority 1: New Sale (market state, not age-based)
+        if sale_type and sale_type.lower() == 'new sale':
+            return cls.NEW_SALE
+
+        # Priority 2: Freehold (no depreciation)
+        if tenure and 'freehold' in tenure.lower():
+            return cls.FREEHOLD
+
+        # Priority 3: Age-based classification
+        if age is None:
+            if strict:
+                raise ValueError("Cannot classify: age is None and not new_sale/freehold")
+            return 'unknown'
+
+        # Map age to bucket using AGE_RANGES
+        for bucket, (min_age, max_age) in cls.AGE_RANGES.items():
+            if max_age is None:
+                # Unbounded upper (e.g., mature_resale: 25+)
+                if age >= min_age:
+                    return bucket
+            elif age >= min_age and age < max_age:
+                return bucket
+
+        # Age doesn't fit any bucket (e.g., 0-4 years for resale)
+        if strict:
+            raise ValueError(f"Age {age} does not fit any canonical bucket")
+        return 'unknown'
+
+    @classmethod
+    def all_keys(cls) -> list:
+        """Return all valid bucket keys (for contract tests)."""
+        return cls.ALL + ['unknown']  # 'unknown' is a valid fallback
 
 
 # =============================================================================

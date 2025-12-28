@@ -25,11 +25,11 @@ import { PROPERTY_AGE_BANDS, BEDROOM_ORDER_NUMERIC } from '../../constants';
 const MIN_CELL_COUNT = 5;
 
 /**
- * Age band order for matrix display
+ * Age band order for matrix display.
+ * Matches canonical PropertyAgeBucket from backend/schemas/api_contract.py
  */
 const AGE_BAND_ORDER = [
   'new_sale',
-  'just_top',      // 0-4 years (added for completeness)
   'recently_top',  // 4-8 years
   'young_resale',  // 8-15 years
   'resale',        // 15-25 years

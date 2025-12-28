@@ -685,10 +685,9 @@ export const PROPERTY_AGE_BANDS = [
  */
 export const AGE_BAND_LABELS_FULL = {
   new_sale: 'New Sale',
-  just_top: 'Just TOP (0-3 yrs)',
   recently_top: 'Recently TOP (4-7 yrs)',
-  young_resale: 'Young Resale (8-15 yrs)',
-  resale: 'Resale (15-25 yrs)',
+  young_resale: 'Young Resale (8-14 yrs)',
+  resale: 'Resale (15-24 yrs)',
   mature_resale: 'Mature Resale (25+ yrs)',
   freehold: 'Freehold',
   unknown: 'Unknown Age',
@@ -699,7 +698,6 @@ export const AGE_BAND_LABELS_FULL = {
  */
 export const AGE_BAND_LABELS_SHORT = {
   new_sale: 'New Sale',
-  just_top: 'Just TOP',
   recently_top: 'Recently TOP',
   young_resale: 'Young Resale',
   resale: 'Resale',
