@@ -281,8 +281,8 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
       {/* Column Headers - CSS Grid layout */}
       <div className="px-3 md:px-4 py-2 bg-slate-50 border-b border-slate-200">
         <div
-          className="grid items-center gap-x-4 text-xs font-medium text-slate-600"
-          style={{ gridTemplateColumns: 'minmax(120px, 200px) 1fr 70px 60px' }}
+          className="grid items-center gap-x-3 text-xs font-medium text-slate-600"
+          style={{ gridTemplateColumns: 'minmax(100px, 180px) 1fr 65px 65px 55px' }}
         >
           <div
             className="cursor-pointer hover:text-slate-800 select-none truncate"
@@ -290,23 +290,28 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
           >
             District<SortIcon column="district" />
           </div>
-          <div className="text-center">
-            <span className="text-slate-500">Median PSF Growth</span>
+          <div className="text-center text-slate-400 text-[10px]">
+            {startQuarter} → {endQuarter}
+          </div>
+          <div
+            className="text-right cursor-pointer hover:text-slate-800 select-none"
+            onClick={() => handleSort('endPsf')}
+            title="Latest Quarter PSF"
+          >
+            Latest<SortIcon column="endPsf" />
           </div>
           <div
             className="text-right cursor-pointer hover:text-slate-800 select-none"
             onClick={() => handleSort('increment')}
             title="Absolute PSF change"
           >
-            <span className="hidden md:inline">Increment</span>
-            <span className="md:hidden">+/-</span>
-            <SortIcon column="increment" />
+            Δ PSF<SortIcon column="increment" />
           </div>
           <div
             className="text-right cursor-pointer hover:text-slate-800 select-none"
             onClick={() => handleSort('growth')}
           >
-            Growth<SortIcon column="growth" />
+            %<SortIcon column="growth" />
           </div>
         </div>
       </div>
