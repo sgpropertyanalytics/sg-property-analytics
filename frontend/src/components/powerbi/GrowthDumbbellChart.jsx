@@ -343,100 +343,86 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
           return (
             <div
               key={item.district}
-              className="px-3 md:px-4 py-2.5 hover:bg-slate-50 cursor-pointer transition-colors group"
+              className="px-3 md:px-4 py-2 hover:bg-slate-50 cursor-pointer transition-colors group"
               onClick={() => handleDistrictClick(item.district)}
-              title={`${DISTRICT_NAMES[item.district]}\n${item.startQuarter}: ${formatPrice(item.startPsf)} → ${item.endQuarter}: ${formatPrice(item.endPsf)}`}
+              title={`${DISTRICT_NAMES[item.district]}\nBaseline: ${formatPrice(item.startPsf)} → Latest: ${formatPrice(item.endPsf)}`}
             >
               {/* CSS Grid row - matches header */}
               <div
-                className="grid items-center gap-x-4"
-                style={{ gridTemplateColumns: 'minmax(120px, 200px) 1fr 70px 60px' }}
+                className="grid items-center gap-x-3"
+                style={{ gridTemplateColumns: 'minmax(100px, 180px) 1fr 65px 65px 55px' }}
               >
-                {/* Column 1: District label (fixed width, never clips) */}
-                <div className="overflow-hidden">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded shrink-0 ${regionBg} ${regionText}`}>
-                      {item.district}
-                    </span>
-                    <span className="text-xs md:text-sm text-slate-600 truncate" title={DISTRICT_NAMES[item.district]}>
-                      {item.areaNames}
-                    </span>
-                  </div>
+                {/* Column 1: District */}
+                <div className="flex items-center gap-1.5 overflow-hidden">
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${regionBg} ${regionText}`}>
+                    {item.district}
+                  </span>
+                  <span className="text-xs text-slate-600 truncate" title={DISTRICT_NAMES[item.district]}>
+                    {item.areaNames}
+                  </span>
                 </div>
 
-                {/* Column 2: Dumbbell chart with fixed label areas */}
-                <div className="flex items-center h-10 gap-2">
-                  {/* Start PSF label - fixed width */}
-                  <span className="text-[9px] md:text-[10px] text-slate-500 w-12 md:w-14 text-right shrink-0">
-                    {formatPrice(item.startPsf)}
-                  </span>
+                {/* Column 2: Dumbbell (visual only - no labels) */}
+                <div className="relative h-6">
+                  {/* Background track */}
+                  <div className="absolute left-0 right-0 bg-slate-100 rounded-full" style={{ top: '50%', height: '3px', transform: 'translateY(-50%)' }} />
 
-                  {/* Track area - flexes */}
-                  <div className="flex-1 relative h-full">
-                    {/* Background track */}
-                    <div className="absolute left-0 right-0 bg-slate-100 rounded-full" style={{ top: '50%', height: '4px', transform: 'translateY(-50%)' }} />
+                  {/* Connecting line - colored by direction */}
+                  <div
+                    className="absolute rounded-full transition-all"
+                    style={{
+                      left: `${leftPercent}%`,
+                      width: `${Math.max(rightPercent - leftPercent, 1)}%`,
+                      height: `${lineThickness}px`,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      backgroundColor: lineColor,
+                    }}
+                  />
 
-                    {/* Connecting line */}
-                    <div
-                      className="absolute rounded-full transition-all"
-                      style={{
-                        left: `${leftPercent}%`,
-                        width: `${Math.max(rightPercent - leftPercent, 1)}%`,
-                        height: `${lineThickness}px`,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        backgroundColor: lineColor,
-                      }}
-                    />
+                  {/* Start dot (baseline) - light gray */}
+                  <div
+                    className="absolute rounded-full bg-slate-300 border-2 border-white shadow-sm group-hover:scale-110 transition-transform"
+                    style={{
+                      left: `${startPercent}%`,
+                      top: '50%',
+                      width: '10px',
+                      height: '10px',
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  />
 
-                    {/* Start dot */}
-                    <div
-                      className="absolute rounded-full bg-slate-300 border-2 border-white shadow-sm group-hover:scale-110 transition-transform"
-                      style={{
-                        left: `${startPercent}%`,
-                        top: '50%',
-                        width: '12px',
-                        height: '12px',
-                        transform: 'translate(-50%, -50%)',
-                      }}
-                    />
+                  {/* End dot (latest) - colored by growth */}
+                  <div
+                    className="absolute rounded-full border-2 border-white shadow-md group-hover:scale-110 transition-transform z-10"
+                    style={{
+                      left: `${endPercent}%`,
+                      top: '50%',
+                      width: '12px',
+                      height: '12px',
+                      transform: 'translate(-50%, -50%)',
+                      backgroundColor: endDotColor,
+                    }}
+                  />
+                </div>
 
-                    {/* End dot */}
-                    <div
-                      className="absolute rounded-full border-2 border-white shadow-md group-hover:scale-110 transition-transform z-10"
-                      style={{
-                        left: `${endPercent}%`,
-                        top: '50%',
-                        width: `${Math.max(endDotSize - 2, 14)}px`,
-                        height: `${Math.max(endDotSize - 2, 14)}px`,
-                        transform: 'translate(-50%, -50%)',
-                        backgroundColor: endDotColor,
-                      }}
-                    />
-                  </div>
-
-                  {/* End PSF label - fixed width */}
-                  <span className={`text-[9px] md:text-[10px] font-medium w-12 md:w-14 shrink-0 ${textColorClass}`}>
+                {/* Column 3: Latest PSF */}
+                <div className="text-right">
+                  <span className="text-xs font-medium text-slate-700">
                     {formatPrice(item.endPsf)}
                   </span>
                 </div>
 
-                {/* Column 3: Increment */}
+                {/* Column 4: Δ PSF (Increment) */}
                 <div className="text-right">
-                  {(() => {
-                    const increment = item.endPsf - item.startPsf;
-                    const incrementClass = increment >= 0 ? 'text-emerald-600' : 'text-red-500';
-                    return (
-                      <span className={`text-xs md:text-sm font-medium ${incrementClass}`}>
-                        {increment >= 0 ? '+' : ''}{formatPrice(increment)}
-                      </span>
-                    );
-                  })()}
+                  <span className={`text-xs font-medium ${item.growthPercent >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {item.growthPercent >= 0 ? '+' : ''}{formatPrice(item.endPsf - item.startPsf)}
+                  </span>
                 </div>
 
-                {/* Column 4: Growth % */}
+                {/* Column 5: Growth % */}
                 <div className="text-right">
-                  <span className={`text-xs md:text-sm font-bold ${textColorClass}`}>
+                  <span className={`text-xs font-bold ${textColorClass}`}>
                     {item.growthPercent >= 0 ? '+' : ''}{item.growthPercent.toFixed(0)}%
                   </span>
                 </div>
