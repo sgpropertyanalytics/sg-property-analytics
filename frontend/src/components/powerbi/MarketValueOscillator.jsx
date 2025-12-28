@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import {
@@ -27,7 +27,6 @@ import {
   transformCompressionSeries,
   logFetchDebug,
   assertKnownVersion,
-  calculateRollingAverage,
 } from '../../adapters';
 import { SaleType } from '../../schemas/apiContract';
 
@@ -45,13 +44,6 @@ ChartJS.register(
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
-
-// Rolling average window options
-const ROLLING_AVG_OPTIONS = [
-  { value: 6, label: '6M' },
-  { value: 12, label: '12M' },
-  { value: 24, label: '24M' },
-];
 
 /**
  * Market Value Oscillator Chart
@@ -72,8 +64,6 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
   const { isPremium } = useSubscription();
 
   const chartRef = useRef(null);
-  const [rollingWindow, setRollingWindow] = useState(12);
-  const [showMA, setShowMA] = useState(true);
 
   // Defer fetch until chart is visible
   const { shouldFetch, containerRef } = useDeferredFetch({
@@ -151,37 +141,31 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
     return latestZCcrRcr - latestZRcrOcr;
   }, [latestZCcrRcr, latestZRcrOcr]);
 
-  // Calculate dynamic Y-axis bounds based on actual data (minimum ±3)
+  // Calculate dynamic Y-axis bounds based on actual data
   const yAxisBounds = useMemo(() => {
     const allZScores = [
       ...data.map(d => d.zCcrRcr),
       ...data.map(d => d.zRcrOcr),
     ].filter(v => v !== null && !isNaN(v));
 
-    if (allZScores.length === 0) return { min: -3, max: 3 };
+    if (allZScores.length === 0) return { min: -2.5, max: 2.5 };
 
     const minZ = Math.min(...allZScores);
     const maxZ = Math.max(...allZScores);
 
-    // Ensure minimum range of ±3, but expand if data exceeds
+    // Round to nearest 0.5 with some padding
+    const roundedMin = Math.floor(minZ * 2) / 2 - 0.5;
+    const roundedMax = Math.ceil(maxZ * 2) / 2 + 0.5;
+
+    // Ensure symmetric range around 0 for balanced visual
+    const absMax = Math.max(Math.abs(roundedMin), Math.abs(roundedMax));
     return {
-      min: Math.min(-3, Math.floor(minZ) - 0.5),
-      max: Math.max(3, Math.ceil(maxZ) + 0.5),
+      min: -absMax,
+      max: absMax,
     };
   }, [data]);
 
-  // Calculate rolling averages with configurable window
-  const rollingWindowLabel = ROLLING_AVG_OPTIONS.find(o => o.value === rollingWindow)?.label || `${rollingWindow}M`;
-  const rollingAverages = useMemo(() => {
-    const ccrRcrValues = data.map(d => d.zCcrRcr);
-    const rcrOcrValues = data.map(d => d.zRcrOcr);
-    return {
-      ccrRcr: calculateRollingAverage(ccrRcrValues, rollingWindow),
-      rcrOcr: calculateRollingAverage(rcrOcrValues, rollingWindow),
-    };
-  }, [data, rollingWindow]);
-
-  // Chart data - conditionally include MA lines
+  // Chart data
   const chartData = {
     labels: data.map(d => d.period),
     datasets: [
@@ -216,33 +200,6 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
         tension: 0.3,
         spanGaps: true,
       },
-      ...(showMA ? [
-        {
-          label: `CCR-RCR ${rollingWindowLabel} Avg`,
-          data: rollingAverages.ccrRcr,
-          borderColor: 'rgba(33, 52, 72, 0.5)', // Navy, lighter
-          backgroundColor: 'transparent',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          pointHoverRadius: 0,
-          fill: false,
-          tension: 0.4,
-          spanGaps: true,
-        },
-        {
-          label: `RCR-OCR ${rollingWindowLabel} Avg`,
-          data: rollingAverages.rcrOcr,
-          borderColor: 'rgba(84, 119, 146, 0.5)', // Ocean blue, lighter
-          backgroundColor: 'transparent',
-          borderWidth: 1.5,
-          borderDash: [6, 4],
-          pointRadius: 0,
-          pointHoverRadius: 0,
-          fill: false,
-          tension: 0.4,
-          spanGaps: true,
-        },
-      ] : []),
     ],
   };
 
@@ -268,14 +225,6 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
             const d = data[idx];
             const z = context.parsed.y;
 
-            // Rolling average datasets (indices 2, 3)
-            if (context.datasetIndex === 2) {
-              return z !== null ? `CCR-RCR ${rollingWindowLabel} Avg: ${z.toFixed(2)}σ` : '';
-            }
-            if (context.datasetIndex === 3) {
-              return z !== null ? `RCR-OCR ${rollingWindowLabel} Avg: ${z.toFixed(2)}σ` : '';
-            }
-
             if (!d) return '';
 
             const signal = getZScoreLabel(z);
@@ -300,20 +249,20 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
       },
       annotation: {
         annotations: {
-          // Premium zone (extremely overvalued) - only beyond +2σ
-          premiumZone: {
+          // Extreme overvalued zone (dark red) - beyond +2σ
+          extremeOvervaluedZone: {
             type: 'box',
             yMin: 2.0,
             yMax: yAxisBounds.max,
-            backgroundColor: 'rgba(239, 68, 68, 0.12)',
+            backgroundColor: 'rgba(239, 68, 68, 0.20)',
             borderWidth: 0,
           },
-          // Value zone (extremely undervalued) - only beyond -2σ
-          valueZone: {
+          // Elevated zone (light red) - +1σ to +2σ
+          elevatedZone: {
             type: 'box',
-            yMin: yAxisBounds.min,
-            yMax: -2.0,
-            backgroundColor: 'rgba(16, 185, 129, 0.12)',
+            yMin: 1.0,
+            yMax: 2.0,
+            backgroundColor: 'rgba(239, 68, 68, 0.08)',
             borderWidth: 0,
           },
           // Normal zone (grey) - between -1σ and +1σ
@@ -322,6 +271,22 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
             yMin: -1.0,
             yMax: 1.0,
             backgroundColor: 'rgba(148, 180, 193, 0.15)',
+            borderWidth: 0,
+          },
+          // Compressed zone (light green) - -2σ to -1σ
+          compressedZone: {
+            type: 'box',
+            yMin: -2.0,
+            yMax: -1.0,
+            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            borderWidth: 0,
+          },
+          // Extreme undervalued zone (dark green) - beyond -2σ
+          extremeUndervaluedZone: {
+            type: 'box',
+            yMin: yAxisBounds.min,
+            yMax: -2.0,
+            backgroundColor: 'rgba(16, 185, 129, 0.20)',
             borderWidth: 0,
           },
           // Zero line (historical average)
@@ -342,7 +307,7 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
               padding: 3,
             },
           },
-          // Upper threshold (+2σ) - extreme overvaluation boundary
+          // Upper threshold (+2σ)
           upperThreshold: {
             type: 'line',
             yMin: 2.0,
@@ -360,7 +325,7 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
               padding: 2,
             },
           },
-          // Lower threshold (-2σ) - extreme undervaluation boundary
+          // Lower threshold (-2σ)
           lowerThreshold: {
             type: 'line',
             yMin: -2.0,
@@ -378,7 +343,7 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
               padding: 2,
             },
           },
-          // Normal range lines (±1σ) - inner boundaries
+          // Normal range lines (±1σ)
           upperNormal: {
             type: 'line',
             yMin: 1.0,
@@ -426,13 +391,13 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
         },
       },
       y: {
-        min: yAxisBounds.min,
-        max: yAxisBounds.max,
-        title: { display: true, text: 'σ (Standard Deviation)', font: { size: 11 } },
+        beginAtZero: false,
+        grace: '10%',
+        title: { display: true, text: 'Z-Score (σ)', font: { size: 11 } },
         ticks: {
-          callback: (v) => `${v > 0 ? '+' : ''}${v}σ`,
+          callback: (v) => v === 0 ? '0' : `${v > 0 ? '+' : ''}${v}σ`,
           font: { size: 10 },
-          stepSize: 1,
+          stepSize: 0.5,
         },
         grid: { color: 'rgba(148, 180, 193, 0.2)' },
       },
@@ -452,39 +417,13 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
         >
           {/* Header */}
           <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-                  Market Value Oscillator
-                </h3>
-                <p className="text-xs text-[#547792] mt-0.5">
-                  Z-Score normalized spread analysis ({TIME_LABELS[timeGrouping]})
-                </p>
-              </div>
-              {/* Rolling Average Controls */}
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => setShowMA(!showMA)}
-                  className={`text-xs px-2 py-0.5 rounded border transition-colors ${
-                    showMA
-                      ? 'bg-[#213448] text-white border-[#213448]'
-                      : 'bg-white text-[#547792] border-[#94B4C1]/50 hover:border-[#547792]'
-                  }`}
-                >
-                  MA
-                </button>
-                {showMA && (
-                  <select
-                    value={rollingWindow}
-                    onChange={(e) => setRollingWindow(Number(e.target.value))}
-                    className="text-xs bg-white border border-[#94B4C1]/50 rounded px-1.5 py-0.5 text-[#213448] focus:outline-none focus:ring-1 focus:ring-[#547792]"
-                  >
-                    {ROLLING_AVG_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
+            <div className="min-w-0">
+              <h3 className="font-semibold text-[#213448] text-sm md:text-base">
+                Market Value Oscillator
+              </h3>
+              <p className="text-xs text-[#547792] mt-0.5">
+                Z-Score normalized spread analysis ({TIME_LABELS[timeGrouping]})
+              </p>
             </div>
 
             {/* KPI Row */}
