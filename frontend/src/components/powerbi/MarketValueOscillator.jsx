@@ -216,8 +216,8 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
         labels: {
           usePointStyle: true,
           pointStyle: 'line',
-          boxWidth: 40,
-          boxHeight: 2,
+          boxWidth: 50,
+          boxHeight: 0,
           padding: 16,
           font: { size: 11 },
         },
