@@ -528,22 +528,22 @@ export function ProjectDeepDiveContent() {
         {loading && (
           <div className="space-y-6 animate-fade-in">
             {/* 2-Column Layout Skeleton */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 lg:auto-rows-fr lg:items-stretch">
-              {/* Left Column - flex col to distribute stretch height */}
-              <div className="flex flex-col gap-4 lg:gap-6 h-full">
-                <div className="shrink-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-start">
+              {/* Left Column */}
+              <div className="flex flex-col gap-4 lg:gap-6">
+                <div>
                   <ProjectFundamentalsPanel loading={true} compact />
                 </div>
-                <div className="flex-1 min-h-0 bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 min-h-[350px] animate-pulse" />
-                <div className="flex-1 min-h-0 bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 min-h-[400px] animate-pulse" />
+                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[350px] animate-pulse" />
+                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
               </div>
-              {/* Right Column - flex col to distribute stretch height */}
-              <div className="flex flex-col gap-4 lg:gap-6 h-full">
-                <div className="shrink-0">
+              {/* Right Column */}
+              <div className="flex flex-col gap-4 lg:gap-6">
+                <div>
                   <ResaleMetricsCards loading={true} compact />
                 </div>
-                <div className="flex-1 min-h-0 bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 min-h-[400px] animate-pulse" />
-                <div className="flex-1 min-h-0">
+                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
+                <div>
                   <ExitRiskDashboard loading={true} />
                 </div>
               </div>
@@ -564,13 +564,13 @@ export function ProjectDeepDiveContent() {
             )}
 
             {/* Charts Grid - 2 Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 lg:auto-rows-fr lg:items-stretch">
+            {/* items-start: align cards at top (don't stretch - charts have fixed heights) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-start">
 
               {/* ===== LEFT COLUMN ===== */}
-              {/* flex col + h-full to distribute stretched height to children */}
-              <div className="flex flex-col gap-4 lg:gap-6 h-full">
-                {/* Property Fundamentals - shrink-0: don't stretch KPI cards */}
-                <div className="shrink-0">
+              <div className="flex flex-col gap-4 lg:gap-6">
+                {/* Property Fundamentals */}
+                <div>
                   <ProjectFundamentalsPanel
                     totalUnits={exitQueueData.fundamentals?.total_units}
                     topYear={exitQueueData.fundamentals?.top_year}
@@ -581,8 +581,8 @@ export function ProjectDeepDiveContent() {
                   />
                 </div>
 
-                {/* Price Growth Analysis - flex-1: fill available height */}
-                <div className="flex-1 min-h-0">
+                {/* Price Growth Analysis */}
+                <div>
                   <PriceGrowthChart
                     data={priceGrowthData}
                     loading={priceGrowthLoading}
@@ -593,8 +593,8 @@ export function ProjectDeepDiveContent() {
                   />
                 </div>
 
-                {/* Historical Downside Protection - flex-1: fill available height */}
-                <div className="flex-1 min-h-0">
+                {/* Historical Downside Protection */}
+                <div>
                   <PriceBandChart
                     bands={priceBandsData?.bands || []}
                     latest={priceBandsData?.latest}
@@ -614,10 +614,9 @@ export function ProjectDeepDiveContent() {
               </div>
 
               {/* ===== RIGHT COLUMN ===== */}
-              {/* flex col + h-full to distribute stretched height to children */}
-              <div className="flex flex-col gap-4 lg:gap-6 h-full">
-                {/* Resale Activity Metrics - shrink-0: don't stretch KPI cards */}
-                <div className="shrink-0">
+              <div className="flex flex-col gap-4 lg:gap-6">
+                {/* Resale Activity Metrics */}
+                <div>
                   {exitQueueData.resale_metrics ? (
                     <ResaleMetricsCards
                       totalResaleTransactions={exitQueueData.resale_metrics?.total_resale_transactions}
@@ -644,16 +643,16 @@ export function ProjectDeepDiveContent() {
                 {/* Which Floors Sell Faster + Liquidity Assessment (only if resale data exists) */}
                 {exitQueueData.resale_metrics && (
                   <>
-                    {/* Floor Liquidity - flex-1: fill available height */}
-                    <div className="flex-1 min-h-0">
+                    {/* Floor Liquidity */}
+                    <div>
                       <FloorLiquidityHeatmap
                         district={selectedProject?.district}
                         highlightProject={selectedProject?.name}
                       />
                     </div>
 
-                    {/* Liquidity Assessment - flex-1: fill available height */}
-                    <div className="flex-1 min-h-0">
+                    {/* Liquidity Assessment */}
+                    <div>
                       <ExitRiskDashboard
                         marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
                         recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
