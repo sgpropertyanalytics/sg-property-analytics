@@ -6,6 +6,7 @@ import { HotProjectsTable } from './powerbi/HotProjectsTable';
 import { UpcomingLaunchesTable } from './powerbi/UpcomingLaunchesTable';
 import { ResultsSummaryBar } from './ResultsSummaryBar';
 import { BudgetActivityHeatmap } from './powerbi/BudgetActivityHeatmap';
+import { PriceRangeMatrix } from './powerbi/PriceRangeMatrix';
 
 /**
  * ValueParityPanel - Budget-based property search tool with Deal Checker
@@ -440,6 +441,18 @@ export function ValueParityPanel() {
           region={region || null}
           district={district || null}
           tenure={tenure || null}
+        />
+      )}
+
+      {/* ===== FAIR PRICE RANGE MATRIX: What's a fair price to pay? ===== */}
+      {hasSearched && (
+        <PriceRangeMatrix
+          budget={budget}
+          tolerance={100000}
+          region={region || null}
+          district={district || null}
+          tenure={tenure || null}
+          monthsLookback={24}
         />
       )}
 
