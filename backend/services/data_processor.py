@@ -1641,38 +1641,23 @@ def get_new_vs_resale_comparison(
     from models.database import db
     from sqlalchemy import text
 
-    # Set implicit time range based on drill level (only if no date filter from sidebar)
-    # Year: ALL time, Quarter: 5Y, Month: 2Y
+    # Data completeness principle: Show ALL data by default.
+    # Only apply date filters when user explicitly sets them via sidebar.
+    # Sidebar is the single source of truth for filtering.
     today = datetime.now()
 
     # Defensive clamp: never query beyond today (prevents future-dated data distortion)
     if date_to and date_to > today.date():
         date_to = today.date()
 
-    if date_from or date_to:
-        # Use sidebar date filters if provided
-        start_date = None  # Will be applied via where clause
-        end_date = None
-    else:
-        # Apply implicit time range based on drill level
-        if time_grain == "year":
-            start_date = None  # ALL time at year level
-        elif time_grain == "month":
-            start_date = today - timedelta(days=2 * 365)  # 2Y at month level
-        else:  # quarter (default)
-            start_date = today - timedelta(days=5 * 365)  # 5Y at quarter level
-
     # Build WHERE conditions for the query
     where_conditions = ["1=1"]  # Base condition that's always true
     params = {}
 
-    # Apply date filters - pass Python date objects directly (not strings)
+    # Apply date filters ONLY if user explicitly set them via sidebar
     if date_from:
         where_conditions.append("transaction_date >= :date_from")
         params["date_from"] = date_from
-    elif start_date:
-        where_conditions.append("transaction_date >= :start_date")
-        params["start_date"] = start_date.date() if isinstance(start_date, datetime) else start_date
 
     if date_to:
         # Use < next_day instead of <= date_to to include all transactions on date_to
