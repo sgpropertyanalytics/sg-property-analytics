@@ -654,3 +654,457 @@ GET /api/debug/sanity-check?district=D09&bedroom=3&date_from=2024-01-01&date_to=
 1. Add `insufficient_sample` warning to D09 5BR response
 2. Consider hiding D09 5BR or showing "N/A"
 ```
+
+---
+
+## 15. PAGE-LEVEL VALIDATION PROTOCOL
+
+> **Goal:** Verify that a given page (or set of charts) is correct end-to-end and not a false positive.
+>
+> For EACH endpoint and chart on the page, run the validation protocol below and produce a report with:
+> - PASS/FAIL per check
+> - the exact SQL used (or pseudo-SQL if no DB access)
+> - sample rows / counts where relevant
+> - any discrepancies and likely root cause
+
+---
+
+### A) Data Scope & Leakage Checks (Critical)
+
+#### A1) Scope Assertion
+
+Confirm the intended data scope is enforced consistently (e.g., `sale_type=resale`).
+
+**Verify scope is applied in:**
+- Page-level params (React component)
+- API request params (network tab)
+- Backend query filters (SQL)
+- Historical baseline computations (if any)
+
+```javascript
+// Frontend check - verify page passes scope to all charts
+// In MacroOverview.jsx:
+const SALE_TYPE = SaleType.RESALE;  // ✅ Page-level scope
+<TimeTrendChart saleType={SALE_TYPE} />  // ✅ Passed to chart
+```
+
+```python
+# Backend check - verify SQL includes scope filter
+WHERE COALESCE(is_outlier, false) = false
+  AND LOWER(sale_type) = :sale_type  -- ✅ Scope enforced
+```
+
+#### A2) Zero-Leak Query
+
+Run a query that should return 0 rows if scope is correct:
+
+```sql
+-- Zero-Leak Test: Must return 0 if scope is correctly applied
+SELECT COUNT(*) as leak_count
+FROM transactions
+WHERE COALESCE(is_outlier, false) = false
+  AND <all_endpoint_filters_applied>
+  AND sale_type != :intended_scope_value;
+
+-- Example for resale-only page:
+SELECT COUNT(*) as leak_count
+FROM transactions
+WHERE COALESCE(is_outlier, false) = false
+  AND transaction_date >= :date_from
+  AND transaction_date < :date_to
+  AND LOWER(sale_type) = 'resale'
+  AND sale_type != 'Resale';  -- Must be 0
+```
+
+**Result interpretation:**
+- `0` → ✅ PASS - No data leakage
+- `> 0` → ❌ FAIL - Data from wrong scope included
+
+#### A3) Negative Control
+
+Force the opposite scope and confirm outputs materially change:
+
+```bash
+# Resale-only endpoint
+curl -s "http://localhost:5000/api/aggregate?sale_type=resale&group_by=quarter&metrics=count" | jq '.data | length'
+# Returns: 22
+
+# Force New Sale scope
+curl -s "http://localhost:5000/api/aggregate?sale_type=new%20sale&group_by=quarter&metrics=count" | jq '.data | length'
+# Returns: 21 (different!)
+```
+
+**Result interpretation:**
+- Outputs differ → ✅ PASS - Filter is applied
+- Outputs identical → ❌ FAIL - Filter is NOT applied or aggregation is wrong
+
+#### A4) Precedence / Override Check
+
+Check for multiple sources of scope (page prop, UI filters, defaults).
+
+```javascript
+// Verify precedence order: page intent > filter intent > default
+// In utils.js buildApiParamsFromState():
+
+// ✅ CORRECT - page prop takes precedence
+if (excludeOwnDimension !== 'sale_type' && !params.sale_type && activeFilters.saleType) {
+  params.sale_type = activeFilters.saleType;
+}
+
+// ❌ WRONG - filter overrides page
+if (activeFilters.saleType) {
+  params.sale_type = activeFilters.saleType;  // Would override page prop!
+}
+```
+
+**Verification SQL:**
+```sql
+-- Confirm final params are deterministic
+-- Run same query 3 times, results must match exactly
+SELECT md5(string_agg(id::text, ',' ORDER BY id)) as result_hash
+FROM transactions
+WHERE COALESCE(is_outlier, false) = false
+  AND LOWER(sale_type) = 'resale';
+```
+
+---
+
+### B) Calculation Integrity Checks (Critical)
+
+#### B5) API vs SQL Equivalence
+
+For at least 2 representative time windows, recompute the metric in SQL and compare to API output.
+
+```sql
+-- SQL Verification (Q1 2024)
+SELECT
+    EXTRACT(YEAR FROM transaction_date) || '-Q' || EXTRACT(QUARTER FROM transaction_date) as quarter,
+    COUNT(*) as sql_count,
+    ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf)::numeric, 2) as sql_median_psf
+FROM transactions
+WHERE COALESCE(is_outlier, false) = false
+  AND LOWER(sale_type) = 'resale'
+  AND transaction_date >= '2024-01-01'
+  AND transaction_date < '2024-04-01'
+GROUP BY 1;
+```
+
+```bash
+# API Verification
+curl -s "http://localhost:5000/api/aggregate?sale_type=resale&group_by=quarter&metrics=count,median_psf&date_from=2024-01-01&date_to=2024-04-01" | jq '.data'
+```
+
+**Comparison Table:**
+
+| Quarter | API Count | SQL Count | Match | API Median | SQL Median | Match |
+|---------|-----------|-----------|-------|------------|------------|-------|
+| 2024-Q1 | 2,481 | 2,481 | ✅ | $1,842 | $1,842 | ✅ |
+| 2023-Q4 | 2,105 | 2,105 | ✅ | $1,798 | $1,798 | ✅ |
+
+**Tolerance:** Must match exactly (or within agreed rounding: ±$0.50 for PSF, ±0.01% for percentages)
+
+#### B6) Aggregation Correctness
+
+Verify the aggregation method matches spec:
+
+| Method | Correct | Wrong |
+|--------|---------|-------|
+| Median | `PERCENTILE_CONT(0.5)` over pooled transactions | Median-of-medians per group |
+| Volume-weighted | `Σ(value × weight) / Σ(weight)` | Simple average |
+| Percentile | `PERCENTILE_CONT` or `PERCENTILE_DISC` | Approximation without spec |
+| Rounding | Backend: raw; Frontend: formatted | Backend pre-rounds |
+
+```sql
+-- Verify median is pooled, not median-of-medians
+-- CORRECT: Pooled median across all transactions
+SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as pooled_median
+FROM transactions
+WHERE COALESCE(is_outlier, false) = false
+  AND region = 'CCR';
+
+-- WRONG: Median of monthly medians (different result!)
+SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY monthly_median) as median_of_medians
+FROM (
+    SELECT DATE_TRUNC('month', transaction_date) as month,
+           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as monthly_median
+    FROM transactions
+    WHERE COALESCE(is_outlier, false) = false AND region = 'CCR'
+    GROUP BY 1
+) sub;
+```
+
+#### B7) Outlier & Exclusion Rules
+
+Confirm all exclusion filters are applied:
+
+```sql
+-- Before/After Exclusion Report
+SELECT
+    'Total Records' as stage,
+    COUNT(*) as count
+FROM transactions
+UNION ALL
+SELECT
+    'After Outlier Exclusion',
+    COUNT(*)
+FROM transactions
+WHERE COALESCE(is_outlier, false) = false
+UNION ALL
+SELECT
+    'After PSF Null Exclusion',
+    COUNT(*)
+FROM transactions
+WHERE COALESCE(is_outlier, false) = false
+  AND psf IS NOT NULL
+UNION ALL
+SELECT
+    'After Invalid Area Exclusion',
+    COUNT(*)
+FROM transactions
+WHERE COALESCE(is_outlier, false) = false
+  AND psf IS NOT NULL
+  AND area_sqft > 0;
+```
+
+**Expected Output:**
+
+| Stage | Count | Excluded |
+|-------|-------|----------|
+| Total Records | 103,379 | - |
+| After Outlier Exclusion | 102,590 | 789 (0.8%) |
+| After PSF Null Exclusion | 102,590 | 0 |
+| After Invalid Area Exclusion | 102,590 | 0 |
+
+---
+
+### C) Stability & Boundary Condition Checks (High Value)
+
+#### C8) Multi-Filter Combinations
+
+Test at least 5 combinations of filters:
+
+```bash
+# Test matrix
+COMBOS=(
+  "sale_type=resale"
+  "sale_type=resale&bedroom=3"
+  "sale_type=resale&bedroom=3&district=D09"
+  "sale_type=resale&bedroom=3&district=D09&date_from=2024-01-01"
+  "sale_type=resale&segment=CCR"
+)
+
+for combo in "${COMBOS[@]}"; do
+  count=$(curl -s "http://localhost:5000/api/aggregate?${combo}&metrics=count" | jq '[.data[].count] | add')
+  echo "${combo} → ${count}"
+done
+```
+
+**Expected:** Each additional filter reduces or maintains count (monotonic decrease).
+
+| Filters | Count | Change |
+|---------|-------|--------|
+| sale_type=resale | 62,895 | - |
+| + bedroom=3 | 18,432 | -70.7% ✅ |
+| + district=D09 | 1,245 | -93.2% ✅ |
+| + date_from=2024 | 412 | -66.9% ✅ |
+
+#### C9) Time Boundary Behavior
+
+Verify date windows and "complete months" logic:
+
+```sql
+-- Check: No partial-month inclusion
+SELECT
+    DATE_TRUNC('month', transaction_date) as month,
+    COUNT(*) as count,
+    MIN(transaction_date) as first_txn,
+    MAX(transaction_date) as last_txn
+FROM transactions
+WHERE COALESCE(is_outlier, false) = false
+  AND transaction_date >= :date_from
+  AND transaction_date < :date_to
+GROUP BY 1
+ORDER BY 1 DESC
+LIMIT 5;
+```
+
+**Verify:**
+- [ ] No mid-month cutoffs (boundaries on 1st of month)
+- [ ] Current vs previous periods use consistent boundaries
+- [ ] Rolling windows use month boundaries, not day counts
+
+#### C10) Edge Cases
+
+```sql
+-- Test empty result handling
+SELECT COUNT(*) FROM transactions
+WHERE district = 'D99';  -- Invalid district → 0
+
+-- Test single-record group
+SELECT district, bedroom_count, COUNT(*)
+FROM transactions
+WHERE COALESCE(is_outlier, false) = false
+GROUP BY 1, 2
+HAVING COUNT(*) = 1;
+
+-- Test maximum values
+SELECT MAX(psf), MAX(price), MAX(area_sqft)
+FROM transactions
+WHERE COALESCE(is_outlier, false) = false;
+```
+
+---
+
+### D) Cross-Period & Baseline Consistency
+
+#### D12) Baseline Scope Consistency
+
+For any mean/stddev baselines or historical distributions, verify they use the SAME filters and scope as the current metric.
+
+```javascript
+// MarketValueOscillator.jsx - Baseline fetch
+const { data: baselineStats } = useAbortableQuery(
+  async (signal) => {
+    const effectiveSaleType = saleType || SaleType.RESALE;  // ✅ Same scope
+    const params = {
+      group_by: 'quarter,region',
+      metrics: 'median_psf,count',
+      sale_type: effectiveSaleType,  // ✅ Matches current data fetch
+    };
+    // ...
+  },
+  [saleType],  // ✅ Refetches if scope changes
+);
+```
+
+**Common baseline bugs:**
+
+| Bug | Symptom | Fix |
+|-----|---------|-----|
+| Baseline ignores scope | Z-scores always near 0 | Add scope filter to baseline query |
+| Baseline uses different time range | Unstable Z-scores | Align time windows |
+| Baseline cached but scope changed | Stale Z-scores | Add scope to cache key |
+
+#### D13) Cross-Window Sanity
+
+Compare outputs across 3M / 6M / 12M / 24M windows:
+
+```bash
+for period in 3 6 12 24; do
+  median=$(curl -s "http://localhost:5000/api/aggregate?sale_type=resale&metrics=median_psf&period=${period}m" | jq '.data[-1].median_psf')
+  echo "${period}M window → Median PSF: ${median}"
+done
+```
+
+**Expected:** Trends should be directionally consistent unless there's a known regime change.
+
+| Window | Median PSF | vs Previous |
+|--------|------------|-------------|
+| 3M | $1,892 | - |
+| 6M | $1,875 | -0.9% ✅ |
+| 12M | $1,842 | -1.8% ✅ |
+| 24M | $1,798 | -2.4% ✅ |
+
+**Flag:** Sudden discontinuities (>10% jump) require investigation.
+
+---
+
+### E) Report Format
+
+#### Summary Table
+
+```markdown
+# Page Validation Report: [Page Name]
+
+**Page:** [e.g., Market Core]
+**Charts Validated:** [count]
+**Timestamp:** [ISO 8601]
+**Backend:** [URL]
+
+## Check Summary
+
+| Category | Check | Status | Evidence |
+|----------|-------|--------|----------|
+| **A) Scope & Leakage** | | | |
+| | A1. Scope Assertion | ✅ PASS | saleType prop verified in 6 charts |
+| | A2. Zero-Leak Query | ✅ PASS | 0 rows with wrong scope |
+| | A3. Negative Control | ✅ PASS | Outputs differ by scope |
+| | A4. Precedence Check | ✅ PASS | Page > Filter > Default |
+| **B) Calculations** | | | |
+| | B5. API vs SQL | ✅ PASS | 4/4 quarters match exactly |
+| | B6. Aggregation Method | ✅ PASS | Pooled median verified |
+| | B7. Exclusion Rules | ✅ PASS | 789 outliers excluded |
+| **C) Stability** | | | |
+| | C8. Multi-Filter Combos | ✅ PASS | 5/5 monotonic decrease |
+| | C9. Time Boundaries | ✅ PASS | Month boundaries only |
+| | C10. Edge Cases | ⚠️ WARN | 2 small-sample groups |
+| **D) Baseline** | | | |
+| | D12. Baseline Scope | ✅ PASS | Same scope as current |
+| | D13. Cross-Window Sanity | ✅ PASS | Trends consistent |
+
+## Key Numbers
+
+| Metric | Value |
+|--------|-------|
+| Total transactions (filtered) | 62,895 |
+| Outliers excluded | 789 (0.8%) |
+| Date range | 2020-Q4 to 2024-Q4 |
+| Scope enforced | sale_type=resale |
+
+## Spot Checks
+
+### Check 1: Q4 2024 CCR Median PSF
+
+| Source | Value |
+|--------|-------|
+| API | $2,118 |
+| SQL | $2,118 |
+| Status | ✅ MATCH |
+
+### Check 2: Transaction Count by Region
+
+| Region | API | SQL | Match |
+|--------|-----|-----|-------|
+| CCR | 15,432 | 15,432 | ✅ |
+| RCR | 28,901 | 28,901 | ✅ |
+| OCR | 18,562 | 18,562 | ✅ |
+
+## Discrepancies
+
+[None found / List any with root cause]
+
+## Recommendations
+
+1. [Any actions needed]
+```
+
+---
+
+## 16. CHART-BY-CHART VALIDATION TEMPLATE
+
+For each chart on the page, complete this template:
+
+```markdown
+### Chart: [Chart Name]
+
+**Endpoint:** `/api/[endpoint]`
+**Params:** `group_by=[x], metrics=[y], sale_type=[z]`
+
+#### Scope Check
+- [ ] Page-level scope passed: `saleType={SALE_TYPE}`
+- [ ] API params include scope: `sale_type=resale`
+- [ ] SQL includes scope filter
+
+#### Calculation Check
+- [ ] Aggregation method correct
+- [ ] Sample values verified against SQL
+
+#### Sample Verification
+
+| Period | API Value | SQL Value | Match |
+|--------|-----------|-----------|-------|
+| [Recent] | [value] | [value] | ✅/❌ |
+| [Older] | [value] | [value] | ✅/❌ |
+
+#### Status: ✅ PASS / ❌ FAIL / ⚠️ WARN
+```

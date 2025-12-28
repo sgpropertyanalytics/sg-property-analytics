@@ -364,12 +364,16 @@ def get_project_units(project_name: str) -> Dict[str, Any]:
     if normalized in csv_data:
         info = csv_data[normalized]
         if info.get('total_units'):
+            top_year = info.get('top')
+            # Estimate TOP if not in CSV
+            if top_year is None:
+                top_year = _estimate_top_year(normalized)
             result.update({
                 "total_units": info['total_units'],
                 "unit_source": "csv",
                 "confidence": CONFIDENCE_HIGH,
                 "note": f"Official data from {info.get('source', 'CSV')}",
-                "top": info.get('top'),
+                "top": top_year,
                 "developer": info.get('developer'),
                 "district": info.get('district'),
                 "tenure": info.get('tenure'),
@@ -383,12 +387,16 @@ def get_project_units(project_name: str) -> Dict[str, Any]:
     db_result = _lookup_upcoming_launches(normalized)
     if db_result and db_result.get('total_units'):
         db_confidence = db_result.get('data_confidence', CONFIDENCE_MEDIUM)
+        top_year = db_result.get('expected_top_date')
+        # Estimate TOP if not in database
+        if top_year is None:
+            top_year = _estimate_top_year(normalized)
         result.update({
             "total_units": db_result['total_units'],
             "unit_source": "database",
             "confidence": db_confidence,
             "note": f"From {db_result.get('data_source', 'database')}",
-            "top": db_result.get('expected_top_date'),
+            "top": top_year,
             "developer": db_result.get('developer'),
             "district": db_result.get('district'),
             "tenure": db_result.get('tenure'),
@@ -401,11 +409,14 @@ def get_project_units(project_name: str) -> Dict[str, Any]:
     # -------------------------------------------------------------------------
     estimation = _estimate_units_from_transactions(normalized)
     if estimation and estimation.get('total_units'):
+        # Estimate TOP year for this project
+        top_year = _estimate_top_year(normalized)
         result.update({
             "total_units": estimation['total_units'],
             "unit_source": "estimated",
             "confidence": estimation['confidence'],
             "note": estimation['note'],
+            "top": top_year,
             "district": estimation.get('district'),
             "tenure": estimation.get('tenure'),
         })
@@ -414,7 +425,65 @@ def get_project_units(project_name: str) -> Dict[str, Any]:
 
     # No data available
     result["note"] = "No unit data available from any source"
+
+    # -------------------------------------------------------------------------
+    # Final step: Estimate TOP year if still missing
+    # -------------------------------------------------------------------------
+    if result.get("top") is None:
+        estimated_top = _estimate_top_year(normalized)
+        if estimated_top:
+            result["top"] = estimated_top
+            result["top_source"] = "estimated"
+
     return result
+
+
+def _estimate_top_year(project_name_upper: str) -> Optional[int]:
+    """
+    Estimate TOP year from transaction data.
+
+    Strategy:
+    1. For projects with New Sale transactions: first New Sale year + 2-3 years
+    2. For projects with only Resale: first transaction year (already TOP'd)
+
+    Returns estimated TOP year or None if cannot determine.
+    """
+    try:
+        from models.database import db
+        from sqlalchemy import text
+        from db.sql import OUTLIER_FILTER
+
+        # First, check for New Sale transactions
+        new_sale_year = db.session.execute(text(f"""
+            SELECT MIN(EXTRACT(YEAR FROM transaction_date)::int) as first_year
+            FROM transactions
+            WHERE UPPER(project_name) = :project_name
+              AND sale_type = 'New Sale'
+              AND {OUTLIER_FILTER}
+        """), {"project_name": project_name_upper}).scalar()
+
+        if new_sale_year:
+            # New Sale typically starts 2-3 years before TOP
+            # Conservative estimate: first New Sale + 3 years
+            return int(new_sale_year) + 3
+
+        # Fallback: For resale-only projects, use first transaction year
+        # These are already TOP'd, so first transaction approximates when they TOP'd
+        first_resale_year = db.session.execute(text(f"""
+            SELECT MIN(EXTRACT(YEAR FROM transaction_date)::int) as first_year
+            FROM transactions
+            WHERE UPPER(project_name) = :project_name
+              AND {OUTLIER_FILTER}
+        """), {"project_name": project_name_upper}).scalar()
+
+        if first_resale_year:
+            # If only resale exists, the project TOP'd around or before first resale
+            return int(first_resale_year)
+
+    except Exception as e:
+        logger.warning(f"Error estimating TOP year for {project_name_upper}: {e}")
+
+    return None
 
 
 def _lookup_upcoming_launches(project_name_upper: str) -> Optional[Dict[str, Any]]:
