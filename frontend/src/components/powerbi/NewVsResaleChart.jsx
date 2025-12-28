@@ -140,7 +140,7 @@ export function NewVsResaleChart({ height = 350 }) {
   const resaleDataPoints = totalPoints - resaleGaps;
   const resaleCompleteness = totalPoints > 0 ? resaleDataPoints / totalPoints : 1;
   const hasSignificantGaps = resaleGaps > totalPoints * 0.2; // >20% gaps
-  const isSeverelySparse = totalPoints > 0 && resaleCompleteness < 0.5; // <50% data completeness
+  const isSeverelySparse = totalPoints > 0 && resaleCompleteness < 0.75; // <75% data completeness
 
   const chartConfig = {
     labels,
