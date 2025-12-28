@@ -232,6 +232,57 @@ This combination is dangerous because:
 
 **Fail condition:** Child has `h-full` or `flex-1` inside `space-y-*` parent.
 
+### INV-10: Sibling Charts in Same Grid Must Have Matching Height Definitions
+
+**CRITICAL:** Charts placed side-by-side in a grid row MUST have consistent height definitions.
+
+**Why:** When two charts have different height constraints:
+- One has `height: 350`, other has `minHeight: 400, maxHeight: 600`
+- Grid row height is determined by tallest item
+- Shorter chart leaves visible gap below it
+- Even with `items-stretch`, the mismatch causes visual misalignment
+
+**Allowed:**
+```jsx
+{/* Both have same fixed height */}
+<div className="grid lg:grid-cols-2">
+  <ChartA height={400} />       // ✅ height=400
+  <ChartB height={400} />       // ✅ height=400 (matches)
+</div>
+
+{/* Both use same flexible pattern */}
+<div className="grid lg:grid-cols-2 items-stretch">
+  <ChartA className="h-full" /> // ✅ Both stretch
+  <ChartB className="h-full" /> // ✅ Both stretch
+</div>
+```
+
+**Forbidden:**
+```jsx
+{/* Height mismatch - creates gap below shorter chart */}
+<div className="grid lg:grid-cols-2">
+  <ChartA height={350} />                              // ❌ 350px
+  <ChartB style={{ minHeight: 400, maxHeight: 600 }}/> // ❌ 400-600px
+</div>
+
+{/* One fixed, one flexible - inconsistent */}
+<div className="grid lg:grid-cols-2">
+  <ChartA height={400} />       // ❌ Fixed
+  <ChartB className="h-full" /> // ❌ Flexible (no bounded ancestor)
+</div>
+```
+
+**Check Process:**
+1. Find all 2+ column grids containing chart components
+2. For each grid row, collect height definitions of all chart siblings
+3. Compare: fixed heights must match, or ALL must use same flexible pattern
+4. Flag if mismatch detected
+
+**Fail condition:**
+- Charts in same grid row have different `height` prop values
+- One chart uses fixed height, sibling uses `minHeight/maxHeight` range
+- One chart uses fixed height, sibling has no height (relies on content)
+
 ---
 
 ## 3. FORBIDDEN LAYOUT MUTATIONS
@@ -343,6 +394,7 @@ POST-FIX GATE CHECKLIST
    □ INV-7: Chart wrappers have CAPPED height
    □ INV-8: h-full has bounded ancestor
    □ INV-9: No space-y-* + h-full combination
+   □ INV-10: Sibling charts in same grid have matching height definitions
 
 □ 2. REGRESSION CHECK
    Q: Does the fix break any PASSING invariant?
@@ -589,6 +641,70 @@ THRESHOLD: 4px
 ```
 
 **Implementation:** Requires state manipulation or separate test renders.
+
+### Sibling Chart Height Consistency Check (INV-10)
+
+**Purpose:** Detect charts in the same grid row with mismatched height definitions.
+
+**Spec:**
+```
+1. Find all grid containers (className contains 'grid' and 'grid-cols-')
+2. For each grid, identify chart component children:
+   - Components ending in 'Chart', 'Heatmap', 'Graph', etc.
+   - Components with height prop or style.height/minHeight/maxHeight
+3. Group charts by grid row (based on grid placement)
+4. For each row with 2+ charts:
+   a. Extract height definition from each:
+      - height prop value (e.g., height={400})
+      - style.height value
+      - style.minHeight + style.maxHeight range
+      - className h-[Xpx] pattern
+   b. Compare definitions:
+      - All fixed heights must match exactly
+      - minHeight/maxHeight ranges indicate flexible (flag if mixed with fixed)
+      - Missing height definition = content-based (flag if sibling has fixed)
+   c. Flag if mismatch detected
+
+PATTERNS TO FLAG:
+- height={350} alongside height={400}
+- height={X} alongside minHeight/maxHeight range
+- height={X} alongside no height definition
+- minHeight without maxHeight alongside fixed height
+```
+
+**Static Analysis Check (grep-based):**
+```bash
+# Find grid containers with chart children
+grep -n "grid.*grid-cols" src/pages/*.jsx | \
+  while read line; do
+    # Check for height prop mismatches in nearby lines
+    # Look for patterns like: height={350} ... height={400}
+  done
+
+# Find charts with flexible height (potential issue)
+grep -rn "minHeight.*maxHeight" src/components/powerbi/*.jsx
+grep -rn 'style={{.*minHeight' src/components/powerbi/*.jsx
+```
+
+**Example Violation:**
+```jsx
+// ProjectDeepDive.jsx - BEFORE FIX
+<div className="grid lg:grid-cols-2">
+  <PriceGrowthChart height={350} />           // Fixed 350px
+  <FloorLiquidityHeatmap />                   // Has minHeight:400, maxHeight:600
+</div>
+// Result: 50px+ gap below PriceGrowthChart
+```
+
+**Correct Pattern:**
+```jsx
+// ProjectDeepDive.jsx - AFTER FIX
+<div className="grid lg:grid-cols-2 lg:items-stretch">
+  <PriceGrowthChart height={400} />           // Fixed 400px
+  <FloorLiquidityHeatmap style={{height:400}}/>// Fixed 400px (matches)
+</div>
+// Result: Both charts align perfectly
+```
 
 ---
 

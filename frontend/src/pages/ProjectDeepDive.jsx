@@ -594,14 +594,14 @@ export function ProjectDeepDiveContent() {
               </div>
 
               {/* Row 2: Price Growth + Floor Liquidity */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 lg:items-stretch">
                 <PriceGrowthChart
                   data={priceGrowthData}
                   loading={priceGrowthLoading}
                   error={priceGrowthError}
                   projectName={selectedProject?.name}
                   district={selectedProject?.district}
-                  height={350}
+                  height={400}
                 />
                 {exitQueueData.resale_metrics && (
                   <FloorLiquidityHeatmap
