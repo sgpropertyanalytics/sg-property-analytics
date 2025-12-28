@@ -203,7 +203,7 @@ export function SupplyWaterfallChart({
 
         {/* Footer */}
         <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">
-          <span className="truncate min-w-0 flex-1">
+          <span className="truncate">
             {view === 'district'
               ? `Showing ${selectedRegion} districts`
               : selectedRegion
@@ -211,7 +211,7 @@ export function SupplyWaterfallChart({
                 : 'All regions combined'
             }
           </span>
-          <span className="text-[10px] shrink-0 hidden sm:block">
+          <span className="text-[10px] shrink-0">
             As of: {chartData?.displayMeta?.asOf || 'N/A'}
             {chartData?.displayMeta?.launchYear && (
               <> | Launch Year: {chartData.displayMeta.launchYear}</>

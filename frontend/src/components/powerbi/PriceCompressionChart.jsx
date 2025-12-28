@@ -18,7 +18,7 @@ import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
+import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
   transformCompressionSeries,
@@ -194,7 +194,7 @@ export function PriceCompressionChart({ height = 380 }) {
           generateLabels: (_chart) => {
             return [
               {
-                text: 'CCR > RCR Premium',
+                text: 'CCR ↔ RCR Spread (solid)',
                 fillStyle: '#213448',
                 strokeStyle: '#213448',
                 lineWidth: 2,
@@ -203,7 +203,7 @@ export function PriceCompressionChart({ height = 380 }) {
                 datasetIndex: 0,
               },
               {
-                text: 'RCR > OCR Premium',
+                text: 'RCR ↔ OCR Spread (dashed)',
                 fillStyle: '#547792',
                 strokeStyle: '#547792',
                 lineWidth: 2,
@@ -267,7 +267,8 @@ export function PriceCompressionChart({ height = 380 }) {
   };
 
   // Card layout: flex column with fixed height
-  const cardHeight = height + 200;
+  // Added 60px for KeyInsightBox
+  const cardHeight = height + 260;
 
   // CRITICAL: containerRef must be OUTSIDE QueryState for IntersectionObserver to work
   // QueryState only renders children when not loading, so ref would be null during load
@@ -316,6 +317,17 @@ export function PriceCompressionChart({ height = 380 }) {
         </InlineCardRow>
       </div>
 
+      {/* How to Interpret - shrink-0 */}
+      <div className="shrink-0">
+        <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
+          <p>
+            <span className="font-semibold text-[#213448]">Compression Score</span> tells you how compressed or stretched the price gap is between CCR ↔ RCR ↔ OCR relative to history.
+            <span className="font-semibold text-[#213448]"> Higher</span> means prices across regions are converging (tight market).
+            <span className="font-semibold text-[#213448]"> Lower</span> means they're drifting apart (fragmented market).
+          </p>
+        </KeyInsightBox>
+      </div>
+
       {/* Main Spread Chart - Chart.js handles data updates efficiently without key remount */}
       <ChartSlot>
         {data.length > 0 ? (
@@ -331,13 +343,9 @@ export function PriceCompressionChart({ height = 380 }) {
         )}
       </ChartSlot>
 
-      {/* Footer */}
-      <div className="shrink-0 px-4 py-2 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 text-xs text-[#547792]">
-        <p className="leading-relaxed">
-          <span className="font-semibold text-[#213448]">Compression Score</span> measures how tight or wide the price gap is between CCR &gt; RCR &gt; OCR relative to history.
-          {' '}<span className="font-semibold text-[#213448]">Higher</span> = regions converging (tight).
-          {' '}<span className="font-semibold text-[#213448]">Lower</span> = regions diverging (fragmented).
-        </p>
+      {/* Footer - fixed height h-11 for consistent alignment */}
+      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-end gap-3 text-xs text-[#547792]">
+        <span className="truncate">{data.length} periods</span>
       </div>
       </div>
     </QueryState>
