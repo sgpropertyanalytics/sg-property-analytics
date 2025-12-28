@@ -328,16 +328,13 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
     },
   };
 
-  // Card height with header + insight box
-  const cardHeight = height + 140;
-
   // CRITICAL: containerRef must be OUTSIDE QueryState
   return (
     <div ref={containerRef}>
-      <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={350}>
+      <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={height}>
         <div
-          className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
-          style={{ height: cardHeight }}
+          className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col h-full"
+          style={{ minHeight: height + 160 }}
         >
           {/* Header */}
           <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">

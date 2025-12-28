@@ -59,6 +59,7 @@ export function MacroOverviewContent() {
   const trendChartHeight = useChartHeight(280, MOBILE_CAPS.compact);      // 280px desktop, max 260px mobile
   const standardChartHeight = useChartHeight(350, MOBILE_CAPS.standard);  // 350px desktop, max 300px mobile
   const compressionHeight = useChartHeight(380, MOBILE_CAPS.tall);        // 380px desktop, max 320px mobile
+  const oscillatorHeight = useChartHeight(420, MOBILE_CAPS.tall);         // 420px desktop, max 320px mobile (full-width chart)
 
   // Summary KPIs - Deal detection metrics with trend indicators
   // Uses v2 standardized API format
@@ -332,7 +333,7 @@ export function MacroOverviewContent() {
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Market Value Oscillator" compact>
                     <ChartWatermark>
-                      <MarketValueOscillator height={compressionHeight} saleType={SALE_TYPE} />
+                      <MarketValueOscillator height={oscillatorHeight} saleType={SALE_TYPE} />
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>
