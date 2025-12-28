@@ -573,24 +573,14 @@ export function ProjectDeepDiveContent() {
                 />
 
                 {/* Price Growth Analysis */}
-                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
-                  <div className="mb-4">
-                    <h2 className="text-base font-semibold text-[#213448] mb-1">
-                      Price Growth Analysis
-                    </h2>
-                    <p className="text-sm text-[#547792]">
-                      Historical PSF trend and cumulative growth for this project
-                    </p>
-                  </div>
-                  <PriceGrowthChart
-                    data={priceGrowthData}
-                    loading={priceGrowthLoading}
-                    error={priceGrowthError}
-                    projectName={selectedProject?.name}
-                    district={selectedProject?.district}
-                    height={350}
-                  />
-                </div>
+                <PriceGrowthChart
+                  data={priceGrowthData}
+                  loading={priceGrowthLoading}
+                  error={priceGrowthError}
+                  projectName={selectedProject?.name}
+                  district={selectedProject?.district}
+                  height={350}
+                />
 
                 {/* Historical Downside Protection */}
                 <PriceBandChart
