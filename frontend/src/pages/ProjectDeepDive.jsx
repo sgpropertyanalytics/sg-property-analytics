@@ -529,12 +529,21 @@ export function ProjectDeepDiveContent() {
         {/* Loading State */}
         {loading && (
           <div className="space-y-6 animate-fade-in">
-            {/* 50/50 Split Skeleton */}
+            {/* 2-Column Layout Skeleton */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              <ProjectFundamentalsPanel loading={true} compact />
-              <ResaleMetricsCards loading={true} compact />
+              {/* Left Column */}
+              <div className="space-y-4 lg:space-y-6">
+                <ProjectFundamentalsPanel loading={true} compact />
+                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
+                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[450px] animate-pulse" />
+              </div>
+              {/* Right Column */}
+              <div className="space-y-4 lg:space-y-6">
+                <ResaleMetricsCards loading={true} compact />
+                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[350px] animate-pulse" />
+                <ExitRiskDashboard loading={true} />
+              </div>
             </div>
-            <ExitRiskDashboard loading={true} />
           </div>
         )}
 
@@ -550,99 +559,109 @@ export function ProjectDeepDiveContent() {
               </div>
             )}
 
-            {/* Property Fundamentals + Resale Metrics - 50/50 Split */}
+            {/* Charts Grid - 2 Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              {/* Left: Property Fundamentals */}
-              <ProjectFundamentalsPanel
-                totalUnits={exitQueueData.fundamentals?.total_units}
-                topYear={exitQueueData.fundamentals?.top_year}
-                propertyAgeYears={exitQueueData.fundamentals?.property_age_years}
-                ageSource={exitQueueData.fundamentals?.age_source}
-                tenure={exitQueueData.fundamentals?.tenure}
-                district={exitQueueData.fundamentals?.district}
-                developer={exitQueueData.fundamentals?.developer}
-                firstResaleDate={exitQueueData.fundamentals?.first_resale_date}
-                compact
-              />
 
-              {/* Right: Resale Activity Metrics (only if resale data exists) */}
-              {exitQueueData.resale_metrics ? (
-                <ResaleMetricsCards
-                  totalResaleTransactions={exitQueueData.resale_metrics?.total_resale_transactions}
-                  resales12m={exitQueueData.resale_metrics?.resales_12m}
-                  marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
-                  recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
+              {/* ===== LEFT COLUMN ===== */}
+              <div className="space-y-4 lg:space-y-6">
+                {/* Property Fundamentals */}
+                <ProjectFundamentalsPanel
                   totalUnits={exitQueueData.fundamentals?.total_units}
+                  topYear={exitQueueData.fundamentals?.top_year}
+                  propertyAgeYears={exitQueueData.fundamentals?.property_age_years}
+                  ageSource={exitQueueData.fundamentals?.age_source}
+                  tenure={exitQueueData.fundamentals?.tenure}
+                  district={exitQueueData.fundamentals?.district}
+                  developer={exitQueueData.fundamentals?.developer}
+                  firstResaleDate={exitQueueData.fundamentals?.first_resale_date}
                   compact
                 />
-              ) : (
-                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6 flex flex-col">
-                  <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-4">
-                    Resale Activity Metrics
-                  </h3>
-                  <div className="flex-1 flex items-center justify-center">
-                    <p className="text-sm text-[#94B4C1] text-center">
-                      No resale data available yet
+
+                {/* Price Growth Analysis */}
+                <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
+                  <div className="mb-4">
+                    <h2 className="text-base font-semibold text-[#213448] mb-1">
+                      Price Growth Analysis
+                    </h2>
+                    <p className="text-sm text-[#547792]">
+                      Historical PSF trend and cumulative growth for this project
                     </p>
                   </div>
+                  <PriceGrowthChart
+                    data={priceGrowthData}
+                    loading={priceGrowthLoading}
+                    error={priceGrowthError}
+                    projectName={selectedProject?.name}
+                    district={selectedProject?.district}
+                    height={350}
+                  />
                 </div>
-              )}
-            </div>
 
-            {/* Historical Price Bands Chart */}
-            <PriceBandChart
-                bands={priceBandsData?.bands || []}
-                latest={priceBandsData?.latest}
-                trend={priceBandsData?.trend}
-                verdict={priceBandsData?.verdict}
-                unitPsf={unitPsf}
-                dataSource={priceBandsData?.data_source}
-                proxyLabel={priceBandsData?.proxy_label}
-                dataQuality={priceBandsData?.data_quality}
-                loading={priceBandsLoading}
-                error={priceBandsError}
-                projectName={selectedProject?.name}
-                height={450}
-              />
-
-            {/* Exit Risk Dashboard (only if resale data exists) */}
-            {exitQueueData.resale_metrics && (
-              <>
-                <ExitRiskDashboard
-                  marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
-                  recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
-                  marketTurnoverZone={exitQueueData.risk_assessment?.market_turnover_zone}
-                  recentTurnoverZone={exitQueueData.risk_assessment?.recent_turnover_zone}
-                  overallRisk={exitQueueData.risk_assessment?.overall_risk}
-                  interpretation={exitQueueData.risk_assessment?.interpretation}
+                {/* Historical Downside Protection */}
+                <PriceBandChart
+                  bands={priceBandsData?.bands || []}
+                  latest={priceBandsData?.latest}
+                  trend={priceBandsData?.trend}
+                  verdict={priceBandsData?.verdict}
+                  unitPsf={unitPsf}
+                  dataSource={priceBandsData?.data_source}
+                  proxyLabel={priceBandsData?.proxy_label}
+                  dataQuality={priceBandsData?.data_quality}
+                  totalResaleTransactions={exitQueueData?.resale_metrics?.total_resale_transactions}
+                  loading={priceBandsLoading}
+                  error={priceBandsError}
+                  projectName={selectedProject?.name}
+                  height={400}
                 />
-
-                {/* Floor Liquidity - Which Floors Resell Faster (district-scoped) */}
-                <FloorLiquidityHeatmap
-                  district={selectedProject?.district}
-                  highlightProject={selectedProject?.name}
-                />
-              </>
-            )}
-
-            {/* Price Growth Analysis */}
-            <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
-              <div className="mb-4">
-                <h2 className="text-base font-semibold text-[#213448] mb-1">
-                  Price Growth Analysis
-                </h2>
-                <p className="text-sm text-[#547792]">
-                  Historical PSF trend and cumulative growth for this project
-                </p>
               </div>
-              <PriceGrowthChart
-                data={priceGrowthData}
-                loading={priceGrowthLoading}
-                error={priceGrowthError}
-                projectName={selectedProject?.name}
-                district={selectedProject?.district}
-                height={400}
-              />
+
+              {/* ===== RIGHT COLUMN ===== */}
+              <div className="space-y-4 lg:space-y-6">
+                {/* Resale Activity Metrics */}
+                {exitQueueData.resale_metrics ? (
+                  <ResaleMetricsCards
+                    totalResaleTransactions={exitQueueData.resale_metrics?.total_resale_transactions}
+                    resales12m={exitQueueData.resale_metrics?.resales_12m}
+                    marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
+                    recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
+                    totalUnits={exitQueueData.fundamentals?.total_units}
+                    compact
+                  />
+                ) : (
+                  <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6 flex flex-col">
+                    <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-4">
+                      Resale Activity Metrics
+                    </h3>
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className="text-sm text-[#94B4C1] text-center">
+                        No resale data available yet
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Which Floors Sell Faster + Liquidity Assessment (only if resale data exists) */}
+                {exitQueueData.resale_metrics && (
+                  <>
+                    {/* Floor Liquidity - Which Floors Resell Faster */}
+                    <FloorLiquidityHeatmap
+                      district={selectedProject?.district}
+                      highlightProject={selectedProject?.name}
+                    />
+
+                    {/* Liquidity Assessment */}
+                    <ExitRiskDashboard
+                      marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
+                      recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
+                      marketTurnoverZone={exitQueueData.risk_assessment?.market_turnover_zone}
+                      recentTurnoverZone={exitQueueData.risk_assessment?.recent_turnover_zone}
+                      overallRisk={exitQueueData.risk_assessment?.overall_risk}
+                      interpretation={exitQueueData.risk_assessment?.interpretation}
+                    />
+                  </>
+                )}
+              </div>
+
             </div>
 
             {/* Gating Warnings */}
