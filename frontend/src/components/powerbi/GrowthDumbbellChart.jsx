@@ -355,59 +355,69 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
                   </div>
                 </div>
 
-                {/* Dumbbell Chart Area with inline labels */}
-                <div className="flex-1 flex items-center gap-1 mx-1 md:mx-0">
-                  {/* Start quarter label */}
-                  <span className="text-[10px] md:text-xs text-slate-500 w-14 md:w-16 text-right shrink-0" title={formatPrice(item.startPsf)}>
-                    {startQuarter}
+                {/* Dumbbell Chart Area with labels beside dots */}
+                <div className="flex-1 relative h-10 mx-1 md:mx-0">
+                  {/* Background track */}
+                  <div className="absolute left-0 right-0 bg-slate-100 rounded-full" style={{ top: '50%', height: '4px', transform: 'translateY(-50%)' }} />
+
+                  {/* Connecting line - thickness varies by growth magnitude */}
+                  <div
+                    className="absolute rounded-full transition-all"
+                    style={{
+                      left: `${leftPercent}%`,
+                      width: `${Math.max(rightPercent - leftPercent, 1)}%`,
+                      height: `${lineThickness}px`,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      backgroundColor: lineColor,
+                    }}
+                  />
+
+                  {/* Start dot - Earliest Quarter (neutral grey) */}
+                  <div
+                    className="absolute rounded-full bg-slate-300 border-2 border-white shadow-sm transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform"
+                    style={{
+                      left: `${startPercent}%`,
+                      top: '50%',
+                      width: '12px',
+                      height: '12px',
+                    }}
+                  />
+
+                  {/* Start label - positioned beside dot */}
+                  <span
+                    className="absolute text-[9px] md:text-[10px] text-slate-500 whitespace-nowrap"
+                    style={{
+                      left: `${startPercent}%`,
+                      top: '50%',
+                      transform: startPercent > 15 ? 'translate(calc(-100% - 16px), -50%)' : 'translate(16px, -50%)',
+                    }}
+                  >
+                    Baseline {formatPrice(item.startPsf)}
                   </span>
 
-                  {/* Dumbbell visualization */}
-                  <div className="flex-1 relative h-7">
-                    {/* Background track */}
-                    <div className="absolute inset-y-2.5 left-0 right-0 bg-slate-100 rounded-full" />
+                  {/* End dot - Latest Quarter (colored by outcome) */}
+                  <div
+                    className="absolute rounded-full border-2 border-white shadow-md transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform z-10"
+                    style={{
+                      left: `${endPercent}%`,
+                      top: '50%',
+                      width: `${Math.max(endDotSize - 2, 14)}px`,
+                      height: `${Math.max(endDotSize - 2, 14)}px`,
+                      backgroundColor: endDotColor,
+                    }}
+                  />
 
-                    {/* Connecting line - thickness varies by growth magnitude */}
-                    <div
-                      className="absolute rounded-full transition-all"
-                      style={{
-                        left: `${leftPercent}%`,
-                        width: `${Math.max(rightPercent - leftPercent, 1)}%`,
-                        height: `${lineThickness}px`,
-                        top: `calc(50% - ${lineThickness / 2}px)`,
-                        backgroundColor: lineColor,
-                      }}
-                    />
-
-                    {/* Start dot - Earliest Quarter (neutral grey) */}
-                    <div
-                      className="absolute rounded-full bg-slate-300 border-2 border-white shadow-sm transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform"
-                      style={{
-                        left: `${startPercent}%`,
-                        top: '50%',
-                        width: '12px',
-                        height: '12px',
-                      }}
-                      title={`${startQuarter}: ${formatPrice(item.startPsf)}`}
-                    />
-
-                    {/* End dot - Latest Quarter (colored by outcome) */}
-                    <div
-                      className="absolute rounded-full border-2 border-white shadow-md transform -translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform z-10"
-                      style={{
-                        left: `${endPercent}%`,
-                        top: '50%',
-                        width: `${Math.max(endDotSize - 2, 14)}px`,
-                        height: `${Math.max(endDotSize - 2, 14)}px`,
-                        backgroundColor: endDotColor,
-                      }}
-                      title={`${endQuarter}: ${formatPrice(item.endPsf)}`}
-                    />
-                  </div>
-
-                  {/* End quarter label */}
-                  <span className={`text-[10px] md:text-xs font-medium w-14 md:w-16 shrink-0 ${textColorClass}`} title={formatPrice(item.endPsf)}>
-                    {endQuarter}
+                  {/* End label - positioned beside dot */}
+                  <span
+                    className={`absolute text-[9px] md:text-[10px] font-medium whitespace-nowrap ${textColorClass}`}
+                    style={{
+                      left: `${endPercent}%`,
+                      top: '50%',
+                      transform: endPercent < 85 ? 'translate(16px, -50%)' : 'translate(calc(-100% - 16px), -50%)',
+                    }}
+                  >
+                    Latest {formatPrice(item.endPsf)}
                   </span>
                 </div>
 
