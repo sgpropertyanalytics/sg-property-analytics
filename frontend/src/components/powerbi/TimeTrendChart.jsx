@@ -173,7 +173,7 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
               if (value >= 1000000000) {
                 return `  ${label}: $${(value / 1000000000).toFixed(2)}B`;
               }
-              return `  ${label}: $${(value / 1000000).toFixed(2)}M`;
+              return `  ${label}: $${(value / 1000000).toFixed(0)}M`;
             }
             return `  ${label}: ${value.toLocaleString()}`;
           },
@@ -230,9 +230,9 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         ticks: {
           callback: (value) => {
             if (value >= 1000000000) {
-              return `$${(value / 1000000000).toFixed(2)}B`;
+              return `$${(value / 1000000000).toFixed(1)}B`;
             }
-            return `$${(value / 1000000).toFixed(2)}M`;
+            return `$${(value / 1000000).toFixed(0)}M`;
           },
           color: '#1a1a1a',  // Near-black for readability
           font: { size: 11 },
