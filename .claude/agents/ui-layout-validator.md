@@ -59,7 +59,192 @@ You are a **UI Layout Validator** for dashboard components.
 
 ---
 
-## 2. OVERFLOW SAFETY STRATEGY
+## 2. LAYOUT INVARIANTS (Non-Negotiable)
+
+Every validation run MUST verify these invariants. Failure = Blocker.
+
+### INV-1: Sibling Cards Share Height
+
+Cards in the same grid row MUST have equal height.
+
+**Check:**
+- Parent grid has `items-stretch` (Tailwind) or `align-items: stretch`
+- OR parent uses `auto-rows-fr` for equal row heights
+- OR explicit row height strategy exists
+
+**Fail condition:** Sibling cards in same row have different heights.
+
+### INV-2: Flex/Grid Children Have Shrink Safety
+
+Any flex/grid child that can contain dynamic content MUST have:
+- `min-w-0` (horizontal shrink)
+- `min-h-0` (vertical shrink) if parent is column flex or grid row
+
+**Fail condition:** `flex-1` or `flex-grow` without corresponding `min-w-0`/`min-h-0`.
+
+### INV-3: Scrollable Regions Are Contained
+
+Any region with `overflow-auto` or `overflow-y-auto` MUST have:
+- Explicit height constraint (not just `h-full` with no parent height)
+- `min-h-0` on the element itself
+
+**Fail condition:** `overflow-auto` without height constraint → content expands instead of scrolling.
+
+### INV-4: Card Body Does Not Dictate Card Height
+
+Card body content MUST NOT expand the card. The card height is set by:
+- Row strategy (INV-1), OR
+- Explicit height/minHeight on card, OR
+- Fixed header + flexible body with `overflow-auto`
+
+**Fail condition:** Card with no height constraint and body content that grows unbounded.
+
+### INV-5: Loading/Empty States Match Data State Height
+
+Skeleton and empty states MUST occupy the same height as the data-loaded state.
+
+**Fail condition:** Loading skeleton is shorter/taller than final chart.
+
+---
+
+## 3. ROOT CAUSE DIAGNOSIS FLOW
+
+When cards/panels are misaligned, follow this decision tree:
+
+### Step 1: Check Row Height Strategy
+```
+Q: Do sibling cards share the same row height?
+├─ NO → Fix: Add `items-stretch` to parent grid, or use `auto-rows-fr`
+└─ YES → Continue to Step 2
+```
+
+### Step 2: Check Card Internal Structure
+```
+Q: Does the card use header/body/footer grid structure?
+├─ NO → Fix: Refactor to use DashboardCard primitive (see dashboard-layout skill)
+└─ YES → Continue to Step 3
+```
+
+### Step 3: Check Body Containment
+```
+Q: Does body have `min-h-0` + `overflow-auto` (or overflow-hidden)?
+├─ NO → Fix: Add `min-h-0` to body, set overflow behavior
+└─ YES → Continue to Step 4
+```
+
+### Step 4: Check Dynamic Content
+```
+Q: Is there data-dependent content (controls, legends, subtitles)?
+├─ YES → Fix: Constrain with fixed height or move outside card body
+└─ NO → Continue to Step 5
+```
+
+### Step 5: Check State Heights
+```
+Q: Do loading/empty states match data state height?
+├─ NO → Fix: Use same height container for all states
+└─ YES → Issue is elsewhere (check CSS specificity, z-index, etc.)
+```
+
+---
+
+## 4. FIX HIERARCHY
+
+**Rule:** Fix shared primitives FIRST. Never apply per-card hacks.
+
+### Priority Order
+
+1. **Row Container** (highest priority)
+   - Fix grid row height strategy at row level
+   - Add `items-stretch` or `auto-rows-fr` to parent
+   - NEVER add `h-[300px]` to individual cards
+
+2. **Card Primitive**
+   - Fix in shared `DashboardCard` component
+   - Enforce header/body/footer structure
+   - NEVER override card styles in feature code
+
+3. **Chart Frame**
+   - Fix in shared `ChartFrame` wrapper
+   - Ensure consistent minHeight strategy
+   - NEVER set chart container heights per-chart
+
+4. **Content Rules** (lowest priority)
+   - Only fix here if above layers are correct
+   - Text truncation, label clamping
+   - These are last resort, not first
+
+### Anti-Pattern Detection
+
+| Pattern | Problem | Instead |
+|---------|---------|---------|
+| `style={{ height: 300 }}` on one card | Per-card hack | Fix row strategy |
+| `!important` overrides | Fighting specificity | Fix primitive |
+| Inline `minHeight` per chart | Inconsistent | Fix ChartFrame |
+| `flex-grow` without `min-h-0` | Content pushes height | Add min-h-0 |
+
+---
+
+## 5. PROGRAMMATIC CHECK SPEC
+
+### Sibling Height Variance Check
+
+**Purpose:** Detect cards in the same row with different heights.
+
+**Spec:**
+```
+1. Find all grid containers with dashboard cards as direct children
+2. Group cards by their grid row (based on grid-template or auto-placement)
+3. For each row:
+   a. Measure rendered height of each card (offsetHeight or getBoundingClientRect)
+   b. Calculate variance: max(heights) - min(heights)
+   c. If variance > THRESHOLD, flag as failure
+
+THRESHOLD: 4px (allow minor sub-pixel differences)
+```
+
+**Implementation Notes:**
+- Requires browser context (Playwright, Puppeteer, or manual inspection)
+- Check at multiple breakpoints: 1440px, 768px, 375px
+- Report which row, which cards, and the height delta
+
+### min-h-0 Safety Check
+
+**Purpose:** Detect flex/grid children missing shrink safety.
+
+**Spec:**
+```
+1. Find all elements with `flex-1`, `flex-grow`, or `grow` class
+2. Check if element or ancestor has `overflow-auto` or `overflow-y-auto`
+3. If yes, verify element has `min-h-0` (or `min-height: 0` in style)
+4. Flag if missing
+
+Also check:
+- `flex-1` → must have `min-w-0` if in horizontal flex
+- `flex-1` → must have `min-h-0` if in vertical flex (flex-col)
+```
+
+### State Height Parity Check
+
+**Purpose:** Ensure loading/empty states don't cause layout shift.
+
+**Spec:**
+```
+1. For each chart component, capture height in:
+   a. Loading state (with skeleton)
+   b. Empty state (no data)
+   c. Data state (with sample data)
+2. Compare heights across states
+3. Flag if variance > THRESHOLD
+
+THRESHOLD: 4px
+```
+
+**Implementation:** Requires state manipulation or separate test renders.
+
+---
+
+## 6. OVERFLOW SAFETY STRATEGY
 
 **Rule:** NEVER allow horizontal scroll at any viewport.
 
@@ -123,7 +308,7 @@ Apply at **page shell** and **card shell** only.
 
 ---
 
-## 3. RESPONSIVE BREAKPOINT MATRIX
+## 7. RESPONSIVE BREAKPOINT MATRIX
 
 ### Required Viewports to Verify
 
@@ -154,7 +339,7 @@ Refer to `dashboard-layout` skill for canonical patterns:
 
 ---
 
-## 4. CONTAINER CONSTRAINTS
+## 8. CONTAINER CONSTRAINTS
 
 ### Chart Wrapper Requirements
 
@@ -181,7 +366,7 @@ Required components vary by chart type. Check that controller, elements, and sca
 
 ---
 
-## 5. VISUAL ROBUSTNESS TESTS
+## 9. VISUAL ROBUSTNESS TESTS
 
 ### Long Label Handling
 
@@ -216,7 +401,7 @@ Refer to `dashboard-design` skill for empty state pattern. Verify:
 
 ---
 
-## 6. ANTI-PATTERNS TO FLAG
+## 10. ANTI-PATTERNS TO FLAG
 
 ### Immediate Rejects (Blocker)
 
@@ -247,7 +432,7 @@ className="grid-cols-5"  // May overflow on mobile
 
 ---
 
-## 7. VALIDATION WORKFLOW
+## 11. VALIDATION WORKFLOW
 
 ### Step 1: Identify Target Files
 
@@ -290,7 +475,7 @@ Output findings with required fields (see output format).
 
 ---
 
-## 8. OUTPUT FORMAT
+## 12. OUTPUT FORMAT
 
 ### Required Fields Per Issue
 
@@ -369,7 +554,7 @@ Output findings with required fields (see output format).
 
 ---
 
-## 9. QUICK REFERENCE CHECKLIST
+## 13. QUICK REFERENCE CHECKLIST
 
 ### Before Marking Component Complete
 
@@ -400,7 +585,7 @@ ROBUSTNESS:
 
 ---
 
-## 10. INTEGRATION WITH OTHER TOOLS
+## 14. INTEGRATION WITH OTHER TOOLS
 
 ### When to Hand Off
 

@@ -221,3 +221,418 @@ CHARTS:
 [ ] responsive: true, maintainAspectRatio: false
 [ ] Fallback for very small screens
 ```
+
+---
+
+## 10. Row Height Strategies
+
+### Strategy A: Stretch (Recommended for Mixed Content)
+
+All items in a row stretch to the tallest item's height.
+
+```tsx
+<div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+  <DashboardCard>Short content</DashboardCard>
+  <DashboardCard>Taller content with more text</DashboardCard>
+</div>
+```
+
+**Use for:** KPI rows, mixed-height cards where visual alignment matters.
+
+### Strategy B: Auto-Rows-Fr (Equal Height Rows)
+
+All rows have equal height, regardless of content.
+
+```tsx
+<div className="grid grid-cols-2 auto-rows-fr gap-4">
+  <DashboardCard>...</DashboardCard>
+  <DashboardCard>...</DashboardCard>
+</div>
+```
+
+**Use for:** Chart grids where consistent row height is desired.
+
+### Strategy C: Fixed Row Heights (Bloomberg Style)
+
+Explicit heights for each row type.
+
+```tsx
+<div className="space-y-4">
+  {/* KPI Row: 120px */}
+  <div className="grid grid-cols-4 gap-4 h-[120px]">
+    {kpis.map(k => <KPICard key={k.id} {...k} />)}
+  </div>
+
+  {/* Chart Row: 400px */}
+  <div className="grid grid-cols-2 gap-4 h-[400px]">
+    <ChartCard>...</ChartCard>
+    <ChartCard>...</ChartCard>
+  </div>
+</div>
+```
+
+**Use for:** Dense dashboards with strict layout requirements.
+
+### When to Use Which
+
+| Scenario | Strategy | Why |
+|----------|----------|-----|
+| KPIs with varying text | Stretch | Tallest KPI sets row height |
+| 2x2 chart grid | Auto-rows-fr | Consistent row heights |
+| Bloomberg-style dense layout | Fixed | Predictable, compact |
+| Mixed KPI + chart rows | Stretch per row | Different row types |
+
+---
+
+## 11. Canonical Component Contracts
+
+### DashboardRow
+
+Container for horizontally-aligned dashboard elements.
+
+```tsx
+function DashboardRow({
+  children,
+  cols = 2,
+  gap = 4,
+  height // optional: explicit height
+}) {
+  return (
+    <div
+      className={`
+        grid gap-${gap} items-stretch
+        grid-cols-1 md:grid-cols-${cols}
+      `}
+      style={height ? { height } : undefined}
+    >
+      {children}
+    </div>
+  );
+}
+```
+
+**Contract:**
+- Children stretch to fill row height
+- Responsive: single column on mobile
+- Gap scales with content density
+
+### DashboardCard
+
+Standard card wrapper with header/body/footer structure.
+
+```tsx
+function DashboardCard({
+  title,
+  subtitle,
+  controls,  // Optional header controls
+  footer,    // Optional footer content
+  children,
+  minHeight = 0
+}) {
+  return (
+    <div className="bg-white rounded-lg border shadow-sm flex flex-col overflow-hidden h-full">
+      {/* HEADER: Fixed height */}
+      <div className="p-3 md:p-4 border-b flex-shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm md:text-base truncate">{title}</h3>
+            {subtitle && <p className="text-xs text-gray-500 truncate">{subtitle}</p>}
+          </div>
+          {controls && <div className="flex-shrink-0">{controls}</div>}
+        </div>
+      </div>
+
+      {/* BODY: Flexible, scrolls if needed */}
+      <div
+        className="flex-1 min-h-0 p-3 md:p-4 overflow-auto"
+        style={{ minHeight }}
+      >
+        {children}
+      </div>
+
+      {/* FOOTER: Fixed height (optional) */}
+      {footer && (
+        <div className="p-3 md:p-4 border-t flex-shrink-0 bg-gray-50">
+          {footer}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Contract:**
+- Header: fixed, never wraps (use truncate)
+- Body: flexible, scrolls when content exceeds
+- Footer: fixed, optional
+- Card fills parent height (`h-full`)
+- Body has `min-h-0` for scroll containment
+
+### ChartFrame
+
+Chart container with consistent height behavior.
+
+```tsx
+function ChartFrame({ children, minHeight = 300, aspectRatio }) {
+  return (
+    <div
+      className="relative w-full h-full min-h-0"
+      style={{
+        minHeight,
+        aspectRatio: aspectRatio || undefined
+      }}
+    >
+      <div className="absolute inset-0">
+        {children}
+      </div>
+    </div>
+  );
+}
+```
+
+**Contract:**
+- Fills parent (works inside DashboardCard body)
+- Minimum height prevents collapse
+- Absolute positioning for chart library compatibility
+- No padding (padding is on DashboardCard body)
+
+---
+
+## 12. Row Type Examples
+
+### KPI Row
+
+```tsx
+<DashboardRow cols={4} gap={4}>
+  <KPICard label="Total Volume" value="$2.3B" change="+12%" />
+  <KPICard label="Transactions" value="1,234" change="-5%" />
+  <KPICard label="Avg PSF" value="$1,850" change="+3%" />
+  <KPICard label="Projects" value="45" />
+</DashboardRow>
+```
+
+**Height:** Content-driven (stretch)
+**Mobile:** 2 columns
+
+### Chart Row
+
+```tsx
+<DashboardRow cols={2} gap={6}>
+  <DashboardCard title="Volume Trend">
+    <ChartFrame minHeight={300}>
+      <Line data={volumeData} options={chartOptions} />
+    </ChartFrame>
+  </DashboardCard>
+  <DashboardCard title="Price Distribution">
+    <ChartFrame minHeight={300}>
+      <Bar data={priceData} options={chartOptions} />
+    </ChartFrame>
+  </DashboardCard>
+</DashboardRow>
+```
+
+**Height:** `minHeight` on ChartFrame (300px minimum)
+**Mobile:** Single column, each chart full width
+
+### Table Row
+
+```tsx
+<DashboardRow cols={1}>
+  <DashboardCard
+    title="Recent Transactions"
+    footer={<Pagination />}
+  >
+    <div className="overflow-x-auto -mx-3 md:-mx-4 px-3 md:px-4">
+      <table className="min-w-[600px] w-full">
+        ...
+      </table>
+    </div>
+  </DashboardCard>
+</DashboardRow>
+```
+
+**Height:** Content-driven (table rows)
+**Mobile:** Horizontal scroll for table, or card view alternative
+
+### Mixed Dashboard Layout
+
+```tsx
+<div className="space-y-4 md:space-y-6">
+  {/* Row 1: KPIs */}
+  <DashboardRow cols={4} gap={4}>
+    <KPICard ... />
+    <KPICard ... />
+    <KPICard ... />
+    <KPICard ... />
+  </DashboardRow>
+
+  {/* Row 2: Charts */}
+  <DashboardRow cols={2} gap={6}>
+    <DashboardCard title="Trend">
+      <ChartFrame><Line ... /></ChartFrame>
+    </DashboardCard>
+    <DashboardCard title="Distribution">
+      <ChartFrame><Bar ... /></ChartFrame>
+    </DashboardCard>
+  </DashboardRow>
+
+  {/* Row 3: Table */}
+  <DashboardRow cols={1}>
+    <DashboardCard title="Transactions">
+      <TransactionTable />
+    </DashboardCard>
+  </DashboardRow>
+</div>
+```
+
+---
+
+## 13. Empty/Loading State Contracts
+
+**Rule:** All states must occupy the same height to prevent layout shift.
+
+### Loading State
+
+```tsx
+function ChartLoading({ height = 300 }) {
+  return (
+    <div
+      className="flex items-center justify-center bg-gray-50 rounded"
+      style={{ height }}
+    >
+      <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
+// Usage in ChartFrame
+<ChartFrame minHeight={300}>
+  {loading ? <ChartLoading height={300} /> : <Line data={data} />}
+</ChartFrame>
+```
+
+### Empty State
+
+```tsx
+function ChartEmpty({ height = 300, message = "No data available" }) {
+  return (
+    <div
+      className="flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded"
+      style={{ height }}
+    >
+      <svg className="w-12 h-12 mb-2" ...>...</svg>
+      <p className="text-sm">{message}</p>
+    </div>
+  );
+}
+```
+
+### Error State
+
+```tsx
+function ChartError({ height = 300, onRetry }) {
+  return (
+    <div
+      className="flex flex-col items-center justify-center text-red-500 bg-red-50 rounded"
+      style={{ height }}
+    >
+      <svg className="w-12 h-12 mb-2" ...>...</svg>
+      <p className="text-sm mb-2">Failed to load chart</p>
+      {onRetry && (
+        <button onClick={onRetry} className="text-xs underline">
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+### State Height Contract
+
+| State | Height | Background | Content |
+|-------|--------|------------|---------|
+| Loading | Same as data | `bg-gray-50` | Centered spinner |
+| Empty | Same as data | `bg-gray-50` | Centered icon + message |
+| Error | Same as data | `bg-red-50` | Centered icon + message + retry |
+| Data | `minHeight` prop | transparent | Chart |
+
+**Critical:** Pass the same `height` / `minHeight` to all state components.
+
+---
+
+## 14. Bloomberg Style Guide
+
+Dense, information-rich layout inspired by financial terminals.
+
+### Principles
+
+1. **High density** — More data per screen, less whitespace
+2. **Consistent row heights** — Predictable visual rhythm
+3. **Compact spacing** — Smaller gaps, tighter padding
+4. **Dark mode friendly** — Works on dark backgrounds
+5. **Keyboard navigable** — Focus states, shortcuts
+
+### Spacing Tokens (Compact)
+
+| Token | Value | Use |
+|-------|-------|-----|
+| `gap-2` | 8px | Between KPIs |
+| `gap-3` | 12px | Between chart cards |
+| `p-2` | 8px | Card padding (compact) |
+| `p-3` | 12px | Card padding (standard) |
+| `space-y-3` | 12px | Between rows |
+
+### Compact Card Variant
+
+```tsx
+function CompactCard({ title, children }) {
+  return (
+    <div className="bg-white rounded border shadow-sm overflow-hidden">
+      <div className="px-2 py-1.5 border-b bg-gray-50">
+        <h3 className="text-xs font-medium text-gray-600 uppercase tracking-wide truncate">
+          {title}
+        </h3>
+      </div>
+      <div className="p-2 min-h-0 overflow-auto">
+        {children}
+      </div>
+    </div>
+  );
+}
+```
+
+### Dense Grid Example
+
+```tsx
+<div className="space-y-3">
+  {/* KPI strip: 5 columns, minimal height */}
+  <div className="grid grid-cols-5 gap-2 h-[80px]">
+    <CompactKPI label="VOL" value="$2.3B" />
+    <CompactKPI label="TXN" value="1,234" />
+    <CompactKPI label="PSF" value="$1,850" />
+    <CompactKPI label="CHG" value="+3.2%" positive />
+    <CompactKPI label="YTD" value="+12.5%" positive />
+  </div>
+
+  {/* 3-column chart grid */}
+  <div className="grid grid-cols-3 gap-3 h-[280px]">
+    <CompactCard title="PRICE TREND">
+      <ChartFrame minHeight={200}><Line .../></ChartFrame>
+    </CompactCard>
+    <CompactCard title="VOLUME DIST">
+      <ChartFrame minHeight={200}><Bar .../></ChartFrame>
+    </CompactCard>
+    <CompactCard title="REGION MIX">
+      <ChartFrame minHeight={200}><Pie .../></ChartFrame>
+    </CompactCard>
+  </div>
+</div>
+```
+
+### When to Use
+
+- Power users who prefer density over aesthetics
+- Dashboard views with 10+ KPIs
+- Multi-chart comparison layouts
+- Financial/trading interfaces
