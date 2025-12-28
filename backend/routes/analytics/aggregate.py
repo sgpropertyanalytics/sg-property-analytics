@@ -147,7 +147,8 @@ def aggregate():
     # Segment filter (supports comma-separated values e.g., "CCR,RCR")
     # OPTIMIZED: Use pre-computed district→segment mapping from constants
     # instead of N+1 database query
-    segment = request.args.get("segment")
+    # Also support 'region' as alias for 'segment' (backwards compatibility)
+    segment = request.args.get("segment") or request.args.get("region")
     if segment:
         from constants import get_districts_for_region
         segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
@@ -315,14 +316,20 @@ def aggregate():
             select_columns.append(Transaction.floor_level.label("floor_level"))
 
     # Add metric columns
-    if "count" in metrics:
-        select_columns.append(func.count(Transaction.id).label("count"))
-    if "avg_psf" in metrics or "median_psf" in metrics:
+    # ALWAYS include count - it's a row integrity field, not just a metric
+    select_columns.append(func.count(Transaction.id).label("count"))
+    if "avg_psf" in metrics:
         select_columns.append(func.avg(Transaction.psf).label("avg_psf"))
+    if "median_psf" in metrics:
+        # TRUE median using PERCENTILE_CONT(0.5), not a copy of avg
+        select_columns.append(func.percentile_cont(0.5).within_group(Transaction.psf).label("median_psf"))
     if "total_value" in metrics:
         select_columns.append(func.sum(Transaction.price).label("total_value"))
-    if "avg_price" in metrics or "median_price" in metrics:
+    if "avg_price" in metrics:
         select_columns.append(func.avg(Transaction.price).label("avg_price"))
+    if "median_price" in metrics:
+        # TRUE median price using PERCENTILE_CONT(0.5)
+        select_columns.append(func.percentile_cont(0.5).within_group(Transaction.price).label("median_price"))
     if "min_psf" in metrics:
         select_columns.append(func.min(Transaction.psf).label("min_psf"))
     if "max_psf" in metrics:
@@ -413,12 +420,6 @@ def aggregate():
             else:
                 clean_dict[key] = value
 
-        # Map avg to median if median was requested (approximation)
-        if "median_psf" in metrics and "avg_psf" in clean_dict:
-            clean_dict["median_psf"] = clean_dict.get("avg_psf")
-        if "median_price" in metrics and "avg_price" in clean_dict:
-            clean_dict["median_price"] = clean_dict.get("avg_price")
-
         data.append(clean_dict)
 
     elapsed = time.time() - start
@@ -432,7 +433,6 @@ def aggregate():
         "metrics": metrics,
         "elapsed_ms": int(elapsed * 1000),
         "cache_hit": False,
-        "note": "median values are approximated using avg for memory efficiency",
         "schemaVersion": schema_version,
         "subscription": {
             "is_premium": is_premium,
