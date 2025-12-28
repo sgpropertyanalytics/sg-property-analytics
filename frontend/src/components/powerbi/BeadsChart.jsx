@@ -15,12 +15,14 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
 import { KeyInsightBox, ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
+import { REGIONS } from '../../constants';
 import {
   transformBeadsChartSeries,
   formatPrice,
   logFetchDebug,
   assertKnownVersion,
 } from '../../adapters';
+import { niceMaxMillion } from '../../utils/niceAxisMax';
 
 ChartJS.register(LinearScale, PointElement, BubbleController, Tooltip, Legend, annotationPlugin);
 
@@ -90,10 +92,9 @@ export function BeadsChart({ height = 300, saleType = null }) {
     if (!stringRanges) return {};
 
     const annotations = {};
-    const regions = ['CCR', 'RCR', 'OCR'];
 
     // "String" lines connecting min-max price per region
-    regions.forEach((region, idx) => {
+    REGIONS.forEach((region, idx) => {
       const range = stringRanges[region];
       if (range && range.min > 0 && range.max > 0) {
         annotations[`string_${region}`] = {
@@ -234,9 +235,9 @@ export function BeadsChart({ height = 300, saleType = null }) {
             display: false, // Remove vertical grid lines (distracting)
           },
           min: 0,
-          // Tight max: round up to nearest $500K with small padding
+          // Nice max: human-readable boundary (INV-11)
           max: stats?.priceRange?.max
-            ? Math.ceil((stats.priceRange.max / 1000000) * 2) / 2 + 0.5
+            ? niceMaxMillion(stats.priceRange.max / 1000000)
             : 4,
         },
         y: {

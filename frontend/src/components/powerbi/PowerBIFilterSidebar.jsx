@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import {
+  REGIONS,
   DISTRICT_NAMES,
   BEDROOM_THRESHOLDS_TIER1,
   BEDROOM_THRESHOLDS_TIER2,
@@ -223,7 +224,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
           {/* Market Segment Buttons - click to switch, shift+click to multi-select */}
           <FilterGroup label="Market Segment">
             <div className="grid grid-cols-3 gap-2">
-              {['CCR', 'RCR', 'OCR'].map(seg => (
+              {REGIONS.map(seg => (
                 <button
                   type="button"
                   key={seg}

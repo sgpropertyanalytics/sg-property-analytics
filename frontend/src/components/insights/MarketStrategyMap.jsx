@@ -15,7 +15,7 @@ import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
-import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
+import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../hooks';
 import { SaleType } from '../../schemas/apiContract';
@@ -290,14 +290,13 @@ function HoverCard({ district, data }) {
 function RegionSummaryBar({ districtData }) {
   // Calculate aggregates for each region
   const regionStats = useMemo(() => {
-    const regions = ['CCR', 'RCR', 'OCR'];
     const regionDistricts = {
       CCR: CCR_DISTRICTS,
       RCR: RCR_DISTRICTS,
       OCR: OCR_DISTRICTS,
     };
 
-    return regions.map(region => {
+    return REGIONS.map(region => {
       const districts = districtData.filter(
         d => regionDistricts[region].includes(d.district_id) && d.has_data
       );

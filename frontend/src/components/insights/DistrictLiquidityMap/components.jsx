@@ -6,7 +6,7 @@
 
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../../constants';
+import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../../constants';
 import {
   getScoreBadgeStyle,
   getScoreLabel,
@@ -290,14 +290,13 @@ export function HoverCard({ district, data }) {
 
 export function RegionSummaryBar({ districtData, meta: _meta }) {
   const regionStats = useMemo(() => {
-    const regions = ['CCR', 'RCR', 'OCR'];
     const regionDistricts = {
       CCR: CCR_DISTRICTS,
       RCR: RCR_DISTRICTS,
       OCR: OCR_DISTRICTS,
     };
 
-    return regions.map((region) => {
+    return REGIONS.map((region) => {
       const districts = districtData.filter(
         (d) => regionDistricts[region].includes(d.district_id) && d.has_data
       );
