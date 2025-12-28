@@ -1,0 +1,22 @@
+{
+  "_version": "v3",
+  "_description": "Response schema snapshots for upcoming launches endpoints",
+  "all": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "by_segment": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "supply_pipeline": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "project": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "stats": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "needs_review": {
+    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
+  }
+}

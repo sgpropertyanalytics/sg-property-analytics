@@ -29,6 +29,7 @@ upcoming_launches_bp = Blueprint('upcoming_launches', __name__)
 
 # Import contract versioning for HTTP header
 from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+from api.contracts.wrapper import api_contract
 
 
 @upcoming_launches_bp.after_request
@@ -39,6 +40,7 @@ def add_contract_version_header(response):
 
 
 @upcoming_launches_bp.route("/all", methods=["GET"])
+@api_contract("upcoming-launches/all")
 def get_all():
     """
     Get all upcoming launch projects.
@@ -145,6 +147,7 @@ def get_all():
 
 
 @upcoming_launches_bp.route("/by-segment", methods=["GET"])
+@api_contract("upcoming-launches/by-segment")
 def get_by_segment():
     """
     Get upcoming launches grouped by market segment.
@@ -195,6 +198,7 @@ def get_by_segment():
 
 
 @upcoming_launches_bp.route("/supply-pipeline", methods=["GET"])
+@api_contract("upcoming-launches/supply-pipeline")
 def get_supply_pipeline():
     """
     Get aggregate supply pipeline from upcoming launches.
@@ -264,6 +268,7 @@ def get_supply_pipeline():
 
 
 @upcoming_launches_bp.route("/project/<project_name>", methods=["GET"])
+@api_contract("upcoming-launches/project")
 def get_project_detail(project_name: str):
     """
     Get details for a specific project.
@@ -299,6 +304,7 @@ def get_project_detail(project_name: str):
 
 
 @upcoming_launches_bp.route("/needs-review", methods=["GET"])
+@api_contract("upcoming-launches/needs-review")
 def get_needs_review():
     """
     Get projects that need manual review.
@@ -379,6 +385,7 @@ def reset_data():
 
 
 @upcoming_launches_bp.route("/stats", methods=["GET"])
+@api_contract("upcoming-launches/stats")
 def get_stats():
     """
     Get summary statistics for upcoming launches data.
