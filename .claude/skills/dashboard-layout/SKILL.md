@@ -144,7 +144,103 @@ function ChartCard({ title, children, minHeight = 300 }) {
 
 ---
 
-## 7. Responsive Patterns
+## 7. Chart Height Ownership (CRITICAL)
+
+**Rule:** A chart must either FULLY control its height OR let parent control it—NEVER both.
+
+### The Problem
+
+Hybrid height control causes layout bugs (white space, overflow, jitter):
+
+```tsx
+// ❌ BROKEN: Hybrid ownership (chart + parent both control height)
+<div className="h-full" style={{ minHeight: height + 140 }}>
+  <ChartSlot><Chart /></ChartSlot>
+</div>
+```
+
+**Why it breaks:**
+- `h-full` says "fill parent"
+- `minHeight` says "at least this tall"
+- CSS + Chart.js fight each other
+- Result: unpredictable height, white space
+
+### The Fix: Explicit Ownership
+
+**Option A: Chart owns height (RECOMMENDED)**
+
+```tsx
+// ✅ CORRECT: Chart explicitly calculates and owns its total height
+const cardHeight = height + 200; // height prop + overhead (header + footer)
+
+<div
+  className="flex flex-col overflow-hidden"
+  style={{ height: cardHeight }}  // Explicit, deterministic
+>
+  <Header className="shrink-0" />
+  <ChartSlot>
+    <Chart />
+  </ChartSlot>
+  <Footer className="shrink-0" />
+</div>
+```
+
+**Option B: Parent owns height**
+
+```tsx
+// ✅ CORRECT: Parent provides fixed container, chart fills it
+<div style={{ height: 500 }}>  {/* Parent owns */}
+  <ChartCard className="h-full">  {/* Card fills parent */}
+    <Chart />
+  </ChartCard>
+</div>
+```
+
+### Height Calculation Pattern
+
+When chart owns height, document the overhead:
+
+```tsx
+// Card owns its height explicitly
+// Overhead breakdown:
+//   Header: ~60px (title + subtitle)
+//   KPI row: ~80px
+//   Insight box: ~50px
+//   Footer: ~44px
+//   Total overhead: ~234px
+const cardHeight = height + 234;
+```
+
+### Anti-Patterns
+
+```tsx
+// ❌ h-full + minHeight (hybrid)
+<div className="h-full" style={{ minHeight: 400 }}>
+
+// ❌ h-full + height (conflicting)
+<div className="h-full" style={{ height: 500 }}>
+
+// ❌ flex-1 without parent height constraint
+<div className="flex-1">  // What is parent height?
+
+// ❌ Relying on implicit parent flex height
+<div className="h-full">  // Parent has no defined height
+```
+
+### Checklist
+
+```
+HEIGHT OWNERSHIP:
+[ ] Single owner: chart OR parent (not both)
+[ ] If chart owns: explicit `style={{ height: X }}`
+[ ] If parent owns: parent has explicit height, chart uses `h-full`
+[ ] Document overhead calculation in comment
+[ ] Test at 320px, 768px, 1440px viewports
+```
+
+---
+
+## 8. Responsive Patterns
 
 ### Tables
 ```tsx
@@ -171,7 +267,7 @@ function ChartCard({ title, children, minHeight = 300 }) {
 
 ---
 
-## 8. Anti-Patterns
+## 9. Anti-Patterns
 
 ```tsx
 // ❌ Fixed pixel widths
@@ -195,7 +291,7 @@ function ChartCard({ title, children, minHeight = 300 }) {
 
 ---
 
-## 9. Quick Checklist
+## 10. Quick Checklist
 
 ```
 OVERFLOW:
@@ -220,11 +316,16 @@ CHARTS:
 [ ] Container has overflow-hidden
 [ ] responsive: true, maintainAspectRatio: false
 [ ] Fallback for very small screens
+
+HEIGHT OWNERSHIP:
+[ ] Single owner: chart OR parent (not both)
+[ ] No h-full + minHeight hybrid
+[ ] Overhead documented in comment
 ```
 
 ---
 
-## 10. Row Height Strategies
+## 11. Row Height Strategies
 
 ### Strategy A: Stretch (Recommended for Mixed Content)
 
@@ -284,7 +385,7 @@ Explicit heights for each row type.
 
 ---
 
-## 11. Canonical Component Contracts
+## 12. Canonical Component Contracts
 
 ### DashboardRow
 
@@ -398,7 +499,7 @@ function ChartFrame({ children, minHeight = 300, aspectRatio }) {
 
 ---
 
-## 12. Row Type Examples
+## 13. Row Type Examples
 
 ### KPI Row
 
@@ -487,7 +588,7 @@ function ChartFrame({ children, minHeight = 300, aspectRatio }) {
 
 ---
 
-## 13. Empty/Loading State Contracts
+## 14. Empty/Loading State Contracts
 
 **Rule:** All states must occupy the same height to prevent layout shift.
 
@@ -561,7 +662,7 @@ function ChartError({ height = 300, onRetry }) {
 
 ---
 
-## 14. Bloomberg Style Guide
+## 15. Bloomberg Style Guide
 
 Dense, information-rich layout inspired by financial terminals.
 
