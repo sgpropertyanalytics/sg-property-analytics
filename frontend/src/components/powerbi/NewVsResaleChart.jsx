@@ -37,14 +37,14 @@ ChartJS.register(
 );
 
 /**
- * New Sale vs Recently TOP (4-8 years age) Comparison Chart
+ * New Sale vs Recently TOP (4-7 years age) Comparison Chart
  *
  * Dual-line time series showing:
  * - Line A (solid, navy): New Sale median total price
- * - Line B (dashed, blue): Recently TOP (4-8 years old) median total price
+ * - Line B (dashed, blue): Recently TOP (4-7 years old) median total price
  *
  * Recently TOP definition:
- * - Property age (transaction year - lease start year) between 4 and 8 years
+ * - Property age (transaction year - lease start year) between 4 and 7 years (inclusive)
  * - Project must have at least one resale transaction (excludes delayed construction)
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
@@ -218,7 +218,7 @@ export function NewVsResaleChart({ height = 350 }) {
                 lines.push('(No new sale data)');
               }
               if (dataPoint.resalePrice === null) {
-                lines.push('(No recently TOP 4-8yr data)');
+                lines.push('(No recently TOP 4-7yr data)');
               }
 
               return lines;
@@ -306,7 +306,7 @@ export function NewVsResaleChart({ height = 350 }) {
       <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
         <div className="min-w-0">
           <h3 className="font-semibold text-[#213448] text-sm md:text-base">
-            New Sale vs Recently TOP (4-8 yrs)
+            New Sale vs Recently TOP (4-7 yrs)
           </h3>
           <p className="text-xs text-[#547792] mt-0.5">
             {getFilterSummary()} · by {TIME_LABELS[timeGrouping].toLowerCase()}
@@ -346,7 +346,7 @@ export function NewVsResaleChart({ height = 350 }) {
       {/* How to Interpret - shrink-0 */}
       <div className="shrink-0">
         <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-          Tracks the price gap between new launches and recently TOP units (4-8 years old) to highlight pricing discrepancies and relative value.
+          Tracks the price gap between new launches and recently TOP units (4-7 years old) to highlight pricing discrepancies and relative value.
         </KeyInsightBox>
       </div>
 

@@ -663,7 +663,7 @@ export const isValidTenure = (tenure) => {
  * | Band          | Age Range | Boundary Logic          |
  * |---------------|-----------|-------------------------|
  * | new_sale      | N/A       | sale_type == 'New Sale' |
- * | recently_top  | 4-8 yrs   | age >= 4 AND age < 8    |
+ * | recently_top  | 4-7 yrs   | age >= 4 AND age < 8    |
  * | young_resale  | 8-15 yrs  | age >= 8 AND age < 15   |
  * | resale        | 15-25 yrs | age >= 15 AND age < 25  |
  * | mature_resale | 25+ yrs   | age >= 25               |
@@ -685,7 +685,7 @@ export const PROPERTY_AGE_BANDS = [
  */
 export const AGE_BAND_LABELS_FULL = {
   new_sale: 'New Sale',
-  recently_top: 'Recently TOP (4-8 yrs)',
+  recently_top: 'Recently TOP (4-7 yrs)',
   young_resale: 'Young Resale (8-15 yrs)',
   resale: 'Resale (15-25 yrs)',
   mature_resale: 'Mature Resale (25+ yrs)',

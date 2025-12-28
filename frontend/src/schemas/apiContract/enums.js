@@ -259,7 +259,7 @@ export const PropertyAgeBucket = {
  */
 export const PropertyAgeBucketLabels = {
   [PropertyAgeBucket.NEW_SALE]: 'New Sale (No Resales Yet)',
-  [PropertyAgeBucket.RECENTLY_TOP]: 'Recently TOP (4-8 years)',
+  [PropertyAgeBucket.RECENTLY_TOP]: 'Recently TOP (4-7 years)',
   [PropertyAgeBucket.YOUNG_RESALE]: 'Young Resale (8-15 years)',
   [PropertyAgeBucket.RESALE]: 'Resale (15-25 years)',
   [PropertyAgeBucket.MATURE_RESALE]: 'Mature Resale (25+ years)',
