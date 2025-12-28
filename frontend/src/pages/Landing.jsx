@@ -20,11 +20,8 @@ const CUSTOM_CURSORS = {
   // Key cursor for "Log In" - suggests unlocking access
   key: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='7.5' cy='7.5' r='5.5'/%3E%3Cpath d='m21 21-5.2-5.2'/%3E%3Cpath d='M15 11l2 2'/%3E%3Cpath d='M18 14l2 2'/%3E%3C/svg%3E") 4 4, pointer`,
 
-  // Arrow cursor for CTAs - suggests forward motion/action
-  arrow: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m12 5 7 7-7 7'/%3E%3C/svg%3E") 16 12, pointer`,
-
-  // Chart cursor alternative for data CTAs
-  chart: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3v18h18'/%3E%3Cpath d='m19 9-5 5-4-4-3 3'/%3E%3C/svg%3E") 4 4, pointer`,
+  // Hand/pointer cursor for CTAs
+  hand: 'pointer',
 };
 
 /**
@@ -142,17 +139,25 @@ const LandingPage = () => {
     // Master canvas with global background color
     <div className="relative min-h-screen font-sans selection:bg-[#94B4C1]/30 text-[#213448] bg-[#FDFBF7] overflow-x-hidden">
 
-      {/* Global Noise Texture (Fixed Position)
-          Ensures the 'paper feel' persists down the entire page */}
+      {/* Global Noise Texture - Optimized with will-change for GPU layer */}
       <div
-        className="fixed inset-0 pointer-events-none opacity-[0.08] z-0 mix-blend-multiply"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+        className="fixed inset-0 pointer-events-none opacity-[0.06] z-0"
+        style={{
+          willChange: 'transform',
+          transform: 'translateZ(0)',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
+        }}
       />
 
-      {/* Global Ambient Orbs
-          Top orb for hero, bottom orb for visual balance */}
-      <div className="fixed top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#94B4C1]/20 rounded-full blur-[120px] pointer-events-none z-0" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[800px] h-[600px] bg-[#EAE0CF]/40 rounded-full blur-[100px] pointer-events-none z-0" />
+      {/* Global Ambient Orbs - GPU optimized with reduced blur */}
+      <div
+        className="fixed top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#94B4C1]/15 rounded-full blur-[80px] pointer-events-none z-0"
+        style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+      />
+      <div
+        className="fixed bottom-[-10%] right-[-10%] w-[800px] h-[600px] bg-[#EAE0CF]/30 rounded-full blur-[60px] pointer-events-none z-0"
+        style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+      />
 
       {/* === NAV === */}
       <nav className="fixed w-full z-50 px-4 md:px-6 py-3 md:py-4 backdrop-blur-md border-b border-[#94B4C1]/10 bg-[#FDFBF7]/80">
@@ -220,7 +225,7 @@ const LandingPage = () => {
                 onClick={() => navigate('/login')}
                 className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-medium min-h-[48px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none hover:shadow-2xl transition-shadow"
                 variant="primary"
-                cursorType="chart"
+                cursorType="hand"
               >
                 View Market Data
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -328,7 +333,7 @@ function HeroSection({ navigate }) {
             onClick={() => navigate('/login')}
             className="group px-8 py-4 rounded-xl font-semibold min-h-[48px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none hover:shadow-xl transition-shadow duration-300"
             variant="primary"
-            cursorType="chart"
+            cursorType="hand"
           >
             <Database className="w-4 h-4" />
             <span>View Market Data</span>
