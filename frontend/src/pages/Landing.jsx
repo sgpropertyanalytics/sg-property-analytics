@@ -149,10 +149,13 @@ function HeroSection({ navigate }) {
     // Paper layering effect for dashboard to pop
     <section className="relative pt-28 sm:pt-32 overflow-hidden min-h-screen flex flex-col items-center bg-[#EAE0CF]/30">
 
-      {/* Text Content with fade on scroll */}
-      <motion.div style={{ opacity }} className="relative z-20 text-center max-w-4xl px-6 flex flex-col items-center mb-16">
+      {/* All hero content fades on scroll */}
+      <motion.div style={{ opacity }} className="w-full flex flex-col items-center">
 
-        {/* Trust Badge - Emerald ping animation */}
+        {/* Text Content */}
+        <div className="relative z-20 text-center max-w-4xl px-6 flex flex-col items-center mb-16">
+
+          {/* Trust Badge - Emerald ping animation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -207,10 +210,10 @@ function HeroSection({ navigate }) {
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
         </motion.div>
-      </motion.div>
+        </div>
 
-      {/* Combined Visual: Dashboard + YouVsMarket Card */}
-      <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10 mt-8 sm:mt-12 mb-8">
+        {/* Combined Visual: Dashboard + YouVsMarket Card */}
+        <div className="w-full max-w-7xl px-4 sm:px-6 relative z-10 mt-8 sm:mt-12 mb-8">
 
         {/* Desktop: Side by side layout - aligned heights */}
         <div className="hidden lg:grid lg:grid-cols-5 gap-6 items-stretch">
@@ -275,7 +278,8 @@ function HeroSection({ navigate }) {
             <YouVsMarketVisual />
           </div>
         </div>
-      </div>
+        </div>
+      </motion.div>
 
     </section>
   );
