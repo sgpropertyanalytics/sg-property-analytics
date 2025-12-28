@@ -1,23 +1,20 @@
 /**
  * ProjectFundamentalsPanel - Property fundamentals stats display
  *
- * Shows key project metrics in a card grid:
+ * Shows 3 key project metrics in a card grid (mirrors ResaleMetricsCards):
  * - Property Age (from TOP year or first resale)
  * - Total Units
  * - First Resale Date
- * - District/Tenure
  */
 
-import { TenureLabels, Tenure } from '../../schemas/apiContract';
-
-// Single stat card component
+// Single stat card component - matches MetricCard in ResaleMetricsCards
 function StatCard({ label, value, subtext, isUnavailable = false }) {
   return (
     <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
       <p className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-1">
         {label}
       </p>
-      <p className={`text-xl font-semibold ${isUnavailable ? 'text-[#94B4C1]' : 'text-[#213448]'}`}>
+      <p className={`text-2xl font-semibold ${isUnavailable ? 'text-[#94B4C1]' : 'text-[#213448]'}`}>
         {value}
       </p>
       {subtext && (
@@ -29,16 +26,17 @@ function StatCard({ label, value, subtext, isUnavailable = false }) {
   );
 }
 
-// Skeleton loader
+// Skeleton loader - matches ResaleMetricsSkeleton layout
 function ProjectFundamentalsSkeleton({ compact = false }) {
   return (
     <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 animate-pulse">
       <div className="h-4 bg-[#94B4C1]/30 rounded w-1/2 mb-4" />
-      <div className={`grid gap-3 ${compact ? 'grid-cols-2' : 'grid-cols-2 lg:grid-cols-4'}`}>
-        {[...Array(4)].map((_, i) => (
+      <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 md:grid-cols-3'}`}>
+        {[...Array(3)].map((_, i) => (
           <div key={i} className="bg-[#94B4C1]/20 rounded-lg p-3 md:p-4">
             <div className="h-3 bg-[#94B4C1]/30 rounded w-1/2 mb-2" />
-            <div className="h-5 md:h-6 bg-[#94B4C1]/30 rounded w-3/4" />
+            <div className="h-6 md:h-8 bg-[#94B4C1]/30 rounded w-2/3 mb-1" />
+            <div className="h-3 bg-[#94B4C1]/30 rounded w-3/4" />
           </div>
         ))}
       </div>
@@ -51,12 +49,9 @@ export default function ProjectFundamentalsPanel({
   topYear,
   propertyAgeYears,
   ageSource,
-  tenure,
-  district,
-  developer,
   firstResaleDate,
   loading = false,
-  compact = false, // When true, uses 2-col grid (for 50/50 split layout)
+  compact = false, // When true, uses 3-col grid (mirrors ResaleMetricsCards)
 }) {
   if (loading) {
     return <ProjectFundamentalsSkeleton compact={compact} />;
@@ -97,27 +92,9 @@ export default function ProjectFundamentalsPanel({
     return { value: totalUnits.toLocaleString(), subtext: 'Total units in development' };
   };
 
-  // Format tenure
-  const formatTenure = () => {
-    if (!tenure) {
-      return { value: district || 'N/A', subtext: 'District', isUnavailable: !district };
-    }
-    // Extract key info from tenure string (e.g., "99 yrs lease commencing from 2022")
-    const freeholdLabel = TenureLabels[Tenure.FREEHOLD];
-    if (tenure.includes(freeholdLabel)) {
-      return { value: freeholdLabel, subtext: district || '' };
-    }
-    const match = tenure.match(/(\d+)\s*yrs?\s*lease/i);
-    if (match) {
-      return { value: `${match[1]}-year`, subtext: district || '' };
-    }
-    return { value: tenure.substring(0, 15) + (tenure.length > 15 ? '...' : ''), subtext: district || '' };
-  };
-
   const ageData = formatAge();
   const firstResaleData = formatFirstResale();
   const unitsData = formatUnits();
-  const tenureData = formatTenure();
 
   return (
     <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
@@ -126,8 +103,8 @@ export default function ProjectFundamentalsPanel({
         Property Fundamentals
       </h3>
 
-      {/* Stats Grid - 2-col always in compact mode, responsive otherwise */}
-      <div className={`grid gap-3 ${compact ? 'grid-cols-2' : 'grid-cols-2 lg:grid-cols-4'}`}>
+      {/* Stats Grid - 3 cards matching ResaleMetricsCards layout */}
+      <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 md:grid-cols-3'}`}>
         <StatCard
           label="Property Age"
           value={ageData.value}
@@ -146,20 +123,7 @@ export default function ProjectFundamentalsPanel({
           subtext={firstResaleData.subtext}
           isUnavailable={firstResaleData.isUnavailable}
         />
-        <StatCard
-          label="Tenure"
-          value={tenureData.value}
-          subtext={tenureData.subtext}
-          isUnavailable={tenureData.isUnavailable}
-        />
       </div>
-
-      {/* Developer info if available */}
-      {developer && (
-        <div className="mt-3 md:mt-4 text-xs text-[#547792]">
-          <span className="font-medium">Developer:</span> {developer}
-        </div>
-      )}
     </div>
   );
 }

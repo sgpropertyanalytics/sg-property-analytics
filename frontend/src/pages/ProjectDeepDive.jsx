@@ -564,15 +564,12 @@ export function ProjectDeepDiveContent() {
 
               {/* ===== LEFT COLUMN ===== */}
               <div className="space-y-4 lg:space-y-6">
-                {/* Property Fundamentals */}
+                {/* Property Fundamentals - 3 cards mirroring Resale Activity Metrics */}
                 <ProjectFundamentalsPanel
                   totalUnits={exitQueueData.fundamentals?.total_units}
                   topYear={exitQueueData.fundamentals?.top_year}
                   propertyAgeYears={exitQueueData.fundamentals?.property_age_years}
                   ageSource={exitQueueData.fundamentals?.age_source}
-                  tenure={exitQueueData.fundamentals?.tenure}
-                  district={exitQueueData.fundamentals?.district}
-                  developer={exitQueueData.fundamentals?.developer}
                   firstResaleDate={exitQueueData.fundamentals?.first_resale_date}
                   compact
                 />
