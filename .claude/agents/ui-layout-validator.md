@@ -45,6 +45,7 @@ You are a **UI Layout Validator** for dashboard components.
 | **Responsiveness** | Behavior at 320px, 375px, 768px, 1024px, 1440px |
 | **Container Constraints** | Chart wrappers with overflow containment + minHeight |
 | **Tooltip/Legend Containment** | Clipping, z-index, portal/overflow issues (layout, not content) |
+| **Nice Axis Ticks** | Human-readable tick max/step (no 2,196 or step=137) |
 
 ### What This Agent Does NOT Validate
 
@@ -283,6 +284,88 @@ This combination is dangerous because:
 - One chart uses fixed height, sibling uses `minHeight/maxHeight` range
 - One chart uses fixed height, sibling has no height (relies on content)
 
+### INV-11: Nice Axis Ticks (No Ugly Max/Step)
+
+**CRITICAL:** Numeric axis tick endpoints and step sizes MUST be human-readable.
+
+**Why:** Auto-scaled axes produce "ugly" values like 2,196 or step sizes like 137. These harm dashboard readability and look unprofessional.
+
+**Definition of "Nice" by Axis Type:**
+
+| Axis Type | Nice Tick Boundaries | Nice Step Sizes |
+|-----------|---------------------|-----------------|
+| **Count** | Multiple of 50/100/200/250/500/1000 | 50, 100, 200, 250, 500, 1000 |
+| **Currency ($)** | $0.1M, $0.5M, $1M, $5M, $10M, $0.5B, $1B | Aligned to magnitude |
+| **Percent (%)** | Multiple of 1%, 2%, 5%, 10% | 1, 2, 5, 10 |
+| **Z-score (σ)** | ±2.5 or ±3 (fixed) | 0.5σ |
+
+**Fail conditions:**
+
+A) **Ugly tick endpoint:**
+```
+Top tick: 2,196 ❌ (not a nice boundary)
+Top tick: 2,200 ✅ (multiple of 100)
+Top tick: 2,250 ✅ (multiple of 250)
+```
+
+B) **Irregular tick step:**
+```
+Steps: 0, 137, 274, 411, 548 ❌ (ugly step = 137)
+Steps: 0, 200, 400, 600, 800 ✅ (nice step = 200)
+```
+
+C) **No headroom with ugly max:**
+```
+Data max: 2,147, Axis max: 2,196 ❌ (ugly, no headroom)
+Data max: 2,147, Axis max: 2,200 ✅ (nice, ~2.5% headroom)
+```
+
+**Required Fix Pattern:**
+
+```js
+// Helper: compute nice max for counts
+function niceMax(dataMax) {
+  const magnitude = Math.pow(10, Math.floor(Math.log10(dataMax)));
+  const normalized = dataMax / magnitude;
+
+  if (normalized <= 1) return magnitude;
+  if (normalized <= 2) return 2 * magnitude;
+  if (normalized <= 2.5) return 2.5 * magnitude;
+  if (normalized <= 5) return 5 * magnitude;
+  return 10 * magnitude;
+}
+
+// Apply to Chart.js scales
+scales: {
+  y: {
+    max: niceMax(Math.max(...data)),  // or suggestedMax for soft cap
+    ticks: {
+      stepSize: calculateNiceStep(niceMax, tickCount),
+    }
+  }
+}
+```
+
+**Check Process:**
+1. For each numeric axis (y, y1, y2), extract current max tick value
+2. Check if max is "nice" per axis type rules
+3. For axes with ≥5 ticks, verify step size is regular AND nice
+4. If data max is within 2% of axis max AND axis max is ugly → fail
+
+**Allowed:**
+```js
+max: 2200                           // ✅ Explicit nice max
+suggestedMax: niceMax(dataMax)      // ✅ Computed nice max
+ticks: { stepSize: 200 }            // ✅ Nice step
+```
+
+**Forbidden:**
+```js
+// ❌ Auto-scaled ugly max (no explicit max set, axis shows 2,196)
+// ❌ Irregular steps: 0, 137, 274, 411
+// ❌ Tight ugly max: dataMax=2147, axisMax=2196 with no headroom
+```
+
 ---
 
 ## 3. FORBIDDEN LAYOUT MUTATIONS
@@ -395,6 +478,7 @@ POST-FIX GATE CHECKLIST
    □ INV-8: h-full has bounded ancestor
    □ INV-9: No space-y-* + h-full combination
    □ INV-10: Sibling charts in same grid have matching height definitions
+   □ INV-11: Axis ticks use nice max/step (no ugly 2,196 or step=137)
 
 □ 2. REGRESSION CHECK
    Q: Does the fix break any PASSING invariant?
@@ -706,6 +790,97 @@ grep -rn 'style={{.*minHeight' src/components/powerbi/*.jsx
 // Result: Both charts align perfectly
 ```
 
+### Nice Axis Ticks Check (INV-11)
+
+**Purpose:** Detect chart axes with ugly tick endpoints or irregular step sizes.
+
+**Spec:**
+```
+1. Find all Chart.js chart components (Bar, Line, Scatter, etc.)
+2. For each chart, analyze scales configuration:
+   a. Extract y-axis (and y1, y2 if dual-axis) settings
+   b. If no explicit `max` or `suggestedMax` set → potential issue
+   c. If `max` is set, check if value is "nice" per axis type
+
+3. Define "nice" check by axis type:
+   COUNT:
+     isNice = max % 50 === 0 || max % 100 === 0 || max % 250 === 0
+   CURRENCY:
+     isNice = alignsToCurrencyBoundary(max)  // 0.1M, 0.5M, 1M, etc.
+   PERCENT:
+     isNice = max % 1 === 0 || max % 5 === 0 || max % 10 === 0
+   Z-SCORE:
+     isNice = max === 2.5 || max === 3
+
+4. Check step regularity:
+   - If ticks.stepSize is set → verify it's a nice step
+   - If auto-calculated → flag for review (may produce ugly steps)
+
+5. Flag violations with severity based on visibility:
+   - Primary y-axis on main charts → Blocker
+   - Secondary axis or drill-down charts → Major
+```
+
+**Static Analysis Checks:**
+```bash
+# Find charts without explicit max/suggestedMax
+grep -rn "scales.*{" src/components/powerbi/*.jsx | \
+  xargs -I{} sh -c 'grep -L "max:" {} || echo "MISSING MAX: {}"'
+
+# Find potential ugly max values (manual review needed)
+grep -rn "max:\s*[0-9]" src/components/powerbi/*.jsx
+
+# Find charts relying on auto-scale (no scales.y.max)
+grep -rn "new Chart\|<Bar\|<Line\|<Scatter" src/components/ | \
+  xargs -I{} sh -c 'grep -L "scales.*y.*max" {} && echo "AUTO-SCALED: {}"'
+```
+
+**Example Violation:**
+```jsx
+// BEFORE: Auto-scaled, produces max=2,196
+<Line
+  data={chartData}
+  options={{
+    scales: { y: { beginAtZero: true } }  // ❌ No max set
+  }}
+/>
+```
+
+**Correct Pattern:**
+```jsx
+// AFTER: Explicit nice max
+const dataMax = Math.max(...values);
+const niceMax = Math.ceil(dataMax / 100) * 100;  // Round up to nearest 100
+
+<Line
+  data={chartData}
+  options={{
+    scales: {
+      y: {
+        beginAtZero: true,
+        suggestedMax: niceMax,           // ✅ Nice boundary
+        ticks: { stepSize: niceMax / 5 } // ✅ 5 nice ticks
+      }
+    }
+  }}
+/>
+```
+
+**Validator Output Template:**
+```markdown
+### ❌ Check: Nice Axis Ticks
+
+**Axis:** y (Transaction Count)
+**Top tick:** 2196 ❌ (not a nice boundary)
+**Data max:** 2147
+**Step size:** 439 ❌ (irregular)
+
+**Fix:**
+1. Compute niceMax = ceil(dataMax / 100) * 100 → 2200
+2. Apply: `scales.y.max = 2200`
+3. Set: `ticks.stepSize = 200` (5 even ticks)
+```
+
 ---
 
 ## 7. OVERFLOW SAFETY STRATEGY
@@ -879,6 +1054,12 @@ className="w-[800px]"
 
 // ❌ Chart without responsive options
 <Bar data={data} options={{ maintainAspectRatio: true }} />
+
+// ❌ Ugly axis max (INV-11) - auto-scaled producing non-human values
+scales: { y: { beginAtZero: true } }  // No max → produces 2,196
+
+// ❌ Irregular tick steps
+ticks: { stepSize: 137 }  // Non-human step size
 ```
 
 ### Warnings (Major)
@@ -1098,6 +1279,9 @@ CHARTS:
 [ ] Using standard wrapper pattern (ChartCard/ChartSlot)
 [ ] responsive: true, maintainAspectRatio: false
 [ ] minHeight set on container
+[ ] Axis max is "nice" (multiple of 50/100/250/500/1000)
+[ ] Tick stepSize is human-readable (no 137, 219, etc.)
+[ ] Currency axes use M/B units with nice boundaries
 
 ROBUSTNESS:
 [ ] Long labels handled (truncate/line-clamp)
