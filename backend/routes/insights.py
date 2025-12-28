@@ -12,6 +12,7 @@ from models.transaction import Transaction
 from models.database import db
 from sqlalchemy import func, and_, or_, extract, case, literal
 from constants import CCR_DISTRICTS, RCR_DISTRICTS, DISTRICT_NAMES, SALE_TYPE_NEW, SALE_TYPE_RESALE
+from api.contracts import api_contract
 
 
 def build_property_age_filter(age_filter):
@@ -94,6 +95,7 @@ def years_ago(date, years):
 
 
 @insights_bp.route("/district-psf", methods=["GET"])
+@api_contract("insights/district-psf")
 def district_psf():
     """
     Get median PSF by district for the Visual Analytics Map.
@@ -331,6 +333,7 @@ def district_psf():
 
 
 @insights_bp.route("/district-summary", methods=["GET"])
+@api_contract("insights/district-summary")
 def district_summary():
     """
     Get summary statistics for a specific district.
@@ -503,6 +506,7 @@ def district_summary():
 
 
 @insights_bp.route("/district-liquidity", methods=["GET"])
+@api_contract("insights/district-liquidity")
 def district_liquidity():
     """
     Get liquidity metrics by district for the District Liquidity Heatmap.
