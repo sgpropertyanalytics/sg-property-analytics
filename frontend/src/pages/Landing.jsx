@@ -1,5 +1,6 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
 import {
   ArrowRight,
   BarChart3,
@@ -10,6 +11,98 @@ import {
   LineChart,
 } from 'lucide-react';
 import YouVsMarketVisual from '../components/landing/YouVsMarketVisual';
+
+/**
+ * MagneticButton - Interactive button with magnetic pull + spotlight blob
+ *
+ * Effects:
+ * 1. Magnetic pull: Button subtly moves toward cursor on hover
+ * 2. Spotlight blob: Glowing orb follows cursor within button
+ */
+function MagneticButton({ children, onClick, className, variant = 'primary' }) {
+  const buttonRef = useRef(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const [spotlightPos, setSpotlightPos] = useState({ x: 0, y: 0 });
+
+  // Magnetic pull position
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  // Spring physics for smooth magnetic effect
+  const springConfig = { damping: 15, stiffness: 150 };
+  const xSpring = useSpring(x, springConfig);
+  const ySpring = useSpring(y, springConfig);
+
+  const handleMouseMove = (e) => {
+    if (!buttonRef.current) return;
+
+    const rect = buttonRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    // Magnetic pull (button moves toward cursor)
+    const deltaX = (e.clientX - centerX) * 0.2;
+    const deltaY = (e.clientY - centerY) * 0.3;
+    x.set(deltaX);
+    y.set(deltaY);
+
+    // Spotlight position (cursor position within button)
+    setSpotlightPos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+    setIsHovered(false);
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const baseClasses = variant === 'primary'
+    ? 'bg-[#213448] text-[#EAE0CF] shadow-lg shadow-[#213448]/20'
+    : 'bg-[#213448] text-[#EAE0CF] shadow-lg shadow-[#213448]/10';
+
+  return (
+    <motion.button
+      ref={buttonRef}
+      onClick={onClick}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={{ x: xSpring, y: ySpring }}
+      whileTap={{ scale: 0.98 }}
+      className={`relative overflow-hidden cursor-pointer ${baseClasses} ${className}`}
+    >
+      {/* Spotlight blob - follows cursor with soft glow */}
+      <div
+        className="pointer-events-none absolute inset-0 transition-opacity duration-200"
+        style={{
+          opacity: isHovered ? 1 : 0,
+          background: `radial-gradient(80px circle at ${spotlightPos.x}px ${spotlightPos.y}px, rgba(148, 180, 193, 0.5), transparent 50%)`,
+        }}
+      />
+
+      {/* Inner highlight layer */}
+      <div
+        className="pointer-events-none absolute inset-0 transition-opacity duration-200"
+        style={{
+          opacity: isHovered ? 1 : 0,
+          background: `radial-gradient(60px circle at ${spotlightPos.x}px ${spotlightPos.y}px, rgba(255, 255, 255, 0.2), transparent 40%)`,
+        }}
+      />
+
+      {/* Button content */}
+      <span className="relative z-10 flex items-center justify-center gap-2">
+        {children}
+      </span>
+    </motion.button>
+  );
+}
 
 /**
  * Landing Page - "Warm Precision" Design System with Unified Texture
@@ -50,12 +143,13 @@ const LandingPage = () => {
             </span>
           </div>
           <div className="flex gap-2 md:gap-4">
-            <button
+            <MagneticButton
               onClick={() => navigate('/login')}
-              className="px-4 md:px-5 py-2 text-sm font-medium bg-[#213448] text-[#EAE0CF] rounded-lg hover:bg-[#547792] hover:shadow-lg active:scale-[0.98] transition-all shadow-lg shadow-[#213448]/10 min-h-[44px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+              className="px-4 md:px-5 py-2 text-sm font-medium rounded-lg min-h-[44px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+              variant="secondary"
             >
               Log In
-            </button>
+            </MagneticButton>
           </div>
         </div>
       </nav>
@@ -97,13 +191,16 @@ const LandingPage = () => {
               Join investors who use institutional-grade analytics to make
               data-driven property decisions.
             </p>
-            <button
-              onClick={() => navigate('/login')}
-              className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#213448] text-[#EAE0CF] font-medium hover:bg-[#547792] hover:shadow-2xl active:scale-[0.98] transition-all shadow-xl shadow-[#213448]/20 flex items-center gap-2 mx-auto min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
-            >
-              View Market Data
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
+            <div className="flex justify-center">
+              <MagneticButton
+                onClick={() => navigate('/login')}
+                className="group px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-medium min-h-[48px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none hover:shadow-2xl transition-shadow"
+                variant="primary"
+              >
+                View Market Data
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </MagneticButton>
+            </div>
           </div>
         </section>
 
@@ -202,14 +299,15 @@ function HeroSection({ navigate }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <button
+          <MagneticButton
             onClick={() => navigate('/login')}
-            className="group px-8 py-4 rounded-lg bg-[#213448] text-[#EAE0CF] font-semibold shadow-lg shadow-[#213448]/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-3 min-h-[48px] touch-action-manipulation focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none"
+            className="group px-8 py-4 rounded-xl font-semibold min-h-[48px] focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus:outline-none hover:shadow-xl transition-shadow duration-300"
+            variant="primary"
           >
             <Database className="w-4 h-4" />
             <span>View Market Data</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
+          </MagneticButton>
         </motion.div>
         </div>
 
