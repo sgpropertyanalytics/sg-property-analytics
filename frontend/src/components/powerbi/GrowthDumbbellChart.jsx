@@ -134,7 +134,7 @@ export function GrowthDumbbellChart({ period = '12m', bedroom = 'all', saleType 
 
       // Add bedroom filter
       if (bedroom && bedroom !== 'all') {
-        params.bedrooms = bedroom;
+        params.bedroom = bedroom;
       }
 
       // Add sale type filter
