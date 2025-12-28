@@ -3,9 +3,6 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import {
   REGIONS,
   DISTRICT_NAMES,
-  BEDROOM_THRESHOLDS_TIER1,
-  BEDROOM_THRESHOLDS_TIER2,
-  BEDROOM_THRESHOLDS_TIER3,
   BEDROOM_ORDER_NUMERIC,
 } from '../../constants';
 // SaleType filter removed - Market Core is Resale-only
@@ -306,43 +303,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
           <p className="text-[10px] text-slate-500 mt-1 italic">
             Click to switch, Shift+click to multi-select
           </p>
-
-          {/* Classification Tiers Info - Generated from constants */}
-          <div className="text-[10px] text-slate-500 mt-2 space-y-1.5 italic overflow-hidden">
-            <div className="text-slate-500 break-words">Bedroom Classification (sqft): Post-harm: after AC ledge removal | Pre-harm: before</div>
-            <div className="overflow-x-auto">
-            <table className="w-full text-[10px] border-collapse border border-dotted border-slate-400">
-              <thead>
-                <tr className="text-slate-600 bg-slate-50/50">
-                  <th className="text-left font-medium p-1 border border-dotted border-slate-400">Type</th>
-                  {BEDROOM_ORDER_NUMERIC.map((br) => (
-                    <th key={br} className="text-center font-medium p-1 border border-dotted border-slate-400">
-                      {br === 5 ? '5BR+' : `${br}BR`}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="text-slate-500">
-                {[
-                  { label: "New ≥Jun'23", thresholds: BEDROOM_THRESHOLDS_TIER1, title: 'Post-harmonization: AC ledge rules changed' },
-                  { label: "New <Jun'23", thresholds: BEDROOM_THRESHOLDS_TIER2, title: 'Pre-harmonization: Before AC ledge rule changes' },
-                  { label: 'Resale', thresholds: BEDROOM_THRESHOLDS_TIER3, title: 'Resale units: Legacy larger sizes' },
-                ].map(({ label, thresholds, title }) => (
-                  <tr key={label} title={title}>
-                    <td className="text-left p-1 border border-dotted border-slate-400">{label}</td>
-                    {BEDROOM_ORDER_NUMERIC.map((br) => (
-                      <td key={br} className="text-center p-1 border border-dotted border-slate-400">
-                        {br === 5
-                          ? `≥${thresholds[4]}`
-                          : `<${thresholds[br]}`}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          </div>
         </FilterSection>
 
         {/* Date Section - moved after Bedroom Size */}
