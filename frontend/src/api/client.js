@@ -75,15 +75,32 @@ const queueRequest = (executeFn, priority = 'normal') => {
 };
 
 // Create axios instance
-// Timeout: 30s for initial cold-start requests (Render free tier spins down after 15 min idle)
+// Timeout: 45s for initial cold-start requests (Render free tier spins down after 15 min idle)
 // Most requests complete in <2s once server is warm
 const apiClient = axios.create({
   baseURL: API_BASE,
-  timeout: 30000, // 30 seconds - generous for cold starts
+  timeout: 45000, // 45 seconds - generous for cold starts
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+/**
+ * Retry wrapper for requests that may hit cold start timeouts
+ * Retries once with increased timeout on timeout errors
+ */
+const withRetry = async (requestFn, retries = 1) => {
+  try {
+    return await requestFn();
+  } catch (error) {
+    const isTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
+    if (isTimeout && retries > 0) {
+      console.log('[API] Timeout, retrying... (cold start likely)');
+      return withRetry(requestFn, retries - 1);
+    }
+    throw error;
+  }
+};
 
 // Request interceptor - attach JWT token from localStorage
 apiClient.interceptors.request.use(
@@ -457,10 +474,11 @@ export const getProjectInventory = (projectName) =>
 /**
  * Get project names for dropdown selection
  * Only returns geocoded projects
+ * Uses retry logic for cold start scenarios
  * @returns {Promise<{projects: Array<{name, district, market_segment}>, count: number}>}
  */
 export const getProjectNames = (options = {}) =>
-  apiClient.get('/projects/names', options);
+  withRetry(() => apiClient.get('/projects/names', options));
 
 /**
  * Get multi-scope comparison for deal checker

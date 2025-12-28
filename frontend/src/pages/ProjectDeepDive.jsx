@@ -39,14 +39,14 @@ const generateLoadingText = () => {
   return `Loading project ${generateRandomProjectName()}, project ${generateRandomProjectName()}, project ${generateRandomProjectName()}...`;
 };
 
-// localStorage keys for persistence
+// sessionStorage keys for persistence (cleared on browser close, preserved during navigation)
 const STORAGE_KEY_PROJECT = 'projectDeepDive:selectedProject';
 const STORAGE_KEY_UNIT_PSF = 'projectDeepDive:unitPsf';
 
-// Helper to safely read from localStorage
+// Helper to safely read from sessionStorage
 const getStoredProject = () => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY_PROJECT);
+    const stored = sessionStorage.getItem(STORAGE_KEY_PROJECT);
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -55,7 +55,7 @@ const getStoredProject = () => {
 
 const getStoredUnitPsf = () => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY_UNIT_PSF);
+    const stored = sessionStorage.getItem(STORAGE_KEY_UNIT_PSF);
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -63,7 +63,7 @@ const getStoredUnitPsf = () => {
 };
 
 export function ProjectDeepDiveContent() {
-  // Project selection state - initialize from localStorage
+  // Project selection state - initialize from sessionStorage
   const [selectedProject, setSelectedProject] = useState(() => getStoredProject());
   const [projectSearch, setProjectSearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -85,21 +85,21 @@ export function ProjectDeepDiveContent() {
   const [priceBandsError, setPriceBandsError] = useState(null);
   const [unitPsf, setUnitPsf] = useState(() => getStoredUnitPsf());
 
-  // Persist selectedProject to localStorage
+  // Persist selectedProject to sessionStorage
   useEffect(() => {
     if (selectedProject) {
-      localStorage.setItem(STORAGE_KEY_PROJECT, JSON.stringify(selectedProject));
+      sessionStorage.setItem(STORAGE_KEY_PROJECT, JSON.stringify(selectedProject));
     } else {
-      localStorage.removeItem(STORAGE_KEY_PROJECT);
+      sessionStorage.removeItem(STORAGE_KEY_PROJECT);
     }
   }, [selectedProject]);
 
-  // Persist unitPsf to localStorage
+  // Persist unitPsf to sessionStorage
   useEffect(() => {
     if (unitPsf !== null) {
-      localStorage.setItem(STORAGE_KEY_UNIT_PSF, JSON.stringify(unitPsf));
+      sessionStorage.setItem(STORAGE_KEY_UNIT_PSF, JSON.stringify(unitPsf));
     } else {
-      localStorage.removeItem(STORAGE_KEY_UNIT_PSF);
+      sessionStorage.removeItem(STORAGE_KEY_UNIT_PSF);
     }
   }, [unitPsf]);
 
@@ -125,7 +125,7 @@ export function ProjectDeepDiveContent() {
           if (!exists) {
             console.warn('Stored project no longer exists, clearing selection');
             setSelectedProject(null);
-            localStorage.removeItem(STORAGE_KEY_PROJECT);
+            sessionStorage.removeItem(STORAGE_KEY_PROJECT);
           }
         }
       } catch (err) {

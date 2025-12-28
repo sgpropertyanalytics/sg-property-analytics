@@ -46,9 +46,10 @@ export function PowerBIFilterProvider({ children }) {
   const [breadcrumbs, setBreadcrumbs] = useState(INITIAL_BREADCRUMBS);
 
   // ===== Time Grouping (View Context) =====
+  // Uses sessionStorage to reset on browser close (session-scoped)
   const [timeGrouping, setTimeGroupingState] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('user_time_pref') || 'quarter';
+      return sessionStorage.getItem('user_time_pref') || 'quarter';
     }
     return 'quarter';
   });
@@ -56,7 +57,7 @@ export function PowerBIFilterProvider({ children }) {
   const setTimeGrouping = useCallback((val) => {
     setTimeGroupingState(val);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('user_time_pref', val);
+      sessionStorage.setItem('user_time_pref', val);
     }
   }, []);
 
