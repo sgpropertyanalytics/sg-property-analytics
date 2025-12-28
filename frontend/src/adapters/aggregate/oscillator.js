@@ -107,6 +107,10 @@ export const transformOscillatorSeries = (rawData, expectedGrain = null, baselin
 
 /**
  * Get human-readable label for a Z-score value.
+ * Thresholds aligned with chart zones:
+ * - ±2σ: Extreme (red/green zones)
+ * - ±1σ to ±2σ: Elevated/watch (amber/yellow)
+ * - ±1σ: Normal (grey zone)
  *
  * @param {number} z - Z-score value
  * @returns {string} Label (e.g., "Undervalued", "Fair Value", "Overvalued")
@@ -114,17 +118,16 @@ export const transformOscillatorSeries = (rawData, expectedGrain = null, baselin
 export const getZScoreLabel = (z) => {
   if (z === null || z === undefined || isNaN(z)) return 'N/A';
 
-  if (z > 2.0) return 'Extremely Overvalued';
-  if (z > 1.0) return 'Overvalued';
-  if (z > 0.5) return 'Above Average';
-  if (z > -0.5) return 'Fair Value';
-  if (z > -1.0) return 'Below Average';
-  if (z > -2.0) return 'Undervalued';
-  return 'Extremely Undervalued';
+  if (z > 2.0) return 'Extreme Disparity';
+  if (z > 1.0) return 'Elevated Premium';
+  if (z > -1.0) return 'Normal Range';
+  if (z > -2.0) return 'Compressed Premium';
+  return 'Extreme Compression';
 };
 
 /**
  * Get short label for a Z-score (for KPI cards).
+ * Only flags extreme values (beyond ±2σ).
  *
  * @param {number} z - Z-score value
  * @returns {string} Short label
@@ -132,13 +135,16 @@ export const getZScoreLabel = (z) => {
 export const getZScoreShortLabel = (z) => {
   if (z === null || z === undefined || isNaN(z)) return 'N/A';
 
-  if (z > 1.0) return 'High';
+  if (z > 2.0) return 'Extreme High';
+  if (z > 1.0) return 'Elevated';
   if (z > -1.0) return 'Normal';
-  return 'Low';
+  if (z > -2.0) return 'Low';
+  return 'Extreme Low';
 };
 
 /**
  * Get signal color for a Z-score.
+ * Red/green only for EXTREME scenarios (beyond ±2σ).
  *
  * @param {number} z - Z-score value
  * @returns {string} Tailwind color class (text-*)
@@ -146,9 +152,11 @@ export const getZScoreShortLabel = (z) => {
 export const getZScoreColor = (z) => {
   if (z === null || z === undefined || isNaN(z)) return 'text-[#547792]';
 
-  if (z > 1.0) return 'text-red-600';
-  if (z < -1.0) return 'text-emerald-600';
-  return 'text-[#213448]';
+  if (z > 2.0) return 'text-red-600';       // Extreme overvaluation
+  if (z > 1.0) return 'text-amber-600';      // Elevated, watch closely
+  if (z > -1.0) return 'text-[#213448]';     // Normal range
+  if (z > -2.0) return 'text-sky-600';       // Compressed, improving
+  return 'text-emerald-600';                 // Extreme undervaluation
 };
 
 /**

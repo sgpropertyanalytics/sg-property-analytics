@@ -291,20 +291,28 @@ export function MarketValueOscillator({ height = 380 }) {
       },
       annotation: {
         annotations: {
-          // Premium zone (overvalued) - extends to dynamic max
+          // Premium zone (extremely overvalued) - only beyond +2σ
           premiumZone: {
             type: 'box',
-            yMin: 1.0,
+            yMin: 2.0,
             yMax: yAxisBounds.max,
-            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+            backgroundColor: 'rgba(239, 68, 68, 0.12)',
             borderWidth: 0,
           },
-          // Value zone (undervalued) - extends to dynamic min
+          // Value zone (extremely undervalued) - only beyond -2σ
           valueZone: {
             type: 'box',
             yMin: yAxisBounds.min,
-            yMax: -1.0,
-            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            yMax: -2.0,
+            backgroundColor: 'rgba(16, 185, 129, 0.12)',
+            borderWidth: 0,
+          },
+          // Normal zone (grey) - between -1σ and +1σ
+          normalZone: {
+            type: 'box',
+            yMin: -1.0,
+            yMax: 1.0,
+            backgroundColor: 'rgba(148, 180, 193, 0.15)',
             borderWidth: 0,
           },
           // Zero line (historical average)
@@ -325,38 +333,73 @@ export function MarketValueOscillator({ height = 380 }) {
               padding: 3,
             },
           },
-          // Upper threshold (+1σ)
+          // Upper threshold (+2σ) - extreme overvaluation boundary
           upperThreshold: {
             type: 'line',
-            yMin: 1.0,
-            yMax: 1.0,
-            borderColor: 'rgba(239, 68, 68, 0.3)',
+            yMin: 2.0,
+            yMax: 2.0,
+            borderColor: 'rgba(239, 68, 68, 0.4)',
             borderWidth: 1,
             borderDash: [2, 4],
             label: {
               display: true,
-              content: '+1σ',
+              content: '+2σ',
               position: 'end',
-              backgroundColor: 'rgba(239, 68, 68, 0.6)',
+              backgroundColor: 'rgba(239, 68, 68, 0.7)',
               color: '#fff',
               font: { size: 8 },
               padding: 2,
             },
           },
-          // Lower threshold (-1σ)
+          // Lower threshold (-2σ) - extreme undervaluation boundary
           lowerThreshold: {
             type: 'line',
-            yMin: -1.0,
-            yMax: -1.0,
-            borderColor: 'rgba(16, 185, 129, 0.3)',
+            yMin: -2.0,
+            yMax: -2.0,
+            borderColor: 'rgba(16, 185, 129, 0.4)',
             borderWidth: 1,
             borderDash: [2, 4],
             label: {
               display: true,
+              content: '-2σ',
+              position: 'end',
+              backgroundColor: 'rgba(16, 185, 129, 0.7)',
+              color: '#fff',
+              font: { size: 8 },
+              padding: 2,
+            },
+          },
+          // Normal range lines (±1σ) - inner boundaries
+          upperNormal: {
+            type: 'line',
+            yMin: 1.0,
+            yMax: 1.0,
+            borderColor: 'rgba(148, 180, 193, 0.4)',
+            borderWidth: 1,
+            borderDash: [4, 4],
+            label: {
+              display: true,
+              content: '+1σ',
+              position: 'end',
+              backgroundColor: 'rgba(148, 180, 193, 0.7)',
+              color: '#213448',
+              font: { size: 8 },
+              padding: 2,
+            },
+          },
+          lowerNormal: {
+            type: 'line',
+            yMin: -1.0,
+            yMax: -1.0,
+            borderColor: 'rgba(148, 180, 193, 0.4)',
+            borderWidth: 1,
+            borderDash: [4, 4],
+            label: {
+              display: true,
               content: '-1σ',
               position: 'end',
-              backgroundColor: 'rgba(16, 185, 129, 0.6)',
-              color: '#fff',
+              backgroundColor: 'rgba(148, 180, 193, 0.7)',
+              color: '#213448',
               font: { size: 8 },
               padding: 2,
             },
@@ -468,11 +511,11 @@ export function MarketValueOscillator({ height = 380 }) {
               <div className="mb-2">
                 <div className="font-semibold text-[#213448] mb-1">Interpretation Guide</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
-                  <div><span className="font-semibold text-amber-600">+0.5σ to +1.0σ</span> — Above average but healthy range.</div>
-                  <div><span className="font-semibold text-red-500">+1.0σ to +2.0σ</span> — Overvalued, risk of mean reversion.</div>
-                  <div><span className="font-semibold text-red-700">&gt; +2.0σ</span> — Extremely overvalued, stretched beyond norms.</div>
-                  <div><span className="font-semibold text-sky-600">–0.5σ to –1.0σ</span> — Below average, improving value.</div>
-                  <div><span className="font-semibold text-emerald-600">&lt; –1.0σ</span> — Significantly undervalued, mean-reversion potential.</div>
+                  <div><span className="font-semibold text-[#547792]">±0σ to ±1.0σ</span> — Normal range, fair value.</div>
+                  <div><span className="font-semibold text-amber-600">+1.0σ to +2.0σ</span> — Elevated premium, watch closely.</div>
+                  <div><span className="font-semibold text-red-600">&gt; +2.0σ</span> — Extreme disparity, significant overvaluation.</div>
+                  <div><span className="font-semibold text-sky-600">–1.0σ to –2.0σ</span> — Compressed premium, improving value.</div>
+                  <div><span className="font-semibold text-emerald-600">&lt; –2.0σ</span> — Extreme compression, potential opportunity.</div>
                 </div>
               </div>
             </KeyInsightBox>
