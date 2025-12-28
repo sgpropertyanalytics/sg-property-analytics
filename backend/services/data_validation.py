@@ -329,8 +329,11 @@ def get_data_quality_report() -> Dict[str, Any]:
         return {"error": "No data in database"}
 
     # Count records with missing values
+    # NOTE: f-string SQL is safe here because column names are from a hardcoded
+    # list below, NOT from user input. Do not copy this pattern for user-provided values.
     null_counts = {}
-    for column in ['price', 'area_sqft', 'psf', 'district', 'bedroom_count', 'transaction_date']:
+    VALID_COLUMNS = ['price', 'area_sqft', 'psf', 'district', 'bedroom_count', 'transaction_date']
+    for column in VALID_COLUMNS:
         sql = text(f"SELECT COUNT(*) FROM transactions WHERE {column} IS NULL")
         null_counts[column] = db.session.execute(sql).scalar()
 
