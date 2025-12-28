@@ -146,9 +146,10 @@ export function buildApiParamsFromState(
     }
   }
 
-  // Sale type - pass through from filters (page/chart layer enforces business rules)
-  // See CLAUDE.md "Business Logic Enforcement" for why this is NOT hardcoded here
-  if (excludeOwnDimension !== 'sale_type' && activeFilters.saleType) {
+  // Sale type - page prop takes precedence over filters
+  // If sale_type already set in additionalParams (from page), don't override
+  // See CLAUDE.md "Business Logic Enforcement" for architectural rationale
+  if (excludeOwnDimension !== 'sale_type' && !params.sale_type && activeFilters.saleType) {
     params.sale_type = activeFilters.saleType;
   }
 

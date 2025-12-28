@@ -29,6 +29,7 @@ import {
   assertKnownVersion,
   calculateRollingAverage,
 } from '../../adapters';
+import { SaleType } from '../../schemas/apiContract';
 
 ChartJS.register(
   CategoryScale,
@@ -81,15 +82,19 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
     fetchOnMount: true,
   });
 
-  // HISTORICAL BASELINE: Fetch full historical data once (no date filters)
+  // HISTORICAL BASELINE: Fetch full historical data (no date filters)
   // This provides stable mean/stdDev for Z-score calculation
-  // NOTE: Uses RESALE ONLY - excludes new sale data which can be artificially priced
+  // Uses page-level saleType prop for consistency with current data
+  // Defaults to RESALE if not provided (new sales can be artificially priced)
   const { data: baselineStats } = useAbortableQuery(
     async (signal) => {
+      // Use page prop or fallback to canonical RESALE enum
+      // See CLAUDE.md "Business Logic Enforcement" - charts receive saleType from page
+      const effectiveSaleType = saleType || SaleType.RESALE;
       const params = {
         group_by: 'quarter,region',
         metrics: 'median_psf,count',
-        sale_type: 'Resale',  // Exclude new sales for more accurate market signal
+        sale_type: effectiveSaleType,
       };
 
       const response = await getAggregate(params, { signal });
@@ -97,15 +102,14 @@ export function MarketValueOscillator({ height = 380, saleType = null }) {
       const compressionData = transformCompressionSeries(rawData, 'quarter');
       return calculateZScoreStats(compressionData);
     },
-    [], // Empty deps = fetch once on mount
+    [saleType], // Refetch if saleType changes (rare - usually constant from page)
     {
       initialData: { ccrRcr: { mean: 400, stdDev: 200 }, rcrOcr: { mean: 200, stdDev: 100 } },
       enabled: shouldFetch
     }
   );
 
-  // Main filtered data fetching
-  // NOTE: Uses RESALE ONLY - excludes new sale data which can be artificially priced
+  // Main filtered data fetching - uses page-level saleType prop
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"

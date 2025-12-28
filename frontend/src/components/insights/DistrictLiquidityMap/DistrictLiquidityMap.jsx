@@ -40,14 +40,13 @@ import {
 // MAIN COMPONENT
 // =============================================================================
 
-export default function DistrictLiquidityMap() {
+export default function DistrictLiquidityMap({ saleType = SaleType.RESALE }) {
   const { isPremium } = useSubscription();
   const [districtData, setDistrictData] = useState([]);
   const [meta, setMeta] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
-  // NOTE: saleType is fixed to SaleType.RESALE (no UI toggle, resale-only for this page)
   const [selectedPeriod, setSelectedPeriod] = useState('12m');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
@@ -56,8 +55,8 @@ export default function DistrictLiquidityMap() {
 
   // Stable filter key for dependency tracking (avoids object reference issues)
   const filterKey = useMemo(
-    () => `${selectedPeriod}:${selectedBed}`,
-    [selectedPeriod, selectedBed]
+    () => `${selectedPeriod}:${selectedBed}:${saleType}`,
+    [selectedPeriod, selectedBed, saleType]
   );
 
   const [viewState, setViewState] = useState({
@@ -81,7 +80,7 @@ export default function DistrictLiquidityMap() {
         params: {
           period: selectedPeriod,
           bed: selectedBed,
-          saleType: SaleType.RESALE, // Resale-only for District Deep Dive
+          saleType, // Use prop value (page-level enforcement)
         },
         signal, // Pass abort signal to cancel on filter change
       });

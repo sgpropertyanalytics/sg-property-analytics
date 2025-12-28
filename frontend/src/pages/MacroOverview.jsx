@@ -5,6 +5,7 @@ import { PriceDistributionChart } from '../components/powerbi/PriceDistributionC
 import { BeadsChart } from '../components/powerbi/BeadsChart';
 // NewVsResaleChart moved to Primary Market page
 import { PriceCompressionChart } from '../components/powerbi/PriceCompressionChart';
+import { SaleType } from '../schemas/apiContract';
 import { AbsolutePsfChart } from '../components/powerbi/AbsolutePsfChart';
 import { MarketValueOscillator } from '../components/powerbi/MarketValueOscillator';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
@@ -42,7 +43,8 @@ import { useChartHeight, MOBILE_CAPS } from '../hooks';
  */
 
 // Page-level data scope - all charts inherit this
-const SALE_TYPE = 'Resale';
+// Uses canonical enum from apiContract (lowercase: 'resale')
+const SALE_TYPE = SaleType.RESALE;
 
 export function MacroOverviewContent() {
   const { apiMetadata } = useData();

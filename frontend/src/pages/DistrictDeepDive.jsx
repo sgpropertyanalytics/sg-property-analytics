@@ -100,13 +100,15 @@ export function DistrictDeepDiveContent() {
 /**
  * District (Volume/Liquidity) Tab Content
  * Features: Liquidity Map
+ *
+ * NOTE: saleType is fixed to SaleType.RESALE (page-level enforcement)
  */
 function DistrictVolumeContent() {
   return (
     <div className="space-y-6">
       {/* District Liquidity Map */}
       <ChartWatermark>
-        <DistrictLiquidityMap />
+        <DistrictLiquidityMap saleType={SaleType.RESALE} />
       </ChartWatermark>
     </div>
   );

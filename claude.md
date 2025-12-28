@@ -23,6 +23,130 @@ Docs: `docs/backend.md`, `docs/frontend.md`, `docs/architecture.md`
 
 ---
 
+# 0. ARCHITECTURAL INVARIANTS (NON-NEGOTIABLE)
+
+These rules MUST be followed at all times. Violating them is a bug, even if the code "works."
+
+## Core Philosophy — Page Owns Business Logic
+
+| Layer | Responsibility |
+|-------|----------------|
+| **Pages** | Decide business logic (data scope, sale type, market mode) |
+| **Components** | Receive props, render data, never enforce meaning |
+| **Utils** | Transform inputs, never set defaults or infer intent |
+| **Backend** | Enforce rules, validate inputs |
+
+**Mental Model (memorize this):**
+```
+Pages decide meaning → Components visualize → Utils transform → Backend enforces → Nothing guesses
+```
+
+## Component Design Rules
+
+Components MUST:
+- Be stateless and reusable
+- Accept configuration via props
+- Never assume market context
+
+Components must NOT:
+- Hardcode sale type or business rules
+- Infer business intent
+- Override page-level decisions
+
+```jsx
+// ❌ FORBIDDEN - component decides business logic
+params.sale_type = 'resale';
+
+// ✅ REQUIRED - page passes intent via prop
+<Component saleType={SaleType.RESALE} />
+```
+
+## Single Source of Truth (Enums)
+
+All sale types MUST come from canonical enums. No string literals for business logic.
+
+```jsx
+// ✅ Correct
+import { SaleType } from '../schemas/apiContract';
+const SALE_TYPE = SaleType.RESALE;
+
+// ❌ Incorrect - string literals
+'Resale'
+'resale'
+'NEW'
+'new-sale'
+```
+
+## Param Merge Precedence
+
+When building API params, precedence order is:
+1. **Page-level prop** (highest) - always wins
+2. **Filter-derived value** - only if page didn't set it
+3. **Default** (lowest) - none
+
+```js
+// utils.js - page prop takes precedence
+if (!params.sale_type && activeFilters.saleType) {
+  params.sale_type = activeFilters.saleType;  // Only if not already set
+}
+```
+
+## Market Core vs Primary Market
+
+These are SEPARATE data universes. They MUST NEVER be mixed.
+
+| Page | Data Scope | Purpose |
+|------|------------|---------|
+| Market Core | Resale ONLY | Secondary market analysis |
+| Primary Market | New Sale + Resale | Developer pricing, launches, absorption |
+
+## Chart Rules
+
+Charts:
+- Accept `saleType` as prop
+- Never decide saleType internally
+- Never override page intent
+- Must be reusable across pages
+
+```jsx
+// ✅ Allowed - conditional based on prop
+if (saleType) params.sale_type = saleType;
+
+// ❌ Forbidden - chart decides
+params.sale_type = SaleType.RESALE;
+```
+
+## Utility Function Rules
+
+Utils must be PURE. They:
+- Transform inputs
+- Never enforce logic
+- Never set defaults
+- Never infer intent
+
+```js
+// ❌ Not allowed in utils
+if (!saleType) saleType = 'resale';  // Setting default = business logic
+
+// ✅ Allowed - pure transformation
+return saleType?.toLowerCase();
+```
+
+## Pre-Merge Safety Checklist
+
+Before merging ANY analytics-related change:
+- [ ] Page decides sale type
+- [ ] Components are reusable (no hardcoded business logic)
+- [ ] No string literals for enums
+- [ ] Page prop overrides filter params
+- [ ] Market Core ≠ Primary Market clearly separated
+- [ ] Charts accept saleType as prop
+- [ ] Utils are pure (no defaults, no inference)
+
+**If unsure — STOP and ask.**
+
+---
+
 # 1. HARD CONSTRAINTS
 
 ## Memory (512MB)
@@ -156,20 +280,22 @@ API           │ Enforces rules (safest for analytics)
 Utils         │ Pure helpers (no business logic)
 ```
 
-**✅ CORRECT: Page-level enforcement**
+**✅ CORRECT: Page-level enforcement with canonical enum**
 ```jsx
-// MarketCoreChart.jsx - explicit, self-documenting
-const params = buildApiParams({
-  group_by: 'month',
-  sale_type: 'Resale',  // Market Core is resale-only
-});
+import { SaleType } from '../schemas/apiContract';
+
+// Page-level data scope - all charts inherit this
+const SALE_TYPE = SaleType.RESALE;  // Use canonical enum ('resale')
+
+<TimeTrendChart saleType={SALE_TYPE} />
 ```
 
 **✅ BETTER: API-level enforcement (for critical analytics)**
 ```python
-# backend/routes/market_core.py
-if route == "market_core":
-    params["sale_type"] = "resale"  # Backend guarantees integrity
+# backend/routes/analytics.py
+# For Market Core endpoints, enforce resale-only server-side
+if sale_type is None:
+    sale_type = "Resale"  # Default to resale for Market Core
 ```
 
 **❌ WRONG: Hardcoded in utils**
@@ -186,6 +312,34 @@ export function buildApiParams(...) {
 - Keeps utils reusable
 - Matches mental model ("this page is resale-only")
 - No hidden side effects
+
+## Sale Type Normalization
+**Rule:** Always use canonical enum values. Page props take precedence over filters.
+
+**Sources of truth:**
+```
+Frontend: SaleType.RESALE = 'resale' (schemas/apiContract/enums.js)
+Backend:  SALE_TYPE_RESALE = 'Resale' (constants.py)
+```
+
+**Precedence order (highest to lowest):**
+1. Page-level prop (`saleType={SaleType.RESALE}`)
+2. Filter-derived value (`activeFilters.saleType`)
+3. Default (none - all sale types)
+
+**Implementation in buildApiParams:**
+```js
+// utils.js - page prop wins
+if (!params.sale_type && activeFilters.saleType) {
+  params.sale_type = activeFilters.saleType;  // Only if not already set
+}
+```
+
+**Checklist for sale type safety:**
+- [ ] Use `SaleType.RESALE` enum, not string literals
+- [ ] Page prop passed to all charts: `saleType={SALE_TYPE}`
+- [ ] Utils don't override if sale_type already in params
+- [ ] Backend validates/normalizes sale_type values
 
 ## Dates
 - UI date ranges must NEVER exceed today (clamp future dates)

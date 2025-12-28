@@ -392,14 +392,15 @@ function RegionSummaryBar({ districtData }) {
  * MarketStrategyMap Component
  *
  * Supports both controlled and uncontrolled modes:
- * - Controlled: Pass selectedPeriod, selectedBed, onFilterChange props
+ * - Controlled: Pass selectedPeriod, selectedBed, selectedSaleType, onFilterChange props
  * - Uncontrolled: Uses internal state (legacy behavior)
  *
- * NOTE: saleType is fixed to SaleType.RESALE (no UI toggle, resale-only for this page)
+ * @param {string} selectedSaleType - Sale type enum value (page-level enforcement)
  */
 export default function MarketStrategyMap({
   selectedPeriod: controlledPeriod,
   selectedBed: controlledBed,
+  selectedSaleType = SaleType.RESALE,
   onFilterChange,
 }) {
   const { isPremium } = useSubscription();
@@ -439,8 +440,8 @@ export default function MarketStrategyMap({
 
   // Stable filter key for dependency tracking (avoids object reference issues)
   const filterKey = useMemo(
-    () => `${selectedPeriod}:${selectedBed}`,
-    [selectedPeriod, selectedBed]
+    () => `${selectedPeriod}:${selectedBed}:${selectedSaleType}`,
+    [selectedPeriod, selectedBed, selectedSaleType]
   );
 
   const [viewState, setViewState] = useState({
@@ -461,7 +462,7 @@ export default function MarketStrategyMap({
 
     try {
       const response = await apiClient.get('/insights/district-psf', {
-        params: { period: selectedPeriod, bed: selectedBed, sale_type: SaleType.RESALE },
+        params: { period: selectedPeriod, bed: selectedBed, sale_type: selectedSaleType },
         signal,  // Pass abort signal to cancel on filter change
       });
 
