@@ -212,9 +212,22 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
         display: true,
         position: 'bottom',
         labels: {
-          usePointStyle: true,
+          usePointStyle: false,
+          boxWidth: 40,
+          boxHeight: 2,
           padding: 16,
           font: { size: 11 },
+          generateLabels: (chart) => {
+            return chart.data.datasets.map((dataset, i) => ({
+              text: dataset.label,
+              fillStyle: dataset.borderColor,
+              strokeStyle: dataset.borderColor,
+              lineWidth: dataset.borderWidth,
+              lineDash: dataset.borderDash || [],
+              hidden: !chart.isDatasetVisible(i),
+              datasetIndex: i,
+            }));
+          },
         },
       },
       tooltip: {
