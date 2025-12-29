@@ -16,7 +16,7 @@ import React from 'react';
 export function TransactionDataTable({ height = 400 }) {
   return (
     <div
-      className="bg-white rounded-lg border border-[#94B4C1]/50 flex items-center justify-center"
+      className="bg-card rounded-lg border border-[#94B4C1]/50 flex items-center justify-center"
       style={{ height }}
     >
       <div className="p-6 text-center max-w-md">

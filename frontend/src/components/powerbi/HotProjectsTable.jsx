@@ -190,7 +190,7 @@ export function HotProjectsTable({
   ];
 
   return (
-    <div id="hot-projects-table" className={`bg-white ${compact ? '' : 'rounded-lg border border-[#94B4C1]/50'} overflow-hidden`}>
+    <div id="hot-projects-table" className={`bg-card ${compact ? '' : 'rounded-lg border border-[#94B4C1]/50'} overflow-hidden`}>
       {/* Header - conditionally shown */}
       {showHeader && (
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
@@ -224,7 +224,7 @@ export function HotProjectsTable({
           </div>
         ) : loading ? (
           [...Array(5)].map((_, i) => (
-            <div key={i} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 animate-pulse">
+            <div key={i} className="p-3 bg-card rounded-lg border border-[#94B4C1]/30 animate-pulse">
               <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
               <div className="h-3 bg-slate-200 rounded w-1/2"></div>
             </div>
@@ -235,7 +235,7 @@ export function HotProjectsTable({
           </div>
         ) : (
           sortedData.map((project, idx) => (
-            <div key={project.project_name || idx} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 active:bg-[#EAE0CF]/20">
+            <div key={project.project_name || idx} className="p-3 bg-card rounded-lg border border-[#94B4C1]/30 active:bg-[#EAE0CF]/20">
               <div className="flex justify-between items-start gap-3">
                 {/* Left: Project info */}
                 <div className="min-w-0 flex-1">

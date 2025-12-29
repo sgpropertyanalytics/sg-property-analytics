@@ -196,7 +196,7 @@ export function ValueParityPanel() {
       ) : (
         <>
       {/* Input Panel */}
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+      <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
         <form onSubmit={handleSearch}>
           {/* 50/50 Two-column layout: Budget+Search (left) | Optional Filters (right) */}
           <div className="grid grid-cols-1 lg:grid-cols-2">
@@ -474,7 +474,7 @@ export function ValueParityPanel() {
           </div>
 
           {/* Upcoming Launches Table with internal header */}
-          <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+          <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
             <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center gap-3">
               <span className="text-xl">🏗️</span>
               <div>
@@ -505,7 +505,7 @@ export function ValueParityPanel() {
           </div>
 
           {/* Hot Projects Table with internal header */}
-          <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+          <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
             <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center gap-3">
               <span className="text-xl">🏢</span>
               <div>
@@ -534,7 +534,7 @@ export function ValueParityPanel() {
 
       {/* Initial state - before search */}
       {!hasSearched && (
-        <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-8 text-center">
+        <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-8 text-center">
           <div className="max-w-md mx-auto">
             <svg className="w-16 h-16 mx-auto text-[#94B4C1] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />

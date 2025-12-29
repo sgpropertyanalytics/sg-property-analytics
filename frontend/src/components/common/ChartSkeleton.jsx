@@ -18,7 +18,7 @@
 // Shimmer styles are in index.css
 
 export function ChartSkeleton({ type = 'default', height = 300, className = '' }) {
-  const baseClass = `chart-skeleton bg-white rounded-lg border border-[#e8e4dc]/60 overflow-hidden ${className}`;
+  const baseClass = `chart-skeleton bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden ${className}`;
 
   switch (type) {
     case 'bar':

@@ -526,7 +526,7 @@ export function PriceDistributionHeroChart({
   // Loading state
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+      <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
         <div className="px-4 py-3 border-b border-[#94B4C1]/30">
           <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
         </div>
@@ -543,7 +543,7 @@ export function PriceDistributionHeroChart({
   // No data state
   if (totalCount === 0 || !chartData) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+      <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
         <div className="px-4 py-3 border-b border-[#94B4C1]/30">
           <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
         </div>
@@ -619,7 +619,7 @@ export function PriceDistributionHeroChart({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between gap-4">

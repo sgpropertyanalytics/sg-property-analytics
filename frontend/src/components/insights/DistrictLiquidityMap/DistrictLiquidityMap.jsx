@@ -165,7 +165,7 @@ export default function DistrictLiquidityMap({ saleType = SaleType.RESALE }) {
   }, []);
 
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
       {/* Header with filters */}
       <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-[#94B4C1]/30">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 sm:gap-3">

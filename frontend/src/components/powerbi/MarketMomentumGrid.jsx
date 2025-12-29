@@ -128,7 +128,7 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
   // Error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+      <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
         <div className="px-4 py-3 border-b border-[#94B4C1]/30">
           <h3 className="text-sm font-semibold text-[#213448]">Market Momentum Grid</h3>
         </div>
@@ -147,7 +147,7 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
   }
 
   return (
-    <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-3 md:px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

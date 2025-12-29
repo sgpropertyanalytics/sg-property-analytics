@@ -168,7 +168,7 @@ export function GLSDataTable({ height = 400 }) {
   const awardedCount = data.filter(t => t.status === 'awarded').length;
 
   return (
-    <div ref={containerRef} id="gls-data-table" className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div ref={containerRef} id="gls-data-table" className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between mb-2">

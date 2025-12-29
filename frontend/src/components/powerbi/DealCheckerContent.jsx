@@ -332,7 +332,7 @@ export default function DealCheckerContent() {
     <div className="space-y-6">
       {/* Input Form Card - Consistent with Affordability tab */}
       {/* IMPORTANT: Do NOT add overflow-hidden here - it clips the project dropdown */}
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50">
+      <div className="bg-card rounded-lg border border-[#94B4C1]/50">
         <div className="px-4 py-3 border-b border-[#94B4C1]/30">
           <h3 className="font-semibold text-[#213448]">Check Your Deal</h3>
           <p className="text-xs text-[#547792] mt-0.5">
@@ -533,7 +533,7 @@ export default function DealCheckerContent() {
           />
 
           {/* Map - Full Width (similar to District Deep Dive) */}
-          <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+          <div className="bg-card rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
             <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-[#94B4C1]/30">
               <h3 className="text-base sm:text-lg font-bold text-[#213448]">Nearby Projects Map</h3>
               <p className="text-[10px] sm:text-xs text-[#547792]">
@@ -550,7 +550,7 @@ export default function DealCheckerContent() {
           </div>
 
           {/* Nearby Projects Table - Full Width Below Map */}
-          <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+          <div className="bg-card rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-[#94B4C1]/30">
                 <div className="flex items-center justify-between">
                   <div>
@@ -815,7 +815,7 @@ export default function DealCheckerContent() {
 
       {/* Initial state */}
       {!result && !loading && (
-        <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-8 text-center">
+        <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-8 text-center">
           <div className="max-w-md mx-auto">
             <svg className="w-16 h-16 mx-auto text-[#94B4C1] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />

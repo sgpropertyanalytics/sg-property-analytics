@@ -74,7 +74,7 @@ const DistrictLiquidityMapLazy = lazyWithRetry(
 // Loading fallback component for 3D map (light theme to match actual component)
 function MapLoadingFallback() {
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <h2 className="text-lg font-bold text-[#213448]">
           District PSF Heatmap
@@ -96,7 +96,7 @@ function MapLoadingFallback() {
 // Loading fallback component for strategy map (light theme to match actual component)
 function StrategyMapLoadingFallback() {
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <h2 className="text-lg font-bold text-[#213448]">
           District Price Overview
@@ -142,7 +142,7 @@ export function MarketStrategyMap(props) {
 // Loading fallback for liquidity map
 function LiquidityMapLoadingFallback() {
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <h2 className="text-lg font-bold text-[#213448]">
           District Liquidity Map

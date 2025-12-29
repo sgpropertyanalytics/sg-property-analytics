@@ -79,7 +79,7 @@ export function PriceRangeMatrix({
   // Loading state
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-card rounded-lg shadow-sm border border-[#94B4C1]/50 p-4">
         <ChartSkeleton height={300} />
       </div>
     );
@@ -88,7 +88,7 @@ export function PriceRangeMatrix({
   // Error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-card rounded-lg shadow-sm border border-[#94B4C1]/50 p-4">
         <div className="text-red-600 text-sm">
           Failed to load price range data
         </div>
@@ -99,7 +99,7 @@ export function PriceRangeMatrix({
   // Empty state
   if (!data || data.totalCount === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-card rounded-lg shadow-sm border border-[#94B4C1]/50 p-4">
         <div className="text-gray-500 text-sm text-center py-8">
           No transactions found for the selected criteria
         </div>
@@ -110,7 +110,7 @@ export function PriceRangeMatrix({
   const { matrix, ageBands, bedrooms } = data;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="bg-card rounded-lg shadow-sm border border-[#94B4C1]/50">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-200">
         <div className="flex items-center justify-between">

@@ -185,7 +185,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
   return (
     <QueryState loading={loading} error={error} onRetry={refetch} empty={data.projects.length === 0} skeleton="grid" height={400}>
     {/* Card owns its height explicitly - 400px fixed */}
-    <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: 400 }}>
+    <div className="bg-card rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: 400 }}>
       {/* Header */}
       <div className="px-6 py-4 border-b border-[#94B4C1]/30">
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -293,7 +293,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
           const districtAgg = projectsByDistrict.districtAggregates[district];
 
           return (
-            <div key={district} className="bg-white rounded-lg border border-[#94B4C1]/30">
+            <div key={district} className="bg-card rounded-lg border border-[#94B4C1]/30">
               {/* District Header */}
               <button
                 onClick={() => toggleDistrict(district)}

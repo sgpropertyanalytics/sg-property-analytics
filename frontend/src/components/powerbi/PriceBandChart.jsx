@@ -282,7 +282,7 @@ export function PriceBandChart({
   if (error) {
     return (
       <div
-        className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
+        className="bg-card rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
         style={{ height }}
       >
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
@@ -302,7 +302,7 @@ export function PriceBandChart({
   if (!chartData || bands.length === 0) {
     return (
       <div
-        className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
+        className="bg-card rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
         style={{ height }}
       >
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
@@ -334,7 +334,7 @@ export function PriceBandChart({
   // Main chart view
   return (
     <div
-      className="bg-white rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
+      className="bg-card rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
       style={{ height: cardHeight }}
     >
       {/* Header */}

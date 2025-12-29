@@ -125,7 +125,7 @@ export function BudgetActivityHeatmap({
   // Error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-6">
+      <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-6">
         <p className="text-sm text-red-600">Failed to load market activity data</p>
       </div>
     );
@@ -134,7 +134,7 @@ export function BudgetActivityHeatmap({
   // No data or empty state
   if (!data || data.total_count === 0) {
     return (
-      <div className="bg-white rounded-lg border border-[#94B4C1]/50 p-6">
+      <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-6">
         <h4 className="font-semibold text-[#213448] mb-2">
           Bedroom Mix by Property Age
         </h4>
@@ -149,7 +149,7 @@ export function BudgetActivityHeatmap({
   const showMarketShiftWarning = timeWindow >= 48;
 
   return (
-    <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex items-start justify-between gap-4">

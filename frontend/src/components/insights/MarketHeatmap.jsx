@@ -157,7 +157,7 @@ export default function MarketHeatmap() {
     : null;
 
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/30 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-xl border border-[#94B4C1]/30 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 md:px-6 md:py-4 border-b border-[#94B4C1]/30">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">

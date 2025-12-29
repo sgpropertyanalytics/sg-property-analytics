@@ -138,7 +138,7 @@ function TurnoverBar({ label, value, maxValue = 30 }) {
 // Skeleton loader for loading state
 function ExitRiskDashboardSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6 animate-pulse">
+    <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-6 animate-pulse">
       <div className="h-4 bg-[#94B4C1]/30 rounded w-1/3 mb-6" />
 
       {/* Market turnover bar skeleton */}
@@ -186,7 +186,7 @@ export default function ExitRiskDashboard({
   const riskBadge = getRiskBadgeStyles(overallRisk);
 
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6">
+    <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-6">
       {/* Header */}
       <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-6">
         Liquidity Assessment

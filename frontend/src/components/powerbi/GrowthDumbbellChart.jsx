@@ -190,7 +190,7 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
 
   return (
     <QueryState loading={loading} error={error} onRetry={refetch} empty={!sortedData || sortedData.length === 0} skeleton="bar" height={400}>
-    <div className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header with title */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

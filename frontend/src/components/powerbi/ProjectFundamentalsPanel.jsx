@@ -29,7 +29,7 @@ function StatCard({ label, value, subtext, isUnavailable = false }) {
 // Skeleton loader - matches ResaleMetricsSkeleton layout
 function ProjectFundamentalsSkeleton({ compact = false }) {
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 animate-pulse">
+    <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 animate-pulse">
       <div className="h-4 bg-[#94B4C1]/30 rounded w-1/2 mb-4" />
       <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 md:grid-cols-3'}`}>
         {[...Array(3)].map((_, i) => (
@@ -97,7 +97,7 @@ export default function ProjectFundamentalsPanel({
   const unitsData = formatUnits();
 
   return (
-    <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
+    <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
       {/* Header */}
       <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-3 md:mb-4">
         Property Fundamentals

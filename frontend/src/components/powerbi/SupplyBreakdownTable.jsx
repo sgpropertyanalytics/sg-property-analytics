@@ -162,7 +162,7 @@ export function SupplyBreakdownTable({
       empty={tableData.districts.length === 0}
       skeleton="table"
     >
-      <div className="bg-white rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
+      <div className="bg-card rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#94B4C1]/30">
           <div className="flex items-center justify-between flex-wrap gap-3">

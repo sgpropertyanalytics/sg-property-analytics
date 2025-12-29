@@ -240,7 +240,7 @@ export function DistrictComparisonChart({
 
   // Render
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-card rounded-lg border border-[#94B4C1]/50 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-100">
         <h3 className="text-base font-semibold text-gray-900">
