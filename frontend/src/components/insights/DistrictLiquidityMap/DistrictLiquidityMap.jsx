@@ -40,15 +40,44 @@ import {
 // MAIN COMPONENT
 // =============================================================================
 
-export default function DistrictLiquidityMap({ saleType = SaleType.RESALE }) {
+export default function DistrictLiquidityMap({
+  saleType = SaleType.RESALE,
+  selectedPeriod: controlledPeriod,
+  selectedBed: controlledBed,
+  onFilterChange,
+}) {
   const { isPremium } = useSubscription();
   const [districtData, setDistrictData] = useState([]);
   const [meta, setMeta] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedBed, setSelectedBed] = useState('all');
-  const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
+
+  // Support both controlled and uncontrolled modes (like MarketStrategyMap)
+  const [internalBed, setInternalBed] = useState('all');
+  const [internalPeriod, setInternalPeriod] = useState('all');
+
+  // Use controlled values if provided, otherwise use internal state
+  const isControlled = onFilterChange !== undefined;
+  const selectedBed = isControlled ? controlledBed : internalBed;
+  const selectedPeriod = isControlled ? controlledPeriod : internalPeriod;
+
+  // Unified setters that work in both modes
+  const setSelectedBed = (value) => {
+    if (isControlled) {
+      onFilterChange('bed', value);
+    } else {
+      setInternalBed(value);
+    }
+  };
+
+  const setSelectedPeriod = (value) => {
+    if (isControlled) {
+      onFilterChange('period', value);
+    } else {
+      setInternalPeriod(value);
+    }
+  };
 
   // Abort/stale request protection
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
