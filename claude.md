@@ -18,6 +18,7 @@
 |-------|---------|
 | `regression-snapshot-guard` | "verify no regressions", "before deploy", "numbers shifted" |
 | `ui-layout-validator` | "check layout", "verify responsive", "overflow issues" |
+| `designer-validator` | "check typography", "verify colors", "design consistency", "font issues" |
 | `data-integrity-validator` | "validate data", "check filters", "wrong counts" |
 | `ingestion-orchestrator` | "scrape", "ingest", "upload CSV", "data sources", "tier A/B/C" |
 | `etl-pipeline` | "upload CSV", "weekly update", "import transactions" |
