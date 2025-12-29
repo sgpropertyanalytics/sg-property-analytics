@@ -16,6 +16,8 @@ import { transformCompressionSeries } from '../adapters';
 import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS, useAbortableQuery } from '../hooks';
+// Control Bar pattern - horizontal filter bar
+import { ControlBar, FilterSummary } from '../components/filters';
 
 // Lazy-loaded below-fold charts (reduces initial bundle by ~150KB)
 // These charts are not immediately visible and can load on demand
@@ -37,7 +39,7 @@ const ChartLoadingFallback = ({ height }) => (
  * Macro Overview Page - Power BI-style Dashboard (Market Core)
  *
  * Features:
- * - Dynamic filtering with sidebar controls
+ * - Dynamic filtering with horizontal Control Bar
  * - Cross-filtering (click chart to filter others)
  * - Drill-down hierarchies:
  *   - Time: year -> quarter -> month
@@ -51,7 +53,6 @@ const ChartLoadingFallback = ({ height }) => (
  *
  * NOTE: This component is designed to be wrapped by DashboardLayout which provides:
  * - PowerBIFilterProvider context
- * - PowerBIFilterSidebar (secondary sidebar)
  * - GlobalNavRail (primary navigation)
  * - Mobile responsive header and drawers
  */
@@ -133,9 +134,15 @@ export function MacroOverviewContent() {
   };
 
   return (
-    <div className="h-full">
+    <div className="h-full flex flex-col">
+      {/* Control Bar - Horizontal filter controls */}
+      <ControlBar />
+
+      {/* Filter Summary - Shows active filters */}
+      <FilterSummary />
+
       {/* Main Content Area - Scrollable (vertical only, no horizontal) */}
-      <div className="h-full overflow-y-auto overflow-x-hidden">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="p-3 md:p-4 lg:p-6">
           {/* Header */}
           <div className="mb-4 md:mb-6">
@@ -198,12 +205,12 @@ export function MacroOverviewContent() {
                           {current_score} <span className={`text-xs font-bold uppercase tracking-wider ${conditionColorClass}`}>{label}</span>
                         </div>
                         {score_change_pct != null && (
-                          <div className={`text-[12px] sm:text-[14px] font-medium ${changeColorClass}`}>
+                          <div className={`text-xs sm:text-sm font-medium ${changeColorClass}`}>
                             {arrow} {pctStr} QoQ
                           </div>
                         )}
                         {prev_score && (
-                          <div className="text-[10px] sm:text-[12px] text-gray-500">
+                          <div className="text-[10px] sm:text-xs text-gray-500">
                             Prev: {prev_score}
                           </div>
                         )}
@@ -228,15 +235,15 @@ export function MacroOverviewContent() {
                     return (
                       <>
                         <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
-                          ${current_psf?.toLocaleString()} <span className="text-[14px] sm:text-[16px] font-normal">psf</span>
+                          ${current_psf?.toLocaleString()} <span className="text-sm sm:text-base font-normal">psf</span>
                         </div>
                         {pct_change != null && (
-                          <div className={`text-[12px] sm:text-[14px] font-medium ${colorClass}`}>
+                          <div className={`text-xs sm:text-sm font-medium ${colorClass}`}>
                             {arrow} {pctStr} QoQ
                           </div>
                         )}
                         {prev_psf && (
-                          <div className="text-[10px] sm:text-[12px] text-gray-500">
+                          <div className="text-[10px] sm:text-xs text-gray-500">
                             Prev: ${prev_psf?.toLocaleString()} psf
                           </div>
                         )}
@@ -264,12 +271,12 @@ export function MacroOverviewContent() {
                           {current_count?.toLocaleString()} <span className={`text-xs font-bold uppercase tracking-wider ${colorClass}`}>{label}</span>
                         </div>
                         {pct_change != null && (
-                          <div className={`text-[12px] sm:text-[14px] font-medium ${colorClass}`}>
+                          <div className={`text-xs sm:text-sm font-medium ${colorClass}`}>
                             {arrow} {pctStr} QoQ
                           </div>
                         )}
                         {previous_count != null && (
-                          <div className="text-[10px] sm:text-[12px] text-gray-500">
+                          <div className="text-[10px] sm:text-xs text-gray-500">
                             Prev: {previous_count?.toLocaleString()} txns
                           </div>
                         )}
@@ -300,12 +307,12 @@ export function MacroOverviewContent() {
                           {kpi.formatted_value} <span className={`text-xs font-bold uppercase tracking-wider ${labelColorClass}`}>{label}</span>
                         </div>
                         {pct_change != null && (
-                          <div className={`text-[12px] sm:text-[14px] font-medium ${changeColorClass}`}>
+                          <div className={`text-xs sm:text-sm font-medium ${changeColorClass}`}>
                             {arrow} {pctStr} QoQ
                           </div>
                         )}
                         {prior_annualized != null && (
-                          <div className="text-[10px] sm:text-[12px] text-gray-500">
+                          <div className="text-[10px] sm:text-xs text-gray-500">
                             Prev: {prior_annualized}%
                           </div>
                         )}
