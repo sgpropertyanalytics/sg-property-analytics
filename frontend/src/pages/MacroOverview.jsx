@@ -133,10 +133,9 @@ export function MacroOverviewContent() {
   };
 
   return (
-    <div className="h-full bg-[#EAE0CF]/40">
-      {/* Main Content Area - Scrollable (vertical only, no horizontal) */}
-      <div className="h-full overflow-y-auto overflow-x-hidden">
-        <div className="p-3 md:p-4 lg:p-6">
+    <div className="min-h-full bg-[#EAE0CF]/40">
+      {/* Main Content Area - scrolling handled by parent DashboardLayout */}
+      <div className="p-3 md:p-4 lg:p-6">
         {/* Header */}
         <div className="mb-4 md:mb-6">
           <div className="min-w-0 mb-2">
@@ -395,7 +394,6 @@ export function MacroOverviewContent() {
 
               </div>
 
-          </div>
         </div>
       </div>
 
