@@ -51,8 +51,8 @@ export const NAV_GROUPS = [
     id: 'project-tools',
     label: 'Project Tools',
     items: [
-      { id: 'explore', path: '/project-deep-dive', label: 'Explore', icon: '🔍' },
-      { id: 'value-comparison', path: '/value-parity', label: 'Value Comparison', icon: '💰' },
+      { id: 'explore', path: '/project-deep-dive', label: 'Explore Budget', icon: '🔍' },
+      { id: 'deal-checker', path: '/value-parity', label: 'Deal Checker', icon: '💰' },
       { id: 'exit-risk', path: '/exit-risk', label: 'Exit Risk', icon: '🚪' },
     ],
   },

@@ -107,15 +107,15 @@ function App() {
             {/* Primary Market - New Sale vs Resale comparison (Lazy-loaded) */}
             <Route path="/primary-market" element={<PrimaryMarketContent />} />
 
-            {/* Value Parity Tool - No filter sidebar (Lazy-loaded) */}
+            {/* Deal Checker - Compare your purchase to nearby transactions (Lazy-loaded) */}
             <Route
               path="/value-parity"
               element={
-                <div className="h-full overflow-auto">
+                <div className="min-h-full bg-[#EAE0CF]/40">
                   <div className="p-3 md:p-4 lg:p-6">
                     <PageHeader
-                      title="Value Parity Tool"
-                      subtitle="Find properties within your budget and compare value across districts"
+                      title="Deal Checker"
+                      subtitle="Compare your purchase to nearby transactions and evaluate if it's a good deal"
                     />
                     <div className="animate-view-enter">
                       <ValueParityPanel />
@@ -128,10 +128,10 @@ function App() {
             {/* District Deep Dive (Lazy-loaded) */}
             <Route path="/district-deep-dive" element={<DistrictDeepDiveContent />} />
 
-            {/* Project Deep Dive (Lazy-loaded) */}
+            {/* Explore Budget - Budget-based property search (Lazy-loaded) */}
             <Route path="/project-deep-dive" element={<ProjectDeepDiveContent />} />
 
-            {/* Exit Risk Assessment (Lazy-loaded) */}
+            {/* Exit Risk - Comprehensive project exit analysis (Lazy-loaded) */}
             <Route path="/exit-risk" element={<ExitRiskContent />} />
 
             {/* Supply & Inventory Insights (Lazy-loaded) */}

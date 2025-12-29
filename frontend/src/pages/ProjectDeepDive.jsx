@@ -1,699 +1,497 @@
 /**
- * Project Deep Dive Page - Comprehensive Project Analysis
+ * Explore Page - Budget-based Property Search
  *
  * Features:
- * - Searchable project dropdown for projects with resale transactions
- * - Property fundamentals (age, units, tenure)
- * - Historical Downside Protection (P25/P50/P75 price bands)
- * - Liquidity assessment (market turnover, recent turnover, risk badge)
- * - Resale activity metrics (transactions per 100 units)
- * - Gating warnings for special cases
- *
- * Liquidity Zones (transactions per 100 units):
- * - Low Liquidity (<5): harder to exit
- * - Healthy Liquidity (5-15): optimal for exit
- * - Elevated Turnover (>15): possible volatility
- *
- * PERFORMANCE: Chart.js components are lazy-loaded to reduce initial bundle size.
+ * - Budget slider for target price
+ * - Optional filters: Bedroom, Region, District, Tenure, Sale Type, Property Age
+ * - Market activity heatmap by bedroom and property age
+ * - Fair price range matrix
+ * - Upcoming new launches
+ * - Remaining new launches with unsold inventory
  */
-import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
-import { getProjectNames, getProjectExitQueue, getProjectPriceBands, getProjectPriceGrowth } from '../api/client';
-import ExitRiskDashboard from '../components/powerbi/ExitRiskDashboard';
-import ProjectFundamentalsPanel from '../components/powerbi/ProjectFundamentalsPanel';
-import ResaleMetricsCards from '../components/powerbi/ResaleMetricsCards';
-import UnitPsfInput from '../components/powerbi/UnitPsfInput';
-import { KeyInsightBox } from '../components/ui/KeyInsightBox';
-import { ChartSkeleton } from '../components/common/ChartSkeleton';
+import { useState, useEffect, useRef } from 'react';
+import { getFilterOptions } from '../api/client';
+import { isDistrictInRegion, SALE_TYPE_OPTIONS, TENURE_OPTIONS, SaleType, SaleTypeLabels } from '../constants';
+import { HotProjectsTable } from '../components/powerbi/HotProjectsTable';
+import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
+import { ResultsSummaryBar } from '../components/ResultsSummaryBar';
+import { BudgetActivityHeatmap } from '../components/powerbi/BudgetActivityHeatmap';
+import { PriceRangeMatrix } from '../components/powerbi/PriceRangeMatrix';
+import { PageHeader } from '../components/ui';
 
-// PERFORMANCE: Lazy-load Chart.js components (~170KB bundle reduction)
-// These use default exports so can import directly
-const PriceBandChart = lazy(() => import('../components/powerbi/PriceBandChart'));
-const PriceGrowthChart = lazy(() => import('../components/powerbi/PriceGrowthChart'));
-const FloorLiquidityHeatmap = lazy(() =>
-  import('../components/powerbi/FloorLiquidityHeatmap').then(m => ({ default: m.FloorLiquidityHeatmap }))
-);
-const DistrictComparisonChart = lazy(() =>
-  import('../components/powerbi/DistrictComparisonChart').then(m => ({ default: m.DistrictComparisonChart }))
-);
+// Budget slider constants
+const BUDGET_MIN = 500000;    // $0.5M
+const BUDGET_MAX = 5000000;   // $5M
+const BUDGET_STEP = 25000;    // $25K intervals
 
-// Random project name generator for loading animation
-const generateRandomProjectName = () => {
-  const prefixes = ['The', 'One', 'Park', 'Sky', 'Marina', 'Royal', 'Grand', 'Vista', 'Parc', 'Haus'];
-  const middles = ['Residences', 'View', 'Heights', 'Loft', 'Towers', 'Suites', 'Edge', 'Crest', 'Haven', 'Oasis'];
-  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  return `${pick(prefixes)} ${pick(middles)}`;
-};
-
-// Generate loading text with 3 random project names
-const generateLoadingText = () => {
-  return `Loading project ${generateRandomProjectName()}, project ${generateRandomProjectName()}, project ${generateRandomProjectName()}...`;
-};
-
-// sessionStorage keys for persistence (cleared on browser close, preserved during navigation)
-const STORAGE_KEY_PROJECT = 'projectDeepDive:selectedProject';
-const STORAGE_KEY_UNIT_PSF = 'projectDeepDive:unitPsf';
-
-// Helper to safely read from sessionStorage
-const getStoredProject = () => {
-  try {
-    const stored = sessionStorage.getItem(STORAGE_KEY_PROJECT);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-};
-
-const getStoredUnitPsf = () => {
-  try {
-    const stored = sessionStorage.getItem(STORAGE_KEY_UNIT_PSF);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-};
+// Active trading range for gradient visualization
+const ACTIVE_RANGE_MIN = 1500000;  // $1.5M
+const ACTIVE_RANGE_MAX = 3500000;  // $3.5M
 
 export function ProjectDeepDiveContent() {
-  // Project selection state - initialize from sessionStorage
-  const [selectedProject, setSelectedProject] = useState(() => getStoredProject());
-  const [projectSearch, setProjectSearch] = useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  // Form state
+  const [budget, setBudget] = useState(1500000);
+  const [bedroom, setBedroom] = useState('');
+  const [region, setRegion] = useState('');
+  const [district, setDistrict] = useState('');
+  const [tenure, setTenure] = useState('');
+  const [saleType, setSaleType] = useState('');
+  const [leaseAge, setLeaseAge] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
 
-  // Loading animation state
-  const [loadingText, setLoadingText] = useState(() => generateLoadingText());
+  // Filter options from API
+  const [filterOptions, setFilterOptions] = useState({
+    districts: [],
+    loading: true,
+  });
 
-  // Data state
-  const [projectOptions, setProjectOptions] = useState([]);
-  const [projectOptionsLoading, setProjectOptionsLoading] = useState(true);
-  const [exitQueueData, setExitQueueData] = useState(null);
+  // Loading state for search
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  // Price bands state
-  const [priceBandsData, setPriceBandsData] = useState(null);
-  const [priceBandsLoading, setPriceBandsLoading] = useState(false);
-  const [priceBandsError, setPriceBandsError] = useState(null);
-  const [unitPsf, setUnitPsf] = useState(() => getStoredUnitPsf());
+  // Refs for scrolling
+  const newLaunchesRef = useRef(null);
 
-  // Persist selectedProject to sessionStorage
+  // Hot projects count
+  const [hotProjectsCount, setHotProjectsCount] = useState(0);
+
+  // Mobile filter panel toggle
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // Count active filters
+  const activeFilterCount = [bedroom, region, district, tenure, saleType, leaseAge].filter(Boolean).length;
+
+  // Load filter options on mount
   useEffect(() => {
-    if (selectedProject) {
-      sessionStorage.setItem(STORAGE_KEY_PROJECT, JSON.stringify(selectedProject));
-    } else {
-      sessionStorage.removeItem(STORAGE_KEY_PROJECT);
-    }
-  }, [selectedProject]);
-
-  // Persist unitPsf to sessionStorage
-  useEffect(() => {
-    if (unitPsf !== null) {
-      sessionStorage.setItem(STORAGE_KEY_UNIT_PSF, JSON.stringify(unitPsf));
-    } else {
-      sessionStorage.removeItem(STORAGE_KEY_UNIT_PSF);
-    }
-  }, [unitPsf]);
-
-  // Price growth state
-  const [priceGrowthData, setPriceGrowthData] = useState(null);
-  const [priceGrowthLoading, setPriceGrowthLoading] = useState(false);
-  const [priceGrowthError, setPriceGrowthError] = useState(null);
-
-  // Load project options on mount and validate stored project
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchProjects = async () => {
-      setProjectOptionsLoading(true);
+    const loadFilterOptions = async () => {
       try {
-        const response = await getProjectNames({ signal: controller.signal });
-        const projects = response.data.projects || [];
-        setProjectOptions(projects);
-
-        // Validate stored project exists in the list
-        if (selectedProject) {
-          const exists = projects.some(p => p.name === selectedProject.name);
-          if (!exists) {
-            console.warn('Stored project no longer exists, clearing selection');
-            setSelectedProject(null);
-            sessionStorage.removeItem(STORAGE_KEY_PROJECT);
-          }
-        }
+        const response = await getFilterOptions();
+        setFilterOptions({
+          districts: response.data.districts || [],
+          loading: false,
+        });
       } catch (err) {
-        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
-        console.error('Failed to load project options:', err);
-        setProjectOptions([]);
-      } finally {
-        if (!controller.signal.aborted) {
-          setProjectOptionsLoading(false);
-        }
+        console.error('Error loading filter options:', err);
+        setFilterOptions(prev => ({ ...prev, loading: false }));
       }
     };
-    fetchProjects();
-
-    return () => controller.abort();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- Mount-only: validates stored project once, re-running on change causes unnecessary fetches
+    loadFilterOptions();
   }, []);
 
-  // PERFORMANCE: Parallel fetch for exitQueue + priceGrowth when project changes
-  // These two only depend on selectedProject, so we fetch them together
-  useEffect(() => {
-    if (!selectedProject) {
-      setExitQueueData(null);
-      setPriceGrowthData(null);
-      setPriceGrowthError(null);
-      return;
-    }
+  // Handle search
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setHasSearched(true);
 
-    const controller = new AbortController();
-    const signal = controller.signal;
-
-    const fetchProjectData = async () => {
-      setLoading(true);
-      setError(null);
-      setPriceGrowthLoading(true);
-      setPriceGrowthError(null);
-
-      try {
-        // Fetch exitQueue and priceGrowth in PARALLEL - saves 400-800ms
-        const [exitQueueRes, priceGrowthRes] = await Promise.allSettled([
-          getProjectExitQueue(selectedProject.name, { signal }),
-          getProjectPriceGrowth(selectedProject.name, { signal }),
-        ]);
-
-        if (controller.signal.aborted) return;
-
-        // Handle exit queue result
-        if (exitQueueRes.status === 'fulfilled') {
-          setExitQueueData(exitQueueRes.value.data);
-        } else {
-          const err = exitQueueRes.reason;
-          if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
-            console.error('Failed to load exit queue data:', err);
-            setError(err.response?.data?.error || 'Failed to load project data');
-            setExitQueueData(null);
-          }
-        }
-
-        // Handle price growth result
-        if (priceGrowthRes.status === 'fulfilled') {
-          setPriceGrowthData(priceGrowthRes.value.data);
-        } else {
-          const err = priceGrowthRes.reason;
-          if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
-            if (err.response?.status === 404) {
-              setPriceGrowthError('Price growth data coming soon');
-            } else {
-              setPriceGrowthError(err.response?.data?.error || 'Failed to load price growth data');
-            }
-            setPriceGrowthData(null);
-          }
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-          setPriceGrowthLoading(false);
-        }
-      }
-    };
-
-    fetchProjectData();
-    return () => controller.abort();
-  }, [selectedProject]);
-
-  // Load price bands data when project or unitPsf changes
-  // Separate effect since it has additional unitPsf dependency
-  useEffect(() => {
-    if (!selectedProject) {
-      setPriceBandsData(null);
-      setPriceBandsError(null);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    const fetchPriceBands = async () => {
-      setPriceBandsLoading(true);
-      setPriceBandsError(null);
-      try {
-        const params = {};
-        if (unitPsf) {
-          params.unit_psf = unitPsf;
-        }
-        const response = await getProjectPriceBands(selectedProject.name, params, { signal: controller.signal });
-        if (!controller.signal.aborted) {
-          setPriceBandsData(response.data);
-        }
-      } catch (err) {
-        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
-        console.error('Failed to load price bands:', err);
-        setPriceBandsError(err.response?.data?.error || 'Failed to load price bands');
-        setPriceBandsData(null);
-      } finally {
-        if (!controller.signal.aborted) {
-          setPriceBandsLoading(false);
-        }
-      }
-    };
-    fetchPriceBands();
-
-    return () => controller.abort();
-  }, [selectedProject, unitPsf]);
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Animate loading text with random project names
-  useEffect(() => {
-    if (!projectOptionsLoading) return;
-    const interval = setInterval(() => {
-      setLoadingText(generateLoadingText());
-    }, 500);
-    return () => clearInterval(interval);
-  }, [projectOptionsLoading]);
-
-  // Filter projects based on search
-  const filteredProjects = useMemo(() => {
-    if (!projectSearch.trim()) return projectOptions;
-    const search = projectSearch.toLowerCase();
-    return projectOptions.filter(
-      p => p.name.toLowerCase().includes(search) || p.district?.toLowerCase().includes(search)
-    );
-  }, [projectOptions, projectSearch]);
-
-  // Handle project selection
-  const handleProjectSelect = (project) => {
-    setSelectedProject(project);
-    setProjectSearch('');
-    setIsDropdownOpen(false);
+    setTimeout(() => {
+      setLoading(false);
+      newLaunchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
-  // Clear selection
-  const handleClearSelection = () => {
-    setSelectedProject(null);
-    setExitQueueData(null);
-    setError(null);
-    setPriceBandsData(null);
-    setPriceBandsError(null);
-    setUnitPsf(null);
-    setPriceGrowthData(null);
-    setPriceGrowthError(null);
+  // Format budget for display
+  const formatBudgetDisplay = (value) => {
+    if (value >= 1000000) {
+      const millions = value / 1000000;
+      return `$${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(2)}M`;
+    }
+    return `$${(value / 1000).toFixed(0)}K`;
   };
 
-  // Render gating warnings
-  const renderGatingWarnings = () => {
-    if (!exitQueueData?.gating_flags) return null;
+  // Filter districts by selected region
+  const filteredDistricts = (filterOptions.districts || []).filter(d => {
+    if (!region) return true;
+    return isDistrictInRegion(d, region);
+  });
 
-    const flags = exitQueueData.gating_flags;
-    const warnings = [];
+  // Tick marks at $500k intervals
+  const tickMarks = [
+    { value: 500000, label: '$0.5M', percent: 0 },
+    { value: 1000000, label: '$1M', percent: ((1000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 1500000, label: '$1.5M', percent: ((1500000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 2000000, label: '$2M', percent: ((2000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 2500000, label: '$2.5M', percent: ((2500000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 3000000, label: '$3M', percent: ((3000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 3500000, label: '$3.5M', percent: ((3500000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 4000000, label: '$4M', percent: ((4000000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 4500000, label: '$4.5M', percent: ((4500000 - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100 },
+    { value: 5000000, label: '$5M', percent: 100 },
+  ];
 
-    if (flags.is_thin_data) {
-      warnings.push({
-        variant: 'warning',
-        title: 'Limited Data',
-        content: 'Insufficient transaction data for reliable analysis. Interpret with caution.'
-      });
-    }
-
-    if (flags.is_boutique) {
-      warnings.push({
-        variant: 'info',
-        title: 'Boutique Development',
-        content: `This is a smaller development with ${exitQueueData.fundamentals?.total_units || 'few'} units. Small sample sizes may cause metrics to be less statistically reliable.`
-      });
-    }
-
-    if (flags.is_brand_new) {
-      warnings.push({
-        variant: 'info',
-        title: 'Recently Completed',
-        content: 'This project achieved TOP recently. Resale patterns typically stabilize 3-5 years post-TOP.'
-      });
-    }
-
-    if (flags.is_ultra_luxury) {
-      warnings.push({
-        variant: 'info',
-        title: 'Premium Development',
-        content: 'This is a premium/luxury development where typical resale patterns may not apply. Ultra-luxury properties often have lower turnover.'
-      });
-    }
-
-    if (flags.unit_type_mixed) {
-      warnings.push({
-        variant: 'default',
-        title: 'Mixed Unit Types',
-        content: 'Analysis combines all unit types (1BR-5BR+). Interpretation may vary by unit size.'
-      });
-    }
-
-    if (warnings.length === 0) return null;
-
-    return (
-      <div className="space-y-3">
-        {warnings.map((w, i) => (
-          <KeyInsightBox key={i} variant={w.variant} title={w.title} compact>
-            {w.content}
-          </KeyInsightBox>
-        ))}
-      </div>
-    );
-  };
+  // Slider gradient
+  const activeStartPercent = ((ACTIVE_RANGE_MIN - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
+  const activeEndPercent = ((ACTIVE_RANGE_MAX - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
+  const sliderGradient = `linear-gradient(to right,
+    #94B4C1 0%,
+    #94B4C1 ${activeStartPercent * 0.5}%,
+    #547792 ${activeStartPercent}%,
+    #213448 ${(activeStartPercent + activeEndPercent) / 2}%,
+    #547792 ${activeEndPercent}%,
+    #94B4C1 ${activeEndPercent + (100 - activeEndPercent) * 0.5}%,
+    #94B4C1 100%)`;
 
   return (
-    <div className="h-full overflow-auto">
+    <div className="min-h-full bg-[#EAE0CF]/40">
       <div className="p-3 md:p-4 lg:p-6">
         {/* Header */}
         <div className="mb-4 md:mb-6">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
-            Project Deep Dive
-          </h1>
-          <p className="text-[#547792] text-sm mt-1">
-            Exit queue risk analysis for individual projects
-          </p>
+          <PageHeader
+            title="Explore Properties"
+            subtitle="Find properties within your budget and explore market activity"
+          />
         </div>
 
-        {/* Project Selector + Downside Protection Input - Single Card with 50/50 Split */}
-        <div className="bg-white rounded-xl border border-[#94B4C1]/30 mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2">
-            {/* Left: Project Selector */}
-            <div className="p-4 md:p-6">
-              <label className="block text-sm font-medium text-[#213448] mb-2">
-                Select a Project
-              </label>
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  disabled={projectOptionsLoading}
-                  className="w-full px-3 py-2.5 text-sm border border-[#94B4C1]/50 rounded-lg text-left bg-[#EAE0CF]/20 focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent flex items-center justify-between"
-                >
-                  <span className={selectedProject ? 'text-[#213448] truncate font-medium' : 'text-[#94B4C1]'}>
-                    {selectedProject
-                      ? `${selectedProject.name} (${selectedProject.district})`
-                      : projectOptionsLoading
-                        ? <span className="truncate">{loadingText}</span>
-                        : 'Search for a project...'}
-                  </span>
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                    {selectedProject && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); handleClearSelection(); }}
-                        className="p-1 hover:bg-[#94B4C1]/30 rounded"
-                      >
-                        <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <div className="space-y-6 animate-fade-in">
+          {/* Input Panel */}
+          <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+            <form onSubmit={handleSearch}>
+              <div className="grid grid-cols-1 lg:grid-cols-2">
+                {/* LEFT: Budget Slider + Search */}
+                <div className="min-w-0 px-4 md:px-5 py-4 md:py-5 lg:pr-6">
+                  <p className="text-sm text-[#547792] mb-4">Target price (S$) - Show transactions within +/- $100K of this amount</p>
+
+                  {/* Slider with floating value */}
+                  <div className="relative mb-4 pt-8">
+                    {(() => {
+                      const thumbPercent = ((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
+                      const isNearLeft = thumbPercent < 15;
+                      const isNearRight = thumbPercent > 85;
+                      return (
+                        <div
+                          className={`absolute top-0 pointer-events-none ${
+                            isNearLeft ? 'left-0' :
+                            isNearRight ? 'right-0' :
+                            'transform -translate-x-1/2'
+                          }`}
+                          style={!isNearLeft && !isNearRight ? { left: `${thumbPercent}%` } : undefined}
+                        >
+                          <span className="text-2xl font-semibold text-[#213448]">
+                            {formatBudgetDisplay(budget)}
+                          </span>
+                        </div>
+                      );
+                    })()}
+
+                    <input
+                      type="range"
+                      min={BUDGET_MIN}
+                      max={BUDGET_MAX}
+                      step={BUDGET_STEP}
+                      value={budget}
+                      onChange={(e) => setBudget(parseInt(e.target.value))}
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer slider-thumb mt-4"
+                      style={{ background: sliderGradient }}
+                    />
+
+                    {/* Tick marks */}
+                    <div className="relative w-full h-5 mt-1">
+                      {tickMarks.map((tick, index) => {
+                        const isFirst = index === 0;
+                        const isLast = index === tickMarks.length - 1;
+                        return (
+                          <span
+                            key={tick.value}
+                            className={`absolute text-xs text-[#547792] ${
+                              isFirst ? 'left-0 text-left' :
+                              isLast ? 'right-0 text-right' :
+                              'transform -translate-x-1/2'
+                            }`}
+                            style={!isFirst && !isLast ? { left: `${tick.percent}%` } : undefined}
+                          >
+                            {tick.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Search Button */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                      </button>
+                        Searching...
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Search
+                      </span>
                     )}
-                    <svg className={`w-4 h-4 text-[#547792] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  </button>
+                </div>
+
+                {/* RIGHT: Optional Filters */}
+                <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03]">
+                  {/* Mobile: Collapsible toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setFiltersExpanded(!filtersExpanded)}
+                    className="lg:hidden w-full flex items-center justify-between min-h-[48px] px-4 py-3 active:bg-[#EAE0CF]/50"
+                  >
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                      </svg>
+                      <span className="text-sm font-medium text-[#213448]">Filters</span>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {activeFilterCount > 0 && (
+                        <span className="px-2 py-0.5 bg-[#547792]/20 text-[#213448] text-xs rounded-full">
+                          {activeFilterCount}
+                        </span>
+                      )}
+                      <svg
+                        className={`w-4 h-4 text-[#547792] transition-transform duration-200 ${filtersExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+
+                  {/* Desktop: Always visible / Mobile: Collapsible */}
+                  <div className={`${filtersExpanded ? 'block' : 'hidden'} lg:block px-4 md:px-5 py-4 md:py-5 w-full`}>
+                    <p className="hidden lg:block text-[10px] uppercase tracking-wide text-[#547792]/60 mb-3 font-medium">Optional filters</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {/* Bedroom */}
+                      <div>
+                        <label className="block text-xs font-medium text-[#547792] mb-1">Bedroom</label>
+                        <select
+                          value={bedroom}
+                          onChange={(e) => setBedroom(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                        >
+                          <option value="">All</option>
+                          <option value="1">1BR</option>
+                          <option value="2">2BR</option>
+                          <option value="3">3BR</option>
+                          <option value="4">4BR</option>
+                          <option value="5">5BR+</option>
+                        </select>
+                      </div>
+
+                      {/* Market Segment */}
+                      <div>
+                        <label className="block text-xs font-medium text-[#547792] mb-1">Segment</label>
+                        <select
+                          value={region}
+                          onChange={(e) => {
+                            setRegion(e.target.value);
+                            setDistrict('');
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                        >
+                          <option value="">All</option>
+                          <option value="CCR">CCR</option>
+                          <option value="RCR">RCR</option>
+                          <option value="OCR">OCR</option>
+                        </select>
+                      </div>
+
+                      {/* District */}
+                      <div>
+                        <label className="block text-xs font-medium text-[#547792] mb-1">District</label>
+                        <select
+                          value={district}
+                          onChange={(e) => setDistrict(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                          disabled={filterOptions.loading}
+                        >
+                          <option value="">All</option>
+                          {filteredDistricts.map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Tenure */}
+                      <div>
+                        <label className="block text-xs font-medium text-[#547792] mb-1">Tenure</label>
+                        <select
+                          value={tenure}
+                          onChange={(e) => setTenure(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                        >
+                          <option value="">All</option>
+                          {TENURE_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Sale Type */}
+                      <div>
+                        <label className="block text-xs font-medium text-[#547792] mb-1">Sale Type</label>
+                        <select
+                          value={saleType}
+                          onChange={(e) => setSaleType(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                        >
+                          <option value="">All</option>
+                          {SALE_TYPE_OPTIONS.filter(opt => opt.value !== SaleTypeLabels[SaleType.SUB_SALE]).map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Property Age */}
+                      <div>
+                        <label className="block text-xs font-medium text-[#547792] mb-1">Property Age</label>
+                        <select
+                          value={leaseAge}
+                          onChange={(e) => setLeaseAge(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                        >
+                          <option value="">All</option>
+                          <option value="0-5">New / Recently TOP (≤5 yrs)</option>
+                          <option value="5-10">Young Resale (6-10 yrs)</option>
+                          <option value="10-20">Mature (11-20 yrs)</option>
+                          <option value="20+">Old (&gt;20 yrs)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {/* Results Summary Bar */}
+          {hasSearched && (
+            <ResultsSummaryBar
+              budget={budget}
+              loading={loading}
+              hotProjectsCount={hotProjectsCount}
+              onJumpToNewLaunches={() => newLaunchesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            />
+          )}
+
+          {/* Market Activity Heatmap */}
+          {hasSearched && (
+            <BudgetActivityHeatmap
+              budget={budget}
+              bedroom={bedroom || null}
+              region={region || null}
+              district={district || null}
+              tenure={tenure || null}
+            />
+          )}
+
+          {/* Fair Price Range Matrix */}
+          {hasSearched && (
+            <PriceRangeMatrix
+              budget={budget}
+              tolerance={100000}
+              region={region || null}
+              district={district || null}
+              tenure={tenure || null}
+              monthsLookback={24}
+            />
+          )}
+
+          {/* Upcoming New Launches */}
+          {hasSearched && (
+            <div ref={newLaunchesRef} className="space-y-4">
+              <div className="flex items-center justify-center py-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#94B4C1]/50" />
+                  <div className="flex items-center gap-2 px-5 py-2 bg-[#EAE0CF]/40 border border-[#94B4C1]/30 rounded-full">
+                    <span className="text-sm font-semibold text-[#213448] tracking-wide">Upcoming New Launches</span>
+                    <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                </button>
+                  <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#94B4C1]/50" />
+                </div>
+              </div>
 
-                {/* Dropdown Panel */}
-                {isDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-[#94B4C1]/50 rounded-lg shadow-lg max-h-80 overflow-hidden">
-                    <div className="p-2 border-b border-[#94B4C1]/30">
-                      <input
-                        type="text"
-                        placeholder="Type to search..."
-                        value={projectSearch}
-                        onChange={(e) => setProjectSearch(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
-                        autoFocus
-                      />
-                    </div>
-                    <div className="max-h-60 overflow-y-auto">
-                      {filteredProjects.length === 0 ? (
-                        <div className="px-3 py-4 text-sm text-[#94B4C1] text-center">
-                          {projectOptionsLoading ? 'Loading...' : 'No projects found'}
-                        </div>
-                      ) : (
-                        filteredProjects.slice(0, 100).map(p => (
-                          <button
-                            key={p.name}
-                            type="button"
-                            onClick={() => handleProjectSelect(p)}
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-[#EAE0CF]/50 flex justify-between items-center ${
-                              selectedProject?.name === p.name ? 'bg-[#EAE0CF]/30 text-[#213448] font-medium' : 'text-[#547792]'
-                            }`}
-                          >
-                            <span className="truncate">{p.name}</span>
-                            <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
-                          </button>
-                        ))
-                      )}
-                      {filteredProjects.length > 100 && (
-                        <div className="px-3 py-2 text-xs text-[#94B4C1] text-center border-t border-[#94B4C1]/30">
-                          +{filteredProjects.length - 100} more projects
-                        </div>
-                      )}
-                    </div>
+              <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center gap-3">
+                  <span className="text-xl">🏗️</span>
+                  <div>
+                    <h3 className="font-semibold text-[#213448]">Upcoming New Launches</h3>
+                    <p className="text-xs text-[#547792]">Projects expected to launch soon - not yet available for sale</p>
                   </div>
-                )}
+                </div>
+                <UpcomingLaunchesTable height={300} showHeader={false} compact={true} />
+              </div>
+            </div>
+          )}
+
+          {/* Remaining New Launches */}
+          {hasSearched && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center py-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#94B4C1]/50" />
+                  <div className="flex items-center gap-2 px-5 py-2 bg-[#EAE0CF]/40 border border-[#94B4C1]/30 rounded-full">
+                    <span className="text-sm font-semibold text-[#213448] tracking-wide">Remaining New Launches</span>
+                    <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#94B4C1]/50" />
+                </div>
               </div>
 
-              {/* Project count info */}
-              {!projectOptionsLoading && projectOptions.length > 0 && (
-                <p className="text-xs text-[#94B4C1] mt-2">
-                  {projectOptions.length.toLocaleString()} projects available
-                </p>
-              )}
-            </div>
-
-            {/* Right: Downside Protection Input - Grey background with left border */}
-            <div className="lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03] p-4 md:p-6">
-              <div className="mb-3">
-                <h2 className="text-sm font-semibold text-[#213448] mb-1">
-                  Downside Protection Analysis
-                </h2>
-                <p className="text-xs text-[#547792]">
-                  See where your unit PSF sits relative to historical price floors
-                </p>
-              </div>
-
-              {/* Unit PSF Input */}
-              <UnitPsfInput
-                value={unitPsf}
-                onChange={setUnitPsf}
-                disabled={!selectedProject}
-              />
-
-              {/* Helper when no project selected */}
-              {!selectedProject && (
-                <p className="text-xs text-[#94B4C1] mt-2 italic">
-                  Select a project first to analyze downside protection
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Error State */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-            <p className="text-red-700 text-sm">
-              <strong>Error:</strong> {error}
-            </p>
-            <button
-              onClick={() => setSelectedProject({ ...selectedProject })}
-              className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-            >
-              Try again
-            </button>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!selectedProject && !loading && (
-          <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#EAE0CF]/50 flex items-center justify-center">
-              <svg className="w-8 h-8 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <h2 className="text-lg font-semibold text-[#213448] mb-2">
-              Select a Project to Analyze
-            </h2>
-            <p className="text-sm text-[#547792] max-w-md mx-auto">
-              Search for any condominium project with resale transaction history to view liquidity assessment, turnover metrics, and downside protection analysis.
-            </p>
-          </div>
-        )}
-
-        {/* Loading State */}
-        {loading && (
-          <div className="space-y-4 lg:space-y-6 animate-fade-in">
-            {/* Row 1: KPI Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              <ProjectFundamentalsPanel loading={true} compact />
-              <ResaleMetricsCards loading={true} compact />
-            </div>
-            {/* Row 2: Price Growth + Floor Liquidity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[350px] animate-pulse" />
-              <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
-            </div>
-            {/* Row 3: Price Band + Exit Risk */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
-              <ExitRiskDashboard loading={true} />
-            </div>
-          </div>
-        )}
-
-        {/* Results */}
-        {!loading && exitQueueData && (
-          <div className="space-y-6 animate-fade-in">
-            {/* No Resales Warning */}
-            {exitQueueData.data_quality?.completeness === 'no_resales' && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <p className="text-amber-700 text-sm">
-                  <strong>No resale transactions found</strong> for this project. Exit queue analysis is not available until resale transactions occur.
-                </p>
-              </div>
-            )}
-
-            {/* Charts Grid - Row-based Layout for cross-column alignment */}
-            <div className="space-y-4 lg:space-y-6">
-
-              {/* Row 1: KPI Cards */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                <ProjectFundamentalsPanel
-                  totalUnits={exitQueueData.fundamentals?.total_units}
-                  topYear={exitQueueData.fundamentals?.top_year}
-                  propertyAgeYears={exitQueueData.fundamentals?.property_age_years}
-                  ageSource={exitQueueData.fundamentals?.age_source}
-                  firstResaleDate={exitQueueData.fundamentals?.first_resale_date}
-                  compact
+              <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center gap-3">
+                  <span className="text-xl">🏢</span>
+                  <div>
+                    <h3 className="font-semibold text-[#213448]">Remaining New Launches</h3>
+                    <p className="text-xs text-[#547792]">Already launched projects with unsold units within your budget</p>
+                  </div>
+                </div>
+                <HotProjectsTable
+                  height={300}
+                  showHeader={false}
+                  compact={true}
+                  excludeSoldOut={true}
+                  filters={{
+                    priceMin: budget - 100000,
+                    priceMax: budget + 100000,
+                    bedroom: bedroom || null,
+                    region: region || null,
+                    district: district || null,
+                  }}
+                  onDataLoad={setHotProjectsCount}
                 />
-                {exitQueueData.resale_metrics ? (
-                  <ResaleMetricsCards
-                    totalResaleTransactions={exitQueueData.resale_metrics?.total_resale_transactions}
-                    resales12m={exitQueueData.resale_metrics?.resales_12m}
-                    marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
-                    recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
-                    totalUnits={exitQueueData.fundamentals?.total_units}
-                    compact
-                  />
-                ) : (
-                  <div className="bg-white rounded-xl border border-[#94B4C1]/30 p-6 flex flex-col">
-                    <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-4">
-                      Resale Activity Metrics
-                    </h3>
-                    <div className="flex-1 flex items-center justify-center">
-                      <p className="text-sm text-[#94B4C1] text-center">
-                        No resale data available yet
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
-
-              {/* Row 2: Price Growth + Floor Liquidity */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 lg:items-stretch">
-                <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
-                  <PriceGrowthChart
-                    data={priceGrowthData}
-                    loading={priceGrowthLoading}
-                    error={priceGrowthError}
-                    projectName={selectedProject?.name}
-                    district={selectedProject?.district}
-                    height={400}
-                  />
-                </Suspense>
-                {exitQueueData.resale_metrics && (
-                  <Suspense fallback={<ChartSkeleton type="table" height={400} />}>
-                    <FloorLiquidityHeatmap
-                      district={selectedProject?.district}
-                      highlightProject={selectedProject?.name}
-                    />
-                  </Suspense>
-                )}
-              </div>
-
-              {/* Row 3: Price Band + Exit Risk */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
-                  <PriceBandChart
-                    bands={priceBandsData?.bands || []}
-                    latest={priceBandsData?.latest}
-                    trend={priceBandsData?.trend}
-                    verdict={priceBandsData?.verdict}
-                    unitPsf={unitPsf}
-                    dataSource={priceBandsData?.data_source}
-                    proxyLabel={priceBandsData?.proxy_label}
-                    dataQuality={priceBandsData?.data_quality}
-                    totalResaleTransactions={exitQueueData?.resale_metrics?.total_resale_transactions}
-                    loading={priceBandsLoading}
-                    error={priceBandsError}
-                    projectName={selectedProject?.name}
-                    height={400}
-                  />
-                </Suspense>
-                {exitQueueData.resale_metrics && (
-                  <ExitRiskDashboard
-                    marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
-                    recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
-                    marketTurnoverZone={exitQueueData.risk_assessment?.market_turnover_zone}
-                    recentTurnoverZone={exitQueueData.risk_assessment?.recent_turnover_zone}
-                    overallRisk={exitQueueData.risk_assessment?.overall_risk}
-                    interpretation={exitQueueData.risk_assessment?.interpretation}
-                  />
-                )}
-              </div>
-
-              {/* Row 4: District Comparison (Full Width) */}
-              {selectedProject?.district && (
-                <Suspense fallback={<ChartSkeleton type="bar" height={400} />}>
-                  <DistrictComparisonChart
-                    district={selectedProject.district}
-                    selectedProject={selectedProject.name}
-                  />
-                </Suspense>
-              )}
-
             </div>
+          )}
 
-            {/* Gating Warnings */}
-            {renderGatingWarnings()}
-
-            {/* Data Quality Notes */}
-            {exitQueueData.data_quality?.warnings?.length > 0 && (
-              <div className="bg-[#EAE0CF]/30 rounded-xl p-4 border border-[#94B4C1]/30">
-                <h4 className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-2">
-                  Data Notes
-                </h4>
-                <ul className="text-xs text-[#547792] space-y-1">
-                  {exitQueueData.data_quality.warnings.map((warning, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-[#94B4C1]">-</span>
-                      <span>{warning}</span>
-                    </li>
-                  ))}
-                </ul>
-                {exitQueueData.data_quality.sample_window_months > 0 && (
-                  <p className="text-xs text-[#94B4C1] mt-2">
-                    Data spans {exitQueueData.data_quality.sample_window_months} months of resale history.
-                  </p>
-                )}
+          {/* Initial state - before search */}
+          {!hasSearched && (
+            <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-8 text-center">
+              <div className="max-w-md mx-auto">
+                <svg className="w-16 h-16 mx-auto text-[#94B4C1] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <h3 className="text-lg font-semibold text-[#213448] mb-2">Benchmark Transaction Prices</h3>
+                <p className="text-sm text-[#547792]">
+                  Drag the budget slider above to set your target price ceiling and click Search to view realized transaction prices.
+                  Use the optional filters to narrow down by bedroom type, region, or district.
+                </p>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-export default ProjectDeepDiveContent;
+export default function ProjectDeepDive() {
+  return <ProjectDeepDiveContent />;
+}

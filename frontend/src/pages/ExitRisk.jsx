@@ -1,27 +1,68 @@
 /**
- * Exit Risk Page - Liquidity Assessment Tool
- *
- * Focused page for analyzing project liquidity and exit risk.
- * Shows market turnover, recent turnover, and overall risk assessment.
+ * Exit Risk Page - Comprehensive Project Exit Analysis
  *
  * Features:
- * - Searchable project dropdown
- * - Liquidity assessment dashboard
- * - Risk interpretation from backend
+ * - Searchable project dropdown for projects with resale transactions
+ * - Property fundamentals (age, units, tenure)
+ * - Historical Downside Protection (P25/P50/P75 price bands)
+ * - Liquidity assessment (market turnover, recent turnover, risk badge)
+ * - Resale activity metrics (transactions per 100 units)
+ * - Gating warnings for special cases
+ *
+ * Liquidity Zones (transactions per 100 units):
+ * - Low Liquidity (<5): harder to exit
+ * - Healthy Liquidity (5-15): optimal for exit
+ * - Elevated Turnover (>15): possible volatility
+ *
+ * PERFORMANCE: Chart.js components are lazy-loaded to reduce initial bundle size.
  */
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { getProjectNames, getProjectExitQueue } from '../api/client';
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
+import { getProjectNames, getProjectExitQueue, getProjectPriceBands, getProjectPriceGrowth } from '../api/client';
 import ExitRiskDashboard from '../components/powerbi/ExitRiskDashboard';
 import ProjectFundamentalsPanel from '../components/powerbi/ProjectFundamentalsPanel';
-import { PageHeader } from '../components/ui';
+import ResaleMetricsCards from '../components/powerbi/ResaleMetricsCards';
+import UnitPsfInput from '../components/powerbi/UnitPsfInput';
+import { KeyInsightBox } from '../components/ui/KeyInsightBox';
+import { ChartSkeleton } from '../components/common/ChartSkeleton';
 
-// Session storage key for persisting selection
-const STORAGE_KEY = 'exitRisk_selectedProject';
+// PERFORMANCE: Lazy-load Chart.js components (~170KB bundle reduction)
+const PriceBandChart = lazy(() => import('../components/powerbi/PriceBandChart'));
+const PriceGrowthChart = lazy(() => import('../components/powerbi/PriceGrowthChart'));
+const FloorLiquidityHeatmap = lazy(() =>
+  import('../components/powerbi/FloorLiquidityHeatmap').then(m => ({ default: m.FloorLiquidityHeatmap }))
+);
+const DistrictComparisonChart = lazy(() =>
+  import('../components/powerbi/DistrictComparisonChart').then(m => ({ default: m.DistrictComparisonChart }))
+);
 
-// Get stored project from sessionStorage
+// Random project name generator for loading animation
+const generateRandomProjectName = () => {
+  const prefixes = ['The', 'One', 'Park', 'Sky', 'Marina', 'Royal', 'Grand', 'Vista', 'Parc', 'Haus'];
+  const middles = ['Residences', 'View', 'Heights', 'Loft', 'Towers', 'Suites', 'Edge', 'Crest', 'Haven', 'Oasis'];
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  return `${pick(prefixes)} ${pick(middles)}`;
+};
+
+const generateLoadingText = () => {
+  return `Loading project ${generateRandomProjectName()}, project ${generateRandomProjectName()}, project ${generateRandomProjectName()}...`;
+};
+
+// sessionStorage keys for persistence
+const STORAGE_KEY_PROJECT = 'exitRisk:selectedProject';
+const STORAGE_KEY_UNIT_PSF = 'exitRisk:unitPsf';
+
 const getStoredProject = () => {
   try {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
+    const stored = sessionStorage.getItem(STORAGE_KEY_PROJECT);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+
+const getStoredUnitPsf = () => {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY_UNIT_PSF);
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -35,6 +76,9 @@ export function ExitRiskContent() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Loading animation state
+  const [loadingText, setLoadingText] = useState(() => generateLoadingText());
+
   // Data state
   const [projectOptions, setProjectOptions] = useState([]);
   const [projectOptionsLoading, setProjectOptionsLoading] = useState(true);
@@ -42,14 +86,34 @@ export function ExitRiskContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Persist selection to sessionStorage
+  // Price bands state
+  const [priceBandsData, setPriceBandsData] = useState(null);
+  const [priceBandsLoading, setPriceBandsLoading] = useState(false);
+  const [priceBandsError, setPriceBandsError] = useState(null);
+  const [unitPsf, setUnitPsf] = useState(() => getStoredUnitPsf());
+
+  // Price growth state
+  const [priceGrowthData, setPriceGrowthData] = useState(null);
+  const [priceGrowthLoading, setPriceGrowthLoading] = useState(false);
+  const [priceGrowthError, setPriceGrowthError] = useState(null);
+
+  // Persist selectedProject to sessionStorage
   useEffect(() => {
     if (selectedProject) {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(selectedProject));
+      sessionStorage.setItem(STORAGE_KEY_PROJECT, JSON.stringify(selectedProject));
     } else {
-      sessionStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(STORAGE_KEY_PROJECT);
     }
   }, [selectedProject]);
+
+  // Persist unitPsf to sessionStorage
+  useEffect(() => {
+    if (unitPsf !== null) {
+      sessionStorage.setItem(STORAGE_KEY_UNIT_PSF, JSON.stringify(unitPsf));
+    } else {
+      sessionStorage.removeItem(STORAGE_KEY_UNIT_PSF);
+    }
+  }, [unitPsf]);
 
   // Load project options on mount
   useEffect(() => {
@@ -67,7 +131,7 @@ export function ExitRiskContent() {
           const exists = projects.some(p => p.name === selectedProject.name);
           if (!exists) {
             setSelectedProject(null);
-            sessionStorage.removeItem(STORAGE_KEY);
+            sessionStorage.removeItem(STORAGE_KEY_PROJECT);
           }
         }
       } catch (err) {
@@ -86,41 +150,105 @@ export function ExitRiskContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch exit queue data when project changes
+  // Parallel fetch for exitQueue + priceGrowth when project changes
   useEffect(() => {
     if (!selectedProject) {
       setExitQueueData(null);
+      setPriceGrowthData(null);
+      setPriceGrowthError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    const fetchProjectData = async () => {
+      setLoading(true);
+      setError(null);
+      setPriceGrowthLoading(true);
+      setPriceGrowthError(null);
+
+      try {
+        const [exitQueueRes, priceGrowthRes] = await Promise.allSettled([
+          getProjectExitQueue(selectedProject.name, { signal }),
+          getProjectPriceGrowth(selectedProject.name, { signal }),
+        ]);
+
+        if (controller.signal.aborted) return;
+
+        if (exitQueueRes.status === 'fulfilled') {
+          setExitQueueData(exitQueueRes.value.data);
+        } else {
+          const err = exitQueueRes.reason;
+          if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
+            setError(err.response?.data?.error || 'Failed to load project data');
+            setExitQueueData(null);
+          }
+        }
+
+        if (priceGrowthRes.status === 'fulfilled') {
+          setPriceGrowthData(priceGrowthRes.value.data);
+        } else {
+          const err = priceGrowthRes.reason;
+          if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
+            if (err.response?.status === 404) {
+              setPriceGrowthError('Price growth data coming soon');
+            } else {
+              setPriceGrowthError(err.response?.data?.error || 'Failed to load price growth data');
+            }
+            setPriceGrowthData(null);
+          }
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          setPriceGrowthLoading(false);
+        }
+      }
+    };
+
+    fetchProjectData();
+    return () => controller.abort();
+  }, [selectedProject]);
+
+  // Load price bands data when project or unitPsf changes
+  useEffect(() => {
+    if (!selectedProject) {
+      setPriceBandsData(null);
+      setPriceBandsError(null);
       return;
     }
 
     const controller = new AbortController();
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
+    const fetchPriceBands = async () => {
+      setPriceBandsLoading(true);
+      setPriceBandsError(null);
       try {
-        const response = await getProjectExitQueue(selectedProject.name, { signal: controller.signal });
+        const params = {};
+        if (unitPsf) {
+          params.unit_psf = unitPsf;
+        }
+        const response = await getProjectPriceBands(selectedProject.name, params, { signal: controller.signal });
         if (!controller.signal.aborted) {
-          setExitQueueData(response.data);
+          setPriceBandsData(response.data);
         }
       } catch (err) {
         if (err.name === 'AbortError' || err.name === 'CanceledError') return;
-        console.error('Failed to load exit queue data:', err);
-        setError(err.response?.data?.error || 'Failed to load liquidity data');
-        setExitQueueData(null);
+        setPriceBandsError(err.response?.data?.error || 'Failed to load price bands');
+        setPriceBandsData(null);
       } finally {
         if (!controller.signal.aborted) {
-          setLoading(false);
+          setPriceBandsLoading(false);
         }
       }
     };
+    fetchPriceBands();
 
-    fetchData();
     return () => controller.abort();
-  }, [selectedProject]);
+  }, [selectedProject, unitPsf]);
 
-  // Close dropdown on outside click
+  // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -131,22 +259,98 @@ export function ExitRiskContent() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Animate loading text
+  useEffect(() => {
+    if (!projectOptionsLoading) return;
+    const interval = setInterval(() => {
+      setLoadingText(generateLoadingText());
+    }, 500);
+    return () => clearInterval(interval);
+  }, [projectOptionsLoading]);
+
   // Filter projects based on search
   const filteredProjects = useMemo(() => {
     if (!projectSearch.trim()) return projectOptions;
     const search = projectSearch.toLowerCase();
-    return projectOptions.filter(p =>
-      p.name.toLowerCase().includes(search) ||
-      p.district?.toLowerCase().includes(search) ||
-      p.market_segment?.toLowerCase().includes(search)
+    return projectOptions.filter(
+      p => p.name.toLowerCase().includes(search) || p.district?.toLowerCase().includes(search)
     );
   }, [projectOptions, projectSearch]);
 
-  // Handle project selection
-  const handleSelectProject = (project) => {
+  const handleProjectSelect = (project) => {
     setSelectedProject(project);
     setProjectSearch('');
     setIsDropdownOpen(false);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedProject(null);
+    setExitQueueData(null);
+    setError(null);
+    setPriceBandsData(null);
+    setPriceBandsError(null);
+    setUnitPsf(null);
+    setPriceGrowthData(null);
+    setPriceGrowthError(null);
+  };
+
+  const renderGatingWarnings = () => {
+    if (!exitQueueData?.gating_flags) return null;
+
+    const flags = exitQueueData.gating_flags;
+    const warnings = [];
+
+    if (flags.is_thin_data) {
+      warnings.push({
+        variant: 'warning',
+        title: 'Limited Data',
+        content: 'Insufficient transaction data for reliable analysis. Interpret with caution.'
+      });
+    }
+
+    if (flags.is_boutique) {
+      warnings.push({
+        variant: 'info',
+        title: 'Boutique Development',
+        content: `This is a smaller development with ${exitQueueData.fundamentals?.total_units || 'few'} units. Small sample sizes may cause metrics to be less statistically reliable.`
+      });
+    }
+
+    if (flags.is_brand_new) {
+      warnings.push({
+        variant: 'info',
+        title: 'Recently Completed',
+        content: 'This project achieved TOP recently. Resale patterns typically stabilize 3-5 years post-TOP.'
+      });
+    }
+
+    if (flags.is_ultra_luxury) {
+      warnings.push({
+        variant: 'info',
+        title: 'Premium Development',
+        content: 'This is a premium/luxury development where typical resale patterns may not apply.'
+      });
+    }
+
+    if (flags.unit_type_mixed) {
+      warnings.push({
+        variant: 'default',
+        title: 'Mixed Unit Types',
+        content: 'Analysis combines all unit types (1BR-5BR+). Interpretation may vary by unit size.'
+      });
+    }
+
+    if (warnings.length === 0) return null;
+
+    return (
+      <div className="space-y-3">
+        {warnings.map((w, i) => (
+          <KeyInsightBox key={i} variant={w.variant} title={w.title} compact>
+            {w.content}
+          </KeyInsightBox>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -154,102 +358,177 @@ export function ExitRiskContent() {
       <div className="p-3 md:p-4 lg:p-6">
         {/* Header */}
         <div className="mb-4 md:mb-6">
-          <PageHeader
-            title="Exit Risk Assessment"
-            subtitle="Analyze liquidity and exit risk for any project with resale history"
-          />
+          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
+            Exit Risk Analysis
+          </h1>
+          <p className="text-[#547792] text-sm mt-1">
+            Comprehensive exit queue and liquidity assessment for individual projects
+          </p>
         </div>
 
-        {/* Project Selector */}
-        <div className="mb-6" ref={dropdownRef}>
-          <label className="block text-sm font-medium text-[#213448] mb-2">
-            Select Project
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={isDropdownOpen ? projectSearch : (selectedProject?.name || '')}
-              onChange={(e) => {
-                setProjectSearch(e.target.value);
-                setIsDropdownOpen(true);
-              }}
-              onFocus={() => setIsDropdownOpen(true)}
-              placeholder={projectOptionsLoading ? 'Loading projects...' : 'Search for a project...'}
-              disabled={projectOptionsLoading}
-              className="w-full md:w-96 px-4 py-3 border border-[#94B4C1] rounded-lg
-                         focus:ring-2 focus:ring-[#547792] focus:border-[#547792]
-                         bg-white text-[#213448] placeholder-[#94B4C1]
-                         disabled:bg-gray-100 disabled:cursor-not-allowed"
-            />
-            {selectedProject && !isDropdownOpen && (
-              <button
-                onClick={() => {
-                  setSelectedProject(null);
-                  setProjectSearch('');
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94B4C1] hover:text-[#547792]"
-              >
-                ✕
-              </button>
-            )}
-
-            {/* Dropdown */}
-            {isDropdownOpen && (
-              <div className="absolute z-50 mt-1 w-full md:w-96 bg-white border border-[#94B4C1] rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {filteredProjects.length === 0 ? (
-                  <div className="px-4 py-3 text-sm text-[#94B4C1]">
-                    {projectSearch ? 'No projects found' : 'Start typing to search...'}
+        {/* Project Selector + Downside Protection Input */}
+        <div className="bg-card rounded-xl border border-[#94B4C1]/30 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2">
+            {/* Left: Project Selector */}
+            <div className="p-4 md:p-6">
+              <label className="block text-sm font-medium text-[#213448] mb-2">
+                Select a Project
+              </label>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  disabled={projectOptionsLoading}
+                  className="w-full px-3 py-2.5 text-sm border border-[#94B4C1]/50 rounded-lg text-left bg-[#EAE0CF]/20 focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent flex items-center justify-between"
+                >
+                  <span className={selectedProject ? 'text-[#213448] truncate font-medium' : 'text-[#94B4C1]'}>
+                    {selectedProject
+                      ? `${selectedProject.name} (${selectedProject.district})`
+                      : projectOptionsLoading
+                        ? <span className="truncate">{loadingText}</span>
+                        : 'Search for a project...'}
+                  </span>
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                    {selectedProject && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleClearSelection(); }}
+                        className="p-1 hover:bg-[#94B4C1]/30 rounded"
+                      >
+                        <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                    <svg className={`w-4 h-4 text-[#547792] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
-                ) : (
-                  filteredProjects.slice(0, 50).map((project) => (
-                    <button
-                      key={project.name}
-                      onClick={() => handleSelectProject(project)}
-                      className="w-full px-4 py-3 text-left hover:bg-[#EAE0CF]/50 border-b border-[#EAE0CF] last:border-b-0"
-                    >
-                      <div className="font-medium text-[#213448]">{project.name}</div>
-                      <div className="text-xs text-[#547792]">
-                        {project.district} • {project.market_segment}
-                      </div>
-                    </button>
-                  ))
-                )}
-                {filteredProjects.length > 50 && (
-                  <div className="px-4 py-2 text-xs text-[#94B4C1] bg-gray-50">
-                    Showing first 50 results. Type more to narrow down.
+                </button>
+
+                {/* Dropdown Panel */}
+                {isDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-[#94B4C1]/50 rounded-lg shadow-lg max-h-80 overflow-hidden">
+                    <div className="p-2 border-b border-[#94B4C1]/30">
+                      <input
+                        type="text"
+                        placeholder="Type to search..."
+                        value={projectSearch}
+                        onChange={(e) => setProjectSearch(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                      {filteredProjects.length === 0 ? (
+                        <div className="px-3 py-4 text-sm text-[#94B4C1] text-center">
+                          {projectOptionsLoading ? 'Loading...' : 'No projects found'}
+                        </div>
+                      ) : (
+                        filteredProjects.slice(0, 100).map(p => (
+                          <button
+                            key={p.name}
+                            type="button"
+                            onClick={() => handleProjectSelect(p)}
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-[#EAE0CF]/50 flex justify-between items-center ${
+                              selectedProject?.name === p.name ? 'bg-[#EAE0CF]/30 text-[#213448] font-medium' : 'text-[#547792]'
+                            }`}
+                          >
+                            <span className="truncate">{p.name}</span>
+                            <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
+                          </button>
+                        ))
+                      )}
+                      {filteredProjects.length > 100 && (
+                        <div className="px-3 py-2 text-xs text-[#94B4C1] text-center border-t border-[#94B4C1]/30">
+                          +{filteredProjects.length - 100} more projects
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
-            )}
+
+              {!projectOptionsLoading && projectOptions.length > 0 && (
+                <p className="text-xs text-[#94B4C1] mt-2">
+                  {projectOptions.length.toLocaleString()} projects available
+                </p>
+              )}
+            </div>
+
+            {/* Right: Downside Protection Input */}
+            <div className="lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03] p-4 md:p-6">
+              <div className="mb-3">
+                <h2 className="text-sm font-semibold text-[#213448] mb-1">
+                  Downside Protection Analysis
+                </h2>
+                <p className="text-xs text-[#547792]">
+                  See where your unit PSF sits relative to historical price floors
+                </p>
+              </div>
+
+              <UnitPsfInput
+                value={unitPsf}
+                onChange={setUnitPsf}
+                disabled={!selectedProject}
+              />
+
+              {!selectedProject && (
+                <p className="text-xs text-[#94B4C1] mt-2 italic">
+                  Select a project first to analyze downside protection
+                </p>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Empty State */}
-        {!selectedProject && !loading && (
-          <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-8 text-center">
-            <div className="text-4xl mb-4">🚪</div>
-            <h3 className="text-lg font-semibold text-[#213448] mb-2">
-              Select a Project to Analyze
-            </h3>
-            <p className="text-[#547792] text-sm max-w-md mx-auto">
-              Choose a project from the dropdown above to view its liquidity assessment
-              and exit risk profile based on historical resale activity.
-            </p>
-          </div>
-        )}
 
         {/* Error State */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-            <p className="text-red-700 text-sm">{error}</p>
+            <p className="text-red-700 text-sm">
+              <strong>Error:</strong> {error}
+            </p>
+            <button
+              onClick={() => setSelectedProject({ ...selectedProject })}
+              className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!selectedProject && !loading && (
+          <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#EAE0CF]/50 flex items-center justify-center">
+              <svg className="w-8 h-8 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-[#213448] mb-2">
+              Select a Project to Analyze
+            </h2>
+            <p className="text-sm text-[#547792] max-w-md mx-auto">
+              Search for any condominium project with resale transaction history to view liquidity assessment, turnover metrics, and downside protection analysis.
+            </p>
           </div>
         )}
 
         {/* Loading State */}
         {loading && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 animate-fade-in">
-            <ProjectFundamentalsPanel loading={true} compact />
-            <ExitRiskDashboard loading={true} />
+          <div className="space-y-4 lg:space-y-6 animate-fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <ProjectFundamentalsPanel loading={true} compact />
+              <ResaleMetricsCards loading={true} compact />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[350px] animate-pulse" />
+              <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
+              <ExitRiskDashboard loading={true} />
+            </div>
           </div>
         )}
 
@@ -260,90 +539,132 @@ export function ExitRiskContent() {
             {exitQueueData.data_quality?.completeness === 'no_resales' && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="text-amber-700 text-sm">
-                  <strong>No resale transactions found</strong> for this project.
-                  Exit risk analysis requires resale transaction history.
+                  <strong>No resale transactions found</strong> for this project. Exit queue analysis is not available until resale transactions occur.
                 </p>
               </div>
             )}
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              {/* Project Fundamentals */}
-              <ProjectFundamentalsPanel
-                topYear={exitQueueData.fundamentals?.top_year}
-                totalUnits={exitQueueData.fundamentals?.total_units}
-                tenure={exitQueueData.fundamentals?.tenure}
-                district={selectedProject?.district}
-                marketSegment={selectedProject?.market_segment}
-                compact
-              />
-
-              {/* Exit Risk Dashboard */}
-              {exitQueueData.resale_metrics && (
-                <ExitRiskDashboard
-                  marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
-                  recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
-                  marketTurnoverZone={exitQueueData.risk_assessment?.market_turnover_zone}
-                  recentTurnoverZone={exitQueueData.risk_assessment?.recent_turnover_zone}
-                  overallRisk={exitQueueData.risk_assessment?.overall_risk}
-                  interpretation={exitQueueData.risk_assessment?.interpretation}
+            {/* Charts Grid */}
+            <div className="space-y-4 lg:space-y-6">
+              {/* Row 1: KPI Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <ProjectFundamentalsPanel
+                  totalUnits={exitQueueData.fundamentals?.total_units}
+                  topYear={exitQueueData.fundamentals?.top_year}
+                  propertyAgeYears={exitQueueData.fundamentals?.property_age_years}
+                  ageSource={exitQueueData.fundamentals?.age_source}
+                  firstResaleDate={exitQueueData.fundamentals?.first_resale_date}
+                  compact
                 />
+                {exitQueueData.resale_metrics ? (
+                  <ResaleMetricsCards
+                    totalResaleTransactions={exitQueueData.resale_metrics?.total_resale_transactions}
+                    resales12m={exitQueueData.resale_metrics?.resales_12m}
+                    marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
+                    recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
+                    totalUnits={exitQueueData.fundamentals?.total_units}
+                    compact
+                  />
+                ) : (
+                  <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-6 flex flex-col">
+                    <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-4">
+                      Resale Activity Metrics
+                    </h3>
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className="text-sm text-[#94B4C1] text-center">
+                        No resale data available yet
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Row 2: Price Growth + Floor Liquidity */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 lg:items-stretch">
+                <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
+                  <PriceGrowthChart
+                    data={priceGrowthData}
+                    loading={priceGrowthLoading}
+                    error={priceGrowthError}
+                    projectName={selectedProject?.name}
+                    district={selectedProject?.district}
+                    height={400}
+                  />
+                </Suspense>
+                {exitQueueData.resale_metrics && (
+                  <Suspense fallback={<ChartSkeleton type="table" height={400} />}>
+                    <FloorLiquidityHeatmap
+                      district={selectedProject?.district}
+                      highlightProject={selectedProject?.name}
+                    />
+                  </Suspense>
+                )}
+              </div>
+
+              {/* Row 3: Price Band + Exit Risk */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
+                  <PriceBandChart
+                    bands={priceBandsData?.bands || []}
+                    latest={priceBandsData?.latest}
+                    trend={priceBandsData?.trend}
+                    verdict={priceBandsData?.verdict}
+                    unitPsf={unitPsf}
+                    dataSource={priceBandsData?.data_source}
+                    proxyLabel={priceBandsData?.proxy_label}
+                    dataQuality={priceBandsData?.data_quality}
+                    totalResaleTransactions={exitQueueData?.resale_metrics?.total_resale_transactions}
+                    loading={priceBandsLoading}
+                    error={priceBandsError}
+                    projectName={selectedProject?.name}
+                    height={400}
+                  />
+                </Suspense>
+                {exitQueueData.resale_metrics && (
+                  <ExitRiskDashboard
+                    marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
+                    recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
+                    marketTurnoverZone={exitQueueData.risk_assessment?.market_turnover_zone}
+                    recentTurnoverZone={exitQueueData.risk_assessment?.recent_turnover_zone}
+                    overallRisk={exitQueueData.risk_assessment?.overall_risk}
+                    interpretation={exitQueueData.risk_assessment?.interpretation}
+                  />
+                )}
+              </div>
+
+              {/* Row 4: District Comparison */}
+              {selectedProject?.district && (
+                <Suspense fallback={<ChartSkeleton type="bar" height={400} />}>
+                  <DistrictComparisonChart
+                    district={selectedProject.district}
+                    selectedProject={selectedProject.name}
+                  />
+                </Suspense>
               )}
             </div>
 
-            {/* Resale Metrics Summary */}
-            {exitQueueData.resale_metrics && (
-              <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-6">
-                <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-4">
-                  Resale Activity Summary
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-3 bg-[#EAE0CF]/30 rounded-lg">
-                    <div className="text-2xl font-bold text-[#213448]">
-                      {exitQueueData.resale_metrics.total_resale_transactions?.toLocaleString() || '—'}
-                    </div>
-                    <div className="text-xs text-[#547792] mt-1">Total Resales</div>
-                  </div>
-                  <div className="text-center p-3 bg-[#EAE0CF]/30 rounded-lg">
-                    <div className="text-2xl font-bold text-[#213448]">
-                      {exitQueueData.resale_metrics.resales_12m?.toLocaleString() || '—'}
-                    </div>
-                    <div className="text-xs text-[#547792] mt-1">Last 12 Months</div>
-                  </div>
-                  <div className="text-center p-3 bg-[#EAE0CF]/30 rounded-lg">
-                    <div className="text-2xl font-bold text-[#213448]">
-                      {exitQueueData.fundamentals?.total_units?.toLocaleString() || '—'}
-                    </div>
-                    <div className="text-xs text-[#547792] mt-1">Total Units</div>
-                  </div>
-                  <div className="text-center p-3 bg-[#EAE0CF]/30 rounded-lg">
-                    <div className="text-2xl font-bold text-[#213448]">
-                      {exitQueueData.fundamentals?.top_year || '—'}
-                    </div>
-                    <div className="text-xs text-[#547792] mt-1">TOP Year</div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Gating Warnings */}
+            {renderGatingWarnings()}
 
-            {/* Gating Flags (if any) */}
-            {exitQueueData.gating_flags && Object.values(exitQueueData.gating_flags).some(v => v) && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h4 className="text-sm font-semibold text-blue-800 mb-2">Data Considerations</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  {exitQueueData.gating_flags.is_boutique && (
-                    <li>• Boutique development (&lt;50 units) - limited sample size</li>
-                  )}
-                  {exitQueueData.gating_flags.is_brand_new && (
-                    <li>• Recently TOP (&lt;3 years) - limited resale history</li>
-                  )}
-                  {exitQueueData.gating_flags.is_ultra_luxury && (
-                    <li>• Ultra-luxury segment - unique market dynamics</li>
-                  )}
-                  {exitQueueData.gating_flags.is_thin_data && (
-                    <li>• Limited transaction data - interpret with caution</li>
-                  )}
+            {/* Data Quality Notes */}
+            {exitQueueData.data_quality?.warnings?.length > 0 && (
+              <div className="bg-[#EAE0CF]/30 rounded-xl p-4 border border-[#94B4C1]/30">
+                <h4 className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-2">
+                  Data Notes
+                </h4>
+                <ul className="text-xs text-[#547792] space-y-1">
+                  {exitQueueData.data_quality.warnings.map((warning, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-[#94B4C1]">-</span>
+                      <span>{warning}</span>
+                    </li>
+                  ))}
                 </ul>
+                {exitQueueData.data_quality.sample_window_months > 0 && (
+                  <p className="text-xs text-[#94B4C1] mt-2">
+                    Data spans {exitQueueData.data_quality.sample_window_months} months of resale history.
+                  </p>
+                )}
               </div>
             )}
           </div>
