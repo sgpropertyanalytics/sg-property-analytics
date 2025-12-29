@@ -76,7 +76,7 @@ const ExitRiskContent = lazyWithRetry(() =>
  * - /explore: Budget-based property search (premium)
  * - /value-check: Compare purchase to nearby transactions (premium)
  * - /exit-risk: Exit risk analysis (premium)
- * - /supply-insights: Supply & inventory insights (premium)
+ * - /supply-inventory: Supply & inventory insights (premium)
  */
 function App() {
   return (
@@ -137,7 +137,7 @@ function App() {
             <Route path="/exit-risk" element={<ExitRiskContent />} />
 
             {/* Supply & Inventory Insights (Lazy-loaded) */}
-            <Route path="/supply-insights" element={<SupplyInsightsContent />} />
+            <Route path="/supply-inventory" element={<SupplyInsightsContent />} />
 
             {/* Methodology - Assumptions, classifications, data sources */}
             <Route path="/methodology" element={<MethodologyContent />} />
@@ -157,6 +157,7 @@ function App() {
           <Route path="/dashboard" element={<Navigate to="/market-overview" replace />} />
           <Route path="/macro-overview" element={<Navigate to="/market-overview" replace />} />
           <Route path="/market-pulse" element={<Navigate to="/market-overview" replace />} />
+          <Route path="/supply-insights" element={<Navigate to="/supply-inventory" replace />} />
 
               {/* Catch-all -> Landing Page */}
               <Route path="*" element={<Navigate to="/" replace />} />

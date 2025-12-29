@@ -55,7 +55,8 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
     if (pathname.startsWith('/value-check')) return 'value-check';
     if (pathname.startsWith('/district-overview')) return 'districts';
     if (pathname.startsWith('/explore')) return 'explore';
-    if (pathname.startsWith('/supply-insights')) return 'supply';
+    if (pathname.startsWith('/supply-inventory')) return 'supply';
+    if (pathname.startsWith('/supply-insights')) return 'supply'; // Legacy
     if (pathname.startsWith('/exit-risk')) return 'exit-risk';
     if (pathname.startsWith('/methodology')) return 'methodology';
     // Legacy route support

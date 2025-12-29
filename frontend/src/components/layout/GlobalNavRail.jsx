@@ -53,7 +53,7 @@ export const NAV_GROUPS = [
       { id: 'overview', path: '/market-overview', label: 'Market Overview', icon: '📊' },
       { id: 'districts', path: '/district-overview', label: 'District Overview', icon: '🗺️' },
       { id: 'new-launches', path: '/new-launch-market', label: 'New Launch Market', icon: '🏗️' },
-      { id: 'supply', path: '/supply-insights', label: 'Supply & Inventory', icon: '📦' },
+      { id: 'supply', path: '/supply-inventory', label: 'Supply & Inventory', icon: '📦' },
     ],
   },
   {
