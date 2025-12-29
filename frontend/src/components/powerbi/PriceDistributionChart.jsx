@@ -47,7 +47,7 @@ ChartJS.register(
  *
  * This chart answers ONE question: "Where do most transactions happen?"
  */
-export function PriceDistributionChart({ height = 300, numBins = 20, saleType = null }) {
+export const PriceDistributionChart = React.memo(function PriceDistributionChart({ height = 300, numBins = 20, saleType = null }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const [showFullRange, setShowFullRange] = useState(false);
@@ -317,6 +317,6 @@ export function PriceDistributionChart({ height = 300, numBins = 20, saleType = 
       </div>
     </QueryState>
   );
-}
+});
 
 export default PriceDistributionChart;

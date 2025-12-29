@@ -60,7 +60,7 @@ const REGION_COLORS = {
  * @param {Array} [props.sharedData=null] - Pre-fetched data from parent (skips internal fetch if provided)
  * @param {boolean} [props.sharedLoading=false] - Loading state from parent when using sharedData
  */
-export function AbsolutePsfChart({ height = 300, saleType = null, sharedData = null, sharedLoading = false }) {
+export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 300, saleType = null, sharedData = null, sharedLoading = false }) {
   const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
   const chartRef = useRef(null);
@@ -329,6 +329,6 @@ export function AbsolutePsfChart({ height = 300, saleType = null, sharedData = n
     </QueryState>
     </div>
   );
-}
+});
 
 export default AbsolutePsfChart;

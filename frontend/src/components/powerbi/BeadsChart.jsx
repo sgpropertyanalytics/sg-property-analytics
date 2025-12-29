@@ -46,7 +46,7 @@ const REGION_COLORS = {
  * This chart answers ONE question:
  * "How much are 1BR, 2BR, 3BR, 4BR, 5BR selling for in CCR, RCR, and OCR?"
  */
-export function BeadsChart({ height = 300, saleType = null }) {
+export const BeadsChart = React.memo(function BeadsChart({ height = 300, saleType = null }) {
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const chartRef = useRef(null);
 
@@ -330,6 +330,6 @@ export function BeadsChart({ height = 300, saleType = null }) {
       </div>
     </QueryState>
   );
-}
+});
 
 export default BeadsChart;

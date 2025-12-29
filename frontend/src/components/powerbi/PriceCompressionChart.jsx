@@ -66,7 +66,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * @param {Array} [props.sharedData=null] - Pre-fetched data from parent (skips internal fetch if provided)
  * @param {boolean} [props.sharedLoading=false] - Loading state from parent when using sharedData
  */
-export function PriceCompressionChart({ height = 380, saleType = null, sharedData = null, sharedLoading = false }) {
+export const PriceCompressionChart = React.memo(function PriceCompressionChart({ height = 380, saleType = null, sharedData = null, sharedLoading = false }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
@@ -346,7 +346,7 @@ export function PriceCompressionChart({ height = 380, saleType = null, sharedDat
     </QueryState>
     </div>
   );
-}
+});
 
 // ============================================
 // SUB-COMPONENTS

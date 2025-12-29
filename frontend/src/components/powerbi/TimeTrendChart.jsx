@@ -46,7 +46,7 @@ ChartJS.register(
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
-export function TimeTrendChart({ height = 300, saleType = null }) {
+export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300, saleType = null }) {
   // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
@@ -268,6 +268,6 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
       </div>
     </QueryState>
   );
-}
+});
 
 export default TimeTrendChart;
