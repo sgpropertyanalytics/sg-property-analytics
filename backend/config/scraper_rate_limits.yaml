@@ -1,0 +1,181 @@
+# Scraper Rate Limits Configuration
+#
+# Key format: scrape:{domain}:{route_group}
+# Rate limits are enforced per domain with optional route-group granularity.
+
+defaults:
+  requests_per_minute: 10
+  requests_per_hour: 100
+  burst_limit: 3
+
+domains:
+  # ===========================================================================
+  # Tier A - Government Sources (generous, respectful)
+  # ===========================================================================
+
+  ura.gov.sg:
+    requests_per_minute: 30
+    requests_per_hour: 500
+    burst_limit: 5
+    notes: "URA media releases and data"
+    routes:
+      media_releases:
+        requests_per_minute: 20
+        notes: "Listing pages"
+      media_release_detail:
+        requests_per_minute: 30
+        notes: "Individual release pages"
+
+  onemap.gov.sg:
+    requests_per_minute: 60
+    requests_per_hour: 1000
+    burst_limit: 10
+    notes: "Public geocoding API - documented limit 250/min"
+    routes:
+      search:
+        requests_per_minute: 60
+      revgeocode:
+        requests_per_minute: 60
+
+  data.gov.sg:
+    requests_per_minute: 30
+    requests_per_hour: 500
+    burst_limit: 5
+    notes: "Government data portal"
+
+  # ===========================================================================
+  # Tier B - Institutional (moderate)
+  # ===========================================================================
+
+  edgeprop.sg:
+    requests_per_minute: 10
+    requests_per_hour: 100
+    burst_limit: 2
+    notes: "Property portal - be conservative"
+    routes:
+      listings:
+        requests_per_minute: 10
+      project_detail:
+        requests_per_minute: 15
+
+  propertyguru.com.sg:
+    requests_per_minute: 10
+    requests_per_hour: 100
+    burst_limit: 2
+    notes: "Major property portal"
+
+  99.co:
+    requests_per_minute: 10
+    requests_per_hour: 100
+    burst_limit: 2
+    notes: "Property portal"
+
+  srx.com.sg:
+    requests_per_minute: 10
+    requests_per_hour: 100
+    burst_limit: 2
+    notes: "SRX property portal"
+
+  propnex.com:
+    requests_per_minute: 10
+    requests_per_hour: 100
+    burst_limit: 2
+    notes: "Agency website"
+
+  era.com.sg:
+    requests_per_minute: 10
+    requests_per_hour: 100
+    burst_limit: 2
+    notes: "Agency website"
+
+  orangetee.com:
+    requests_per_minute: 10
+    requests_per_hour: 100
+    burst_limit: 2
+    notes: "Agency website"
+
+  huttons.com.sg:
+    requests_per_minute: 10
+    requests_per_hour: 100
+    burst_limit: 2
+    notes: "Agency website"
+
+  # ===========================================================================
+  # Tier C - Content/Discovery (conservative)
+  # ===========================================================================
+
+  # Property Blogs
+  stackedhomes.com:
+    requests_per_minute: 5
+    requests_per_hour: 50
+    burst_limit: 1
+    notes: "Property blog - discovery only"
+
+  propertysoul.com:
+    requests_per_minute: 5
+    requests_per_hour: 50
+    burst_limit: 1
+    notes: "Property blog - discovery only"
+
+  sgpropertypicks.com:
+    requests_per_minute: 5
+    requests_per_hour: 50
+    burst_limit: 1
+    notes: "Property blog - discovery only"
+
+  newlaunchreview.com:
+    requests_per_minute: 5
+    requests_per_hour: 50
+    burst_limit: 1
+    notes: "Property blog - discovery only"
+
+  # News/Media
+  businesstimes.com.sg:
+    requests_per_minute: 5
+    requests_per_hour: 50
+    burst_limit: 1
+    notes: "News site - discovery only"
+
+  channelnewsasia.com:
+    requests_per_minute: 5
+    requests_per_hour: 50
+    burst_limit: 1
+    notes: "News site - discovery only"
+
+  straitstimes.com:
+    requests_per_minute: 5
+    requests_per_hour: 50
+    burst_limit: 1
+    notes: "News site - discovery only"
+
+  # Forums
+  hardwarezone.com.sg:
+    requests_per_minute: 3
+    requests_per_hour: 30
+    burst_limit: 1
+    notes: "Forum - URL discovery only"
+
+  # Social (very restrictive)
+  reddit.com:
+    requests_per_minute: 5
+    requests_per_hour: 30
+    burst_limit: 1
+    notes: "Reddit - use official API if available"
+
+  facebook.com:
+    requests_per_minute: 3
+    requests_per_hour: 20
+    burst_limit: 1
+    notes: "Facebook - very restrictive, prefer Graph API"
+
+  tiktok.com:
+    requests_per_minute: 3
+    requests_per_hour: 20
+    burst_limit: 1
+    notes: "TikTok - discovery only"
+
+  youtube.com:
+    requests_per_minute: 3
+    requests_per_hour: 20
+    burst_limit: 1
+    notes: "YouTube - prefer Data API"
