@@ -54,19 +54,19 @@ export function TimeGranularityToggle({ className = '' }) {
   return (
     <div className={`relative flex items-center ${className}`}>
       {/* Label - hidden on very small screens */}
-      <span className="hidden sm:inline text-xs text-[#547792] font-medium mr-2 whitespace-nowrap">
+      <span className="hidden sm:inline text-sm text-[#547792] font-medium mr-2 whitespace-nowrap">
         Group by:
       </span>
 
-      {/* Segmented toggle - more compact on mobile */}
-      <div className="inline-flex rounded-lg bg-[#94B4C1]/20 p-0.5 sm:p-1">
+      {/* Segmented toggle - consistent sizing with other filter buttons */}
+      <div className="inline-flex rounded-md bg-[#94B4C1]/20 p-1">
         {options.map(opt => (
           <button
             key={opt.value}
             type="button"
             onClick={() => handleChange(opt.value)}
             className={`
-              px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium rounded-md
+              min-h-[36px] px-3 py-1.5 text-sm font-medium rounded-md
               transition-all duration-200
               ${timeGrouping === opt.value
                 ? 'bg-[#213448] text-white shadow-sm'

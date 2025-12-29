@@ -171,7 +171,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   if (layout === 'horizontal') {
     return (
       <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-[#EAE0CF]/70 backdrop-blur-md border-b border-[#94B4C1]/30 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-4">
         {/* Region/Segment Buttons */}
         <FilterGroup label="Market Segment">
           <div className="flex gap-1">
@@ -180,7 +180,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 type="button"
                 key={seg}
                 onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                className={`min-h-[36px] px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
                   filters.segments.includes(seg)
                     ? 'bg-[#547792] text-white border-[#547792]'
                     : filters.segments.length === 0
@@ -194,9 +194,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             ))}
           </div>
         </FilterGroup>
-
-        {/* Separator */}
-        <div className="hidden lg:block w-px h-6 bg-[#94B4C1]/30" />
 
         {/* District Dropdown */}
         <MultiSelectDropdown
@@ -215,9 +212,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           compact
         />
 
-        {/* Separator */}
-        <div className="hidden lg:block w-px h-6 bg-[#94B4C1]/30" />
-
         {/* Bedroom Pills */}
         <FilterGroup label="Size">
           <div className="flex gap-1">
@@ -226,7 +220,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 type="button"
                 key={br}
                 onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                className={`min-h-[36px] min-w-[40px] px-2 py-1.5 text-xs rounded-md border transition-colors ${
+                className={`min-h-[44px] min-w-[44px] px-2 py-2 text-sm rounded-md border transition-colors ${
                   filters.bedroomTypes.includes(br)
                     ? 'bg-[#547792] text-white border-[#547792]'
                     : filters.bedroomTypes.length === 0
@@ -241,9 +235,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           </div>
         </FilterGroup>
 
-        {/* Separator */}
-        <div className="hidden lg:block w-px h-6 bg-[#94B4C1]/30" />
-
         {/* Date Preset Buttons */}
         <FilterGroup label="Period">
           <div className="flex gap-1">
@@ -253,7 +244,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 key={preset}
                 onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
                 disabled={filterOptions.loading}
-                className={`min-h-[36px] px-2.5 py-1.5 text-xs rounded-md border transition-colors ${
+                className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
                   filterOptions.loading
                     ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
                     : datePreset === preset
@@ -267,9 +258,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           </div>
         </FilterGroup>
 
-        {/* Separator */}
-        <div className="hidden lg:block w-px h-6 bg-[#94B4C1]/30" />
-
         {/* Time Granularity Toggle - Group by Year/Quarter/Month */}
         <TimeGranularityToggle />
 
@@ -280,7 +268,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
         {activeFilterCount > 0 && (
           <button
             onClick={handleResetFilters}
-            className="min-h-[36px] px-3 py-1.5 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-md transition-colors active:scale-[0.98]"
+            className="min-h-[44px] px-3 py-2 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-md transition-colors active:scale-[0.98]"
           >
             Clear all
           </button>
@@ -396,7 +384,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={br}
                   onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                  className={`min-h-[44px] py-2.5 text-xs rounded-md border transition-colors ${
+                  className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
                     filters.bedroomTypes.includes(br)
                       ? 'bg-[#547792] text-white border-[#547792]'
                       : filters.bedroomTypes.length === 0
@@ -432,7 +420,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   key={preset}
                   onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
                   disabled={filterOptions.loading}
-                  className={`min-h-[40px] py-2 text-sm rounded-md border transition-colors ${
+                  className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
                     filterOptions.loading
                       ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
                       : datePreset === preset
@@ -677,7 +665,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 type="button"
                 key={br}
                 onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                className={`min-h-[44px] py-2.5 text-xs rounded-md border transition-colors ${
+                className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
                   filters.bedroomTypes.includes(br)
                     ? 'bg-[#547792] text-white border-[#547792]'
                     : filters.bedroomTypes.length === 0
@@ -715,7 +703,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 key={preset}
                 onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
                 disabled={filterOptions.loading}
-                className={`min-h-[40px] py-2 text-sm rounded-md border transition-colors ${
+                className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
                   filterOptions.loading
                     ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
                     : datePreset === preset
@@ -871,7 +859,7 @@ function FilterSection({ title, icon, expanded, onToggle, activeCount, children 
 function FilterGroup({ label, children }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-[#547792] mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-[#547792] mb-1.5">{label}</label>
       {children}
     </div>
   );
