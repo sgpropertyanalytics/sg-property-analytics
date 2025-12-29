@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useLocation, Outlet } from 'react-router-dom';
-import { GlobalNavRail, NAV_ITEMS } from './GlobalNavRail';
+import { GlobalNavRail, NAV_ITEMS, NAV_WIDTH } from './GlobalNavRail';
 import { PowerBIFilterSidebar } from '../powerbi/PowerBIFilterSidebar';
 import { ErrorBoundary } from '../ui';
 import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
@@ -103,8 +103,11 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
   return (
       <div className="flex h-screen bg-[#EAE0CF]/30 overflow-hidden">
         {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
-        {/* Desktop: Fixed 240px width | Mobile: Hidden */}
-        <div className="hidden lg:block flex-shrink-0 w-60">
+        {/* Desktop: Uses NAV_WIDTH design token | Mobile: Hidden */}
+        <div
+          className="hidden lg:block flex-shrink-0"
+          style={{ width: NAV_WIDTH }}
+        >
           <GlobalNavRail activePage={activePage} />
         </div>
 
@@ -116,8 +119,11 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
               className="absolute inset-0 bg-black/50"
               onClick={handleMobileNavClose}
             />
-            {/* Nav Drawer - 280px width for mobile */}
-            <div className="absolute inset-y-0 left-0 w-[280px] max-w-[85vw] animate-slide-in-left">
+            {/* Nav Drawer - Uses NAV_WIDTH design token, capped at 85vw */}
+            <div
+              className="absolute inset-y-0 left-0 max-w-[85vw] animate-slide-in-left"
+              style={{ width: NAV_WIDTH }}
+            >
               <GlobalNavRail activePage={activePage} />
               {/* Close button overlay */}
               <button

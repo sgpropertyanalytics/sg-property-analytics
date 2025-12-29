@@ -5,25 +5,29 @@ import { UserProfileMenu } from './UserProfileMenu';
 import { AccountSettingsModal } from '../AccountSettingsModal';
 
 /**
- * GlobalNavRail - Primary Navigation Sidebar (224px fixed width)
+ * GlobalNavRail - Primary Navigation Sidebar
  *
  * The far-left navigation component that provides app-wide page switching.
  * Uses Deep Navy (#213448) background with Sand/Cream (#EAE0CF) active states.
  *
- * Responsive Behavior:
- * - Desktop (lg+): Fixed 224px sidebar, always visible
- * - Tablet/Mobile: Hidden, shown as drawer on hamburger click
+ * Width: Parent controls width (w-full). DashboardLayout sets:
+ * - Desktop (lg+): 288px (w-72)
+ * - Mobile drawer: 288px (w-72), max 85vw
  *
  * Structure:
  * - Market Intelligence: Overview, Districts, New Launches, Supply & Inventory
  * - Project Tools: Explore, Value Comparison, Exit Risk (Coming Soon)
  */
 
+// Design token: Nav rail width (defined once, used in DashboardLayout)
+// Collapsed: 72px (icons only) - future
+// Expanded: 256px (icons + labels) - current
+export const NAV_WIDTH = 256; // px
+
 export const NAV_GROUPS = [
   {
     id: 'market-intelligence',
     label: 'Market Intelligence',
-    icon: '🌍',
     items: [
       { id: 'overview', path: '/market-core', label: 'Overview', icon: '📊' },
       { id: 'districts', path: '/district-deep-dive', label: 'Districts', icon: '🗺️' },
@@ -34,7 +38,6 @@ export const NAV_GROUPS = [
   {
     id: 'project-tools',
     label: 'Project Tools',
-    icon: '🔧',
     items: [
       { id: 'explore', path: '/project-deep-dive', label: 'Explore', icon: '🔍' },
       { id: 'value-comparison', path: '/value-parity', label: 'Value Comparison', icon: '💰' },
@@ -56,6 +59,7 @@ function NavItem({ item, isActive, onClick }) {
     <button
       onClick={() => !isComingSoon && onClick(item)}
       disabled={isComingSoon}
+      title={item.label} // Tooltip for truncated text
       className={`
         group relative w-full min-h-[44px] px-3 py-2 rounded-lg
         flex items-center gap-3 text-left min-w-0
@@ -79,7 +83,7 @@ function NavItem({ item, isActive, onClick }) {
       {/* Icon */}
       <span className="text-base flex-shrink-0">{item.icon}</span>
 
-      {/* Label */}
+      {/* Label - can truncate, tooltip shows full text */}
       <span className="text-sm font-medium truncate min-w-0 flex-1">{item.label}</span>
 
       {/* Coming Soon badge */}
@@ -165,7 +169,7 @@ export function GlobalNavRail({ activePage, onPageChange }) {
 
           return (
             <div key={group.id}>
-              {/* Group Header - Collapsible */}
+              {/* Group Header - Collapsible, sentence case, no icon */}
               <button
                 onClick={() => toggleGroup(group.id)}
                 className={`
@@ -180,8 +184,8 @@ export function GlobalNavRail({ activePage, onPageChange }) {
                 `}
                 aria-expanded={isExpanded}
               >
-                <span className="text-base flex-shrink-0">{group.icon}</span>
-                <span className="text-xs font-semibold uppercase tracking-wider truncate min-w-0 flex-1">
+                {/* Section header: text only, no icon, sentence case */}
+                <span className="text-sm font-semibold min-w-0 flex-1">
                   {group.label}
                 </span>
                 {/* Chevron */}
