@@ -130,7 +130,7 @@ def get_project_price_bands(project_name):
     """
     start = time.time()
     from services.price_bands_service import get_project_price_bands as compute_bands
-    from schemas.api_contract import serialize_price_bands_dual, serialize_price_bands_v2
+    from schemas.api_contract import serialize_price_bands_v2
 
     try:
         # Parse query params
@@ -150,11 +150,6 @@ def get_project_price_bands(project_name):
         return validation_error_response(e)
 
     try:
-
-        # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
-        schema_version = request.args.get('schema', 'v2').lower()
-        strict_v2 = schema_version != 'v1'
-
         # Compute price bands
         result = compute_bands(
             project_name=project_name,
@@ -162,14 +157,9 @@ def get_project_price_bands(project_name):
             unit_psf=unit_psf
         )
 
-        # Serialize response based on schema mode
-        if strict_v2:
-            # Strict v2: camelCase only, no deprecated fields
-            response = serialize_price_bands_v2(result)
-            response['apiContractVersion'] = 'v2'
-        else:
-            # Default: dual-mode (v1 snake_case + _v2 camelCase nested)
-            response = serialize_price_bands_dual(result, include_deprecated=True)
+        # Serialize to v2 schema (v1 deprecated)
+        response = serialize_price_bands_v2(result)
+        response['apiContractVersion'] = 'v2'
 
         elapsed = time.time() - start
         print(f"GET /api/projects/{project_name}/price-bands completed in {elapsed:.4f}s")

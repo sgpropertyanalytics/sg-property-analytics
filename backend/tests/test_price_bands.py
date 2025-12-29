@@ -480,42 +480,26 @@ class TestPriceBandsDualMode:
             }
         }
 
-    def test_dual_mode_has_v1_and_v2(self, sample_result):
-        """Test that dual mode includes both v1 snake_case and _v2 nested object."""
-        dual = serialize_price_bands_dual(sample_result, include_deprecated=True)
+    def test_v2_has_camel_case_fields(self, sample_result):
+        """Test that v2 response uses camelCase field names."""
+        result = serialize_price_bands_dual(sample_result)
 
-        # v1 snake_case keys at top level
-        assert 'project_name' in dual
-        assert 'data_source' in dual
-        assert 'data_quality' in dual
-
-        # _v2 nested object with camelCase
-        assert '_v2' in dual
-        assert 'projectName' in dual['_v2']
-        assert 'dataSource' in dual['_v2']
-        assert 'dataQuality' in dual['_v2']
-
-    def test_dual_mode_has_api_version(self, sample_result):
-        """Test that dual mode includes API contract version."""
-        dual = serialize_price_bands_dual(sample_result, include_deprecated=True)
-
-        assert 'apiContractVersion' in dual
-        assert dual['apiContractVersion'] == API_CONTRACT_VERSION
-
-    def test_strict_v2_no_snake_case(self, sample_result):
-        """Test that strict v2 mode has no snake_case keys."""
-        strict = serialize_price_bands_dual(sample_result, include_deprecated=False)
-
-        # Should have camelCase only
-        assert 'projectName' in strict
-        assert 'dataSource' in strict
+        # Should have camelCase
+        assert 'projectName' in result
+        assert 'dataSource' in result
+        assert 'dataQuality' in result
 
         # Should NOT have snake_case
-        assert 'project_name' not in strict
-        assert 'data_source' not in strict
+        assert 'project_name' not in result
+        assert 'data_source' not in result
+        assert 'data_quality' not in result
 
-        # Should NOT have _v2 nested (it's already v2)
-        assert '_v2' not in strict
+    def test_v2_has_api_version(self, sample_result):
+        """Test that v2 includes API contract version."""
+        result = serialize_price_bands_dual(sample_result)
+
+        assert 'apiContractVersion' in result
+        assert result['apiContractVersion'] == API_CONTRACT_VERSION
 
 
 # =============================================================================

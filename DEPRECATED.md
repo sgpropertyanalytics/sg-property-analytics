@@ -1,6 +1,6 @@
 # Deprecated Code Inventory
 
-Last updated: 2024-12-29
+Last updated: 2025-12-29
 
 ## Definition
 
@@ -55,11 +55,19 @@ These files intentionally return deprecation responses for compliance or consoli
 
 These provide backwards compatibility during API migration.
 
-| File/Pattern | Purpose | Sunset Timeline |
-|--------------|---------|-----------------|
-| `api_contract.py` dual serializers (`*_dual()`) | Returns both v1 (snake_case) and v2 (camelCase) fields | TBD - depends on client migration |
-| `?schema=v2` parameter support | Allows clients to opt into v2-only output | Keep indefinitely |
-| `include_deprecated` parameter | Controls whether v1 fields are included | Keep indefinitely |
+| File/Pattern | Purpose | Status |
+|--------------|---------|--------|
+| *(none - v2 migration complete)* | - | - |
+
+### REMOVED (v2 Migration Complete - 2025-12-29)
+
+The following backwards compatibility layers have been removed:
+
+| Pattern | Former Purpose | Removal Reason |
+|---------|----------------|----------------|
+| `api_contract.py` dual serializers | Returned both v1 (snake_case) and v2 (camelCase) fields | Frontend migrated to v2-only, all endpoints default to v2 |
+| `?schema=v2` parameter | Allowed clients to opt into v2-only output | Now v2-only by default, parameter ignored |
+| `include_deprecated` parameter | Controlled whether v1 fields were included | Removed from all serializers, v1 fields deleted |
 
 ---
 
@@ -109,3 +117,4 @@ git log --oneline -20 -- <file_path>
 | Date | Action | Files |
 |------|--------|-------|
 | 2024-12-29 | Initial inventory created | N/A |
+| 2025-12-29 | v2 API migration complete - removed dual serializers | `api_contract.py`, routes, tests |

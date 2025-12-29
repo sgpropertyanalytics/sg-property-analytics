@@ -99,18 +99,11 @@ class TestPeriodNormalization:
         assert result['period'] == 2024
         assert result['periodGrain'] == 'year'
 
-    def test_legacy_fields_included_by_default(self, quarter_aggregate_row):
-        """Legacy time fields should be included for backwards compat."""
-        result = serialize_aggregate_row(quarter_aggregate_row, include_deprecated=True)
+    def test_v2_uses_period_not_legacy_fields(self, quarter_aggregate_row):
+        """v2 should use period field, not legacy quarter field."""
+        result = serialize_aggregate_row(quarter_aggregate_row)
 
-        assert 'quarter' in result, "Missing legacy 'quarter' field"
-        assert result['quarter'] == '2024-Q4'
-
-    def test_legacy_fields_excluded_in_v2_strict(self, quarter_aggregate_row):
-        """Legacy time fields should be excluded in strict v2 mode."""
-        result = serialize_aggregate_row(quarter_aggregate_row, include_deprecated=False)
-
-        assert 'quarter' not in result, "Legacy 'quarter' should not be in v2 strict"
+        assert 'quarter' not in result, "Legacy 'quarter' should not be in v2"
         assert 'period' in result
 
 
@@ -130,17 +123,12 @@ class TestEnumValues:
         assert result['saleType'] in SaleType.ALL
 
     def test_region_enum_conversion(self, month_aggregate_row):
-        """region should be converted to lowercase enum in v2 strict mode."""
-        # In dual mode (default), uppercase is preserved for backwards compat
-        result_dual = serialize_aggregate_row(month_aggregate_row, include_deprecated=True)
-        assert 'region' in result_dual, "Missing 'region' field"
-        assert result_dual['region'] == 'CCR'  # uppercase in dual mode (v1 compat)
+        """region should be converted to lowercase enum in v2."""
+        result = serialize_aggregate_row(month_aggregate_row)
 
-        # In v2 strict mode, lowercase enum is used
-        result_v2 = serialize_aggregate_row(month_aggregate_row, include_deprecated=False)
-        assert 'region' in result_v2, "Missing 'region' field in v2"
-        assert result_v2['region'] == 'ccr'  # lowercase in v2 strict
-        assert result_v2['region'] in Region.ALL
+        assert 'region' in result, "Missing 'region' field"
+        assert result['region'] == 'ccr'  # lowercase in v2
+        assert result['region'] in Region.ALL
 
     def test_invalid_sale_type_passes_through(self):
         """Unknown sale_type should pass through (graceful degradation)."""
@@ -233,8 +221,8 @@ class TestFieldNames:
     """Test that field names follow v2 camelCase convention."""
 
     def test_v2_camel_case_fields(self, quarter_aggregate_row):
-        """v2 response should have camelCase field names."""
-        result = serialize_aggregate_row(quarter_aggregate_row, include_deprecated=False)
+        """v2 response should have camelCase field names only."""
+        result = serialize_aggregate_row(quarter_aggregate_row)
 
         # Should have camelCase
         assert 'avgPsf' in result
@@ -242,20 +230,11 @@ class TestFieldNames:
         assert 'totalValue' in result
         assert 'saleType' in result
 
-        # Should NOT have snake_case in v2 strict
+        # Should NOT have snake_case in v2
         assert 'avg_psf' not in result
         assert 'median_psf' not in result
         assert 'total_value' not in result
         assert 'sale_type' not in result
-
-    def test_dual_mode_has_both(self, quarter_aggregate_row):
-        """Default dual mode should have both field formats."""
-        result = serialize_aggregate_row(quarter_aggregate_row, include_deprecated=True)
-
-        # Should have both
-        assert 'avgPsf' in result
-        assert 'avg_psf' in result
-        assert result['avgPsf'] == result['avg_psf']
 
 
 # =============================================================================
@@ -338,9 +317,9 @@ class TestContractSmokeTest:
         # 4. SaleType is valid enum
         assert result['saleType'] in SaleType.ALL, f"Invalid saleType: {result['saleType']}"
 
-        # 5. v1 compat fields present (dual mode)
-        assert 'avg_psf' in result, "Missing v1 compat field"
-        assert 'quarter' in result, "Missing v1 compat time field"
+        # 5. v1 compat fields should NOT be present (v2 only)
+        assert 'avg_psf' not in result, "v1 compat field should not be in v2"
+        assert 'quarter' not in result, "v1 time field should not be in v2"
 
         print("✅ Contract smoke test PASSED")
 

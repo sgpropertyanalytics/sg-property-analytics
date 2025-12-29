@@ -361,12 +361,11 @@ class TransactionFields:
 # SERIALIZERS
 # =============================================================================
 
-def serialize_transaction(txn, include_deprecated: bool = True) -> Dict[str, Any]:
+def serialize_transaction(txn) -> Dict[str, Any]:
     """Convert DB Transaction to API v2 schema.
 
     Args:
         txn: Transaction ORM object
-        include_deprecated: If True, include old snake_case fields for backwards compat
 
     Returns:
         dict with camelCase keys and enum values
@@ -379,8 +378,7 @@ def serialize_transaction(txn, include_deprecated: bool = True) -> Dict[str, Any
         else:
             txn_date = str(txn.transaction_date)
 
-    result = {
-        # New v2 fields (camelCase + enum values)
+    return {
         TransactionFields.ID: txn.id,
         TransactionFields.PROJECT_NAME: txn.project_name,
         TransactionFields.DISTRICT: txn.district,
@@ -398,33 +396,14 @@ def serialize_transaction(txn, include_deprecated: bool = True) -> Dict[str, Any
         TransactionFields.FLOOR_RANGE: getattr(txn, 'floor_range', None),
     }
 
-    if include_deprecated:
-        # DEPRECATED: Old snake_case fields for backwards compatibility
-        # Remove after frontend migration complete
-        result.update({
-            'project_name': txn.project_name,
-            'bedroom_count': txn.bedroom_count,
-            'transaction_date': txn_date,
-            'area_sqft': txn.area_sqft,
-            'sale_type': txn.sale_type,  # Old DB value (e.g., 'New Sale')
-            'floor_level': getattr(txn, 'floor_level', None),  # Old DB value
-            'remaining_lease': getattr(txn, 'remaining_lease', None),
-            'market_segment': getattr(txn, 'market_segment', None),  # Old format
-            'street_name': getattr(txn, 'street_name', None),
-            'floor_range': getattr(txn, 'floor_range', None),
-        })
 
-    return result
-
-
-def serialize_transaction_teaser(txn, include_deprecated: bool = True) -> Dict[str, Any]:
+def serialize_transaction_teaser(txn) -> Dict[str, Any]:
     """Convert DB Transaction to API v2 schema with masked/teaser values.
 
     Used for free tier where sensitive data is hidden.
 
     Args:
         txn: Transaction ORM object
-        include_deprecated: If True, include old snake_case fields for backwards compat
 
     Returns:
         dict with masked sensitive fields
@@ -436,8 +415,7 @@ def serialize_transaction_teaser(txn, include_deprecated: bool = True) -> Dict[s
         else:
             txn_date = str(txn.transaction_date)
 
-    result = {
-        # New v2 fields (camelCase + enum values)
+    return {
         TransactionFields.ID: txn.id,
         TransactionFields.PROJECT_NAME: None,  # Masked
         TransactionFields.DISTRICT: txn.district,
@@ -456,26 +434,6 @@ def serialize_transaction_teaser(txn, include_deprecated: bool = True) -> Dict[s
         'areaSqftMasked': _mask_area(txn.area_sqft),
         'psfMasked': _mask_psf(txn.psf),
     }
-
-    if include_deprecated:
-        # DEPRECATED: Old snake_case fields
-        result.update({
-            'project_name': None,
-            'project_name_masked': f"{txn.district} Condo",
-            'bedroom_count': txn.bedroom_count,
-            'transaction_date': txn_date,
-            'area_sqft': None,
-            'area_sqft_masked': _mask_area(txn.area_sqft),
-            'price': None,
-            'price_masked': _mask_price(txn.price),
-            'psf': None,
-            'psf_masked': _mask_psf(txn.psf),
-            'sale_type': txn.sale_type,
-            'floor_level': getattr(txn, 'floor_level', None),
-            'remaining_lease': getattr(txn, 'remaining_lease', None),
-        })
-
-    return result
 
 
 def _mask_price(price: Optional[float]) -> Optional[str]:
@@ -716,7 +674,7 @@ _AGGREGATE_FIELD_MAP = {
 }
 
 
-def serialize_aggregate_row(row: Dict[str, Any], include_deprecated: bool = True) -> Dict[str, Any]:
+def serialize_aggregate_row(row: Dict[str, Any]) -> Dict[str, Any]:
     """Serialize a single aggregate result row to API v2 schema.
 
     Converts:
@@ -728,7 +686,6 @@ def serialize_aggregate_row(row: Dict[str, Any], include_deprecated: bool = True
 
     Args:
         row: Dict from SQL query result
-        include_deprecated: If True, include old snake_case fields
 
     Returns:
         Transformed dict with v2 schema
@@ -752,35 +709,17 @@ def serialize_aggregate_row(row: Dict[str, Any], include_deprecated: bool = True
     for key, value in row.items():
         # Transform enum values
         if key == 'sale_type' and value:
-            v2_value = SaleType.from_db(value)
-            result[AggregateFields.SALE_TYPE] = v2_value
-            if include_deprecated:
-                result['sale_type'] = value  # Keep old format
+            result[AggregateFields.SALE_TYPE] = SaleType.from_db(value)
         elif key == 'floor_level' and value:
-            v2_value = FloorLevel.from_db(value)
-            result[AggregateFields.FLOOR_LEVEL] = v2_value
-            if include_deprecated:
-                result['floor_level'] = value
+            result[AggregateFields.FLOOR_LEVEL] = FloorLevel.from_db(value)
         elif key == 'region' and value:
-            v2_value = value.lower() if isinstance(value, str) else value
-            result[AggregateFields.REGION] = v2_value
-            if include_deprecated:
-                result['region'] = value  # Keep uppercase
+            result[AggregateFields.REGION] = value.lower() if isinstance(value, str) else value
         elif key == 'bedroom':
             result[AggregateFields.BEDROOM_COUNT] = value
-            if include_deprecated:
-                result['bedroom'] = value
         elif key in _AGGREGATE_FIELD_MAP:
             # Convert snake_case metric to camelCase
-            v2_key = _AGGREGATE_FIELD_MAP[key]
-            result[v2_key] = value
-            if include_deprecated:
-                result[key] = value
-        elif key in TIME_BUCKET_FIELDS:
-            # Keep legacy time fields for backwards compatibility
-            if include_deprecated:
-                result[key] = value
-        else:
+            result[_AGGREGATE_FIELD_MAP[key]] = value
+        elif key not in TIME_BUCKET_FIELDS:
             # Pass through unchanged (district, project, count)
             result[key] = value
 
@@ -790,22 +729,17 @@ def serialize_aggregate_row(row: Dict[str, Any], include_deprecated: bool = True
 def serialize_aggregate_response(
     data: list,
     meta: Dict[str, Any],
-    include_deprecated: bool = True
 ) -> Dict[str, Any]:
     """Serialize full aggregate response to API v2 schema.
 
     Args:
         data: List of aggregate result rows
         meta: Metadata dict
-        include_deprecated: If True, include old snake_case fields
 
     Returns:
         Complete response dict with serialized data and meta
     """
-    serialized_data = [
-        serialize_aggregate_row(row, include_deprecated=include_deprecated)
-        for row in data
-    ]
+    serialized_data = [serialize_aggregate_row(row) for row in data]
 
     # Add API contract version and schema hash to meta
     meta_v2 = {
@@ -879,7 +813,6 @@ def serialize_filter_options(
     size_range: dict,
     tenures: list,
     property_age_buckets: list = None,
-    include_deprecated: bool = True
 ) -> Dict[str, Any]:
     """Serialize filter options to API v2 schema.
 
@@ -899,7 +832,6 @@ def serialize_filter_options(
         size_range: Dict with min/max size
         tenures: List of DB tenure values
         property_age_buckets: List of PropertyAgeBucket enum values (defaults to ALL)
-        include_deprecated: If True, include old snake_case fields
 
     Returns:
         Serialized filter options dict with {value, label} objects
@@ -949,7 +881,7 @@ def serialize_filter_options(
     ]
 
     # Build v2 response
-    result = {
+    return {
         FilterOptionsFields.SALE_TYPES: sale_types_v2,
         FilterOptionsFields.TENURES: tenures_v2,
         FilterOptionsFields.REGIONS: regions_v2,
@@ -964,23 +896,6 @@ def serialize_filter_options(
         'apiContractVersion': API_CONTRACT_VERSION,
         'contractHash': get_schema_hash('filter_options'),
     }
-
-    if include_deprecated:
-        # DEPRECATED: v1 snake_case fields with raw values (for backwards compat)
-        # TODO: Remove in Phase 1c after frontend migration complete
-        result.update({
-            'sale_types': sale_types,          # Raw DB values ['New Sale', 'Resale']
-            'tenures': tenures,                # Raw DB values ['Freehold', '99-year']
-            'districts': districts,            # Raw list ['D01', 'D02', ...]
-            'bedrooms': bedrooms,              # Raw integers [1, 2, 3, 4, 5]
-            'regions_legacy': regions,         # Original dict format {CCR: [...], RCR: [...]}
-            'date_range': date_range,
-            'psf_range': psf_range,
-            'size_range': size_range,
-            'property_age_buckets': property_age_buckets,  # Raw enum list for v1 compat
-        })
-
-    return result
 
 
 # =============================================================================
@@ -1013,15 +928,10 @@ class DashboardFields:
     PRICE_RANGE = 'priceRange'      # v1: price_range
 
 
-def serialize_time_series_panel(data: list, include_deprecated: bool = True) -> list:
-    """Serialize time_series panel data to v2 schema.
-
-    v1 format: { period, count, avg_psf, median_psf, total_value, avg_price }
-    v2 format: { period, count, avgPsf, medianPsf, totalValue, avgPrice }
-    """
-    result = []
-    for row in data:
-        v2_row = {
+def serialize_time_series_panel(data: list) -> list:
+    """Serialize time_series panel data to v2 schema."""
+    return [
+        {
             DashboardFields.PERIOD: row.get('period'),
             DashboardFields.COUNT: row.get('count'),
             DashboardFields.AVG_PSF: row.get('avg_psf'),
@@ -1029,48 +939,25 @@ def serialize_time_series_panel(data: list, include_deprecated: bool = True) -> 
             DashboardFields.TOTAL_VALUE: row.get('total_value'),
             DashboardFields.AVG_PRICE: row.get('avg_price'),
         }
-        if include_deprecated:
-            v2_row.update({
-                'avg_psf': row.get('avg_psf'),
-                'median_psf': row.get('median_psf'),
-                'total_value': row.get('total_value'),
-                'avg_price': row.get('avg_price'),
-            })
-        result.append(v2_row)
-    return result
+        for row in data
+    ]
 
 
-def serialize_volume_by_location_panel(data: list, include_deprecated: bool = True) -> list:
-    """Serialize volume_by_location panel data to v2 schema.
-
-    v1 format: { location, count, total_value, avg_psf }
-    v2 format: { location, count, totalValue, avgPsf }
-    """
-    result = []
-    for row in data:
-        v2_row = {
+def serialize_volume_by_location_panel(data: list) -> list:
+    """Serialize volume_by_location panel data to v2 schema."""
+    return [
+        {
             DashboardFields.LOCATION: row.get('location'),
             DashboardFields.COUNT: row.get('count'),
             DashboardFields.TOTAL_VALUE: row.get('total_value'),
             DashboardFields.AVG_PSF: row.get('avg_psf'),
         }
-        if include_deprecated:
-            v2_row.update({
-                'total_value': row.get('total_value'),
-                'avg_psf': row.get('avg_psf'),
-            })
-        result.append(v2_row)
-    return result
+        for row in data
+    ]
 
 
-def serialize_price_histogram_panel(data: dict, include_deprecated: bool = True) -> dict:
-    """Serialize price_histogram panel data to v2 schema.
-
-    Histogram structure:
-    - bins: list of {bin, bin_start, bin_end, count}
-    - stats: {total_count, p5, p25, median, p75, p95, min, max, iqr}
-    - tail: {count, threshold, pct}
-    """
+def serialize_price_histogram_panel(data: dict) -> dict:
+    """Serialize price_histogram panel data to v2 schema."""
     if not data or 'error' in data:
         return data
 
@@ -1078,11 +965,10 @@ def serialize_price_histogram_panel(data: dict, include_deprecated: bool = True)
         'bins': data.get('bins', []),
     }
 
-    # Pass through stats with both v1 snake_case and v2 camelCase
+    # Stats in v2 camelCase
     stats = data.get('stats', {})
     if stats:
         result['stats'] = {
-            # v2 camelCase fields
             'totalCount': stats.get('total_count'),
             'median': stats.get('median'),
             'p5': stats.get('p5'),
@@ -1093,11 +979,8 @@ def serialize_price_histogram_panel(data: dict, include_deprecated: bool = True)
             'max': stats.get('max'),
             'iqr': stats.get('iqr'),
         }
-        if include_deprecated:
-            # v1 snake_case for backward compatibility
-            result['stats']['total_count'] = stats.get('total_count')
 
-    # Pass through tail info (for "N% hidden" message)
+    # Tail info (for "N% hidden" message)
     tail = data.get('tail', {})
     if tail:
         result['tail'] = {
@@ -1109,70 +992,38 @@ def serialize_price_histogram_panel(data: dict, include_deprecated: bool = True)
     return result
 
 
-def serialize_bedroom_mix_panel(data: list, include_deprecated: bool = True) -> list:
-    """Serialize bedroom_mix panel data to v2 schema.
-
-    v1 format: { period, bedroom, sale_type, count }
-    v2 format: { period, bedroomCount, saleType, count }
-
-    sale_type is transformed to lowercase enum (New Sale → new_sale)
-    """
-    result = []
-    for row in data:
-        sale_type_v2 = SaleType.from_db(row.get('sale_type'))
-        v2_row = {
+def serialize_bedroom_mix_panel(data: list) -> list:
+    """Serialize bedroom_mix panel data to v2 schema."""
+    return [
+        {
             DashboardFields.PERIOD: row.get('period'),
             DashboardFields.BEDROOM_COUNT: row.get('bedroom'),
-            DashboardFields.SALE_TYPE: sale_type_v2,
+            DashboardFields.SALE_TYPE: SaleType.from_db(row.get('sale_type')),
             DashboardFields.COUNT: row.get('count'),
         }
-        if include_deprecated:
-            v2_row.update({
-                'bedroom': row.get('bedroom'),
-                'sale_type': row.get('sale_type'),  # Original DB value
-            })
-        result.append(v2_row)
-    return result
+        for row in data
+    ]
 
 
-def serialize_sale_type_breakdown_panel(data: list, include_deprecated: bool = True) -> list:
-    """Serialize sale_type_breakdown panel data to v2 schema.
-
-    v1 format: { period, sale_type, count, total_value }
-    v2 format: { period, saleType, count, totalValue }
-
-    sale_type is transformed to lowercase enum (New Sale → new_sale)
-    """
-    result = []
-    for row in data:
-        sale_type_v2 = SaleType.from_db(row.get('sale_type'))
-        v2_row = {
+def serialize_sale_type_breakdown_panel(data: list) -> list:
+    """Serialize sale_type_breakdown panel data to v2 schema."""
+    return [
+        {
             DashboardFields.PERIOD: row.get('period'),
-            DashboardFields.SALE_TYPE: sale_type_v2,
+            DashboardFields.SALE_TYPE: SaleType.from_db(row.get('sale_type')),
             DashboardFields.COUNT: row.get('count'),
             DashboardFields.TOTAL_VALUE: row.get('total_value'),
         }
-        if include_deprecated:
-            v2_row.update({
-                'sale_type': row.get('sale_type'),  # Original DB value
-                'total_value': row.get('total_value'),
-            })
-        result.append(v2_row)
-    return result
+        for row in data
+    ]
 
 
-def serialize_summary_panel(data: dict, include_deprecated: bool = True) -> dict:
-    """Serialize summary panel data to v2 schema.
-
-    v1 format: { total_count, avg_psf, median_psf, avg_price, median_price,
-                 total_value, date_min, date_max, psf_range, price_range }
-    v2 format: { totalCount, avgPsf, medianPsf, avgPrice, medianPrice,
-                 totalValue, dateMin, dateMax, psfRange, priceRange }
-    """
+def serialize_summary_panel(data: dict) -> dict:
+    """Serialize summary panel data to v2 schema."""
     if not data or 'error' in data:
         return data
 
-    result = {
+    return {
         DashboardFields.TOTAL_COUNT: data.get('total_count', 0),
         DashboardFields.AVG_PSF: data.get('avg_psf'),
         DashboardFields.MEDIAN_PSF: data.get('median_psf'),
@@ -1184,22 +1035,6 @@ def serialize_summary_panel(data: dict, include_deprecated: bool = True) -> dict
         DashboardFields.PSF_RANGE: data.get('psf_range'),
         DashboardFields.PRICE_RANGE: data.get('price_range'),
     }
-
-    if include_deprecated:
-        result.update({
-            'total_count': data.get('total_count', 0),
-            'avg_psf': data.get('avg_psf'),
-            'median_psf': data.get('median_psf'),
-            'avg_price': data.get('avg_price'),
-            'median_price': data.get('median_price'),
-            'total_value': data.get('total_value', 0),
-            'date_min': data.get('date_min'),
-            'date_max': data.get('date_max'),
-            'psf_range': data.get('psf_range'),
-            'price_range': data.get('price_range'),
-        })
-
-    return result
 
 
 # Panel serializer registry
@@ -1213,20 +1048,19 @@ _DASHBOARD_PANEL_SERIALIZERS = {
 }
 
 
-def serialize_dashboard_panel(panel_name: str, data: Any, include_deprecated: bool = True) -> Any:
+def serialize_dashboard_panel(panel_name: str, data: Any) -> Any:
     """Serialize a single dashboard panel to v2 schema.
 
     Args:
         panel_name: Name of the panel (e.g., 'time_series', 'summary')
         data: Raw panel data from dashboard service
-        include_deprecated: If True, include v1 snake_case fields
 
     Returns:
         Serialized panel data
     """
     serializer = _DASHBOARD_PANEL_SERIALIZERS.get(panel_name)
     if serializer:
-        return serializer(data, include_deprecated=include_deprecated)
+        return serializer(data)
     # Unknown panel - return as-is
     return data
 
@@ -1234,26 +1068,23 @@ def serialize_dashboard_panel(panel_name: str, data: Any, include_deprecated: bo
 def serialize_dashboard_response(
     data: Dict[str, Any],
     meta: Dict[str, Any],
-    include_deprecated: bool = True
 ) -> Dict[str, Any]:
     """Serialize full dashboard response to v2 schema.
 
     Args:
         data: Dict of panel_name → panel_data
         meta: Metadata dict from dashboard service
-        include_deprecated: If True, include v1 snake_case fields
 
     Returns:
         Complete response dict with serialized panels and meta
     """
-    serialized_data = {}
-    for panel_name, panel_data in data.items():
-        if panel_data is None or (isinstance(panel_data, dict) and 'error' in panel_data):
-            serialized_data[panel_name] = panel_data
-        else:
-            serialized_data[panel_name] = serialize_dashboard_panel(
-                panel_name, panel_data, include_deprecated=include_deprecated
-            )
+    serialized_data = {
+        panel_name: (
+            panel_data if panel_data is None or (isinstance(panel_data, dict) and 'error' in panel_data)
+            else serialize_dashboard_panel(panel_name, panel_data)
+        )
+        for panel_name, panel_data in data.items()
+    }
 
     # Add API contract version and schema hash to meta
     meta_v2 = {
@@ -1760,33 +1591,20 @@ def serialize_price_bands_v2(result: Dict[str, Any]) -> Dict[str, Any]:
     return response
 
 
-def serialize_price_bands_dual(
-    result: Dict[str, Any],
-    include_deprecated: bool = True
-) -> Dict[str, Any]:
+def serialize_price_bands_dual(result: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Serialize price bands result with dual-mode support.
+    Serialize price bands result to v2 schema.
 
     Args:
         result: Raw result from get_project_price_bands()
-        include_deprecated: If True, include v1 snake_case fields (default True)
 
     Returns:
-        Dict with v2 camelCase fields, and optionally v1 snake_case fields
+        Dict with v2 camelCase fields
     """
-    if include_deprecated:
-        # Return v1 format with _v2 nested
-        response = serialize_price_bands_v1(result)
-        response['_v2'] = serialize_price_bands_v2(result)
-        response['apiContractVersion'] = API_CONTRACT_VERSION
-        response['contractHash'] = get_schema_hash('price_bands')
-        return response
-    else:
-        # Strict v2 only
-        response = serialize_price_bands_v2(result)
-        response['apiContractVersion'] = API_CONTRACT_VERSION
-        response['contractHash'] = get_schema_hash('price_bands')
-        return response
+    response = serialize_price_bands_v2(result)
+    response['apiContractVersion'] = API_CONTRACT_VERSION
+    response['contractHash'] = get_schema_hash('price_bands')
+    return response
 
 
 # =============================================================================
@@ -1897,12 +1715,9 @@ def apply_psf_by_price_band_k_anonymity(rows: list) -> list:
     return result
 
 
-def serialize_psf_by_price_band_row(
-    row: Dict[str, Any],
-    include_deprecated: bool = True
-) -> Dict[str, Any]:
+def serialize_psf_by_price_band_row(row: Dict[str, Any]) -> Dict[str, Any]:
     """Serialize a single PSF by price band row to API v2 schema."""
-    v2_row = {
+    return {
         PsfByPriceBandFields.PRICE_BAND: row['priceBand'],
         PsfByPriceBandFields.PRICE_BAND_MIN: row.get('priceBandMin'),
         PsfByPriceBandFields.PRICE_BAND_MAX: row.get('priceBandMax'),
@@ -1913,50 +1728,28 @@ def serialize_psf_by_price_band_row(
         PsfByPriceBandFields.P75: row['p75'],
         PsfByPriceBandFields.OBSERVATION_COUNT: row['observationCount'],
         PsfByPriceBandFields.SUPPRESSED: row['suppressed'],
-        # New fields: age and region breakdown
         'avgAge': row.get('avgAge'),
         'ccrCount': row.get('ccrCount', 0),
         'rcrCount': row.get('rcrCount', 0),
         'ocrCount': row.get('ocrCount', 0),
     }
 
-    if include_deprecated:
-        # v1 snake_case fields for backwards compatibility
-        v2_row.update({
-            'price_band': row['priceBand'],
-            'price_band_min': row.get('priceBandMin'),
-            'price_band_max': row.get('priceBandMax'),
-            'bedroom_count': row['bedroomCount'],
-            'observation_count': row['observationCount'],
-            'avg_age': row.get('avgAge'),
-            'ccr_count': row.get('ccrCount', 0),
-            'rcr_count': row.get('rcrCount', 0),
-            'ocr_count': row.get('ocrCount', 0),
-        })
-
-    return v2_row
-
 
 def serialize_psf_by_price_band(
     data: list,
-    meta: Optional[Dict[str, Any]] = None,
-    include_deprecated: bool = True
+    meta: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
-    Serialize PSF by price band response with v2 support.
+    Serialize PSF by price band response to API v2 schema.
 
     Args:
         data: List of dicts (after K-anonymity applied)
         meta: Optional metadata dict
-        include_deprecated: If True, include v1 snake_case fields
 
     Returns:
         Complete response dict with serialized data and meta
     """
-    serialized = [
-        serialize_psf_by_price_band_row(row, include_deprecated=include_deprecated)
-        for row in data
-    ]
+    serialized = [serialize_psf_by_price_band_row(row) for row in data]
 
     response_meta = {
         'kAnonymity': {

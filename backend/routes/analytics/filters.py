@@ -29,9 +29,7 @@ def filter_options():
     from services.data_processor import _get_market_segment
     from schemas.api_contract import serialize_filter_options, PropertyAgeBucket
 
-    # Schema version: v2 (strict, default) or v1 (dual-mode for backwards compat)
-    schema_version = request.args.get('schema', 'v2')
-    include_deprecated = (schema_version == 'v1')
+    # Schema version: v2 only (v1 deprecated fields removed)
 
     try:
         # Base filter to exclude outliers
@@ -99,8 +97,7 @@ def filter_options():
             psf_range=psf_range,
             size_range=size_range,
             tenures=tenures,
-            property_age_buckets=PropertyAgeBucket.ALL,
-            include_deprecated=include_deprecated
+            property_age_buckets=PropertyAgeBucket.ALL
         ))
     except Exception as e:
         print(f"GET /api/filter-options ERROR: {e}")

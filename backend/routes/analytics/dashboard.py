@@ -79,9 +79,7 @@ def dashboard():
     start = time.time()
 
     try:
-        # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
-        schema_version = request.args.get('schema', 'v2')
-        include_deprecated = (schema_version == 'v1')
+        # Schema version: v2 only (v1 deprecated fields removed)
 
         # Parse parameters from GET query string or POST JSON body
         if request.method == 'POST' and request.is_json:
@@ -215,11 +213,10 @@ def dashboard():
                 # Add flag so frontend knows data is masked
                 result['meta']['data_masked'] = True
 
-        # Serialize to v2 schema (with backwards compat for v1)
+        # Serialize to v2 schema
         serialized = serialize_dashboard_response(
             data=result.get('data', {}),
-            meta=result.get('meta', {}),
-            include_deprecated=include_deprecated
+            meta=result.get('meta', {})
         )
 
         elapsed = time.time() - start

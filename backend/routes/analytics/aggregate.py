@@ -163,9 +163,8 @@ def aggregate():
 
     start = time.time()
 
-    # Schema version: v2 (default) returns camelCase + lowercase enums only, v1 returns both for backwards compat
+    # Schema version: v2 only (v1 deprecated fields removed)
     schema_version = request.args.get('schema', 'v2')
-    include_deprecated = (schema_version == 'v1')
 
     # Build cache key from query string
     skip_cache = request.args.get('skip_cache', '').lower() == 'true'
@@ -338,7 +337,7 @@ def aggregate():
             "elapsed_ms": int(elapsed * 1000),
             "schemaVersion": schema_version,
         }
-        return jsonify(serialize_aggregate_response([], empty_meta, include_deprecated=include_deprecated))
+        return jsonify(serialize_aggregate_response([], empty_meta))
 
     # Build group_by columns for SQL
     group_columns = []
@@ -585,7 +584,7 @@ def aggregate():
     }
 
     # Wrap with API contract serializer (transforms field names + enum values)
-    result = serialize_aggregate_response(data, meta, include_deprecated=include_deprecated)
+    result = serialize_aggregate_response(data, meta)
 
     # Cache the result for faster repeated queries
     _dashboard_cache.set(cache_key, result)

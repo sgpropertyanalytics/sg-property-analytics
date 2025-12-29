@@ -168,7 +168,7 @@ def serialize_transaction(transaction, is_premium=None):
         return transaction.to_teaser_dict()
 
 
-def serialize_transactions(transactions, is_premium=None, schema_version='v2'):
+def serialize_transactions(transactions, is_premium=None):
     """
     Serialize a list of transactions based on user's subscription tier.
 
@@ -177,8 +177,6 @@ def serialize_transactions(transactions, is_premium=None, schema_version='v2'):
     Args:
         transactions: List of Transaction model instances
         is_premium: Override tier check
-        schema_version: 'v2' (default, clean output, camelCase + enum values only)
-                       'v1' (includes deprecated snake_case fields for backwards compat)
 
     Returns:
         list of dicts - full data for premium, masked data for free/anonymous
@@ -188,13 +186,10 @@ def serialize_transactions(transactions, is_premium=None, schema_version='v2'):
     if is_premium is None:
         is_premium = is_premium_user()
 
-    # v2 (default) means no deprecated fields; v1 includes both old and new for backwards compat
-    include_deprecated = (schema_version == 'v1')
-
     if is_premium:
-        return [serialize_transaction(t, include_deprecated=include_deprecated) for t in transactions]
+        return [serialize_transaction(t) for t in transactions]
     else:
-        return [serialize_transaction_teaser(t, include_deprecated=include_deprecated) for t in transactions]
+        return [serialize_transaction_teaser(t) for t in transactions]
 
 
 # ============================================================================

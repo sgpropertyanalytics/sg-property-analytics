@@ -166,8 +166,7 @@ class TestPropertyAgeBucketSerialization:
             psf_range={'min': 500, 'max': 3000},
             size_range={'min': 300, 'max': 5000},
             tenures=['Freehold', '99-year'],
-            property_age_buckets=PropertyAgeBucket.ALL,
-            include_deprecated=True
+            property_age_buckets=PropertyAgeBucket.ALL
         )
 
         # v2 format should have {value, label} objects
@@ -181,29 +180,7 @@ class TestPropertyAgeBucketSerialization:
             assert 'label' in bucket
             assert bucket['value'] in PropertyAgeBucket.ALL
 
-        # v1 format should have raw list
-        assert 'property_age_buckets' in result
-        assert result['property_age_buckets'] == PropertyAgeBucket.ALL
-
-    def test_serialize_v2_only_mode(self):
-        """With include_deprecated=False, only v2 fields should be present."""
-        from schemas.api_contract import serialize_filter_options, PropertyAgeBucket
-
-        result = serialize_filter_options(
-            districts=['D01'],
-            regions={'CCR': ['D01'], 'RCR': [], 'OCR': []},
-            bedrooms=[1],
-            sale_types=['Resale'],
-            projects=[],
-            date_range={'min': None, 'max': None},
-            psf_range={'min': None, 'max': None},
-            size_range={'min': None, 'max': None},
-            tenures=['Freehold'],
-            property_age_buckets=PropertyAgeBucket.ALL,
-            include_deprecated=False
-        )
-
-        assert 'propertyAgeBuckets' in result
+        # v1 snake_case should NOT be present in v2
         assert 'property_age_buckets' not in result
 
     def test_default_buckets_when_none_provided(self):
@@ -220,8 +197,7 @@ class TestPropertyAgeBucketSerialization:
             psf_range={'min': None, 'max': None},
             size_range={'min': None, 'max': None},
             tenures=['Freehold'],
-            property_age_buckets=None,  # Explicitly None
-            include_deprecated=True
+            property_age_buckets=None  # Explicitly None
         )
 
         assert len(result['propertyAgeBuckets']) == len(PropertyAgeBucket.ALL)
