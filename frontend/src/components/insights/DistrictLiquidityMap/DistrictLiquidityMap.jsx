@@ -204,7 +204,7 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
                 >
                   {mapMode === 'volume' && (
                     <motion.div
-                      layoutId="map-toggle-pill"
+                      layoutId="liquidity-map-toggle"
                       className="absolute inset-0 bg-[#213448] rounded-md -z-10 shadow-sm"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />
@@ -221,7 +221,7 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
                 >
                   {mapMode === 'price' && (
                     <motion.div
-                      layoutId="map-toggle-pill"
+                      layoutId="liquidity-map-toggle"
                       className="absolute inset-0 bg-[#9A3412] rounded-md -z-10 shadow-sm"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />

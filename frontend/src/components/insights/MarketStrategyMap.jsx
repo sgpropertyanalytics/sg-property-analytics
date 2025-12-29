@@ -556,7 +556,7 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
                 >
                   {mapMode === 'volume' && (
                     <motion.div
-                      layoutId="map-toggle-pill"
+                      layoutId="price-map-toggle"
                       className="absolute inset-0 bg-[#213448] rounded-md -z-10 shadow-sm"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />
@@ -573,7 +573,7 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
                 >
                   {mapMode === 'price' && (
                     <motion.div
-                      layoutId="map-toggle-pill"
+                      layoutId="price-map-toggle"
                       className="absolute inset-0 bg-[#9A3412] rounded-md -z-10 shadow-sm"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />
