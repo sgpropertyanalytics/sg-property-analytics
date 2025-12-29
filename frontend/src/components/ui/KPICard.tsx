@@ -53,7 +53,7 @@ export function KPICard({
   const isInteractive = !!onClick;
 
   const variantClasses = {
-    default: 'bg-white border-[#94B4C1]/50',
+    default: 'bg-card border-[#94B4C1]/50',
     highlighted: 'bg-[#213448] border-[#213448] text-white',
     muted: 'bg-[#EAE0CF]/50 border-[#94B4C1]/30',
   };
@@ -208,7 +208,7 @@ function TrendBadge({ value, direction, variant }: TrendBadgeProps) {
 export function KPICardSkeleton({ className = '' }: { className?: string }) {
   return (
     <div className={`
-      bg-white rounded-lg border border-[#94B4C1]/50
+      bg-card rounded-lg border border-[#94B4C1]/50
       p-3 md:p-4 lg:p-5
       animate-pulse
       ${className}
