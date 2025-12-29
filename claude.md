@@ -938,6 +938,16 @@ Before submitting UI/layout changes:
 
 **If this rule is violated, the change must be reverted.**
 
+## Before Making Any Change
+
+**Check all claude.md rules and existing UI templates before making changes.**
+
+Do not duplicate or reimplement logic or layouts.
+
+- Every page must use the same shared template/component
+- If a change does not appear on a page, the issue is a **broken reference** — not a missing implementation
+- **Your task is to fix the wiring, not rewrite the UI**
+
 ## Engineering Philosophy
 
 ```
