@@ -79,7 +79,6 @@ export {
   normalizeSaleTypeRow,
   // API Parameters
   toApiParams,
-  V2_SCHEMA_PARAM,
   // Filter Options
   normalizeFilterOptions,
 } from './apiContract/index';

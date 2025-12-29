@@ -34,9 +34,3 @@ export const toApiParams = (filters) => {
 
   return params;
 };
-
-/**
- * Request v2 schema from API (clean output without deprecated fields).
- * Add ?schema=v2 to get only camelCase fields and enum values.
- */
-export const V2_SCHEMA_PARAM = { schema: 'v2' };
