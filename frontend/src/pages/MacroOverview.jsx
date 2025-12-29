@@ -8,8 +8,6 @@ import { SaleType } from '../schemas/apiContract';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { TimeGranularityToggle } from '../components/powerbi/TimeGranularityToggle';
-import { ViewModeToggle } from '../components/powerbi/ViewModeToggle';
-import { DistrictAtlasView } from '../components/powerbi/DistrictAtlasView';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getKpiSummaryV2, getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
@@ -69,9 +67,6 @@ export function MacroOverviewContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalFilters, setModalFilters] = useState({});
-
-  // View mode state: 'pulse' (charts) or 'atlas' (map-centric)
-  const [viewMode, setViewMode] = useState('pulse');
 
   // Desktop-first chart heights with mobile guardrails
   // Desktop: exact pixels | Mobile (<768px): capped to prevent viewport domination
@@ -171,10 +166,8 @@ export function MacroOverviewContent() {
                 )}
               </div>
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                {/* View Mode Toggle - Switch between Pulse (charts) and Atlas (map) */}
-                <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-                {/* Time Grouping Toggle - View context control (only shown in pulse mode) */}
-                {viewMode === 'pulse' && <TimeGranularityToggle />}
+                {/* Time Grouping Toggle - View context control (not a filter) */}
+                <TimeGranularityToggle />
               </div>
             </div>
 
@@ -182,11 +175,8 @@ export function MacroOverviewContent() {
             <DrillBreadcrumb />
           </div>
 
-          {/* Analytics View - Conditional rendering based on view mode */}
+          {/* Analytics View - Dashboard with charts */}
           <div className="animate-view-enter">
-            {/* Market Pulse View - Charts and KPIs */}
-            {viewMode === 'pulse' && (
-              <>
               {/* KPI Summary Cards - Using standardized KPICardV2 */}
               <KPICardV2Group columns={4} className="mb-4 md:mb-6">
                 {/* Card 1: Market Momentum */}
@@ -407,13 +397,6 @@ export function MacroOverviewContent() {
                 </div>
 
               </div>
-              </>
-            )}
-
-            {/* District Atlas View - Map-centric spatial analysis */}
-            {viewMode === 'atlas' && (
-              <DistrictAtlasView saleType={SALE_TYPE} />
-            )}
 
           </div>
         </div>

@@ -15,7 +15,7 @@ import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
-import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass } from '../../constants';
+import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../hooks';
 import { SaleType } from '../../schemas/apiContract';
@@ -48,6 +48,10 @@ const VOLUME_GLOW = {
   warm: 'drop-shadow(0 0 10px rgba(249, 115, 22, 0.65))',  // Orange - 10-20%
   mild: 'drop-shadow(0 0 8px rgba(250, 204, 21, 0.55))',   // Yellow - 20-30%
 };
+
+// Use centralized filter options
+const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
+const PERIOD_OPTIONS = PERIOD_FILTER_OPTIONS;
 
 // Manual marker offsets for crowded central districts
 const MARKER_OFFSETS = {
@@ -135,46 +139,16 @@ function getVolumeTier(txCount, thresholds) {
 // DISTRICT LABEL COMPONENT
 // =============================================================================
 
-function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered, volumeTier, metricMode = 'price', supplyData = null }) {
+function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered, volumeTier }) {
   const hasData = data?.has_data;
   const psf = data?.median_psf || 0;
-  const txCount = data?.tx_count || 0;
-  const supplyCount = supplyData?.totalEffectiveSupply || 0;
   const isCompact = zoom < 11.2;
 
-  // Get display value and label based on metric mode
-  const getDisplayValue = () => {
-    switch (metricMode) {
-      case 'volume':
-        return hasData && txCount > 0 ? txCount.toLocaleString() : '-';
-      case 'supply':
-        return supplyCount > 0 ? supplyCount.toLocaleString() : '-';
-      case 'price':
-      default:
-        return hasData ? formatPsf(psf) : '-';
-    }
-  };
-
-  // Color based on metric mode
-  const getMetricStyle = () => {
-    if (metricMode === 'price') {
-      if (!hasData) return 'bg-[#EAE0CF] text-[#94B4C1] border-[#94B4C1]/30';
-      if (psf >= 2200) return 'bg-[#213448] text-white border-[#213448]';
-      if (psf >= 1400) return 'bg-[#547792] text-white border-[#547792]';
-      return 'bg-white text-[#213448] border-[#94B4C1]';
-    }
-    if (metricMode === 'volume') {
-      if (!hasData || txCount === 0) return 'bg-[#EAE0CF] text-[#94B4C1] border-[#94B4C1]/30';
-      if (txCount >= 100) return 'bg-[#213448] text-white border-[#213448]';
-      if (txCount >= 50) return 'bg-[#547792] text-white border-[#547792]';
-      return 'bg-white text-[#213448] border-[#94B4C1]';
-    }
-    if (metricMode === 'supply') {
-      if (supplyCount === 0) return 'bg-[#EAE0CF] text-[#94B4C1] border-[#94B4C1]/30';
-      if (supplyCount >= 500) return 'bg-orange-600 text-white border-orange-600';
-      if (supplyCount >= 200) return 'bg-amber-500 text-white border-amber-500';
-      return 'bg-white text-[#213448] border-[#94B4C1]';
-    }
+  // Color based on PSF tier
+  const getPriceStyle = () => {
+    if (!hasData) return 'bg-[#EAE0CF] text-[#94B4C1] border-[#94B4C1]/30';
+    if (psf >= 2200) return 'bg-[#213448] text-white border-[#213448]';
+    if (psf >= 1400) return 'bg-[#547792] text-white border-[#547792]';
     return 'bg-white text-[#213448] border-[#94B4C1]';
   };
 
@@ -198,17 +172,17 @@ function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered, volu
       animate={{ scale: isHovered ? 1.05 : 1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
-      {/* Metric pill - shows value based on metricMode */}
+      {/* Price pill - always shows median PSF */}
       <div
         className={`
           px-2 py-0.5 rounded-md shadow-md border font-bold
           transition-shadow duration-200
-          ${getMetricStyle()}
+          ${getPriceStyle()}
           ${isHovered ? 'shadow-lg ring-2 ring-white/50' : ''}
           ${isCompact ? 'text-[9px]' : 'text-[11px]'}
         `}
       >
-        {getDisplayValue()}
+        {hasData ? formatPsf(psf) : '-'}
       </div>
 
       {/* District info label - shows district number and area name */}
@@ -416,18 +390,17 @@ function RegionSummaryBar({ districtData }) {
 /**
  * MarketStrategyMap Component
  *
- * Controlled component - filters come from parent (sidebar context).
+ * Supports both controlled and uncontrolled modes:
+ * - Controlled: Pass selectedPeriod, selectedBed, selectedSaleType, onFilterChange props
+ * - Uncontrolled: Uses internal state (legacy behavior)
  *
- * @param {Object} dateRange - { start, end } date range from sidebar
- * @param {Array} bedroomTypes - Array of bedroom types from sidebar (e.g., ['1BR', '2BR'])
- * @param {string} saleType - Sale type enum value (page-level enforcement)
- * @param {string} metricMode - 'price' | 'volume' | 'supply' - controls coloring
+ * @param {string} selectedSaleType - Sale type enum value (page-level enforcement)
  */
 export default function MarketStrategyMap({
-  dateRange,
-  bedroomTypes = [],
-  saleType = SaleType.RESALE,
-  metricMode = 'price',
+  selectedPeriod: controlledPeriod,
+  selectedBed: controlledBed,
+  selectedSaleType = SaleType.RESALE,
+  onFilterChange,
 }) {
   const { isPremium } = useSubscription();
   const [districtData, setDistrictData] = useState([]);
@@ -435,29 +408,39 @@ export default function MarketStrategyMap({
   const [error, setError] = useState(null);
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
-  // Convert sidebar filters to API format
-  // bedroomTypes: ['1BR', '2BR'] -> bed: '1,2' or 'all' if empty
-  const selectedBed = useMemo(() => {
-    if (!bedroomTypes || bedroomTypes.length === 0) return 'all';
-    // Extract numbers from bedroom types (e.g., '1BR' -> '1', '5BR+' -> '5')
-    return bedroomTypes.map(b => b.replace(/\D/g, '') || '5').join(',');
-  }, [bedroomTypes]);
+  // Support both controlled and uncontrolled modes
+  const [internalBed, setInternalBed] = useState('all');
+  const [internalPeriod, setInternalPeriod] = useState('12m');
 
-  // Convert dateRange to period for API
-  // If no date range, use 'all'. Otherwise calculate based on range.
-  const selectedPeriod = useMemo(() => {
-    if (!dateRange?.start && !dateRange?.end) return 'all';
-    // If explicit date range is set, pass dates directly (API will handle)
-    return 'custom';
-  }, [dateRange]);
+  // Use controlled values if provided, otherwise use internal state
+  const isControlled = onFilterChange !== undefined;
+  const selectedBed = isControlled ? controlledBed : internalBed;
+  const selectedPeriod = isControlled ? controlledPeriod : internalPeriod;
+
+  // Unified setter that works in both modes
+  const setSelectedBed = (value) => {
+    if (isControlled) {
+      onFilterChange('bed', value);
+    } else {
+      setInternalBed(value);
+    }
+  };
+
+  const setSelectedPeriod = (value) => {
+    if (isControlled) {
+      onFilterChange('period', value);
+    } else {
+      setInternalPeriod(value);
+    }
+  };
 
   // Abort/stale request protection
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Stable filter key for dependency tracking (avoids object reference issues)
   const filterKey = useMemo(
-    () => `${selectedPeriod}:${selectedBed}:${saleType}:${metricMode}:${dateRange?.start || ''}:${dateRange?.end || ''}`,
-    [selectedPeriod, selectedBed, saleType, metricMode, dateRange]
+    () => `${selectedPeriod}:${selectedBed}:${selectedSaleType}`,
+    [selectedPeriod, selectedBed, selectedSaleType]
   );
 
   const [viewState, setViewState] = useState({
@@ -477,14 +460,8 @@ export default function MarketStrategyMap({
     setError(null);
 
     try {
-      // Build params - use date range if set, otherwise use period
-      const params = { bed: selectedBed, sale_type: saleType };
-      if (dateRange?.start) params.date_from = dateRange.start;
-      if (dateRange?.end) params.date_to = dateRange.end;
-      if (!dateRange?.start && !dateRange?.end) params.period = 'all';
-
       const response = await apiClient.get('/insights/district-psf', {
-        params,
+        params: { period: selectedPeriod, bed: selectedBed, sale_type: selectedSaleType },
         signal,  // Pass abort signal to cancel on filter change
       });
 
@@ -507,7 +484,7 @@ export default function MarketStrategyMap({
       setError('Failed to load data');
       setLoading(false);
     }
-  }, [selectedBed, saleType, dateRange, startRequest, getSignal, isStale]);
+  }, [selectedBed, selectedPeriod, startRequest, getSignal, isStale]);
 
   useEffect(() => {
     fetchData();
@@ -565,34 +542,59 @@ export default function MarketStrategyMap({
 
   return (
     <div className="bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
-      {/* Header */}
+      {/* Header with filters */}
       <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-[#94B4C1]/30">
-        <div>
-          <h2 className="text-base sm:text-lg font-bold text-[#213448]">
-            {metricMode === 'price' && 'District Price Overview'}
-            {metricMode === 'volume' && 'District Volume Overview'}
-            {metricMode === 'supply' && 'District Supply Overview'}
-          </h2>
-          <p className="text-[10px] sm:text-xs text-[#547792]">
-            {metricMode === 'price' && (
-              <>
-                <span className="hidden sm:inline">Median PSF by postal district</span>
-                <span className="sm:hidden">Median PSF by district</span>
-              </>
-            )}
-            {metricMode === 'volume' && (
-              <>
-                <span className="hidden sm:inline">Transaction count by postal district</span>
-                <span className="sm:hidden">Transactions by district</span>
-              </>
-            )}
-            {metricMode === 'supply' && (
-              <>
-                <span className="hidden sm:inline">Total supply (unsold + upcoming) by postal district</span>
-                <span className="sm:hidden">Supply by district</span>
-              </>
-            )}
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 sm:gap-3">
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-[#213448]">
+              District Price Overview
+            </h2>
+            <p className="text-[10px] sm:text-xs text-[#547792]">
+              <span className="hidden sm:inline">Median PSF by postal district</span>
+              <span className="sm:hidden">Median PSF by district</span>
+            </p>
+          </div>
+
+          {/* Filter pills - more compact on mobile */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {/* Bedroom filter */}
+            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
+              {BEDROOM_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => setSelectedBed(option.value)}
+                  className={`
+                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
+                    ${selectedBed === option.value
+                      ? 'bg-white text-[#213448] shadow-sm'
+                      : 'text-[#547792] hover:text-[#213448]'
+                    }
+                  `}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Period filter */}
+            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
+              {PERIOD_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => setSelectedPeriod(option.value)}
+                  className={`
+                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
+                    ${selectedPeriod === option.value
+                      ? 'bg-white text-[#213448] shadow-sm'
+                      : 'text-[#547792] hover:text-[#213448]'
+                    }
+                  `}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -702,7 +704,6 @@ export default function MarketStrategyMap({
                   zoom={viewState.zoom}
                   isHovered={isHovered}
                   volumeTier={volumeTier}
-                  metricMode={metricMode}
                   onHover={(d, data) => {
                     setHoveredDistrict({ district: d, data });
                   }}
