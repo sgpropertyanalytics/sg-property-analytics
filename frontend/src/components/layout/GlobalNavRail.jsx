@@ -50,9 +50,9 @@ export const NAV_GROUPS = [
     id: 'market-intelligence',
     label: 'Market Intelligence',
     items: [
-      { id: 'overview', path: '/market-core', label: 'Market Overview', icon: '📊' },
-      { id: 'districts', path: '/district-deep-dive', label: 'District Overview', icon: '🗺️' },
-      { id: 'new-launches', path: '/primary-market', label: 'New Launch Market', icon: '🏗️' },
+      { id: 'overview', path: '/market-overview', label: 'Market Overview', icon: '📊' },
+      { id: 'districts', path: '/district-overview', label: 'District Overview', icon: '🗺️' },
+      { id: 'new-launches', path: '/new-launch-market', label: 'New Launch Market', icon: '🏗️' },
       { id: 'supply', path: '/supply-insights', label: 'Supply & Inventory', icon: '📦' },
     ],
   },
@@ -60,8 +60,8 @@ export const NAV_GROUPS = [
     id: 'project-tools',
     label: 'Project Tools',
     items: [
-      { id: 'explore', path: '/project-deep-dive', label: 'Explore', icon: '🔍' },
-      { id: 'value-check', path: '/value-parity', label: 'Value Check', icon: '💰' },
+      { id: 'explore', path: '/explore', label: 'Explore', icon: '🔍' },
+      { id: 'value-check', path: '/value-check', label: 'Value Check', icon: '💰' },
       { id: 'exit-risk', path: '/exit-risk', label: 'Exit Risk', icon: '🚪' },
     ],
   },
@@ -225,9 +225,9 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       className={`bg-[#213448] w-full flex flex-col py-4 flex-shrink-0 h-full overflow-y-auto overflow-x-hidden transition-[padding] duration-500 ease-[cubic-bezier(0.2,0,0,1)] ${collapsed ? 'px-2' : 'px-3'} ${isPending ? 'opacity-90' : ''}`}
       aria-label="Main navigation"
     >
-      {/* Logo / Home - Links to Market Core */}
+      {/* Logo / Home - Links to Market Overview */}
       <button
-        onClick={() => startTransition(() => navigate('/market-core'))}
+        onClick={() => startTransition(() => navigate('/market-overview'))}
         className={`group relative mb-6 flex items-center w-full min-h-[44px] min-w-0 active:scale-[0.98] select-none ${TRANSITION_CLASS} ${collapsed ? 'justify-center px-0' : 'gap-3 px-2'}`}
         aria-label="Go to Home"
       >

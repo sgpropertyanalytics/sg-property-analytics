@@ -7,7 +7,7 @@ import DealCheckerContent from './powerbi/DealCheckerContent';
  * Compare your purchase to nearby transactions and evaluate if it's a good deal.
  * This component now focuses solely on the Value Check functionality.
  *
- * Budget-based property search has been moved to the Explore page (/project-deep-dive).
+ * Budget-based property search has been moved to the Explore page (/explore).
  */
 export function ValueParityPanel() {
   return (

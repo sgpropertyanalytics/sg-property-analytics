@@ -48,17 +48,23 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   // Determine active page from URL or prop
   const getActivePageFromPath = (pathname) => {
     // Map paths to page IDs
-    if (pathname.startsWith('/market-core') || pathname === '/analytics' || pathname === '/') {
-      return 'market-core';
+    if (pathname.startsWith('/market-overview') || pathname === '/analytics' || pathname === '/') {
+      return 'overview';
     }
-    if (pathname.startsWith('/primary-market')) return 'primary-market';
-    if (pathname.startsWith('/value-parity')) return 'value-parity';
-    if (pathname.startsWith('/floor-dispersion')) return 'floor-dispersion';
-    if (pathname.startsWith('/district-deep-dive')) return 'district-deep-dive';
-    if (pathname.startsWith('/project-deep-dive')) return 'project-deep-dive';
-    if (pathname.startsWith('/supply-insights')) return 'supply-insights';
+    if (pathname.startsWith('/new-launch-market')) return 'new-launches';
+    if (pathname.startsWith('/value-check')) return 'value-check';
+    if (pathname.startsWith('/district-overview')) return 'districts';
+    if (pathname.startsWith('/explore')) return 'explore';
+    if (pathname.startsWith('/supply-insights')) return 'supply';
+    if (pathname.startsWith('/exit-risk')) return 'exit-risk';
     if (pathname.startsWith('/methodology')) return 'methodology';
-    return 'market-core';
+    // Legacy route support
+    if (pathname.startsWith('/market-core')) return 'overview';
+    if (pathname.startsWith('/primary-market')) return 'new-launches';
+    if (pathname.startsWith('/value-parity')) return 'value-check';
+    if (pathname.startsWith('/district-deep-dive')) return 'districts';
+    if (pathname.startsWith('/project-deep-dive')) return 'explore';
+    return 'overview';
   };
 
   const activePage = propActivePage || getActivePageFromPath(location.pathname);
