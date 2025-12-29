@@ -5,7 +5,9 @@
  * Helps users understand how metrics are calculated and data is categorized.
  */
 
+import { useState, useEffect } from 'react';
 import { PageHeader } from '../components/ui';
+import apiClient from '../api/client';
 
 // Classification data from constants
 const BEDROOM_THRESHOLDS = {
@@ -152,6 +154,42 @@ function DataTable({ headers, rows, className = '' }) {
 }
 
 export function MethodologyContent() {
+  const [metadata, setMetadata] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiClient.get('/api/metadata')
+      .then(response => {
+        setMetadata(response.data);
+      })
+      .catch(err => {
+        console.error('Failed to fetch metadata:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  // Format date for display
+  const formatDate = (isoString) => {
+    if (!isoString) return 'N/A';
+    try {
+      return new Date(isoString).toLocaleDateString('en-SG', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return isoString;
+    }
+  };
+
+  // Format number with commas
+  const formatNumber = (num) => {
+    if (num === null || num === undefined) return 'N/A';
+    return num.toLocaleString();
+  };
+
   return (
     <div className="h-full overflow-auto">
       <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto">
@@ -343,6 +381,49 @@ export function MethodologyContent() {
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Dynamic Database Stats */}
+            <div className="mt-4 p-4 bg-[#213448] rounded-lg text-white">
+              <h4 className="font-semibold text-sm sm:text-base mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                </svg>
+                Database Statistics
+              </h4>
+              {loading ? (
+                <div className="grid grid-cols-2 gap-3 animate-pulse">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="bg-white/10 rounded p-2">
+                      <div className="h-3 bg-white/20 rounded w-20 mb-1"></div>
+                      <div className="h-5 bg-white/20 rounded w-16"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/10 rounded p-2">
+                    <div className="text-[10px] sm:text-xs text-white/70">Data last updated</div>
+                    <div className="text-sm sm:text-base font-semibold">{formatDate(metadata?.last_updated)}</div>
+                  </div>
+                  <div className="bg-white/10 rounded p-2">
+                    <div className="text-[10px] sm:text-xs text-white/70">Records added (latest)</div>
+                    <div className="text-sm sm:text-base font-semibold">{formatNumber(metadata?.records_added_last_ingestion)}</div>
+                  </div>
+                  <div className="bg-white/10 rounded p-2">
+                    <div className="text-[10px] sm:text-xs text-white/70">Total records</div>
+                    <div className="text-sm sm:text-base font-semibold">{formatNumber(metadata?.total_records)}</div>
+                  </div>
+                  <div className="bg-white/10 rounded p-2">
+                    <div className="text-[10px] sm:text-xs text-white/70">Outliers excluded</div>
+                    <div className="text-sm sm:text-base font-semibold">{formatNumber(metadata?.outliers_excluded)}</div>
+                  </div>
+                </div>
+              )}
+              <p className="text-[10px] sm:text-xs text-white/60 mt-3">
+                Data is processed via automated ingestion and validation pipelines.
+                Figures may differ from official releases due to timing and filtering.
+              </p>
             </div>
 
             <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">

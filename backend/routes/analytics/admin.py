@@ -165,10 +165,46 @@ def debug_data_status():
         }), 500
 
 
+@analytics_bp.route("/metadata", methods=["GET"])
+def get_metadata():
+    """
+    Public metadata endpoint for frontend consumption.
+    Returns database stats including ingestion info.
+    """
+    from models.precomputed_stats import PreComputedStats
+    from models.transaction import Transaction
+    from models.database import db
+    from db.sql import exclude_outliers
+
+    try:
+        # Get stored metadata
+        stored_metadata = PreComputedStats.get_stat('_metadata') or {}
+
+        # Get live counts from database
+        total_count = db.session.query(Transaction).count()
+        outlier_count = db.session.query(Transaction).filter(
+            Transaction.is_outlier == True
+        ).count()
+        active_count = total_count - outlier_count
+
+        return jsonify({
+            "last_updated": stored_metadata.get('last_updated'),
+            "records_added_last_ingestion": stored_metadata.get('records_added_last_ingestion', 0),
+            "total_records": total_count,
+            "active_records": active_count,
+            "outliers_excluded": outlier_count,
+        })
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+
 @analytics_bp.route("/admin/update-metadata", methods=["POST"])
 def admin_update_metadata():
     """
     Manually update the precomputed metadata with outlier/validation counts.
+    Called by ETL pipeline after ingestion.
     """
     from models.precomputed_stats import PreComputedStats
     from models.transaction import Transaction
@@ -190,14 +226,18 @@ def admin_update_metadata():
         outliers_excluded = data.get('outliers_excluded', existing.get('outliers_excluded', 0))
         total_records_removed = invalid_removed + duplicates_removed + outliers_excluded
 
+        # Track ingestion stats (set by ETL pipeline)
+        records_added_last_ingestion = data.get('records_added_last_ingestion', existing.get('records_added_last_ingestion', 0))
+
         # Build updated metadata
         updated_metadata = {
-            'last_updated': existing.get('last_updated', datetime.utcnow().isoformat()),
+            'last_updated': data.get('last_updated', datetime.utcnow().isoformat()),
             'row_count': total_count,
             'invalid_removed': invalid_removed,
             'duplicates_removed': duplicates_removed,
             'outliers_excluded': outliers_excluded,
             'total_records_removed': total_records_removed,
+            'records_added_last_ingestion': records_added_last_ingestion,
             'computed_at': existing.get('computed_at', datetime.utcnow().isoformat()),
             'manually_updated_at': datetime.utcnow().isoformat()
         }
