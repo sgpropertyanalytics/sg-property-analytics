@@ -1,5 +1,6 @@
 // PowerBI-style Dynamic Filtering Components
 export { PowerBIFilterSidebar } from './PowerBIFilterSidebar';
+export { FilterBar } from './FilterBar';
 export { TimeTrendChart } from './TimeTrendChart';
 export { PriceDistributionChart } from './PriceDistributionChart';
 export { NewVsResaleChart } from './NewVsResaleChart';
