@@ -22,7 +22,7 @@ export function ControlBar() {
   return (
     <>
       {/* Desktop/Tablet: Horizontal bar */}
-      <div className="hidden md:flex flex-wrap items-center gap-3 p-4 bg-[#EAE0CF]/40 rounded-lg border border-[#94B4C1]/20">
+      <div className="hidden md:flex flex-wrap items-center gap-3 p-4 bg-white/60 rounded-lg border border-[#94B4C1]/20 backdrop-blur-sm">
         <RegionDropdown />
         <DistrictCombobox />
 
@@ -51,7 +51,7 @@ export function ControlBar() {
       </div>
 
       {/* Mobile: Filters button */}
-      <div className="md:hidden p-3 bg-[#EAE0CF]/40 rounded-lg">
+      <div className="md:hidden p-3 bg-white/60 rounded-lg backdrop-blur-sm">
         <button
           onClick={() => setMobileDrawerOpen(true)}
           className="w-full min-h-[44px] px-4 flex items-center justify-center gap-2 bg-white/80 rounded-lg border border-[#94B4C1]/30 text-[#547792] hover:border-[#547792] active:bg-[#EAE0CF]/50 active:scale-[0.98] transition-colors"

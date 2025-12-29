@@ -134,7 +134,7 @@ export function MacroOverviewContent() {
   };
 
   return (
-    <div className="h-full">
+    <div className="h-full bg-[#EAE0CF]/40">
       {/* Main Content Area - Scrollable (vertical only, no horizontal) */}
       <div className="h-full overflow-y-auto overflow-x-hidden">
         <div className="p-3 md:p-4 lg:p-6">
