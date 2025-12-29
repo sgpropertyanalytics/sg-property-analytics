@@ -66,9 +66,27 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   // Mobile nav state
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // Desktop nav collapse state
-  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
-  const toggleNavCollapse = () => setIsNavCollapsed(prev => !prev);
+  // Desktop nav collapse state - persisted to localStorage to prevent flicker on navigation
+  const [isNavCollapsed, setIsNavCollapsed] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nav-collapsed');
+      return saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleNavCollapse = () => {
+    setIsNavCollapsed(prev => {
+      const newValue = !prev;
+      try {
+        localStorage.setItem('nav-collapsed', String(newValue));
+      } catch {
+        // Ignore storage errors
+      }
+      return newValue;
+    });
+  };
 
   // Reset mobile drawer when page changes
   useEffect(() => {
