@@ -27,7 +27,7 @@ export function MobileFilterDrawer({ isOpen, onClose }) {
       />
 
       {/* Drawer */}
-      <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-white flex flex-col animate-slide-in-right">
+      <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-card flex flex-col animate-slide-in-right">
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-[#94B4C1]/30">
           <h2 className="text-lg font-semibold text-[#213448]">Filters</h2>
@@ -70,7 +70,7 @@ export function MobileFilterDrawer({ isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 p-4 border-t border-[#94B4C1]/30 bg-white" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+        <div className="flex-shrink-0 p-4 border-t border-[#94B4C1]/30 bg-card" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           <div className="flex gap-3">
             {activeFilterCount > 0 && (
               <button

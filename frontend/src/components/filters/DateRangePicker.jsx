@@ -137,7 +137,7 @@ export function DateRangePicker() {
           active:scale-[0.98]
           ${hasFilter
             ? 'bg-[#213448] text-white'
-            : 'bg-white border border-[#94B4C1] text-[#547792] hover:border-[#547792]'
+            : 'bg-card border border-[#94B4C1] text-[#547792] hover:border-[#547792]'
           }
         `}
         aria-expanded={isOpen}
@@ -160,7 +160,7 @@ export function DateRangePicker() {
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg border border-[#94B4C1]/50 shadow-lg z-50 py-1">
+        <div className="absolute top-full left-0 mt-1 w-48 bg-card rounded-lg border border-[#94B4C1]/50 shadow-lg z-50 py-1">
           {PRESETS.map((preset) => {
             const isActive = activePreset === preset.value;
             return (

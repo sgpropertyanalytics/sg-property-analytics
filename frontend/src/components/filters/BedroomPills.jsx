@@ -35,7 +35,7 @@ export function BedroomPills() {
                 active:scale-[0.98]
                 ${isSelected
                   ? 'bg-[#213448] text-white'
-                  : 'bg-white border border-[#94B4C1] text-[#547792] hover:border-[#547792] hover:text-[#213448]'
+                  : 'bg-card border border-[#94B4C1] text-[#547792] hover:border-[#547792] hover:text-[#213448]'
                 }
               `}
               aria-pressed={isSelected}
