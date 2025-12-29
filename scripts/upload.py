@@ -1015,13 +1015,61 @@ def create_staging_table(logger: UploadLogger, batch_id: str = None):
             logger.log("  Creating staging table...")
             _create_staging_table_schema(logger)
         else:
-            logger.log(f"  ✓ Staging table exists, will append with batch_id={batch_id[:8]}...")
+            logger.log(f"  ✓ Staging table exists, checking schema...")
+            # Migrate schema if needed (add missing columns)
+            _migrate_staging_schema(logger)
+            logger.log(f"  ✓ Schema OK, will append with batch_id={batch_id[:8]}...")
     else:
         logger.log("Creating staging table...")
 
         # Legacy mode: Drop existing staging table if exists
         db.session.execute(text(f"DROP TABLE IF EXISTS {STAGING_TABLE} CASCADE"))
         _create_staging_table_schema(logger)
+
+
+def _migrate_staging_schema(logger: UploadLogger):
+    """
+    Add missing columns to existing staging table.
+
+    This allows schema evolution without dropping existing data.
+    """
+    # Define all expected columns with their types
+    expected_columns = {
+        'contract_date': 'VARCHAR(10)',
+        'psf_source': 'FLOAT',
+        'psf_calc': 'FLOAT',
+        'market_segment_raw': 'TEXT',
+        'row_hash': 'TEXT',
+        'batch_id': 'UUID',
+        'is_valid': 'BOOLEAN DEFAULT true',
+        'raw_extras': 'JSONB',
+        'is_outlier': 'BOOLEAN DEFAULT false',
+    }
+
+    # Get existing columns
+    existing_cols = db.session.execute(text("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = :table_name
+    """), {'table_name': STAGING_TABLE}).fetchall()
+    existing_col_names = {row[0] for row in existing_cols}
+
+    # Add missing columns
+    columns_added = []
+    for col_name, col_type in expected_columns.items():
+        if col_name not in existing_col_names:
+            try:
+                db.session.execute(text(f"""
+                    ALTER TABLE {STAGING_TABLE}
+                    ADD COLUMN IF NOT EXISTS {col_name} {col_type}
+                """))
+                columns_added.append(col_name)
+            except Exception as e:
+                logger.log(f"  ⚠️  Could not add column {col_name}: {e}")
+
+    if columns_added:
+        db.session.commit()
+        logger.log(f"  ✓ Added missing columns: {', '.join(columns_added)}")
 
 
 def _create_staging_table_schema(logger: UploadLogger):
