@@ -254,7 +254,7 @@ export function AbsolutePsfChart({ height = 300, saleType = null, sharedData = n
     <div ref={containerRef}>
     <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={height}>
       <div
-        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col h-full"
+        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col h-full"
       >
         {/* Header */}
         <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">

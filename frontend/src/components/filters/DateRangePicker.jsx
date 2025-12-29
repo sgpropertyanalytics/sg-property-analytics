@@ -71,8 +71,16 @@ const PRESETS = [
 
 export function DateRangePicker() {
   const { filters, filterOptions, setDateRange } = usePowerBIFilters();
-  const dateRange = filters.dateRange || { start: null, end: null };
-  const maxDate = filterOptions?.dateRange?.max ? new Date(filterOptions.dateRange.max) : new Date();
+
+  // Memoize to stabilize references for downstream useMemo hooks
+  const dateRange = useMemo(
+    () => filters.dateRange || { start: null, end: null },
+    [filters.dateRange]
+  );
+  const maxDate = useMemo(
+    () => filterOptions?.dateRange?.max ? new Date(filterOptions.dateRange.max) : new Date(),
+    [filterOptions?.dateRange?.max]
+  );
 
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);

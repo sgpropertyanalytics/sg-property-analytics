@@ -105,7 +105,7 @@ export default function DistrictLiquidityMap({ saleType = SaleType.RESALE }) {
       setError('Failed to load data');
       setLoading(false);
     }
-  }, [selectedBed, selectedPeriod, startRequest, getSignal, isStale]);
+  }, [selectedBed, selectedPeriod, saleType, startRequest, getSignal, isStale]);
 
   useEffect(() => {
     fetchData();

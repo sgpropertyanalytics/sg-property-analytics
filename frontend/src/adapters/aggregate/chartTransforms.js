@@ -157,7 +157,7 @@ export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
       excludedDistricts.push({ district, reason });
 
       if (isDev) {
-        console.log(`[transformGrowthDumbbellSeries] Excluding ${district}: ${reason}`);
+        console.warn(`[transformGrowthDumbbellSeries] Excluding ${district}: ${reason}`);
       }
     }
   });

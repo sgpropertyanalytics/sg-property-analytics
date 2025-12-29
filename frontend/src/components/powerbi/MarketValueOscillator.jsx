@@ -317,7 +317,7 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
     <div ref={containerRef}>
       <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={height}>
         <div
-          className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+          className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
           style={{ height: cardHeight }}
         >
           {/* Header */}
@@ -427,7 +427,7 @@ function ZScoreSignalCard({ label, zScore, spread, avgSpread }) {
   else if (zScore < -1.0) variant = 'success';
 
   const deviation = spread !== null ? spread - avgSpread : null;
-  const deviationText = deviation !== null
+  const _deviationText = deviation !== null
     ? `${deviation >= 0 ? '+' : ''}$${Math.round(deviation)} vs avg`
     : undefined;
 

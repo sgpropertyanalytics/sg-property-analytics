@@ -95,7 +95,7 @@ const withRetry = async (requestFn, retries = 1) => {
   } catch (error) {
     const isTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
     if (isTimeout && retries > 0) {
-      console.log('[API] Timeout, retrying... (cold start likely)');
+      console.warn('[API] Timeout, retrying... (cold start likely)');
       return withRetry(requestFn, retries - 1);
     }
     throw error;

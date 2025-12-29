@@ -16,7 +16,7 @@ import { PageHeader } from '../components/ui';
  */
 export function PrimaryMarketContent() {
   // Connect to filter context (our own independent instance)
-  const { filters } = usePowerBIFilters();
+  const { filters: _filters } = usePowerBIFilters();
   // Desktop-first chart height with mobile guardrail
   const chartHeight = useChartHeight(400, MOBILE_CAPS.tall);
 

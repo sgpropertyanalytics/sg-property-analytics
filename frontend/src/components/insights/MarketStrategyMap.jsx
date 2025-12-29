@@ -484,7 +484,7 @@ export default function MarketStrategyMap({
       setError('Failed to load data');
       setLoading(false);
     }
-  }, [selectedBed, selectedPeriod, startRequest, getSignal, isStale]);
+  }, [selectedBed, selectedPeriod, selectedSaleType, startRequest, getSignal, isStale]);
 
   useEffect(() => {
     fetchData();

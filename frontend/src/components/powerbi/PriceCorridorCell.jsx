@@ -40,7 +40,7 @@ export function PriceCorridorCell({ cellData, budget, compact = false }) {
 
   const {
     priceQ1,
-    priceMedian,
+    priceMedian: _priceMedian,
     priceQ3,
     priceMin,
     priceMax,

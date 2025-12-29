@@ -32,7 +32,7 @@ class RootErrorBoundary extends React.Component {
     // Clear any cached state that might cause the crash
     try {
       sessionStorage.clear();
-    } catch (e) {
+    } catch {
       // Ignore storage errors
     }
     window.location.reload();

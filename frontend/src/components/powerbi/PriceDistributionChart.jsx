@@ -246,7 +246,7 @@ export function PriceDistributionChart({ height = 300, numBins = 20, saleType = 
   return (
     <QueryState loading={loading} error={error} onRetry={refetch} empty={!bins || bins.length === 0} skeleton="bar" height={350}>
       <div
-        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
       >
       {/* Header - shrink-0 */}

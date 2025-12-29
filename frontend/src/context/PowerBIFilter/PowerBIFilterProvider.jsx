@@ -11,7 +11,7 @@
  * Project selection is drill-through only (opens ProjectDetailPanel).
  */
 
-import { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
 // Constants and initial state
 import {

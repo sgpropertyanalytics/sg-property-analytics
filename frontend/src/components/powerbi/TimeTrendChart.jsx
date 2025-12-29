@@ -244,7 +244,7 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
   return (
     <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="bar" height={height + 80}>
       <div
-        className="bg-white rounded-lg border border-[#94B4C1]/30 overflow-hidden flex flex-col shadow-sm"
+        className="bg-card rounded-lg border border-[#94B4C1]/30 overflow-hidden flex flex-col shadow-sm"
         style={{ height: cardHeight }}
       >
         {/* Header - refined typography */}

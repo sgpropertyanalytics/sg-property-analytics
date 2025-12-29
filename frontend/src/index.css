@@ -3,6 +3,10 @@
 @theme {
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Semantic card colors - warm-tinted white for sand/cream backgrounds */
+  --color-card: #FFFCF5;
+  --color-card-hover: #FFF9F0;
 }
 
 /* Bloomberg Terminal style - mono font for numerical data */

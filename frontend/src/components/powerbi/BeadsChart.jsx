@@ -285,7 +285,7 @@ export function BeadsChart({ height = 300, saleType = null }) {
       height={350}
     >
       <div
-        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
       >
         {/* Header - shrink-0 */}

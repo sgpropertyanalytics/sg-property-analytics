@@ -19,7 +19,7 @@
  */
 
 import { assertKnownVersion } from './validation';
-import { PROPERTY_AGE_BANDS, BEDROOM_ORDER_NUMERIC } from '../../constants';
+import { BEDROOM_ORDER_NUMERIC } from '../../constants';
 
 // K-anonymity threshold (same as budget heatmap)
 const MIN_CELL_COUNT = 5;

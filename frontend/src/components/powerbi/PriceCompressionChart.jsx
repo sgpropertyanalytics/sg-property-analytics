@@ -257,7 +257,7 @@ export function PriceCompressionChart({ height = 380, saleType = null, sharedDat
     <div ref={containerRef}>
     <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={350}>
       <div
-        className="bg-white rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
       >
       {/* Header - shrink-0 */}

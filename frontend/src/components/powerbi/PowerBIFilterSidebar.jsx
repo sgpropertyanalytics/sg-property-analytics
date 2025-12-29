@@ -3,7 +3,6 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import {
   REGIONS,
   DISTRICT_NAMES,
-  BEDROOM_ORDER_NUMERIC,
 } from '../../constants';
 // SaleType filter removed - Market Core is Resale-only
 
