@@ -15,6 +15,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSupplyData } from '../../context/SupplyDataContext';
 import { QueryState } from '../common/QueryState';
 import { DISTRICT_NAMES, getRegionForDistrict, getRegionBadgeClass } from '../../constants';
+import { SupplyField, getSupplyField } from '../../schemas/apiContract';
 
 // Colors for volume bars (muted warm tones)
 const COLORS = {
@@ -43,9 +44,11 @@ export function SupplyBreakdownTable({
 
   // Process data into table format
   const tableData = useMemo(() => {
-    if (!apiResponse?.byDistrict) return { districts: [], totals: null };
+    const byDistrict = getSupplyField(apiResponse, SupplyField.BY_DISTRICT);
+    if (!byDistrict) return { districts: [], totals: null };
 
-    const { byDistrict, byRegion, totals } = apiResponse;
+    const byRegion = getSupplyField(apiResponse, SupplyField.BY_REGION) || {};
+    const totals = getSupplyField(apiResponse, SupplyField.TOTALS) || {};
 
     // Filter by selected region if specified
     const filteredDistricts = Object.entries(byDistrict)

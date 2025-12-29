@@ -561,9 +561,9 @@ describe('transformDistributionSeries', () => {
 
     const result = transformDistributionSeries(data);
 
-    expect(result.bins[0].label).toBe('$500K-$600K');
+    expect(result.bins[0].label).toBe('$500\u2013600K');
     // 2 decimals for millions (user requested for price precision)
-    expect(result.bins[1].label).toBe('$1.50M-$2.00M');
+    expect(result.bins[1].label).toBe('$1.5\u20132.0M');
   });
 
   test('handles missing count gracefully', () => {

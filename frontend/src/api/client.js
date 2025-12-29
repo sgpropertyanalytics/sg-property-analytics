@@ -39,7 +39,13 @@ const requestQueue = [];
 
 const processQueue = () => {
   while (requestQueue.length > 0 && activeRequests < MAX_CONCURRENT_REQUESTS) {
-    const { execute, resolve, reject } = requestQueue.shift();
+    const { execute, resolve, reject, signal } = requestQueue.shift();
+    if (signal?.aborted) {
+      const err = new Error('Request aborted');
+      err.name = 'AbortError';
+      reject(err);
+      continue;
+    }
     activeRequests++;
     execute()
       .then(resolve)
@@ -55,8 +61,15 @@ const processQueue = () => {
  * Queue a request to limit concurrent API calls
  * High priority requests bypass the queue
  */
-const queueRequest = (executeFn, priority = 'normal') => {
+const queueRequest = (executeFn, options = {}) => {
+  const { priority = 'normal', signal } = options;
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      const err = new Error('Request aborted');
+      err.name = 'AbortError';
+      reject(err);
+      return;
+    }
     if (priority === 'high' || activeRequests < MAX_CONCURRENT_REQUESTS) {
       // Execute immediately if high priority or under limit
       activeRequests++;
@@ -69,7 +82,7 @@ const queueRequest = (executeFn, priority = 'normal') => {
         });
     } else {
       // Add to queue
-      requestQueue.push({ execute: executeFn, resolve, reject });
+      requestQueue.push({ execute: executeFn, resolve, reject, signal });
     }
   });
 };
@@ -162,6 +175,14 @@ const buildQueryString = (params) => {
 
 const apiCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL
+const MAX_CACHE_ENTRIES = 200;
+
+const evictOldestCacheEntry = () => {
+  const oldestKey = apiCache.keys().next().value;
+  if (oldestKey !== undefined) {
+    apiCache.delete(oldestKey);
+  }
+};
 
 /**
  * Get cached response or fetch fresh data
@@ -196,7 +217,7 @@ const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
   }
 
   // Queue the fetch to limit concurrent requests
-  const response = await queueRequest(fetchFn, priority);
+  const response = await queueRequest(fetchFn, { priority, signal });
 
   // Don't cache if request was aborted
   if (signal?.aborted) {
@@ -206,6 +227,9 @@ const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
   }
 
   // Cache the response
+  if (apiCache.size >= MAX_CACHE_ENTRIES) {
+    evictOldestCacheEntry();
+  }
   apiCache.set(cacheKey, {
     data: response,
     timestamp: Date.now()
@@ -519,6 +543,32 @@ export const createPortalSession = (returnUrl) => {
   return apiClient.post('/payments/portal', { return_url: returnUrl });
 };
 
+export const __test__ = {
+  queueRequest,
+  processQueue,
+  apiCache,
+  addCacheEntry(key, value) {
+    if (apiCache.size >= MAX_CACHE_ENTRIES) {
+      evictOldestCacheEntry();
+    }
+    apiCache.set(key, { data: value, timestamp: Date.now() });
+  },
+  getMaxCacheEntries() {
+    return MAX_CACHE_ENTRIES;
+  },
+  resetQueueState() {
+    requestQueue.length = 0;
+    activeRequests = 0;
+    apiCache.clear();
+  },
+  setActiveRequests(value) {
+    activeRequests = value;
+  },
+  getActiveRequests() {
+    return activeRequests;
+  },
+};
+
 // ===== Exit Queue Risk API Functions =====
 
 /**
@@ -608,4 +658,3 @@ export const getSupplySummary = (params = {}, options = {}) =>
   apiClient.get(`/supply/summary?${buildQueryString(params)}`, { signal: options.signal });
 
 export default apiClient;
-

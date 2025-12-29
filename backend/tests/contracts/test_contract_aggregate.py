@@ -49,6 +49,13 @@ class TestAggregateContractSchema:
         assert aliases.get("dateFrom") == "date_from"
         assert aliases.get("dateTo") == "date_to"
 
+    def test_schema_param_v2_only(self, contract_registry):
+        """Schema param should only allow v2 to avoid silent mismatches."""
+        contract = contract_registry["aggregate"]
+        schema_field = contract.param_schema.fields["schema"]
+        assert schema_field.default == "v2"
+        assert schema_field.allowed_values == ["v2"]
+
     def test_response_schema_has_required_meta(self, contract_registry):
         """ResponseSchema should require meta fields."""
         contract = contract_registry["aggregate"]

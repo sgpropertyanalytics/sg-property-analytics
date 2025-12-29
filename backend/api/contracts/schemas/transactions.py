@@ -90,7 +90,7 @@ PRICE_GROWTH_PARAM_SCHEMA = ParamSchema(
         "schema": FieldSpec(
             name="schema",
             type=str,
-            default="v1",
+            default="v2",
             allowed_values=["v1", "v2"],
             description="Response schema version"
         ),
@@ -115,7 +115,7 @@ PRICE_GROWTH_SERVICE_SCHEMA = ServiceBoundarySchema(
         "date_to": FieldSpec(name="date_to", type=date, nullable=True),
         "page": FieldSpec(name="page", type=int, default=1),
         "per_page": FieldSpec(name="per_page", type=int, default=50),
-        "schema": FieldSpec(name="schema", type=str, default="v1"),
+        "schema": FieldSpec(name="schema", type=str, default="v2"),
     }
 )
 
@@ -189,7 +189,7 @@ SEGMENTS_PARAM_SCHEMA = ParamSchema(
         "schema": FieldSpec(
             name="schema",
             type=str,
-            default="v1",
+            default="v2",
             allowed_values=["v1", "v2"],
             description="Response schema version"
         ),
@@ -204,7 +204,7 @@ SEGMENTS_SERVICE_SCHEMA = ServiceBoundarySchema(
         "project": FieldSpec(name="project", type=str, nullable=True),
         "district": FieldSpec(name="district", type=str, nullable=True),
         "sale_type": FieldSpec(name="sale_type", type=str, nullable=True),
-        "schema": FieldSpec(name="schema", type=str, default="v1"),
+        "schema": FieldSpec(name="schema", type=str, default="v2"),
     }
 )
 

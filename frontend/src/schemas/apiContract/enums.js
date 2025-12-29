@@ -5,6 +5,30 @@
  * Includes backwards compatibility with v1 DB string values.
  */
 
+import { getContract } from '../../generated/apiContract';
+
+const warnOrThrow = (message) => {
+  if (import.meta.env.MODE === 'test') {
+    throw new Error(message);
+  }
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.warn(message);
+  }
+};
+
+const assertEnumMatch = (name, expected, actual, normalize = (val) => val) => {
+  if (!expected || expected.length === 0) return;
+  const expectedSet = new Set(expected.map(normalize));
+  const actualSet = new Set(actual.map(normalize));
+  for (const value of expectedSet) {
+    if (!actualSet.has(value)) {
+      warnOrThrow(`[API CONTRACT] ${name} enum missing value: ${value}`);
+      break;
+    }
+  }
+};
+
 // =============================================================================
 // SALE TYPE
 // =============================================================================
@@ -124,6 +148,17 @@ export const RegionLabels = {
   [Region.OCR]: 'OCR',
 };
 
+const regionAllowed =
+  getContract('aggregate')?.param_schema?.fields?.segment?.allowed_values ||
+  getContract('dashboard')?.param_schema?.fields?.segment?.allowed_values ||
+  [];
+assertEnumMatch(
+  'Region',
+  regionAllowed,
+  Object.values(Region),
+  (val) => String(val).toLowerCase()
+);
+
 // =============================================================================
 // FLOOR LEVEL
 // =============================================================================
@@ -185,6 +220,16 @@ export const FloorLevelLabels = {
   [FloorLevelDB.LUXURY]: 'Luxury (41+)',
   [FloorLevelDB.UNKNOWN]: 'Unknown',
 };
+
+const floorLevelAllowed =
+  getContract('transactions/price-growth')?.param_schema?.fields?.floor_level?.allowed_values ||
+  [];
+assertEnumMatch(
+  'FloorLevel',
+  floorLevelAllowed,
+  Object.values(FloorLevelDB),
+  (val) => String(val).toLowerCase()
+);
 
 /**
  * Short labels for floor levels (just the classification name).

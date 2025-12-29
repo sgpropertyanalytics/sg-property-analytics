@@ -9,16 +9,17 @@ Endpoints:
 """
 
 import time
-from flask import request, jsonify, g
+import json
+from flask import jsonify, g
 from routes.analytics import analytics_bp
 from constants import (
     SALE_TYPE_NEW, SALE_TYPE_RESALE,
     TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR
 )
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 from typing import Optional, Tuple
 from utils.normalize import (
-    to_int, to_float, to_date, to_list, to_bool, clamp_date_to_today,
+    to_float, to_date, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
@@ -96,6 +97,43 @@ def _classify_age_band(
     )
 
 
+def _expand_csv_list(value, item_type=str) -> list:
+    if value is None:
+        return []
+    items = value if isinstance(value, list) else [value]
+    expanded = []
+    for item in items:
+        if isinstance(item, str) and "," in item:
+            expanded.extend([p.strip() for p in item.split(",") if p.strip()])
+        else:
+            expanded.append(item)
+    if item_type is int:
+        try:
+            return [int(v) for v in expanded]
+        except (ValueError, TypeError):
+            raise NormalizeValidationError("Invalid list value")
+    return expanded
+
+
+def _build_aggregate_cache_key(params: dict) -> str:
+    def normalize_value(value):
+        if isinstance(value, (date, datetime)):
+            return value.isoformat()
+        if isinstance(value, list):
+            return [normalize_value(v) for v in value]
+        if isinstance(value, dict):
+            return {k: normalize_value(v) for k, v in sorted(value.items())}
+        return value
+
+    filtered = {
+        key: value
+        for key, value in params.items()
+        if value not in (None, "", [], {})
+    }
+    normalized = {k: normalize_value(v) for k, v in sorted(filtered.items())}
+    return f"aggregate:{json.dumps(normalized, sort_keys=True)}"
+
+
 @analytics_bp.route("/aggregate", methods=["GET"])
 @api_contract("aggregate")
 def aggregate():
@@ -153,7 +191,6 @@ def aggregate():
         }
       }
     """
-    from datetime import datetime
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func, and_, or_, extract, cast, String, Integer, literal_column
@@ -163,12 +200,19 @@ def aggregate():
 
     start = time.time()
 
-    # Schema version: v2 only (v1 deprecated fields removed)
-    schema_version = request.args.get('schema', 'v2')
+    params = getattr(g, "normalized_params", {}) or {}
 
-    # Build cache key from query string
-    skip_cache = request.args.get('skip_cache', '').lower() == 'true'
-    cache_key = f"aggregate:{request.query_string.decode('utf-8')}"
+    # Schema version: v2 only (v1 deprecated fields removed)
+    schema_version = params.get('schema', 'v2').lower()
+    if schema_version != 'v2':
+        return jsonify({
+            "error": "Unsupported schema version",
+            "details": {"schema": schema_version, "supported": ["v2"]}
+        }), 400
+
+    # Build cache key from normalized params
+    skip_cache = params.get("skip_cache", False)
+    cache_key = _build_aggregate_cache_key(params)
 
     # Check cache first
     if not skip_cache:
@@ -181,17 +225,19 @@ def aggregate():
             return jsonify(cached)
 
     # Parse parameters
-    group_by_param = request.args.get("group_by", "month")
-    metrics_param = request.args.get("metrics", "count,avg_psf")
-
-    group_by = [g.strip() for g in group_by_param.split(",") if g.strip()]
-    metrics = [m.strip() for m in metrics_param.split(",") if m.strip()]
+    group_by = params.get("group_by") or ["month"]
+    metrics = params.get("metrics") or ["count", "avg_psf"]
+    if isinstance(group_by, str):
+        group_by = [g.strip() for g in group_by.split(",") if g.strip()]
+    if isinstance(metrics, str):
+        metrics = [m.strip() for m in metrics.split(",") if m.strip()]
 
     # SUBSCRIPTION CHECK: Granularity restriction for free users
     # NOTE: 60-day time restriction removed - using blur paywall instead (all data visible but blurred)
     from utils.subscription import check_granularity_allowed, is_premium_user
     is_premium = is_premium_user()
 
+    group_by_param = ",".join(group_by)
     allowed, error_msg = check_granularity_allowed(group_by_param, is_premium=is_premium)
     if not allowed:
         return jsonify({
@@ -206,20 +252,14 @@ def aggregate():
     filters_applied = {}
 
     # District filter
-    districts_param = request.args.get("district")
-    if districts_param:
-        districts = [d.strip().upper() for d in districts_param.split(",") if d.strip()]
-        normalized = []
-        for d in districts:
-            if not d.startswith("D"):
-                d = f"D{d.zfill(2)}"
-            normalized.append(d)
-        filter_conditions.append(Transaction.district.in_(normalized))
-        filters_applied["district"] = normalized
+    districts = params.get("districts") or []
+    if districts:
+        filter_conditions.append(Transaction.district.in_(districts))
+        filters_applied["district"] = districts
 
     # Bedroom filter
     try:
-        bedrooms = to_list(request.args.get("bedroom"), item_type=int, field="bedroom")
+        bedrooms = _expand_csv_list(params.get("bedrooms"), item_type=int)
         if bedrooms:
             filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
             filters_applied["bedroom"] = bedrooms
@@ -228,12 +268,10 @@ def aggregate():
 
     # Segment filter (supports comma-separated values e.g., "CCR,RCR")
     # OPTIMIZED: Use pre-computed district→segment mapping from constants
-    # instead of N+1 database query
-    # Also support 'region' as alias for 'segment' (backwards compatibility)
-    segment = request.args.get("segment") or request.args.get("region")
-    if segment:
+    segments = _expand_csv_list(params.get("segments"))
+    if segments:
         from constants import get_districts_for_region
-        segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
+        segments = [s.strip().upper() for s in segments]
         segment_districts = []
         for seg in segments:
             segment_districts.extend(get_districts_for_region(seg))
@@ -242,55 +280,49 @@ def aggregate():
         filters_applied["segment"] = segments
 
     # Sale type filter (case-insensitive to handle data variations)
-    sale_type = request.args.get("sale_type")
+    sale_type = params.get("sale_type")
     if sale_type:
-        # Use case-insensitive comparison to handle 'New Sale', 'NEW SALE', 'new sale', etc.
         filter_conditions.append(func.lower(Transaction.sale_type) == sale_type.lower())
         filters_applied["sale_type"] = sale_type
 
     # Date range filter
-    try:
-        from_dt = to_date(request.args.get("date_from"), field="date_from")
-        if from_dt:
-            filter_conditions.append(Transaction.transaction_date >= from_dt)
-            filters_applied["date_from"] = from_dt.isoformat()
+    from_dt = params.get("date_from")
+    if from_dt:
+        filter_conditions.append(Transaction.transaction_date >= from_dt)
+        filters_applied["date_from"] = from_dt.isoformat()
 
-        to_dt = clamp_date_to_today(to_date(request.args.get("date_to"), field="date_to"))
-        if to_dt:
-            # Use < next_day instead of <= to_dt to include all transactions on to_dt
-            # PostgreSQL treats date as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
-            filter_conditions.append(Transaction.transaction_date < to_dt + timedelta(days=1))
-            filters_applied["date_to"] = to_dt.isoformat()
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
+    to_dt_exclusive = params.get("date_to_exclusive")
+    to_dt = None
+    if to_dt_exclusive:
+        # Use exclusive upper bound to include all transactions on the end date
+        filter_conditions.append(Transaction.transaction_date < to_dt_exclusive)
+        to_dt = to_dt_exclusive - timedelta(days=1)
+        filters_applied["date_to"] = to_dt.isoformat()
 
     # PSF range filter
-    try:
-        psf_min = to_float(request.args.get("psf_min"), field="psf_min")
-        if psf_min is not None:
-            filter_conditions.append(Transaction.psf >= psf_min)
-            filters_applied["psf_min"] = psf_min
+    if params.get("psf_min") is not None:
+        psf_min = params.get("psf_min")
+        filter_conditions.append(Transaction.psf >= psf_min)
+        filters_applied["psf_min"] = psf_min
 
-        psf_max = to_float(request.args.get("psf_max"), field="psf_max")
-        if psf_max is not None:
-            filter_conditions.append(Transaction.psf <= psf_max)
-            filters_applied["psf_max"] = psf_max
+    if params.get("psf_max") is not None:
+        psf_max = params.get("psf_max")
+        filter_conditions.append(Transaction.psf <= psf_max)
+        filters_applied["psf_max"] = psf_max
 
-        # Size range filter
-        size_min = to_float(request.args.get("size_min"), field="size_min")
-        if size_min is not None:
-            filter_conditions.append(Transaction.area_sqft >= size_min)
-            filters_applied["size_min"] = size_min
+    # Size range filter
+    if params.get("size_min") is not None:
+        size_min = params.get("size_min")
+        filter_conditions.append(Transaction.area_sqft >= size_min)
+        filters_applied["size_min"] = size_min
 
-        size_max = to_float(request.args.get("size_max"), field="size_max")
-        if size_max is not None:
-            filter_conditions.append(Transaction.area_sqft <= size_max)
-            filters_applied["size_max"] = size_max
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
+    if params.get("size_max") is not None:
+        size_max = params.get("size_max")
+        filter_conditions.append(Transaction.area_sqft <= size_max)
+        filters_applied["size_max"] = size_max
 
     # Tenure filter
-    tenure = request.args.get("tenure")
+    tenure = params.get("tenure")
     if tenure:
         tenure_lower = tenure.lower()
         if tenure_lower == TENURE_FREEHOLD.lower():
@@ -310,8 +342,8 @@ def aggregate():
     # Project filter - supports both partial match (search) and exact match (drill-through)
     # Use project_exact for drill-through views (ProjectDetailPanel)
     # Use project for search functionality (sidebar filter)
-    project_exact = request.args.get("project_exact")
-    project = request.args.get("project")
+    project_exact = params.get("project_exact")
+    project = params.get("project")
     if project_exact:
         # EXACT match - for ProjectDetailPanel drill-through
         filter_conditions.append(Transaction.project_name == project_exact)
@@ -344,24 +376,24 @@ def aggregate():
     select_columns = []
 
     # Map group_by params to SQL expressions
-    for g in group_by:
-        if g == "district":
+    for group in group_by:
+        if group == "district":
             group_columns.append(Transaction.district)
             select_columns.append(Transaction.district.label("district"))
-        elif g == "bedroom":
+        elif group == "bedroom":
             group_columns.append(Transaction.bedroom_count)
             select_columns.append(Transaction.bedroom_count.label("bedroom"))
-        elif g == "sale_type":
+        elif group == "sale_type":
             group_columns.append(Transaction.sale_type)
             select_columns.append(Transaction.sale_type.label("sale_type"))
-        elif g == "project":
+        elif group == "project":
             group_columns.append(Transaction.project_name)
             select_columns.append(Transaction.project_name.label("project"))
-        elif g == "year":
+        elif group == "year":
             year_col = cast(extract('year', Transaction.transaction_date), Integer)
             group_columns.append(year_col)
             select_columns.append(year_col.label("year"))
-        elif g == "month":
+        elif group == "month":
             # Format as YYYY-MM - cast to integers for proper grouping
             year_col = cast(extract('year', Transaction.transaction_date), Integer)
             month_col = cast(extract('month', Transaction.transaction_date), Integer)
@@ -370,7 +402,7 @@ def aggregate():
             group_columns.append(month_col)
             select_columns.append(year_col.label("_year"))
             select_columns.append(month_col.label("_month"))
-        elif g == "quarter":
+        elif group == "quarter":
             # Cast year to integer for proper grouping
             year_col = cast(extract('year', Transaction.transaction_date), Integer)
             # Use FLOOR and CAST for proper integer division to calculate quarter
@@ -380,7 +412,7 @@ def aggregate():
             group_columns.append(quarter_col)
             select_columns.append(year_col.label("_year"))
             select_columns.append(quarter_col.label("_quarter"))
-        elif g == "region":
+        elif group == "region":
             # Map districts to regions using CASE statement
             from sqlalchemy import case, literal
             # Import from centralized constants (SINGLE SOURCE OF TRUTH)
@@ -392,11 +424,11 @@ def aggregate():
             )
             group_columns.append(region_case)
             select_columns.append(region_case.label("region"))
-        elif g == "floor_level":
+        elif group == "floor_level":
             # Group by floor level classification
             group_columns.append(Transaction.floor_level)
             select_columns.append(Transaction.floor_level.label("floor_level"))
-        elif g == "age_band":
+        elif group == "age_band":
             # Group by property age band using canonical PropertyAgeBucket
             # IMPORTANT: CASE expression built dynamically from PropertyAgeBucket constants
             # to ensure single source of truth (no hardcoded bucket strings)
@@ -489,14 +521,9 @@ def aggregate():
             query = query.order_by(group_columns[0])
 
     # Apply limit if specified (useful for project grouping which can return 5000+ rows)
-    limit_param = request.args.get('limit')
-    if limit_param:
-        try:
-            limit_val = int(limit_param)
-            if 0 < limit_val <= 10000:  # Cap at 10k for safety
-                query = query.limit(limit_val)
-        except ValueError:
-            pass  # Ignore invalid limit values
+    limit_val = params.get("limit")
+    if isinstance(limit_val, int) and 0 < limit_val <= 10000:
+        query = query.limit(limit_val)
 
     # Execute query
     results = query.all()
@@ -601,7 +628,7 @@ MAX_TIME_BUCKETS = 40
 MAX_BIN_COUNT = 20
 
 
-def _make_aggregate_cache_key():
+def _make_aggregate_cache_key(params: dict) -> str:
     """
     Generate stable cache key from normalized, sorted query params.
 
@@ -613,10 +640,17 @@ def _make_aggregate_cache_key():
         'tenure', 'date_from', 'date_to', 'price_min', 'price_max',
         'psf_min', 'psf_max', 'bin_count'
     ]
+    def normalize_value(value):
+        if isinstance(value, list):
+            return ",".join([str(v) for v in value])
+        if isinstance(value, (date, datetime)):
+            return value.isoformat()
+        return value
+
     sorted_params = sorted(
-        (k, request.args.get(k))
+        (k, normalize_value(params.get(k)))
         for k in relevant_params
-        if request.args.get(k)
+        if params.get(k)
     )
     param_str = '&'.join(f"{k}={v}" for k, v in sorted_params)
     return f"agg_summary:{param_str}"
@@ -674,89 +708,88 @@ def aggregate_summary():
 
     start = time.time()
 
+    params = getattr(g, "normalized_params", {}) or {}
+
     # Check cache first
-    cache_key = _make_aggregate_cache_key()
+    cache_key = _make_aggregate_cache_key(params)
     cached = _dashboard_cache.get(cache_key)
     if cached:
         return jsonify(cached)
 
     # Enforce bin limits
-    try:
-        bin_count = min(to_int(request.args.get('bin_count'), default=10, field='bin_count'), MAX_BIN_COUNT)
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
+    bin_count = params.get("bin_count", 10)
+    if isinstance(bin_count, int):
+        bin_count = min(bin_count, MAX_BIN_COUNT)
+    else:
+        return validation_error_response(NormalizeValidationError("Invalid bin_count"))
 
     # Build base query with outlier exclusion
     query = Transaction.active_query()
 
     # Collect filter params for K-anonymity check
     filter_params = {}
+    segment_districts = []
+    bedrooms = []
+    sale_type_db = None
 
     # District filter
-    districts_param = request.args.get("district")
-    if districts_param:
-        districts = [d.strip().upper() for d in districts_param.split(",") if d.strip()]
-        normalized = []
-        for d in districts:
-            if not d.startswith("D"):
-                d = f"D{d.zfill(2)}"
-            normalized.append(d)
-        query = query.filter(Transaction.district.in_(normalized))
-        filter_params['district'] = districts_param
+    districts = params.get("districts") or []
+    if districts:
+        query = query.filter(Transaction.district.in_(districts))
+        filter_params['district'] = districts
 
     # Segment filter
-    segment = request.args.get("segment")
-    if segment:
-        segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
+    segments = _expand_csv_list(params.get("segments"))
+    if segments:
+        segments = [s.strip().upper() for s in segments]
         all_districts = db.session.query(Transaction.district).distinct().all()
         segment_districts = [
             d[0] for d in all_districts
             if get_region_for_district(d[0]) in segments
         ]
         query = query.filter(Transaction.district.in_(segment_districts))
-        filter_params['segment'] = segment
+        filter_params['segment'] = segments
 
     # Bedroom filter
-    bedroom_param = request.args.get("bedroom")
-    if bedroom_param:
-        bedrooms = [int(b.strip()) for b in bedroom_param.split(",") if b.strip()]
-        query = query.filter(Transaction.bedroom_count.in_(bedrooms))
+    try:
+        bedrooms = _expand_csv_list(params.get("bedrooms"), item_type=int)
+        if bedrooms:
+            query = query.filter(Transaction.bedroom_count.in_(bedrooms))
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
 
     # Sale type filter
     from schemas.api_contract import SaleType
-    sale_type_param = request.args.get("saleType") or request.args.get("sale_type")
+    sale_type_param = params.get("sale_type")
     if sale_type_param:
-        if sale_type_param in SaleType.ALL:
-            sale_type_db = SaleType.to_db(sale_type_param)
-        else:
-            sale_type_db = sale_type_param
+        sale_type_db = SaleType.to_db(sale_type_param) if sale_type_param in SaleType.ALL else sale_type_param
         query = query.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
 
     # Date range filter
     try:
-        from_dt = to_date(request.args.get("date_from"), field="date_from")
+        from_dt = to_date(params.get("date_from"), field="date_from")
         if from_dt:
             query = query.filter(Transaction.transaction_date >= from_dt)
 
-        to_dt = clamp_date_to_today(to_date(request.args.get("date_to"), field="date_to"))
+        to_dt = clamp_date_to_today(to_date(params.get("date_to"), field="date_to"))
         if to_dt:
             # Use < next_day instead of <= to_dt to include all transactions on to_dt
             query = query.filter(Transaction.transaction_date < to_dt + timedelta(days=1))
 
         # Price/PSF range filters
-        price_min = to_float(request.args.get("price_min"), field="price_min")
+        price_min = to_float(params.get("price_min"), field="price_min")
         if price_min is not None:
             query = query.filter(Transaction.price >= price_min)
 
-        price_max = to_float(request.args.get("price_max"), field="price_max")
+        price_max = to_float(params.get("price_max"), field="price_max")
         if price_max is not None:
             query = query.filter(Transaction.price <= price_max)
 
-        psf_min = to_float(request.args.get("psf_min"), field="psf_min")
+        psf_min = to_float(params.get("psf_min"), field="psf_min")
         if psf_min is not None:
             query = query.filter(Transaction.psf >= psf_min)
 
-        psf_max = to_float(request.args.get("psf_max"), field="psf_max")
+        psf_max = to_float(params.get("psf_max"), field="psf_max")
         if psf_max is not None:
             query = query.filter(Transaction.psf <= psf_max)
     except NormalizeValidationError as e:
@@ -794,11 +827,11 @@ def aggregate_summary():
     )
 
     # Apply same filters to stats query
-    if districts_param:
-        psf_stats = psf_stats.filter(Transaction.district.in_(normalized))
-    if segment:
+    if districts:
+        psf_stats = psf_stats.filter(Transaction.district.in_(districts))
+    if segments:
         psf_stats = psf_stats.filter(Transaction.district.in_(segment_districts))
-    if bedroom_param:
+    if bedrooms:
         psf_stats = psf_stats.filter(Transaction.bedroom_count.in_(bedrooms))
     if sale_type_param:
         psf_stats = psf_stats.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
@@ -822,11 +855,11 @@ def aggregate_summary():
     )
 
     # Apply same filters
-    if districts_param:
-        price_stats = price_stats.filter(Transaction.district.in_(normalized))
-    if segment:
+    if districts:
+        price_stats = price_stats.filter(Transaction.district.in_(districts))
+    if segments:
         price_stats = price_stats.filter(Transaction.district.in_(segment_districts))
-    if bedroom_param:
+    if bedrooms:
         price_stats = price_stats.filter(Transaction.bedroom_count.in_(bedrooms))
     if sale_type_param:
         price_stats = price_stats.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
@@ -847,9 +880,9 @@ def aggregate_summary():
     ).group_by(Transaction.bedroom_count)
 
     # Apply filters
-    if districts_param:
-        bedroom_mix_query = bedroom_mix_query.filter(Transaction.district.in_(normalized))
-    if segment:
+    if districts:
+        bedroom_mix_query = bedroom_mix_query.filter(Transaction.district.in_(districts))
+    if segments:
         bedroom_mix_query = bedroom_mix_query.filter(Transaction.district.in_(segment_districts))
     if sale_type_param:
         bedroom_mix_query = bedroom_mix_query.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
@@ -879,11 +912,11 @@ def aggregate_summary():
     ).group_by(Transaction.sale_type)
 
     # Apply filters
-    if districts_param:
-        sale_mix_query = sale_mix_query.filter(Transaction.district.in_(normalized))
-    if segment:
+    if districts:
+        sale_mix_query = sale_mix_query.filter(Transaction.district.in_(districts))
+    if segments:
         sale_mix_query = sale_mix_query.filter(Transaction.district.in_(segment_districts))
-    if bedroom_param:
+    if bedrooms:
         sale_mix_query = sale_mix_query.filter(Transaction.bedroom_count.in_(bedrooms))
     if from_dt:
         sale_mix_query = sale_mix_query.filter(Transaction.transaction_date >= from_dt)

@@ -209,14 +209,23 @@ FLOOR_LIQUIDITY_HEATMAP_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 FLOOR_LIQUIDITY_HEATMAP_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "projects": FieldSpec(name="projects", type=list, required=False),
+        "floor_zone_order": FieldSpec(name="floor_zone_order", type=list, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
         "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
         "window_months": FieldSpec(name="window_months", type=int),
         "filters_applied": FieldSpec(name="filters_applied", type=dict),
+        "filtersApplied": FieldSpec(name="filtersApplied", type=dict),
         "total_projects": FieldSpec(name="total_projects", type=int),
+        "projects_returned": FieldSpec(name="projects_returned", type=int),
+        "exclusions": FieldSpec(name="exclusions", type=dict),
+        "cache_hit": FieldSpec(name="cache_hit", type=bool),
+        "cacheHit": FieldSpec(name="cacheHit", type=bool),
+        "elapsed_ms": FieldSpec(name="elapsed_ms", type=int),
     },
     required_meta=["requestId", "elapsedMs", "apiVersion"],
     data_is_list=False,
@@ -393,11 +402,33 @@ BUDGET_HEATMAP_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 BUDGET_HEATMAP_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        # v2 response keys (camelCase)
+        "matrix": FieldSpec(name="matrix", type=dict, required=False),
+        "ageBands": FieldSpec(name="ageBands", type=list, required=False),
+        "bedroomTypes": FieldSpec(name="bedroomTypes", type=list, required=False),
+        "totalCount": FieldSpec(name="totalCount", type=int, required=False),
+        "insight": FieldSpec(name="insight", type=str, required=False),
+        "meta": FieldSpec(name="meta", type=dict, required=False),
+        # v1 response keys (snake_case)
+        "age_bands": FieldSpec(name="age_bands", type=list, required=False),
+        "bedroom_types": FieldSpec(name="bedroom_types", type=list, required=False),
+        "total_count": FieldSpec(name="total_count", type=int, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
         "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
+        # v2 meta fields (camelCase)
+        "budget": FieldSpec(name="budget", type=int),
+        "tolerance": FieldSpec(name="tolerance", type=int),
+        "priceRange": FieldSpec(name="priceRange", type=dict),
+        "monthsLookback": FieldSpec(name="monthsLookback", type=int),
+        "ageIsApprox": FieldSpec(name="ageIsApprox", type=bool),
+        # v1 meta fields (snake_case)
+        "price_range": FieldSpec(name="price_range", type=dict),
+        "months_lookback": FieldSpec(name="months_lookback", type=int),
+        "age_is_approx": FieldSpec(name="age_is_approx", type=bool),
     },
     required_meta=["requestId", "elapsedMs", "apiVersion"],
     data_is_list=False,

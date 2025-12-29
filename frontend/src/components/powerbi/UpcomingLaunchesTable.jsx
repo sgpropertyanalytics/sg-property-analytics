@@ -4,6 +4,7 @@ import { getUpcomingLaunchesAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { getRegionBadgeClass } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
+import { UpcomingLaunchesField, getUpcomingLaunchesField } from '../../schemas/apiContract';
 
 /**
  * Upcoming Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
@@ -66,7 +67,8 @@ export function UpcomingLaunchesTable({
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/upcoming-launches');
 
-      return response.data.data || [];
+      const responseData = response.data || {};
+      return getUpcomingLaunchesField(responseData, UpcomingLaunchesField.DATA) || [];
     },
     [sortConfig.column, sortConfig.order, refreshTrigger],
     {

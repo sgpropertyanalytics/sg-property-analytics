@@ -1,5 +1,6 @@
 import React from 'react';
 import { HelpTooltip } from './HelpTooltip';
+import { getKpiField, KpiField } from '../../schemas/apiContract';
 
 /**
  * KPICardV2 - Universal Card System
@@ -152,10 +153,10 @@ export function mapKpiV2ToCardProps(kpi: {
   meta?: Record<string, unknown>;
 }): KPICardV2Props {
   return {
-    title: kpi.title,
-    value: kpi.formatted_value,
-    trend: kpi.trend,
-    footnote: kpi.insight,
+    title: getKpiField(kpi, KpiField.TITLE),
+    value: getKpiField(kpi, KpiField.FORMATTED_VALUE),
+    trend: getKpiField(kpi, KpiField.TREND),
+    footnote: getKpiField(kpi, KpiField.INSIGHT),
   };
 }
 

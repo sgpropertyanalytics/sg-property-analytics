@@ -36,6 +36,13 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
+      - name: Generate frontend contracts (CI check)
+        run: |
+          python backend/scripts/generate_contracts.py
+          test -s frontend/src/generated/apiContract.json
+          test -s frontend/src/generated/apiContract.ts
+          git diff --exit-code backend/contracts_manifest.sha256
+
       - name: Run unit tests (no DB required)
         run: |
           cd backend

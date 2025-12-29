@@ -15,7 +15,12 @@ import { Line, Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate, getProjectInventory, getDashboard } from '../../api/client';
 import { DISTRICT_NAMES } from '../../constants';
-import { getAggField, AggField } from '../../schemas/apiContract';
+import {
+  getAggField,
+  AggField,
+  ProjectInventoryField,
+  getProjectInventoryField,
+} from '../../schemas/apiContract';
 import { SuppressedValue } from '../SuppressedValue';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 
@@ -183,10 +188,10 @@ function ProjectDetailPanelInner({
           .sort((a, b) => (getAggField(a, AggField.BEDROOM_COUNT) || 0) - (getAggField(b, AggField.BEDROOM_COUNT) || 0));
 
         // Extract inventory data (includes cumulative sales from backend)
-        const inventory = inventoryResponse.data;
+        const inventory = inventoryResponse.data || {};
         setSalesByType({
-          newSale: inventory.cumulative_new_sales || 0,
-          resale: inventory.cumulative_resales || 0
+          newSale: getProjectInventoryField(inventory, ProjectInventoryField.CUMULATIVE_NEW_SALES) || 0,
+          resale: getProjectInventoryField(inventory, ProjectInventoryField.CUMULATIVE_RESALES) || 0
         });
         setInventoryData(inventory);
 

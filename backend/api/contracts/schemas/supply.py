@@ -52,7 +52,10 @@ SUPPLY_SUMMARY_SERVICE_SCHEMA = ServiceBoundarySchema(
 
 SUPPLY_SUMMARY_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
-        # Response has byRegion, byDistrict, totals, meta at top level
+        "byRegion": FieldSpec(name="byRegion", type=dict, required=False),
+        "byDistrict": FieldSpec(name="byDistrict", type=dict, required=False),
+        "totals": FieldSpec(name="totals", type=dict, required=False),
+        "meta": FieldSpec(name="meta", type=dict, required=False),
     },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
@@ -62,6 +65,7 @@ SUPPLY_SUMMARY_RESPONSE_SCHEMA = ResponseSchema(
         "includeGls": FieldSpec(name="includeGls", type=bool, required=False),
         "computedAs": FieldSpec(name="computedAs", type=str, required=False),
         "asOfDate": FieldSpec(name="asOfDate", type=str, required=False),
+        "warnings": FieldSpec(name="warnings", type=list, required=False),
     },
     required_meta=["requestId", "elapsedMs", "apiVersion"],
     data_is_list=False,

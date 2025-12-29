@@ -9,6 +9,10 @@ import {
   getLiquidityColor,
 } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
+import {
+  FloorLiquidityField,
+  getFloorLiquidityField,
+} from '../../schemas/apiContract';
 
 /**
  * Floor Liquidity Heatmap
@@ -55,9 +59,14 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/floor-liquidity-heatmap');
 
+      const responseData = response.data || {};
+      const responsePayload = responseData.data || {};
       return {
-        data: response.data?.data || { projects: [], floor_zone_order: [] },
-        meta: response.data?.meta || { exclusions: {} }
+        data: {
+          projects: getFloorLiquidityField(responsePayload, FloorLiquidityField.PROJECTS) || [],
+          floor_zone_order: getFloorLiquidityField(responsePayload, FloorLiquidityField.FLOOR_ZONE_ORDER) || [],
+        },
+        meta: responseData.meta || { exclusions: {} }
       };
     },
     [filterKey, windowMonths],
@@ -164,8 +173,9 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
   const collapseAll = () => setExpandedDistricts(new Set());
 
   // Floor zones to display
-  const floorZones = data.floor_zone_order?.length > 0
-    ? data.floor_zone_order
+  const floorZoneOrder = getFloorLiquidityField(data, FloorLiquidityField.FLOOR_ZONE_ORDER) || [];
+  const floorZones = floorZoneOrder.length > 0
+    ? floorZoneOrder
     : FLOOR_LEVELS;
 
   // Handle cell hover

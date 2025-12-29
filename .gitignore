@@ -102,3 +102,6 @@ logs/
 *.tmp
 *.temp
 .cache/
+
+# Generated frontend contracts
+frontend/src/generated/

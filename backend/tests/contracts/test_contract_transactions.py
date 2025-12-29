@@ -48,6 +48,7 @@ class TestPriceGrowthContractSchema:
         assert fields["page"].default == 1
         assert "per_page" in fields
         assert fields["per_page"].default == 50
+        assert fields["schema"].default == "v2"
 
     def test_param_schema_has_aliases(self):
         """Param schema should have camelCase aliases."""
@@ -110,6 +111,7 @@ class TestSegmentsContractSchema:
         assert "project" in fields
         assert "district" in fields
         assert "sale_type" in fields
+        assert fields["schema"].default == "v2"
 
     def test_response_schema_has_required_meta(self):
         """Response schema should require key meta fields."""

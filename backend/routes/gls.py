@@ -1,22 +1,23 @@
 """
 GLS (Government Land Sales) API Routes
 
-Provides endpoints for:
-- Upcoming tenders (SIGNAL - leading indicator)
-- Awarded tenders (FACT - confirmed supply)
-- Supply pipeline aggregation
-- Price floor data
+Active public endpoint:
+- /all - Unified GLS feed (use filters on /all)
+
+Admin endpoints:
+- /needs-review
+- /scrape
+- /reset
+- /cron-refresh
+- /refresh-status
+- /trigger-refresh
 """
 from flask import Blueprint, request, jsonify
 import time
-from datetime import datetime
 from models.database import db
 from models.gls_tender import GLSTender
 from sqlalchemy import desc, asc, extract
-from utils.normalize import (
-    to_int, to_bool,
-    ValidationError as NormalizeValidationError, validation_error_response
-)
+from utils.normalize import to_int
 from api.contracts import api_contract
 
 gls_bp = Blueprint('gls', __name__)
@@ -34,110 +35,6 @@ def add_contract_version_header(response):
 
 # Minimum year for frontend display (2024 data used only for backend linking)
 MIN_DISPLAY_YEAR = 2025
-
-
-@gls_bp.route("/upcoming", methods=["GET"])
-@api_contract("gls/upcoming")
-def get_upcoming():
-    """
-    Get upcoming (launched) GLS tenders.
-
-    Query params:
-        - market_segment: CCR, RCR, or OCR (optional)
-        - planning_area: Filter by planning area (optional)
-        - limit: Max results (default 50)
-
-    Returns:
-        SIGNAL data with disclaimer
-    """
-    start = time.time()
-
-    market_segment = request.args.get("market_segment")
-    planning_area = request.args.get("planning_area")
-    limit = to_int(request.args.get("limit"), default=50, field="limit")
-
-    try:
-        query = db.session.query(GLSTender).filter(
-            GLSTender.status == 'launched',
-            # Only show 2025+ records (2024 used for backend linking only)
-            extract('year', GLSTender.release_date) >= MIN_DISPLAY_YEAR
-        )
-
-        if market_segment:
-            query = query.filter(GLSTender.market_segment == market_segment.upper())
-
-        if planning_area:
-            query = query.filter(GLSTender.planning_area.ilike(f"%{planning_area}%"))
-
-        query = query.order_by(desc(GLSTender.release_date)).limit(limit)
-        tenders = query.all()
-
-        elapsed = time.time() - start
-        print(f"GET /api/gls/upcoming took: {elapsed:.4f} seconds (returned {len(tenders)} tenders)")
-
-        return jsonify({
-            "status": "SIGNAL",
-            "disclaimer": "Upcoming tenders - not confirmed supply",
-            "count": len(tenders),
-            "data": [t.to_dict() for t in tenders]
-        })
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/gls/upcoming ERROR (took {elapsed:.4f}s): {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@gls_bp.route("/awarded", methods=["GET"])
-@api_contract("gls/awarded")
-def get_awarded():
-    """
-    Get awarded GLS tenders.
-
-    Query params:
-        - market_segment: CCR, RCR, or OCR (optional)
-        - planning_area: Filter by planning area (optional)
-        - limit: Max results (default 50)
-
-    Returns:
-        FACT data with confirmed supply info
-    """
-    start = time.time()
-
-    market_segment = request.args.get("market_segment")
-    planning_area = request.args.get("planning_area")
-    limit = to_int(request.args.get("limit"), default=50, field="limit")
-
-    try:
-        query = db.session.query(GLSTender).filter(
-            GLSTender.status == 'awarded',
-            # Only show 2025+ records (2024 used for backend linking only)
-            extract('year', GLSTender.release_date) >= MIN_DISPLAY_YEAR
-        )
-
-        if market_segment:
-            query = query.filter(GLSTender.market_segment == market_segment.upper())
-
-        if planning_area:
-            query = query.filter(GLSTender.planning_area.ilike(f"%{planning_area}%"))
-
-        query = query.order_by(desc(GLSTender.release_date)).limit(limit)
-        tenders = query.all()
-
-        elapsed = time.time() - start
-        print(f"GET /api/gls/awarded took: {elapsed:.4f} seconds (returned {len(tenders)} tenders)")
-
-        return jsonify({
-            "status": "FACT",
-            "disclaimer": "Confirmed supply - capital committed",
-            "count": len(tenders),
-            "data": [t.to_dict() for t in tenders]
-        })
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/gls/awarded ERROR (took {elapsed:.4f}s): {e}")
-        return jsonify({"error": str(e)}), 500
 
 
 @gls_bp.route("/all", methods=["GET"])
@@ -210,107 +107,6 @@ def get_all():
     except Exception as e:
         elapsed = time.time() - start
         print(f"GET /api/gls/all ERROR (took {elapsed:.4f}s): {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@gls_bp.route("/supply-pipeline", methods=["GET"])
-@api_contract("gls/supply-pipeline")
-def get_supply_pipeline():
-    """
-    Get aggregate upcoming supply pipeline.
-
-    Query params:
-        - market_segment: CCR, RCR, or OCR (optional)
-
-    Returns:
-        Aggregated SIGNAL data by region
-    """
-    start = time.time()
-
-    market_segment = request.args.get("market_segment")
-
-    try:
-        from services.gls_scraper import get_supply_pipeline
-
-        pipeline = get_supply_pipeline(market_segment=market_segment)
-
-        elapsed = time.time() - start
-        print(f"GET /api/gls/supply-pipeline took: {elapsed:.4f} seconds")
-
-        return jsonify(pipeline)
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/gls/supply-pipeline ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@gls_bp.route("/price-floor", methods=["GET"])
-@api_contract("gls/price-floor")
-def get_price_floor():
-    """
-    Get aggregate awarded price floor data.
-
-    Query params:
-        - market_segment: CCR, RCR, or OCR (optional)
-
-    Returns:
-        Aggregated FACT data with psf_ppr statistics
-    """
-    start = time.time()
-
-    market_segment = request.args.get("market_segment")
-
-    try:
-        from services.gls_scraper import get_price_floor
-
-        price_floor = get_price_floor(market_segment=market_segment)
-
-        elapsed = time.time() - start
-        print(f"GET /api/gls/price-floor took: {elapsed:.4f} seconds")
-
-        return jsonify(price_floor)
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/gls/price-floor ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@gls_bp.route("/tender/<release_id>", methods=["GET"])
-@api_contract("gls/tender")
-def get_tender_detail(release_id: str):
-    """
-    Get details for a specific tender by release ID.
-
-    Args:
-        release_id: URA release ID (e.g., 'pr25-66')
-
-    Returns:
-        Full tender details
-    """
-    start = time.time()
-
-    try:
-        tender = db.session.query(GLSTender).filter(
-            GLSTender.release_id == release_id.lower()
-        ).first()
-
-        if not tender:
-            return jsonify({"error": f"Tender not found: {release_id}"}), 404
-
-        elapsed = time.time() - start
-        print(f"GET /api/gls/tender/{release_id} took: {elapsed:.4f} seconds")
-
-        return jsonify(tender.to_dict())
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/gls/tender/{release_id} ERROR (took {elapsed:.4f}s): {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -618,68 +414,4 @@ def trigger_background_refresh():
         print(f"POST /api/gls/trigger-refresh ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@gls_bp.route("/stats", methods=["GET"])
-@api_contract("gls/stats")
-def get_stats():
-    """
-    Get summary statistics for GLS data.
-
-    Returns:
-        Overview of tender counts and values
-    """
-    start = time.time()
-
-    try:
-        from sqlalchemy import func
-
-        # Count by status
-        status_counts = db.session.query(
-            GLSTender.status,
-            func.count(GLSTender.id).label('count')
-        ).group_by(GLSTender.status).all()
-
-        status_summary = {row.status: row.count for row in status_counts}
-
-        # Count by region
-        region_counts = db.session.query(
-            GLSTender.market_segment,
-            GLSTender.status,
-            func.count(GLSTender.id).label('count'),
-            func.sum(GLSTender.estimated_units).label('total_units')
-        ).group_by(GLSTender.market_segment, GLSTender.status).all()
-
-        by_region = {}
-        for row in region_counts:
-            region = row.market_segment or 'Unknown'
-            if region not in by_region:
-                by_region[region] = {'launched': 0, 'awarded': 0, 'units_launched': 0, 'units_awarded': 0}
-
-            by_region[region][row.status] = row.count
-            by_region[region][f'units_{row.status}'] = int(row.total_units) if row.total_units else 0
-
-        # Date range
-        date_range = db.session.query(
-            func.min(GLSTender.release_date).label('earliest'),
-            func.max(GLSTender.release_date).label('latest')
-        ).first()
-
-        elapsed = time.time() - start
-        print(f"GET /api/gls/stats took: {elapsed:.4f} seconds")
-
-        return jsonify({
-            "status_summary": status_summary,
-            "by_region": by_region,
-            "date_range": {
-                "earliest": date_range.earliest.isoformat() if date_range.earliest else None,
-                "latest": date_range.latest.isoformat() if date_range.latest else None
-            },
-            "total_tenders": sum(status_summary.values())
-        })
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/gls/stats ERROR (took {elapsed:.4f}s): {e}")
         return jsonify({"error": str(e)}), 500

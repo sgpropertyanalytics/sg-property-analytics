@@ -2,33 +2,47 @@
  * Transaction Field Helpers
  *
  * Constants and accessors for transaction API responses.
- * Handles v1 (snake_case) and v2 (camelCase) field formats.
+ * Canonical field names are sourced from generated backend contracts.
  */
+
+import { getContract } from '../../generated/apiContract';
 
 // =============================================================================
 // FIELD CONSTANTS
 // =============================================================================
+
+const priceGrowthContract = getContract('transactions/price-growth');
+const priceGrowthFields = priceGrowthContract?.response_schema?.data_fields || {};
+
+const resolveField = (fieldName) => {
+  if (!priceGrowthFields[fieldName]) {
+    if (import.meta.env.MODE === 'test') {
+      throw new Error(`[API CONTRACT] Missing transactions field: ${fieldName}`);
+    }
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.warn(`[API CONTRACT] Missing transactions field: ${fieldName}`);
+    }
+  }
+  return fieldName;
+};
 
 /**
  * Transaction field names in API v2 responses.
  * Use these constants instead of hardcoding field names.
  */
 export const TxnField = {
-  ID: 'id',
-  PROJECT_NAME: 'projectName',
-  DISTRICT: 'district',
-  BEDROOM_COUNT: 'bedroomCount',
-  TRANSACTION_DATE: 'transactionDate',
-  PRICE: 'price',
-  AREA_SQFT: 'areaSqft',
-  PSF: 'psf',
-  SALE_TYPE: 'saleType',
-  TENURE: 'tenure',
-  FLOOR_LEVEL: 'floorLevel',
-  REMAINING_LEASE: 'remainingLease',
-  MARKET_SEGMENT: 'marketSegment',
-  STREET_NAME: 'streetName',
-  FLOOR_RANGE: 'floorRange',
+  ID: resolveField('transactionId'),
+  PROJECT: resolveField('project'),
+  BEDROOM_COUNT: resolveField('bedroomCount'),
+  FLOOR_LEVEL: resolveField('floorLevel'),
+  TRANSACTION_DATE: resolveField('transactionDate'),
+  PRICE: resolveField('price'),
+  PSF: resolveField('psf'),
+  CUMULATIVE_GROWTH_PCT: resolveField('cumulativeGrowthPct'),
+  INCREMENTAL_GROWTH_PCT: resolveField('incrementalGrowthPct'),
+  DAYS_SINCE_PREVIOUS: resolveField('daysSincePrevious'),
+  ANNUALIZED_GROWTH_PCT: resolveField('annualizedGrowthPct'),
 };
 
 // =============================================================================
@@ -40,16 +54,17 @@ export const TxnField = {
  * Used for backwards compatibility during migration.
  */
 const V1_FIELD_MAP = {
-  projectName: 'project_name',
+  transactionId: 'id',
+  project: 'project_name',
   bedroomCount: 'bedroom_count',
-  transactionDate: 'transaction_date',
-  areaSqft: 'area_sqft',
-  saleType: 'sale_type',
   floorLevel: 'floor_level',
-  remainingLease: 'remaining_lease',
-  marketSegment: 'market_segment',
-  streetName: 'street_name',
-  floorRange: 'floor_range',
+  transactionDate: 'transaction_date',
+  price: 'price',
+  psf: 'psf',
+  cumulativeGrowthPct: 'cumulative_growth_pct',
+  incrementalGrowthPct: 'incremental_growth_pct',
+  daysSincePrevious: 'days_since_prev',
+  annualizedGrowthPct: 'annualized_growth_pct',
 };
 
 // =============================================================================

@@ -37,7 +37,17 @@ PROJECT_INVENTORY_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 PROJECT_INVENTORY_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "project_name": FieldSpec(name="project_name", type=str, required=True),
+        "cumulative_new_sales": FieldSpec(name="cumulative_new_sales", type=int, required=True),
+        "cumulative_resales": FieldSpec(name="cumulative_resales", type=int, required=False),
+        "total_transactions": FieldSpec(name="total_transactions", type=int, required=False),
+        "total_units": FieldSpec(name="total_units", type=int, required=False),
+        "estimated_unsold": FieldSpec(name="estimated_unsold", type=int, required=False),
+        "percent_sold": FieldSpec(name="percent_sold", type=float, required=False),
+        "data_source": FieldSpec(name="data_source", type=str, required=False),
+        "message": FieldSpec(name="message", type=str, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
@@ -96,7 +106,18 @@ PROJECT_PRICE_BANDS_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 PROJECT_PRICE_BANDS_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "projectName": FieldSpec(name="projectName", type=str, required=False),
+        "dataSource": FieldSpec(name="dataSource", type=str, required=False),
+        "proxyLabel": FieldSpec(name="proxyLabel", type=str, required=False),
+        "bands": FieldSpec(name="bands", type=list, required=False),
+        "latest": FieldSpec(name="latest", type=dict, required=False),
+        "trend": FieldSpec(name="trend", type=dict, required=False),
+        "verdict": FieldSpec(name="verdict", type=dict, required=False),
+        "dataQuality": FieldSpec(name="dataQuality", type=dict, required=False),
+        "error": FieldSpec(name="error", type=str, required=False),
+        "apiContractVersion": FieldSpec(name="apiContractVersion", type=str, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
@@ -179,7 +200,15 @@ PROJECT_EXIT_QUEUE_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 PROJECT_EXIT_QUEUE_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "project_name": FieldSpec(name="project_name", type=str, required=False),
+        "data_quality": FieldSpec(name="data_quality", type=dict, required=False),
+        "fundamentals": FieldSpec(name="fundamentals", type=dict, required=False),
+        "resale_metrics": FieldSpec(name="resale_metrics", type=dict, required=False),
+        "risk_assessment": FieldSpec(name="risk_assessment", type=dict, required=False),
+        "gating_flags": FieldSpec(name="gating_flags", type=dict, required=False),
+        "_v2": FieldSpec(name="_v2", type=dict, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),

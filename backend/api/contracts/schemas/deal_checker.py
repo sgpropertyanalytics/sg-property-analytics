@@ -135,7 +135,13 @@ MULTI_SCOPE_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 MULTI_SCOPE_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "project": FieldSpec(name="project", type=dict, required=True),
+        "filters": FieldSpec(name="filters", type=dict, required=True),
+        "scopes": FieldSpec(name="scopes", type=dict, required=True),
+        "map_data": FieldSpec(name="map_data", type=dict, required=True),
+        "meta": FieldSpec(name="meta", type=dict, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
@@ -171,7 +177,10 @@ PROJECT_NAMES_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 PROJECT_NAMES_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "projects": FieldSpec(name="projects", type=list, required=True),
+        "count": FieldSpec(name="count", type=int, required=True),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),

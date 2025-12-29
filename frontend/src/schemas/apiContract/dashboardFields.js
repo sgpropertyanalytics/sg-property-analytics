@@ -5,7 +5,24 @@
  * Includes normalization functions for common panel types.
  */
 
+import { getContract } from '../../generated/apiContract';
 import { isSaleType } from './enums';
+
+const dashboardContract = getContract('dashboard');
+const dashboardMetaFields = dashboardContract?.response_schema?.meta_fields || {};
+
+const resolveMetaField = (fieldName) => {
+  if (!dashboardMetaFields[fieldName]) {
+    if (import.meta.env.MODE === 'test') {
+      throw new Error(`[API CONTRACT] Missing dashboard meta field: ${fieldName}`);
+    }
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.warn(`[API CONTRACT] Missing dashboard meta field: ${fieldName}`);
+    }
+  }
+  return fieldName;
+};
 
 // =============================================================================
 // FIELD CONSTANTS
@@ -63,6 +80,34 @@ const V1_DASHBOARD_FIELD_MAP = {
 };
 
 // =============================================================================
+// META FIELD CONSTANTS
+// =============================================================================
+
+/**
+ * Dashboard response meta fields (from backend contracts).
+ * Use these constants instead of hardcoding meta keys.
+ */
+export const DashboardMetaField = {
+  REQUEST_ID: resolveMetaField('requestId'),
+  ELAPSED_MS: resolveMetaField('elapsedMs'),
+  CACHE_HIT: resolveMetaField('cacheHit'),
+  FILTERS_APPLIED: resolveMetaField('filtersApplied'),
+  TOTAL_RECORDS_MATCHED: resolveMetaField('totalRecordsMatched'),
+  API_VERSION: resolveMetaField('apiVersion'),
+  DATA_MASKED: resolveMetaField('data_masked'),
+};
+
+/**
+ * Mapping from v2 camelCase to v1 snake_case for dashboard meta fields.
+ */
+const V1_DASHBOARD_META_FIELD_MAP = {
+  elapsedMs: 'elapsed_ms',
+  cacheHit: 'cache_hit',
+  filtersApplied: 'filters_applied',
+  totalRecordsMatched: 'total_records_matched',
+};
+
+// =============================================================================
 // FIELD ACCESSOR
 // =============================================================================
 
@@ -93,6 +138,28 @@ export const getDashboardField = (data, field) => {
 
   // Field doesn't change between versions (e.g., 'period', 'count', 'location')
   return data[field];
+};
+
+/**
+ * Get meta value from dashboard response, handling v1/v2 formats.
+ *
+ * @param {Object} meta - Response meta from /api/dashboard
+ * @param {string} field - Meta field name (use DashboardMetaField constants)
+ * @returns {*} Meta value or undefined
+ */
+export const getDashboardMetaField = (meta, field) => {
+  if (!meta) return undefined;
+
+  if (meta[field] !== undefined) {
+    return meta[field];
+  }
+
+  const v1Field = V1_DASHBOARD_META_FIELD_MAP[field];
+  if (v1Field && meta[v1Field] !== undefined) {
+    return meta[v1Field];
+  }
+
+  return meta[field];
 };
 
 // =============================================================================

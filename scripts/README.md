@@ -52,3 +52,10 @@ crontab -e
 ## run_etl.py
 Legacy ETL script (from original architecture). Can be deprecated in favor of `upload.py`.
 
+## generate_contracts.sh
+Generates frontend contract artifacts from backend API contracts.
+
+**Usage:**
+```bash
+./scripts/generate_contracts.sh
+```

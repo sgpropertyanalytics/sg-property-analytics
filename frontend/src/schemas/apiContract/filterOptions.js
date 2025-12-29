@@ -11,6 +11,7 @@ import {
   Bedroom,
   PropertyAgeBucketLabels,
 } from './enums';
+import { getContract } from '../../generated/apiContract';
 
 // =============================================================================
 // INTERNAL HELPERS
@@ -21,6 +22,22 @@ import {
  */
 const isValueLabelFormat = (item) =>
   item && typeof item === 'object' && 'value' in item && 'label' in item;
+
+const filterOptionsContract = getContract('filter-options');
+const filterOptionsFields = filterOptionsContract?.response_schema?.data_fields || {};
+
+const resolveField = (fieldName) => {
+  if (!filterOptionsFields[fieldName]) {
+    if (import.meta.env.MODE === 'test') {
+      throw new Error(`[API CONTRACT] Missing filter-options field: ${fieldName}`);
+    }
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.warn(`[API CONTRACT] Missing filter-options field: ${fieldName}`);
+    }
+  }
+  return fieldName;
+};
 
 /**
  * Safe wrapper for array.map() - catches errors and returns empty array
@@ -206,19 +223,30 @@ export const normalizeFilterOptions = (apiResponse) => {
   }
 
   try {
+    const saleTypesField = resolveField('saleTypes');
+    const tenuresField = resolveField('tenures');
+    const regionsField = resolveField('regions');
+    const districtsField = resolveField('districts');
+    const bedroomsField = resolveField('bedrooms');
+    const marketSegmentsField = resolveField('marketSegments');
+    const propertyAgeBucketsField = resolveField('propertyAgeBuckets');
+    const dateRangeField = resolveField('dateRange');
+    const psfRangeField = resolveField('psfRange');
+    const sizeRangeField = resolveField('sizeRange');
+
     // Prefer v2 fields (camelCase), fallback to v1 (snake_case)
-    const saleTypesRaw = apiResponse.saleTypes || apiResponse.sale_types || [];
-    const tenuresRaw = apiResponse.tenures || [];
-    const regionsRaw = apiResponse.regions || apiResponse.regions_legacy || {};
-    const districtsRaw = apiResponse.districts || [];
-    const bedroomsRaw = apiResponse.bedrooms || [];
-    const marketSegmentsRaw = apiResponse.marketSegments || regionsRaw;
-    const propertyAgeBucketsRaw = apiResponse.propertyAgeBuckets || apiResponse.property_age_buckets || [];
+    const saleTypesRaw = apiResponse[saleTypesField] || apiResponse.sale_types || [];
+    const tenuresRaw = apiResponse[tenuresField] || [];
+    const regionsRaw = apiResponse[regionsField] || apiResponse.regions_legacy || {};
+    const districtsRaw = apiResponse[districtsField] || [];
+    const bedroomsRaw = apiResponse[bedroomsField] || [];
+    const marketSegmentsRaw = apiResponse[marketSegmentsField] || regionsRaw;
+    const propertyAgeBucketsRaw = apiResponse[propertyAgeBucketsField] || apiResponse.property_age_buckets || [];
 
     // Date/PSF/Size ranges (same structure in v1 and v2)
-    const dateRange = apiResponse.dateRange || apiResponse.date_range || { min: null, max: null };
-    const psfRange = apiResponse.psfRange || apiResponse.psf_range || { min: null, max: null };
-    const sizeRange = apiResponse.sizeRange || apiResponse.size_range || { min: null, max: null };
+    const dateRange = apiResponse[dateRangeField] || apiResponse.date_range || { min: null, max: null };
+    const psfRange = apiResponse[psfRangeField] || apiResponse.psf_range || { min: null, max: null };
+    const sizeRange = apiResponse[sizeRangeField] || apiResponse.size_range || { min: null, max: null };
 
     return {
       saleTypes: normalizeSaleTypes(saleTypesRaw),

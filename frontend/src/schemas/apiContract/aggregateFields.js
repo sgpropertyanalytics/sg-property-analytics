@@ -2,48 +2,65 @@
  * Aggregate Field Helpers
  *
  * Constants and accessors for aggregate API responses.
- * Handles v1 (snake_case) and v2 (camelCase) field formats,
- * plus unified period handling.
+ * Canonical field names are sourced from generated backend contracts.
  */
+
+import { getContract } from '../../generated/apiContract';
 
 // =============================================================================
 // FIELD CONSTANTS
 // =============================================================================
+
+const aggregateContract = getContract('aggregate');
+const aggregateFields = aggregateContract?.response_schema?.data_fields || {};
+
+const resolveField = (fieldName) => {
+  if (!aggregateFields[fieldName]) {
+    if (import.meta.env.MODE === 'test') {
+      throw new Error(`[API CONTRACT] Missing aggregate field: ${fieldName}`);
+    }
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.warn(`[API CONTRACT] Missing aggregate field: ${fieldName}`);
+    }
+  }
+  return fieldName;
+};
 
 /**
  * Aggregate field names in API v2 responses.
  */
 export const AggField = {
   // Time dimension fields (unified v2)
-  PERIOD: 'period',               // Unified time bucket (canonical)
-  PERIOD_GRAIN: 'periodGrain',    // Time granularity: 'year', 'quarter', 'month'
+  PERIOD: resolveField('period'),               // Unified time bucket (canonical)
+  PERIOD_GRAIN: resolveField('periodGrain'),    // Time granularity: 'year', 'quarter', 'month'
   // Legacy time fields (v1 compatibility)
-  MONTH: 'month',
-  QUARTER: 'quarter',
-  YEAR: 'year',
+  MONTH: resolveField('month'),
+  QUARTER: resolveField('quarter'),
+  YEAR: resolveField('year'),
   // Dimension fields
-  DISTRICT: 'district',
-  BEDROOM_COUNT: 'bedroomCount',  // v1: bedroom
-  SALE_TYPE: 'saleType',          // v1: sale_type
-  PROJECT: 'project',
-  REGION: 'region',
-  FLOOR_LEVEL: 'floorLevel',      // v1: floor_level
+  DISTRICT: resolveField('district'),
+  BEDROOM_COUNT: resolveField('bedroomCount'),  // v1: bedroom
+  SALE_TYPE: resolveField('saleType'),          // v1: sale_type
+  PROJECT: resolveField('project'),
+  REGION: resolveField('region'),
+  FLOOR_LEVEL: resolveField('floorLevel'),      // v1: floor_level
   // Metric fields
-  COUNT: 'count',
-  AVG_PSF: 'avgPsf',              // v1: avg_psf
-  MEDIAN_PSF: 'medianPsf',        // v1: median_psf
-  TOTAL_VALUE: 'totalValue',      // v1: total_value
-  AVG_PRICE: 'avgPrice',          // v1: avg_price
-  MEDIAN_PRICE: 'medianPrice',    // v1: median_price
+  COUNT: resolveField('count'),
+  AVG_PSF: resolveField('avgPsf'),              // v1: avg_psf
+  MEDIAN_PSF: resolveField('medianPsf'),        // v1: median_psf
+  TOTAL_VALUE: resolveField('totalValue'),      // v1: total_value
+  AVG_PRICE: resolveField('avgPrice'),          // v1: avg_price
+  MEDIAN_PRICE: resolveField('medianPrice'),    // v1: median_price
   // Project inventory fields (group_by=project only)
-  TOTAL_UNITS: 'totalUnits',      // v1: total_units
-  TOTAL_UNITS_SOURCE: 'totalUnitsSource',    // v1: total_units_source
-  TOTAL_UNITS_CONFIDENCE: 'totalUnitsConfidence', // v1: total_units_confidence
-  TOP_YEAR: 'topYear',            // v1: top_year - TOP year for age calculation
+  TOTAL_UNITS: resolveField('totalUnits'),      // v1: total_units
+  TOTAL_UNITS_SOURCE: resolveField('totalUnitsSource'),    // v1: total_units_source
+  TOTAL_UNITS_CONFIDENCE: resolveField('totalUnitsConfidence'), // v1: total_units_confidence
+  TOP_YEAR: resolveField('topYear'),            // v1: top_year - TOP year for age calculation
   // Lease info and age band (group_by=project only)
-  LEASE_START_YEAR: 'leaseStartYear',       // v1: lease_start_year
-  PROPERTY_AGE_YEARS: 'propertyAgeYears',   // v1: property_age_years
-  AGE_BAND: 'ageBand',                      // v1: age_band - canonical age band from backend
+  LEASE_START_YEAR: resolveField('leaseStartYear'),       // v1: lease_start_year
+  PROPERTY_AGE_YEARS: resolveField('propertyAgeYears'),   // v1: property_age_years
+  AGE_BAND: resolveField('ageBand'),                      // v1: age_band - canonical age band from backend
 };
 
 // =============================================================================

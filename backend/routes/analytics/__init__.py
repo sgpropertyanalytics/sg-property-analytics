@@ -8,7 +8,6 @@ This package organizes the analytics endpoints into logical domains:
 - kpi.py: KPI summary endpoint
 - admin.py: Health, debug, admin endpoints
 - deprecated.py: Deprecated 410 endpoints
-- precomputed.py: Precomputed stats endpoints (legacy)
 - trends.py: Trend endpoints (candidates for /aggregate consolidation)
 - charts.py: Specialized chart data endpoints
 - transactions.py: Transaction list and growth endpoints
@@ -44,7 +43,6 @@ from routes.analytics import kpi
 from routes.analytics import kpi_v2
 from routes.analytics import admin
 from routes.analytics import deprecated
-from routes.analytics import precomputed
 from routes.analytics import trends
 from routes.analytics import charts
 from routes.analytics import transactions

@@ -9,10 +9,11 @@ Endpoints:
 """
 
 import time
-from flask import request, jsonify
+from datetime import timedelta
+from flask import jsonify, g
 from routes.analytics import analytics_bp
 from utils.normalize import (
-    to_int, to_date, clamp_date_to_today,
+    clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
@@ -57,20 +58,26 @@ def get_transaction_price_growth():
     from services.price_growth_service import get_transaction_price_growth as compute_growth
 
     try:
-        # Parse filter params using normalize utilities
-        project_name = request.args.get('project')
-        bedroom_count = to_int(request.args.get('bedroom'), field='bedroom')
-        floor_level = request.args.get('floor_level')
-        district = request.args.get('district')
-        sale_type = request.args.get('sale_type')
+        params = getattr(g, "normalized_params", {}) or {}
 
-        # Parse date params (must be Python date objects for SQL guardrails)
-        date_from = to_date(request.args.get('date_from'), field='date_from')
-        date_to = clamp_date_to_today(to_date(request.args.get('date_to'), field='date_to'))
+        project_name = params.get("project")
+        bedroom_count = params.get("bedroom")
+        floor_level = params.get("floor_level")
+        sale_type = params.get("sale_type")
 
-        # Parse pagination params
-        page = to_int(request.args.get('page'), default=1, field='page')
-        per_page = to_int(request.args.get('per_page'), default=50, field='per_page')
+        district = params.get("district")
+        if district is None:
+            districts = params.get("districts") or []
+            district = districts[0] if districts else None
+
+        date_from = params.get("date_from")
+        date_to = None
+        date_to_exclusive = params.get("date_to_exclusive")
+        if date_to_exclusive:
+            date_to = clamp_date_to_today(date_to_exclusive - timedelta(days=1))
+
+        page = params.get("page", 1)
+        per_page = params.get("per_page", 50)
 
     except NormalizeValidationError as e:
         return validation_error_response(e)
@@ -78,7 +85,7 @@ def get_transaction_price_growth():
     try:
 
         # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
-        schema_version = request.args.get('schema', 'v2').lower()
+        schema_version = (params.get("schema") or "v2").lower()
         strict_v2 = schema_version != 'v1'
 
         # Compute price growth
@@ -138,13 +145,18 @@ def get_price_growth_segments():
     from services.price_growth_service import get_segment_summary
 
     try:
-        # Parse filter params
-        project_name = request.args.get('project')
-        district = request.args.get('district')
-        sale_type = request.args.get('sale_type')
+        params = getattr(g, "normalized_params", {}) or {}
+
+        project_name = params.get("project")
+        sale_type = params.get("sale_type")
+
+        district = params.get("district")
+        if district is None:
+            districts = params.get("districts") or []
+            district = districts[0] if districts else None
 
         # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
-        schema_version = request.args.get('schema', 'v2').lower()
+        schema_version = (params.get("schema") or "v2").lower()
         strict_v2 = schema_version != 'v1'
 
         # Get segment summary

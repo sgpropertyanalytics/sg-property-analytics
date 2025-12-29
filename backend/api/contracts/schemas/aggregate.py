@@ -151,8 +151,8 @@ AGGREGATE_PARAM_SCHEMA = ParamSchema(
         "schema": FieldSpec(
             name="schema",
             type=str,
-            default="v1",
-            allowed_values=["v1", "v2"],
+            default="v2",
+            allowed_values=["v2"],
             description="Response schema version (v2 = camelCase only)"
         ),
     },

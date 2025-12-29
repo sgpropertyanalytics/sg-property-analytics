@@ -3,6 +3,12 @@ import { useAbortableQuery } from '../../hooks';
 import { getBudgetHeatmap } from '../../api/client';
 import { getBedroomLabelShort } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
+import {
+  BudgetHeatmapField,
+  BudgetHeatmapRowField,
+  getBudgetHeatmapField,
+  getBudgetHeatmapRowField,
+} from '../../schemas/apiContract';
 import { ChartSkeleton } from '../common/ChartSkeleton';
 
 // Time window presets: label → months
@@ -114,8 +120,10 @@ export function BudgetActivityHeatmap({
   );
 
   // Age bands and bedroom types from response
-  const ageBands = data?.age_bands || [];
-  const bedroomTypes = data?.bedroom_types || [1, 2, 3, 4, 5];
+  const ageBands = getBudgetHeatmapField(data, BudgetHeatmapField.AGE_BANDS) || [];
+  const bedroomTypes = getBudgetHeatmapField(data, BudgetHeatmapField.BEDROOM_TYPES) || [1, 2, 3, 4, 5];
+  const totalCount = getBudgetHeatmapField(data, BudgetHeatmapField.TOTAL_COUNT) || 0;
+  const matrix = getBudgetHeatmapField(data, BudgetHeatmapField.MATRIX) || {};
 
   // Loading state
   if (loading) {
@@ -132,7 +140,7 @@ export function BudgetActivityHeatmap({
   }
 
   // No data or empty state
-  if (!data || data.total_count === 0) {
+  if (!data || totalCount === 0) {
     return (
       <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-6">
         <h4 className="font-semibold text-[#213448] mb-2">
@@ -215,9 +223,9 @@ export function BudgetActivityHeatmap({
           </thead>
           <tbody>
             {ageBands.map((band) => {
-              const rowData = data.matrix[band.key] || {};
-              const rowTotal = rowData.row_total || 0;
-              const isLowSample = rowData.low_sample;
+              const rowData = matrix[band.key] || {};
+              const rowTotal = getBudgetHeatmapRowField(rowData, BudgetHeatmapRowField.ROW_TOTAL) || 0;
+              const isLowSample = getBudgetHeatmapRowField(rowData, BudgetHeatmapRowField.LOW_SAMPLE);
 
               return (
                 <tr
