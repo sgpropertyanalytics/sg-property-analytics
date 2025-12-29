@@ -199,7 +199,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           </div>
 
           {/* Divider */}
-          <div className="w-px h-8 bg-[#94B4C1]/40" />
+          <div className="w-px h-10 bg-[#94B4C1]/40" />
 
           {/* District Dropdown */}
           <MultiSelectDropdown
@@ -219,7 +219,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           />
 
           {/* Divider */}
-          <div className="w-px h-8 bg-[#94B4C1]/40" />
+          <div className="w-px h-10 bg-[#94B4C1]/40" />
 
           {/* Bedroom Pills - implicit label via button content */}
           <div className="flex gap-1">
@@ -243,7 +243,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           </div>
 
           {/* Divider */}
-          <div className="w-px h-8 bg-[#94B4C1]/40" />
+          <div className="w-px h-10 bg-[#94B4C1]/40" />
 
           {/* Period Preset Buttons - implicit label via button content */}
           <div className="flex gap-1">
@@ -267,7 +267,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           </div>
 
           {/* Divider */}
-          <div className="w-px h-8 bg-[#94B4C1]/40" />
+          <div className="w-px h-10 bg-[#94B4C1]/40" />
 
           {/* Time Granularity Toggle - Group by Year/Quarter/Month */}
           <TimeGranularityToggle layout="horizontal" />
@@ -923,9 +923,9 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
-        className={`${compact ? 'min-w-[140px]' : 'w-full'} px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500`}
+        className={`${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500`}
       >
-        <span className={selected.length > 0 ? 'text-slate-800 truncate' : 'text-slate-500'}>
+        <span className={`${selected.length > 0 ? 'text-slate-800' : 'text-slate-500'} truncate min-w-0 flex-shrink`}>
           {getDisplayText()}
         </span>
         <svg
