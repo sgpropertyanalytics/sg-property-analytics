@@ -19,14 +19,14 @@ export function FilterBar() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   return (
-    <div className="mb-6">
-      {/* Desktop: Horizontal sticky bar */}
-      <div className="hidden md:block">
+    <>
+      {/* Desktop: Horizontal sticky bar - sticky applied at wrapper level */}
+      <div className="hidden md:block sticky top-0 z-30 mb-6">
         <PowerBIFilterSidebar layout="horizontal" />
       </div>
 
       {/* Mobile: Filter button + drawer */}
-      <div className="md:hidden">
+      <div className="md:hidden mb-6">
         <div className="p-3 bg-card/60 rounded-lg backdrop-blur-sm">
           <button
             onClick={() => setMobileFilterOpen(true)}
@@ -60,7 +60,7 @@ export function FilterBar() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
