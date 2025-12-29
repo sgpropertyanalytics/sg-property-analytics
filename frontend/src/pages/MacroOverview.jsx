@@ -17,6 +17,7 @@ import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group } from '../com
 import { useChartHeight, MOBILE_CAPS, useAbortableQuery } from '../hooks';
 // Horizontal filter bar (refactored from sidebar)
 import { PowerBIFilterSidebar } from '../components/powerbi/PowerBIFilterSidebar';
+import { TimeGranularityToggle } from '../components/powerbi/TimeGranularityToggle';
 
 // Lazy-loaded below-fold charts (reduces initial bundle by ~150KB)
 // These charts are not immediately visible and can load on demand
@@ -200,6 +201,10 @@ export function MacroOverviewContent() {
                   </span>
                 </p>
               )}
+            </div>
+            {/* Time Granularity Toggle - controls chart time aggregation */}
+            <div className="flex-shrink-0">
+              <TimeGranularityToggle />
             </div>
           </div>
 
