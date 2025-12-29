@@ -225,7 +225,7 @@ export default function DistrictLiquidityMap({
                   {mapMode === 'volume' && (
                     <motion.div
                       layoutId="map-toggle-pill"
-                      className="absolute inset-0 bg-[#547792] rounded-full -z-10"
+                      className="absolute inset-0 bg-[#213448] rounded-full -z-10"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />
                   )}
@@ -242,7 +242,7 @@ export default function DistrictLiquidityMap({
                   {mapMode === 'price' && (
                     <motion.div
                       layoutId="map-toggle-pill"
-                      className="absolute inset-0 bg-emerald-600 rounded-full -z-10"
+                      className="absolute inset-0 bg-[#8B7355] rounded-full -z-10"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />
                   )}
