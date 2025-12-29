@@ -22,11 +22,11 @@ from services.kpi.resale_velocity import (
     build_params,
     get_sql,
     map_result,
-    LOOKBACK_DAYS,
     MIN_UNITS_THRESHOLD,
     SPEC,
 )
 from services.kpi.base import validate_sql_params, KPIResult
+from unittest.mock import patch
 
 
 # =============================================================================
@@ -40,18 +40,19 @@ class TestBuildParams:
         """Should use comparison bounds for current vs prior period."""
         params = build_params({'max_date': date(2024, 6, 15)})
 
-        assert 'min_date' in params
+        assert 'current_min_date' in params
         assert 'max_date_exclusive' in params
         assert 'prev_min_date' in params
         assert 'prev_max_date_exclusive' in params
 
-    def test_lookback_is_90_days(self):
-        """Default lookback should be 90 days."""
-        assert LOOKBACK_DAYS == 90
+    def test_uses_month_boundaries(self):
+        """Should use complete month boundaries, not day-based lookback."""
+        # June 15 means max_exclusive = June 1 (excludes incomplete June)
+        # Current period: Mar 1 - Jun 1 (3 complete months: Mar, Apr, May)
+        params = build_params({'max_date': date(2024, 6, 15)})
 
-        params = build_params({'max_date': date(2024, 6, 30)})
-        expected_min = date(2024, 4, 1)  # 90 days before June 30
-        assert params['min_date'] == expected_min
+        assert params['max_date_exclusive'] == date(2024, 6, 1)
+        assert params['current_min_date'] == date(2024, 3, 1)
 
 
 class TestGetSql:
@@ -66,11 +67,12 @@ class TestGetSql:
         validate_sql_params(sql, params)
 
     def test_sql_filters_resale_only(self):
-        """SQL should filter for Resale transactions only."""
+        """SQL should filter for Resale transactions only using parameter."""
         params = build_params({})
         sql = get_sql(params)
 
-        assert "sale_type = 'Resale'" in sql
+        # Uses parameterized query instead of hardcoded string
+        assert "sale_type = :sale_type_resale" in sql
 
     def test_sql_uses_outlier_filter(self):
         """SQL should use the standard outlier filter."""
@@ -95,25 +97,31 @@ class TestMapResult:
         row.prior_txns = prior_txns
         return row
 
-    def test_velocity_calculation(self):
-        """Velocity = (current_txns / total_units) * 100."""
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_velocity_calculation(self, mock_units):
+        """Velocity = (current_txns / total_units) * 100 * 4 (annualized)."""
+        mock_units.return_value = (10000, 50)
         row = self.make_row(current_txns=100, prior_txns=80)
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        result = map_result(row, {})
 
-        # 100 / 10000 * 100 = 1.0%
-        assert result.value == 1.0
+        # 100 / 10000 * 100 = 1.0% quarterly * 4 = 4.0% annualized
+        assert result.value == 4.0
 
-    def test_zero_units_returns_empty(self):
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_zero_units_returns_empty(self, mock_units):
         """Zero total units should return empty state."""
+        mock_units.return_value = (0, 0)
         row = self.make_row(current_txns=100, prior_txns=80)
-        result = map_result(row, {}, total_units=0, projects_counted=0)
+        result = map_result(row, {})
 
         assert result.formatted_value == "—"
         assert result.insight == "Insufficient data"
 
-    def test_no_row_returns_empty(self):
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_no_row_returns_empty(self, mock_units):
         """No row data should return empty state."""
-        result = map_result(None, {}, total_units=10000, projects_counted=50)
+        mock_units.return_value = (10000, 50)
+        result = map_result(None, {})
 
         assert result.formatted_value == "—"
 
@@ -131,41 +139,49 @@ class TestInterpretation:
         row.prior_txns = prior_txns
         return row
 
-    def test_hot_market(self):
-        """Annualized >= 4% should be 'Hot'."""
-        # 1% 90D velocity = 4% annualized
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_very_active_market(self, mock_units):
+        """Annualized 4-6% should be 'Very Active'."""
+        mock_units.return_value = (10000, 50)
+        # 1% quarterly velocity = 4% annualized
         row = self.make_row(current_txns=100)
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        result = map_result(row, {})
 
         # 100/10000 * 100 = 1% * 4 = 4% annualized
-        assert result.trend['label'] == 'Hot'
+        assert result.trend['label'] == 'Very Active'
         assert result.trend['direction'] == 'up'
 
-    def test_healthy_market(self):
-        """Annualized 2-4% should be 'Healthy'."""
-        # 0.6% 90D velocity = 2.4% annualized
-        row = self.make_row(current_txns=60)
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_healthy_market(self, mock_units):
+        """Annualized 2-3% should be 'Healthy'."""
+        mock_units.return_value = (10000, 50)
+        # 0.625% quarterly velocity = 2.5% annualized
+        row = self.make_row(current_txns=62)
+        result = map_result(row, {})
 
-        # 60/10000 * 100 = 0.6% * 4 = 2.4% annualized
+        # 62/10000 * 100 = 0.62% * 4 = 2.48% annualized
         assert result.trend['label'] == 'Healthy'
         assert result.trend['direction'] == 'neutral'
 
-    def test_slow_market(self):
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_slow_market(self, mock_units):
         """Annualized 1-2% should be 'Slow'."""
-        # 0.3% 90D velocity = 1.2% annualized
-        row = self.make_row(current_txns=30)
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        mock_units.return_value = (10000, 50)
+        # 0.375% quarterly velocity = 1.5% annualized
+        row = self.make_row(current_txns=37)
+        result = map_result(row, {})
 
-        # 30/10000 * 100 = 0.3% * 4 = 1.2% annualized
+        # 37/10000 * 100 = 0.37% * 4 = 1.48% annualized
         assert result.trend['label'] == 'Slow'
-        assert result.trend['direction'] == 'neutral'
+        assert result.trend['direction'] == 'down'
 
-    def test_illiquid_market(self):
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_illiquid_market(self, mock_units):
         """Annualized < 1% should be 'Illiquid'."""
-        # 0.2% 90D velocity = 0.8% annualized
+        mock_units.return_value = (10000, 50)
+        # 0.2% quarterly velocity = 0.8% annualized
         row = self.make_row(current_txns=20)
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        result = map_result(row, {})
 
         # 20/10000 * 100 = 0.2% * 4 = 0.8% annualized
         assert result.trend['label'] == 'Illiquid'
@@ -185,24 +201,30 @@ class TestConfidence:
         row.prior_txns = prior_txns
         return row
 
-    def test_high_confidence(self):
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_high_confidence(self, mock_units):
         """>=20 transactions should be high confidence."""
+        mock_units.return_value = (10000, 50)
         row = self.make_row(current_txns=25)
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        result = map_result(row, {})
 
         assert result.meta['confidence'] == 'high'
 
-    def test_medium_confidence(self):
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_medium_confidence(self, mock_units):
         """10-19 transactions should be medium confidence."""
+        mock_units.return_value = (10000, 50)
         row = self.make_row(current_txns=15)
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        result = map_result(row, {})
 
         assert result.meta['confidence'] == 'medium'
 
-    def test_low_confidence(self):
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_low_confidence(self, mock_units):
         """<10 transactions should be low confidence."""
+        mock_units.return_value = (10000, 50)
         row = self.make_row(current_txns=5)
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        result = map_result(row, {})
 
         assert result.meta['confidence'] == 'low'
 
@@ -220,29 +242,35 @@ class TestTrend:
         row.prior_txns = prior_txns
         return row
 
-    def test_positive_trend(self):
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_positive_trend(self, mock_units):
         """Current > prior should show positive change."""
+        mock_units.return_value = (10000, 50)
         row = self.make_row(current_txns=120, prior_txns=100)
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        result = map_result(row, {})
 
         # Both periods: same total_units
         # Current: 1.2%, Prior: 1.0%
         # Change: (1.2 - 1.0) / 1.0 * 100 = 20%
         assert result.trend['value'] == 20.0
 
-    def test_negative_trend(self):
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_negative_trend(self, mock_units):
         """Current < prior should show negative change."""
+        mock_units.return_value = (10000, 50)
         row = self.make_row(current_txns=80, prior_txns=100)
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        result = map_result(row, {})
 
         # Current: 0.8%, Prior: 1.0%
         # Change: (0.8 - 1.0) / 1.0 * 100 = -20%
         assert result.trend['value'] == -20.0
 
-    def test_no_prior_data_zero_change(self):
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_no_prior_data_zero_change(self, mock_units):
         """No prior transactions should show 0% change."""
+        mock_units.return_value = (10000, 50)
         row = self.make_row(current_txns=100, prior_txns=0)
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        result = map_result(row, {})
 
         assert result.trend['value'] == 0
 
@@ -254,33 +282,37 @@ class TestTrend:
 class TestMetaData:
     """Test metadata in result."""
 
-    def test_meta_contains_required_fields(self):
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_meta_contains_required_fields(self, mock_units):
         """Result meta should contain all required fields."""
+        mock_units.return_value = (10000, 50)
         row = MagicMock()
         row.current_txns = 100
         row.prior_txns = 80
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        result = map_result(row, {})
 
         required_fields = [
             'current_txns',
             'prior_txns',
             'total_units',
             'projects_counted',
-            'annualized_velocity',
+            'current_annualized',
             'confidence',
-            'window',
         ]
         for field in required_fields:
             assert field in result.meta, f"Missing meta field: {field}"
 
-    def test_window_is_90d(self):
-        """Window should always be '90D'."""
+    @patch('services.kpi.resale_velocity.get_total_units_for_scope')
+    def test_meta_has_quarterly_velocity(self, mock_units):
+        """Meta should include quarterly velocity for reference."""
+        mock_units.return_value = (10000, 50)
         row = MagicMock()
         row.current_txns = 100
         row.prior_txns = 80
-        result = map_result(row, {}, total_units=10000, projects_counted=50)
+        result = map_result(row, {})
 
-        assert result.meta['window'] == '90D'
+        assert 'quarterly_velocity' in result.meta
+        assert result.meta['quarterly_velocity'] == 1.0  # 100/10000 * 100
 
 
 # =============================================================================

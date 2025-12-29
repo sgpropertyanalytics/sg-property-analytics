@@ -123,11 +123,12 @@ def get_total_units_for_scope(filters: Dict[str, Any]) -> Tuple[int, int]:
         base_filter += " AND " + " AND ".join(filter_parts)
 
     # Get distinct projects with resale transactions in scope
+    filter_params['sale_type_resale'] = SALE_TYPE_RESALE
     projects_result = db.session.execute(text(f"""
         SELECT DISTINCT UPPER(project_name) as project_name
         FROM transactions
         WHERE {base_filter}
-          AND sale_type = 'Resale'
+          AND sale_type = :sale_type_resale
     """), filter_params).fetchall()
 
     project_names = [r[0] for r in projects_result]

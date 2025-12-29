@@ -5,8 +5,9 @@ Wraps canonical classifiers from the codebase.
 NEVER duplicates logic - always calls existing modules.
 
 Usage:
+    from constants import SALE_TYPE_RESALE
     registry = get_rule_registry()
-    bedroom = registry.apply('bedroom', area_sqft=800, sale_type='Resale', transaction_date=date.today())
+    bedroom = registry.apply('bedroom', area_sqft=800, sale_type=SALE_TYPE_RESALE, transaction_date=date.today())
     rules_version = registry.get_version()
 """
 import hashlib
@@ -253,8 +254,9 @@ def get_rule_registry() -> RuleRegistry:
     Get the singleton rule registry instance.
 
     Usage:
+        from constants import SALE_TYPE_RESALE
         registry = get_rule_registry()
-        bedroom = registry.apply('bedroom', area_sqft=800, sale_type='Resale', transaction_date=date.today())
+        bedroom = registry.apply('bedroom', area_sqft=800, sale_type=SALE_TYPE_RESALE, transaction_date=date.today())
     """
     global _registry
     if _registry is None:

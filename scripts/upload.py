@@ -645,7 +645,7 @@ def get_db_columns() -> Set[str]:
 
 def find_sample_csv(rawdata_path: str) -> Optional[str]:
     """Find a sample CSV file from rawdata folder."""
-    for folder in ['New Sale', 'Resale']:
+    for folder in ['New Sale', 'Resale', 'Subsale']:
         folder_path = os.path.join(rawdata_path, folder)
         if os.path.exists(folder_path):
             for f in os.listdir(folder_path):
@@ -2186,15 +2186,16 @@ def print_plan_report(report: Dict[str, Any], logger: 'UploadLogger'):
 # MAIN ENTRY POINT
 # =============================================================================
 
-def discover_csv_files(csv_folder: str) -> Tuple[List[str], List[str]]:
+def discover_csv_files(csv_folder: str) -> Tuple[List[str], List[str], List[str]]:
     """
     Discover CSV files BEFORE any database operations.
 
     Returns:
-        Tuple of (new_sale_files, resale_files)
+        Tuple of (new_sale_files, resale_files, subsale_files)
     """
     new_sale_files = []
     resale_files = []
+    subsale_files = []
 
     new_sale_folder = os.path.join(csv_folder, 'New Sale')
     if os.path.exists(new_sale_folder):
@@ -2212,7 +2213,15 @@ def discover_csv_files(csv_folder: str) -> Tuple[List[str], List[str]]:
             if f.endswith('.csv')
         ]
 
-    return new_sale_files, resale_files
+    subsale_folder = os.path.join(csv_folder, 'Subsale')
+    if os.path.exists(subsale_folder):
+        subsale_files = [
+            os.path.join(subsale_folder, f)
+            for f in sorted(os.listdir(subsale_folder))
+            if f.endswith('.csv')
+        ]
+
+    return new_sale_files, resale_files, subsale_files
 
 
 def safe_release_advisory_lock():
@@ -2314,21 +2323,22 @@ def main():
     # Discover CSV files BEFORE touching the database
     # This prevents "no files found" errors after DB work has started
     if not args.check and not args.publish and not args.rollback:
-        new_sale_files, resale_files = discover_csv_files(csv_folder)
-        total_csv_files = len(new_sale_files) + len(resale_files)
+        new_sale_files, resale_files, subsale_files = discover_csv_files(csv_folder)
+        total_csv_files = len(new_sale_files) + len(resale_files) + len(subsale_files)
 
         if total_csv_files == 0 and not args.dry_run:
             print(f"\n❌ No CSV files found in {csv_folder}")
-            print(f"   Expected: rawdata/New Sale/*.csv and/or rawdata/Resale/*.csv")
+            print(f"   Expected: rawdata/New Sale/*.csv, rawdata/Resale/*.csv, and/or rawdata/Subsale/*.csv")
             sys.exit(1)
 
         print(f"\n📂 Found {total_csv_files} CSV files")
         print(f"   New Sale: {len(new_sale_files)} files")
         print(f"   Resale: {len(resale_files)} files")
+        print(f"   Subsale: {len(subsale_files)} files")
 
         # Step A: Contract-based header check (before loading)
         if USE_CONTRACT_HEADERS and CONTRACT_AVAILABLE:
-            all_csv_files = new_sale_files + resale_files
+            all_csv_files = new_sale_files + resale_files + subsale_files
             contract_valid, contract_report = run_contract_preflight(all_csv_files, logger)
             # Step A: Report only, don't block (no behavior change)
             # Future steps will use contract_report for batch tracking
@@ -2352,13 +2362,14 @@ def main():
             from models.transaction import Transaction
             existing_count = db.session.query(Transaction).count()
 
-            new_sale_files, resale_files = discover_csv_files(csv_folder)
+            new_sale_files, resale_files, subsale_files = discover_csv_files(csv_folder)
 
             print(f"\n📂 DRY RUN - No changes will be made")
             print(f"   Current production rows: {existing_count:,}")
             print(f"   New Sale CSV files: {len(new_sale_files)}")
             print(f"   Resale CSV files: {len(resale_files)}")
-            print(f"   Total CSV files: {len(new_sale_files) + len(resale_files)}")
+            print(f"   Subsale CSV files: {len(subsale_files)}")
+            print(f"   Total CSV files: {len(new_sale_files) + len(resale_files) + len(subsale_files)}")
         sys.exit(0)
 
     # === MAIN UPLOAD FLOW (requires advisory lock) ===
@@ -2482,6 +2493,14 @@ def main():
                 logger.log("Processing Resale data...")
                 for csv_path in resale_files:
                     saved = insert_to_staging(csv_path, 'Resale', logger, batch_id=current_batch_id)
+                    total_saved += saved
+                    gc.collect()
+
+            # Process Subsale CSVs
+            if subsale_files:
+                logger.log("Processing Subsale data...")
+                for csv_path in subsale_files:
+                    saved = insert_to_staging(csv_path, 'Sub Sale', logger, batch_id=current_batch_id)
                     total_saved += saved
                     gc.collect()
 
