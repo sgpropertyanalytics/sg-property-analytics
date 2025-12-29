@@ -19,6 +19,7 @@ Usage:
     python -m scripts.upload --rollback         # Rollback to previous version
     python -m scripts.upload --check            # Schema parity check only
     python -m scripts.upload --dry-run          # Preview without changes
+    python -m scripts.upload --plan             # Load to staging, show diff, don't promote
 
 CRITICAL: This script preserves ALL CSV columns end-to-end.
 """
@@ -47,6 +48,88 @@ from models.transaction import Transaction
 from services.data_loader import clean_csv_data, parse_date_flexible
 from services.data_computation import recompute_all_stats
 import pandas as pd
+
+# Contract-based header resolution (Step A of incremental migration)
+try:
+    from contracts import (
+        load_transaction_schema,
+        get_schema_version,
+        get_contract_hash,
+        check_contract_compatibility,
+        compute_header_fingerprint,
+        get_natural_key_fields,
+    )
+    CONTRACT_AVAILABLE = True
+except ImportError:
+    CONTRACT_AVAILABLE = False
+
+# RunContext for batch tracking (Step B of incremental migration)
+try:
+    from services.etl.run_context import RunContext, create_run_context
+    from services.etl.rule_registry import get_rule_registry
+    from services.etl.fingerprint import compute_file_sha256, compute_row_hash
+    RUN_CONTEXT_AVAILABLE = True
+except ImportError:
+    RUN_CONTEXT_AVAILABLE = False
+
+# Row hash computation (Step C of incremental migration)
+# Natural key fields for deduplication
+NATURAL_KEY_FIELDS = ['project_name', 'transaction_month', 'price', 'area_sqft', 'floor_range']
+
+
+def compute_transaction_row_hash(row: dict) -> str:
+    """
+    Compute row_hash for a transaction record using natural key fields.
+
+    Step C: Just compute and store, don't enforce uniqueness yet.
+
+    The natural key is: project_name, transaction_month, price, area_sqft, floor_range
+    where transaction_month is the first day of the transaction month.
+    """
+    if not USE_ROW_HASH or not RUN_CONTEXT_AVAILABLE:
+        return None
+
+    # Build the natural key dict
+    natural_key = {}
+
+    # project_name
+    natural_key['project_name'] = row.get('project_name', '')
+
+    # transaction_month: first day of the month
+    transaction_date = row.get('transaction_date')
+    if transaction_date:
+        if hasattr(transaction_date, 'replace'):
+            # datetime or date object
+            natural_key['transaction_month'] = transaction_date.replace(day=1)
+        else:
+            natural_key['transaction_month'] = None
+    else:
+        natural_key['transaction_month'] = None
+
+    # price and area_sqft
+    natural_key['price'] = row.get('price', 0)
+    natural_key['area_sqft'] = row.get('area_sqft', 0)
+
+    # floor_range
+    natural_key['floor_range'] = row.get('floor_range', '')
+
+    try:
+        return compute_row_hash(natural_key, NATURAL_KEY_FIELDS)
+    except Exception:
+        return None
+
+# =============================================================================
+# FEATURE FLAGS (for incremental migration)
+# =============================================================================
+# Set to True to enable each feature. Once stable, remove flags.
+
+USE_CONTRACT_HEADERS = True           # Step A: Contract-based header resolution
+USE_BATCH_TRACKING = True             # Step B: etl_batches table
+USE_ROW_HASH = True                   # Step C: Compute row_hash
+USE_BATCH_SCOPED_STAGING = True       # Step D: Append-only staging
+USE_IDEMPOTENT_PROMOTION = True       # Step E: ON CONFLICT DO NOTHING
+USE_PLAN_MODE = True                  # Step F: --plan flag
+USE_PSF_RECONCILIATION = True         # Step G: PSF source/calc/reconcile
 
 
 def preflight_db_check(app) -> bool:
@@ -181,6 +264,312 @@ VALIDATION_CONFIG = {
     'psf_range': (100, 20_000),  # $100 - $20K PSF
     'area_range': (100, 50_000),  # 100 - 50,000 sqft
 }
+
+
+# =============================================================================
+# CONTRACT-BASED HEADER RESOLUTION (Step A)
+# =============================================================================
+
+def check_csv_headers_against_contract(csv_path: str, logger: 'UploadLogger' = None) -> Dict[str, Any]:
+    """
+    Check CSV headers against schema contract before loading.
+
+    This is a non-blocking check that reports:
+    - Missing required columns (will fail later if critical)
+    - Missing optional columns (info only)
+    - Unknown columns (stored in raw_extras)
+    - Aliases used (info only)
+
+    Args:
+        csv_path: Path to CSV file
+        logger: Optional logger for output
+
+    Returns:
+        Contract compatibility report dict
+    """
+    if not CONTRACT_AVAILABLE or not USE_CONTRACT_HEADERS:
+        return {'skipped': True, 'reason': 'Contract not available or disabled'}
+
+    try:
+        # Read only the header row
+        df_header = pd.read_csv(csv_path, nrows=0)
+        csv_headers = list(df_header.columns)
+
+        # Check against contract
+        report = check_contract_compatibility(csv_headers)
+        header_fp = compute_header_fingerprint(csv_headers)
+
+        report['header_fingerprint'] = header_fp
+        report['schema_version'] = get_schema_version()
+        report['contract_hash'] = get_contract_hash()
+
+        # Log results
+        if logger:
+            if report['missing_required']:
+                logger.log(f"  ⚠️  Missing required columns: {report['missing_required']}")
+            if report['aliases_used']:
+                logger.log(f"  ℹ️  Aliases used: {report['aliases_used']}")
+            if report['unknown_headers']:
+                logger.log(f"  ℹ️  Unknown columns (will store in raw_extras): {report['unknown_headers'][:5]}")
+                if len(report['unknown_headers']) > 5:
+                    logger.log(f"      ... and {len(report['unknown_headers']) - 5} more")
+            if report['is_valid']:
+                logger.log(f"  ✓ Contract check passed (schema v{report['schema_version']})")
+
+        return report
+
+    except Exception as e:
+        if logger:
+            logger.log(f"  ⚠️  Contract check failed: {e}")
+        return {'skipped': True, 'error': str(e)}
+
+
+def run_contract_preflight(csv_files: List[str], logger: 'UploadLogger') -> Tuple[bool, Dict[str, Any]]:
+    """
+    Run contract compatibility check on all CSV files before loading.
+
+    This is Step A of the incremental migration: check headers without
+    changing the actual loading behavior.
+
+    Args:
+        csv_files: List of CSV file paths
+        logger: Logger instance
+
+    Returns:
+        (all_valid, combined_report)
+    """
+    if not CONTRACT_AVAILABLE or not USE_CONTRACT_HEADERS:
+        logger.log("Contract-based header check: SKIPPED (not available or disabled)")
+        return True, {}
+
+    logger.log("Running contract-based header check...")
+    logger.log(f"  Schema version: {get_schema_version()}")
+    logger.log(f"  Contract hash: {get_contract_hash()}")
+
+    all_valid = True
+    combined_report = {
+        'schema_version': get_schema_version(),
+        'contract_hash': get_contract_hash(),
+        'files': {},
+        'all_missing_required': set(),
+        'all_unknown_headers': set(),
+        'all_aliases_used': {},
+    }
+
+    for csv_path in csv_files:
+        filename = os.path.basename(csv_path)
+        logger.log(f"  Checking: {filename}")
+        report = check_csv_headers_against_contract(csv_path, logger)
+
+        combined_report['files'][filename] = report
+
+        if not report.get('skipped'):
+            if report.get('missing_required'):
+                combined_report['all_missing_required'].update(report['missing_required'])
+            if report.get('unknown_headers'):
+                combined_report['all_unknown_headers'].update(report['unknown_headers'])
+            if report.get('aliases_used'):
+                combined_report['all_aliases_used'].update(report['aliases_used'])
+            if not report.get('is_valid', True):
+                all_valid = False
+
+    # Convert sets to lists for JSON serialization
+    combined_report['all_missing_required'] = list(combined_report['all_missing_required'])
+    combined_report['all_unknown_headers'] = list(combined_report['all_unknown_headers'])
+
+    if all_valid:
+        logger.log("✅ Contract preflight check passed")
+    else:
+        logger.log("⚠️  Contract preflight check found issues (continuing with existing logic)")
+
+    return all_valid, combined_report
+
+
+# =============================================================================
+# BATCH TRACKING (Step B)
+# =============================================================================
+
+def ensure_etl_batches_table():
+    """
+    Ensure etl_batches table exists (in case migration hasn't run).
+
+    This is a safety fallback - the proper way is to run the migration.
+    """
+    if not USE_BATCH_TRACKING:
+        return
+
+    db.session.execute(text("""
+        CREATE TABLE IF NOT EXISTS etl_batches (
+            id SERIAL PRIMARY KEY,
+            batch_id UUID NOT NULL UNIQUE,
+            started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            completed_at TIMESTAMPTZ,
+            status VARCHAR(20) NOT NULL DEFAULT 'staging',
+            file_fingerprints JSONB,
+            total_files INTEGER DEFAULT 0,
+            schema_version VARCHAR(20),
+            rules_version VARCHAR(40),
+            contract_hash VARCHAR(32),
+            header_fingerprint VARCHAR(64),
+            rows_loaded INTEGER DEFAULT 0,
+            rows_after_dedup INTEGER DEFAULT 0,
+            rows_outliers_marked INTEGER DEFAULT 0,
+            rows_promoted INTEGER DEFAULT 0,
+            rows_skipped_collision INTEGER DEFAULT 0,
+            validation_passed BOOLEAN,
+            validation_issues JSONB,
+            semantic_warnings JSONB,
+            contract_report JSONB,
+            error_message TEXT,
+            error_stage VARCHAR(50),
+            triggered_by VARCHAR(100) DEFAULT 'manual'
+        )
+    """))
+    db.session.commit()
+
+
+def insert_batch_record(ctx: 'RunContext', logger: 'UploadLogger') -> bool:
+    """
+    Insert initial batch record into etl_batches table.
+
+    Returns True if successful.
+    """
+    if not USE_BATCH_TRACKING or not RUN_CONTEXT_AVAILABLE:
+        return False
+
+    try:
+        record = ctx.to_batch_record()
+        db.session.execute(text("""
+            INSERT INTO etl_batches (
+                batch_id, started_at, status, schema_version, rules_version,
+                contract_hash, header_fingerprint, file_fingerprints, total_files,
+                triggered_by
+            ) VALUES (
+                :batch_id, :started_at, :status, :schema_version, :rules_version,
+                :contract_hash, :header_fingerprint, :file_fingerprints, :total_files,
+                :triggered_by
+            )
+        """), {
+            'batch_id': record['batch_id'],
+            'started_at': record['started_at'],
+            'status': record['status'],
+            'schema_version': record['schema_version'],
+            'rules_version': record['rules_version'],
+            'contract_hash': record['contract_hash'],
+            'header_fingerprint': record['header_fingerprint'],
+            'file_fingerprints': json.dumps(record['file_fingerprints']) if record['file_fingerprints'] else None,
+            'total_files': record['total_files'],
+            'triggered_by': record['triggered_by'],
+        })
+        db.session.commit()
+        logger.log(f"  ✓ Batch record created: {ctx.batch_id[:8]}...")
+        return True
+    except Exception as e:
+        logger.log(f"  ⚠️  Failed to create batch record: {e}")
+        db.session.rollback()
+        return False
+
+
+def update_batch_record(ctx: 'RunContext', logger: 'UploadLogger') -> bool:
+    """
+    Update batch record with current context state.
+
+    Call this after each stage completes.
+    """
+    if not USE_BATCH_TRACKING or not RUN_CONTEXT_AVAILABLE:
+        return False
+
+    try:
+        record = ctx.to_batch_record()
+        db.session.execute(text("""
+            UPDATE etl_batches SET
+                status = :status,
+                completed_at = :completed_at,
+                rows_loaded = :rows_loaded,
+                rows_after_dedup = :rows_after_dedup,
+                rows_outliers_marked = :rows_outliers_marked,
+                rows_promoted = :rows_promoted,
+                rows_skipped_collision = :rows_skipped_collision,
+                validation_passed = :validation_passed,
+                validation_issues = :validation_issues,
+                semantic_warnings = :semantic_warnings,
+                contract_report = :contract_report,
+                error_message = :error_message,
+                error_stage = :error_stage
+            WHERE batch_id = :batch_id
+        """), {
+            'batch_id': record['batch_id'],
+            'status': record['status'],
+            'completed_at': record['completed_at'],
+            'rows_loaded': record['rows_loaded'],
+            'rows_after_dedup': record['rows_after_dedup'],
+            'rows_outliers_marked': record['rows_outliers_marked'],
+            'rows_promoted': record['rows_promoted'],
+            'rows_skipped_collision': record['rows_skipped_collision'],
+            'validation_passed': record['validation_passed'],
+            'validation_issues': json.dumps(record['validation_issues']) if record['validation_issues'] else None,
+            'semantic_warnings': json.dumps(record['semantic_warnings']) if record['semantic_warnings'] else None,
+            'contract_report': json.dumps(record['contract_report']) if record['contract_report'] else None,
+            'error_message': record['error_message'],
+            'error_stage': record['error_stage'],
+        })
+        db.session.commit()
+        return True
+    except Exception as e:
+        logger.log(f"  ⚠️  Failed to update batch record: {e}")
+        db.session.rollback()
+        return False
+
+
+def initialize_run_context(
+    csv_files: list,
+    contract_report: dict = None,
+    logger: 'UploadLogger' = None
+) -> 'RunContext':
+    """
+    Initialize RunContext with file fingerprints and version info.
+
+    This is Step B: audit tracking only, no behavior change.
+    """
+    if not RUN_CONTEXT_AVAILABLE:
+        return None
+
+    ctx = create_run_context(run_mode='full', triggered_by='manual')
+
+    # Set schema/rules versions
+    if CONTRACT_AVAILABLE:
+        ctx.schema_version = get_schema_version()
+        ctx.contract_hash = get_contract_hash()
+    else:
+        ctx.schema_version = 'unknown'
+        ctx.contract_hash = 'unknown'
+
+    try:
+        registry = get_rule_registry()
+        ctx.rules_version = registry.get_version()
+    except Exception:
+        ctx.rules_version = 'unknown'
+
+    # Compute file fingerprints
+    for csv_path in csv_files:
+        try:
+            fingerprint = compute_file_sha256(csv_path)
+            ctx.file_fingerprints[os.path.basename(csv_path)] = fingerprint
+        except Exception as e:
+            if logger:
+                logger.log(f"  ⚠️  Could not fingerprint {csv_path}: {e}")
+
+    ctx.total_files = len(csv_files)
+
+    # Store contract report if available
+    if contract_report:
+        ctx.contract_report = contract_report
+        ctx.header_fingerprint = contract_report.get('files', {}).get(
+            list(contract_report.get('files', {}).keys())[0] if contract_report.get('files') else '',
+            {}
+        ).get('header_fingerprint', '')
+
+    return ctx
 
 
 # =============================================================================
@@ -357,6 +746,166 @@ def _parse_lease_info(tenure_str: str, current_year: int):
     return lease_start_year, remaining_lease
 
 
+# =============================================================================
+# STEP G: PSF RECONCILIATION + RAW EXTRAS
+# =============================================================================
+
+# PSF tolerance settings (from schema contract)
+PSF_TOLERANCE_ABSOLUTE = 3.0   # ±$3 PSF
+PSF_TOLERANCE_PERCENT = 0.005  # ±0.5%
+
+
+def reconcile_psf(psf_source: float, psf_calc: float) -> Tuple[float, bool, str]:
+    """
+    Reconcile PSF from source (CSV) vs calculated (price/area).
+
+    Step G: PSF reconciliation with tolerance-based validation.
+
+    Logic:
+    - If psf_source is within tolerance of psf_calc → use psf_source
+    - Otherwise → use psf_calc and flag as mismatch
+
+    Args:
+        psf_source: PSF from CSV (Unit Price $ PSF column)
+        psf_calc: Computed PSF (price / area_sqft)
+
+    Returns:
+        Tuple of (canonical_psf, is_match, warning_message)
+        - canonical_psf: The PSF value to use
+        - is_match: True if source matches calc within tolerance
+        - warning_message: Empty if match, else description of mismatch
+    """
+    if not USE_PSF_RECONCILIATION:
+        # Feature flag disabled - use source as-is
+        return psf_source, True, ''
+
+    # Handle edge cases
+    if not psf_source or psf_source <= 0:
+        return psf_calc, True, ''  # No source, use calculated
+
+    if not psf_calc or psf_calc <= 0:
+        return psf_source, True, ''  # Can't calculate, use source
+
+    # Check tolerance
+    abs_diff = abs(psf_source - psf_calc)
+    pct_diff = abs_diff / psf_calc if psf_calc > 0 else 1.0
+
+    is_within_tolerance = (
+        abs_diff <= PSF_TOLERANCE_ABSOLUTE or
+        pct_diff <= PSF_TOLERANCE_PERCENT
+    )
+
+    if is_within_tolerance:
+        # Source is within tolerance - use source
+        return psf_source, True, ''
+    else:
+        # Mismatch - use calculated and warn
+        warning = f"PSF mismatch: source={psf_source:.2f}, calc={psf_calc:.2f}, diff={abs_diff:.2f} ({pct_diff*100:.1f}%)"
+        return psf_calc, False, warning
+
+
+def compute_psf_with_reconciliation(price: float, area_sqft: float, psf_source: float) -> Dict[str, Any]:
+    """
+    Compute PSF values with full reconciliation data.
+
+    Step G: Returns all PSF fields for storage.
+
+    Args:
+        price: Transaction price
+        area_sqft: Area in square feet
+        psf_source: PSF from CSV (may be None or 0)
+
+    Returns:
+        Dict with psf_source, psf_calc, psf (canonical), and any warnings
+    """
+    result = {
+        'psf_source': psf_source if psf_source and psf_source > 0 else None,
+        'psf_calc': None,
+        'psf': None,
+        'psf_mismatch': False,
+        'psf_warning': None,
+    }
+
+    # Compute PSF from price and area
+    if price and price > 0 and area_sqft and area_sqft > 0:
+        result['psf_calc'] = round(price / area_sqft, 2)
+
+    # Reconcile
+    psf_src = result['psf_source'] or 0
+    psf_calc = result['psf_calc'] or 0
+
+    if psf_src > 0 and psf_calc > 0:
+        canonical_psf, is_match, warning = reconcile_psf(psf_src, psf_calc)
+        result['psf'] = canonical_psf
+        result['psf_mismatch'] = not is_match
+        result['psf_warning'] = warning if warning else None
+    elif psf_calc > 0:
+        result['psf'] = psf_calc
+    elif psf_src > 0:
+        result['psf'] = psf_src
+    else:
+        result['psf'] = None
+
+    return result
+
+
+def extract_raw_extras(row: Dict[str, Any], known_fields: Set[str]) -> Optional[Dict[str, Any]]:
+    """
+    Extract unknown columns into raw_extras JSONB.
+
+    Step G: Store unknown CSV columns for audit and future compatibility.
+
+    Args:
+        row: Full row dict with all columns
+        known_fields: Set of canonical field names we recognize
+
+    Returns:
+        Dict of unknown fields, or None if all fields are known
+    """
+    if not USE_PSF_RECONCILIATION:
+        return None
+
+    extras = {}
+    for key, value in row.items():
+        if key not in known_fields and value is not None:
+            # Convert to JSON-safe types
+            if pd.notna(value):
+                if hasattr(value, 'isoformat'):
+                    extras[key] = value.isoformat()
+                elif isinstance(value, (int, float, str, bool)):
+                    extras[key] = value
+                else:
+                    extras[key] = str(value)
+
+    return extras if extras else None
+
+
+# Known field names (canonical) - used for raw_extras extraction
+KNOWN_FIELDS = {
+    'project_name', 'Project Name',
+    'transaction_date', 'Sale Date', 'Transaction Date',
+    'contract_date', 'Contract Date',
+    'price', 'Transacted Price ($)', 'Transacted Price',
+    'area_sqft', 'Area (SQFT)', 'Area (Sqft)',
+    'psf', 'Unit Price ($ PSF)', 'Unit Price (PSF)',
+    'district', 'Postal District', 'District',
+    'bedroom_count',
+    'property_type', 'Property Type',
+    'sale_type', 'Type of Sale', 'Sale Type',
+    'tenure', 'Tenure', 'Lease',
+    'lease_start_year',
+    'remaining_lease',
+    'street_name', 'Street Name', 'Address',
+    'floor_range', 'Floor Level', 'Floor Range',
+    'floor_level',
+    'num_units', 'Number of Units', 'Units',
+    'nett_price', 'Nett Price($)', 'Nett Price',
+    'type_of_area', 'Type of Area',
+    'market_segment', 'Market Segment',
+    'area_sqm', 'Area (SQM)',
+}
+
+
 def _execute_with_retry(session, sql, values, logger, batch_num: int, max_retries: int = 3) -> Tuple[bool, int]:
     """
     Execute SQL INSERT with retry logic and exponential backoff.
@@ -443,15 +992,43 @@ def release_advisory_lock():
 # STAGING TABLE MANAGEMENT
 # =============================================================================
 
-def create_staging_table(logger: UploadLogger):
-    """Create staging table as a copy of production schema."""
-    logger.log("Creating staging table...")
+def create_staging_table(logger: UploadLogger, batch_id: str = None):
+    """
+    Create or ensure staging table exists.
 
-    # Drop existing staging table if exists
-    db.session.execute(text(f"DROP TABLE IF EXISTS {STAGING_TABLE} CASCADE"))
+    Step D: Batch-scoped staging - table is append-only, not DROP/CREATE.
+    When USE_BATCH_SCOPED_STAGING is True, we keep existing data and
+    filter by batch_id for all operations.
+    """
+    if USE_BATCH_SCOPED_STAGING:
+        logger.log("Ensuring staging table exists (batch-scoped mode)...")
 
+        # Check if table exists
+        table_exists = db.session.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_name = :table_name
+            )
+        """), {'table_name': STAGING_TABLE}).scalar()
+
+        if not table_exists:
+            logger.log("  Creating staging table...")
+            _create_staging_table_schema(logger)
+        else:
+            logger.log(f"  ✓ Staging table exists, will append with batch_id={batch_id[:8]}...")
+    else:
+        logger.log("Creating staging table...")
+
+        # Legacy mode: Drop existing staging table if exists
+        db.session.execute(text(f"DROP TABLE IF EXISTS {STAGING_TABLE} CASCADE"))
+        _create_staging_table_schema(logger)
+
+
+def _create_staging_table_schema(logger: UploadLogger):
+    """Internal: Create the staging table schema."""
     # Create staging table with same schema as transactions
     # Use TEXT for variable-length fields to avoid "value too long" errors
+    # Step G: Added psf_source, psf_calc, market_segment_raw, raw_extras
     db.session.execute(text(f"""
         CREATE TABLE {STAGING_TABLE} (
             id SERIAL PRIMARY KEY,
@@ -460,7 +1037,9 @@ def create_staging_table(logger: UploadLogger):
             contract_date VARCHAR(10),
             price FLOAT NOT NULL,
             area_sqft FLOAT NOT NULL,
-            psf FLOAT NOT NULL,
+            psf FLOAT,
+            psf_source FLOAT,
+            psf_calc FLOAT,
             district VARCHAR(10) NOT NULL,
             bedroom_count INTEGER NOT NULL,
             property_type TEXT DEFAULT 'Condominium',
@@ -476,16 +1055,33 @@ def create_staging_table(logger: UploadLogger):
             nett_price FLOAT,
             type_of_area TEXT,
             market_segment TEXT,
-            is_outlier BOOLEAN DEFAULT false
+            market_segment_raw TEXT,
+            is_outlier BOOLEAN DEFAULT false,
+            row_hash TEXT,
+            batch_id UUID,
+            is_valid BOOLEAN DEFAULT true,
+            raw_extras JSONB
         )
     """))
+
+    # Create indexes for batch-scoped operations
+    if USE_BATCH_SCOPED_STAGING:
+        db.session.execute(text(f"""
+            CREATE INDEX IF NOT EXISTS idx_staging_batch ON {STAGING_TABLE}(batch_id);
+            CREATE INDEX IF NOT EXISTS idx_staging_row_hash ON {STAGING_TABLE}(row_hash);
+        """))
+
     db.session.commit()
     logger.log("✓ Staging table created")
 
 
-def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> int:
+def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger, batch_id: str = None) -> int:
     """
     Process a single CSV file and insert into staging table.
+
+    Step D: When batch_id is provided, each row is tagged with it for
+    batch-scoped deduplication and promotion.
+
     Returns count of rows saved.
     """
     logger.log(f"Processing: {os.path.basename(csv_path)}")
@@ -591,6 +1187,38 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
                     tenure_str = _safe_str(row.get('tenure') or row.get('Tenure'))
                     lease_start_year, remaining_lease = _parse_lease_info(tenure_str, current_year)
                     property_type = _safe_str(row.get('property_type') or row.get('Property Type'), default='Condominium')
+                    floor_range = _safe_str(row.get('floor_range')) or None
+
+                    # Step C: Compute row_hash using natural key fields
+                    row_hash = None
+                    if USE_ROW_HASH:
+                        row_hash = compute_transaction_row_hash({
+                            'project_name': project_name,
+                            'transaction_date': transaction_date,
+                            'price': price,
+                            'area_sqft': area_sqft,
+                            'floor_range': floor_range,
+                        })
+
+                    # Step G: PSF reconciliation
+                    psf_from_csv = _safe_float(row.get('psf'))
+                    if USE_PSF_RECONCILIATION:
+                        psf_data = compute_psf_with_reconciliation(price, area_sqft, psf_from_csv)
+                        psf_final = psf_data['psf']
+                        psf_source = psf_data['psf_source']
+                        psf_calc = psf_data['psf_calc']
+                    else:
+                        psf_final = psf_from_csv if psf_from_csv else (price / area_sqft if area_sqft > 0 else 0)
+                        psf_source = None
+                        psf_calc = None
+
+                    # Step G: Extract raw_extras for unknown columns
+                    raw_extras = None
+                    if USE_PSF_RECONCILIATION:
+                        raw_extras = extract_raw_extras(row.to_dict(), KNOWN_FIELDS)
+
+                    # Market segment - store raw for audit
+                    market_segment_val = _safe_str(row.get('market_segment')) or None
 
                     values.append({
                         'project_name': project_name,
@@ -598,7 +1226,9 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
                         'contract_date': _safe_str(row.get('contract_date')),
                         'price': price,
                         'area_sqft': area_sqft,
-                        'psf': _safe_float(row.get('psf')),
+                        'psf': psf_final,
+                        'psf_source': psf_source,
+                        'psf_calc': psf_calc,
                         'district': district,
                         'bedroom_count': _safe_int(row.get('bedroom_count'), default=1),
                         'property_type': property_type,
@@ -607,12 +1237,16 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
                         'lease_start_year': lease_start_year,
                         'remaining_lease': remaining_lease,
                         'street_name': _safe_str(row.get('street_name')) or None,
-                        'floor_range': _safe_str(row.get('floor_range')) or None,
+                        'floor_range': floor_range,
                         'floor_level': _safe_str(row.get('floor_level')) or None,
                         'num_units': _safe_int(row.get('num_units')),
                         'nett_price': _safe_float(row.get('nett_price')),  # 0.0 is valid, don't convert to None
                         'type_of_area': _safe_str(row.get('type_of_area')) or None,
-                        'market_segment': _safe_str(row.get('market_segment')) or None,
+                        'market_segment': market_segment_val,
+                        'market_segment_raw': market_segment_val,
+                        'row_hash': row_hash,
+                        'batch_id': batch_id,
+                        'raw_extras': json.dumps(raw_extras) if raw_extras else None,
                     })
                 except Exception as e:
                     insert_rejection_reasons['exception'] = insert_rejection_reasons.get('exception', 0) + 1
@@ -622,19 +1256,20 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
             if values:
                 # Bulk insert into staging with retry logic for timeout resilience
                 batch_num = idx // batch_size + 1
+                # Step G: Added psf_source, psf_calc, market_segment_raw, raw_extras
                 insert_sql = text(f"""
                     INSERT INTO {STAGING_TABLE} (
                         project_name, transaction_date, contract_date, price, area_sqft,
-                        psf, district, bedroom_count, property_type, sale_type,
+                        psf, psf_source, psf_calc, district, bedroom_count, property_type, sale_type,
                         tenure, lease_start_year, remaining_lease, street_name,
                         floor_range, floor_level, num_units, nett_price, type_of_area,
-                        market_segment
+                        market_segment, market_segment_raw, row_hash, batch_id, raw_extras
                     ) VALUES (
                         :project_name, :transaction_date, :contract_date, :price, :area_sqft,
-                        :psf, :district, :bedroom_count, :property_type, :sale_type,
+                        :psf, :psf_source, :psf_calc, :district, :bedroom_count, :property_type, :sale_type,
                         :tenure, :lease_start_year, :remaining_lease, :street_name,
                         :floor_range, :floor_level, :num_units, :nett_price, :type_of_area,
-                        :market_segment
+                        :market_segment, :market_segment_raw, :row_hash, :batch_id, :raw_extras
                     )
                 """)
 
@@ -673,28 +1308,59 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger) -> in
 # VALIDATION ON STAGING
 # =============================================================================
 
-def remove_duplicates_staging(logger: UploadLogger) -> int:
-    """Remove duplicates from staging table."""
-    before = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+def remove_duplicates_staging(logger: UploadLogger, batch_id: str = None) -> int:
+    """
+    Remove duplicates from staging table.
 
-    db.session.execute(text(f"""
-        DELETE FROM {STAGING_TABLE}
-        WHERE id NOT IN (
-            SELECT MIN(id)
-            FROM {STAGING_TABLE}
-            GROUP BY project_name, transaction_date, price, area_sqft,
-                     COALESCE(floor_range, '')
-        )
-    """))
-    db.session.commit()
+    Step D: When batch_id is provided, only dedup within that batch.
+    """
+    if USE_BATCH_SCOPED_STAGING and batch_id:
+        # Batch-scoped dedup: only remove duplicates within this batch
+        before = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE batch_id = :batch_id"),
+            {'batch_id': batch_id}
+        ).scalar()
 
-    after = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+        db.session.execute(text(f"""
+            DELETE FROM {STAGING_TABLE}
+            WHERE batch_id = :batch_id
+              AND id NOT IN (
+                SELECT MIN(id)
+                FROM {STAGING_TABLE}
+                WHERE batch_id = :batch_id
+                GROUP BY project_name, transaction_date, price, area_sqft,
+                         COALESCE(floor_range, '')
+            )
+        """), {'batch_id': batch_id})
+        db.session.commit()
+
+        after = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE batch_id = :batch_id"),
+            {'batch_id': batch_id}
+        ).scalar()
+    else:
+        # Legacy mode: dedup entire table
+        before = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+
+        db.session.execute(text(f"""
+            DELETE FROM {STAGING_TABLE}
+            WHERE id NOT IN (
+                SELECT MIN(id)
+                FROM {STAGING_TABLE}
+                GROUP BY project_name, transaction_date, price, area_sqft,
+                         COALESCE(floor_range, '')
+            )
+        """))
+        db.session.commit()
+
+        after = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+
     removed = before - after
     logger.log(f"✓ Removed {removed:,} duplicates from staging")
     return removed
 
 
-def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
+def filter_outliers_staging(logger: UploadLogger, batch_id: str = None) -> Tuple[int, Dict]:
     """
     Mark outliers in staging using two-stage detection (soft-delete).
 
@@ -707,8 +1373,23 @@ def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
       - Still catches extreme price outliers
 
     Marks outliers with is_outlier=true instead of deleting them.
+
+    Step D: When batch_id is provided, only mark outliers within that batch.
     """
-    before = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+    # Build batch filter clause
+    batch_filter = ""
+    params = {}
+    if USE_BATCH_SCOPED_STAGING and batch_id:
+        batch_filter = "AND batch_id = :batch_id"
+        params['batch_id'] = batch_id
+
+    if USE_BATCH_SCOPED_STAGING and batch_id:
+        before = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE batch_id = :batch_id"),
+            {'batch_id': batch_id}
+        ).scalar()
+    else:
+        before = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
 
     # ==========================================================================
     # STAGE 1: Mark en-bloc/collective sales (area > 10,000 sqft)
@@ -722,7 +1403,8 @@ def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
         SET is_outlier = true
         WHERE area_sqft > :threshold
           AND (is_outlier = false OR is_outlier IS NULL)
-    """), {'threshold': EN_BLOC_AREA_THRESHOLD})
+          {batch_filter}
+    """), {'threshold': EN_BLOC_AREA_THRESHOLD, **params})
 
     enbloc_count = enbloc_marked.rowcount
     db.session.commit()
@@ -743,7 +1425,8 @@ def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
         FROM {STAGING_TABLE}
         WHERE price > 0
           AND (is_outlier = false OR is_outlier IS NULL)
-    """)).fetchone()
+          {batch_filter}
+    """), params).fetchone()
 
     if not result or not result.q1 or not result.q3:
         logger.log("⚠️  Could not calculate IQR bounds")
@@ -763,7 +1446,8 @@ def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
         SET is_outlier = true
         WHERE (price < :lower_bound OR price > :upper_bound)
           AND (is_outlier = false OR is_outlier IS NULL)
-    """), {'lower_bound': lower_bound, 'upper_bound': upper_bound})
+          {batch_filter}
+    """), {'lower_bound': lower_bound, 'upper_bound': upper_bound, **params})
 
     price_outlier_count = price_marked.rowcount
     db.session.commit()
@@ -774,9 +1458,15 @@ def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
     total_marked = enbloc_count + price_outlier_count
 
     # Count active (non-outlier) records
-    active_count = db.session.execute(text(f"""
-        SELECT COUNT(*) FROM {STAGING_TABLE} WHERE is_outlier = false
-    """)).scalar()
+    if USE_BATCH_SCOPED_STAGING and batch_id:
+        active_count = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE is_outlier = false AND batch_id = :batch_id"),
+            {'batch_id': batch_id}
+        ).scalar()
+    else:
+        active_count = db.session.execute(text(f"""
+            SELECT COUNT(*) FROM {STAGING_TABLE} WHERE is_outlier = false
+        """)).scalar()
 
     logger.log(f"✓ Total outliers marked: {total_marked:,} (en-bloc: {enbloc_count}, price: {price_outlier_count})")
     logger.log(f"  Active records: {active_count:,}")
@@ -797,16 +1487,35 @@ def filter_outliers_staging(logger: UploadLogger) -> Tuple[int, Dict]:
     }
 
 
-def validate_staging(logger: UploadLogger) -> Tuple[bool, List[str]]:
+def validate_staging(logger: UploadLogger, batch_id: str = None) -> Tuple[bool, List[str]]:
     """
     Run validation checks on staging table.
+
+    Step D: When batch_id is provided, only validate that batch.
+
     Returns (is_valid, list_of_issues).
     """
     logger.log("Running validation checks on staging data...")
     issues = []
 
+    # Build batch filter clause
+    batch_filter = ""
+    params = {}
+    if USE_BATCH_SCOPED_STAGING and batch_id:
+        batch_filter = "WHERE batch_id = :batch_id"
+        batch_filter_and = "AND batch_id = :batch_id"
+        params['batch_id'] = batch_id
+    else:
+        batch_filter_and = ""
+
     # 1. Row count check
-    row_count = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+    if USE_BATCH_SCOPED_STAGING and batch_id:
+        row_count = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE batch_id = :batch_id"),
+            {'batch_id': batch_id}
+        ).scalar()
+    else:
+        row_count = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
     logger.log(f"  Row count: {row_count:,}")
 
     if row_count < VALIDATION_CONFIG['min_row_count']:
@@ -814,9 +1523,15 @@ def validate_staging(logger: UploadLogger) -> Tuple[bool, List[str]]:
 
     # 2. Null rate checks for required columns
     for column, max_rate in VALIDATION_CONFIG['max_null_rate'].items():
-        null_count = db.session.execute(text(f"""
-            SELECT COUNT(*) FROM {STAGING_TABLE} WHERE {column} IS NULL
-        """)).scalar()
+        if USE_BATCH_SCOPED_STAGING and batch_id:
+            null_count = db.session.execute(
+                text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE {column} IS NULL AND batch_id = :batch_id"),
+                {'batch_id': batch_id}
+            ).scalar()
+        else:
+            null_count = db.session.execute(text(f"""
+                SELECT COUNT(*) FROM {STAGING_TABLE} WHERE {column} IS NULL
+            """)).scalar()
         null_rate = null_count / row_count if row_count > 0 else 1.0
 
         if null_rate > max_rate:
@@ -826,10 +1541,16 @@ def validate_staging(logger: UploadLogger) -> Tuple[bool, List[str]]:
 
     # 3. Price range sanity check
     min_price, max_price = VALIDATION_CONFIG['price_range']
-    invalid_prices = db.session.execute(text(f"""
-        SELECT COUNT(*) FROM {STAGING_TABLE}
-        WHERE price < :min_price OR price > :max_price
-    """), {'min_price': min_price, 'max_price': max_price}).scalar()
+    if USE_BATCH_SCOPED_STAGING and batch_id:
+        invalid_prices = db.session.execute(text(f"""
+            SELECT COUNT(*) FROM {STAGING_TABLE}
+            WHERE (price < :min_price OR price > :max_price) AND batch_id = :batch_id
+        """), {'min_price': min_price, 'max_price': max_price, 'batch_id': batch_id}).scalar()
+    else:
+        invalid_prices = db.session.execute(text(f"""
+            SELECT COUNT(*) FROM {STAGING_TABLE}
+            WHERE price < :min_price OR price > :max_price
+        """), {'min_price': min_price, 'max_price': max_price}).scalar()
 
     if invalid_prices > 0:
         rate = invalid_prices / row_count
@@ -840,10 +1561,16 @@ def validate_staging(logger: UploadLogger) -> Tuple[bool, List[str]]:
 
     # 4. PSF range sanity check
     min_psf, max_psf = VALIDATION_CONFIG['psf_range']
-    invalid_psf = db.session.execute(text(f"""
-        SELECT COUNT(*) FROM {STAGING_TABLE}
-        WHERE psf < :min_psf OR psf > :max_psf
-    """), {'min_psf': min_psf, 'max_psf': max_psf}).scalar()
+    if USE_BATCH_SCOPED_STAGING and batch_id:
+        invalid_psf = db.session.execute(text(f"""
+            SELECT COUNT(*) FROM {STAGING_TABLE}
+            WHERE (psf < :min_psf OR psf > :max_psf) AND batch_id = :batch_id
+        """), {'min_psf': min_psf, 'max_psf': max_psf, 'batch_id': batch_id}).scalar()
+    else:
+        invalid_psf = db.session.execute(text(f"""
+            SELECT COUNT(*) FROM {STAGING_TABLE}
+            WHERE psf < :min_psf OR psf > :max_psf
+        """), {'min_psf': min_psf, 'max_psf': max_psf}).scalar()
 
     if invalid_psf > 0:
         rate = invalid_psf / row_count
@@ -853,16 +1580,29 @@ def validate_staging(logger: UploadLogger) -> Tuple[bool, List[str]]:
             logger.log(f"  ✓ PSF range: {invalid_psf} outliers ({rate:.4%})")
 
     # 5. District distribution check
-    district_counts = db.session.execute(text(f"""
-        SELECT district, COUNT(*) as cnt FROM {STAGING_TABLE}
-        GROUP BY district ORDER BY cnt DESC LIMIT 5
-    """)).fetchall()
+    if USE_BATCH_SCOPED_STAGING and batch_id:
+        district_counts = db.session.execute(text(f"""
+            SELECT district, COUNT(*) as cnt FROM {STAGING_TABLE}
+            WHERE batch_id = :batch_id
+            GROUP BY district ORDER BY cnt DESC LIMIT 5
+        """), {'batch_id': batch_id}).fetchall()
+    else:
+        district_counts = db.session.execute(text(f"""
+            SELECT district, COUNT(*) as cnt FROM {STAGING_TABLE}
+            GROUP BY district ORDER BY cnt DESC LIMIT 5
+        """)).fetchall()
     logger.log(f"  Top districts: {[(d.district, d.cnt) for d in district_counts]}")
 
     # 6. Date range check
-    date_range = db.session.execute(text(f"""
-        SELECT MIN(transaction_date), MAX(transaction_date) FROM {STAGING_TABLE}
-    """)).fetchone()
+    if USE_BATCH_SCOPED_STAGING and batch_id:
+        date_range = db.session.execute(text(f"""
+            SELECT MIN(transaction_date), MAX(transaction_date) FROM {STAGING_TABLE}
+            WHERE batch_id = :batch_id
+        """), {'batch_id': batch_id}).fetchone()
+    else:
+        date_range = db.session.execute(text(f"""
+            SELECT MIN(transaction_date), MAX(transaction_date) FROM {STAGING_TABLE}
+        """)).fetchone()
     logger.log(f"  Date range: {date_range[0]} to {date_range[1]}")
 
     is_valid = len(issues) == 0
@@ -881,9 +1621,127 @@ def validate_staging(logger: UploadLogger) -> Tuple[bool, List[str]]:
 # ATOMIC PUBLISH (TABLE SWAP)
 # =============================================================================
 
-def atomic_publish(logger: UploadLogger) -> bool:
+def atomic_publish(logger: UploadLogger, batch_id: str = None) -> Tuple[bool, Dict]:
     """
-    Atomically swap staging table to production.
+    Publish staging data to production.
+
+    Step E: When USE_IDEMPOTENT_PROMOTION is True, uses INSERT ... ON CONFLICT
+    for idempotent promotion. Otherwise, uses legacy table swap.
+
+    Returns (success, stats) where stats contains:
+    - rows_promoted: Number of rows successfully inserted
+    - rows_skipped_collision: Number of rows skipped due to conflict
+    """
+    stats = {'rows_promoted': 0, 'rows_skipped_collision': 0}
+
+    if USE_IDEMPOTENT_PROMOTION:
+        return _idempotent_promote(logger, batch_id, stats)
+    else:
+        success = _legacy_table_swap(logger)
+        return success, stats
+
+
+def _idempotent_promote(logger: UploadLogger, batch_id: str, stats: Dict) -> Tuple[bool, Dict]:
+    """
+    Step E: Idempotent promotion using INSERT ... ON CONFLICT DO NOTHING.
+
+    Promotes rows from staging to production without replacing existing data.
+    Requires:
+    - row_hash column with unique index on production table
+    - batch_id to filter which staging rows to promote
+    """
+    logger.log("Starting idempotent promotion...")
+
+    try:
+        # Build batch filter
+        batch_filter = ""
+        params = {}
+        if batch_id:
+            batch_filter = "AND batch_id = :batch_id"
+            params['batch_id'] = batch_id
+
+        # Count staging rows to promote
+        if batch_id:
+            staging_count = db.session.execute(
+                text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE is_valid = true AND batch_id = :batch_id"),
+                {'batch_id': batch_id}
+            ).scalar()
+        else:
+            staging_count = db.session.execute(
+                text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE is_valid = true OR is_valid IS NULL")
+            ).scalar()
+
+        if staging_count == 0:
+            logger.log("❌ No valid staging rows to promote")
+            return False, stats
+
+        logger.log(f"  Promoting {staging_count:,} rows from staging...")
+
+        # Ensure production table has row_hash unique index
+        db.session.execute(text(f"""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_row_hash
+            ON {PRODUCTION_TABLE}(row_hash)
+            WHERE row_hash IS NOT NULL
+        """))
+
+        # Count before
+        before_count = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {PRODUCTION_TABLE}")
+        ).scalar()
+
+        # Idempotent insert: ON CONFLICT DO NOTHING
+        # Note: is_outlier rows ARE promoted (not filtered)
+        # Step G: Added psf_source, psf_calc, market_segment_raw, raw_extras
+        result = db.session.execute(text(f"""
+            INSERT INTO {PRODUCTION_TABLE} (
+                project_name, transaction_date, contract_date, price, area_sqft,
+                psf, psf_source, psf_calc, district, bedroom_count, property_type, sale_type,
+                tenure, lease_start_year, remaining_lease, street_name,
+                floor_range, floor_level, num_units, nett_price, type_of_area,
+                market_segment, market_segment_raw, is_outlier, row_hash, raw_extras
+            )
+            SELECT
+                project_name, transaction_date, contract_date, price, area_sqft,
+                psf, psf_source, psf_calc, district, bedroom_count, property_type, sale_type,
+                tenure, lease_start_year, remaining_lease, street_name,
+                floor_range, floor_level, num_units, nett_price, type_of_area,
+                market_segment, market_segment_raw, is_outlier, row_hash, raw_extras
+            FROM {STAGING_TABLE}
+            WHERE (is_valid = true OR is_valid IS NULL)
+              {batch_filter}
+            ON CONFLICT (row_hash) DO NOTHING
+        """), params)
+
+        rows_promoted = result.rowcount
+        db.session.commit()
+
+        # Count after
+        after_count = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {PRODUCTION_TABLE}")
+        ).scalar()
+
+        # Calculate stats
+        stats['rows_promoted'] = rows_promoted
+        stats['rows_skipped_collision'] = staging_count - rows_promoted
+
+        logger.log(f"✅ Idempotent promotion complete!")
+        logger.log(f"  Rows promoted: {rows_promoted:,}")
+        logger.log(f"  Rows skipped (collision): {stats['rows_skipped_collision']:,}")
+        logger.log(f"  Production table: {before_count:,} → {after_count:,}")
+
+        return True, stats
+
+    except Exception as e:
+        db.session.rollback()
+        logger.log(f"❌ Promotion failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False, stats
+
+
+def _legacy_table_swap(logger: UploadLogger) -> bool:
+    """
+    Legacy promotion: Atomically swap staging table to production.
     Uses PostgreSQL table rename in a single transaction.
 
     Steps:
@@ -894,7 +1752,7 @@ def atomic_publish(logger: UploadLogger) -> bool:
 
     Returns True on success.
     """
-    logger.log("Starting atomic publish...")
+    logger.log("Starting atomic publish (table swap)...")
 
     try:
         # Check if staging table exists and has data
@@ -1057,6 +1915,203 @@ def run_schema_check(rawdata_path: str) -> bool:
 
 
 # =============================================================================
+# PLAN MODE (Step F)
+# =============================================================================
+
+def generate_plan_report(
+    logger: 'UploadLogger',
+    run_ctx: Optional['RunContext'],
+    batch_id: Optional[str],
+    total_staged: int,
+    duplicates_removed: int,
+    outliers_marked: int
+) -> Dict[str, Any]:
+    """
+    Generate a plan report showing what would change if promoted.
+
+    Step F: --plan mode for safe preview without touching production.
+
+    Returns a report dict with:
+    - Staging stats (rows, duplicates, outliers)
+    - Date window (min/max transaction dates)
+    - District distribution (count per district)
+    - Collision preview (rows that already exist in production)
+    """
+    report = {
+        'batch_id': batch_id[:8] if batch_id else 'N/A',
+        'schema_version': run_ctx.schema_version if run_ctx else 'N/A',
+        'rules_version': run_ctx.rules_version if run_ctx else 'N/A',
+        'staging': {
+            'total_loaded': total_staged,
+            'duplicates_removed': duplicates_removed,
+            'after_dedup': total_staged - duplicates_removed,
+            'outliers_marked': outliers_marked,
+        },
+        'date_window': {},
+        'district_distribution': {},
+        'collision_preview': {},
+    }
+
+    # Build batch filter for queries
+    batch_filter = ""
+    params = {}
+    if USE_BATCH_SCOPED_STAGING and batch_id:
+        batch_filter = "AND batch_id = :batch_id"
+        params['batch_id'] = batch_id
+
+    # Get date window from staging
+    try:
+        date_result = db.session.execute(text(f"""
+            SELECT
+                MIN(transaction_date) as min_date,
+                MAX(transaction_date) as max_date,
+                COUNT(DISTINCT DATE_TRUNC('month', transaction_date)) as months
+            FROM {STAGING_TABLE}
+            WHERE (is_valid = true OR is_valid IS NULL)
+              {batch_filter}
+        """), params).fetchone()
+
+        if date_result:
+            report['date_window'] = {
+                'min_date': str(date_result[0]) if date_result[0] else None,
+                'max_date': str(date_result[1]) if date_result[1] else None,
+                'months_covered': date_result[2] or 0,
+            }
+    except Exception as e:
+        logger.log(f"  Warning: Could not get date window: {e}")
+
+    # Get district distribution from staging
+    try:
+        district_result = db.session.execute(text(f"""
+            SELECT district, COUNT(*) as cnt
+            FROM {STAGING_TABLE}
+            WHERE (is_valid = true OR is_valid IS NULL)
+              AND district IS NOT NULL
+              {batch_filter}
+            GROUP BY district
+            ORDER BY district
+        """), params).fetchall()
+
+        report['district_distribution'] = {
+            row[0]: row[1] for row in district_result
+        }
+    except Exception as e:
+        logger.log(f"  Warning: Could not get district distribution: {e}")
+
+    # Preview collisions (rows that already exist in production)
+    if USE_IDEMPOTENT_PROMOTION:
+        try:
+            # Check how many staging rows have row_hash matching production
+            collision_result = db.session.execute(text(f"""
+                SELECT COUNT(*) as collision_count
+                FROM {STAGING_TABLE} s
+                WHERE (s.is_valid = true OR s.is_valid IS NULL)
+                  AND s.row_hash IS NOT NULL
+                  AND EXISTS (
+                      SELECT 1 FROM {PRODUCTION_TABLE} p
+                      WHERE p.row_hash = s.row_hash
+                  )
+                  {batch_filter.replace('batch_id', 's.batch_id') if batch_filter else ''}
+            """), params).fetchone()
+
+            new_rows_result = db.session.execute(text(f"""
+                SELECT COUNT(*) as new_count
+                FROM {STAGING_TABLE} s
+                WHERE (s.is_valid = true OR s.is_valid IS NULL)
+                  AND (s.row_hash IS NULL OR NOT EXISTS (
+                      SELECT 1 FROM {PRODUCTION_TABLE} p
+                      WHERE p.row_hash = s.row_hash
+                  ))
+                  {batch_filter.replace('batch_id', 's.batch_id') if batch_filter else ''}
+            """), params).fetchone()
+
+            report['collision_preview'] = {
+                'existing_duplicates': collision_result[0] if collision_result else 0,
+                'new_rows_to_insert': new_rows_result[0] if new_rows_result else 0,
+            }
+        except Exception as e:
+            logger.log(f"  Warning: Could not preview collisions: {e}")
+            report['collision_preview'] = {
+                'existing_duplicates': 'N/A',
+                'new_rows_to_insert': 'N/A',
+                'note': 'Production table may not have row_hash column yet',
+            }
+
+    # Get sale type breakdown
+    try:
+        sale_type_result = db.session.execute(text(f"""
+            SELECT sale_type, COUNT(*) as cnt
+            FROM {STAGING_TABLE}
+            WHERE (is_valid = true OR is_valid IS NULL)
+              {batch_filter}
+            GROUP BY sale_type
+        """), params).fetchall()
+
+        report['sale_type_breakdown'] = {
+            row[0] or 'Unknown': row[1] for row in sale_type_result
+        }
+    except Exception as e:
+        logger.log(f"  Warning: Could not get sale type breakdown: {e}")
+
+    return report
+
+
+def print_plan_report(report: Dict[str, Any], logger: 'UploadLogger'):
+    """Print the plan report in a human-readable format."""
+    print("\n" + "=" * 60)
+    print("📊 ETL PLAN - What Will Change")
+    print("=" * 60)
+
+    print(f"\nBatch ID: {report['batch_id']}")
+    print(f"Schema: {report['schema_version']} | Rules: {report['rules_version']}")
+
+    # Staging stats
+    staging = report.get('staging', {})
+    print(f"\n📥 Staging Summary:")
+    print(f"   Total loaded:        {staging.get('total_loaded', 0):,}")
+    print(f"   Duplicates removed:  {staging.get('duplicates_removed', 0):,}")
+    print(f"   After dedup:         {staging.get('after_dedup', 0):,}")
+    print(f"   Outliers marked:     {staging.get('outliers_marked', 0):,}")
+
+    # Date window
+    date_window = report.get('date_window', {})
+    if date_window.get('min_date'):
+        print(f"\n📅 Date Window:")
+        print(f"   Min: {date_window.get('min_date')}")
+        print(f"   Max: {date_window.get('max_date')}")
+        print(f"   Months covered: {date_window.get('months_covered')}")
+
+    # Collision preview (if idempotent mode)
+    collision = report.get('collision_preview', {})
+    if collision:
+        print(f"\n🔄 Collision Preview (Idempotent Mode):")
+        if isinstance(collision.get('existing_duplicates'), int):
+            print(f"   Already exist (will skip):   {collision.get('existing_duplicates', 0):,}")
+            print(f"   New rows (will insert):      {collision.get('new_rows_to_insert', 0):,}")
+        else:
+            print(f"   Note: {collision.get('note', 'Unable to preview collisions')}")
+
+    # Sale type breakdown
+    sale_types = report.get('sale_type_breakdown', {})
+    if sale_types:
+        print(f"\n📊 Sale Type Breakdown:")
+        for sale_type, count in sorted(sale_types.items()):
+            print(f"   {sale_type}: {count:,}")
+
+    # District distribution (top 10)
+    districts = report.get('district_distribution', {})
+    if districts:
+        print(f"\n📍 District Distribution (top 10):")
+        sorted_districts = sorted(districts.items(), key=lambda x: x[1], reverse=True)[:10]
+        for district, count in sorted_districts:
+            print(f"   {district}: {count:,}")
+
+    print("\n" + "-" * 60)
+    print("Run without --plan to promote to production.")
+    print("=" * 60 + "\n")
+
+
+# =============================================================================
 # MAIN ENTRY POINT
 # =============================================================================
 
@@ -1159,6 +2214,11 @@ def main():
         action='store_true',
         help='Skip confirmation prompts'
     )
+    parser.add_argument(
+        '--plan',
+        action='store_true',
+        help='Preview changes without touching production (dry-run diff)'
+    )
     args = parser.parse_args()
 
     # Generate run ID for this upload
@@ -1194,6 +2254,13 @@ def main():
         print(f"\n📂 Found {total_csv_files} CSV files")
         print(f"   New Sale: {len(new_sale_files)} files")
         print(f"   Resale: {len(resale_files)} files")
+
+        # Step A: Contract-based header check (before loading)
+        if USE_CONTRACT_HEADERS and CONTRACT_AVAILABLE:
+            all_csv_files = new_sale_files + resale_files
+            contract_valid, contract_report = run_contract_preflight(all_csv_files, logger)
+            # Step A: Report only, don't block (no behavior change)
+            # Future steps will use contract_report for batch tracking
 
     app = create_app()
 
@@ -1278,7 +2345,7 @@ def main():
                     exit_code = 1
                     raise SystemExit(exit_code)
 
-                success = atomic_publish(logger)
+                success, publish_stats = atomic_publish(logger)
 
                 if success:
                     logger.stage("RECOMPUTE STATS")
@@ -1302,10 +2369,29 @@ def main():
 
             # === Full upload: Staging → Validate → Publish ===
 
+            # Step B: Initialize RunContext for batch tracking
+            run_ctx = None
+            if USE_BATCH_TRACKING and RUN_CONTEXT_AVAILABLE:
+                all_csv_files = new_sale_files + resale_files
+                run_ctx = initialize_run_context(
+                    all_csv_files,
+                    contract_report=contract_report if 'contract_report' in dir() else None,
+                    logger=logger
+                )
+                if run_ctx:
+                    logger.log(f"Batch tracking enabled: {run_ctx.batch_id[:8]}...")
+                    logger.log(f"  Schema: {run_ctx.schema_version} | Rules: {run_ctx.rules_version}")
+                    ensure_etl_batches_table()
+                    insert_batch_record(run_ctx, logger)
+                    run_ctx.mark_stage('staging')
+
+            # Step D: Get batch_id for batch-scoped operations
+            current_batch_id = run_ctx.batch_id if run_ctx else None
+
             # STAGE 1: Create staging table
             logger.stage("CREATE STAGING TABLE")
             db.create_all()  # Ensure production schema exists
-            create_staging_table(logger)
+            create_staging_table(logger, batch_id=current_batch_id)
 
             # STAGE 2: Load CSV data to staging
             logger.stage("LOAD CSV TO STAGING")
@@ -1316,7 +2402,7 @@ def main():
             if new_sale_files:
                 logger.log("Processing New Sale data...")
                 for csv_path in new_sale_files:
-                    saved = insert_to_staging(csv_path, 'New Sale', logger)
+                    saved = insert_to_staging(csv_path, 'New Sale', logger, batch_id=current_batch_id)
                     total_saved += saved
                     gc.collect()
 
@@ -1324,7 +2410,7 @@ def main():
             if resale_files:
                 logger.log("Processing Resale data...")
                 for csv_path in resale_files:
-                    saved = insert_to_staging(csv_path, 'Resale', logger)
+                    saved = insert_to_staging(csv_path, 'Resale', logger, batch_id=current_batch_id)
                     total_saved += saved
                     gc.collect()
 
@@ -1335,40 +2421,120 @@ def main():
 
             logger.log(f"Total rows loaded to staging: {total_saved:,}")
 
+            # Step B: Update batch record after loading
+            if run_ctx:
+                run_ctx.rows_loaded = total_saved
+                update_batch_record(run_ctx, logger)
+
             # STAGE 3: Deduplicate staging
             logger.stage("DEDUPLICATE STAGING")
-            duplicates_removed = remove_duplicates_staging(logger)
+            duplicates_removed = remove_duplicates_staging(logger, batch_id=current_batch_id)
+
+            # Step B: Update batch record after dedup
+            if run_ctx:
+                run_ctx.rows_after_dedup = total_saved - duplicates_removed
+                run_ctx.mark_stage('validating')
+                update_batch_record(run_ctx, logger)
 
             # STAGE 4: Remove outliers from staging
             logger.stage("REMOVE OUTLIERS")
-            outliers_removed, _ = filter_outliers_staging(logger)
+            outliers_removed, _ = filter_outliers_staging(logger, batch_id=current_batch_id)
+
+            # Step B: Update batch record after outliers
+            if run_ctx:
+                run_ctx.rows_outliers_marked = outliers_removed
 
             # STAGE 5: Validate staging
             logger.stage("VALIDATE STAGING")
             if not args.skip_validation:
-                is_valid, issues = validate_staging(logger)
+                is_valid, issues = validate_staging(logger, batch_id=current_batch_id)
+
+                # Step B: Update batch record with validation results
+                if run_ctx:
+                    run_ctx.validation_passed = is_valid
+                    if not is_valid:
+                        for issue in issues:
+                            run_ctx.add_validation_issue('staging_validation', issue)
+                    update_batch_record(run_ctx, logger)
 
                 if not is_valid:
+                    # Step B: Mark batch as failed
+                    if run_ctx:
+                        run_ctx.fail('validation', 'Staging validation failed')
+                        update_batch_record(run_ctx, logger)
                     logger.log("❌ Validation failed! Staging data not published.")
                     logger.log("   Fix the issues and re-run, or use --skip-validation")
                     exit_code = 1
                     raise SystemExit(exit_code)
             else:
                 logger.log("⚠️  Skipping validation (--skip-validation)")
+                if run_ctx:
+                    run_ctx.validation_passed = True
+                    run_ctx.add_semantic_warning('validation_skipped', 'Validation was skipped via --skip-validation')
+
+            # Step F: Plan mode - generate report and exit without promoting
+            if USE_PLAN_MODE and args.plan:
+                logger.stage("PLAN MODE")
+                logger.log("Generating plan report (no changes to production)...")
+
+                plan_report = generate_plan_report(
+                    logger=logger,
+                    run_ctx=run_ctx,
+                    batch_id=current_batch_id,
+                    total_staged=total_saved,
+                    duplicates_removed=duplicates_removed,
+                    outliers_marked=outliers_removed,
+                )
+                print_plan_report(plan_report, logger)
+
+                # Mark batch as plan-only (not promoted)
+                if run_ctx:
+                    run_ctx.status = 'plan_only'
+                    run_ctx.add_semantic_warning('plan_mode', 'Run in --plan mode, no promotion')
+                    update_batch_record(run_ctx, logger)
+
+                logger.log("Plan mode complete. Staging data preserved for inspection.")
+                logger.log(f"Staging table: {STAGING_TABLE}")
+                exit_code = 0
+                raise SystemExit(exit_code)
 
             # STAGE 6: Publish (unless staging-only)
             if args.staging_only:
                 logger.log("Staging-only mode: Skipping publish")
                 logger.log(f"Data is ready in '{STAGING_TABLE}' table")
                 logger.log("Run with --publish to publish to production")
+                # Step B: Mark batch as staging-only complete
+                if run_ctx:
+                    run_ctx.status = 'staging_complete'
+                    update_batch_record(run_ctx, logger)
             else:
                 logger.stage("ATOMIC PUBLISH")
-                success = atomic_publish(logger)
+                if run_ctx:
+                    run_ctx.mark_stage('promoting')
+                    update_batch_record(run_ctx, logger)
+
+                success, publish_stats = atomic_publish(logger, batch_id=current_batch_id)
 
                 if not success:
+                    # Step B: Mark batch as failed
+                    if run_ctx:
+                        run_ctx.fail('promotion', 'Atomic publish failed')
+                        update_batch_record(run_ctx, logger)
                     logger.log("❌ Publish failed!")
                     exit_code = 1
                     raise SystemExit(exit_code)
+
+                # Step B/E: Record promoted row count and collision stats
+                if run_ctx:
+                    if USE_IDEMPOTENT_PROMOTION:
+                        run_ctx.rows_promoted = publish_stats.get('rows_promoted', 0)
+                        run_ctx.rows_skipped_collision = publish_stats.get('rows_skipped_collision', 0)
+                    else:
+                        # Get the actual count from production (legacy mode)
+                        prod_count = db.session.execute(
+                            text(f"SELECT COUNT(*) FROM {PRODUCTION_TABLE}")
+                        ).scalar()
+                        run_ctx.rows_promoted = prod_count
 
                 # Verify schema has new columns
                 schema_check = db.session.execute(text("""
@@ -1420,12 +2586,20 @@ def main():
                 except Exception as e:
                     logger.log(f"New launch cleanup failed (non-critical): {e}")
 
+            # Step B: Mark batch as complete
+            if run_ctx:
+                run_ctx.complete()
+                update_batch_record(run_ctx, logger)
+                logger.log(f"Batch {run_ctx.batch_id[:8]}... marked as complete")
+
             # Print summary
             summary = logger.summary()
             print(f"\n{'='*60}")
             print("✅ UPLOAD COMPLETE!")
             print(f"{'='*60}")
             print(f"Run ID: {run_id}")
+            if run_ctx:
+                print(f"Batch ID: {run_ctx.batch_id}")
             print(f"Total time: {summary['total_elapsed_seconds']:.1f} seconds")
             print(f"Stages completed: {len(summary['stages'])}")
 
@@ -1434,6 +2608,13 @@ def main():
             exit_code = e.code if isinstance(e.code, int) else 1
         except Exception as e:
             # Unexpected error
+            # Step B: Mark batch as failed on unexpected error
+            if 'run_ctx' in dir() and run_ctx:
+                run_ctx.fail('unexpected', str(e)[:500])
+                try:
+                    update_batch_record(run_ctx, logger)
+                except Exception:
+                    pass  # Don't fail on failure to record failure
             logger.log(f"❌ Unexpected error: {e}")
             import traceback
             traceback.print_exc()

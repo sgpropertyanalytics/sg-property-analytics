@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "URA Transactions",
+  "version": "2025-01-01",
+  "type": "object",
+
+  "required": ["project_name", "transaction_month", "price", "area_sqft"],
+
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "minLength": 1,
+      "etl": {"natural_key": true, "normalize": "strip"}
+    },
+    "transaction_month": {
+      "type": "string",
+      "format": "date",
+      "description": "Month-granularity date stored as YYYY-MM-01",
+      "etl": {"natural_key": true, "parse_with": ["%b-%y", "%B %Y", "%Y-%m-%d"]}
+    },
+    "price": {
+      "type": "number",
+      "minimum": 50000,
+      "maximum": 100000000,
+      "etl": {"natural_key": true, "normalize": "strip_commas"}
+    },
+    "area_sqft": {
+      "type": "number",
+      "minimum": 100,
+      "maximum": 50000,
+      "etl": {"natural_key": true}
+    },
+    "floor_range": {
+      "type": ["string", "null"],
+      "etl": {"natural_key": true, "derive": "classify_floor_level", "missing_value": "Unknown"}
+    },
+    "district": {
+      "type": ["string", "null"],
+      "pattern": "^D(0[1-9]|[12][0-9])$",
+      "description": "Postal district D01-D28",
+      "etl": {"derive": "get_region_for_district"}
+    },
+    "psf_source": {
+      "type": ["number", "null"],
+      "description": "PSF from CSV (Unit Price $ PSF)"
+    },
+    "psf_calc": {
+      "type": ["number", "null"],
+      "description": "Computed price/area_sqft"
+    },
+    "psf": {
+      "type": "number",
+      "description": "Canonical PSF (reconciled)",
+      "etl": {"reconcile": {"source": "psf_source", "calc": "psf_calc", "tolerance_abs": 3, "tolerance_pct": 0.005}}
+    },
+    "market_segment_raw": {
+      "type": ["string", "null"],
+      "description": "URA's human label (audit only)"
+    },
+    "region": {
+      "type": "string",
+      "description": "Canonical region from get_region_for_district(district)",
+      "etl": {"derive": "get_region_for_district", "cross_check": "market_segment_raw"}
+    },
+    "bedroom_count": {
+      "type": "integer",
+      "etl": {"derive": "classify_bedroom_three_tier", "missing_fallback": "default_tier"}
+    },
+    "sale_type": {
+      "type": ["string", "null"],
+      "enum": ["New Sale", "Resale", "Sub Sale", null],
+      "etl": {"missing_value": "Unknown"}
+    },
+    "tenure": {
+      "type": ["string", "null"],
+      "description": "Raw tenure string from CSV",
+      "etl": {"missing_value": "Unknown"}
+    },
+    "street_name": {
+      "type": ["string", "null"]
+    },
+    "num_units": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "nett_price": {
+      "type": ["number", "null"]
+    },
+    "type_of_area": {
+      "type": ["string", "null"],
+      "enum": ["Strata", "Land", null]
+    },
+    "raw_extras": {
+      "type": "object",
+      "description": "Unknown columns stored for audit"
+    }
+  },
+
+  "etl": {
+    "natural_key_fields": ["project_name", "transaction_month", "price", "area_sqft", "floor_range"],
+    "outlier_iqr_multiplier": 5.0,
+    "enbloc_area_threshold": 10000,
+    "late_arrival_days": 120,
+    "retention_days": 90,
+    "psf_tolerance": {"absolute": 3, "percent": 0.005},
+    "min_row_count": 1000,
+    "max_null_rate": {
+      "project_name": 0.0,
+      "price": 0.0,
+      "area_sqft": 0.0,
+      "district": 0.01,
+      "transaction_month": 0.0
+    }
+  },
+
+  "column_aliases": {
+    "project_name": ["Project Name"],
+    "price": ["Transacted Price ($)", "Transacted Price", "Price ($)"],
+    "area_sqft": ["Area (SQFT)", "Area (Sqft)", "Area (ft2)"],
+    "transaction_month": ["Sale Date", "Transaction Month", "Contract Date"],
+    "floor_range": ["Floor Level", "Floor Range"],
+    "district": ["Postal District", "District"],
+    "psf_source": ["Unit Price ($ PSF)", "Unit Price (PSF)", "PSF"],
+    "sale_type": ["Type of Sale", "Sale Type"],
+    "tenure": ["Tenure", "Lease"],
+    "market_segment_raw": ["Market Segment"],
+    "street_name": ["Street Name", "Address"],
+    "num_units": ["Number of Units", "Units"],
+    "nett_price": ["Nett Price($)", "Nett Price"],
+    "type_of_area": ["Type of Area"]
+  },
+
+  "semantic_assertions": {
+    "psf_consistency": {
+      "description": "PSF from CSV should match price/area_sqft within tolerance",
+      "check": "abs(psf_source - psf_calc) / psf_calc < 0.01",
+      "severity": "warn",
+      "threshold": 0.05
+    },
+    "district_range": {
+      "description": "District must be D01-D28",
+      "check": "district matches ^D(0[1-9]|[12][0-9])$",
+      "severity": "fail"
+    },
+    "price_range": {
+      "description": "Price must be between $50K and $100M",
+      "check": "price >= 50000 AND price <= 100000000",
+      "severity": "warn",
+      "threshold": 0.01
+    },
+    "area_range": {
+      "description": "Area must be between 100 and 50,000 sqft",
+      "check": "area_sqft >= 100 AND area_sqft <= 50000",
+      "severity": "warn",
+      "threshold": 0.01
+    }
+  }
+}
