@@ -31,7 +31,7 @@ export default function Pricing() {
       // Create Stripe checkout session
       const response = await apiClient.post('/payments/create-checkout', {
         plan_id: planId,
-        success_url: `${window.location.origin}/market-pulse?upgraded=true`,
+        success_url: `${window.location.origin}/market-overview?upgraded=true`,
         cancel_url: `${window.location.origin}/pricing`,
       });
 
@@ -66,7 +66,7 @@ export default function Pricing() {
               )}
             </p>
             <button
-              onClick={() => navigate('/market-pulse')}
+              onClick={() => navigate('/market-overview')}
               className="w-full py-3 bg-[#213448] text-white rounded-xl hover:bg-[#547792] transition-colors"
             >
               Go to Dashboard
@@ -228,7 +228,7 @@ export default function Pricing() {
         {/* Back to Dashboard Link */}
         <div className="mt-8 text-center">
           <button
-            onClick={() => navigate('/market-pulse')}
+            onClick={() => navigate('/market-overview')}
             className="text-[#547792] hover:text-[#213448] underline text-sm"
           >
             Continue with limited access

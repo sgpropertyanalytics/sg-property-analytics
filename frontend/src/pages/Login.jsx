@@ -27,7 +27,7 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   // Get the page they were trying to access (from ProtectedRoute)
-  const from = location.state?.from?.pathname || '/market-pulse';
+  const from = location.state?.from?.pathname || '/market-overview';
 
   const handleGoogleSignIn = async () => {
     if (!isConfigured) return;

@@ -69,7 +69,7 @@ export function PricingModal({ isOpen, onClose }) {
     try {
       const response = await apiClient.post('/payments/create-checkout', {
         plan_id: planId,
-        success_url: `${window.location.origin}/market-pulse?upgraded=true`,
+        success_url: `${window.location.origin}/market-overview?upgraded=true`,
         cancel_url: window.location.href,
       });
 
