@@ -9,13 +9,14 @@
  * - Region summary bar
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import { BarChart3, DollarSign } from 'lucide-react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../../api/client';
 import { singaporeDistrictsGeoJSON } from '../../../data/singaporeDistrictsGeoJSON';
+import { DISTRICT_CENTROIDS } from '../../../data/districtCentroids';
 import { useSubscription } from '../../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../../hooks';
 import { SaleType } from '../../../schemas/apiContract';
@@ -27,9 +28,8 @@ import {
   LIQUIDITY_FILLS,
   BEDROOM_OPTIONS,
   PERIOD_OPTIONS,
-  MARKER_OFFSETS,
 } from './constants';
-import { polylabel, getLiquidityFill } from './utils';
+import { getLiquidityFill } from './utils';
 import {
   DistrictLabel,
   HoverCard,
@@ -41,7 +41,7 @@ import {
 // MAIN COMPONENT
 // =============================================================================
 
-export default function DistrictLiquidityMap({
+const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
   saleType = SaleType.RESALE,
   selectedPeriod: controlledPeriod,
   selectedBed: controlledBed,
@@ -153,28 +153,8 @@ export default function DistrictLiquidityMap({
     return map;
   }, [districtData]);
 
-  // Calculate district centroids
-  const districtCentroids = useMemo(() => {
-    return singaporeDistrictsGeoJSON.features
-      .map((feature) => {
-        const centroid = polylabel(feature.geometry.coordinates);
-        const districtId = feature.properties.district;
-        const offset = MARKER_OFFSETS[districtId] || { lng: 0, lat: 0 };
-
-        return {
-          district: districtId,
-          name: feature.properties.name,
-          region: feature.properties.region,
-          centroid: centroid
-            ? {
-                lng: centroid.lng + offset.lng,
-                lat: centroid.lat + offset.lat,
-              }
-            : null,
-        };
-      })
-      .filter((d) => d.centroid !== null);
-  }, []);
+  // Use precomputed district centroids (calculated at module load time)
+  const districtCentroids = DISTRICT_CENTROIDS;
 
   // Dynamic fill color expression based on liquidity
   const fillColorExpression = useMemo(() => {
@@ -569,4 +549,6 @@ export default function DistrictLiquidityMap({
       `}</style>
     </div>
   );
-}
+});
+
+export default DistrictLiquidityMap;

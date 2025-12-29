@@ -53,12 +53,13 @@ const getGradientColor = (rankPercent) => {
  * @param {string} bedroom - 'all', '1', '2', '3', '4', '5' (still respects bedroom filter)
  * @param {string} saleType - 'all', 'New Sale', 'Resale' (still respects sale type filter)
  */
-export const GrowthDumbbellChart = React.memo(function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
+export const GrowthDumbbellChart = React.memo(function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all', enabled = true }) {
   // Create a stable filter key for dependency tracking (no period - fixed date range)
   const filterKey = useMemo(() => `fixed:${bedroom}:${saleType}`, [bedroom, saleType]);
   const [sortConfig, setSortConfig] = useState({ column: 'growth', order: 'desc' });
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
+  // enabled prop prevents fetching when component is hidden (e.g., in volume mode)
   const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       // Build API params - NO date filters, uses full database range
@@ -96,7 +97,7 @@ export const GrowthDumbbellChart = React.memo(function GrowthDumbbellChart({ bed
       return transformGrowthDumbbellSeries(rawData, { districts: ALL_DISTRICTS });
     },
     [filterKey],
-    { initialData: { chartData: [], startQuarter: '', endQuarter: '', excludedDistricts: [] } }
+    { initialData: { chartData: [], startQuarter: '', endQuarter: '', excludedDistricts: [] }, enabled }
   );
 
   // Extract transformed data and add display metadata

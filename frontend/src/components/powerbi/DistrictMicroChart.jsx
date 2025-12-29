@@ -1,29 +1,10 @@
 import React, { useRef, useMemo } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  BarController,
-  LineElement,
-  LineController,
-  PointElement,
-  Tooltip,
-} from 'chart.js';
 import { Chart } from 'react-chartjs-2';
 import { BASE_CHART_OPTIONS } from '../../constants/chartOptions';
 import { getRegionForDistrict, DISTRICT_NAMES, isRegionDark } from '../../constants';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  BarController,
-  LineElement,
-  LineController,
-  PointElement,
-  Tooltip
-);
+// Singleton registration - ensures Chart.js components are registered once
+import '../../lib/chartjs-registry';
 
 // Region-based header colors (more prominent for clarity)
 const REGION_HEADER_BG = {

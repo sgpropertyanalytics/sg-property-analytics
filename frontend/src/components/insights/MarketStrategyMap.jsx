@@ -16,6 +16,7 @@ import { BarChart3, DollarSign } from 'lucide-react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
+import { DISTRICT_CENTROIDS } from '../../data/districtCentroids';
 import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../hooks';
@@ -508,24 +509,8 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
     return calculateVolumeThresholds(districtData);
   }, [districtData]);
 
-  // Calculate district centroids
-  const districtCentroids = useMemo(() => {
-    return singaporeDistrictsGeoJSON.features.map(feature => {
-      const centroid = polylabel(feature.geometry.coordinates);
-      const districtId = feature.properties.district;
-      const offset = MARKER_OFFSETS[districtId] || { lng: 0, lat: 0 };
-
-      return {
-        district: districtId,
-        name: feature.properties.name,
-        region: feature.properties.region,
-        centroid: centroid ? {
-          lng: centroid.lng + offset.lng,
-          lat: centroid.lat + offset.lat,
-        } : null,
-      };
-    }).filter(d => d.centroid !== null);
-  }, []);
+  // Use precomputed district centroids (calculated at module load time)
+  const districtCentroids = DISTRICT_CENTROIDS;
 
   // Region fill color expression
   const fillColorExpression = useMemo(() => {
@@ -855,4 +840,6 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
       `}</style>
     </div>
   );
-}
+});
+
+export default MarketStrategyMap;

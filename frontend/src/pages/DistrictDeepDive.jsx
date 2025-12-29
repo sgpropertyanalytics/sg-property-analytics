@@ -94,6 +94,7 @@ export function DistrictDeepDiveContent() {
                 <GrowthDumbbellChart
                   bedroom={selectedBed}
                   saleType={SaleType.RESALE}
+                  enabled={mapMode === 'price'}
                 />
               </ChartWatermark>
             </>
