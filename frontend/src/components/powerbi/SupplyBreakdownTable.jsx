@@ -333,25 +333,25 @@ export function SupplyBreakdownTable({
                               />
                             )}
                           </div>
-                          <span className="text-[10px] text-[#213448] font-mono font-semibold w-10 text-right">
+                          <span className="text-[10px] text-[#213448] font-mono tabular-nums font-semibold w-10 text-right">
                             {formatNum(row.total)}
                           </span>
                         </div>
                       </td>
 
                       {/* Unsold */}
-                      <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10 text-[#213448]">
+                      <td className="text-right px-3 py-1.5 font-mono tabular-nums bg-[#547792]/10 text-[#213448]">
                         {formatNum(row.unsold)}
                       </td>
 
                       {/* Upcoming */}
-                      <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10 text-[#213448]">
+                      <td className="text-right px-3 py-1.5 font-mono tabular-nums bg-[#547792]/10 text-[#213448]">
                         {formatNum(row.upcoming)}
                       </td>
 
                       {/* GLS */}
                       {includeGls && (
-                        <td className="text-right px-3 py-1.5 font-mono bg-[#547792]/10 text-[#213448]">
+                        <td className="text-right px-3 py-1.5 font-mono tabular-nums bg-[#547792]/10 text-[#213448]">
                           {formatNum(row.gls)}
                         </td>
                       )}
@@ -388,24 +388,24 @@ export function SupplyBreakdownTable({
 
                         {/* Project Total */}
                         <td className={`${pIdx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-2 py-1 border-r border-[#94B4C1]/30 text-center`}>
-                          <span className="text-[10px] text-[#547792] font-mono">
+                          <span className="text-[10px] text-[#547792] font-mono tabular-nums">
                             {formatNum(project.units)}
                           </span>
                         </td>
 
                         {/* Unsold column */}
-                        <td className="text-right px-3 py-1 font-mono text-[11px] text-[#213448]">
+                        <td className="text-right px-3 py-1 font-mono tabular-nums text-[11px] text-[#213448]">
                           {project.category === 'unsold' ? formatNum(project.units) : '–'}
                         </td>
 
                         {/* Upcoming column */}
-                        <td className="text-right px-3 py-1 font-mono text-[11px] text-[#213448]">
+                        <td className="text-right px-3 py-1 font-mono tabular-nums text-[11px] text-[#213448]">
                           {project.category === 'upcoming' ? formatNum(project.units) : '–'}
                         </td>
 
                         {/* GLS column */}
                         {includeGls && (
-                          <td className="text-right px-3 py-1 font-mono text-[11px] text-[#213448]">
+                          <td className="text-right px-3 py-1 font-mono tabular-nums text-[11px] text-[#213448]">
                             –
                           </td>
                         )}
@@ -422,17 +422,17 @@ export function SupplyBreakdownTable({
                     TOTAL
                   </td>
                   <td className="px-2 py-2.5 border-t border-[#547792]" />
-                  <td className="px-2 py-2.5 font-mono border-t border-[#547792] text-center">
+                  <td className="px-2 py-2.5 font-mono tabular-nums border-t border-[#547792] text-center">
                     {formatNum(tableData.totals.totalEffectiveSupply)}
                   </td>
-                  <td className="text-right px-3 py-2.5 font-mono border-t border-[#547792]">
+                  <td className="text-right px-3 py-2.5 font-mono tabular-nums border-t border-[#547792]">
                     {formatNum(tableData.totals.unsoldInventory)}
                   </td>
-                  <td className="text-right px-3 py-2.5 font-mono border-t border-[#547792]">
+                  <td className="text-right px-3 py-2.5 font-mono tabular-nums border-t border-[#547792]">
                     {formatNum(tableData.totals.upcomingLaunches)}
                   </td>
                   {includeGls && (
-                    <td className="text-right px-3 py-2.5 font-mono border-t border-[#547792]">
+                    <td className="text-right px-3 py-2.5 font-mono tabular-nums border-t border-[#547792]">
                       {formatNum(tableData.totals.glsPipeline)}
                     </td>
                   )}

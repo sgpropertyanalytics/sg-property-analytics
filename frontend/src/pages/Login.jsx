@@ -123,15 +123,15 @@ function Login() {
         <div className="relative z-10 pt-8 border-t border-[#547792]/30">
           <div className="grid grid-cols-3 gap-6 mb-6">
             <div>
-              <div className="text-2xl font-bold text-[#EAE0CF] font-mono">$2.8B+</div>
+              <div className="text-2xl font-bold text-[#EAE0CF] font-mono tabular-nums">$2.8B+</div>
               <div className="text-xs text-[#94B4C1] uppercase tracking-wide">Property Value Analyzed</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-[#EAE0CF] font-mono">5 Years</div>
+              <div className="text-2xl font-bold text-[#EAE0CF] font-mono tabular-nums">5 Years</div>
               <div className="text-xs text-[#94B4C1] uppercase tracking-wide">Historical Data</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-[#EAE0CF] font-mono">28</div>
+              <div className="text-2xl font-bold text-[#EAE0CF] font-mono tabular-nums">28</div>
               <div className="text-xs text-[#94B4C1] uppercase tracking-wide">Districts Covered</div>
             </div>
           </div>

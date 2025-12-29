@@ -455,7 +455,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                             style={{ width: `${(projectsByDistrict.districtAggregates[district]?.totalTxns || 0) / projectsByDistrict.maxVolume * 100}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-[#547792] font-mono w-8 text-right">
+                        <span className="text-[10px] text-[#547792] font-mono tabular-nums w-8 text-right">
                           {projectsByDistrict.districtAggregates[district]?.totalTxns || 0}
                         </span>
                       </div>
@@ -479,7 +479,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                           title={hasData ? `${zone}: ${districtZone.count} of ${districtTotal} transactions (${percentage.toFixed(1)}%)` : `${zone}: No data`}
                         >
                           {hasData ? (
-                            <span className="text-[11px] font-mono text-[#213448]">
+                            <span className="text-[11px] font-mono tabular-nums text-[#213448]">
                               {districtZone.count}
                             </span>
                           ) : (
@@ -499,7 +499,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                       </td>
                       {/* Project Volume - Now second column */}
                       <td className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-2 py-1 border-r border-[#94B4C1]/30 text-center`}>
-                        <span className="text-[10px] text-[#547792] font-mono">
+                        <span className="text-[10px] text-[#547792] font-mono tabular-nums">
                           {project.total_transactions}
                         </span>
                       </td>
@@ -532,7 +532,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                               isInsufficient ? (
                                 <span className="text-xs text-gray-400">n&lt;5</span>
                               ) : (
-                                <span className={`text-xs font-mono font-medium ${textColor}`}>
+                                <span className={`text-xs font-mono tabular-nums font-medium ${textColor}`}>
                                   {zoneData.z_score > 0 ? '+' : ''}{zoneData.z_score.toFixed(2)}
                                 </span>
                               )
@@ -567,15 +567,15 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between">
               <span className="text-[#94B4C1]">Avg Velocity:</span>
-              <span className="font-mono">{hoveredCell.zoneData.velocity.toFixed(2)} units/mo</span>
+              <span className="font-mono tabular-nums">{hoveredCell.zoneData.velocity.toFixed(2)} units/mo</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#94B4C1]">Sample Size:</span>
-              <span className="font-mono">n={hoveredCell.zoneData.count}</span>
+              <span className="font-mono tabular-nums">n={hoveredCell.zoneData.count}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#94B4C1]">Z-Score:</span>
-              <span className="font-mono">
+              <span className="font-mono tabular-nums">
                 {hoveredCell.zoneData.z_score > 0 ? '+' : ''}{hoveredCell.zoneData.z_score.toFixed(2)}
               </span>
             </div>

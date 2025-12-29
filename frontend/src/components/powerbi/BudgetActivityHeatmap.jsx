@@ -262,7 +262,7 @@ export function BudgetActivityHeatmap({
                     return (
                       <td
                         key={br}
-                        className="text-center px-2 py-2 text-xs font-mono transition-colors"
+                        className="text-center px-2 py-2 text-xs font-mono tabular-nums transition-colors"
                         style={{ backgroundColor: bgColor, color: textColor }}
                         title={tooltipText}
                       >
@@ -278,7 +278,7 @@ export function BudgetActivityHeatmap({
                   })}
 
                   {/* Row total */}
-                  <td className="text-center px-2 py-2 text-xs font-mono text-[#547792] bg-[#EAE0CF]/20">
+                  <td className="text-center px-2 py-2 text-xs font-mono tabular-nums text-[#547792] bg-[#EAE0CF]/20">
                     {isLowSample ? (
                       <span className="text-[#94B4C1]">{rowTotal}</span>
                     ) : (

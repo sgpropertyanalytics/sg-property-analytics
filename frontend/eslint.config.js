@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
+import designPlugin from './eslint-plugin-design/index.js';
 
 /**
  * ESLint Configuration (Flat Config for ESLint 9+)
@@ -10,6 +11,10 @@ import globals from 'globals';
  * - no-undef: Catches undefined variables (like 'updating' leftover from refactors)
  * - react-hooks/rules-of-hooks: Enforces React hooks rules
  * - react-hooks/exhaustive-deps: Warns about missing useEffect dependencies
+ * - design/*: Design system enforcement (typography, colors, formatting)
+ *
+ * @see eslint-plugin-design/ - Custom design rules
+ * @see src/design-rules.js - Design system source of truth
  */
 // Vitest globals for test files
 const vitestGlobals = {
@@ -89,8 +94,25 @@ export default [
     },
   },
 
+  // Design system enforcement
+  // Validates typography, colors, and numeric formatting in UI components
+  {
+    files: ['src/components/**/*.{js,jsx}', 'src/pages/**/*.{js,jsx}'],
+    plugins: {
+      design: designPlugin,
+    },
+    rules: {
+      // Typography: Disallow arbitrary font sizes (use Tailwind scale)
+      'design/no-arbitrary-font-size': 'error',
+      // Colors: Disallow raw hex colors (import from constants)
+      'design/no-raw-hex-color': 'error',
+      // Formatting: Require tabular-nums on numeric displays
+      'design/require-tabular-nums': 'warn',
+    },
+  },
+
   // Ignore patterns
   {
-    ignores: ['dist/', 'node_modules/', '*.config.js', '*.config.cjs'],
+    ignores: ['dist/', 'node_modules/', '*.config.js', '*.config.cjs', 'eslint-plugin-design/'],
   },
 ];

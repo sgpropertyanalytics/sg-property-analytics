@@ -514,7 +514,7 @@ function DataValidationCard() {
         </p>
       </div>
 
-      <div className="absolute right-0 top-0 w-1/2 md:w-2/5 h-full opacity-40 group-hover:opacity-60 transition-opacity pointer-events-none select-none overflow-hidden font-mono text-[9px] md:text-[10px] leading-relaxed text-[#213448] p-4 text-right">
+      <div className="absolute right-0 top-0 w-1/2 md:w-2/5 h-full opacity-40 group-hover:opacity-60 transition-opacity pointer-events-none select-none overflow-hidden font-mono tabular-nums text-[9px] md:text-[10px] leading-relaxed text-[#213448] p-4 text-right">
         <div className="animate-scroll-up space-y-1">
           {[...logEntries, ...logEntries].map((entry, i) => (
             <p

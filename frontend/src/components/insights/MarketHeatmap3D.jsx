@@ -518,13 +518,13 @@ export default function MarketHeatmap3D() {
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-sm">
                       <span className="text-[#547792]">Median PSF</span>
-                      <span className="font-semibold text-white font-mono">
+                      <span className="font-semibold text-white font-mono tabular-nums">
                         {formatPsf(popupInfo.district.median_psf)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-[#547792]">Observations</span>
-                      <span className="font-medium text-white font-mono">
+                      <span className="font-medium text-white font-mono tabular-nums">
                         {popupInfo.district.tx_count?.toLocaleString() || 0}
                       </span>
                     </div>
@@ -532,7 +532,7 @@ export default function MarketHeatmap3D() {
                       <div className="flex justify-between text-sm">
                         <span className="text-[#547792]">YoY Change</span>
                         <span
-                          className={`font-medium font-mono ${
+                          className={`font-medium font-mono tabular-nums ${
                             formatYoY(popupInfo.district.yoy_pct)?.colorClass
                           }`}
                         >
@@ -669,7 +669,7 @@ export default function MarketHeatmap3D() {
               <p className="text-[10px] text-[#547792] uppercase tracking-wider">
                 Lowest PSF
               </p>
-              <p className="text-sm md:text-base font-semibold text-white font-mono">
+              <p className="text-sm md:text-base font-semibold text-white font-mono tabular-nums">
                 {formatPsf(psfRange.min)}
               </p>
             </div>
@@ -677,7 +677,7 @@ export default function MarketHeatmap3D() {
               <p className="text-[10px] text-[#547792] uppercase tracking-wider">
                 Districts
               </p>
-              <p className="text-sm md:text-base font-semibold text-white font-mono">
+              <p className="text-sm md:text-base font-semibold text-white font-mono tabular-nums">
                 {districtData.filter((d) => d.has_data).length} / 28
               </p>
             </div>
@@ -685,7 +685,7 @@ export default function MarketHeatmap3D() {
               <p className="text-[10px] text-[#547792] uppercase tracking-wider">
                 Highest PSF
               </p>
-              <p className="text-sm md:text-base font-semibold text-white font-mono">
+              <p className="text-sm md:text-base font-semibold text-white font-mono tabular-nums">
                 {formatPsf(psfRange.max)}
               </p>
             </div>
