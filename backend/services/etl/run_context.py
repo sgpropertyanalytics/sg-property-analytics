@@ -57,6 +57,11 @@ class RunContext:
     # Contract compatibility report
     contract_report: Dict[str, Any] = field(default_factory=dict)
 
+    # Source reconciliation (for audit: source = loaded + rejected + skipped)
+    source_row_count: Optional[int] = None  # Total raw rows in CSV files
+    rows_rejected: int = 0  # Failed parse/validation
+    rows_skipped: int = 0  # Empty rows, header rows in middle, etc.
+
     # Row counts by stage
     rows_loaded: int = 0
     rows_after_dedup: int = 0
@@ -126,6 +131,11 @@ class RunContext:
             'rules_version': self.rules_version,
             'contract_hash': self.contract_hash,
             'header_fingerprint': self.header_fingerprint,
+            # Source reconciliation
+            'source_row_count': self.source_row_count,
+            'rows_rejected': self.rows_rejected,
+            'rows_skipped': self.rows_skipped,
+            # Row counts by stage
             'rows_loaded': self.rows_loaded,
             'rows_after_dedup': self.rows_after_dedup,
             'rows_outliers_marked': self.rows_outliers_marked,
@@ -148,10 +158,26 @@ class RunContext:
             f"Status: {self.status}",
             f"Schema: {self.schema_version} | Rules: {self.rules_version}",
             f"Files: {self.total_files}",
-            f"Rows: loaded={self.rows_loaded}, after_dedup={self.rows_after_dedup}, "
-            f"outliers={self.rows_outliers_marked}, promoted={self.rows_promoted}",
-            f"Elapsed: {elapsed.total_seconds():.1f}s",
         ]
+
+        # Source reconciliation
+        if self.source_row_count is not None:
+            accounted = self.rows_loaded + self.rows_rejected + self.rows_skipped
+            unaccounted = self.source_row_count - accounted
+            lines.append(
+                f"Source: {self.source_row_count} = loaded({self.rows_loaded}) + "
+                f"rejected({self.rows_rejected}) + skipped({self.rows_skipped}) "
+                f"[unaccounted: {unaccounted}]"
+            )
+        else:
+            lines.append(f"Rows loaded: {self.rows_loaded}")
+
+        lines.extend([
+            f"Pipeline: dedup={self.rows_after_dedup}, outliers={self.rows_outliers_marked}, "
+            f"promoted={self.rows_promoted}, collisions={self.rows_skipped_collision}",
+            f"Elapsed: {elapsed.total_seconds():.1f}s",
+        ])
+
         if self.error_message:
             lines.append(f"Error: {self.error_stage}: {self.error_message}")
         if self.validation_issues:
@@ -159,6 +185,24 @@ class RunContext:
         if self.semantic_warnings:
             lines.append(f"Semantic warnings: {len(self.semantic_warnings)}")
         return '\n'.join(lines)
+
+    def reconciliation_check(self) -> tuple:
+        """
+        Check source reconciliation.
+
+        Returns:
+            (is_ok, unaccounted, message)
+        """
+        if self.source_row_count is None:
+            return (None, None, "source_row_count not set")
+
+        accounted = self.rows_loaded + self.rows_rejected + self.rows_skipped
+        unaccounted = self.source_row_count - accounted
+
+        if unaccounted == 0:
+            return (True, 0, "OK: all rows accounted for")
+        else:
+            return (False, unaccounted, f"MISMATCH: {unaccounted} rows unaccounted")
 
 
 def create_run_context(

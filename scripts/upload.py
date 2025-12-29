@@ -127,7 +127,7 @@ USE_CONTRACT_HEADERS = True           # Step A: Contract-based header resolution
 USE_BATCH_TRACKING = True             # Step B: etl_batches table
 USE_ROW_HASH = True                   # Step C: Compute row_hash
 USE_BATCH_SCOPED_STAGING = True       # Step D: Append-only staging
-USE_IDEMPOTENT_PROMOTION = True       # Step E: ON CONFLICT DO NOTHING
+USE_IDEMPOTENT_PROMOTION = True       # Step E: ON CONFLICT DO NOTHING (uses natural key constraint)
 USE_PLAN_MODE = True                  # Step F: --plan flag
 USE_PSF_RECONCILIATION = True         # Step G: PSF source/calc/reconcile
 
@@ -411,6 +411,11 @@ def ensure_etl_batches_table():
             rules_version VARCHAR(40),
             contract_hash VARCHAR(32),
             header_fingerprint VARCHAR(64),
+            -- Source reconciliation columns
+            source_row_count INTEGER,
+            rows_rejected INTEGER NOT NULL DEFAULT 0,
+            rows_skipped INTEGER NOT NULL DEFAULT 0,
+            -- Row counts by stage
             rows_loaded INTEGER DEFAULT 0,
             rows_after_dedup INTEGER DEFAULT 0,
             rows_outliers_marked INTEGER DEFAULT 0,
@@ -485,6 +490,11 @@ def update_batch_record(ctx: 'RunContext', logger: 'UploadLogger') -> bool:
             UPDATE etl_batches SET
                 status = :status,
                 completed_at = :completed_at,
+                -- Source reconciliation
+                source_row_count = :source_row_count,
+                rows_rejected = :rows_rejected,
+                rows_skipped = :rows_skipped,
+                -- Row counts by stage
                 rows_loaded = :rows_loaded,
                 rows_after_dedup = :rows_after_dedup,
                 rows_outliers_marked = :rows_outliers_marked,
@@ -501,6 +511,11 @@ def update_batch_record(ctx: 'RunContext', logger: 'UploadLogger') -> bool:
             'batch_id': record['batch_id'],
             'status': record['status'],
             'completed_at': record['completed_at'],
+            # Source reconciliation
+            'source_row_count': record['source_row_count'],
+            'rows_rejected': record['rows_rejected'],
+            'rows_skipped': record['rows_skipped'],
+            # Row counts by stage
             'rows_loaded': record['rows_loaded'],
             'rows_after_dedup': record['rows_after_dedup'],
             'rows_outliers_marked': record['rows_outliers_marked'],
@@ -623,6 +638,15 @@ class UploadLogger:
             'total_elapsed_seconds': total_elapsed,
             'stages': self.stages
         }
+
+
+# =============================================================================
+# TIMESTAMPED LOGGING HELPER
+# =============================================================================
+
+def log_step(logger, msg):
+    """Log with timestamp for diagnosing hangs."""
+    logger.log(f"{time.strftime('%Y-%m-%d %H:%M:%S')}  {msg}")
 
 
 # =============================================================================
@@ -947,6 +971,10 @@ def _execute_with_retry(session, sql, values, logger, batch_num: int, max_retrie
 
                 # Force session refresh - dispose old connection and get fresh one
                 try:
+                    session.rollback()  # Clear any poisoned transaction state
+                except Exception:
+                    pass
+                try:
                     session.close()
                     # The next execute will get a fresh connection from the pool
                 except Exception:
@@ -1146,14 +1174,18 @@ def _create_staging_table_schema(logger: UploadLogger):
     logger.log("✓ Staging table created")
 
 
-def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger, batch_id: str = None) -> int:
+def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger, batch_id: str = None) -> dict:
     """
     Process a single CSV file and insert into staging table.
 
     Step D: When batch_id is provided, each row is tagged with it for
     batch-scoped deduplication and promotion.
 
-    Returns count of rows saved.
+    Returns dict with reconciliation data:
+        - source_rows: Total raw rows in CSV (before any processing)
+        - rows_loaded: Rows successfully inserted to staging
+        - rows_rejected: Rows rejected during insert (missing fields, invalid values)
+        - rows_skipped: Rows skipped during cleaning (empty rows, header rows)
     """
     logger.log(f"Processing: {os.path.basename(csv_path)}")
 
@@ -1170,7 +1202,7 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger, batch
 
         if df is None:
             logger.log(f"  ⚠️  Could not decode with any encoding")
-            return 0
+            return {'source_rows': 0, 'rows_loaded': 0, 'rows_rejected': 0, 'rows_skipped': 0}
 
         raw_rows = len(df)
         original_cols = len(df.columns)
@@ -1189,21 +1221,31 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger, batch
                 for sample in diag.get('sample_rejected', [])[:3]:
                     logger.log(f"      Sample: {sample}")
 
+        # Calculate rows skipped during cleaning
+        rows_after_clean = len(df) if not df.empty else 0
+        rows_skipped_cleaning = raw_rows - rows_after_clean
+
         if df.empty:
             logger.log(f"  ⚠️  No valid data after cleaning ({raw_rows} raw rows all rejected)")
-            return 0
+            return {'source_rows': raw_rows, 'rows_loaded': 0, 'rows_rejected': 0, 'rows_skipped': rows_skipped_cleaning}
 
         df['sale_type'] = sale_type
 
         # Insert in batches using raw SQL for staging table
-        # Use smaller batch size for remote connections to avoid timeouts
-        batch_size = 100
+        # Batch size 500 balances round-trip reduction vs memory usage
+        batch_size = 500
         total_rows = len(df)
         saved = 0
         insert_rejected = 0
         insert_rejection_reasons = {}
         sample_insert_rejected = []
         current_year = datetime.now().year
+
+        # Progress tracking for diagnosing hangs
+        t0 = time.time()
+        last_log = 0
+        log_every = 500
+        log_step(logger, f"Starting upload: {total_rows:,} rows")
 
         for idx in range(0, total_rows, batch_size):
             batch = df.iloc[idx:idx+batch_size]
@@ -1350,6 +1392,13 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger, batch
 
                 if success:
                     saved += rows_inserted
+                    # Progress logging every log_every rows
+                    done = idx + len(batch)
+                    if done - last_log >= log_every or done == total_rows:
+                        elapsed = time.time() - t0
+                        rate = done / elapsed if elapsed > 0 else 0
+                        log_step(logger, f"Progress: {done:,}/{total_rows:,} rows ({rate:,.0f}/s)")
+                        last_log = done
                 else:
                     insert_rejection_reasons['sql_error'] = insert_rejection_reasons.get('sql_error', 0) + len(values)
                     insert_rejected += len(values)
@@ -1364,15 +1413,23 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger, batch
         else:
             logger.log(f"  ✓ Saved {saved:,} rows (from {original_cols} CSV columns)")
 
+        # Log source reconciliation
+        logger.log(f"  📊 Reconciliation: {raw_rows} source = {saved} loaded + {insert_rejected} rejected + {rows_skipped_cleaning} skipped")
+
         del df
         gc.collect()
-        return saved
+        return {
+            'source_rows': raw_rows,
+            'rows_loaded': saved,
+            'rows_rejected': insert_rejected,
+            'rows_skipped': rows_skipped_cleaning
+        }
 
     except Exception as e:
         logger.log(f"  ⚠️  Error: {e}")
         import traceback
         traceback.print_exc()
-        return 0
+        return {'source_rows': 0, 'rows_loaded': 0, 'rows_rejected': 0, 'rows_skipped': 0}
 
 
 # =============================================================================
@@ -1386,6 +1443,7 @@ def remove_duplicates_staging(logger: UploadLogger, batch_id: str = None) -> int
     Step D: When batch_id is provided, only dedup within that batch.
     """
     if USE_BATCH_SCOPED_STAGING and batch_id:
+        logger.log(f"  Batch-scoped dedup for batch={batch_id[:8]}...")
         # Batch-scoped dedup: only remove duplicates within this batch
         before = db.session.execute(
             text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE batch_id = :batch_id"),
@@ -1411,7 +1469,9 @@ def remove_duplicates_staging(logger: UploadLogger, batch_id: str = None) -> int
         ).scalar()
     else:
         # Legacy mode: dedup entire table
+        logger.log("  WARNING: Legacy mode - processing ENTIRE staging table (may be slow)")
         before = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+        logger.log(f"  Before count: {before:,} rows, running DELETE query...")
 
         db.session.execute(text(f"""
             DELETE FROM {STAGING_TABLE}
@@ -1489,6 +1549,7 @@ def filter_outliers_staging(logger: UploadLogger, batch_id: str = None) -> Tuple
     # Calculate IQR on NON-enbloc records only (exclude already-marked outliers)
     IQR_MULTIPLIER = 5.0  # Relaxed from 1.5x to include luxury condos up to ~$7.6M
 
+    logger.log("  Running PERCENTILE_CONT query (may take time on large datasets)...")
     result = db.session.execute(text(f"""
         SELECT
             PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) as q1,
@@ -1692,7 +1753,7 @@ def validate_staging(logger: UploadLogger, batch_id: str = None) -> Tuple[bool, 
 # ATOMIC PUBLISH (TABLE SWAP)
 # =============================================================================
 
-def atomic_publish(logger: UploadLogger, batch_id: str = None) -> Tuple[bool, Dict]:
+def atomic_publish(logger: UploadLogger, batch_id: str = None, force: bool = False, full_reload: bool = False) -> Tuple[bool, Dict]:
     """
     Publish staging data to production.
 
@@ -1705,9 +1766,107 @@ def atomic_publish(logger: UploadLogger, batch_id: str = None) -> Tuple[bool, Di
     """
     stats = {'rows_promoted': 0, 'rows_skipped_collision': 0}
 
+    # ==========================================================================
+    # PUBLISH GUARDRAIL 1: Verify unique constraint exists (for idempotent mode)
+    # ==========================================================================
+    # ON CONFLICT requires a unique constraint. If it doesn't exist, the INSERT
+    # will fail with a confusing error. Verify upfront.
+    if USE_IDEMPOTENT_PROMOTION:
+        constraint_exists = db.session.execute(text("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_indexes
+                WHERE tablename = :table
+                AND indexname = 'idx_transactions_natural_key'
+            )
+        """), {'table': PRODUCTION_TABLE}).scalar()
+
+        if not constraint_exists:
+            logger.log("❌ PUBLISH BLOCKED: Required unique constraint missing")
+            logger.log("   The idx_transactions_natural_key index does not exist on production.")
+            logger.log("   Run this SQL to create it:")
+            logger.log(f"   CREATE UNIQUE INDEX idx_transactions_natural_key")
+            logger.log(f"   ON {PRODUCTION_TABLE}(project_name, transaction_date, price, area_sqft, COALESCE(floor_range, ''));")
+            return False, stats
+
+    # ==========================================================================
+    # PUBLISH GUARDRAIL 2: Key completeness (natural key columns not NULL)
+    # ==========================================================================
+    # The natural key is (project_name, transaction_date, price, area_sqft, floor_range)
+    # floor_range can be NULL (handled by COALESCE in index), but the others must not be.
+    NATURAL_KEY_COLS = ['project_name', 'transaction_date', 'price', 'area_sqft']
+    NULL_THRESHOLD = 0.001  # Allow 0.1% NULLs (for tiny data quality issues)
+
+    for col in NATURAL_KEY_COLS:
+        null_count = db.session.execute(text(f"""
+            SELECT COUNT(*) FROM {STAGING_TABLE}
+            WHERE {col} IS NULL AND (is_valid = true OR is_valid IS NULL)
+        """)).scalar() or 0
+
+        total_count = db.session.execute(text(f"""
+            SELECT COUNT(*) FROM {STAGING_TABLE}
+            WHERE is_valid = true OR is_valid IS NULL
+        """)).scalar() or 1
+
+        null_rate = null_count / total_count
+        if null_rate > NULL_THRESHOLD:
+            logger.log(f"❌ PUBLISH BLOCKED: Natural key column '{col}' has {null_rate:.2%} NULLs")
+            logger.log(f"   Threshold: {NULL_THRESHOLD:.2%}")
+            logger.log(f"   Fix the data quality issue before publishing.")
+            return False, stats
+
+    # ==========================================================================
+    # PUBLISH GUARDRAIL 3: Prevent accidental row count drops
+    # ==========================================================================
+    # This prevents the "we lost 40k rows" scenario from ever happening again.
+    # For legacy table swap, staging REPLACES production, so we must verify
+    # the candidate is at least as large (or within tolerance).
+    #
+    # Tolerance: Allow up to 5% drop (for legitimate data cleanup/dedup)
+    # Override: Pass force=True to bypass (for intentional full reloads)
+    ROW_DROP_TOLERANCE = 0.05  # 5%
+
+    prod_count = db.session.execute(
+        text(f"SELECT COUNT(*) FROM {PRODUCTION_TABLE}")
+    ).scalar() or 0
+
+    if not USE_IDEMPOTENT_PROMOTION:
+        # Legacy mode: staging REPLACES production
+        staging_count = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE is_valid = true OR is_valid IS NULL")
+        ).scalar() or 0
+
+        if prod_count > 0 and staging_count < prod_count * (1 - ROW_DROP_TOLERANCE):
+            drop_pct = ((prod_count - staging_count) / prod_count) * 100
+            if force:
+                logger.log(f"⚠️  WARNING: Row count will drop by {drop_pct:.1f}% (--force override)")
+                logger.log(f"   Production: {prod_count:,} → Staging: {staging_count:,}")
+            else:
+                logger.log(f"❌ PUBLISH BLOCKED: Row count would drop by {drop_pct:.1f}%")
+                logger.log(f"   Production: {prod_count:,} rows")
+                logger.log(f"   Staging:    {staging_count:,} rows")
+                logger.log(f"   This looks like a partial reload that would lose data.")
+                logger.log(f"   If this is intentional, re-run with --force flag.")
+                return False, stats
+
+    # ==========================================================================
+    # PUBLISH GUARDRAIL 4: Block swap mode unless explicitly requested
+    # ==========================================================================
+    # Swap mode REPLACES the entire production table, which is dangerous.
+    # Only allow it when --full-reload is explicitly passed.
+    if not USE_IDEMPOTENT_PROMOTION and not full_reload:
+        logger.log("❌ PUBLISH BLOCKED: Legacy table-swap mode is disabled by default")
+        logger.log("   Table swap REPLACES the entire production table.")
+        logger.log("   This is dangerous for incremental updates.")
+        logger.log("")
+        logger.log("   Options:")
+        logger.log("   1. Use idempotent mode (default): Set USE_IDEMPOTENT_PROMOTION = True")
+        logger.log("   2. For intentional full rebuild: Re-run with --full-reload --force")
+        return False, stats
+
     if USE_IDEMPOTENT_PROMOTION:
         return _idempotent_promote(logger, batch_id, stats)
     else:
+        logger.log("⚠️  Using legacy table-swap mode (--full-reload)")
         success = _legacy_table_swap(logger)
         return success, stats
 
@@ -1724,23 +1883,53 @@ def _idempotent_promote(logger: UploadLogger, batch_id: str, stats: Dict) -> Tup
     logger.log("Starting idempotent promotion...")
 
     try:
+        # ==========================================================================
+        # PUBLISH GUARDRAIL 5: Batch ownership enforcement
+        # ==========================================================================
+        # Promotion must be for a specific batch_id. This prevents:
+        # - Promoting stale data from failed runs
+        # - Accidentally promoting data from multiple batches
+        if not batch_id:
+            logger.log("❌ PUBLISH BLOCKED: No batch_id specified")
+            logger.log("   Idempotent promotion requires a specific batch_id.")
+            logger.log("   This ensures only the intended data is promoted.")
+            return False, stats
+
+        # Verify the batch_id exists in staging
+        batch_exists = db.session.execute(text(f"""
+            SELECT EXISTS (
+                SELECT 1 FROM {STAGING_TABLE}
+                WHERE batch_id = :batch_id
+                LIMIT 1
+            )
+        """), {'batch_id': batch_id}).scalar()
+
+        if not batch_exists:
+            logger.log(f"❌ PUBLISH BLOCKED: Batch {batch_id[:8]}... not found in staging")
+            # Show what batches ARE in staging
+            existing_batches = db.session.execute(text(f"""
+                SELECT batch_id, COUNT(*) as cnt
+                FROM {STAGING_TABLE}
+                GROUP BY batch_id
+            """)).fetchall()
+            if existing_batches:
+                logger.log("   Available batches in staging:")
+                for b in existing_batches:
+                    bid = str(b[0])[:8] if b[0] else 'NULL'
+                    logger.log(f"     - {bid}...: {b[1]:,} rows")
+            return False, stats
+
+        logger.log(f"  Batch ownership verified: {batch_id[:8]}...")
+
         # Build batch filter
-        batch_filter = ""
-        params = {}
-        if batch_id:
-            batch_filter = "AND batch_id = :batch_id"
-            params['batch_id'] = batch_id
+        batch_filter = "AND batch_id = :batch_id"
+        params = {'batch_id': batch_id}
 
         # Count staging rows to promote
-        if batch_id:
-            staging_count = db.session.execute(
-                text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE is_valid = true AND batch_id = :batch_id"),
-                {'batch_id': batch_id}
-            ).scalar()
-        else:
-            staging_count = db.session.execute(
-                text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE is_valid = true OR is_valid IS NULL")
-            ).scalar()
+        staging_count = db.session.execute(
+            text(f"SELECT COUNT(*) FROM {STAGING_TABLE} WHERE (is_valid = true OR is_valid IS NULL) AND batch_id = :batch_id"),
+            {'batch_id': batch_id}
+        ).scalar()
 
         if staging_count == 0:
             logger.log("❌ No valid staging rows to promote")
@@ -1748,11 +1937,11 @@ def _idempotent_promote(logger: UploadLogger, batch_id: str, stats: Dict) -> Tup
 
         logger.log(f"  Promoting {staging_count:,} rows from staging...")
 
-        # Ensure production table has row_hash unique index
+        # Ensure production table has natural key unique index
+        # (row_hash index requires backfilling existing data, so use natural key instead)
         db.session.execute(text(f"""
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_row_hash
-            ON {PRODUCTION_TABLE}(row_hash)
-            WHERE row_hash IS NOT NULL
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_natural_key
+            ON {PRODUCTION_TABLE}(project_name, transaction_date, price, area_sqft, COALESCE(floor_range, ''))
         """))
 
         # Count before
@@ -1780,7 +1969,7 @@ def _idempotent_promote(logger: UploadLogger, batch_id: str, stats: Dict) -> Tup
             FROM {STAGING_TABLE}
             WHERE (is_valid = true OR is_valid IS NULL)
               {batch_filter}
-            ON CONFLICT (row_hash) DO NOTHING
+            ON CONFLICT (project_name, transaction_date, price, area_sqft, COALESCE(floor_range, '')) DO NOTHING
         """), params)
 
         rows_promoted = result.rowcount
@@ -2299,6 +2488,24 @@ def main():
         action='store_true',
         help='Preview changes without touching production (dry-run diff)'
     )
+    parser.add_argument(
+        '--clear-staging',
+        action='store_true',
+        help='Clear staging table before loading (removes stale data from failed runs)'
+    )
+    parser.add_argument(
+        '--full-reload',
+        action='store_true',
+        help='Use legacy table-swap mode (DANGEROUS: replaces entire production table). '
+             'Only use for intentional full database rebuilds.'
+    )
+    parser.add_argument(
+        '--resume-batch',
+        type=str,
+        metavar='BATCH_ID',
+        help='Resume a previously failed batch instead of starting fresh. '
+             'Use this to continue where a failed run left off.'
+    )
     args = parser.parse_args()
 
     # Generate run ID for this upload
@@ -2427,7 +2634,7 @@ def main():
                     exit_code = 1
                     raise SystemExit(exit_code)
 
-                success, publish_stats = atomic_publish(logger)
+                success, publish_stats = atomic_publish(logger, force=args.force, full_reload=args.full_reload)
 
                 if success:
                     logger.stage("RECOMPUTE STATS")
@@ -2468,7 +2675,103 @@ def main():
                     run_ctx.mark_stage('staging')
 
             # Step D: Get batch_id for batch-scoped operations
-            current_batch_id = run_ctx.batch_id if run_ctx else None
+            # If --resume-batch is passed, use that batch_id instead of creating a new one
+            if args.resume_batch:
+                current_batch_id = args.resume_batch
+                logger.log(f"Resuming batch: {current_batch_id[:8]}...")
+            else:
+                current_batch_id = run_ctx.batch_id if run_ctx else None
+
+            # ==========================================================================
+            # STAGING OWNERSHIP CHECK (Critical Safety Guardrail)
+            # ==========================================================================
+            # Prevents accidental data mixing from failed runs.
+            # New run cannot append to existing staging by accident.
+            staging_exists = db.session.execute(text(
+                f"SELECT to_regclass('public.{STAGING_TABLE}') IS NOT NULL"
+            )).scalar()
+
+            if staging_exists and not args.clear_staging:
+                # Get existing batch info
+                existing_batches = db.session.execute(text(f"""
+                    SELECT
+                        batch_id,
+                        COUNT(*) as row_count,
+                        MIN(created_at)::text as first_row,
+                        MAX(created_at)::text as last_row
+                    FROM {STAGING_TABLE}
+                    GROUP BY batch_id
+                    ORDER BY MIN(created_at) DESC
+                """)).fetchall()
+
+                total_staging_rows = sum(b[1] for b in existing_batches)
+
+                if total_staging_rows > 0:
+                    # Check if resuming the same batch
+                    existing_batch_ids = [str(b[0]) for b in existing_batches if b[0]]
+
+                    if args.resume_batch:
+                        # Verify the batch_id matches
+                        if args.resume_batch not in existing_batch_ids:
+                            logger.log(f"❌ BATCH MISMATCH: Cannot resume batch {args.resume_batch[:8]}...")
+                            logger.log(f"   Staging contains different batch(es):")
+                            for b in existing_batches:
+                                bid = str(b[0])[:8] if b[0] else 'NULL'
+                                logger.log(f"     - {bid}...: {b[1]:,} rows (created {b[2]})")
+                            logger.log(f"")
+                            logger.log(f"   Options:")
+                            logger.log(f"   1. --clear-staging    Start fresh (discard existing data)")
+                            logger.log(f"   2. --resume-batch {existing_batch_ids[0][:8]}   Resume the existing batch")
+                            exit_code = 1
+                            raise SystemExit(exit_code)
+                        else:
+                            logger.log(f"  ✓ Batch ownership verified: {args.resume_batch[:8]}...")
+                            logger.log(f"    Existing rows in batch: {total_staging_rows:,}")
+                    else:
+                        # New batch but staging has data - ABORT
+                        logger.log(f"❌ STAGING NOT EMPTY: Found {total_staging_rows:,} rows from previous run(s)")
+                        logger.log(f"")
+                        logger.log(f"   Existing batches in staging:")
+                        for b in existing_batches:
+                            bid = str(b[0])[:8] if b[0] else 'NULL'
+                            logger.log(f"     - {bid}...: {b[1]:,} rows (created {b[2]})")
+                        logger.log(f"")
+                        logger.log(f"   This is a safety check to prevent accidental data mixing.")
+                        logger.log(f"   You must explicitly choose:")
+                        logger.log(f"")
+                        logger.log(f"   Options:")
+                        logger.log(f"   1. --clear-staging              Start fresh (discard existing data)")
+                        if existing_batch_ids:
+                            logger.log(f"   2. --resume-batch {existing_batch_ids[0]}   Resume the previous batch")
+                        logger.log(f"")
+                        exit_code = 1
+                        raise SystemExit(exit_code)
+
+            # Clear staging if requested (removes stale data from failed runs)
+            if args.clear_staging:
+                logger.log("Clearing staging table (--clear-staging flag)...")
+                try:
+                    # Use to_regclass for reliable schema-aware check
+                    staging_exists = db.session.execute(text(
+                        f"SELECT to_regclass('public.{STAGING_TABLE}') IS NOT NULL"
+                    )).scalar()
+
+                    if staging_exists:
+                        stale_count = db.session.execute(text(f"SELECT COUNT(*) FROM {STAGING_TABLE}")).scalar()
+                        # Use TRUNCATE (fast, keeps schema/indexes) instead of DROP CASCADE (dangerous)
+                        db.session.execute(text(f"TRUNCATE TABLE {STAGING_TABLE} RESTART IDENTITY"))
+                        db.session.commit()
+                        logger.log(f"  Cleared {stale_count:,} stale rows from staging (TRUNCATE)")
+                    else:
+                        logger.log("  Staging table doesn't exist, nothing to clear")
+                except Exception as e:
+                    # Fail fast unless --force is also passed
+                    if args.force:
+                        logger.log(f"  Warning: Could not clear staging: {e} (continuing due to --force)")
+                    else:
+                        logger.log(f"  ❌ Failed to clear staging: {e}")
+                        logger.log(f"     Use --force to continue anyway, or fix the issue first")
+                        raise SystemExit(1)
 
             # STAGE 1: Create staging table
             logger.stage("CREATE STAGING TABLE")
@@ -2478,46 +2781,76 @@ def main():
             # STAGE 2: Load CSV data to staging
             logger.stage("LOAD CSV TO STAGING")
 
-            total_saved = 0
+            # Track reconciliation totals
+            total_source_rows = 0
+            total_loaded = 0
+            total_rejected = 0
+            total_skipped = 0
 
             # Process New Sale CSVs
             if new_sale_files:
                 logger.log("Processing New Sale data...")
                 for csv_path in new_sale_files:
-                    saved = insert_to_staging(csv_path, 'New Sale', logger, batch_id=current_batch_id)
-                    total_saved += saved
+                    result = insert_to_staging(csv_path, 'New Sale', logger, batch_id=current_batch_id)
+                    total_source_rows += result['source_rows']
+                    total_loaded += result['rows_loaded']
+                    total_rejected += result['rows_rejected']
+                    total_skipped += result['rows_skipped']
                     gc.collect()
 
             # Process Resale CSVs
             if resale_files:
                 logger.log("Processing Resale data...")
                 for csv_path in resale_files:
-                    saved = insert_to_staging(csv_path, 'Resale', logger, batch_id=current_batch_id)
-                    total_saved += saved
+                    result = insert_to_staging(csv_path, 'Resale', logger, batch_id=current_batch_id)
+                    total_source_rows += result['source_rows']
+                    total_loaded += result['rows_loaded']
+                    total_rejected += result['rows_rejected']
+                    total_skipped += result['rows_skipped']
                     gc.collect()
 
             # Process Subsale CSVs
             if subsale_files:
                 logger.log("Processing Subsale data...")
                 for csv_path in subsale_files:
-                    saved = insert_to_staging(csv_path, 'Sub Sale', logger, batch_id=current_batch_id)
-                    total_saved += saved
+                    result = insert_to_staging(csv_path, 'Sub Sale', logger, batch_id=current_batch_id)
+                    total_source_rows += result['source_rows']
+                    total_loaded += result['rows_loaded']
+                    total_rejected += result['rows_rejected']
+                    total_skipped += result['rows_skipped']
                     gc.collect()
 
-            if total_saved == 0:
+            if total_loaded == 0:
                 logger.log("❌ All CSV files were empty or had no valid data.")
                 exit_code = 1
                 raise SystemExit(exit_code)
 
-            logger.log(f"Total rows loaded to staging: {total_saved:,}")
+            # Log reconciliation summary
+            logger.log(f"\n=== SOURCE RECONCILIATION ===")
+            logger.log(f"Source rows:    {total_source_rows:,}")
+            logger.log(f"Loaded:         {total_loaded:,}")
+            logger.log(f"Rejected:       {total_rejected:,}")
+            logger.log(f"Skipped:        {total_skipped:,}")
+            unaccounted = total_source_rows - total_loaded - total_rejected - total_skipped
+            if unaccounted == 0:
+                logger.log(f"Unaccounted:    0  ✓")
+            else:
+                logger.log(f"Unaccounted:    {unaccounted:,}  ⚠️")
 
             # Step B: Update batch record after loading
             if run_ctx:
-                run_ctx.rows_loaded = total_saved
+                run_ctx.source_row_count = total_source_rows
+                run_ctx.rows_loaded = total_loaded
+                run_ctx.rows_rejected = total_rejected
+                run_ctx.rows_skipped = total_skipped
                 update_batch_record(run_ctx, logger)
+
+            # Use total_loaded for backward compatibility with rest of pipeline
+            total_saved = total_loaded
 
             # STAGE 3: Deduplicate staging
             logger.stage("DEDUPLICATE STAGING")
+            log_step(logger, "Running deduplication query...")
             duplicates_removed = remove_duplicates_staging(logger, batch_id=current_batch_id)
 
             # Step B: Update batch record after dedup
@@ -2528,6 +2861,7 @@ def main():
 
             # STAGE 4: Remove outliers from staging
             logger.stage("REMOVE OUTLIERS")
+            log_step(logger, "Calculating IQR bounds (PERCENTILE_CONT)...")
             outliers_removed, _ = filter_outliers_staging(logger, batch_id=current_batch_id)
 
             # Step B: Update batch record after outliers
@@ -2603,7 +2937,7 @@ def main():
                     run_ctx.mark_stage('promoting')
                     update_batch_record(run_ctx, logger)
 
-                success, publish_stats = atomic_publish(logger, batch_id=current_batch_id)
+                success, publish_stats = atomic_publish(logger, batch_id=current_batch_id, force=args.force, full_reload=args.full_reload)
 
                 if not success:
                     # Step B: Mark batch as failed
