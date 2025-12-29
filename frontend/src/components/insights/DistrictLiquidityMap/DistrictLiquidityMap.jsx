@@ -215,38 +215,38 @@ export default function DistrictLiquidityMap({
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {/* Color-Sync Liquid Toggle */}
             {onModeChange && (
-              <div className="flex p-1 bg-white/80 backdrop-blur-md border border-[#94B4C1]/30 rounded-full shadow-sm">
+              <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
                 <button
                   onClick={() => onModeChange('volume')}
-                  className={`relative flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-full transition-colors z-10 ${
+                  className={`relative flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all z-10 ${
                     mapMode === 'volume' ? 'text-white' : 'text-[#547792] hover:text-[#213448]'
                   }`}
                 >
                   {mapMode === 'volume' && (
                     <motion.div
                       layoutId="map-toggle-pill"
-                      className="absolute inset-0 bg-[#213448] rounded-full -z-10"
+                      className="absolute inset-0 bg-[#213448] rounded-md -z-10 shadow-sm"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />
                   )}
-                  <BarChart3 size={14} />
+                  <BarChart3 size={12} className="sm:w-3.5 sm:h-3.5" />
                   <span className="hidden sm:inline">Liquidity</span>
                   <span className="sm:hidden">Vol</span>
                 </button>
                 <button
                   onClick={() => onModeChange('price')}
-                  className={`relative flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-full transition-colors z-10 ${
+                  className={`relative flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all z-10 ${
                     mapMode === 'price' ? 'text-white' : 'text-[#547792] hover:text-[#213448]'
                   }`}
                 >
                   {mapMode === 'price' && (
                     <motion.div
                       layoutId="map-toggle-pill"
-                      className="absolute inset-0 bg-[#9A3412] rounded-full -z-10"
+                      className="absolute inset-0 bg-[#9A3412] rounded-md -z-10 shadow-sm"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />
                   )}
-                  <DollarSign size={14} />
+                  <DollarSign size={12} className="sm:w-3.5 sm:h-3.5" />
                   <span className="hidden sm:inline">Price PSF</span>
                   <span className="sm:hidden">PSF</span>
                 </button>
