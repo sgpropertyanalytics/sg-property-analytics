@@ -756,3 +756,464 @@ class ScrapingOrchestrator:
             result["traceback"] = traceback.format_exc()
 
         return result
+
+    # =========================================================================
+    # CSV UPLOAD DIFF DETECTION
+    # =========================================================================
+
+    def compute_diff_for_upcoming_launches(
+        self,
+        incoming_records: List[Dict[str, Any]],
+        run_id: Optional[str] = None,
+    ) -> DiffReport:
+        """
+        Compute diff for upcoming launches CSV against existing database.
+
+        Args:
+            incoming_records: List of launch dicts from CSV
+            run_id: Optional run ID (auto-generated if not provided)
+
+        Returns:
+            DiffReport with unchanged/changed/new/missing and conflicts
+        """
+        from models.upcoming_launch import UpcomingLaunch
+
+        run_id = run_id or str(uuid.uuid4())
+
+        # Load existing records keyed by project_name (lowercase for matching)
+        existing_launches = self.db_session.query(UpcomingLaunch).all()
+        existing_dict = {}
+        for launch in existing_launches:
+            launch_dict = launch.to_dict()
+            # Use lowercase project_name as key for case-insensitive matching
+            key = launch.project_name.lower().strip()
+            existing_dict[key] = launch_dict
+
+        # Normalize incoming records to use lowercase key
+        normalized_incoming = []
+        for record in incoming_records:
+            normalized = record.copy()
+            # Store original project_name but use lowercase for key
+            normalized['_key'] = record.get('project_name', '').lower().strip()
+            normalized_incoming.append(normalized)
+
+        # Fields to compare
+        compare_fields = {
+            "project_name",
+            "developer",
+            "district",
+            "planning_area",
+            "market_segment",
+            "address",
+            "total_units",
+            "indicative_psf_low",
+            "indicative_psf_high",
+            "tenure",
+            "launch_year",
+            "expected_launch_date",
+            "expected_top_date",
+            "land_bid_psf",
+            "data_source",
+            "data_confidence",
+        }
+
+        return compute_diff_report(
+            source_name="upcoming_launches_csv",
+            source_type="csv_upload",
+            run_id=run_id,
+            entity_type="upcoming_launch",
+            incoming_records=normalized_incoming,
+            existing_records=existing_dict,
+            key_field="_key",
+            id_field="id",
+            compare_fields=compare_fields,
+        )
+
+    def compute_diff_for_new_launch_units(
+        self,
+        incoming_records: List[Dict[str, Any]],
+        run_id: Optional[str] = None,
+    ) -> DiffReport:
+        """
+        Compute diff for new_launch_units CSV against upcoming_launches database.
+
+        This compares the CSV unit counts against what's in the database
+        to find discrepancies that need review.
+
+        Args:
+            incoming_records: List of unit dicts from CSV
+            run_id: Optional run ID (auto-generated if not provided)
+
+        Returns:
+            DiffReport with unchanged/changed/new/missing and conflicts
+        """
+        from models.upcoming_launch import UpcomingLaunch
+
+        run_id = run_id or str(uuid.uuid4())
+
+        # Load existing records from upcoming_launches table
+        existing_launches = self.db_session.query(UpcomingLaunch).all()
+        existing_dict = {}
+        for launch in existing_launches:
+            key = launch.project_name.upper().strip()
+            existing_dict[key] = {
+                "id": launch.id,
+                "project_name": launch.project_name,
+                "total_units": launch.total_units,
+                "developer": launch.developer,
+                "tenure": launch.tenure,
+                "district": launch.district,
+            }
+
+        # Normalize incoming records
+        normalized_incoming = []
+        for record in incoming_records:
+            normalized = record.copy()
+            normalized['_key'] = record.get('project_name', '').upper().strip()
+            normalized_incoming.append(normalized)
+
+        # Fields to compare
+        compare_fields = {
+            "project_name",
+            "total_units",
+            "developer",
+            "tenure",
+            "district",
+        }
+
+        return compute_diff_report(
+            source_name="new_launch_units_csv",
+            source_type="csv_upload",
+            run_id=run_id,
+            entity_type="new_launch_units",
+            incoming_records=normalized_incoming,
+            existing_records=existing_dict,
+            key_field="_key",
+            id_field="id",
+            compare_fields=compare_fields,
+        )
+
+    def run_csv_upload_with_diff(
+        self,
+        csv_type: str,
+        file_path: str,
+        auto_promote: bool = False,
+        force_promote: bool = False,
+        dry_run: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Run CSV upload with diff detection before promotion.
+
+        Args:
+            csv_type: 'upcoming_launches' or 'new_launch_units'
+            file_path: Path to CSV file
+            auto_promote: Whether to auto-promote after diffing
+            force_promote: Whether to force promotion even with conflicts
+            dry_run: If True, validate only without saving
+
+        Returns:
+            Dict with run info, diff report, and promotion stats
+        """
+        import csv
+        import os
+
+        run_id = str(uuid.uuid4())
+
+        result = {
+            "run_id": run_id,
+            "csv_type": csv_type,
+            "file_path": file_path,
+            "dry_run": dry_run,
+            "diff_report": None,
+            "diff_summary": None,
+            "promotion_stats": None,
+        }
+
+        # Read CSV file
+        if not os.path.exists(file_path):
+            result["error"] = f"CSV file not found: {file_path}"
+            return result
+
+        try:
+            rows = []
+            with open(file_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    # Normalize column names
+                    normalized = {}
+                    for k, v in row.items():
+                        key = str(k).strip().lower().replace(' ', '_')
+                        normalized[key] = v if v else None
+                    rows.append(normalized)
+
+            result["rows_read"] = len(rows)
+            logger.info(f"Read {len(rows)} rows from {file_path}")
+
+        except Exception as e:
+            result["error"] = f"Failed to read CSV: {e}"
+            return result
+
+        # Compute diff based on CSV type
+        try:
+            if csv_type == "upcoming_launches":
+                # Transform rows to match expected format
+                incoming = self._transform_upcoming_launches_csv(rows)
+                diff_report = self.compute_diff_for_upcoming_launches(incoming, run_id)
+
+            elif csv_type == "new_launch_units":
+                # Transform rows to match expected format
+                incoming = self._transform_new_launch_units_csv(rows)
+                diff_report = self.compute_diff_for_new_launch_units(incoming, run_id)
+
+            else:
+                result["error"] = f"Unknown CSV type: {csv_type}"
+                return result
+
+            result["diff_report"] = diff_report.to_dict()
+            result["diff_summary"] = {
+                "unchanged": diff_report.unchanged_count,
+                "changed": diff_report.changed_count,
+                "new": diff_report.new_count,
+                "missing": diff_report.missing_count,
+                "conflicts": diff_report.total_conflicts,
+                "blocking_conflicts": diff_report.blocking_conflicts,
+                "can_auto_promote": diff_report.can_auto_promote,
+            }
+            result["diff_markdown"] = diff_report.to_markdown()
+
+            # Auto-promote if enabled and not dry run
+            if auto_promote and not dry_run:
+                if csv_type == "upcoming_launches":
+                    promotion_stats = self._promote_upcoming_launches(
+                        diff_report,
+                        incoming,
+                        force=force_promote,
+                    )
+                    result["promotion_stats"] = promotion_stats
+                elif csv_type == "new_launch_units":
+                    # new_launch_units doesn't promote to DB, just updates CSV
+                    result["promotion_stats"] = {
+                        "note": "new_launch_units is file-based, no DB promotion"
+                    }
+
+        except Exception as e:
+            logger.error(f"CSV diff failed: {e}")
+            result["error"] = str(e)
+            import traceback
+            result["traceback"] = traceback.format_exc()
+
+        return result
+
+    def _transform_upcoming_launches_csv(
+        self,
+        rows: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Transform CSV rows to match upcoming_launches format."""
+        transformed = []
+        for row in rows:
+            # Parse numeric fields
+            total_units = None
+            if row.get('total_units'):
+                try:
+                    total_units = int(row['total_units'])
+                except (ValueError, TypeError):
+                    pass
+
+            psf_min = None
+            if row.get('psf_min'):
+                try:
+                    psf_min = float(row['psf_min'])
+                except (ValueError, TypeError):
+                    pass
+
+            psf_max = None
+            if row.get('psf_max'):
+                try:
+                    psf_max = float(row['psf_max'])
+                except (ValueError, TypeError):
+                    pass
+
+            land_bid_psf = None
+            if row.get('land_bid_psf'):
+                try:
+                    land_bid_psf = float(row['land_bid_psf'])
+                except (ValueError, TypeError):
+                    pass
+
+            launch_year = None
+            if row.get('launch_year'):
+                try:
+                    launch_year = int(row['launch_year'])
+                except (ValueError, TypeError):
+                    pass
+
+            # Format district
+            district = str(row.get('district', '')).strip().upper()
+            if district and not district.startswith('D'):
+                district = f"D{district.zfill(2)}"
+
+            transformed.append({
+                "project_name": str(row.get('project_name', '')).strip(),
+                "developer": str(row.get('developer', '')).strip() or None,
+                "district": district or None,
+                "planning_area": str(row.get('planning_area', '')).strip() or None,
+                "market_segment": str(row.get('market_segment', '')).strip().upper() or None,
+                "address": str(row.get('address', '')).strip() or None,
+                "total_units": total_units,
+                "indicative_psf_low": psf_min,
+                "indicative_psf_high": psf_max or psf_min,
+                "tenure": str(row.get('tenure', '')).strip() or None,
+                "launch_year": launch_year,
+                "expected_launch_date": row.get('launch_date'),
+                "land_bid_psf": land_bid_psf,
+                "data_source": str(row.get('source', '')).strip() or None,
+                "data_confidence": str(row.get('confidence', 'medium')).strip().lower(),
+            })
+
+        return transformed
+
+    def _transform_new_launch_units_csv(
+        self,
+        rows: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Transform CSV rows to match new_launch_units format."""
+        transformed = []
+        for row in rows:
+            total_units = None
+            if row.get('total_units'):
+                try:
+                    total_units = int(row['total_units'])
+                except (ValueError, TypeError):
+                    pass
+
+            top = None
+            if row.get('top'):
+                try:
+                    top = int(row['top'])
+                except (ValueError, TypeError):
+                    pass
+
+            transformed.append({
+                "project_name": str(row.get('project_name', '')).strip().upper(),
+                "total_units": total_units,
+                "developer": str(row.get('developer', '')).strip() or None,
+                "tenure": str(row.get('tenure', '')).strip() or None,
+                "top": top,
+                "district": str(row.get('district', '')).strip() or None,
+                "source": str(row.get('source', '')).strip() or None,
+            })
+
+        return transformed
+
+    def _promote_upcoming_launches(
+        self,
+        diff_report: DiffReport,
+        incoming_data: List[Dict[str, Any]],
+        force: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Promote upcoming launches based on diff report.
+
+        Args:
+            diff_report: DiffReport from compute_diff_for_upcoming_launches
+            incoming_data: List of transformed launch dicts
+            force: If True, promote even with blocking conflicts
+
+        Returns:
+            Dict with promotion statistics
+        """
+        from models.upcoming_launch import UpcomingLaunch
+        from utils.normalize import coerce_to_date
+
+        stats = {
+            "promoted": 0,
+            "inserted": 0,
+            "updated": 0,
+            "skipped_conflict": 0,
+            "skipped_unchanged": 0,
+            "blocking_conflicts": diff_report.blocking_conflicts,
+        }
+
+        # Check for blocking conflicts
+        if diff_report.blocking_conflicts > 0 and not force:
+            logger.warning(
+                f"Promotion blocked: {diff_report.blocking_conflicts} blocking conflicts. "
+                f"Use force=True to override."
+            )
+            stats["skipped_conflict"] = len(diff_report.conflicts)
+            return stats
+
+        # Build lookup for incoming data
+        incoming_lookup = {}
+        for record in incoming_data:
+            key = record.get('project_name', '').lower().strip()
+            incoming_lookup[key] = record
+
+        for diff in diff_report.diffs:
+            if diff.status == DiffStatus.UNCHANGED:
+                stats["skipped_unchanged"] += 1
+                continue
+
+            if diff.status == DiffStatus.MISSING:
+                # Don't delete missing records automatically
+                continue
+
+            if diff.has_conflicts and diff.blocking_conflicts > 0 and not force:
+                stats["skipped_conflict"] += 1
+                continue
+
+            incoming = incoming_lookup.get(diff.entity_key)
+            if not incoming:
+                continue
+
+            if diff.status == DiffStatus.NEW:
+                # Insert new record
+                launch = UpcomingLaunch(
+                    project_name=incoming.get("project_name"),
+                    developer=incoming.get("developer"),
+                    district=incoming.get("district"),
+                    planning_area=incoming.get("planning_area"),
+                    market_segment=incoming.get("market_segment"),
+                    address=incoming.get("address"),
+                    total_units=incoming.get("total_units"),
+                    indicative_psf_low=incoming.get("indicative_psf_low"),
+                    indicative_psf_high=incoming.get("indicative_psf_high"),
+                    tenure=incoming.get("tenure"),
+                    launch_year=incoming.get("launch_year"),
+                    expected_launch_date=coerce_to_date(incoming.get("expected_launch_date")),
+                    land_bid_psf=incoming.get("land_bid_psf"),
+                    data_source=incoming.get("data_source"),
+                    data_confidence=incoming.get("data_confidence"),
+                    property_type="Condominium",
+                    needs_review=False,
+                )
+                self.db_session.add(launch)
+                stats["inserted"] += 1
+                stats["promoted"] += 1
+                logger.debug(f"Inserted: {diff.entity_key}")
+
+            elif diff.status == DiffStatus.CHANGED:
+                # Update existing record
+                existing = self.db_session.query(UpcomingLaunch).filter(
+                    UpcomingLaunch.project_name.ilike(diff.entity_key)
+                ).first()
+
+                if existing:
+                    for change in diff.changes:
+                        if not change.is_conflict or force:
+                            # Map field names
+                            field = change.field_name
+                            if field == "indicative_psf_low":
+                                existing.indicative_psf_low = change.new_value
+                            elif field == "indicative_psf_high":
+                                existing.indicative_psf_high = change.new_value
+                            elif hasattr(existing, field):
+                                setattr(existing, field, change.new_value)
+
+                    stats["updated"] += 1
+                    stats["promoted"] += 1
+                    logger.debug(f"Updated: {diff.entity_key} ({len(diff.changes)} fields)")
+
+        self.db_session.commit()
+        logger.info(f"Promotion complete: {stats}")
+        return stats
