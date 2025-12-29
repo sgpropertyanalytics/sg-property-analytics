@@ -8,23 +8,32 @@ import { AccountSettingsModal } from '../AccountSettingsModal';
  * GlobalNavRail - Primary Navigation Sidebar
  *
  * The far-left navigation component that provides app-wide page switching.
- * Uses Deep Navy (#213448) background with professional color hierarchy.
+ * Uses Deep Navy (#213448) background with professional finance-tool aesthetics.
  *
- * Color Hierarchy (Visual Logic):
- * - Background: bg-[#213448] (Deep navy foundation)
- * - Section Headers: text-[#94B4C1]/70, text-xs uppercase tracking-wider (Low contrast - labels, not buttons)
- * - Inactive Items: text-[#94B4C1] (Medium contrast - clearly readable, not fighting for attention)
- * - Hover State: hover:text-white hover:bg-white/5 (Subtle glow feedback)
- * - Active/Selected: text-white bg-[#547792]/30 + border indicator (High contrast - "You are here")
- * - Coming Soon: text-[#94B4C1]/50 cursor-not-allowed (Intentionally dimmed)
+ * DESIGN SYSTEM (Senior UI Pattern):
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Section Headers ("Structural Dividers"):
+ * - text-[11px] font-bold uppercase tracking-[0.12em] leading-none
+ * - Color: text-[#94B4C1]/60 (muted - labels, not buttons)
+ * - Uses typography and spacing to separate content, not borders
+ *
+ * NavItem ("Interactive Targets"):
+ * - Active:  bg-white/10 text-white ring-1 ring-white/10 + blue accent bar
+ * - Inactive: text-[#94B4C1] opacity-70 → hover:text-white hover:bg-white/5
+ * - Coming Soon: opacity-50 cursor-not-allowed + SOON badge
+ * - Focus: ring-2 ring-[#547792] ring-offset-2 ring-offset-[#213448]
+ *
+ * Accent Bar (Active Indicator):
+ * - w-1 bg-[#547792] rounded-r-full - positioned absolute left-0
+ * - Cleaner than full border, matches professional finance tools
  *
  * Width: Parent controls width (w-full). DashboardLayout sets:
- * - Desktop (lg+): 288px (w-72)
- * - Mobile drawer: 288px (w-72), max 85vw
+ * - Desktop (lg+): 256px (w-64)
+ * - Mobile drawer: 256px (w-64), max 85vw
  *
  * Structure:
  * - Market Intelligence: Overview, Districts, New Launches, Supply & Inventory
- * - Project Tools: Explore, Value Comparison, Exit Risk
+ * - Project Tools: Explore Budget, Deal Checker, Exit Risk
  */
 
 // Design token: Nav rail width (defined once, used in DashboardLayout)
@@ -64,10 +73,11 @@ export const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 /**
  * NavItem - Individual navigation item with 44px touch target
  *
- * Color Hierarchy:
- * - Active: High contrast (text-white + accent bg + border indicator)
- * - Inactive: Medium contrast (text-[#94B4C1] - clearly readable)
- * - Coming Soon: Dimmed (text-[#94B4C1]/50 + cursor-not-allowed)
+ * Design System (Senior UI Pattern):
+ * - Active: bg-white/10 + ring-1 ring-white/10 + blue accent bar
+ * - Inactive: text-[#94B4C1] with opacity transitions
+ * - Hover: text-white + bg-white/5
+ * - Coming Soon: opacity-50 + cursor-not-allowed
  *
  * Collapse Animation (Premium Physics):
  * - Collapsing: Fade text out fast, then shrink width
@@ -76,40 +86,50 @@ export const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 function NavItem({ item, isActive, onClick, collapsed = false }) {
   const isComingSoon = item.comingSoon;
 
+  // Base styles for layout and transition
+  const baseStyles = `
+    group relative w-full min-h-[44px] px-3 py-2 rounded-md
+    flex items-center text-left min-w-0
+    text-sm font-medium
+    ${TRANSITION_CLASS}
+    outline-none select-none
+    focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus-visible:ring-offset-[#213448]
+  `;
+
+  // State-specific styles
+  const activeStyles = 'bg-white/10 text-white shadow-sm ring-1 ring-white/10';
+  const inactiveStyles = 'text-[#94B4C1] hover:text-white hover:bg-white/5';
+  const comingSoonStyles = 'text-[#94B4C1]/50 cursor-not-allowed opacity-50';
+
   return (
     <button
       onClick={() => !isComingSoon && onClick(item)}
       disabled={isComingSoon}
       title={item.label}
       className={`
-        group relative w-full min-h-[44px] px-3 py-2 rounded-lg
-        flex items-center text-left min-w-0
-        ${TRANSITION_CLASS}
-        active:scale-[0.98] select-none
+        ${baseStyles}
         ${collapsed ? 'justify-center' : 'gap-3'}
-        ${isActive
-          ? 'bg-[#547792]/30 text-white'
-          : isComingSoon
-            ? 'text-[#94B4C1]/50 cursor-not-allowed'
-            : 'text-[#94B4C1] hover:text-white hover:bg-white/5 active:bg-white/10'
-        }
+        ${isActive ? activeStyles : isComingSoon ? comingSoonStyles : inactiveStyles}
       `}
       aria-current={isActive ? 'page' : undefined}
       aria-label={item.label}
     >
-      {/* Active indicator bar - accent color */}
+      {/* Active indicator bar - blue accent, positioned inside left edge */}
       {isActive && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#547792] rounded-r-full" />
+        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#547792] rounded-r-full" />
       )}
 
-      {/* Icon - dimmed for inactive, bright for active */}
-      <span className={`text-base flex-shrink-0 ${isActive ? '' : isComingSoon ? 'opacity-50' : 'opacity-70 group-hover:opacity-100'}`}>
+      {/* Icon - full opacity when active, dimmed when inactive */}
+      <span className={`
+        text-base flex-shrink-0 transition-opacity
+        ${isActive ? 'opacity-100 text-white' : 'opacity-70 group-hover:opacity-100'}
+      `}>
         {item.icon}
       </span>
 
       {/* Label - Staggered animation: fade fast on collapse, fade in delayed on expand */}
       <span className={`
-        text-sm font-medium whitespace-nowrap overflow-hidden
+        whitespace-nowrap overflow-hidden truncate
         ${TRANSITION_CLASS}
         ${collapsed
           ? 'w-0 opacity-0 translate-x-4'
@@ -119,10 +139,14 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
         {item.label}
       </span>
 
-      {/* Coming Soon badge - hidden when collapsed */}
+      {/* Coming Soon badge - styled to match design system */}
       {isComingSoon && !collapsed && (
         <span className={`
-          flex-shrink-0 text-[10px] font-bold text-[#94B4C1]/60 bg-[#547792]/20 px-1.5 py-0.5 rounded border border-[#547792]/30
+          flex-shrink-0 ml-auto
+          text-[10px] font-bold tracking-wide
+          px-1.5 py-0.5 rounded
+          bg-[#1E293B] text-[#94B4C1]/80
+          border border-[#547792]/40
           ${TRANSITION_CLASS}
           ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}
         `}>
@@ -239,37 +263,38 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       </button>
 
       {/* Navigation Groups */}
-      <div className="flex-1 space-y-2 w-full">
-        {NAV_GROUPS.map(group => {
+      <div className="flex-1 w-full">
+        {NAV_GROUPS.map((group, groupIndex) => {
           const isExpanded = expandedGroups[group.id];
           const hasActiveItem = group.id === activeGroupId;
 
           return (
-            <div key={group.id}>
-              {/* Group Header - Low contrast label (not a button feel) */}
-              {/* Hidden when collapsed - items show directly */}
+            <div key={group.id} className={groupIndex > 0 ? 'mt-6' : ''}>
+              {/* SectionHeader - The "Structural Divider"
+                  Uses typography and spacing to separate content, not borders.
+                  Design: text-[11px] uppercase tracking-[0.12em] - muted labels */}
               {!collapsed && (
                 <button
                   onClick={() => toggleGroup(group.id)}
                   className={`
-                    w-full min-h-[44px] px-3 py-2 rounded-lg
+                    w-full px-3 py-2 rounded-lg
                     flex items-center gap-2 text-left min-w-0
                     transition-colors duration-150
-                    active:scale-[0.98] select-none
+                    select-none
                     ${hasActiveItem
-                      ? 'text-[#94B4C1]'
-                      : 'text-[#94B4C1]/70 hover:text-[#94B4C1]'
+                      ? 'text-[#94B4C1]/80'
+                      : 'text-[#94B4C1]/60 hover:text-[#94B4C1]/80'
                     }
                   `}
                   aria-expanded={isExpanded}
                 >
-                  {/* Section header: uppercase, tracking-wider, smaller - acts as label not button */}
-                  <span className="text-xs font-bold uppercase tracking-wider min-w-0 flex-1">
+                  {/* Section header: 11px, uppercase, wide tracking - acts as structural label */}
+                  <span className="text-[11px] font-bold uppercase tracking-[0.12em] leading-none min-w-0 flex-1">
                     {group.label}
                   </span>
                   {/* Chevron */}
                   <svg
-                    className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 opacity-60 ${isExpanded ? 'rotate-180' : ''}`}
+                    className={`w-3 h-3 flex-shrink-0 transition-transform duration-200 opacity-50 ${isExpanded ? 'rotate-180' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
