@@ -6,6 +6,9 @@ import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PricingModal } from '../PricingModal';
 
+// localStorage key for nav collapse state persistence
+const NAV_STORAGE_KEY = 'nav-collapsed';
+
 // Loading fallback for lazy-loaded page content
 // This is INSIDE the layout so nav rail stays visible during loading
 // Uses delayed fade-in to prevent flash on fast navigations
@@ -73,26 +76,32 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   // Mobile nav state
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // Desktop nav collapse state - persisted to localStorage to prevent flicker on navigation
+  // Desktop nav collapse state - persisted to localStorage
+  // Key insight: We sync via useEffect to ensure persistence survives
+  // React's reconciliation during navigation
   const [isNavCollapsed, setIsNavCollapsed] = useState(() => {
     try {
-      const saved = localStorage.getItem('nav-collapsed');
+      const saved = localStorage.getItem(NAV_STORAGE_KEY);
+      // Only return true if explicitly set to 'true'
+      // null/undefined/'false' all default to expanded
       return saved === 'true';
     } catch {
       return false;
     }
   });
 
+  // Sync collapsed state to localStorage whenever it changes
+  // This ensures persistence even if state changes outside of toggle
+  useEffect(() => {
+    try {
+      localStorage.setItem(NAV_STORAGE_KEY, String(isNavCollapsed));
+    } catch {
+      // Ignore storage errors (private browsing, quota exceeded)
+    }
+  }, [isNavCollapsed]);
+
   const toggleNavCollapse = () => {
-    setIsNavCollapsed(prev => {
-      const newValue = !prev;
-      try {
-        localStorage.setItem('nav-collapsed', String(newValue));
-      } catch {
-        // Ignore storage errors
-      }
-      return newValue;
-    });
+    setIsNavCollapsed(prev => !prev);
   };
 
   // Reset mobile drawer when page changes

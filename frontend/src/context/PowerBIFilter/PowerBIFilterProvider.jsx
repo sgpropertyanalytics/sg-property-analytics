@@ -11,7 +11,7 @@
  * Project selection is drill-through only (opens ProjectDetailPanel).
  */
 
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 
 // Constants and initial state
 import {
@@ -37,9 +37,30 @@ import { useFilterOptions, useRouteReset, useDebouncedFilterKey } from './hooks'
 
 const PowerBIFilterContext = createContext(null);
 
+// Session storage key for filter persistence
+// Uses sessionStorage so filters reset when browser tab closes (not localStorage)
+const FILTERS_STORAGE_KEY = 'powerbi_filters';
+
 export function PowerBIFilterProvider({ children }) {
   // ===== Core State =====
-  const [filters, setFilters] = useState(INITIAL_FILTERS);
+  // Filters persist to sessionStorage (survives navigation, clears on tab close)
+  const [filters, setFilters] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem(FILTERS_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Merge with INITIAL_FILTERS to handle any new fields added after save
+          return { ...INITIAL_FILTERS, ...parsed };
+        }
+      } catch {
+        // Ignore parse errors, use defaults
+      }
+    }
+    return INITIAL_FILTERS;
+  });
+
+  // These states do NOT persist - they reset on route change (handled by useRouteReset)
   const [factFilter, setFactFilter] = useState(INITIAL_FACT_FILTER);
   const [drillPath, setDrillPath] = useState(INITIAL_DRILL_PATH);
   const [selectedProject, setSelectedProjectState] = useState(INITIAL_SELECTED_PROJECT);
@@ -60,6 +81,19 @@ export function PowerBIFilterProvider({ children }) {
       sessionStorage.setItem('user_time_pref', val);
     }
   }, []);
+
+  // ===== Filter Persistence (sessionStorage) =====
+  // Sync filters to sessionStorage whenever they change
+  // This enables persistence across page navigation within the same session
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+      } catch {
+        // Ignore storage errors (quota exceeded, private browsing)
+      }
+    }
+  }, [filters]);
 
   // ===== Filter Options (from API) =====
   const [filterOptions] = useFilterOptions();
@@ -180,6 +214,7 @@ export function PowerBIFilterProvider({ children }) {
   const resetFilters = useCallback(() => {
     setFilters(INITIAL_FILTERS);
     setBreadcrumbs(INITIAL_BREADCRUMBS);
+    // Note: useEffect will sync INITIAL_FILTERS to sessionStorage automatically
   }, []);
 
   // ===== Drill Navigation =====
