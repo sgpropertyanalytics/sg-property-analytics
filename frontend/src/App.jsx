@@ -36,11 +36,8 @@ const MacroOverviewContent = lazyWithRetry(() =>
 const ProjectDeepDiveContent = lazyWithRetry(() =>
   import('./pages/ProjectDeepDive').then(m => ({ default: m.ProjectDeepDiveContent }))
 );
-const ValueCheckContent = lazyWithRetry(() =>
-  import('./pages/ValueCheck').then(m => ({ default: m.ValueCheckContent }))
-);
-const ExitRiskContent = lazyWithRetry(() =>
-  import('./pages/ExitRisk').then(m => ({ default: m.ExitRiskContent }))
+const DistrictDeepDiveContent = lazyWithRetry(() =>
+  import('./pages/DistrictDeepDive').then(m => ({ default: m.DistrictDeepDiveContent }))
 );
 const ValueParityPanel = lazyWithRetry(() =>
   import('./components/ValueParityPanel').then(m => ({ default: m.ValueParityPanel }))
@@ -72,8 +69,7 @@ const MethodologyContent = lazyWithRetry(() =>
  * - /login: User authentication
  * - /market-core: Resale market analytics dashboard (premium)
  * - /primary-market: New Sale vs Resale comparison (premium)
- * - /value-check: Price/PSF analysis across districts (premium)
- * - /exit-risk: Volume/Liquidity analysis across districts (premium)
+ * - /district-deep-dive: District deep dive analysis (premium)
  * - /project-deep-dive: Project analysis with exit queue risk & floor liquidity (premium)
  * - /value-parity: Budget search tool (premium) - includes New Launches + Resale
  */
@@ -126,11 +122,8 @@ function App() {
               }
             />
 
-            {/* Value Check - Price/PSF analysis (Lazy-loaded) */}
-            <Route path="/value-check" element={<ValueCheckContent />} />
-
-            {/* Exit Risk - Volume/Liquidity analysis (Lazy-loaded) */}
-            <Route path="/exit-risk" element={<ExitRiskContent />} />
+            {/* District Deep Dive (Lazy-loaded) */}
+            <Route path="/district-deep-dive" element={<DistrictDeepDiveContent />} />
 
             {/* Project Deep Dive (Lazy-loaded) */}
             <Route path="/project-deep-dive" element={<ProjectDeepDiveContent />} />
@@ -143,7 +136,6 @@ function App() {
           </Route>
 
           {/* Legacy route redirects */}
-          <Route path="/district-deep-dive" element={<Navigate to="/value-check" replace />} />
           <Route path="/project-analysis" element={<Navigate to="/value-parity" replace />} />
           <Route path="/floor-dispersion" element={<Navigate to="/project-deep-dive" replace />} />
           <Route path="/analytics-view" element={<Navigate to="/project-deep-dive" replace />} />
