@@ -2082,7 +2082,7 @@ def generate_plan_report(
                       SELECT 1 FROM {PRODUCTION_TABLE} p
                       WHERE p.row_hash = s.row_hash
                   )
-                  {batch_filter.replace('batch_id', 's.batch_id') if batch_filter else ''}
+                  {("AND s.batch_id = :batch_id") if batch_filter else ''}
             """), params).fetchone()
 
             new_rows_result = db.session.execute(text(f"""
@@ -2093,7 +2093,7 @@ def generate_plan_report(
                       SELECT 1 FROM {PRODUCTION_TABLE} p
                       WHERE p.row_hash = s.row_hash
                   ))
-                  {batch_filter.replace('batch_id', 's.batch_id') if batch_filter else ''}
+                  {("AND s.batch_id = :batch_id") if batch_filter else ''}
             """), params).fetchone()
 
             report['collision_preview'] = {
