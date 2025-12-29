@@ -46,7 +46,6 @@ from config import Config
 from models.database import db
 from models.transaction import Transaction
 from services.data_loader import clean_csv_data, parse_date_flexible
-from services.data_computation import recompute_all_stats
 import pandas as pd
 
 # Contract-based header resolution (Step A of incremental migration)
@@ -2393,20 +2392,7 @@ def main():
 
                 success = rollback_to_previous(logger)
 
-                if success:
-                    logger.stage("RECOMPUTE STATS")
-                    # Preserve existing validation counts (we don't know counts for rolled-back data)
-                    from services.data_computation import get_metadata
-                    existing_metadata = get_metadata()
-                    validation_results = {
-                        'invalid_removed': existing_metadata.get('invalid_removed', 0),
-                        'duplicates_removed': existing_metadata.get('duplicates_removed', 0),
-                        'outliers_removed': existing_metadata.get('outliers_excluded', 0)
-                    }
-                    recompute_all_stats(validation_results)
-                    exit_code = 0
-                else:
-                    exit_code = 1
+                exit_code = 0 if success else 1
                 raise SystemExit(exit_code)
 
             # Publish-only mode
@@ -2428,21 +2414,7 @@ def main():
                     raise SystemExit(exit_code)
 
                 success, publish_stats = atomic_publish(logger)
-
-                if success:
-                    logger.stage("RECOMPUTE STATS")
-                    # Preserve existing validation counts (staging validation happened in separate run)
-                    from services.data_computation import get_metadata
-                    existing_metadata = get_metadata()
-                    validation_results = {
-                        'invalid_removed': existing_metadata.get('invalid_removed', 0),
-                        'duplicates_removed': existing_metadata.get('duplicates_removed', 0),
-                        'outliers_removed': existing_metadata.get('outliers_excluded', 0)
-                    }
-                    recompute_all_stats(validation_results)
-                    exit_code = 0
-                else:
-                    exit_code = 1
+                exit_code = 0 if success else 1
 
                 # Print summary
                 summary = logger.summary()
@@ -2638,15 +2610,7 @@ def main():
                 else:
                     logger.log("⚠️  Warning: New columns not found in transactions table")
 
-                # STAGE 7: Recompute stats
-                logger.stage("RECOMPUTE STATS")
-                validation_results = {
-                    'duplicates_removed': duplicates_removed,
-                    'outliers_removed': outliers_removed
-                }
-                recompute_all_stats(validation_results)
-
-                # STAGE 8: Update project locations (optional)
+                # STAGE 7: Update project locations (optional)
                 try:
                     from services.project_location_service import run_incremental_update
                     logger.stage("UPDATE PROJECT LOCATIONS")
@@ -2656,7 +2620,7 @@ def main():
                 except Exception as e:
                     logger.log(f"Project location update failed (non-critical): {e}")
 
-                # STAGE 9: Cleanup new launch units CSV
+                # STAGE 8: Cleanup new launch units CSV
                 # Remove projects that now have resale transactions
                 try:
                     from services.new_launch_units import cleanup_resale_projects
