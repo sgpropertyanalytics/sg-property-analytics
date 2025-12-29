@@ -21,7 +21,7 @@ def filter_options():
     Returns unique values for each filterable dimension.
 
     Query params:
-      - schema: 'v1' (default) returns both old and new fields, 'v2' returns only camelCase + enums
+      - schema: 'v2' (default) returns only camelCase + enums, 'v1' returns both for backwards compat
     """
     from models.transaction import Transaction
     from models.database import db
@@ -29,9 +29,9 @@ def filter_options():
     from services.data_processor import _get_market_segment
     from schemas.api_contract import serialize_filter_options, PropertyAgeBucket
 
-    # Schema version: v1 (dual-mode) or v2 (strict)
-    schema_version = request.args.get('schema', 'v1')
-    include_deprecated = (schema_version != 'v2')
+    # Schema version: v2 (strict, default) or v1 (dual-mode for backwards compat)
+    schema_version = request.args.get('schema', 'v2')
+    include_deprecated = (schema_version == 'v1')
 
     try:
         # Base filter to exclude outliers

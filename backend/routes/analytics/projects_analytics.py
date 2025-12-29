@@ -151,9 +151,9 @@ def get_project_price_bands(project_name):
 
     try:
 
-        # Check schema parameter for v2 strict mode
-        schema_version = request.args.get('schema', '').lower()
-        strict_v2 = schema_version == 'v2'
+        # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
+        schema_version = request.args.get('schema', 'v2').lower()
+        strict_v2 = schema_version != 'v1'
 
         # Compute price bands
         result = compute_bands(

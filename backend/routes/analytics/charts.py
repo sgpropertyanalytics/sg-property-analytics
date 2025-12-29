@@ -535,13 +535,13 @@ def budget_heatmap():
             skip_cache=skip_cache
         )
 
-        # Handle schema version
-        schema_version = request.args.get('schema', 'v1')
-        if schema_version == 'v2':
-            return jsonify(serialize_heatmap_v2(result))
+        # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
+        schema_version = request.args.get('schema', 'v2')
+        if schema_version == 'v1':
+            return jsonify(result)
 
-        # v1 response (default)
-        return jsonify(result)
+        # v2 response (default)
+        return jsonify(serialize_heatmap_v2(result))
 
     except Exception as e:
         import traceback

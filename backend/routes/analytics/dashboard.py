@@ -79,9 +79,9 @@ def dashboard():
     start = time.time()
 
     try:
-        # Check if client requests v2 schema
-        schema_version = request.args.get('schema', 'v1')
-        include_deprecated = (schema_version != 'v2')
+        # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
+        schema_version = request.args.get('schema', 'v2')
+        include_deprecated = (schema_version == 'v1')
 
         # Parse parameters from GET query string or POST JSON body
         if request.method == 'POST' and request.is_json:

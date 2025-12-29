@@ -163,9 +163,9 @@ def aggregate():
 
     start = time.time()
 
-    # Schema version: v2 returns camelCase + lowercase enums only, v1 (default) returns both
-    schema_version = request.args.get('schema', 'v1')
-    include_deprecated = (schema_version != 'v2')
+    # Schema version: v2 (default) returns camelCase + lowercase enums only, v1 returns both for backwards compat
+    schema_version = request.args.get('schema', 'v2')
+    include_deprecated = (schema_version == 'v1')
 
     # Build cache key from query string
     skip_cache = request.args.get('skip_cache', '').lower() == 'true'
