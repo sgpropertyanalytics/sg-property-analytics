@@ -97,7 +97,7 @@
   },
 
   "etl": {
-    "natural_key_fields": ["project_name", "transaction_month", "price", "area_sqft", "floor_range"],
+    "natural_key_fields": ["project_name", "transaction_month", "price", "area_sqft", "floor_range", "sale_type"],
     "outlier_iqr_multiplier": 5.0,
     "enbloc_area_threshold": 10000,
     "late_arrival_days": 120,

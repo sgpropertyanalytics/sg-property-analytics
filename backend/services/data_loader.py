@@ -425,11 +425,21 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
     if 'Tenure' in df.columns:
         df['tenure'] = df['Tenure']
 
-    # Type of Sale → sale_type (will be overwritten by folder-based assignment)
+    # Type of Sale → sale_type (normalized to canonical DB labels)
     if 'Type of Sale' in df.columns:
         df['sale_type'] = df['Type of Sale']
     else:
         df['sale_type'] = None
+
+    # Normalize sale_type values (maps variants to canonical DB labels)
+    from constants import normalize_sale_type
+    df['sale_type'] = df['sale_type'].apply(normalize_sale_type)
+
+    # Fill Type of Sale from normalized sale_type (for bedroom classifier)
+    if 'Type of Sale' in df.columns:
+        df['Type of Sale'] = df['Type of Sale'].fillna(df['sale_type'])
+    else:
+        df['Type of Sale'] = df['sale_type']
 
     # Add source marker
     df['source'] = 'csv_offline'
@@ -500,7 +510,7 @@ def load_all_csv_data():
 
                 cleaned = clean_csv_data(df)
                 if not cleaned.empty:
-                    cleaned['sale_type'] = 'Resale'
+                    # sale_type is now normalized in clean_csv_data() - no folder override
                     all_dataframes.append(cleaned)
                     print(f"  ✓ Loaded Resale/{csv_file}: {len(cleaned)} rows")
             except Exception as e:
@@ -528,11 +538,8 @@ def load_all_csv_data():
 
                 cleaned = clean_csv_data(df)
                 if not cleaned.empty:
-                    # Set sale_type column
-                    cleaned['sale_type'] = 'New Sale'
-                    # Ensure Type of Sale is set for bedroom classification
-                    if 'Type of Sale' not in cleaned.columns:
-                        cleaned['Type of Sale'] = 'New Sale'
+                    # sale_type is now normalized in clean_csv_data() - no folder override
+                    # Type of Sale is also filled from sale_type in clean_csv_data()
                     all_dataframes.append(cleaned)
                     print(f"  ✓ Loaded New Sale/{csv_file}: {len(cleaned)} rows")
             except Exception as e:
@@ -553,12 +560,34 @@ def load_all_csv_data():
     print(f"✓ Loaded {len(result_df):,} total transactions in {elapsed:.2f} seconds")
     print(f"  Date range: {result_df['parsed_date'].min()} to {result_df['parsed_date'].max()}")
 
-    # Show breakdown by sale type
+    # Enhanced sale_type breakdown with validation
     if 'sale_type' in result_df.columns:
-        sale_type_counts = result_df['sale_type'].value_counts()
-        print(f"  Sale type breakdown:")
+        print(f"\n  Sale type breakdown:")
+
+        # Count known types
+        known_types = {'New Sale', 'Resale', 'Sub Sale'}
+        sale_type_counts = result_df['sale_type'].value_counts(dropna=False)
+
         for sale_type, count in sale_type_counts.items():
-            print(f"    {sale_type}: {count:,} transactions")
+            if pd.isna(sale_type):
+                print(f"    NULL: {count:,} transactions ⚠️")
+            elif sale_type in known_types:
+                print(f"    {sale_type}: {count:,} transactions")
+            else:
+                print(f"    {sale_type}: {count:,} transactions ⚠️ (UNKNOWN)")
+
+        # Summary warnings
+        null_count = result_df['sale_type'].isna().sum()
+        unknown_mask = ~result_df['sale_type'].isin(known_types) & result_df['sale_type'].notna()
+        unknown_count = unknown_mask.sum()
+
+        if null_count > 0:
+            print(f"\n  ⚠️  {null_count:,} rows have NULL sale_type")
+        if unknown_count > 0:
+            unknown_values = result_df.loc[unknown_mask, 'sale_type'].value_counts()
+            print(f"\n  ⚠️  {unknown_count:,} rows have UNKNOWN sale_type:")
+            for val, cnt in unknown_values.items():
+                print(f"       '{val}': {cnt:,}")
 
     return result_df
 

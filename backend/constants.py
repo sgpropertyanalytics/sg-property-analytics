@@ -449,6 +449,37 @@ def is_valid_sale_type(sale_type: str) -> bool:
     return sale_type in SALE_TYPES
 
 
+def normalize_sale_type(raw_value) -> str | None:
+    """
+    Normalize sale type variants to canonical DB labels.
+
+    Returns exact DB values (not enum slugs):
+      'New Sale', 'NEW SALE', 'new sale', 'New' → "New Sale"
+      'Resale', 'RESALE', 're-sale', 'Re-Sale' → "Resale"
+      'Sub Sale', 'SUB SALE', 'Subsale', 'SUBSALE', 'sub-sale' → "Sub Sale"
+
+    Returns None if unrecognized or input is null/empty.
+    """
+    import pandas as pd
+
+    # Handle null/NaN/empty
+    if raw_value is None or (isinstance(raw_value, float) and pd.isna(raw_value)):
+        return None
+    if str(raw_value).strip() == '':
+        return None
+
+    normalized = str(raw_value).strip().lower().replace('-', ' ').replace('_', ' ')
+
+    if normalized in ('new sale', 'new', 'newsale'):
+        return SALE_TYPE_NEW  # Canonical DB label
+    elif normalized in ('resale', 're sale'):
+        return SALE_TYPE_RESALE  # Canonical DB label
+    elif normalized in ('sub sale', 'subsale', 'sub'):
+        return SALE_TYPE_SUB  # Canonical DB label
+    else:
+        return None  # Unrecognized - will be caught by validation
+
+
 # =============================================================================
 # TENURE CLASSIFICATION - SINGLE SOURCE OF TRUTH
 # =============================================================================
