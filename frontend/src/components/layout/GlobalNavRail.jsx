@@ -8,7 +8,15 @@ import { AccountSettingsModal } from '../AccountSettingsModal';
  * GlobalNavRail - Primary Navigation Sidebar
  *
  * The far-left navigation component that provides app-wide page switching.
- * Uses Deep Navy (#213448) background with Sand/Cream (#EAE0CF) active states.
+ * Uses Deep Navy (#213448) background with professional color hierarchy.
+ *
+ * Color Hierarchy (Visual Logic):
+ * - Background: bg-[#213448] (Deep navy foundation)
+ * - Section Headers: text-[#94B4C1]/70, text-xs uppercase tracking-wider (Low contrast - labels, not buttons)
+ * - Inactive Items: text-[#94B4C1] (Medium contrast - clearly readable, not fighting for attention)
+ * - Hover State: hover:text-white hover:bg-white/5 (Subtle glow feedback)
+ * - Active/Selected: text-white bg-[#547792]/30 + border indicator (High contrast - "You are here")
+ * - Coming Soon: text-[#94B4C1]/50 cursor-not-allowed (Intentionally dimmed)
  *
  * Width: Parent controls width (w-full). DashboardLayout sets:
  * - Desktop (lg+): 288px (w-72)
@@ -51,6 +59,11 @@ export const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 
 /**
  * NavItem - Individual navigation item with 44px touch target
+ *
+ * Color Hierarchy:
+ * - Active: High contrast (text-white + accent bg + border indicator)
+ * - Inactive: Medium contrast (text-[#94B4C1] - clearly readable)
+ * - Coming Soon: Dimmed (text-[#94B4C1]/50 + cursor-not-allowed)
  */
 function NavItem({ item, isActive, onClick }) {
   const isComingSoon = item.comingSoon;
@@ -59,37 +72,39 @@ function NavItem({ item, isActive, onClick }) {
     <button
       onClick={() => !isComingSoon && onClick(item)}
       disabled={isComingSoon}
-      title={item.label} // Tooltip for truncated text
+      title={item.label}
       className={`
         group relative w-full min-h-[44px] px-3 py-2 rounded-lg
         flex items-center gap-3 text-left min-w-0
-        transition-colors duration-100
+        transition-colors duration-150
         active:scale-[0.98] select-none
         ${isActive
-          ? 'bg-[#547792]/40 text-[#EAE0CF]'
+          ? 'bg-[#547792]/30 text-white'
           : isComingSoon
-            ? 'text-[#94B4C1]/40 cursor-not-allowed'
-            : 'text-[#94B4C1]/60 hover:bg-[#547792]/30 hover:text-[#EAE0CF] active:bg-[#547792]/40'
+            ? 'text-[#94B4C1]/50 cursor-not-allowed'
+            : 'text-[#94B4C1] hover:text-white hover:bg-white/5 active:bg-white/10'
         }
       `}
       aria-current={isActive ? 'page' : undefined}
       aria-label={item.label}
     >
-      {/* Active indicator bar */}
+      {/* Active indicator bar - accent color */}
       {isActive && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#EAE0CF] rounded-r-full" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#547792] rounded-r-full" />
       )}
 
-      {/* Icon */}
-      <span className="text-base flex-shrink-0">{item.icon}</span>
+      {/* Icon - dimmed for inactive, bright for active */}
+      <span className={`text-base flex-shrink-0 ${isActive ? '' : isComingSoon ? 'opacity-50' : 'opacity-70 group-hover:opacity-100'}`}>
+        {item.icon}
+      </span>
 
-      {/* Label - can truncate, tooltip shows full text */}
+      {/* Label */}
       <span className="text-sm font-medium truncate min-w-0 flex-1">{item.label}</span>
 
-      {/* Coming Soon badge */}
+      {/* Coming Soon badge - styled to look intentionally disabled */}
       {isComingSoon && (
-        <span className="flex-shrink-0 text-[10px] bg-[#547792]/30 text-[#94B4C1] px-1.5 py-0.5 rounded">
-          Soon
+        <span className="flex-shrink-0 text-[10px] font-bold text-[#94B4C1]/60 bg-[#547792]/20 px-1.5 py-0.5 rounded border border-[#547792]/30">
+          SOON
         </span>
       )}
     </button>
@@ -169,28 +184,28 @@ export function GlobalNavRail({ activePage, onPageChange }) {
 
           return (
             <div key={group.id}>
-              {/* Group Header - Collapsible, sentence case, no icon */}
+              {/* Group Header - Low contrast label (not a button feel) */}
               <button
                 onClick={() => toggleGroup(group.id)}
                 className={`
-                  w-full min-h-[44px] px-3 py-2 rounded-lg
+                  w-full min-h-[36px] px-3 py-2 rounded-lg
                   flex items-center gap-2 text-left min-w-0
-                  transition-colors duration-100
+                  transition-colors duration-150
                   active:scale-[0.98] select-none
                   ${hasActiveItem
-                    ? 'text-[#EAE0CF] bg-[#547792]/20'
-                    : 'text-[#94B4C1] hover:bg-[#547792]/20 hover:text-[#EAE0CF] active:bg-[#547792]/30'
+                    ? 'text-[#94B4C1]'
+                    : 'text-[#94B4C1]/70 hover:text-[#94B4C1]'
                   }
                 `}
                 aria-expanded={isExpanded}
               >
-                {/* Section header: text only, no icon, sentence case */}
-                <span className="text-sm font-semibold min-w-0 flex-1">
+                {/* Section header: uppercase, tracking-wider, smaller - acts as label not button */}
+                <span className="text-xs font-bold uppercase tracking-wider min-w-0 flex-1">
                   {group.label}
                 </span>
                 {/* Chevron */}
                 <svg
-                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                  className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 opacity-60 ${isExpanded ? 'rotate-180' : ''}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -227,13 +242,13 @@ export function GlobalNavRail({ activePage, onPageChange }) {
         {/* Separator */}
         <div className="border-t border-[#547792]/30 mb-3 mx-2" />
 
-        {/* Methodology Link */}
+        {/* Methodology Link - matches inactive nav item styling */}
         <button
           onClick={() => startTransition(() => navigate('/methodology'))}
-          className="group relative w-full min-h-[44px] px-3 py-2 rounded-lg flex items-center gap-3 text-left min-w-0 text-[#94B4C1]/60 hover:bg-[#547792]/30 hover:text-[#EAE0CF] active:bg-[#547792]/40 active:scale-[0.98] transition-colors duration-100 select-none"
+          className="group relative w-full min-h-[44px] px-3 py-2 rounded-lg flex items-center gap-3 text-left min-w-0 text-[#94B4C1] hover:text-white hover:bg-white/5 active:bg-white/10 active:scale-[0.98] transition-colors duration-150 select-none"
           aria-label="Methodology"
         >
-          <span className="text-base flex-shrink-0">ℹ️</span>
+          <span className="text-base flex-shrink-0 opacity-70 group-hover:opacity-100">ℹ️</span>
           <span className="text-sm font-medium truncate min-w-0 flex-1">Methodology</span>
         </button>
 
