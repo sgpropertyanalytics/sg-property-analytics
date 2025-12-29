@@ -52,27 +52,24 @@ export function TimeGranularityToggle({ className = '' }) {
   };
 
   return (
-    <div className={`relative flex items-center ${className}`}>
-      {/* Label - hidden on very small screens */}
-      <span className="hidden sm:inline text-sm text-[#547792] font-medium mr-2 whitespace-nowrap">
-        Group by:
-      </span>
+    <div className={`relative ${className}`}>
+      {/* Label above - matches FilterGroup pattern */}
+      <label className="block text-sm font-medium text-[#547792] mb-1.5">
+        Group by
+      </label>
 
-      {/* Segmented toggle - consistent sizing with other filter buttons */}
-      <div className="inline-flex rounded-md bg-[#94B4C1]/20 p-1">
+      {/* Button group - matches other filter buttons exactly */}
+      <div className="flex gap-1">
         {options.map(opt => (
           <button
             key={opt.value}
             type="button"
             onClick={() => handleChange(opt.value)}
-            className={`
-              min-h-[36px] px-3 py-1.5 text-sm font-medium rounded-md
-              transition-all duration-200
-              ${timeGrouping === opt.value
-                ? 'bg-[#213448] text-white shadow-sm'
-                : 'text-[#547792] hover:text-[#213448] hover:bg-[#94B4C1]/20'
-              }
-            `}
+            className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
+              timeGrouping === opt.value
+                ? 'bg-[#547792] text-white border-[#547792]'
+                : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+            }`}
           >
             {opt.label}
           </button>
