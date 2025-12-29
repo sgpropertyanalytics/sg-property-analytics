@@ -61,8 +61,9 @@ sale_type_db = SaleType.to_db(SaleType.RESALE)  # → "Resale"
 |----------|--------|-------------|
 | `/api/aggregate` | GET | Flexible aggregation with grouping |
 | `/api/dashboard` | GET | Multi-panel dashboard data |
-| `/api/transactions/list` | GET | Paginated transaction list |
-| `/api/kpi-summary` | GET | Summary KPIs |
+| `/api/kpi-summary-v2` | GET | Summary KPIs (registry-based) |
+
+> **Deprecated endpoints:** `/api/transactions/list`, `/api/kpi-summary` - return 410 Gone
 
 ### Project Endpoints
 

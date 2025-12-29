@@ -202,6 +202,9 @@ export const BEDROOM_LABELS_SHORT = {
 export const HARMONIZATION_DATE = new Date('2023-06-01');
 
 /**
+ * SYNC: These thresholds MUST match backend/services/classifier.py
+ * Last verified: 2024-12-29
+ *
  * Tier 1: New Sale Post-Harmonization (>= June 2023) - Ultra Compact
  * Format: bedroom_count -> max_sqft (units below this are classified as this bedroom count)
  */

@@ -323,18 +323,7 @@ export const getAggregate = (params = {}, options = {}) => {
 };
 
 /**
- * KPI Summary - Single optimized endpoint for all KPI card metrics
- * Returns all 4 KPI metrics in one fast API call.
- * @param {Object} params - Filter parameters
- * @param {string} params.district - Comma-separated districts
- * @param {string} params.bedroom - Comma-separated bedroom counts
- * @param {string} params.segment - CCR, RCR, OCR
- */
-export const getKpiSummary = (params = {}) =>
-  apiClient.get(`/kpi-summary?${buildQueryString(params)}`);
-
-/**
- * Get KPI summary using v2 standardized format
+ * Get KPI summary using registry-based endpoint
  * Returns array of KPIResult objects with consistent shape.
  * @param {Object} params - Filter parameters
  * @param {string} params.district - Comma-separated districts
@@ -345,6 +334,9 @@ export const getKpiSummary = (params = {}) =>
  */
 export const getKpiSummaryV2 = (params = {}, { signal } = {}) =>
   apiClient.get(`/kpi-summary-v2?${buildQueryString(params)}`, { signal });
+
+// Legacy alias (deprecated) - use getKpiSummaryV2 instead
+export const getKpiSummary = getKpiSummaryV2;
 
 /**
  * Get available filter options based on current data

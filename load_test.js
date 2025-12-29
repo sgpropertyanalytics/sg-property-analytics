@@ -79,10 +79,10 @@ export default function() {
     res = http.get(`${BASE_URL}/filter-options`);
     check(res, { 'filter-options ok': (r) => r.status === 200 });
 
-    // 3. KPI Summary
-    res = http.get(`${BASE_URL}/kpi-summary${qs}`);
+    // 3. KPI Summary (v2 endpoint)
+    res = http.get(`${BASE_URL}/kpi-summary-v2${qs}`);
     kpiLatency.add(res.timings.duration);
-    check(res, { 'kpi-summary ok': (r) => r.status === 200 });
+    check(res, { 'kpi-summary-v2 ok': (r) => r.status === 200 });
     if (res.status !== 200) errorRate.add(1);
 
     // 4. Dashboard unified endpoint
@@ -128,7 +128,7 @@ export default function() {
 
     // These would all fire in parallel in the real app
     const requests = {
-      'kpi': { method: 'GET', url: `${BASE_URL}/kpi-summary${newQs}` },
+      'kpi': { method: 'GET', url: `${BASE_URL}/kpi-summary-v2${newQs}` },
       'dashboard': { method: 'GET', url: `${BASE_URL}/dashboard${newQs}&panels=time_series,price_histogram` },
       'aggregate': { method: 'GET', url: `${BASE_URL}/aggregate${newQs}&group_by=month&metrics=count` },
     };

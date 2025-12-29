@@ -25,6 +25,9 @@ HARMONIZATION_DATE = pd.Timestamp('2023-06-01')
 # =============================================================================
 # BEDROOM CLASSIFICATION THRESHOLDS
 # =============================================================================
+# SYNC: These thresholds MUST match frontend/src/constants/index.js
+# Last verified: 2024-12-29
+#
 # These thresholds define the sqft cutoffs for each bedroom type.
 # Format: bedroom_count -> max_sqft (units below this are classified as this bedroom count)
 
