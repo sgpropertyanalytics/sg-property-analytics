@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
+import { TimeGranularityToggle } from './TimeGranularityToggle';
 import {
   REGIONS,
   DISTRICT_NAMES,
 } from '../../constants';
-// SaleType filter removed - Market Core is Resale-only
 
 /**
- * Power BI-style Filter Sidebar
+ * Power BI-style Filter Bar (formerly Sidebar)
  *
  * Contains dropdown/multi-select filters for all dimensions.
  * Defaults all filters to 'All' (no restriction).
+ *
+ * Layout modes:
+ * - horizontal (default): Single row control bar for desktop
+ * - drawer: Full-screen drawer for mobile
  */
-export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle }) {
+export function PowerBIFilterSidebar({ layout = 'horizontal', onClose }) {
   const {
     filters,
     filterOptions,
@@ -50,16 +54,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
     }
   }, []);
 
-  const [expandedSections, setExpandedSections] = useState({
-    location: true,
-    date: true,
-    roomSize: true,
-    propertyDetails: true,
-  });
-
   // Date preset state: '3M', '12M', '2Y', '5Y', 'custom', or null (all data)
   const [datePreset, setDatePreset] = useState(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
 
   // Calculate date range for a preset relative to the latest data date
@@ -125,6 +122,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
       // Clicking same preset clears it (show all data)
       setDateRange(null, null);
       setDatePreset(null);
+    } else if (preset === 'ALL') {
+      setDateRange(null, null);
+      setDatePreset(null);
     } else {
       const { start, end } = calculatePresetDateRange(preset, filterOptions.dateRange.max);
       if (start && end) {
@@ -132,100 +132,209 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
         setDatePreset(preset);
       }
     }
+    setShowDateDropdown(false);
   }, [datePreset, filterOptions.dateRange.max, calculatePresetDateRange, setDateRange]);
-
-  // Detect custom date changes (when user manually edits)
-  const handleCustomDateChange = useCallback((start, end) => {
-    setDateRange(start, end);
-    // If either date is set, mark as custom (unless it matches a preset)
-    if (start || end) {
-      setDatePreset('custom');
-    } else {
-      setDatePreset(null);
-    }
-  }, [setDateRange]);
 
   // Wrap resetFilters to also reset local datePreset state
   const handleResetFilters = useCallback(() => {
     resetFilters();
-    // Reset to no filter (all data)
     setDatePreset(null);
-    setShowAdvanced(false);
   }, [resetFilters]);
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+  // Get display text for date preset
+  const getDateDisplayText = () => {
+    if (!datePreset || datePreset === 'ALL') return 'All Time';
+    const labels = { '3M': '3 Months', '12M': '12 Months', '2Y': '2 Years', '5Y': '5 Years' };
+    return labels[datePreset] || 'All Time';
   };
 
-  if (collapsed) {
+  // Horizontal Control Bar Layout (Desktop)
+  if (layout === 'horizontal') {
     return (
-      <div className="w-12 bg-[#EAE0CF] border-r border-[#94B4C1]/30 flex flex-col items-center py-4 h-full">
-        {/* Filter icon */}
-        <div className="p-2">
-          <svg className="w-5 h-5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
+      <div className="flex flex-wrap items-center gap-3 p-4 bg-card/60 rounded-lg border border-[#94B4C1]/20 backdrop-blur-sm">
+        {/* Region/Segment Buttons */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-[#547792] mr-1 hidden sm:inline">Region</span>
+          <div className="flex gap-1">
+            {REGIONS.map(seg => (
+              <button
+                type="button"
+                key={seg}
+                onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
+                className={`
+                  min-h-[36px] px-3 py-1.5 rounded-md text-sm font-medium
+                  transition-colors duration-100 select-none active:scale-[0.98]
+                  ${filters.segments.includes(seg)
+                    ? 'bg-[#213448] text-white'
+                    : 'bg-card border border-[#94B4C1] text-[#547792] hover:border-[#547792] hover:text-[#213448]'
+                  }
+                `}
+                title="Shift+click to multi-select"
+              >
+                {seg}
+              </button>
+            ))}
+          </div>
         </div>
-        {activeFilterCount > 0 && (
-          <span className="mt-2 bg-[#547792] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            {activeFilterCount}
-          </span>
-        )}
-      </div>
-    );
-  }
 
-  return (
-    <div className="w-full bg-[#EAE0CF] border-r border-[#94B4C1]/30 flex flex-col h-full overflow-hidden">
-      {/* Header - Sand/Cream background with Navy text */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between bg-[#EAE0CF]">
-        <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          <span className="font-semibold text-[#213448]">Filters</span>
-          {activeFilterCount > 0 && (
-            <span className="bg-[#547792] text-white text-xs px-2 py-0.5 rounded-full">
-              {activeFilterCount}
-            </span>
+        {/* Separator */}
+        <div className="hidden lg:block w-px h-6 bg-[#94B4C1]/30" />
+
+        {/* District Dropdown */}
+        <DistrictDropdown
+          options={(filterOptions.districtsRaw || []).map(d => {
+            const areaName = DISTRICT_NAMES[d];
+            const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
+            return {
+              value: d,
+              label: areaName ? `${d} (${shortName})` : d
+            };
+          })}
+          selected={filters.districts}
+          onChange={setDistricts}
+        />
+
+        {/* Separator */}
+        <div className="hidden lg:block w-px h-6 bg-[#94B4C1]/30" />
+
+        {/* Bedroom Pills */}
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-[#547792] mr-1 hidden sm:inline">Size</span>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map(br => (
+              <button
+                type="button"
+                key={br}
+                onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
+                className={`
+                  min-h-[36px] min-w-[44px] px-2.5 py-1.5 rounded-md text-xs font-medium
+                  transition-colors duration-100 select-none active:scale-[0.98]
+                  ${filters.bedroomTypes.includes(br)
+                    ? 'bg-[#213448] text-white'
+                    : 'bg-card border border-[#94B4C1] text-[#547792] hover:border-[#547792] hover:text-[#213448]'
+                  }
+                `}
+                title="Shift+click to multi-select"
+              >
+                {br === 5 ? '5BR+' : `${br}BR`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Separator */}
+        <div className="hidden lg:block w-px h-6 bg-[#94B4C1]/30" />
+
+        {/* Date Preset Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowDateDropdown(!showDateDropdown)}
+            className={`
+              min-h-[36px] px-3 py-1.5 rounded-md text-sm font-medium
+              flex items-center gap-2
+              transition-colors duration-100 select-none active:scale-[0.98]
+              ${datePreset
+                ? 'bg-[#213448] text-white'
+                : 'bg-card border border-[#94B4C1] text-[#547792] hover:border-[#547792]'
+              }
+            `}
+          >
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span className="truncate max-w-[100px]">{getDateDisplayText()}</span>
+            <svg
+              className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${showDateDropdown ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showDateDropdown && (
+            <div className="absolute top-full left-0 mt-1 w-48 bg-card rounded-lg border border-[#94B4C1]/50 shadow-lg z-50 py-1">
+              {[
+                { value: '3M', label: '3 Months' },
+                { value: '12M', label: '12 Months' },
+                { value: '2Y', label: '2 Years' },
+                { value: '5Y', label: '5 Years' },
+                { value: 'ALL', label: 'All Time' },
+              ].map((preset) => {
+                const isActive = datePreset === preset.value || (!datePreset && preset.value === 'ALL');
+                return (
+                  <button
+                    key={preset.value}
+                    onClick={() => handlePresetClick(preset.value)}
+                    className={`
+                      w-full min-h-[44px] px-4 py-2 text-left
+                      flex items-center justify-between
+                      transition-colors duration-100
+                      ${isActive
+                        ? 'bg-[#EAE0CF]/50 text-[#213448]'
+                        : 'text-[#547792] hover:bg-[#EAE0CF]/30 hover:text-[#213448]'
+                      }
+                    `}
+                  >
+                    <span className="text-sm font-medium">{preset.label}</span>
+                    {isActive && (
+                      <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
-        {/* Clear all button - only show when filters are active */}
+
+        {/* Separator */}
+        <div className="hidden lg:block w-px h-6 bg-[#94B4C1]/30" />
+
+        {/* Time Grouping Toggle */}
+        <TimeGranularityToggle />
+
+        {/* Spacer to push Clear to far right */}
+        <div className="flex-1" />
+
+        {/* Clear filters button */}
         {activeFilterCount > 0 && (
           <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); handleResetFilters(); }}
-            className="text-xs text-[#547792] hover:text-[#213448] px-2 py-1 rounded hover:bg-[#94B4C1]/30 transition-colors"
+            onClick={handleResetFilters}
+            className="min-h-[36px] px-3 py-1.5 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-md transition-colors active:scale-[0.98]"
           >
             Clear all
           </button>
         )}
       </div>
+    );
+  }
 
-
-      {/* Filter sections */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        {/* Location Section */}
-        <FilterSection
-          title="Location"
-          icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+  // Drawer Layout (Mobile)
+  if (layout === 'drawer') {
+    return (
+      <div className="flex flex-col h-full bg-card">
+        {/* Header */}
+        <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-[#94B4C1]/30">
+          <h2 className="text-lg font-semibold text-[#213448]">Filters</h2>
+          <button
+            onClick={onClose}
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-[#EAE0CF]/30 active:bg-[#EAE0CF]/50 transition-colors"
+            aria-label="Close filters"
+          >
+            <svg className="w-6 h-6 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          }
-          expanded={expandedSections.location}
-          onToggle={() => toggleSection('location')}
-          activeCount={
-            (filters.segments.length > 0 ? 1 : 0) +
-            (filters.districts.length > 0 ? 1 : 0)
-          }
-        >
-          {/* Market Segment Buttons - click to switch, shift+click to multi-select */}
-          <FilterGroup label="Market Segment">
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {/* Region */}
+          <div>
+            <label className="block text-sm font-medium text-[#213448] mb-2">Region</label>
             <div className="grid grid-cols-3 gap-2">
               {REGIONS.map(seg => (
                 <button
@@ -234,24 +343,20 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
                   onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
                   className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
                     filters.segments.includes(seg)
-                      ? 'bg-[#547792] text-white border-[#547792]'
-                      : filters.segments.length === 0
-                        ? 'bg-white text-[#213448] border-[#94B4C1]'
-                        : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
+                      ? 'bg-[#213448] text-white border-[#213448]'
+                      : 'bg-card text-[#547792] border-[#94B4C1] hover:border-[#547792]'
                   }`}
                 >
                   {seg}
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-slate-500 mt-2 italic">
-              Click to switch, Shift+click to multi-select
-            </p>
-          </FilterGroup>
+          </div>
 
-          {/* Districts Multi-select */}
-          <FilterGroup label="Districts">
-            <MultiSelectDropdown
+          {/* District */}
+          <div>
+            <label className="block text-sm font-medium text-[#213448] mb-2">District</label>
+            <DistrictDropdown
               options={(filterOptions.districtsRaw || []).map(d => {
                 const areaName = DISTRICT_NAMES[d];
                 const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
@@ -262,236 +367,92 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle })
               })}
               selected={filters.districts}
               onChange={setDistricts}
-              placeholder="All Districts"
-              searchable
+              fullWidth
             />
-          </FilterGroup>
-        </FilterSection>
-
-        {/* Bedroom Size Section */}
-        <FilterSection
-          title="Bedroom Size"
-          icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          }
-          expanded={expandedSections.roomSize}
-          onToggle={() => toggleSection('roomSize')}
-          activeCount={filters.bedroomTypes.length > 0 ? 1 : 0}
-        >
-          {/* Bedroom Type Buttons - click to switch, shift+click to multi-select */}
-          <div className="grid grid-cols-5 gap-1.5">
-            {[1, 2, 3, 4, 5].map(br => (
-              <button
-                type="button"
-                key={br}
-                onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                className={`min-h-[44px] py-2.5 text-xs rounded-md border transition-colors ${
-                  filters.bedroomTypes.includes(br)
-                    ? 'bg-[#547792] text-white border-[#547792]'
-                    : filters.bedroomTypes.length === 0
-                      ? 'bg-white text-[#213448] border-[#94B4C1]'
-                      : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
-                }`}
-              >
-                {br === 5 ? '5BR+' : `${br}BR`}
-              </button>
-            ))}
           </div>
-          <p className="text-[10px] text-slate-500 mt-1 italic">
-            Click to switch, Shift+click to multi-select
-          </p>
-        </FilterSection>
 
-        {/* Date Section - moved after Bedroom Size */}
-        <FilterSection
-          title="Date"
-          icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          }
-          expanded={expandedSections.date}
-          onToggle={() => toggleSection('date')}
-          activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
-        >
-          {/* Preset Buttons - Primary interaction */}
-          {/* Shows loading indicator when filter options not ready, buttons still work with fallback to today */}
-          <div className="grid grid-cols-4 gap-1.5">
-            {['3M', '12M', '2Y', '5Y'].map(preset => (
-              <button
-                type="button"
-                key={preset}
-                onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
-                disabled={filterOptions.loading}
-                className={`min-h-[40px] py-2 text-sm rounded-md border transition-colors ${
-                  filterOptions.loading
-                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
-                    : datePreset === preset
-                      ? 'bg-[#547792] text-white border-[#547792]'
-                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
-                }`}
-              >
-                {preset}
-              </button>
-            ))}
+          {/* Bedroom */}
+          <div>
+            <label className="block text-sm font-medium text-[#213448] mb-2">Unit Size</label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {[1, 2, 3, 4, 5].map(br => (
+                <button
+                  type="button"
+                  key={br}
+                  onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
+                  className={`min-h-[44px] py-2.5 text-xs rounded-md border transition-colors ${
+                    filters.bedroomTypes.includes(br)
+                      ? 'bg-[#213448] text-white border-[#213448]'
+                      : 'bg-card text-[#547792] border-[#94B4C1] hover:border-[#547792]'
+                  }`}
+                >
+                  {br === 5 ? '5BR+' : `${br}BR`}
+                </button>
+              ))}
+            </div>
           </div>
-          {/* Fallback indicator when using today as anchor (filter options not loaded) */}
-          {!filterOptions.dateRange.max && !filterOptions.loading && (
-            <div className="text-[10px] text-amber-600 mt-1">
-              Using today as anchor (data range loading...)
-            </div>
-          )}
 
-          {/* Custom indicator when manually edited */}
-          {datePreset === 'custom' && (
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-[#547792] font-medium">Custom range selected</span>
+          {/* Date Range */}
+          <div>
+            <label className="block text-sm font-medium text-[#213448] mb-2">Time Period</label>
+            <div className="grid grid-cols-4 gap-2">
+              {['3M', '12M', '2Y', '5Y'].map(preset => (
+                <button
+                  type="button"
+                  key={preset}
+                  onClick={() => handlePresetClick(preset)}
+                  className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
+                    datePreset === preset
+                      ? 'bg-[#213448] text-white border-[#213448]'
+                      : 'bg-card text-[#547792] border-[#94B4C1] hover:border-[#547792]'
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Time Grouping */}
+          <div>
+            <label className="block text-sm font-medium text-[#213448] mb-2">Group By</label>
+            <TimeGranularityToggle />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 p-4 border-t border-[#94B4C1]/30 bg-card" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+          <div className="flex gap-3">
+            {activeFilterCount > 0 && (
               <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); handlePresetClick('12M'); }}
-                className="text-xs text-[#547792] hover:text-[#213448] underline"
+                onClick={handleResetFilters}
+                className="flex-1 min-h-[48px] px-4 py-3 rounded-lg border border-[#94B4C1] text-[#547792] font-medium hover:border-[#547792] active:bg-[#EAE0CF]/30 transition-colors"
               >
-                Reset to 12M
+                Clear all
               </button>
-            </div>
-          )}
-
-          {/* Advanced toggle for custom date inputs */}
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); setShowAdvanced(!showAdvanced); }}
-            className="flex items-center gap-1 mt-3 text-xs text-[#547792] hover:text-[#213448] transition-colors"
-          >
-            <span>Custom dates</span>
-            <svg
-              className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            )}
+            <button
+              onClick={onClose}
+              className="flex-1 min-h-[48px] px-4 py-3 rounded-lg bg-[#213448] text-white font-medium hover:bg-[#547792] active:scale-[0.98] transition-all"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {/* Custom date inputs (Advanced) */}
-          {showAdvanced && (
-            <div className="space-y-2 mt-2 pt-2 border-t border-[#94B4C1]/30">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 w-10">From</span>
-                <input
-                  type="month"
-                  value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
-                  onChange={(e) => handleCustomDateChange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
-                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
-                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 w-10">To</span>
-                <input
-                  type="month"
-                  value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      // Get last day of the selected month (e.g., Sep has 30, Feb has 28/29)
-                      // month from input is 1-based (01-12), day 0 trick gives last day of that month
-                      const [year, month] = e.target.value.split('-');
-                      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-                      handleCustomDateChange(filters.dateRange.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
-                    } else {
-                      handleCustomDateChange(filters.dateRange.start, null);
-                    }
-                  }}
-                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
-                  max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Data range info */}
-          {filterOptions.dateRange.min && filterOptions.dateRange.max && (
-            <div className="text-[10px] text-slate-500 mt-2 italic">
-              Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
-            </div>
-          )}
-        </FilterSection>
+              Apply
+            </button>
+          </div>
+        </div>
       </div>
+    );
+  }
 
-      {/* Footer */}
-      <div className="px-4 py-3 border-t border-[#94B4C1] bg-[#EAE0CF]">
-        <button
-          type="button"
-          onClick={(e) => { e.preventDefault(); handleResetFilters(); }}
-          disabled={activeFilterCount === 0}
-          className={`w-full min-h-[44px] py-2.5 text-sm rounded-md transition-colors ${
-            activeFilterCount > 0
-              ? 'bg-[#213448] text-white hover:bg-[#547792]'
-              : 'bg-[#94B4C1]/30 text-[#547792] cursor-not-allowed'
-          }`}
-        >
-          Reset All Filters
-        </button>
-      </div>
-    </div>
-  );
+  return null;
 }
 
 // ===== Helper Components =====
 
-function FilterSection({ title, icon, expanded, onToggle, activeCount, children }) {
-  return (
-    <div className="border-b border-[#94B4C1]/50">
-      <button
-        type="button"
-        onClick={(e) => { e.preventDefault(); onToggle(); }}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#94B4C1]/20 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-[#547792]">{icon}</span>
-          <span className="font-medium text-[#213448]">{title}</span>
-          {activeCount > 0 && (
-            <span className="bg-[#547792]/20 text-[#213448] text-xs px-1.5 py-0.5 rounded">
-              {activeCount}
-            </span>
-          )}
-        </div>
-        <svg
-          className={`w-4 h-4 text-[#547792] transition-transform ${expanded ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {expanded && (
-        <div className="px-4 pb-4 space-y-4">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FilterGroup({ label, children }) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-[#547792] mb-1.5">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function MultiSelectDropdown({ options, selected, onChange, placeholder, searchable }) {
+function DistrictDropdown({ options, selected, onChange, fullWidth = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
 
-  const filteredOptions = searchable && search
+  const filteredOptions = search
     ? options.filter(opt =>
         opt.label.toLowerCase().includes(search.toLowerCase()) ||
         opt.value.toLowerCase().includes(search.toLowerCase())
@@ -507,28 +468,46 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
     }
   };
 
-  // Get display text - show actual label when only 1 selected
   const getDisplayText = () => {
-    if (selected.length === 0) return placeholder;
+    if (selected.length === 0) return 'All Districts';
     if (selected.length === 1) {
       const selectedOption = options.find(opt => opt.value === selected[0]);
       return selectedOption?.label || selected[0];
     }
-    return `${selected.length} selected`;
+    return `${selected.length} districts`;
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClick = (e) => {
+      if (!e.target.closest('.district-dropdown')) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [isOpen]);
+
   return (
-    <div className="relative">
+    <div className={`relative district-dropdown ${fullWidth ? 'w-full' : ''}`}>
       <button
         type="button"
-        onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
-        className="w-full px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`
+          ${fullWidth ? 'w-full' : 'min-w-[140px]'}
+          min-h-[36px] px-3 py-1.5 rounded-md text-sm
+          flex items-center justify-between gap-2
+          transition-colors duration-100 select-none active:scale-[0.98]
+          ${selected.length > 0
+            ? 'bg-[#213448] text-white'
+            : 'bg-card border border-[#94B4C1] text-[#547792] hover:border-[#547792]'
+          }
+        `}
       >
-        <span className={selected.length > 0 ? 'text-slate-800 truncate' : 'text-slate-500'}>
-          {getDisplayText()}
-        </span>
+        <span className="truncate">{getDisplayText()}</span>
         <svg
-          className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -538,24 +517,26 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-300 rounded-md shadow-lg max-h-60 overflow-hidden">
-          {searchable && (
-            <div className="p-2 border-b border-slate-200">
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search..."
-                className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          )}
-          <div className="max-h-48 overflow-y-auto">
+        <div className={`absolute top-full left-0 mt-1 ${fullWidth ? 'w-full' : 'w-64'} bg-card rounded-lg border border-[#94B4C1]/50 shadow-lg z-50 overflow-hidden`}>
+          {/* Search */}
+          <div className="p-2 border-b border-[#94B4C1]/30">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search districts..."
+              className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded-md focus:outline-none focus:ring-2 focus:ring-[#547792] bg-white"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+
+          {/* Options */}
+          <div className="max-h-60 overflow-y-auto">
             {selected.length > 0 && (
               <button
                 type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange([]); }}
-                className="w-full px-3 py-2 text-xs text-left text-blue-600 hover:bg-blue-50 border-b border-slate-100"
+                onClick={(e) => { e.stopPropagation(); onChange([]); }}
+                className="w-full px-3 py-2 text-xs text-left text-[#547792] hover:bg-[#EAE0CF]/30 border-b border-[#94B4C1]/20"
               >
                 Clear selection
               </button>
@@ -563,16 +544,16 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
             {filteredOptions.map(opt => (
               <label
                 key={opt.value}
-                className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
+                className="flex items-center px-3 py-2 hover:bg-[#EAE0CF]/30 cursor-pointer"
                 onClick={(e) => e.stopPropagation()}
               >
                 <input
                   type="checkbox"
                   checked={selected.includes(opt.value)}
                   onChange={(e) => handleToggle(opt.value, e)}
-                  className="mr-2 rounded border-slate-300 text-blue-500 focus:ring-blue-500"
+                  className="mr-2 rounded border-[#94B4C1] text-[#547792] focus:ring-[#547792]"
                 />
-                <span className="text-sm text-slate-700">{opt.label}</span>
+                <span className="text-sm text-[#213448]">{opt.label}</span>
               </label>
             ))}
           </div>
