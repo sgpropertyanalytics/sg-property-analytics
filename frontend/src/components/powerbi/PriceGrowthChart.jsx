@@ -10,7 +10,7 @@
  * - District average PSF line (dotted sky blue, left Y-axis)
  */
 
-import { useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -99,7 +99,7 @@ const aggregateByQuarter = (transactions) => {
     }));
 };
 
-export function PriceGrowthChart({
+export const PriceGrowthChart = React.memo(function PriceGrowthChart({
   data = null,
   districtAverage = [],
   loading = false,
@@ -417,6 +417,6 @@ export function PriceGrowthChart({
       </div>
     </div>
   );
-}
+});
 
 export default PriceGrowthChart;

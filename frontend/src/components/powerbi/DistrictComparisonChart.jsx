@@ -60,7 +60,7 @@ const ROW_HEIGHT = 28;
  * @param {number} height - Chart height in pixels (default 400, dynamic based on project count)
  * @param {number} minUnits - Minimum units threshold (default 100)
  */
-export function DistrictComparisonChart({
+export const DistrictComparisonChart = React.memo(function DistrictComparisonChart({
   district,
   selectedProject,
   height: propHeight,
@@ -348,6 +348,6 @@ export function DistrictComparisonChart({
       )}
     </div>
   );
-}
+});
 
 export default DistrictComparisonChart;

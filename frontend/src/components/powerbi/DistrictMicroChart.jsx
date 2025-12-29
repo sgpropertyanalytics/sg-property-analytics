@@ -48,7 +48,7 @@ const REGION_HEADER_TEXT = {
  * - Bars: Total Transaction Value (grey, 30% opacity)
  * - Independent Y-axes for visual impact
  */
-export function DistrictMicroChart({ district, data, onClick }) {
+export const DistrictMicroChart = React.memo(function DistrictMicroChart({ district, data, onClick }) {
   const chartRef = useRef(null);
 
   // Determine region for header styling
@@ -271,6 +271,6 @@ export function DistrictMicroChart({ district, data, onClick }) {
       </div>
     </div>
   );
-}
+});
 
 export default DistrictMicroChart;

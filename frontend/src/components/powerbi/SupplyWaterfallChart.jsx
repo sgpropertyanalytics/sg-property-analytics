@@ -63,7 +63,7 @@ ChartJS.register(
  * @param {number} props.launchYear - Year filter for upcoming launches (from context)
  * @param {number} props.height - Chart height in pixels
  */
-export function SupplyWaterfallChart({
+export const SupplyWaterfallChart = React.memo(function SupplyWaterfallChart({
   view = 'regional',
   selectedRegion = null,
   // Props kept for documentation but values come from shared context
@@ -206,6 +206,6 @@ export function SupplyWaterfallChart({
       </div>
     </QueryState>
   );
-}
+});
 
 export default SupplyWaterfallChart;

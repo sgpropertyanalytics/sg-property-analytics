@@ -12,7 +12,7 @@
  * - Unit dot marker (if unitPsf provided)
  */
 
-import { useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { ChartSkeleton } from '../common/ChartSkeleton';
 import {
   Chart as ChartJS,
@@ -57,7 +57,7 @@ const COLORS = {
   unitMarker: '#547792',
 };
 
-export function PriceBandChart({
+export const PriceBandChart = React.memo(function PriceBandChart({
   bands = [],
   latest,
   trend,
@@ -444,6 +444,6 @@ export function PriceBandChart({
       )}
     </div>
   );
-}
+});
 
 export default PriceBandChart;

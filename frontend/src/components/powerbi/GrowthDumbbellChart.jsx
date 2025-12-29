@@ -53,7 +53,7 @@ const getGradientColor = (rankPercent) => {
  * @param {string} bedroom - 'all', '1', '2', '3', '4', '5' (still respects bedroom filter)
  * @param {string} saleType - 'all', 'New Sale', 'Resale' (still respects sale type filter)
  */
-export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
+export const GrowthDumbbellChart = React.memo(function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
   // Create a stable filter key for dependency tracking (no period - fixed date range)
   const filterKey = useMemo(() => `fixed:${bedroom}:${saleType}`, [bedroom, saleType]);
   const [sortConfig, setSortConfig] = useState({ column: 'growth', order: 'desc' });
@@ -412,6 +412,6 @@ export function GrowthDumbbellChart({ bedroom = 'all', saleType = 'all' }) {
     </div>
     </QueryState>
   );
-}
+});
 
 export default GrowthDumbbellChart;
