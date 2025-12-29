@@ -809,3 +809,142 @@ backend/tests/
 .claude/agents/
 └── regression-snapshot-guard.md     # Agent definition
 ```
+
+---
+
+# 12. UI/LAYOUT REFACTORING (NON-NEGOTIABLE)
+
+Your primary responsibility is to preserve architectural integrity while making UI or layout changes.
+
+## Core Rule (Mandatory)
+
+**UI changes must NEVER introduce new logic.**
+
+If behavior already exists, it must be:
+- Reused
+- Wrapped
+- Reorganized
+
+**Never recreated. Never duplicated.**
+
+## Single Source of Truth (SSOT)
+
+There must be exactly ONE owner of:
+- Business logic
+- State
+- Filtering behavior
+- Data transformations
+
+**You must NOT:**
+- Reimplement logic in a new component
+- Duplicate state
+- Recreate hooks that already exist
+
+**You must:**
+- Reuse existing hooks and context
+- Pass logic down via props
+- Wrap logic with layout components only
+
+## Layout ≠ Logic
+
+UI changes are presentation-only.
+
+| Allowed | Forbidden |
+|---------|-----------|
+| Changing layout (vertical → horizontal) | Adding state |
+| Changing spacing or grouping | Rewriting logic |
+| Changing component structure | Altering behavior |
+| Changing visual hierarchy | Changing data flow |
+
+**If behavior changes → the refactor is invalid.**
+
+## Composition Over Duplication
+
+```jsx
+// ❌ Never do this
+Sidebar (logic + UI)
+ControlBarFilters (logic + UI)
+
+// ✅ Always do this
+FilterLogic (hooks, rules)
+ ├── SidebarLayout
+ └── HorizontalLayout
+```
+
+If two components behave the same → they must share logic.
+
+## UI Is Not a Feature
+
+| Features | UI |
+|----------|-----|
+| Own logic | Displays state |
+| Define behavior | Triggers events |
+| Enforce rules | Never owns logic |
+
+## Invariant Preservation
+
+The following must NEVER change during UI refactors:
+- Filter semantics
+- Date normalization
+- Selection logic
+- Reset behavior
+- Default values
+- Data mappings
+
+**If any invariant changes → the change is invalid.**
+
+## Layout-Only Changes Must Be Diff-Light
+
+If a change is truly layout-only:
+- No new hooks
+- No new logic files
+- No duplicated state
+- Minimal diffs
+
+**Large diffs = architecture violation.**
+
+## No Parallel Implementations
+
+**Forbidden:**
+- `DesktopFilters` + `MobileFilters` with separate logic
+- `Sidebar` + `ControlBar` with duplicated behavior
+- "Temporary" rewritten logic
+
+All layouts must share the same logic layer.
+
+## Mobile/Responsive UI
+
+Mobile UI:
+- Uses same context
+- Uses same state
+- Uses same handlers
+- Only presentation changes
+
+## Pre-Change Checklist
+
+Before submitting UI/layout changes:
+- [ ] No new logic added
+- [ ] No duplicated state
+- [ ] Existing hooks reused
+- [ ] Behavior unchanged
+- [ ] Layout-only modification
+- [ ] Single source of truth preserved
+
+**If any box fails → stop.**
+
+## Absolute Rule
+
+> This is a layout-only refactor. Do not create new logic, state, or behavior. Reuse existing logic exactly as-is.
+
+**If this rule is violated, the change must be reverted.**
+
+## Engineering Philosophy
+
+```
+Logic is permanent
+UI is disposable
+Duplication is a bug
+Reuse is mandatory
+Behavior must be stable
+Layout must be flexible
+```
