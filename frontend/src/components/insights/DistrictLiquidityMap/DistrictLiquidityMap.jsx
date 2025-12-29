@@ -10,8 +10,9 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
+import { BarChart3, DollarSign } from 'lucide-react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../../api/client';
 import { singaporeDistrictsGeoJSON } from '../../../data/singaporeDistrictsGeoJSON';
@@ -212,28 +213,42 @@ export default function DistrictLiquidityMap({
 
           {/* Toggle + Filter pills */}
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            {/* Volume/Price Toggle - only shown when onModeChange is provided */}
+            {/* Color-Sync Liquid Toggle */}
             {onModeChange && (
-              <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
+              <div className="flex p-1 bg-white/80 backdrop-blur-md border border-[#94B4C1]/30 rounded-full shadow-sm">
                 <button
                   onClick={() => onModeChange('volume')}
-                  className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all ${
-                    mapMode === 'volume'
-                      ? 'bg-white text-[#213448] shadow-sm'
-                      : 'text-[#547792] hover:text-[#213448]'
+                  className={`relative flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-full transition-colors z-10 ${
+                    mapMode === 'volume' ? 'text-white' : 'text-[#547792] hover:text-[#213448]'
                   }`}
                 >
-                  Volume
+                  {mapMode === 'volume' && (
+                    <motion.div
+                      layoutId="map-toggle-pill"
+                      className="absolute inset-0 bg-[#547792] rounded-full -z-10"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <BarChart3 size={14} />
+                  <span className="hidden sm:inline">Liquidity</span>
+                  <span className="sm:hidden">Vol</span>
                 </button>
                 <button
                   onClick={() => onModeChange('price')}
-                  className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all ${
-                    mapMode === 'price'
-                      ? 'bg-white text-[#213448] shadow-sm'
-                      : 'text-[#547792] hover:text-[#213448]'
+                  className={`relative flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-full transition-colors z-10 ${
+                    mapMode === 'price' ? 'text-white' : 'text-[#547792] hover:text-[#213448]'
                   }`}
                 >
-                  Price
+                  {mapMode === 'price' && (
+                    <motion.div
+                      layoutId="map-toggle-pill"
+                      className="absolute inset-0 bg-emerald-600 rounded-full -z-10"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <DollarSign size={14} />
+                  <span className="hidden sm:inline">Price PSF</span>
+                  <span className="sm:hidden">PSF</span>
                 </button>
               </div>
             )}
