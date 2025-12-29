@@ -313,7 +313,7 @@ function ProjectDetailPanelInner({
   const bedroomChartData = {
     labels: priceData.map(d => {
       const bedroom = getAggField(d, AggField.BEDROOM_COUNT);
-      return bedroom >= 5 ? '5BR+' : `${bedroom}BR`;
+      return bedroom >= 5 ? '5BR' : `${bedroom}BR`;
     }),
     datasets: [
       {
@@ -640,7 +640,7 @@ function ProjectDetailPanelInner({
                             const formatPrice = (v) => v ? `$${(v / 1000000).toFixed(2)}M` : '-';
                             return (
                               <tr key={bedroom} className={`border-b border-[#94B4C1]/20 ${isSuppressed ? 'opacity-60' : 'hover:bg-[#EAE0CF]/20'}`}>
-                                <td className="py-1.5 pr-2 font-medium text-[#213448]">{bedroom >= 5 ? '5BR+' : `${bedroom}BR`}</td>
+                                <td className="py-1.5 pr-2 font-medium text-[#213448]">{bedroom >= 5 ? '5BR' : `${bedroom}BR`}</td>
                                 <td className="py-1.5 px-1 text-right text-[#547792]">{count.toLocaleString()}</td>
                                 <td className="py-1.5 px-1 text-right text-[#547792]">
                                   <SuppressedValue value={price25th} suppressed={isSuppressed} kRequired={K_PROJECT_THRESHOLD} formatter={formatPrice} />

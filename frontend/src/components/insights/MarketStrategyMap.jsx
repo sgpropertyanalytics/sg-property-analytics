@@ -9,7 +9,7 @@
  * - Responsive design matching dashboard aesthetic
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import { BarChart3, DollarSign } from 'lucide-react';
@@ -397,7 +397,7 @@ function RegionSummaryBar({ districtData }) {
  *
  * @param {string} selectedSaleType - Sale type enum value (page-level enforcement)
  */
-export default function MarketStrategyMap({
+const MarketStrategyMap = React.memo(function MarketStrategyMap({
   selectedPeriod: controlledPeriod,
   selectedBed: controlledBed,
   selectedSaleType = SaleType.RESALE,

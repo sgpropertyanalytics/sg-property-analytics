@@ -11,7 +11,7 @@
  * - X-axis: Price in millions SGD
  * - Y-axis: Region (CCR, RCR, OCR) as categories
  * - Bubble size: Transaction volume
- * - Bubble color: Bedroom type (1BR-5BR+)
+ * - Bubble color: Bedroom type (1BR-5BR)
  */
 
 import { isDev } from './validation';
@@ -26,7 +26,7 @@ const BEDROOM_COLORS = {
   2: 'rgba(148, 180, 193, 0.9)', // Sky #94B4C1 - light
   3: 'rgba(84, 119, 146, 0.9)', // Blue #547792 - medium
   4: 'rgba(33, 52, 72, 0.9)', // Navy #213448 - dark (was blend, now navy)
-  5: 'rgba(120, 80, 60, 0.9)', // Brown accent for 5BR+ to stand out
+  5: 'rgba(120, 80, 60, 0.9)', // Brown accent for 5BR to stand out
 };
 
 /**
@@ -37,7 +37,7 @@ const BEDROOM_LABELS = {
   2: '2BR',
   3: '3BR',
   4: '4BR',
-  5: '5BR+',
+  5: '5BR',
 };
 
 /**

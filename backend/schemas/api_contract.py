@@ -1830,7 +1830,7 @@ def _bedroom_label(count: int) -> str:
     if count is None:
         return 'Unknown'
     if count >= 5:
-        return '5BR+'
+        return '5BR'
     return f'{count}BR'
 
 

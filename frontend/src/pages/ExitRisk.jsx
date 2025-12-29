@@ -336,7 +336,7 @@ export function ExitRiskContent() {
       warnings.push({
         variant: 'default',
         title: 'Mixed Unit Types',
-        content: 'Analysis combines all unit types (1BR-5BR+). Interpretation may vary by unit size.'
+        content: 'Analysis combines all unit types (1BR-5BR). Interpretation may vary by unit size.'
       });
     }
 

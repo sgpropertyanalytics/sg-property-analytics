@@ -154,7 +154,7 @@ export const REGIONS = ['CCR', 'RCR', 'OCR'];
 /**
  * Bedroom order for display/sorting (short labels)
  */
-export const BEDROOM_ORDER = ['1BR', '2BR', '3BR', '4BR', '5BR+'];
+export const BEDROOM_ORDER = ['1BR', '2BR', '3BR', '4BR', '5BR'];
 
 /**
  * Bedroom order as numeric values
@@ -176,7 +176,7 @@ export const BEDROOM_LABELS_SHORT = {
   2: '2BR',
   3: '3BR',
   4: '4BR',
-  5: '5BR+',
+  5: '5BR',
 };
 
 // =============================================================================
@@ -346,7 +346,7 @@ export const getBedroomClassificationTier = (saleType, transactionDate) => {
  */
 export const getBedroomLabelShort = (bedroom) => {
   const num = parseInt(bedroom, 10);
-  if (num >= 5) return '5BR+';
+  if (num >= 5) return '5BR';
   return BEDROOM_LABELS_SHORT[num] || `${num}BR`;
 };
 
@@ -374,7 +374,7 @@ export const BEDROOM_FILTER_OPTIONS = [
   { value: '2', label: '2BR', fullLabel: '2-Bedroom' },
   { value: '3', label: '3BR', fullLabel: '3-Bedroom' },
   { value: '4', label: '4BR', fullLabel: '4-Bedroom' },
-  { value: '5', label: '5BR+', fullLabel: '5-Bedroom+' },
+  { value: '5', label: '5BR', fullLabel: '5-Bedroom+' },
 ];
 
 /**

@@ -51,10 +51,11 @@ export function DistrictDeepDiveContent() {
 
         {/* Main Content */}
         <div className="space-y-6 animate-fade-in">
-          {/* Map - swaps based on toggle, filters persist */}
+          {/* Map - both rendered, CSS controls visibility to prevent unmount/remount */}
           <ChartWatermark>
             <Suspense fallback={<ChartSkeleton type="map" height={600} />}>
-              {mapMode === 'volume' ? (
+              {/* Volume Mode Map - hidden when in price mode */}
+              <div style={{ display: mapMode === 'volume' ? 'block' : 'none' }}>
                 <DistrictLiquidityMap
                   saleType={SaleType.RESALE}
                   selectedPeriod={selectedPeriod}
@@ -63,7 +64,9 @@ export function DistrictDeepDiveContent() {
                   mapMode={mapMode}
                   onModeChange={setMapMode}
                 />
-              ) : (
+              </div>
+              {/* Price Mode Map - hidden when in volume mode */}
+              <div style={{ display: mapMode === 'price' ? 'block' : 'none' }}>
                 <MarketStrategyMap
                   selectedPeriod={selectedPeriod}
                   selectedBed={selectedBed}
@@ -72,7 +75,7 @@ export function DistrictDeepDiveContent() {
                   mapMode={mapMode}
                   onModeChange={setMapMode}
                 />
-              )}
+              </div>
             </Suspense>
           </ChartWatermark>
 

@@ -194,7 +194,7 @@ export const BeadsChart = React.memo(function BeadsChart({ height = 300, saleTyp
             title: (context) => {
               const raw = context[0]?.raw?._raw;
               if (!raw) return '';
-              return `${raw.region} - ${raw.bedroom === 5 ? '5BR+' : `${raw.bedroom}BR`}`;
+              return `${raw.region} - ${raw.bedroom === 5 ? '5BR' : `${raw.bedroom}BR`}`;
             },
             label: (context) => {
               const raw = context.raw?._raw;
@@ -304,7 +304,7 @@ export const BeadsChart = React.memo(function BeadsChart({ height = 300, saleTyp
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5">
               <div><span className="font-semibold text-[#213448]">X-Position</span> — Volume-weighted median price.</div>
               <div><span className="font-semibold text-[#213448]">Bubble Size</span> — Number of transactions.</div>
-              <div><span className="font-semibold text-[#213448]">Color</span> — Bedroom type (1BR to 5BR+).</div>
+              <div><span className="font-semibold text-[#213448]">Color</span> — Bedroom type (1BR to 5BR).</div>
               <div><span className="font-semibold text-[#213448]">String Line</span> — Price range for that region.</div>
             </div>
           </KeyInsightBox>

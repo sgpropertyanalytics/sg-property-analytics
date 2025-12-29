@@ -237,7 +237,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 }`}
                 title="Shift+click to multi-select"
               >
-                {br === 5 ? '5BR+' : `${br}BR`}
+                {br === 5 ? '5BR' : `${br}BR`}
               </button>
             ))}
           </div>
@@ -403,7 +403,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                         : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
                   }`}
                 >
-                  {br === 5 ? '5BR+' : `${br}BR`}
+                  {br === 5 ? '5BR' : `${br}BR`}
                 </button>
               ))}
             </div>
@@ -684,7 +684,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                       : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
                 }`}
               >
-                {br === 5 ? '5BR+' : `${br}BR`}
+                {br === 5 ? '5BR' : `${br}BR`}
               </button>
             ))}
           </div>

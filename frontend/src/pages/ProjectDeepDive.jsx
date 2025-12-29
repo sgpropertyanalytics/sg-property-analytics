@@ -277,7 +277,7 @@ export function ProjectDeepDiveContent() {
                           <option value="2">2BR</option>
                           <option value="3">3BR</option>
                           <option value="4">4BR</option>
-                          <option value="5">5BR+</option>
+                          <option value="5">5BR</option>
                         </select>
                       </div>
 
