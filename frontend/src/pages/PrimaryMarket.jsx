@@ -25,7 +25,7 @@ export function PrimaryMarketContent() {
           {/* Header */}
           <div className="mb-4 md:mb-6">
             <PageHeader
-              title="Primary Market Analysis"
+              title="New Launch Market"
               subtitle="Compare New Sale vs Recently TOP transactions across the market"
             />
           </div>

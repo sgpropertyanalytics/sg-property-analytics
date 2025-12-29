@@ -107,14 +107,14 @@ function App() {
             {/* Primary Market - New Sale vs Resale comparison (Lazy-loaded) */}
             <Route path="/primary-market" element={<PrimaryMarketContent />} />
 
-            {/* Deal Checker - Compare your purchase to nearby transactions (Lazy-loaded) */}
+            {/* Value Check - Compare your purchase to nearby transactions (Lazy-loaded) */}
             <Route
               path="/value-parity"
               element={
                 <div className="min-h-full bg-[#EAE0CF]/40">
                   <div className="p-3 md:p-4 lg:p-6">
                     <PageHeader
-                      title="Deal Checker"
+                      title="Value Check"
                       subtitle="Compare your purchase to nearby transactions and evaluate if it's a good deal"
                     />
                     <div className="animate-view-enter">

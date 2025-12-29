@@ -136,7 +136,7 @@ export function ProjectDeepDiveContent() {
         {/* Header */}
         <div className="mb-4 md:mb-6">
           <PageHeader
-            title="Explore Properties"
+            title="Explore"
             subtitle="Find properties within your budget and explore market activity"
           />
         </div>

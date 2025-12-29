@@ -140,7 +140,7 @@ export function MacroOverviewContent() {
         <div className="mb-4 md:mb-6">
           <div className="min-w-0 mb-2">
             <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
-              Singapore Property Market Analytics
+              Market Overview
             </h1>
             {/* Data source info - shows last update date and records added */}
             {apiMetadata && (

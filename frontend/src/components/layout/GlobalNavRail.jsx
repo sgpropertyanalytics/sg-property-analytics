@@ -32,8 +32,8 @@ import { AccountSettingsModal } from '../AccountSettingsModal';
  * - Mobile drawer: 256px (w-64), max 85vw
  *
  * Structure:
- * - Market Intelligence: Overview, Districts, New Launches, Supply & Inventory
- * - Project Tools: Explore Budget, Deal Checker, Exit Risk
+ * - Market Intelligence: Market Overview, District Overview, New Launch Market, Supply & Inventory
+ * - Project Tools: Explore, Value Check, Exit Risk
  */
 
 // Design token: Nav rail width (defined once, used in DashboardLayout)
@@ -50,9 +50,9 @@ export const NAV_GROUPS = [
     id: 'market-intelligence',
     label: 'Market Intelligence',
     items: [
-      { id: 'overview', path: '/market-core', label: 'Overview', icon: '📊' },
-      { id: 'districts', path: '/district-deep-dive', label: 'Districts', icon: '🗺️' },
-      { id: 'new-launches', path: '/primary-market', label: 'New Launches', icon: '🏗️' },
+      { id: 'overview', path: '/market-core', label: 'Market Overview', icon: '📊' },
+      { id: 'districts', path: '/district-deep-dive', label: 'District Overview', icon: '🗺️' },
+      { id: 'new-launches', path: '/primary-market', label: 'New Launch Market', icon: '🏗️' },
       { id: 'supply', path: '/supply-insights', label: 'Supply & Inventory', icon: '📦' },
     ],
   },
@@ -60,8 +60,8 @@ export const NAV_GROUPS = [
     id: 'project-tools',
     label: 'Project Tools',
     items: [
-      { id: 'explore', path: '/project-deep-dive', label: 'Explore Budget', icon: '🔍' },
-      { id: 'deal-checker', path: '/value-parity', label: 'Deal Checker', icon: '💰' },
+      { id: 'explore', path: '/project-deep-dive', label: 'Explore', icon: '🔍' },
+      { id: 'value-check', path: '/value-parity', label: 'Value Check', icon: '💰' },
       { id: 'exit-risk', path: '/exit-risk', label: 'Exit Risk', icon: '🚪' },
     ],
   },
