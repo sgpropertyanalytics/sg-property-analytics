@@ -134,56 +134,56 @@ export function MacroOverviewContent() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Control Bar - Horizontal filter controls */}
-      <ControlBar />
-
-      {/* Filter Summary - Shows active filters */}
-      <FilterSummary />
-
+    <div className="h-full">
       {/* Main Content Area - Scrollable (vertical only, no horizontal) */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div className="h-full overflow-y-auto overflow-x-hidden">
         <div className="p-3 md:p-4 lg:p-6">
-          {/* Header */}
-          <div className="mb-4 md:mb-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-2">
-              <div className="min-w-0">
-                <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
-                  Singapore Property Market Analytics
-                </h1>
-                {/* Data source info - shows raw database count and date range */}
-                {apiMetadata && (
-                  <p className="text-[#547792] text-xs md:text-sm italic truncate">
-                    Data source from URA (Total of {((apiMetadata.row_count || 0) + (apiMetadata.total_records_removed || apiMetadata.outliers_excluded || 0)).toLocaleString()} transaction records
-                    <span className="hidden md:inline">
-                    {apiMetadata.min_date && apiMetadata.max_date && (
-                      <> found from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short'
-                      })} to {new Date(apiMetadata.max_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short'
-                      })}</>
-                    )})
-                    {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded) > 0 && (
-                      <> | {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded)?.toLocaleString()} outlier records excluded</>
-                    )}
-                    </span>
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                {/* Time Grouping Toggle - View context control (not a filter) */}
-                <TimeGranularityToggle />
-              </div>
+        {/* Header */}
+        <div className="mb-4 md:mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-2">
+            <div className="min-w-0">
+              <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
+                Singapore Property Market Analytics
+              </h1>
+              {/* Data source info - shows raw database count and date range */}
+              {apiMetadata && (
+                <p className="text-[#547792] text-xs md:text-sm italic truncate">
+                  Data source from URA (Total of {((apiMetadata.row_count || 0) + (apiMetadata.total_records_removed || apiMetadata.outliers_excluded || 0)).toLocaleString()} transaction records
+                  <span className="hidden md:inline">
+                  {apiMetadata.min_date && apiMetadata.max_date && (
+                    <> found from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short'
+                    })} to {new Date(apiMetadata.max_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short'
+                    })}</>
+                  )})
+                  {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded) > 0 && (
+                    <> | {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded)?.toLocaleString()} outlier records excluded</>
+                  )}
+                  </span>
+                </p>
+              )}
             </div>
-
-            {/* Breadcrumb navigation */}
-            <DrillBreadcrumb />
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              {/* Time Grouping Toggle - View context control (not a filter) */}
+              <TimeGranularityToggle />
+            </div>
           </div>
 
-          {/* Analytics View - Dashboard with charts */}
-          <div className="animate-view-enter">
+          {/* Breadcrumb navigation */}
+          <DrillBreadcrumb />
+        </div>
+
+        {/* Control Bar - Horizontal filter controls (below title with breathing room) */}
+        <div className="mb-6">
+          <ControlBar />
+          <FilterSummary />
+        </div>
+
+        {/* Analytics View - Dashboard with charts */}
+        <div className="animate-view-enter">
               {/* KPI Summary Cards - Using standardized KPICardV2 */}
               <KPICardV2Group columns={4} className="mb-4 md:mb-6">
                 {/* Card 1: Market Momentum */}

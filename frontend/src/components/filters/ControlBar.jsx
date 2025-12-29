@@ -22,7 +22,7 @@ export function ControlBar() {
   return (
     <>
       {/* Desktop/Tablet: Horizontal bar */}
-      <div className="hidden md:flex flex-wrap items-center gap-3 p-4 bg-white border-b border-[#94B4C1]/30">
+      <div className="hidden md:flex flex-wrap items-center gap-3 p-4 bg-[#EAE0CF]/40 rounded-lg border border-[#94B4C1]/20">
         <RegionDropdown />
         <DistrictCombobox />
 
@@ -51,10 +51,10 @@ export function ControlBar() {
       </div>
 
       {/* Mobile: Filters button */}
-      <div className="md:hidden p-3 bg-white border-b border-[#94B4C1]/30">
+      <div className="md:hidden p-3 bg-[#EAE0CF]/40 rounded-lg">
         <button
           onClick={() => setMobileDrawerOpen(true)}
-          className="w-full min-h-[44px] px-4 flex items-center justify-center gap-2 bg-white rounded-lg border border-[#94B4C1] text-[#547792] hover:border-[#547792] active:bg-[#EAE0CF]/30 active:scale-[0.98] transition-colors"
+          className="w-full min-h-[44px] px-4 flex items-center justify-center gap-2 bg-white/80 rounded-lg border border-[#94B4C1]/30 text-[#547792] hover:border-[#547792] active:bg-[#EAE0CF]/50 active:scale-[0.98] transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />

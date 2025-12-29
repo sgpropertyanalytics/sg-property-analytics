@@ -82,7 +82,7 @@ export function FilterSummary() {
 
   return (
     <div
-      className="px-4 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20"
+      className="px-4 py-2 mt-2 bg-[#EAE0CF]/30 rounded-md"
       role="status"
       aria-live="polite"
     >
