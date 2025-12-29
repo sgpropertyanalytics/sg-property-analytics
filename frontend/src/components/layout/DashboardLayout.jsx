@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useLocation, Outlet } from 'react-router-dom';
-import { GlobalNavRail, NAV_ITEMS, NAV_WIDTH } from './GlobalNavRail';
+import { GlobalNavRail, NAV_ITEMS, NAV_WIDTH_EXPANDED, NAV_WIDTH_COLLAPSED } from './GlobalNavRail';
 import { ErrorBoundary } from '../ui';
 import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -66,6 +66,10 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   // Mobile nav state
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  // Desktop nav collapse state
+  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+  const toggleNavCollapse = () => setIsNavCollapsed(prev => !prev);
+
   // Reset mobile drawer when page changes
   useEffect(() => {
     setMobileNavOpen(false);
@@ -76,12 +80,32 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   return (
     <div className="flex h-screen bg-[#EAE0CF]/30 overflow-hidden">
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
-      {/* Desktop: Uses NAV_WIDTH design token | Mobile: Hidden */}
+      {/* Desktop: Collapsible with premium physics animation | Mobile: Hidden */}
       <div
-        className="hidden lg:block flex-shrink-0"
-        style={{ width: NAV_WIDTH }}
+        className="hidden lg:flex flex-shrink-0 relative"
+        style={{
+          width: isNavCollapsed ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED,
+          transition: 'width 500ms cubic-bezier(0.2, 0, 0, 1)'
+        }}
       >
-        <GlobalNavRail activePage={activePage} />
+        <GlobalNavRail activePage={activePage} collapsed={isNavCollapsed} />
+
+        {/* Collapse Toggle Button - Positioned at sidebar edge */}
+        <button
+          onClick={toggleNavCollapse}
+          className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-[#213448] border border-[#547792]/50 flex items-center justify-center text-[#94B4C1] hover:text-white hover:bg-[#547792] active:scale-95 transition-all duration-200 shadow-lg"
+          aria-label={isNavCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+        >
+          <svg
+            className="w-3.5 h-3.5 transition-transform duration-500 ease-[cubic-bezier(0.2,0,0,1)]"
+            style={{ transform: isNavCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
       </div>
 
       {/* Mobile Nav Drawer Overlay */}
@@ -92,10 +116,10 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             className="absolute inset-0 bg-black/50"
             onClick={handleMobileNavClose}
           />
-          {/* Nav Drawer - Uses NAV_WIDTH design token, capped at 85vw */}
+          {/* Nav Drawer - Uses NAV_WIDTH_EXPANDED design token, capped at 85vw */}
           <div
             className="absolute inset-y-0 left-0 max-w-[85vw] animate-slide-in-left"
-            style={{ width: NAV_WIDTH }}
+            style={{ width: NAV_WIDTH_EXPANDED }}
           >
             <GlobalNavRail activePage={activePage} />
             {/* Close button overlay */}
