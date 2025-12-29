@@ -233,7 +233,7 @@ export function SubscriptionProvider({ children }) {
     }
   }, [isAuthenticated, startRequest, isStale, getSignal]);
 
-  const value = {
+  const value = useMemo(() => ({
     // State
     subscription,
     isPremium,
@@ -250,7 +250,18 @@ export function SubscriptionProvider({ children }) {
     // Actions
     refreshSubscription,
     setSubscription, // For use after Firebase sync
-  };
+  }), [
+    subscription,
+    isPremium,
+    loading,
+    daysUntilExpiry,
+    isExpiringSoon,
+    showPricingModal,
+    showPaywall,
+    hidePaywall,
+    upsellContext,
+    refreshSubscription,
+  ]);
 
   return (
     <SubscriptionContext.Provider value={value}>

@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * ChartSlot - Canonical wrapper for Chart.js charts
  *
@@ -27,7 +29,7 @@
  * - Do NOT use style={{ height }} inside chart components
  * - Do NOT add extra wrappers around charts
  */
-export function ChartSlot({ children }) {
+export const ChartSlot = React.memo(function ChartSlot({ children }) {
   return (
     <div className="flex-1 min-h-0 overflow-hidden px-4 pb-3">
       <div className="h-full w-full relative">
@@ -35,6 +37,6 @@ export function ChartSlot({ children }) {
       </div>
     </div>
   );
-}
+});
 
 export default ChartSlot;

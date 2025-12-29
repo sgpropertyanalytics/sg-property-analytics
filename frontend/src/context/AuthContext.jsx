@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import apiClient from '../api/client';
@@ -221,7 +221,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     loading,
     initialized,
@@ -231,7 +231,15 @@ export function AuthProvider({ children }) {
     syncWithBackend,
     isAuthenticated: !!user,
     isConfigured: isFirebaseConfigured(),
-  };
+  }), [
+    user,
+    loading,
+    initialized,
+    error,
+    signInWithGoogle,
+    logout,
+    syncWithBackend,
+  ]);
 
   return (
     <AuthContext.Provider value={value}>

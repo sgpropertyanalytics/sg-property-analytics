@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -18,7 +18,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
  * - Sky Blue: #94B4C1
  * - Sand/Cream: #EAE0CF
  */
-export function UserProfileMenu({ expanded = false, onOpenSettings }) {
+export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = false, onOpenSettings }) {
   const { user, isAuthenticated, logout } = useAuth();
   const { isPremium } = useSubscription();
   const navigate = useNavigate();
@@ -213,6 +213,6 @@ export function UserProfileMenu({ expanded = false, onOpenSettings }) {
       )}
     </div>
   );
-}
+});
 
 export default UserProfileMenu;

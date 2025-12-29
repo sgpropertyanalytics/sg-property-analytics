@@ -38,7 +38,7 @@ function ContentLoadingFallback() {
  * providing a horizontal filter bar below the page title.
  */
 
-export function DashboardLayout({ children, activePage: propActivePage }) {
+export const DashboardLayout = React.memo(function DashboardLayout({ children, activePage: propActivePage }) {
   // Use Outlet when used as a route layout (nested routes pattern)
   // This prevents nav rail from unmounting during page transitions
   const content = children || <Outlet />;
@@ -169,6 +169,6 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
       <PricingModal isOpen={showPricingModal} onClose={hidePaywall} />
     </div>
   );
-}
+});
 
 export default DashboardLayout;

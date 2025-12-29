@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * PageHeader - Universal header component for dashboard pages
  *
@@ -11,7 +13,7 @@
  *   <FilterButton />
  * </PageHeader>
  */
-export function PageHeader({ title, subtitle, children }) {
+export const PageHeader = React.memo(function PageHeader({ title, subtitle, children }) {
   return (
     <div className="flex flex-row justify-between items-start w-full mb-4 md:mb-6 gap-4">
       {/* SLOT 1: LEFT (Identity) */}
@@ -34,6 +36,6 @@ export function PageHeader({ title, subtitle, children }) {
       )}
     </div>
   );
-}
+});
 
 export default PageHeader;
