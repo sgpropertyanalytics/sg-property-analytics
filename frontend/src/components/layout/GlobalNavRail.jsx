@@ -106,6 +106,27 @@ export function GlobalNavRail({ activePage, onPageChange }) {
     NAV_ITEMS.find(item => item.path && currentPath.startsWith(item.path))?.id ||
     'overview';
 
+  // Find which group contains the active item
+  const activeGroupId = NAV_GROUPS.find(g =>
+    g.items.some(item => item.id === activeItem)
+  )?.id;
+
+  // Collapsible state - auto-expand group with active item
+  const [expandedGroups, setExpandedGroups] = useState(() => {
+    const initial = {};
+    NAV_GROUPS.forEach(g => {
+      initial[g.id] = g.items.some(item => item.id === activeItem);
+    });
+    return initial;
+  });
+
+  const toggleGroup = (groupId) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId]
+    }));
+  };
+
   const handleNavClick = (item) => {
     if (!item.path) return;
     if (onPageChange) {
@@ -136,28 +157,63 @@ export function GlobalNavRail({ activePage, onPageChange }) {
       </button>
 
       {/* Navigation Groups */}
-      <div className="flex-1 space-y-4 w-full">
-        {NAV_GROUPS.map(group => (
-          <div key={group.id}>
-            {/* Group Header - non-clickable */}
-            <div className="px-3 py-2 text-[#94B4C1] text-xs font-semibold uppercase tracking-wider flex items-center gap-2">
-              <span>{group.icon}</span>
-              <span className="truncate">{group.label}</span>
-            </div>
+      <div className="flex-1 space-y-2 w-full">
+        {NAV_GROUPS.map(group => {
+          const isExpanded = expandedGroups[group.id];
+          const hasActiveItem = group.id === activeGroupId;
 
-            {/* Group Items */}
-            <div className="space-y-1">
-              {group.items.map(item => (
-                <NavItem
-                  key={item.id}
-                  item={item}
-                  isActive={activeItem === item.id}
-                  onClick={handleNavClick}
-                />
-              ))}
+          return (
+            <div key={group.id}>
+              {/* Group Header - Collapsible */}
+              <button
+                onClick={() => toggleGroup(group.id)}
+                className={`
+                  w-full min-h-[44px] px-3 py-2 rounded-lg
+                  flex items-center gap-2 text-left
+                  transition-colors duration-100
+                  ${hasActiveItem
+                    ? 'text-[#EAE0CF] bg-[#547792]/20'
+                    : 'text-[#94B4C1] hover:bg-[#547792]/20 hover:text-[#EAE0CF]'
+                  }
+                `}
+                aria-expanded={isExpanded}
+              >
+                <span className="text-base flex-shrink-0">{group.icon}</span>
+                <span className="text-xs font-semibold uppercase tracking-wider truncate flex-1">
+                  {group.label}
+                </span>
+                {/* Chevron */}
+                <svg
+                  className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Group Items - Collapsible */}
+              <div
+                className={`
+                  overflow-hidden transition-all duration-200 ease-in-out
+                  ${isExpanded ? 'max-h-96 opacity-100 mt-1' : 'max-h-0 opacity-0'}
+                `}
+              >
+                <div className="space-y-1 pl-2">
+                  {group.items.map(item => (
+                    <NavItem
+                      key={item.id}
+                      item={item}
+                      isActive={activeItem === item.id}
+                      onClick={handleNavClick}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Bottom section - Info links + User Profile */}
