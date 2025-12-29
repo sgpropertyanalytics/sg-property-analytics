@@ -177,19 +177,19 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     return (
       <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-[#EAE0CF]/70 backdrop-blur-md border-b border-[#94B4C1]/30 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
-          {/* Region/Segment Buttons - implicit label via button content */}
-          <div className="flex gap-1">
+          {/* Region/Segment Buttons - grouped pill style matching District Map */}
+          <div className="flex items-center gap-0.5 bg-[#EAE0CF]/50 rounded-lg p-1">
             {REGIONS.map(seg => (
               <button
                 type="button"
                 key={seg}
                 onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
+                className={`min-h-[44px] px-4 py-2 text-sm font-medium rounded-md transition-all ${
                   filters.segments.includes(seg)
-                    ? 'bg-[#547792] text-white border-[#547792]'
+                    ? 'bg-white text-[#213448] shadow-sm'
                     : filters.segments.length === 0
-                      ? 'bg-white text-[#213448] border-[#94B4C1]'
-                      : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
+                      ? 'text-[#213448] hover:text-[#213448]'
+                      : 'text-[#547792] hover:text-[#213448]'
                 }`}
                 title="Shift+click to multi-select"
               >
@@ -197,9 +197,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               </button>
             ))}
           </div>
-
-          {/* Divider */}
-          <div className="w-px h-10 bg-[#94B4C1]/40" />
 
           {/* District Dropdown */}
           <MultiSelectDropdown
@@ -218,56 +215,47 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             compact
           />
 
-          {/* Divider */}
-          <div className="w-px h-10 bg-[#94B4C1]/40" />
-
-          {/* Bedroom Pills - implicit label via button content */}
-          <div className="flex gap-1">
+          {/* Bedroom Pills - grouped pill style matching District Map */}
+          <div className="flex items-center gap-0.5 bg-[#EAE0CF]/50 rounded-lg p-1">
             {[1, 2, 3, 4, 5].map(br => (
               <button
                 type="button"
                 key={br}
                 onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                className={`min-h-[44px] min-w-[44px] px-2 py-2 text-sm rounded-md border transition-colors ${
+                className={`min-h-[44px] min-w-[44px] px-3 py-2 text-sm font-medium rounded-md transition-all ${
                   filters.bedroomTypes.includes(br)
-                    ? 'bg-[#547792] text-white border-[#547792]'
+                    ? 'bg-white text-[#213448] shadow-sm'
                     : filters.bedroomTypes.length === 0
-                      ? 'bg-white text-[#213448] border-[#94B4C1]'
-                      : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
+                      ? 'text-[#213448] hover:text-[#213448]'
+                      : 'text-[#547792] hover:text-[#213448]'
                 }`}
                 title="Shift+click to multi-select"
               >
-                {br === 5 ? '5BR' : `${br}BR`}
+                {br === 5 ? '5+' : `${br}BR`}
               </button>
             ))}
           </div>
 
-          {/* Divider */}
-          <div className="w-px h-10 bg-[#94B4C1]/40" />
-
-          {/* Period Preset Buttons - implicit label via button content */}
-          <div className="flex gap-1">
+          {/* Period Preset Buttons - grouped pill style matching District Map */}
+          <div className="flex items-center gap-0.5 bg-[#EAE0CF]/50 rounded-lg p-1">
             {['3M', '6M', '12M', '2Y', '5Y'].map(preset => (
               <button
                 type="button"
                 key={preset}
                 onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
                 disabled={filterOptions.loading}
-                className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
+                className={`min-h-[44px] px-3 py-2 text-sm font-medium rounded-md transition-all ${
                   filterOptions.loading
-                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
+                    ? 'text-gray-400 cursor-wait'
                     : datePreset === preset
-                      ? 'bg-[#547792] text-white border-[#547792]'
-                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
+                      ? 'bg-white text-[#213448] shadow-sm'
+                      : 'text-[#547792] hover:text-[#213448]'
                 }`}
               >
                 {preset}
               </button>
             ))}
           </div>
-
-          {/* Divider */}
-          <div className="w-px h-10 bg-[#94B4C1]/40" />
 
           {/* Time Granularity Toggle - Group by Year/Quarter/Month */}
           <TimeGranularityToggle layout="horizontal" />
