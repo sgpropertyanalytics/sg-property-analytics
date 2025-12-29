@@ -457,13 +457,24 @@ sale_type_api = SaleType.to_api("Resale")  # → "resale"
 | `/api/deal-checker/multi-scope` | GET | Value analysis | Optional |
 | `/api/supply/waterfall` | GET | Supply pipeline data | Optional |
 
-### Admin/Debug
+### Admin/Internal
 
 | Endpoint | Method | Description | Auth |
 |----------|--------|-------------|------|
 | `/api/health` | GET | Health check | Public |
-| `/debug/data-status` | GET | Data loading status | Admin |
-| `/admin/filter-outliers` | POST | Outlier management | Admin |
+| `/api/debug/data-status` | GET | Data loading status | Admin |
+| `/api/admin/filter-outliers` | POST | Outlier management | Admin |
+| `/api/admin/update-metadata` | POST | Metadata updates | Admin |
+| `/api/dashboard/cache` | GET/DELETE | Dashboard cache status/clear | Admin |
+| `/api/projects/compute-school-flags` | POST | Compute school proximity flags | Admin |
+| `/api/gls/needs-review` | GET | GLS review queue | Admin |
+| `/api/gls/scrape` | POST | Manual scrape trigger | Admin |
+| `/api/gls/reset` | POST | Reset GLS data | Admin |
+| `/api/gls/cron-refresh` | POST | Scheduled refresh | Admin |
+| `/api/gls/refresh-status` | GET | Refresh status | Admin |
+| `/api/gls/trigger-refresh` | POST | Manual refresh | Admin |
+| `/api/upcoming-launches/needs-review` | GET | Upcoming launches review queue | Admin |
+| `/api/upcoming-launches/reset` | POST | Reset upcoming launches data | Admin |
 
 ### Deprecated Endpoints (410 Gone)
 

@@ -424,34 +424,24 @@ class TestAggregateSummaryCompliance:
     def test_no_forbidden_keys_in_response(self, client):
         """Response should not contain forbidden keys."""
         response = client.get('/api/aggregate-summary')
-        if response.status_code == 200:
-            data = response.get_json()
-            violations = find_forbidden_keys(data)
-            assert not violations, f"Forbidden keys: {violations}"
+        assert response.status_code == 410
+        data = response.get_json()
+        assert data.get("code") == "ENDPOINT_DEPRECATED"
 
     def test_no_record_arrays_in_response(self, client):
         """Response should not contain record-like arrays."""
         response = client.get('/api/aggregate-summary')
-        if response.status_code == 200:
-            data = response.get_json()
-            violations = find_record_like_arrays(data)
-            assert not violations, f"Record arrays: {violations}"
+        assert response.status_code == 410
 
     def test_no_date_price_pairs(self, client):
         """Response should not have date+price pairs."""
         response = client.get('/api/aggregate-summary')
-        if response.status_code == 200:
-            data = response.get_json()
-            violations = find_date_price_pairs(data)
-            assert not violations, f"Date+price pairs: {violations}"
+        assert response.status_code == 410
 
     def test_schema_compliance(self, client):
         """Response should comply with endpoint schema."""
         response = client.get('/api/aggregate-summary')
-        if response.status_code == 200:
-            data = response.get_json()
-            violations = check_schema_compliance('/aggregate-summary', data)
-            assert not violations, f"Schema violations: {violations}"
+        assert response.status_code == 410
 
 
 # =============================================================================
@@ -465,21 +455,12 @@ class TestKAnonymity:
         """Requests with <K results should be blocked."""
         # Request very specific filters that likely return few results
         response = client.get('/api/aggregate-summary?district=D01&bedroom=5&saleType=new_sale')
-        if response.status_code == 200:
-            data = response.get_json()
-            # If K-anonymity fails, summary should be None
-            if data.get('meta', {}).get('kAnonymityPassed') is False:
-                assert data.get('summary') is None
-                assert 'warning' in data
+        assert response.status_code == 410
 
     def test_market_level_passes(self, client):
         """Market-level (no filters) should pass K-anonymity."""
         response = client.get('/api/aggregate-summary')
-        if response.status_code == 200:
-            data = response.get_json()
-            meta = data.get('meta', {})
-            # Market-level should almost always pass
-            assert meta.get('kAnonymityPassed') is True
+        assert response.status_code == 410
 
 
 # =============================================================================

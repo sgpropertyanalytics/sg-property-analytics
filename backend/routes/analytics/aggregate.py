@@ -695,6 +695,14 @@ def aggregate_summary():
         }
       }
     """
+    return jsonify({
+        "error": "Endpoint deprecated",
+        "code": "ENDPOINT_DEPRECATED",
+        "replacement": "/api/aggregate",
+        "deprecatedAt": "2025-01-15",
+        "removalDate": "2025-02-15"
+    }), 410
+
     from datetime import datetime
     from models.transaction import Transaction
     from models.database import db

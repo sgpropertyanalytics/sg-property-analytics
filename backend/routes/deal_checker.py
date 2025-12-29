@@ -230,6 +230,14 @@ def get_nearby_transactions():
     Returns:
         JSON with project info, histogram, percentile, nearby projects
     """
+    return jsonify({
+        "error": "Endpoint deprecated",
+        "code": "ENDPOINT_DEPRECATED",
+        "replacement": "/api/deal-checker/multi-scope",
+        "deprecatedAt": "2025-01-15",
+        "removalDate": "2025-02-15"
+    }), 410
+
     # SECURITY: Premium feature - require subscription
     from utils.subscription import is_premium_user
     if not is_premium_user():

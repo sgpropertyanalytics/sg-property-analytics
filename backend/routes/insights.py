@@ -346,6 +346,14 @@ def district_summary():
 
     Returns detailed stats for that district.
     """
+    return jsonify({
+        "error": "Endpoint deprecated",
+        "code": "ENDPOINT_DEPRECATED",
+        "replacement": "/api/aggregate?group_by=district",
+        "deprecatedAt": "2025-01-15",
+        "removalDate": "2025-02-15"
+    }), 410
+
     start = time.time()
 
     district = request.args.get("district")
