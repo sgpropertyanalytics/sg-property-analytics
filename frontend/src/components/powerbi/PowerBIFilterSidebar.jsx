@@ -63,7 +63,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     propertyDetails: true,
   });
 
-  // Date preset state: '3M', '12M', '2Y', '5Y', 'custom', or null (all data)
+  // Date preset state: '3M', '6M', '12M', '2Y', '5Y', 'custom', or null (all data)
   const [datePreset, setDatePreset] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -81,6 +81,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
       case '3M':
         startDate = new Date(maxDate);
         startDate.setMonth(startDate.getMonth() - 3);
+        break;
+      case '6M':
+        startDate = new Date(maxDate);
+        startDate.setMonth(startDate.getMonth() - 6);
         break;
       case '12M':
         startDate = new Date(maxDate);
@@ -167,13 +171,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   };
 
   // ==================== HORIZONTAL LAYOUT ====================
-  // Frosted glass control bar - sticky handled by parent FilterBar wrapper
+  // Toolbar-style control bar with implicit labels (no labels, use dividers)
+  // Frosted glass - sticky handled by parent FilterBar wrapper
   if (layout === 'horizontal') {
     return (
       <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-[#EAE0CF]/70 backdrop-blur-md border-b border-[#94B4C1]/30 shadow-sm">
-        <div className="flex flex-wrap items-center gap-4">
-        {/* Region/Segment Buttons */}
-        <FilterGroup label="Market Segment">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Region/Segment Buttons - implicit label via button content */}
           <div className="flex gap-1">
             {REGIONS.map(seg => (
               <button
@@ -193,27 +197,31 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               </button>
             ))}
           </div>
-        </FilterGroup>
 
-        {/* District Dropdown */}
-        <MultiSelectDropdown
-          options={(filterOptions.districtsRaw || []).map(d => {
-            const areaName = DISTRICT_NAMES[d];
-            const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
-            return {
-              value: d,
-              label: areaName ? `${d} (${shortName})` : d
-            };
-          })}
-          selected={filters.districts}
-          onChange={setDistricts}
-          placeholder="All Districts"
-          searchable
-          compact
-        />
+          {/* Divider */}
+          <div className="w-px h-8 bg-[#94B4C1]/40" />
 
-        {/* Bedroom Pills */}
-        <FilterGroup label="Size">
+          {/* District Dropdown */}
+          <MultiSelectDropdown
+            options={(filterOptions.districtsRaw || []).map(d => {
+              const areaName = DISTRICT_NAMES[d];
+              const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
+              return {
+                value: d,
+                label: areaName ? `${d} (${shortName})` : d
+              };
+            })}
+            selected={filters.districts}
+            onChange={setDistricts}
+            placeholder="All Districts"
+            searchable
+            compact
+          />
+
+          {/* Divider */}
+          <div className="w-px h-8 bg-[#94B4C1]/40" />
+
+          {/* Bedroom Pills - implicit label via button content */}
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map(br => (
               <button
@@ -233,12 +241,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               </button>
             ))}
           </div>
-        </FilterGroup>
 
-        {/* Date Preset Buttons */}
-        <FilterGroup label="Period">
+          {/* Divider */}
+          <div className="w-px h-8 bg-[#94B4C1]/40" />
+
+          {/* Period Preset Buttons - implicit label via button content */}
           <div className="flex gap-1">
-            {['3M', '12M', '2Y', '5Y'].map(preset => (
+            {['3M', '6M', '12M', '2Y', '5Y'].map(preset => (
               <button
                 type="button"
                 key={preset}
@@ -256,23 +265,25 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               </button>
             ))}
           </div>
-        </FilterGroup>
 
-        {/* Time Granularity Toggle - Group by Year/Quarter/Month */}
-        <TimeGranularityToggle />
+          {/* Divider */}
+          <div className="w-px h-8 bg-[#94B4C1]/40" />
 
-        {/* Spacer to push Clear to far right */}
-        <div className="flex-1" />
+          {/* Time Granularity Toggle - Group by Year/Quarter/Month */}
+          <TimeGranularityToggle layout="horizontal" />
 
-        {/* Clear filters button */}
-        {activeFilterCount > 0 && (
-          <button
-            onClick={handleResetFilters}
-            className="min-h-[44px] px-3 py-2 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-md transition-colors active:scale-[0.98]"
-          >
-            Clear all
-          </button>
-        )}
+          {/* Spacer to push Clear to far right */}
+          <div className="flex-1" />
+
+          {/* Clear filters button */}
+          {activeFilterCount > 0 && (
+            <button
+              onClick={handleResetFilters}
+              className="min-h-[44px] px-3 py-2 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-md transition-colors active:scale-[0.98]"
+            >
+              Clear all
+            </button>
+          )}
         </div>
       </div>
     );
@@ -413,8 +424,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             onToggle={() => toggleSection('date')}
             activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
           >
-            <div className="grid grid-cols-4 gap-1.5">
-              {['3M', '12M', '2Y', '5Y'].map(preset => (
+            <div className="grid grid-cols-5 gap-1.5">
+              {['3M', '6M', '12M', '2Y', '5Y'].map(preset => (
                 <button
                   type="button"
                   key={preset}
@@ -696,8 +707,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
         >
           {/* Preset Buttons - Primary interaction */}
           {/* Shows loading indicator when filter options not ready, buttons still work with fallback to today */}
-          <div className="grid grid-cols-4 gap-1.5">
-            {['3M', '12M', '2Y', '5Y'].map(preset => (
+          <div className="grid grid-cols-5 gap-1.5">
+            {['3M', '6M', '12M', '2Y', '5Y'].map(preset => (
               <button
                 type="button"
                 key={preset}

@@ -14,13 +14,13 @@ import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
  * - One-time helper tooltip (auto-dismisses after 5s)
  * - Controls all time-series charts simultaneously
  */
-export function TimeGranularityToggle({ className = '' }) {
+export function TimeGranularityToggle({ className = '', layout = 'default' }) {
   const { timeGrouping, setTimeGrouping } = usePowerBIFilters();
   const [showHelper, setShowHelper] = useState(false);
 
   const options = [
     { value: 'year', label: 'Year' },
-    { value: 'quarter', label: 'Quarter' },
+    { value: 'quarter', label: 'Qtr' },
     { value: 'month', label: 'Month' },
   ];
 
@@ -51,6 +51,29 @@ export function TimeGranularityToggle({ className = '' }) {
     setTimeGrouping(value);
   };
 
+  // Horizontal layout: implicit label (no label, just buttons)
+  if (layout === 'horizontal') {
+    return (
+      <div className={`relative flex gap-1 ${className}`}>
+        {options.map(opt => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => handleChange(opt.value)}
+            className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
+              timeGrouping === opt.value
+                ? 'bg-[#547792] text-white border-[#547792]'
+                : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  // Default layout: with label above
   return (
     <div className={`relative ${className}`}>
       {/* Label above - matches FilterGroup pattern */}
