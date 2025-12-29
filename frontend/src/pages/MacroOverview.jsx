@@ -142,24 +142,25 @@ export function MacroOverviewContent() {
             <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
               Singapore Property Market Analytics
             </h1>
-            {/* Data source info - shows raw database count and date range */}
+            {/* Data source info - shows last update date and records added */}
             {apiMetadata && (
               <p className="text-[#547792] text-xs md:text-sm italic truncate">
-                Data source from URA (Total of {((apiMetadata.row_count || 0) + (apiMetadata.total_records_removed || apiMetadata.outliers_excluded || 0)).toLocaleString()} transaction records
-                <span className="hidden md:inline">
-                {apiMetadata.min_date && apiMetadata.max_date && (
-                  <> found from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short'
-                  })} to {new Date(apiMetadata.max_date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short'
-                  })}</>
-                )})
-                {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded) > 0 && (
-                  <> | {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded)?.toLocaleString()} outlier records excluded</>
+                Last updated: {apiMetadata.last_batch_date
+                  ? new Date(apiMetadata.last_batch_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })
+                  : apiMetadata.last_updated
+                    ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })
+                    : 'N/A'}
+                {apiMetadata.last_batch_rows > 0 && (
+                  <> | +{apiMetadata.last_batch_rows.toLocaleString()} records</>
                 )}
-                </span>
               </p>
             )}
           </div>

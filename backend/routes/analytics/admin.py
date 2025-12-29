@@ -20,7 +20,7 @@ def health():
     """Health check endpoint."""
     from models.transaction import Transaction
     from models.database import db
-    from sqlalchemy import func
+    from sqlalchemy import func, text
     from db.sql import exclude_outliers
 
     try:
@@ -53,6 +53,24 @@ def health():
         if max_date_result is None:
             max_date_result = db.session.query(func.max(Transaction.contract_date)).scalar()
 
+        # Get last successful ETL batch info
+        last_batch_date = None
+        last_batch_rows = None
+        try:
+            batch_result = db.session.execute(text("""
+                SELECT completed_at, rows_promoted
+                FROM etl_batches
+                WHERE status = 'completed'
+                ORDER BY completed_at DESC
+                LIMIT 1
+            """)).fetchone()
+            if batch_result:
+                last_batch_date = batch_result[0].isoformat() if batch_result[0] else None
+                last_batch_rows = batch_result[1]
+        except Exception:
+            # etl_batches table may not exist yet - use metadata fallback
+            pass
+
         return jsonify({
             "status": "healthy",
             "data_loaded": active_count > 0,
@@ -63,7 +81,10 @@ def health():
             "stats_computed": metadata.get("last_updated") is not None,
             "last_updated": metadata.get("last_updated"),
             "min_date": min_date_result.isoformat() if min_date_result else None,
-            "max_date": max_date_result.isoformat() if max_date_result else None
+            "max_date": max_date_result.isoformat() if max_date_result else None,
+            # ETL batch info for "Last updated" display
+            "last_batch_date": last_batch_date,
+            "last_batch_rows": last_batch_rows,
         })
     except Exception as e:
         return jsonify({
