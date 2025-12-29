@@ -18,7 +18,7 @@ import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
-import { baseChartJsOptions } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 // SaleType imports removed - Market Core is Resale-only
 import { transformTimeSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
 import { niceMax } from '../../utils/niceAxisMax';
@@ -185,10 +185,9 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         grid: { display: false },
         border: { display: false },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           maxRotation: 45,
           minRotation: 45,
-          font: { size: 11, weight: '500' },
-          color: '#547792',
         },
       },
       y: {
@@ -200,17 +199,15 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         title: {
           display: true,
           text: 'Transaction Count',
-          color: '#213448',
-          font: { size: 11, weight: '600' },
+          ...CHART_AXIS_DEFAULTS.title,
         },
         grid: {
           color: 'rgba(148, 180, 193, 0.15)',  // Sky at 15%
           drawTicks: false,
         },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           callback: (value) => Math.round(value).toLocaleString(),
-          color: '#1a1a1a',  // Near-black for readability
-          font: { size: 11 },
           padding: 8,
         },
       },
@@ -223,19 +220,17 @@ export function TimeTrendChart({ height = 300, saleType = null }) {
         title: {
           display: true,
           text: 'Total Value ($)',
-          color: '#213448',
-          font: { size: 11, weight: '600' },
+          ...CHART_AXIS_DEFAULTS.title,
         },
         grid: { drawOnChartArea: false },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           callback: (value) => {
             if (value >= 1000000000) {
               return `$${(value / 1000000000).toFixed(1)}B`;
             }
             return `$${(value / 1000000).toFixed(0)}M`;
           },
-          color: '#1a1a1a',  // Near-black for readability
-          font: { size: 11 },
           padding: 8,
         },
       },

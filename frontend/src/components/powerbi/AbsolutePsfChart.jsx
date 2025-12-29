@@ -17,7 +17,7 @@ import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
-import { baseChartJsOptions } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import {
   transformCompressionSeries,
   logFetchDebug,
@@ -232,16 +232,16 @@ export function AbsolutePsfChart({ height = 300, saleType = null, sharedData = n
       x: {
         grid: { display: false },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           maxRotation: 45,
           minRotation: 45,
-          font: { size: 10 },
         },
       },
       y: {
-        title: { display: true, text: 'Median PSF ($)', font: { size: 11 } },
+        title: { display: true, text: 'Median PSF ($)', ...CHART_AXIS_DEFAULTS.title },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           callback: (v) => `$${v.toLocaleString()}`,
-          font: { size: 10 },
         },
         grid: { color: 'rgba(148, 180, 193, 0.2)' },
       },

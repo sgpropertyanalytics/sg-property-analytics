@@ -18,7 +18,7 @@ import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
-import { baseChartJsOptions } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import {
   transformOscillatorSeries,
   calculateZScoreStats,
@@ -290,18 +290,18 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
       x: {
         grid: { display: false },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           maxRotation: 45,
           minRotation: 45,
-          font: { size: 10 },
         },
       },
       y: {
         beginAtZero: false,
         grace: '10%',
-        title: { display: true, text: 'Z-Score (σ)', font: { size: 11 } },
+        title: { display: true, text: 'Z-Score (σ)', ...CHART_AXIS_DEFAULTS.title },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           callback: (v) => v === 0 ? '0' : `${v > 0 ? '+' : ''}${v}σ`,
-          font: { size: 10 },
           stepSize: 1,
         },
         grid: { display: false },

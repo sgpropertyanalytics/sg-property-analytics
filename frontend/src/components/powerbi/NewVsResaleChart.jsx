@@ -17,7 +17,7 @@ import { Line } from 'react-chartjs-2';
 import { getNewVsResale } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
-import { baseChartJsOptions } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { transformNewVsResaleSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
 import { SaleType, SaleTypeLabels, PremiumTrendLabels, isPremiumTrend, PropertyAgeBucket, PropertyAgeBucketLabels } from '../../schemas/apiContract';
 
@@ -367,11 +367,9 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
           display: false,
         },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           maxRotation: 45,
           minRotation: 45,
-          font: {
-            size: 10,
-          },
           // Show fewer labels on mobile
           callback: function(value, index, _ticks) {
             // Show every label on desktop, every 2nd on tablet, every 3rd on mobile
@@ -387,15 +385,11 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
         title: {
           display: true,
           text: 'Median Price ($)',
-          font: {
-            size: 11,
-          },
+          ...CHART_AXIS_DEFAULTS.title,
         },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           callback: (value) => `$${value.toLocaleString()}`,
-          font: {
-            size: 10,
-          },
         },
         grid: {
           color: 'rgba(148, 180, 193, 0.2)',

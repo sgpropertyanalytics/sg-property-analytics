@@ -30,7 +30,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { Line } from 'react-chartjs-2';
 import { isFloorDirection, FloorDirectionLabels } from '../../schemas/apiContract';
 import { ChartSlot } from '../ui';
-import { baseChartJsOptions } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { VerdictBadge, VerdictBadgeLarge } from './VerdictBadge';
 
 ChartJS.register(
@@ -238,8 +238,7 @@ export function PriceBandChart({
             display: false,
           },
           ticks: {
-            color: COLORS.oceanBlue,
-            font: { size: 10 },
+            ...CHART_AXIS_DEFAULTS.ticks,
             maxRotation: 45,
             minRotation: 0,
             autoSkip: true,
@@ -248,8 +247,7 @@ export function PriceBandChart({
           title: {
             display: true,
             text: 'Month',
-            color: COLORS.oceanBlue,
-            font: { size: 11 },
+            ...CHART_AXIS_DEFAULTS.title,
           },
         },
         y: {
@@ -257,15 +255,13 @@ export function PriceBandChart({
             color: `${COLORS.skyBlue}30`,
           },
           ticks: {
-            color: COLORS.oceanBlue,
-            font: { size: 10 },
+            ...CHART_AXIS_DEFAULTS.ticks,
             callback: (value) => `$${value.toLocaleString()}`,
           },
           title: {
             display: true,
             text: 'PSF ($/sqft)',
-            color: COLORS.oceanBlue,
-            font: { size: 11 },
+            ...CHART_AXIS_DEFAULTS.title,
           },
         },
       },

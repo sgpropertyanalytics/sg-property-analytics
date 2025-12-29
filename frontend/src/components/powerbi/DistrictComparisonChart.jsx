@@ -17,6 +17,7 @@ import {
   transformDistrictComparison,
   truncateProjectName,
 } from '../../adapters';
+import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 
 // Register Chart.js components
 ChartJS.register(
@@ -216,13 +217,12 @@ export function DistrictComparisonChart({
         title: {
           display: true,
           text: 'Median PSF ($)',
-          color: '#64748b',
-          font: { size: 12 },
+          ...CHART_AXIS_DEFAULTS.title,
         },
         grid: { color: 'rgba(0, 0, 0, 0.05)' },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           callback: (value) => `$${value.toLocaleString()}`,
-          color: '#64748b',
         },
         beginAtZero: false,
       },

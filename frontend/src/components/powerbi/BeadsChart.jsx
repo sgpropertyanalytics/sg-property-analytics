@@ -14,7 +14,7 @@ import { Bubble } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
 import { KeyInsightBox, ChartSlot } from '../ui';
-import { baseChartJsOptions } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { REGIONS } from '../../constants';
 import {
   transformBeadsChartSeries,
@@ -217,10 +217,10 @@ export function BeadsChart({ height = 300, saleType = null }) {
           title: {
             display: true,
             text: 'Volume-Weighted Median Price ($ Millions)',
-            font: { size: 11, weight: '500' },
-            color: '#547792',
+            ...CHART_AXIS_DEFAULTS.title,
           },
           ticks: {
+            ...CHART_AXIS_DEFAULTS.ticks,
             stepSize: 0.5, // $500k intervals
             callback: (value) => {
               // Show as $500K, $1M, $1.5M, $2M, etc.
@@ -229,8 +229,6 @@ export function BeadsChart({ height = 300, saleType = null }) {
               if (value % 1 === 0) return `$${value}M`;
               return `$${value}M`;
             },
-            color: '#547792',
-            font: { size: 10 },
           },
           grid: {
             display: false, // Remove vertical grid lines (distracting)
@@ -255,13 +253,13 @@ export function BeadsChart({ height = 300, saleType = null }) {
             ];
           },
           ticks: {
+            ...CHART_AXIS_DEFAULTS.ticks,
             callback: (value) => {
               // Map numeric positions to region labels
               const labels = { 0: 'CCR', 1: 'RCR', 2: 'OCR' };
               return labels[value] || '';
             },
-            color: '#213448', // All labels same color (black/navy)
-            font: { size: 13, weight: 'bold' },
+            font: { ...CHART_AXIS_DEFAULTS.ticks.font, size: 13 },
             padding: 8,
           },
           grid: {

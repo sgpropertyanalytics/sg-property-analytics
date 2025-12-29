@@ -24,7 +24,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { ChartSlot } from '../ui';
-import { baseChartJsOptions } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { ChartSkeleton } from '../common/ChartSkeleton';
 
 ChartJS.register(
@@ -235,8 +235,7 @@ export function PriceGrowthChart({
         x: {
           grid: { display: false },
           ticks: {
-            color: COLORS.oceanBlue,
-            font: { size: 10 },
+            ...CHART_AXIS_DEFAULTS.ticks,
             maxRotation: 45,
             minRotation: 0,
             autoSkip: true,
@@ -245,38 +244,33 @@ export function PriceGrowthChart({
           title: {
             display: true,
             text: 'Quarter',
-            color: COLORS.oceanBlue,
-            font: { size: 11 },
+            ...CHART_AXIS_DEFAULTS.title,
           },
         },
         y: {
           position: 'left',
           grid: { color: `${COLORS.skyBlue}30` },
           ticks: {
-            color: COLORS.oceanBlue,
-            font: { size: 10 },
+            ...CHART_AXIS_DEFAULTS.ticks,
             callback: (value) => `$${value.toLocaleString()}`,
           },
           title: {
             display: true,
             text: 'PSF ($/sqft)',
-            color: COLORS.oceanBlue,
-            font: { size: 11 },
+            ...CHART_AXIS_DEFAULTS.title,
           },
         },
         y1: {
           position: 'right',
           grid: { drawOnChartArea: false },
           ticks: {
-            color: COLORS.oceanBlue,
-            font: { size: 10 },
+            ...CHART_AXIS_DEFAULTS.ticks,
             callback: (value) => `${value >= 0 ? '+' : ''}${value}%`,
           },
           title: {
             display: true,
             text: 'Cumulative Growth (%)',
-            color: COLORS.oceanBlue,
-            font: { size: 11 },
+            ...CHART_AXIS_DEFAULTS.title,
           },
         },
       },

@@ -15,7 +15,7 @@ import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getDashboard } from '../../api/client';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
-import { baseChartJsOptions } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import {
   transformDistributionSeries,
   formatPrice,
@@ -218,11 +218,9 @@ export function PriceDistributionChart({ height = 300, numBins = 20, saleType = 
           display: false,
         },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           maxRotation: 45,
           minRotation: 45,
-          font: {
-            size: 10,
-          },
         },
       },
       y: {
@@ -230,8 +228,10 @@ export function PriceDistributionChart({ height = 300, numBins = 20, saleType = 
         title: {
           display: true,
           text: 'Observation Count',
+          ...CHART_AXIS_DEFAULTS.title,
         },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           callback: (value) => value.toLocaleString(),
         },
       },

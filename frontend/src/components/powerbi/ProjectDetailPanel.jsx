@@ -17,6 +17,7 @@ import { getAggregate, getProjectInventory, getDashboard } from '../../api/clien
 import { DISTRICT_NAMES } from '../../constants';
 import { getAggField, AggField } from '../../schemas/apiContract';
 import { SuppressedValue } from '../SuppressedValue';
+import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 
 // K-anonymity threshold for project-level data
 const K_PROJECT_THRESHOLD = 15;
@@ -285,13 +286,15 @@ function ProjectDetailPanelInner({
     scales: {
       x: {
         grid: { display: false },
+        ticks: CHART_AXIS_DEFAULTS.ticks,
       },
       y: {
         type: 'linear',
         display: true,
         position: 'left',
-        title: { display: true, text: 'Median PSF ($)' },
+        title: { display: true, text: 'Median PSF ($)', ...CHART_AXIS_DEFAULTS.title },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           callback: (value) => `$${value.toLocaleString()}`,
         },
       },
@@ -299,7 +302,8 @@ function ProjectDetailPanelInner({
         type: 'linear',
         display: true,
         position: 'right',
-        title: { display: true, text: 'Observations' },
+        title: { display: true, text: 'Observations', ...CHART_AXIS_DEFAULTS.title },
+        ticks: CHART_AXIS_DEFAULTS.ticks,
         grid: { drawOnChartArea: false },
       },
     },
@@ -351,11 +355,13 @@ function ProjectDetailPanelInner({
     scales: {
       x: {
         grid: { display: false },
+        ticks: CHART_AXIS_DEFAULTS.ticks,
       },
       y: {
         beginAtZero: true,
-        title: { display: true, text: 'Median PSF ($)' },
+        title: { display: true, text: 'Median PSF ($)', ...CHART_AXIS_DEFAULTS.title },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           callback: (value) => `$${value.toLocaleString()}`,
         },
       },
@@ -435,15 +441,16 @@ function ProjectDetailPanelInner({
       x: {
         grid: { display: false },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           maxRotation: 45,
           minRotation: 45,
-          font: { size: 9 },
         },
       },
       y: {
         beginAtZero: true,
-        title: { display: true, text: 'Observation Count' },
+        title: { display: true, text: 'Observation Count', ...CHART_AXIS_DEFAULTS.title },
         ticks: {
+          ...CHART_AXIS_DEFAULTS.ticks,
           callback: (value) => value.toLocaleString(),
         },
       },

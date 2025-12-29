@@ -101,8 +101,8 @@ export function InlineCard({
       default:
         return {
           container: '',
-          label: 'text-[#547792]',
-          value: 'text-[#213448]',
+          label: 'text-[#64748b]',  // slate-500 for labels
+          value: 'text-[#0f172a]',  // slate-900 for numbers
         };
     }
   };
@@ -115,11 +115,11 @@ export function InlineCard({
   const sizeStyles = {
     default: {
       container: 'rounded-lg px-4 py-3',
-      value: 'text-lg md:text-xl font-bold',
+      value: 'text-lg md:text-xl font-medium',  // medium weight for IBM Plex Mono
     },
     compact: {
       container: 'rounded-lg px-3 py-2',
-      value: 'text-sm md:text-base font-semibold',
+      value: 'text-sm md:text-base font-medium',  // medium weight for IBM Plex Mono
     },
   };
   const currentSize = sizeStyles[size];
