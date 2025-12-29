@@ -256,7 +256,7 @@ def floor_liquidity_heatmap():
     from models.database import db
     from sqlalchemy import func, and_
     from db.sql import exclude_outliers
-    from services.data_processor import _get_market_segment
+    from constants import get_region_for_district
     from services.dashboard_service import _dashboard_cache
     from services.new_launch_units import get_units_for_project
 
@@ -306,7 +306,7 @@ def floor_liquidity_heatmap():
     if segment:
         segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
         all_districts = db.session.query(Transaction.district).distinct().all()
-        segment_districts = [d[0] for d in all_districts if _get_market_segment(d[0]) in segments]
+        segment_districts = [d[0] for d in all_districts if get_region_for_district(d[0]) in segments]
         filter_conditions.append(Transaction.district.in_(segment_districts))
         filters_applied['segment'] = segments
 

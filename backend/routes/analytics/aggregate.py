@@ -157,7 +157,7 @@ def aggregate():
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func, and_, or_, extract, cast, String, Integer, literal_column
-    from services.data_processor import _get_market_segment
+    from constants import get_region_for_district
     from services.dashboard_service import _dashboard_cache
     from schemas.api_contract import serialize_aggregate_response
 
@@ -707,12 +707,11 @@ def aggregate_summary():
     # Segment filter
     segment = request.args.get("segment")
     if segment:
-        from services.data_processor import _get_market_segment
         segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
         all_districts = db.session.query(Transaction.district).distinct().all()
         segment_districts = [
             d[0] for d in all_districts
-            if _get_market_segment(d[0]) in segments
+            if get_region_for_district(d[0]) in segments
         ]
         query = query.filter(Transaction.district.in_(segment_districts))
         filter_params['segment'] = segment

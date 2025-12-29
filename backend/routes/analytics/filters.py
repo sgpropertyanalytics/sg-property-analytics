@@ -26,7 +26,7 @@ def filter_options():
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func, distinct
-    from services.data_processor import _get_market_segment
+    from constants import get_region_for_district
     from schemas.api_contract import serialize_filter_options, PropertyAgeBucket
 
     # Schema version: v2 only (v1 deprecated fields removed)
@@ -69,7 +69,7 @@ def filter_options():
         # Group districts by region
         regions = {"CCR": [], "RCR": [], "OCR": []}
         for d in districts:
-            region = _get_market_segment(d)
+            region = get_region_for_district(d)
             if region in regions:
                 regions[region].append(d)
 

@@ -25,7 +25,7 @@ from services.classifier_extended import (
     classify_property_age_band,
     classify_remaining_lease_band,
 )
-from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
+from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE, get_region_for_district
 from schemas.api_contract import PropertyAgeBucket
 
 # Table name constant for reference
@@ -91,24 +91,6 @@ def _add_lease_columns(df: pd.DataFrame) -> None:
     df["age_band"] = age_bands
     df["remaining_lease"] = remaining_years
     df["lease_band"] = lease_bands
-
-
-def _get_market_segment(district: str) -> Optional[str]:
-    """
-    Map Singapore postal district to Market Segment.
-
-    Args:
-        district: District code (e.g., "D01", "D09")
-
-    Returns:
-        "CCR", "RCR", "OCR", or None if unknown
-    """
-    if not district:
-        return None
-
-    # Use centralized constants (SINGLE SOURCE OF TRUTH)
-    from constants import get_region_for_district
-    return get_region_for_district(district)
 
 
 def parse_contract_date(date_str: str) -> Optional[str]:
@@ -207,7 +189,7 @@ def get_filtered_transactions(
     if segment:
         segment_upper = segment.strip().upper()
         if segment_upper in ["CCR", "RCR", "OCR"]:
-            df["_market_segment"] = df["district"].apply(_get_market_segment)
+            df["_market_segment"] = df["district"].apply(get_region_for_district)
             df = df[df["_market_segment"] == segment_upper]
             df = df.drop(columns=["_market_segment"])
     
@@ -597,9 +579,9 @@ def get_price_trends_by_region(bedroom_types: list = [2, 3, 4], districts: Optio
     
     if df.empty:
         return {"trends": {}}
-    
+
     # Add market segment column
-    df["market_segment"] = df["district"].apply(_get_market_segment)
+    df["market_segment"] = df["district"].apply(get_region_for_district)
     # Filter out rows where market_segment is None
     df = df[df["market_segment"].notna()].copy()
     
@@ -683,9 +665,9 @@ def get_psf_trends_by_region(bedroom_types: list = [2, 3, 4], districts: Optiona
     
     if df.empty:
         return {"trends": []}
-    
+
     # Add market segment column
-    df["market_segment"] = df["district"].apply(_get_market_segment)
+    df["market_segment"] = df["district"].apply(get_region_for_district)
     # Filter out rows where market_segment is None
     df = df[df["market_segment"].notna()].copy()
     

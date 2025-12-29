@@ -6,7 +6,7 @@ Prevents "threading parameters everywhere" and keeps the pipeline consistent.
 
 Usage:
     ctx = RunContext()
-    ctx.schema_version = get_schema_version()
+    ctx.schema_version = "1.0.0"
     ctx.rules_version = registry.get_version()
 
     # During processing

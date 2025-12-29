@@ -19,7 +19,7 @@ import {
   assertKnownVersion,
   formatPrice,
   findBinIndex,
-} from '../aggregateAdapter';
+} from '../aggregate';
 
 import {
   getPeriod,

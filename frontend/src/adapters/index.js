@@ -59,4 +59,4 @@ export {
   // District Comparison
   transformDistrictComparison,
   truncateProjectName,
-} from './aggregateAdapter';
+} from './aggregate';

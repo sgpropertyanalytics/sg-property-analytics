@@ -4,7 +4,7 @@
  * Standardized responsive components for the Singapore Property Analytics Dashboard.
  *
  * Active components:
- * - KPICard: Responsive stat/metric cards
+ * - KPICardV2: Responsive stat/metric cards with tooltips
  * - KeyInsightBox: Plain English insight summaries for charts
  * - ErrorBoundary: Error handling wrapper
  * - ChartWatermark: Visual safeguard for preview mode
@@ -14,7 +14,6 @@
  */
 
 // KPI components (standalone cards for pages)
-export { KPICard, KPICardSkeleton, KPICardGroup } from './KPICard';
 export { KPICardV2, KPICardV2Skeleton, KPICardV2Group, mapKpiV2ToCardProps } from './KPICardV2';
 export { HelpTooltip } from './HelpTooltip';
 

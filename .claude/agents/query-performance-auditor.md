@@ -29,7 +29,6 @@ You are a **Query Performance Auditor** for the Singapore Property Trend analyti
 > **References:**
 > - [CLAUDE.md](../../CLAUDE.md) - System rules
 > - [sql-guardrails skill](../skills/sql-guardrails/SKILL.md) - SQL patterns
-> - [backend/utils/explain_safety.py](../../backend/utils/explain_safety.py) - Safety module
 
 ---
 
@@ -144,14 +143,7 @@ Only if:
 2. Query is SELECT only
 3. Query has bounds
 
-```python
-from utils.explain_safety import run_explain_safely, ExplainSafetyError
-
-try:
-    plan = run_explain_safely(db, sql, sample_params)
-except ExplainSafetyError as e:
-    print(f"BLOCKED: {e}")
-```
+Run manually via psql or database client.
 
 ### Step 5: Generate Report
 
@@ -263,7 +255,7 @@ curl -I "http://localhost:5000/api/aggregate?group_by=month"
 ### Production Detection
 
 ```python
-# In utils/explain_safety.py
+# Patterns to detect production environment
 unsafe_patterns = [
     r'render\.com',
     r'\.onrender\.com',

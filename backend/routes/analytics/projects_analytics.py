@@ -107,15 +107,11 @@ def get_project_price_bands(project_name):
     Query params:
         - window_months: Analysis window in months (default 24, max 60)
         - unit_psf: Optional user's unit PSF for verdict calculation
-        - schema: 'v2' for strict camelCase only, omit for dual-mode (v1 + _v2)
 
-    Returns (default dual-mode):
-        v1 snake_case fields + _v2 nested object with camelCase fields.
+    Returns:
+        Strict v2 camelCase only.
 
-    Returns (?schema=v2):
-        Strict v2 camelCase only, no snake_case fields.
-
-    Example response (v2):
+    Example response:
         {
             "projectName": "The Continuum",
             "dataSource": "project",
