@@ -51,19 +51,19 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
     setTimeGrouping(value);
   };
 
-  // Horizontal layout: grouped pill style matching District Map
+  // Horizontal layout: implicit label (no label, just buttons)
   if (layout === 'horizontal') {
     return (
-      <div className={`relative flex items-center gap-0.5 bg-[#EAE0CF]/50 rounded-lg p-1 ${className}`}>
+      <div className={`relative flex gap-1 ${className}`}>
         {options.map(opt => (
           <button
             key={opt.value}
             type="button"
             onClick={() => handleChange(opt.value)}
-            className={`min-h-[44px] px-3 py-2 text-sm font-medium rounded-md transition-all ${
+            className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
               timeGrouping === opt.value
-                ? 'bg-white text-[#213448] shadow-sm'
-                : 'text-[#547792] hover:text-[#213448]'
+                ? 'bg-[#547792] text-white border-[#547792]'
+                : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
             }`}
           >
             {opt.label}
