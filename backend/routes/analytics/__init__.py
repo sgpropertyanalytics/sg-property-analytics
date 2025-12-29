@@ -5,11 +5,10 @@ This package organizes the analytics endpoints into logical domains:
 - dashboard.py: Unified dashboard endpoint
 - aggregate.py: Flexible aggregation (THE STANDARD)
 - filters.py: Filter options endpoint
-- kpi.py: KPI summary endpoint
+- kpi_v2.py: KPI summary endpoint (v2)
 - admin.py: Health, debug, admin endpoints
 - deprecated.py: Deprecated 410 endpoints
-- precomputed.py: Precomputed stats endpoints (legacy)
-- trends.py: Trend endpoints (candidates for /aggregate consolidation)
+- trends.py: New vs resale comparison endpoint
 - charts.py: Specialized chart data endpoints
 - transactions.py: Transaction list and growth endpoints
 - projects_analytics.py: Project-specific analytics
@@ -18,14 +17,10 @@ All modules share the same blueprint (analytics_bp) registered at /api.
 """
 
 from flask import Blueprint
-from services.analytics_reader import get_reader
 from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
 
 # Create the shared blueprint
 analytics_bp = Blueprint('analytics', __name__)
-
-# Shared reader instance
-reader = get_reader()
 
 
 @analytics_bp.after_request
@@ -44,7 +39,6 @@ from routes.analytics import kpi
 from routes.analytics import kpi_v2
 from routes.analytics import admin
 from routes.analytics import deprecated
-from routes.analytics import precomputed
 from routes.analytics import trends
 from routes.analytics import charts
 from routes.analytics import transactions
