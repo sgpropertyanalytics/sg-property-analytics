@@ -19,8 +19,10 @@
 | `regression-snapshot-guard` | "verify no regressions", "before deploy", "numbers shifted" |
 | `ui-layout-validator` | "check layout", "verify responsive", "overflow issues" |
 | `data-integrity-validator` | "validate data", "check filters", "wrong counts" |
+| `ingestion-orchestrator` | "scrape", "ingest", "upload CSV", "data sources", "tier A/B/C" |
+| `etl-pipeline` | "upload CSV", "weekly update", "import transactions" |
 
-Docs: `docs/backend.md`, `docs/frontend.md`, `docs/architecture.md`
+Docs: `docs/backend.md`, `docs/frontend.md`, `docs/architecture.md`, `INGESTION_ARCHITECTURE.md`
 
 ---
 

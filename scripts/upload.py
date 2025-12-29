@@ -1029,21 +1029,33 @@ def create_staging_table(logger: UploadLogger, batch_id: str = None):
 
 def _migrate_staging_schema(logger: UploadLogger):
     """
-    Add missing columns to existing staging table.
+    Add missing columns to existing staging table, or recreate if schema differs too much.
 
     This allows schema evolution without dropping existing data.
     """
-    # Define all expected columns with their types
+    # Define all expected columns with their types (complete list)
     expected_columns = {
         'contract_date': 'VARCHAR(10)',
         'psf_source': 'FLOAT',
         'psf_calc': 'FLOAT',
+        'property_type': "TEXT DEFAULT 'Condominium'",
+        'sale_type': 'VARCHAR(50)',
+        'tenure': 'TEXT',
+        'lease_start_year': 'INTEGER',
+        'remaining_lease': 'INTEGER',
+        'street_name': 'TEXT',
+        'floor_range': 'TEXT',
+        'floor_level': 'TEXT',
+        'num_units': 'INTEGER',
+        'nett_price': 'FLOAT',
+        'type_of_area': 'TEXT',
+        'market_segment': 'TEXT',
         'market_segment_raw': 'TEXT',
+        'is_outlier': 'BOOLEAN DEFAULT false',
         'row_hash': 'TEXT',
         'batch_id': 'UUID',
         'is_valid': 'BOOLEAN DEFAULT true',
         'raw_extras': 'JSONB',
-        'is_outlier': 'BOOLEAN DEFAULT false',
     }
 
     # Get existing columns
@@ -1054,7 +1066,18 @@ def _migrate_staging_schema(logger: UploadLogger):
     """), {'table_name': STAGING_TABLE}).fetchall()
     existing_col_names = {row[0] for row in existing_cols}
 
-    # Add missing columns
+    # Find missing columns
+    missing_cols = [col for col in expected_columns.keys() if col not in existing_col_names]
+
+    # If too many columns missing, drop and recreate
+    if len(missing_cols) > 5:
+        logger.log(f"  ⚠️  Schema too different ({len(missing_cols)} columns missing), recreating table...")
+        db.session.execute(text(f"DROP TABLE IF EXISTS {STAGING_TABLE} CASCADE"))
+        db.session.commit()
+        _create_staging_table_schema(logger)
+        return
+
+    # Add missing columns one by one
     columns_added = []
     for col_name, col_type in expected_columns.items():
         if col_name not in existing_col_names:
