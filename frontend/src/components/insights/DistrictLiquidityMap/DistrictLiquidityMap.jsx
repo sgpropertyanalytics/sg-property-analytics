@@ -45,6 +45,8 @@ export default function DistrictLiquidityMap({
   selectedPeriod: controlledPeriod,
   selectedBed: controlledBed,
   onFilterChange,
+  mapMode,
+  onModeChange,
 }) {
   const { isPremium } = useSubscription();
   const [districtData, setDistrictData] = useState([]);
@@ -208,8 +210,34 @@ export default function DistrictLiquidityMap({
             </p>
           </div>
 
-          {/* Filter pills - more compact on mobile */}
+          {/* Toggle + Filter pills */}
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {/* Volume/Price Toggle - only shown when onModeChange is provided */}
+            {onModeChange && (
+              <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
+                <button
+                  onClick={() => onModeChange('volume')}
+                  className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all ${
+                    mapMode === 'volume'
+                      ? 'bg-white text-[#213448] shadow-sm'
+                      : 'text-[#547792] hover:text-[#213448]'
+                  }`}
+                >
+                  Volume
+                </button>
+                <button
+                  onClick={() => onModeChange('price')}
+                  className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all ${
+                    mapMode === 'price'
+                      ? 'bg-white text-[#213448] shadow-sm'
+                      : 'text-[#547792] hover:text-[#213448]'
+                  }`}
+                >
+                  Price
+                </button>
+              </div>
+            )}
+
             {/* Bedroom filter */}
             <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
               {BEDROOM_OPTIONS.map((option) => (

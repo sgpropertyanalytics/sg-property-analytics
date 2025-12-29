@@ -41,40 +41,14 @@ export function DistrictDeepDiveContent() {
   return (
     <div className="h-full overflow-auto">
       <div className="p-3 md:p-4 lg:p-6">
-        {/* Header with Toggle */}
-        <div className="mb-4 md:mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
-              District Deep Dive
-            </h1>
-            <p className="text-[#547792] text-sm mt-1">
-              Comprehensive district-level market analysis
-            </p>
-          </div>
-
-          {/* Segmented Toggle */}
-          <div className="flex p-1 bg-[#EAE0CF]/50 rounded-lg">
-            <button
-              onClick={() => setMapMode('volume')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                mapMode === 'volume'
-                  ? 'bg-white text-[#547792] shadow-sm'
-                  : 'text-[#547792]/70 hover:text-[#547792]'
-              }`}
-            >
-              Volume
-            </button>
-            <button
-              onClick={() => setMapMode('price')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                mapMode === 'price'
-                  ? 'bg-white text-[#547792] shadow-sm'
-                  : 'text-[#547792]/70 hover:text-[#547792]'
-              }`}
-            >
-              Price
-            </button>
-          </div>
+        {/* Header */}
+        <div className="mb-4 md:mb-6">
+          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
+            District Deep Dive
+          </h1>
+          <p className="text-[#547792] text-sm mt-1">
+            Comprehensive district-level market analysis
+          </p>
         </div>
 
         {/* Main Content */}
@@ -88,6 +62,8 @@ export function DistrictDeepDiveContent() {
                   selectedPeriod={selectedPeriod}
                   selectedBed={selectedBed}
                   onFilterChange={handleFilterChange}
+                  mapMode={mapMode}
+                  onModeChange={setMapMode}
                 />
               ) : (
                 <MarketStrategyMap
@@ -95,6 +71,8 @@ export function DistrictDeepDiveContent() {
                   selectedBed={selectedBed}
                   selectedSaleType={SaleType.RESALE}
                   onFilterChange={handleFilterChange}
+                  mapMode={mapMode}
+                  onModeChange={setMapMode}
                 />
               )}
             </Suspense>
