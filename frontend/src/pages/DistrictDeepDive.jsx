@@ -16,10 +16,8 @@ const MarketStrategyMap = lazy(() => import('../components/insights/MarketStrate
  * Filters persist across mode switches.
  *
  * Components:
- * - District Liquidity Map (Volume mode) - transaction velocity by district
- * - Market Strategy Map (Price mode) - median PSF by district
- * - Market Momentum Grid (always visible)
- * - Growth Dumbbell Chart (always visible)
+ * - Volume mode: District Liquidity Map + Liquidity Ranking Table
+ * - Price mode: Market Strategy Map + Market Momentum Grid + Growth Dumbbell Chart
  */
 export function DistrictDeepDiveContent() {
   const [mapMode, setMapMode] = useState('volume'); // 'volume' | 'price'
@@ -78,22 +76,25 @@ export function DistrictDeepDiveContent() {
             </Suspense>
           </ChartWatermark>
 
-          {/* Market Momentum Grid - always visible */}
-          <ChartWatermark>
-            <MarketMomentumGrid
-              period={selectedPeriod}
-              bedroom={selectedBed}
-              saleType={SaleType.RESALE}
-            />
-          </ChartWatermark>
+          {/* Price mode: Show Market Momentum Grid and Growth Dumbbell Chart */}
+          {mapMode === 'price' && (
+            <>
+              <ChartWatermark>
+                <MarketMomentumGrid
+                  period={selectedPeriod}
+                  bedroom={selectedBed}
+                  saleType={SaleType.RESALE}
+                />
+              </ChartWatermark>
 
-          {/* Growth Dumbbell Chart - always visible */}
-          <ChartWatermark>
-            <GrowthDumbbellChart
-              bedroom={selectedBed}
-              saleType={SaleType.RESALE}
-            />
-          </ChartWatermark>
+              <ChartWatermark>
+                <GrowthDumbbellChart
+                  bedroom={selectedBed}
+                  saleType={SaleType.RESALE}
+                />
+              </ChartWatermark>
+            </>
+          )}
         </div>
       </div>
     </div>
