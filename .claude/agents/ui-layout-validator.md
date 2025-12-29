@@ -46,6 +46,8 @@ You are a **UI Layout Validator** for dashboard components.
 | **Container Constraints** | Chart wrappers with overflow containment + minHeight |
 | **Tooltip/Legend Containment** | Clipping, z-index, portal/overflow issues (layout, not content) |
 | **Nice Axis Ticks** | Human-readable tick max/step (no 2,196 or step=137) |
+| **Control Bar Consistency** | Same height across all controls, baseline alignment, consistent gaps |
+| **Template Conformance** | Pages must use shared ControlBar, no reimplementation |
 
 ### What This Agent Does NOT Validate
 
@@ -364,6 +366,204 @@ ticks: { stepSize: 200 }            // ✅ Nice step
 // ❌ Auto-scaled ugly max (no explicit max set, axis shows 2,196)
 // ❌ Irregular steps: 0, 137, 274, 411
 // ❌ Tight ugly max: dataMax=2147, axisMax=2196 with no headroom
+```
+
+### INV-12: Control Bar Uses Shared Template
+
+**CRITICAL:** The Control Bar is a shared template. All pages MUST consume it. No page-level reimplementation.
+
+**Rule:** Pages must import and use the shared `ControlBar` or `FilterBar` component. They must NOT create their own filter/control row layouts.
+
+**Check:**
+1. Find all page files in `src/pages/`
+2. If page has filter controls, verify it imports shared ControlBar/FilterBar
+3. Flag if page defines its own flex row with filter controls inline
+
+**Allowed:**
+```jsx
+// ✅ Page imports shared component
+import { FilterBar } from '../components/layout/FilterBar';
+import { ControlBar } from '../components/layout/ControlBar';
+
+<FilterBar filters={filters} onFilterChange={handleChange} />
+```
+
+**Forbidden:**
+```jsx
+// ❌ Page creates its own control bar layout
+<div className="flex items-center gap-4 mb-4">
+  <Dropdown ... />
+  <SegmentedControl ... />
+  <Button ... />
+</div>
+```
+
+**Fail condition:**
+- Page defines inline flex row with 3+ control components (Dropdown, Button, SegmentedControl, etc.)
+- Page does not import shared ControlBar/FilterBar but has filter-like controls
+- Multiple pages with different control bar implementations
+
+### INV-13: Control Bar Height Consistency
+
+**CRITICAL:** All controls within a Control Bar MUST have the same rendered height.
+
+**Standard Height:** 40px (h-10) or as defined in design system
+
+**Why:** Mixed heights create visual chaos and imply different importance levels.
+
+**Check:**
+1. In shared ControlBar component, identify all control elements
+2. Verify all controls have consistent height class (`h-10` = 40px)
+3. Check buttons, dropdowns, segmented controls, pills all match
+
+**Allowed:**
+```jsx
+// ✅ All controls use same height
+<Button className="h-10 ..." />
+<Dropdown className="h-10 ..." />
+<SegmentedControl className="h-10 ..." />
+```
+
+**Forbidden:**
+```jsx
+// ❌ Mixed heights
+<Button className="h-9 ..." />      // 36px
+<Dropdown className="h-10 ..." />   // 40px
+<SegmentedControl className="h-8 ..." /> // 32px
+```
+
+**Fail condition:**
+- Controls in same bar have different `h-*` classes
+- Buttons are `h-9` while dropdowns are `h-10`
+- Any control missing explicit height class (relies on content)
+
+**Actionable Output:**
+```
+ControlBar: expected control height = 40px (h-10)
+  ✅ Button: h-10 (40px)
+  ❌ DistrictDropdown: h-9 (36px) — MISMATCH
+  ✅ RegionSegment: h-10 (40px)
+  ❌ DatePicker: no explicit height — MISSING
+```
+
+### INV-14: Control Bar Baseline Alignment
+
+**CRITICAL:** Text and icons within controls MUST align on a common baseline.
+
+**Rule:** All controls in a row must use `items-center` for vertical centering. Text baselines should visually align across controls.
+
+**Check:**
+1. Control bar container has `items-center`
+2. Each control internally uses `items-center` for icon + text
+3. Font sizes are consistent across control labels
+
+**Allowed:**
+```jsx
+// ✅ Proper alignment
+<div className="flex items-center gap-4">
+  <Button className="inline-flex items-center h-10">
+    <Icon className="w-4 h-4 mr-2" />
+    <span className="text-sm">Label</span>
+  </Button>
+</div>
+```
+
+**Forbidden:**
+```jsx
+// ❌ Missing items-center
+<div className="flex gap-4">
+  <Button className="h-10">...</Button>
+</div>
+
+// ❌ Inconsistent text sizes
+<Button className="text-sm">Filter</Button>
+<Dropdown className="text-base">Region</Dropdown>
+```
+
+**Fail condition:**
+- Control bar flex container missing `items-center`
+- Controls have mixed text sizes (`text-sm` vs `text-base`)
+- Icons not vertically centered with text
+
+### INV-15: Control Bar Gap Consistency
+
+**CRITICAL:** Gaps MUST be consistent within groups and between groups.
+
+**Standard:**
+- Within group (tight): `gap-1` or `gap-2` (4-8px)
+- Between groups (loose): `gap-4` or `gap-6` (16-24px)
+
+**Check:**
+1. Identify control groups (logically related controls)
+2. Verify within-group gaps are uniform
+3. Verify between-group gaps are uniform and larger than within-group
+
+**Allowed:**
+```jsx
+// ✅ Consistent gaps
+<div className="flex items-center gap-6">           {/* Between groups */}
+  <div className="flex items-center gap-2">         {/* Within group */}
+    <RegionFilter />
+    <DistrictFilter />
+  </div>
+  <div className="flex items-center gap-2">         {/* Within group */}
+    <BedroomFilter />
+    <PriceFilter />
+  </div>
+</div>
+```
+
+**Forbidden:**
+```jsx
+// ❌ Inconsistent gaps
+<div className="flex items-center gap-4">
+  <RegionFilter />
+  <div className="ml-2">  {/* Breaks gap pattern */}
+    <DistrictFilter />
+  </div>
+  <BedroomFilter className="mr-6" />  {/* Inline margin breaks pattern */}
+</div>
+```
+
+**Fail condition:**
+- Mixed `gap-*` values at same nesting level
+- Inline `ml-*`, `mr-*`, `mx-*` overriding gap
+- Group gaps same as or smaller than within-group gaps
+
+**Actionable Output:**
+```
+ControlBar Gap Analysis:
+  Container: gap-6 (24px) ✅
+  Group 1 (Region filters): gap-2 (8px) ✅
+  Group 2 (Bedroom filters): gap-4 (16px) ❌ — expected gap-2
+  Inline override: DistrictDropdown has ml-3 ❌ — use gap instead
+```
+
+### INV-16: Control Bar Padding Consistency
+
+**CRITICAL:** All controls MUST have consistent internal padding.
+
+**Standard:**
+- Horizontal: `px-3` or `px-4` (12-16px)
+- Vertical: `py-2` (8px) for h-10 controls
+
+**Check:**
+1. Extract padding classes from all controls in bar
+2. Verify horizontal padding is uniform
+3. Verify vertical padding is uniform
+
+**Fail condition:**
+- Controls have different `px-*` values (e.g., `px-2` vs `px-4`)
+- Controls have different `py-*` values
+- Some controls use `p-*` while others use `px-*`/`py-*`
+
+**Actionable Output:**
+```
+ControlBar Padding Analysis:
+  ✅ Button: px-4 py-2
+  ❌ Dropdown: px-3 py-2 — expected px-4
+  ✅ SegmentedControl: px-4 py-2
+  ❌ FilterPill: px-2 py-1 — expected px-4 py-2
 ```
 
 ---
@@ -881,6 +1081,155 @@ const niceMax = Math.ceil(dataMax / 100) * 100;  // Round up to nearest 100
 3. Set: `ticks.stepSize = 200` (5 even ticks)
 ```
 
+### Control Bar Template Conformance Check (INV-12)
+
+**Purpose:** Ensure all pages use the shared ControlBar/FilterBar instead of reimplementing.
+
+**Spec:**
+```
+1. Find all page files in src/pages/
+2. For each page:
+   a. Check if page imports ControlBar or FilterBar from shared location
+   b. Search for inline control patterns:
+      - <div className="flex.*"> containing 3+ of: Dropdown, Button, Select, SegmentedControl
+   c. Flag if inline pattern found without shared import
+
+DETECTION PATTERNS:
+- Inline flex row with filter controls = VIOLATION
+- Page with filter state but no ControlBar import = SUSPICIOUS
+```
+
+**Static Analysis Check (grep-based):**
+```bash
+# Find pages NOT importing shared ControlBar/FilterBar
+for page in frontend/src/pages/*.jsx; do
+  if ! grep -q "import.*\(ControlBar\|FilterBar\)" "$page"; then
+    # Check if page has filter-like controls inline
+    if grep -q "className=.*flex.*items-center" "$page" && \
+       grep -c "<\(Dropdown\|Select\|Button\|SegmentedControl\)" "$page" | grep -q "[3-9]"; then
+      echo "VIOLATION: $page has inline control bar"
+    fi
+  fi
+done
+```
+
+### Control Bar Height Consistency Check (INV-13)
+
+**Purpose:** Verify all controls in a ControlBar have the same height.
+
+**Spec:**
+```
+1. Find the shared ControlBar/FilterBar component
+2. Extract all control elements (Button, Dropdown, SegmentedControl, etc.)
+3. For each control, extract height class (h-8, h-9, h-10, etc.)
+4. Compare all heights - must be identical
+5. Flag any control missing explicit height
+
+STANDARD: h-10 (40px) unless design system specifies otherwise
+```
+
+**Static Analysis Check (grep-based):**
+```bash
+# In shared ControlBar, check height consistency
+CONTROL_BAR="frontend/src/components/layout/FilterBar.jsx"
+
+# Extract all h-* classes for controls
+grep -oE "h-[0-9]+" "$CONTROL_BAR" | sort | uniq -c
+
+# Expected output: all same height, e.g.:
+#   12 h-10
+# Violation: multiple heights, e.g.:
+#   8 h-10
+#   4 h-9
+```
+
+**Actionable Output:**
+```
+ControlBar Height Check:
+  Expected: h-10 (40px) for all controls
+
+  ✅ Button (line 45): h-10
+  ✅ RegionDropdown (line 52): h-10
+  ❌ DistrictDropdown (line 67): h-9 — MISMATCH (36px vs 40px expected)
+  ❌ DatePicker (line 89): no h-* class — MISSING explicit height
+
+  RESULT: FAIL — 2 violations found
+```
+
+### Control Bar Gap Consistency Check (INV-15)
+
+**Purpose:** Verify gaps are consistent within and between control groups.
+
+**Spec:**
+```
+1. Find ControlBar/FilterBar component
+2. Map the gap hierarchy:
+   - Root container gap (between groups)
+   - Nested group gaps (within groups)
+3. Verify:
+   - All same-level gaps are identical
+   - Group gaps > within-group gaps
+   - No inline ml-*/mr-*/mx-* overrides
+
+STANDARDS:
+- Between groups: gap-4 or gap-6
+- Within groups: gap-1 or gap-2
+```
+
+**Static Analysis Check (grep-based):**
+```bash
+# Check for inconsistent gaps
+grep -n "gap-[0-9]" "$CONTROL_BAR"
+
+# Check for inline margin overrides (violations)
+grep -n "ml-[0-9]\|mr-[0-9]\|mx-[0-9]" "$CONTROL_BAR"
+```
+
+**Actionable Output:**
+```
+ControlBar Gap Check:
+  Root container: gap-6 (24px) ✅
+
+  Group 1 (Geography):
+    ✅ gap-2 (8px)
+    ❌ RegionFilter has ml-1 — inline margin breaks pattern
+
+  Group 2 (Property):
+    ❌ gap-4 (16px) — expected gap-2 to match Group 1
+
+  RESULT: FAIL — 2 violations found
+```
+
+### Control Bar Padding Consistency Check (INV-16)
+
+**Purpose:** Verify all controls have consistent internal padding.
+
+**Spec:**
+```
+1. Extract padding classes from each control in ControlBar
+2. Separate horizontal (px-*) and vertical (py-*) padding
+3. Verify all controls use same padding values
+4. Flag mixed padding patterns
+
+STANDARDS:
+- Horizontal: px-3 or px-4
+- Vertical: py-2
+```
+
+**Static Analysis Check (grep-based):**
+```bash
+# Extract all padding classes from controls
+grep -oE "p[xy]-[0-9]+" "$CONTROL_BAR" | sort | uniq -c
+
+# Expected: consistent padding
+#   15 px-4
+#   15 py-2
+# Violation: mixed padding
+#   10 px-4
+#   5 px-3
+#   15 py-2
+```
+
 ---
 
 ## 7. OVERFLOW SAFETY STRATEGY
@@ -1282,6 +1631,15 @@ CHARTS:
 [ ] Axis max is "nice" (multiple of 50/100/250/500/1000)
 [ ] Tick stepSize is human-readable (no 137, 219, etc.)
 [ ] Currency axes use M/B units with nice boundaries
+
+CONTROL BAR:
+[ ] Page uses shared ControlBar/FilterBar (no reimplementation)
+[ ] All controls same height (h-10 = 40px standard)
+[ ] Container has items-center for baseline alignment
+[ ] Consistent text sizes across control labels (text-sm)
+[ ] Gap hierarchy: gap-2 within groups, gap-4/gap-6 between groups
+[ ] No inline ml-*/mr-* overriding gaps
+[ ] Consistent padding: px-3/px-4 horizontal, py-2 vertical
 
 ROBUSTNESS:
 [ ] Long labels handled (truncate/line-clamp)
