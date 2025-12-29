@@ -247,8 +247,8 @@ export default function DistrictLiquidityMap({
                     />
                   )}
                   <DollarSign size={12} className="sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">Price PSF</span>
-                  <span className="sm:hidden">PSF</span>
+                  <span className="hidden sm:inline">Price</span>
+                  <span className="sm:hidden">Price</span>
                 </button>
               </div>
             )}
