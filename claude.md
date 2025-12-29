@@ -25,6 +25,21 @@
 
 Docs: `docs/backend.md`, `docs/frontend.md`, `docs/architecture.md`, `INGESTION_ARCHITECTURE.md`
 
+## Page Routes
+
+| Nav Label | Page Title | Route |
+|-----------|------------|-------|
+| Market Overview | Market Overview | `/market-overview` |
+| District Overview | District Overview | `/district-overview` |
+| New Launch Market | New Launch Market | `/new-launch-market` |
+| Supply & Inventory | Supply & Inventory Outlook | `/supply-inventory` |
+| Explore | Explore | `/explore` |
+| Value Check | Value Check | `/value-check` |
+| Exit Risk | Exit Risk Analysis | `/exit-risk` |
+| Methodology | Methodology | `/methodology` |
+
+**Legacy redirects:** Old routes (`/market-core`, `/primary-market`, `/district-deep-dive`, `/project-deep-dive`, `/value-parity`, `/supply-insights`) redirect to new routes for backwards compatibility.
+
 ---
 
 # 0. ARCHITECTURAL INVARIANTS (NON-NEGOTIABLE)
@@ -95,14 +110,14 @@ if (!params.sale_type && activeFilters.saleType) {
 }
 ```
 
-## Market Core vs Primary Market
+## Market Overview vs New Launch Market
 
 These are SEPARATE data universes. They MUST NEVER be mixed.
 
-| Page | Data Scope | Purpose |
-|------|------------|---------|
-| Market Core | Resale ONLY | Secondary market analysis |
-| Primary Market | New Sale + Resale | Developer pricing, launches, absorption |
+| Page | Route | Data Scope | Purpose |
+|------|-------|------------|---------|
+| Market Overview | `/market-overview` | Resale ONLY | Secondary market analysis |
+| New Launch Market | `/new-launch-market` | New Sale + Resale | Developer pricing, launches, absorption |
 
 ## Chart Rules
 
@@ -143,7 +158,7 @@ Before merging ANY analytics-related change:
 - [ ] Components are reusable (no hardcoded business logic)
 - [ ] No string literals for enums
 - [ ] Page prop overrides filter params
-- [ ] Market Core ≠ Primary Market clearly separated
+- [ ] Market Overview ≠ New Launch Market clearly separated
 - [ ] Charts accept saleType as prop
 - [ ] Utils are pure (no defaults, no inference)
 
@@ -266,7 +281,7 @@ classifyBedroomThreeTier(area, saleType, date)
 | Cross-filters | ALL charts |
 | Fact filters | Transaction table ONLY |
 
-- `usePowerBIFilters()` → Market Core page ONLY
+- `usePowerBIFilters()` → Market Overview page ONLY
 - Other pages → receive filters as props
 - Each chart has LOCAL drill state
 - `buildApiParams()` for ALL API calls
@@ -297,9 +312,9 @@ const SALE_TYPE = SaleType.RESALE;  // Use canonical enum ('resale')
 **✅ BETTER: API-level enforcement (for critical analytics)**
 ```python
 # backend/routes/analytics.py
-# For Market Core endpoints, enforce resale-only server-side
+# For Market Overview endpoints, enforce resale-only server-side
 if sale_type is None:
-    sale_type = "Resale"  # Default to resale for Market Core
+    sale_type = "Resale"  # Default to resale for Market Overview
 ```
 
 **❌ WRONG: Hardcoded in utils**
