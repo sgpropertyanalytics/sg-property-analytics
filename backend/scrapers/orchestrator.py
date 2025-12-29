@@ -1,22 +1,30 @@
 """
-Scraping Orchestrator - Coordinates scraping, promotion, and projection.
+Ingestion Orchestrator - Coordinates ingestion, diff detection, and promotion.
 
 Responsibilities:
-1. Manages scrape runs (start, monitor, complete)
-2. Coordinates scrapers with rate limiting
-3. Triggers promotion (scraped -> canonical)
-4. Triggers projection (canonical -> domain tables)
+1. Manages ingestion runs (start, monitor, complete)
+2. Coordinates scrapers/uploaders with rate limiting
+3. Computes diffs against existing domain data
+4. Triggers promotion with conflict gating
 5. Detects schema changes
 """
 import logging
+import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Set, Type
 
 from .base import BaseScraper, ScrapeMode, ScrapeResult
 from .tier_system import SourceTier, get_tier_config
 from .field_authority import FieldAuthorityChecker
 from .utils.hashing import compute_json_hash
 from .utils.schema_diff import detect_schema_changes
+from .utils.diff import (
+    DiffStatus,
+    DiffReport,
+    EntityDiff,
+    compute_entity_diff,
+    compute_diff_report,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -452,3 +460,299 @@ class ScrapingOrchestrator:
             query = query.filter_by(source_domain=source_domain)
 
         return query.order_by(ScraperSchemaChange.detected_at.desc()).limit(limit).all()
+
+    # =========================================================================
+    # DIFF DETECTION
+    # =========================================================================
+
+    def compute_diff_for_gls(
+        self,
+        incoming_records: List[Dict[str, Any]],
+        run_id: Optional[str] = None,
+    ) -> DiffReport:
+        """
+        Compute diff for GLS tenders against existing domain table.
+
+        Args:
+            incoming_records: List of tender dicts from scraping
+            run_id: Optional run ID (auto-generated if not provided)
+
+        Returns:
+            DiffReport with unchanged/changed/new/missing and conflicts
+        """
+        from models.gls_tender import GLSTender
+
+        run_id = run_id or str(uuid.uuid4())
+
+        # Load existing records as dict keyed by release_id
+        existing_tenders = self.db_session.query(GLSTender).all()
+        existing_dict = {}
+        for tender in existing_tenders:
+            tender_dict = tender.to_dict(include_status_label=False)
+            existing_dict[tender.release_id] = tender_dict
+
+        # Fields to compare (skip computed/derived fields)
+        compare_fields = {
+            "status",
+            "release_id",
+            "release_url",
+            "release_date",
+            "tender_close_date",
+            "location_raw",
+            "latitude",
+            "longitude",
+            "postal_code",
+            "postal_district",
+            "planning_area",
+            "market_segment",
+            "site_area_sqm",
+            "max_gfa_sqm",
+            "estimated_units",
+            "successful_tenderer",
+            "tendered_price_sgd",
+            "num_tenderers",
+            "psm_gfa",
+        }
+
+        return compute_diff_report(
+            source_name="ura_gls",
+            source_type="scrape",
+            run_id=run_id,
+            entity_type="gls_tender",
+            incoming_records=incoming_records,
+            existing_records=existing_dict,
+            key_field="release_id",
+            id_field="id",
+            compare_fields=compare_fields,
+        )
+
+    def promote_with_diff(
+        self,
+        diff_report: DiffReport,
+        force: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Promote records based on diff report.
+
+        Args:
+            diff_report: DiffReport from compute_diff_for_gls
+            force: If True, promote even with blocking conflicts
+
+        Returns:
+            Dict with promotion statistics
+        """
+        from models.gls_tender import GLSTender
+
+        stats = {
+            "promoted": 0,
+            "inserted": 0,
+            "updated": 0,
+            "skipped_conflict": 0,
+            "skipped_unchanged": 0,
+            "blocking_conflicts": diff_report.blocking_conflicts,
+        }
+
+        # Check for blocking conflicts
+        if diff_report.blocking_conflicts > 0 and not force:
+            logger.warning(
+                f"Promotion blocked: {diff_report.blocking_conflicts} blocking conflicts. "
+                f"Use force=True to override."
+            )
+            stats["skipped_conflict"] = len(diff_report.conflicts)
+            return stats
+
+        for diff in diff_report.diffs:
+            if diff.status == DiffStatus.UNCHANGED:
+                stats["skipped_unchanged"] += 1
+                continue
+
+            if diff.status == DiffStatus.MISSING:
+                # Don't delete missing records automatically
+                continue
+
+            if diff.has_conflicts and diff.blocking_conflicts > 0 and not force:
+                stats["skipped_conflict"] += 1
+                continue
+
+            if diff.status == DiffStatus.NEW:
+                # Insert new record
+                tender_data = diff.new_data or diff.incoming_data
+                if tender_data:
+                    tender = GLSTender(
+                        release_id=tender_data.get("release_id"),
+                        status=tender_data.get("status", "launched"),
+                        release_url=tender_data.get("release_url") or tender_data.get("source_url"),
+                        release_date=self._parse_date(tender_data.get("release_date")),
+                        tender_close_date=self._parse_date(tender_data.get("tender_close_date")),
+                        location_raw=tender_data.get("location_raw"),
+                        latitude=tender_data.get("latitude"),
+                        longitude=tender_data.get("longitude"),
+                        postal_code=tender_data.get("postal_code"),
+                        postal_district=tender_data.get("postal_district"),
+                        planning_area=tender_data.get("planning_area"),
+                        market_segment=tender_data.get("market_segment"),
+                        site_area_sqm=tender_data.get("site_area_sqm"),
+                        max_gfa_sqm=tender_data.get("max_gfa_sqm"),
+                        estimated_units=tender_data.get("estimated_units"),
+                        estimated_units_source=tender_data.get("estimated_units_source"),
+                        successful_tenderer=tender_data.get("successful_tenderer"),
+                        tendered_price_sgd=tender_data.get("tendered_price_sgd"),
+                        num_tenderers=tender_data.get("num_tenderers"),
+                        psm_gfa=tender_data.get("psm_gfa"),
+                    )
+                    GLSTender.compute_derived_fields(tender)
+                    self.db_session.add(tender)
+                    stats["inserted"] += 1
+                    stats["promoted"] += 1
+                    logger.debug(f"Inserted: {diff.entity_key}")
+
+            elif diff.status == DiffStatus.CHANGED:
+                # Update existing record
+                existing = self.db_session.query(GLSTender).filter_by(
+                    release_id=diff.entity_key
+                ).first()
+
+                if existing and diff.incoming_data:
+                    for change in diff.changes:
+                        if not change.is_conflict or force:
+                            setattr(existing, change.field_name, change.new_value)
+
+                    GLSTender.compute_derived_fields(existing)
+                    stats["updated"] += 1
+                    stats["promoted"] += 1
+                    logger.debug(f"Updated: {diff.entity_key} ({len(diff.changes)} fields)")
+
+        self.db_session.commit()
+        logger.info(f"Promotion complete: {stats}")
+        return stats
+
+    def _parse_date(self, value):
+        """Parse date from various formats."""
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value.date()
+        if hasattr(value, 'date'):
+            return value
+        if isinstance(value, str):
+            try:
+                from datetime import datetime as dt
+                return dt.fromisoformat(value).date()
+            except ValueError:
+                try:
+                    return dt.strptime(value, "%Y-%m-%d").date()
+                except ValueError:
+                    return None
+        return None
+
+    def run_scraper_with_diff(
+        self,
+        scraper_name: str,
+        mode: ScrapeMode = ScrapeMode.CANONICAL_INGEST,
+        config: Optional[Dict[str, Any]] = None,
+        triggered_by: str = "manual",
+        auto_promote: bool = False,
+        force_promote: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Execute a scraper with diff detection before promotion.
+
+        Args:
+            scraper_name: Name of registered scraper
+            mode: DISCOVERY, CANDIDATE_INGEST, or CANONICAL_INGEST
+            config: Scraper-specific configuration
+            triggered_by: 'manual', 'cron', or 'webhook'
+            auto_promote: Whether to auto-promote after diffing
+            force_promote: Whether to force promotion even with conflicts
+
+        Returns:
+            Dict with run info, diff report, and promotion stats
+        """
+        if scraper_name not in self.scrapers:
+            raise ValueError(f"Unknown scraper: {scraper_name}")
+
+        # Initialize scraper
+        scraper_class = self.scrapers[scraper_name]
+        scraper = scraper_class(self.db_session, self.rate_limiter, self.cache)
+
+        # Generate run ID
+        run_id = str(uuid.uuid4())
+
+        result = {
+            "run_id": run_id,
+            "scraper_name": scraper_name,
+            "mode": mode.value,
+            "triggered_by": triggered_by,
+            "scraped_records": [],
+            "diff_report": None,
+            "promotion_stats": None,
+        }
+
+        # Fetch and parse data
+        logger.info(f"Starting scrape: {scraper_name} (run_id={run_id})")
+
+        try:
+            # Get URLs and scrape
+            urls = list(scraper.get_urls_to_scrape(**(config or {})))
+            result["urls_found"] = len(urls)
+
+            scraped_records = []
+            limit = (config or {}).get("limit")
+
+            for i, url in enumerate(urls):
+                if limit and i >= limit:
+                    break
+
+                try:
+                    records = scraper.parse_page(url, None)  # HTML fetched internally
+                    if records:
+                        scraped_records.extend(records)
+                except Exception as e:
+                    logger.warning(f"Failed to parse {url}: {e}")
+
+            result["records_count"] = len(scraped_records)
+
+            # Convert ScrapeResult objects to dicts for diff computation
+            incoming_dicts = []
+            for record in scraped_records:
+                if hasattr(record, 'extracted'):
+                    # ScrapeResult object
+                    data = record.extracted.copy()
+                    data['release_id'] = record.entity_key
+                    incoming_dicts.append(data)
+                elif isinstance(record, dict):
+                    incoming_dicts.append(record)
+
+            result["scraped_records"] = incoming_dicts
+
+            # Compute diff
+            if scraper_name == "ura_gls":
+                diff_report = self.compute_diff_for_gls(incoming_dicts, run_id)
+                result["diff_report"] = diff_report.to_dict()
+                result["diff_summary"] = {
+                    "unchanged": diff_report.unchanged_count,
+                    "changed": diff_report.changed_count,
+                    "new": diff_report.new_count,
+                    "missing": diff_report.missing_count,
+                    "conflicts": diff_report.total_conflicts,
+                    "can_auto_promote": diff_report.can_auto_promote,
+                }
+
+                # Auto-promote if enabled
+                if auto_promote:
+                    promotion_stats = self.promote_with_diff(
+                        diff_report,
+                        force=force_promote,
+                    )
+                    result["promotion_stats"] = promotion_stats
+
+                # Generate markdown report
+                result["diff_markdown"] = diff_report.to_markdown()
+
+        except Exception as e:
+            logger.error(f"Scrape failed: {e}")
+            result["error"] = str(e)
+            import traceback
+            result["traceback"] = traceback.format_exc()
+
+        return result
