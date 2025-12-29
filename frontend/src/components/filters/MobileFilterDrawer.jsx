@@ -12,6 +12,7 @@ import { RegionDropdown } from './RegionDropdown';
 import { DistrictCombobox } from './DistrictCombobox';
 import { BedroomPills } from './BedroomPills';
 import { DateRangePicker } from './DateRangePicker';
+import { TimeGranularityToggle } from '../powerbi/TimeGranularityToggle';
 
 export function MobileFilterDrawer({ isOpen, onClose }) {
   const { activeFilterCount, resetFilters } = usePowerBIFilters();
@@ -66,6 +67,12 @@ export function MobileFilterDrawer({ isOpen, onClose }) {
           <div>
             <label className="block text-sm font-medium text-[#213448] mb-2">Time Period</label>
             <DateRangePicker />
+          </div>
+
+          {/* Time Grouping */}
+          <div>
+            <label className="block text-sm font-medium text-[#213448] mb-2">Group By</label>
+            <TimeGranularityToggle />
           </div>
         </div>
 

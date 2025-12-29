@@ -14,6 +14,7 @@ import { DistrictCombobox } from './DistrictCombobox';
 import { BedroomPills } from './BedroomPills';
 import { DateRangePicker } from './DateRangePicker';
 import { MobileFilterDrawer } from './MobileFilterDrawer';
+import { TimeGranularityToggle } from '../powerbi/TimeGranularityToggle';
 
 export function ControlBar() {
   const { activeFilterCount, resetFilters } = usePowerBIFilters();
@@ -36,17 +37,23 @@ export function ControlBar() {
 
         <DateRangePicker />
 
+        {/* Separator */}
+        <div className="hidden lg:block w-px h-6 bg-[#94B4C1]/30" />
+
+        {/* Time Grouping Toggle */}
+        <TimeGranularityToggle />
+
+        {/* Spacer to push Clear to far right */}
+        <div className="flex-1" />
+
         {/* Clear filters button */}
         {activeFilterCount > 0 && (
-          <>
-            <div className="hidden lg:block w-px h-6 bg-[#94B4C1]/30" />
-            <button
-              onClick={resetFilters}
-              className="min-h-[36px] px-3 py-1.5 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-md transition-colors active:scale-[0.98]"
-            >
-              Clear all
-            </button>
-          </>
+          <button
+            onClick={resetFilters}
+            className="min-h-[36px] px-3 py-1.5 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-md transition-colors active:scale-[0.98]"
+          >
+            Clear all
+          </button>
         )}
       </div>
 

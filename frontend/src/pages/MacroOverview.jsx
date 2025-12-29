@@ -7,7 +7,6 @@ import { BeadsChart } from '../components/powerbi/BeadsChart';
 import { SaleType } from '../schemas/apiContract';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
-import { TimeGranularityToggle } from '../components/powerbi/TimeGranularityToggle';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getKpiSummaryV2, getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
@@ -165,10 +164,6 @@ export function MacroOverviewContent() {
                   </span>
                 </p>
               )}
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              {/* Time Grouping Toggle - View context control (not a filter) */}
-              <TimeGranularityToggle />
             </div>
           </div>
 
