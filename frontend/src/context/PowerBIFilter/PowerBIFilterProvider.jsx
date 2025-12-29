@@ -295,8 +295,9 @@ export function PowerBIFilterProvider({ children }) {
   );
 
   // ===== Context Value (Memoized to prevent unnecessary re-renders) =====
-  // Splitting into stable (callbacks) and dynamic (state) parts
-  // Callbacks are stable due to useCallback, so they don't need to be in deps
+  // PERF FIX: Only state in deps - callbacks are stable via useCallback
+  // Including callbacks in deps caused context value recreation on every render,
+  // triggering re-renders in ALL consumers even when only one filter changed.
 
   const value = useMemo(
     () => ({
@@ -316,7 +317,7 @@ export function PowerBIFilterProvider({ children }) {
       timeGrouping,
       setTimeGrouping,
 
-      // Filter setters (stable callbacks)
+      // Filter setters (stable callbacks via useCallback)
       setDateRange,
       setDistricts,
       toggleDistrict,
@@ -342,11 +343,12 @@ export function PowerBIFilterProvider({ children }) {
       setSelectedProject,
       clearSelectedProject,
 
-      // Helpers (stable callback)
+      // Helpers (stable callback - deps are activeFilters, filters, factFilter)
       buildApiParams,
     }),
     [
-      // Only include state that changes - callbacks are stable
+      // ONLY state values - callbacks are stable and don't need to be deps
+      // This prevents context value recreation when callbacks haven't changed
       filters,
       factFilter,
       drillPath,
@@ -358,28 +360,8 @@ export function PowerBIFilterProvider({ children }) {
       debouncedFilterKey,
       selectedProject,
       timeGrouping,
-      // Callbacks (technically stable, but included for correctness)
-      setTimeGrouping,
-      setDateRange,
-      setDistricts,
-      toggleDistrict,
-      setBedroomTypes,
-      toggleBedroomType,
-      setSegments,
-      toggleSegment,
-      setSaleType,
-      setPsfRange,
-      setSizeRange,
-      setTenure,
-      setPropertyAge,
-      setPropertyAgeBucket,
-      setProject,
-      resetFilters,
-      drillDown,
-      drillUp,
-      navigateToBreadcrumb,
-      setSelectedProject,
-      clearSelectedProject,
+      // buildApiParams included because it depends on activeFilters/filters/factFilter
+      // and we want consumers to get the updated function when those change
       buildApiParams,
     ]
   );
