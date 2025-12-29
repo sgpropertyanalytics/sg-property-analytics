@@ -116,11 +116,11 @@ export function GlobalNavRail({ activePage, onPageChange }) {
     g.items.some(item => item.id === activeItem)
   )?.id;
 
-  // Collapsible state - auto-expand group with active item
+  // Collapsible state - all groups expanded by default
   const [expandedGroups, setExpandedGroups] = useState(() => {
     const initial = {};
     NAV_GROUPS.forEach(g => {
-      initial[g.id] = g.items.some(item => item.id === activeItem);
+      initial[g.id] = true; // All groups expanded by default
     });
     return initial;
   });
