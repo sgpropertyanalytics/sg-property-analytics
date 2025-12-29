@@ -51,6 +51,9 @@ const PrimaryMarketContent = lazyWithRetry(() =>
 const MethodologyContent = lazyWithRetry(() =>
   import('./pages/Methodology').then(m => ({ default: m.MethodologyContent }))
 );
+const ExitRiskContent = lazyWithRetry(() =>
+  import('./pages/ExitRisk').then(m => ({ default: m.ExitRiskContent }))
+);
 
 // Note: Loading fallback moved to DashboardLayout to keep nav rail persistent
 
@@ -127,6 +130,9 @@ function App() {
 
             {/* Project Deep Dive (Lazy-loaded) */}
             <Route path="/project-deep-dive" element={<ProjectDeepDiveContent />} />
+
+            {/* Exit Risk Assessment (Lazy-loaded) */}
+            <Route path="/exit-risk" element={<ExitRiskContent />} />
 
             {/* Supply & Inventory Insights (Lazy-loaded) */}
             <Route path="/supply-insights" element={<SupplyInsightsContent />} />

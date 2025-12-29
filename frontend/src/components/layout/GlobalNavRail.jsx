@@ -24,7 +24,7 @@ import { AccountSettingsModal } from '../AccountSettingsModal';
  *
  * Structure:
  * - Market Intelligence: Overview, Districts, New Launches, Supply & Inventory
- * - Project Tools: Explore, Value Comparison, Exit Risk (Coming Soon)
+ * - Project Tools: Explore, Value Comparison, Exit Risk
  */
 
 // Design token: Nav rail width (defined once, used in DashboardLayout)
@@ -49,7 +49,7 @@ export const NAV_GROUPS = [
     items: [
       { id: 'explore', path: '/project-deep-dive', label: 'Explore', icon: '🔍' },
       { id: 'value-comparison', path: '/value-parity', label: 'Value Comparison', icon: '💰' },
-      { id: 'exit-risk', path: null, label: 'Exit Risk', icon: '🚪', comingSoon: true },
+      { id: 'exit-risk', path: '/exit-risk', label: 'Exit Risk', icon: '🚪' },
     ],
   },
 ];
