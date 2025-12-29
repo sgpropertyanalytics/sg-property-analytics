@@ -198,7 +198,7 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
               <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
                 <button
                   onClick={() => onModeChange('volume')}
-                  className={`relative flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all z-10 ${
+                  className={`relative flex items-center justify-center gap-1 min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all z-10 touch-manipulation ${
                     mapMode === 'volume' ? 'text-white' : 'text-[#547792] hover:text-[#213448]'
                   }`}
                 >
@@ -215,7 +215,7 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
                 </button>
                 <button
                   onClick={() => onModeChange('price')}
-                  className={`relative flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all z-10 ${
+                  className={`relative flex items-center justify-center gap-1 min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all z-10 touch-manipulation ${
                     mapMode === 'price' ? 'text-white' : 'text-[#547792] hover:text-[#213448]'
                   }`}
                 >
@@ -240,7 +240,7 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
                   key={option.value}
                   onClick={() => setSelectedBed(option.value)}
                   className={`
-                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
+                    min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all touch-manipulation
                     ${
                       selectedBed === option.value
                         ? 'bg-white text-[#213448] shadow-sm'
@@ -260,7 +260,7 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
                   key={option.value}
                   onClick={() => setSelectedPeriod(option.value)}
                   className={`
-                    px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all
+                    min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all touch-manipulation
                     ${
                       selectedPeriod === option.value
                         ? 'bg-white text-[#213448] shadow-sm'
