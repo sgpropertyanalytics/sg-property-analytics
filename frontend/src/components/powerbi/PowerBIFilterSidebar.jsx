@@ -166,9 +166,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   };
 
   // ==================== HORIZONTAL LAYOUT ====================
+  // Sticky frosted glass control bar - stays visible while scrolling
   if (layout === 'horizontal') {
     return (
-      <div className="flex flex-wrap items-center gap-3 p-4 bg-card/60 rounded-lg border border-[#94B4C1]/20 backdrop-blur-sm">
+      <div className="sticky top-0 z-30 -mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-[#EAE0CF]/70 backdrop-blur-md border-b border-[#94B4C1]/30 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
         {/* Region/Segment Buttons */}
         <FilterGroup label="Market Segment">
           <div className="flex gap-1">
@@ -276,6 +278,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             Clear all
           </button>
         )}
+        </div>
       </div>
     );
   }
