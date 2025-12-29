@@ -103,8 +103,8 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
   return (
       <div className="flex h-screen bg-[#EAE0CF]/30 overflow-hidden">
         {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
-        {/* Desktop: Always visible | Mobile: Hidden */}
-        <div className="hidden lg:block flex-shrink-0">
+        {/* Desktop: Fixed 240px width | Mobile: Hidden */}
+        <div className="hidden lg:block flex-shrink-0 w-60">
           <GlobalNavRail activePage={activePage} />
         </div>
 
@@ -116,13 +116,13 @@ export function DashboardLayout({ children, activePage: propActivePage }) {
               className="absolute inset-0 bg-black/50"
               onClick={handleMobileNavClose}
             />
-            {/* Nav Drawer */}
-            <div className="absolute inset-y-0 left-0 w-64 animate-slide-in-left">
+            {/* Nav Drawer - 280px width for mobile */}
+            <div className="absolute inset-y-0 left-0 w-[280px] max-w-[85vw] animate-slide-in-left">
               <GlobalNavRail activePage={activePage} />
               {/* Close button overlay */}
               <button
                 onClick={handleMobileNavClose}
-                className="absolute top-4 right-4 p-2 rounded-lg bg-[#547792]/30 text-[#EAE0CF] hover:bg-[#547792]/50 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="absolute top-4 right-4 p-2 rounded-lg bg-[#547792]/30 text-[#EAE0CF] hover:bg-[#547792]/50 min-h-[44px] min-w-[44px] flex items-center justify-center active:bg-[#547792]/60 active:scale-[0.98]"
                 aria-label="Close navigation"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

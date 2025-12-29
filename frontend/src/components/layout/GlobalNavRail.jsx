@@ -58,13 +58,14 @@ function NavItem({ item, isActive, onClick }) {
       disabled={isComingSoon}
       className={`
         group relative w-full min-h-[44px] px-3 py-2 rounded-lg
-        flex items-center gap-3 text-left
+        flex items-center gap-3 text-left min-w-0
         transition-colors duration-100
+        active:scale-[0.98] select-none
         ${isActive
           ? 'bg-[#547792]/40 text-[#EAE0CF]'
           : isComingSoon
             ? 'text-[#94B4C1]/40 cursor-not-allowed'
-            : 'text-[#94B4C1]/60 hover:bg-[#547792]/30 hover:text-[#EAE0CF]'
+            : 'text-[#94B4C1]/60 hover:bg-[#547792]/30 hover:text-[#EAE0CF] active:bg-[#547792]/40'
         }
       `}
       aria-current={isActive ? 'page' : undefined}
@@ -79,11 +80,11 @@ function NavItem({ item, isActive, onClick }) {
       <span className="text-base flex-shrink-0">{item.icon}</span>
 
       {/* Label */}
-      <span className="text-sm font-medium truncate">{item.label}</span>
+      <span className="text-sm font-medium truncate min-w-0 flex-1">{item.label}</span>
 
       {/* Coming Soon badge */}
       {isComingSoon && (
-        <span className="ml-auto text-[10px] bg-[#547792]/30 text-[#94B4C1] px-1.5 py-0.5 rounded">
+        <span className="flex-shrink-0 text-[10px] bg-[#547792]/30 text-[#94B4C1] px-1.5 py-0.5 rounded">
           Soon
         </span>
       )}
@@ -139,21 +140,21 @@ export function GlobalNavRail({ activePage, onPageChange }) {
 
   return (
     <nav
-      className={`bg-[#213448] w-56 flex flex-col py-4 px-3 flex-shrink-0 h-full overflow-y-auto overflow-x-hidden ${isPending ? 'opacity-90' : ''}`}
+      className={`bg-[#213448] w-full flex flex-col py-4 px-3 flex-shrink-0 h-full overflow-y-auto overflow-x-hidden ${isPending ? 'opacity-90' : ''}`}
       aria-label="Main navigation"
     >
       {/* Logo / Home - Links to Market Core */}
       <button
         onClick={() => startTransition(() => navigate('/market-core'))}
-        className="group relative mb-6 flex items-center gap-3 w-full px-2 min-h-[44px]"
+        className="group relative mb-6 flex items-center gap-3 w-full px-2 min-h-[44px] min-w-0 active:scale-[0.98] select-none"
         aria-label="Go to Home"
       >
-        <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center transition-all duration-200 group-hover:bg-[#547792]/50 group-hover:scale-105 flex-shrink-0">
+        <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center transition-all duration-200 group-hover:bg-[#547792]/50 group-active:bg-[#547792]/60 group-hover:scale-105 group-active:scale-100 flex-shrink-0">
           <svg className="w-6 h-6 text-[#EAE0CF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
         </div>
-        <span className="text-[#EAE0CF] font-medium text-sm">Home</span>
+        <span className="text-[#EAE0CF] font-medium text-sm truncate min-w-0">Home</span>
       </button>
 
       {/* Navigation Groups */}
@@ -169,17 +170,18 @@ export function GlobalNavRail({ activePage, onPageChange }) {
                 onClick={() => toggleGroup(group.id)}
                 className={`
                   w-full min-h-[44px] px-3 py-2 rounded-lg
-                  flex items-center gap-2 text-left
+                  flex items-center gap-2 text-left min-w-0
                   transition-colors duration-100
+                  active:scale-[0.98] select-none
                   ${hasActiveItem
                     ? 'text-[#EAE0CF] bg-[#547792]/20'
-                    : 'text-[#94B4C1] hover:bg-[#547792]/20 hover:text-[#EAE0CF]'
+                    : 'text-[#94B4C1] hover:bg-[#547792]/20 hover:text-[#EAE0CF] active:bg-[#547792]/30'
                   }
                 `}
                 aria-expanded={isExpanded}
               >
                 <span className="text-base flex-shrink-0">{group.icon}</span>
-                <span className="text-xs font-semibold uppercase tracking-wider truncate flex-1">
+                <span className="text-xs font-semibold uppercase tracking-wider truncate min-w-0 flex-1">
                   {group.label}
                 </span>
                 {/* Chevron */}
@@ -224,11 +226,11 @@ export function GlobalNavRail({ activePage, onPageChange }) {
         {/* Methodology Link */}
         <button
           onClick={() => startTransition(() => navigate('/methodology'))}
-          className="group relative w-full min-h-[44px] px-3 py-2 rounded-lg flex items-center gap-3 text-left text-[#94B4C1]/60 hover:bg-[#547792]/30 hover:text-[#EAE0CF] transition-colors duration-100"
+          className="group relative w-full min-h-[44px] px-3 py-2 rounded-lg flex items-center gap-3 text-left min-w-0 text-[#94B4C1]/60 hover:bg-[#547792]/30 hover:text-[#EAE0CF] active:bg-[#547792]/40 active:scale-[0.98] transition-colors duration-100 select-none"
           aria-label="Methodology"
         >
           <span className="text-base flex-shrink-0">ℹ️</span>
-          <span className="text-sm font-medium truncate">Methodology</span>
+          <span className="text-sm font-medium truncate min-w-0 flex-1">Methodology</span>
         </button>
 
         {/* User Profile */}
