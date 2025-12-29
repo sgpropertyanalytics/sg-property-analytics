@@ -180,34 +180,24 @@ register_contract(RESALE_PROJECTS_CONTRACT)
 # =============================================================================
 
 PROJECT_EXIT_QUEUE_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "v2": FieldSpec(
-            name="v2",
-            type=str,
-            default="true",
-            allowed_values=["true", "false"],
-            description="Include _v2 nested object with camelCase keys"
-        ),
-    },
+    fields={},
     aliases={}
 )
 
 PROJECT_EXIT_QUEUE_SERVICE_SCHEMA = ServiceBoundarySchema(
     fields={
         "project_name": FieldSpec(name="project_name", type=str, required=True),
-        "include_v2": FieldSpec(name="include_v2", type=bool, default=True),
     }
 )
 
 PROJECT_EXIT_QUEUE_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
-        "project_name": FieldSpec(name="project_name", type=str, required=False),
-        "data_quality": FieldSpec(name="data_quality", type=dict, required=False),
+        "projectName": FieldSpec(name="projectName", type=str, required=False),
+        "dataQuality": FieldSpec(name="dataQuality", type=dict, required=False),
         "fundamentals": FieldSpec(name="fundamentals", type=dict, required=False),
-        "resale_metrics": FieldSpec(name="resale_metrics", type=dict, required=False),
-        "risk_assessment": FieldSpec(name="risk_assessment", type=dict, required=False),
-        "gating_flags": FieldSpec(name="gating_flags", type=dict, required=False),
-        "_v2": FieldSpec(name="_v2", type=dict, required=False),
+        "resaleMetrics": FieldSpec(name="resaleMetrics", type=dict, required=False),
+        "riskAssessment": FieldSpec(name="riskAssessment", type=dict, required=False),
+        "gatingFlags": FieldSpec(name="gatingFlags", type=dict, required=False),
     },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),

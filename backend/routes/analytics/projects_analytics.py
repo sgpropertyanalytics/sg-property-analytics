@@ -256,7 +256,7 @@ def get_project_exit_queue(project_name):
     - gating_flags: Boutique, brand new, ultra-luxury, thin data, unit-type mixed
 
     Query params:
-    - v2: If "true", include _v2 nested object with camelCase keys (default: true)
+    - None (v2-only response)
     """
     start = time.time()
 
@@ -265,10 +265,7 @@ def get_project_exit_queue(project_name):
         from sqlalchemy import text
         from services.new_launch_units import get_project_units
         from services.exit_queue_service import get_exit_queue_analysis
-        from schemas.api_contract import serialize_exit_queue_dual
-
-        # Check if v2 schema should be included
-        include_v2 = request.args.get('v2', 'true').lower() != 'false'
+        from schemas.api_contract import serialize_exit_queue_v2
 
         # Call the service - returns (result, error_response, status_code)
         # Uses hybrid lookup: CSV → database → estimation
@@ -286,8 +283,8 @@ def get_project_exit_queue(project_name):
         if error_response:
             return jsonify(error_response), status_code
 
-        # Serialize with dual-mode support (v1 + optional v2)
-        response = serialize_exit_queue_dual(result, include_v2=include_v2)
+        # Serialize v2-only response (camelCase fields + enums)
+        response = serialize_exit_queue_v2(result)
         return jsonify(response)
 
     except Exception as e:

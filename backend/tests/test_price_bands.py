@@ -4,8 +4,7 @@ Tests for Price Bands Service - Historical Downside Protection
 Tests:
 1. Unit tests - rolling_median, compute_floor_trend, compute_verdict
 2. Contract tests - v2 schema format validation
-3. Dual-mode tests - returns both v1 and v2 fields
-4. Edge case tests - empty data, insufficient data
+3. Edge case tests - empty data, insufficient data
 """
 
 import pytest
@@ -28,7 +27,6 @@ from services.price_bands_compute import (
 
 # Import serializers from api_contract
 from schemas.api_contract import (
-    serialize_price_bands_v1,
     serialize_price_bands_v2,
     serialize_price_bands_dual,
     PriceBandsFields,

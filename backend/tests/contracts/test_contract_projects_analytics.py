@@ -76,13 +76,11 @@ class TestProjectExitQueueContract:
         assert contract is not None
         assert contract.version == "v3"
 
-    def test_param_schema_v2_allowed_values(self):
-        """v2 param should have allowed values."""
+    def test_no_required_params(self):
+        """No params should be required."""
         contract = get_contract("projects/exit-queue")
-        v2_field = contract.param_schema.fields["v2"]
-        assert "true" in v2_field.allowed_values
-        assert "false" in v2_field.allowed_values
-        assert v2_field.default == "true"
+        params = {}
+        validate_public_params(params, contract.param_schema)
 
 
 class TestProjectsAnalyticsSnapshots:

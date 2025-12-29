@@ -121,6 +121,8 @@ PROJECTS_HOT_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
         "projects": FieldSpec(name="projects", type=list, required=True),
         "total_count": FieldSpec(name="total_count", type=int, required=True),
+        "filters_applied": FieldSpec(name="filters_applied", type=dict, required=False),
+        "data_note": FieldSpec(name="data_note", type=str, required=False),
         "last_updated": FieldSpec(name="last_updated", type=str, required=True),
     },
     meta_fields={
