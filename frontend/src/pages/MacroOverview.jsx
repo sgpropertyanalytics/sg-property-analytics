@@ -17,7 +17,6 @@ import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group } from '../com
 import { useChartHeight, MOBILE_CAPS, useAbortableQuery } from '../hooks';
 // Unified filter bar component (handles desktop + mobile)
 import { FilterBar } from '../components/powerbi/FilterBar';
-import { TimeGranularityToggle } from '../components/powerbi/TimeGranularityToggle';
 
 // Lazy-loaded below-fold charts (reduces initial bundle by ~150KB)
 // These charts are not immediately visible and can load on demand
@@ -140,36 +139,30 @@ export function MacroOverviewContent() {
         <div className="p-3 md:p-4 lg:p-6">
         {/* Header */}
         <div className="mb-4 md:mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 mb-2">
-            <div className="min-w-0">
-              <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
-                Singapore Property Market Analytics
-              </h1>
-              {/* Data source info - shows raw database count and date range */}
-              {apiMetadata && (
-                <p className="text-[#547792] text-xs md:text-sm italic truncate">
-                  Data source from URA (Total of {((apiMetadata.row_count || 0) + (apiMetadata.total_records_removed || apiMetadata.outliers_excluded || 0)).toLocaleString()} transaction records
-                  <span className="hidden md:inline">
-                  {apiMetadata.min_date && apiMetadata.max_date && (
-                    <> found from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short'
-                    })} to {new Date(apiMetadata.max_date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short'
-                    })}</>
-                  )})
-                  {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded) > 0 && (
-                    <> | {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded)?.toLocaleString()} outlier records excluded</>
-                  )}
-                  </span>
-                </p>
-              )}
-            </div>
-            {/* Time Granularity Toggle - controls chart time aggregation */}
-            <div className="flex-shrink-0">
-              <TimeGranularityToggle />
-            </div>
+          <div className="min-w-0 mb-2">
+            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
+              Singapore Property Market Analytics
+            </h1>
+            {/* Data source info - shows raw database count and date range */}
+            {apiMetadata && (
+              <p className="text-[#547792] text-xs md:text-sm italic truncate">
+                Data source from URA (Total of {((apiMetadata.row_count || 0) + (apiMetadata.total_records_removed || apiMetadata.outliers_excluded || 0)).toLocaleString()} transaction records
+                <span className="hidden md:inline">
+                {apiMetadata.min_date && apiMetadata.max_date && (
+                  <> found from {new Date(apiMetadata.min_date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short'
+                  })} to {new Date(apiMetadata.max_date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short'
+                  })}</>
+                )})
+                {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded) > 0 && (
+                  <> | {(apiMetadata.total_records_removed || apiMetadata.outliers_excluded)?.toLocaleString()} outlier records excluded</>
+                )}
+                </span>
+              </p>
+            )}
           </div>
 
           {/* Breadcrumb navigation */}

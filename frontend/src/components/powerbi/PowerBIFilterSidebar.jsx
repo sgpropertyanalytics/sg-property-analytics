@@ -4,6 +4,7 @@ import {
   REGIONS,
   DISTRICT_NAMES,
 } from '../../constants';
+import { TimeGranularityToggle } from './TimeGranularityToggle';
 // SaleType filter removed - Market Core is Resale-only
 
 /**
@@ -166,10 +167,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   };
 
   // ==================== HORIZONTAL LAYOUT ====================
-  // Sticky frosted glass control bar - stays visible while scrolling
+  // Frosted glass control bar - sticky handled by parent FilterBar wrapper
   if (layout === 'horizontal') {
     return (
-      <div className="sticky top-0 z-30 -mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-[#EAE0CF]/70 backdrop-blur-md border-b border-[#94B4C1]/30 shadow-sm">
+      <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-[#EAE0CF]/70 backdrop-blur-md border-b border-[#94B4C1]/30 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
         {/* Region/Segment Buttons */}
         <FilterGroup label="Market Segment">
@@ -265,6 +266,12 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             ))}
           </div>
         </FilterGroup>
+
+        {/* Separator */}
+        <div className="hidden lg:block w-px h-6 bg-[#94B4C1]/30" />
+
+        {/* Time Granularity Toggle - Group by Year/Quarter/Month */}
+        <TimeGranularityToggle />
 
         {/* Spacer to push Clear to far right */}
         <div className="flex-1" />
@@ -509,6 +516,14 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               </div>
             )}
           </FilterSection>
+
+          {/* Time Grouping Section (Mobile) */}
+          <div className="px-4 py-3 border-b border-[#94B4C1]/50">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-[#213448]">Group by</span>
+              <TimeGranularityToggle className="flex-shrink-0" />
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
