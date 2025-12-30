@@ -80,8 +80,17 @@ export function SubscriptionProvider({ children }) {
     const requestId = startRequest();
 
     const fetchSubscription = async () => {
+      // Debug logging for subscription state tracking
+      console.log('[Subscription] Fetch triggered:', {
+        initialized,
+        isAuthenticated,
+        hasToken: !!localStorage.getItem('token'),
+        cachedSub: getCachedSubscription(),
+      });
+
       // Don't fetch until auth is fully initialized (token sync complete)
       if (!initialized) {
+        console.log('[Subscription] Waiting for auth initialization...');
         return;
       }
 
@@ -90,7 +99,9 @@ export function SubscriptionProvider({ children }) {
         if (isStale(requestId)) return;
         const freeSub = { tier: 'free', subscribed: false, ends_at: null };
         setSubscription(freeSub);
-        cacheSubscription(freeSub); // Clear cache on sign out
+        // DON'T cache 'free' on logout - prevents stale cache persisting across sessions
+        // Next login will fetch fresh subscription status from backend
+        // cacheSubscription(freeSub);  // REMOVED: Was causing stale 'free' cache bug
         return;
       }
 
@@ -145,6 +156,7 @@ export function SubscriptionProvider({ children }) {
             subscribed: response.data.subscribed || false,
             ends_at: response.data.ends_at || null,
           };
+          console.log('[Subscription] API response received:', newSub);
           setSubscription(newSub);
           cacheSubscription(newSub); // Cache for instant load next time
         }

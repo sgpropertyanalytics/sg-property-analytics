@@ -74,6 +74,8 @@ export function AuthProvider({ children }) {
 
               if (!isStale(requestId) && response.data.token) {
                 localStorage.setItem('token', response.data.token);
+                // Clear stale subscription cache on redirect login
+                localStorage.removeItem('subscription_cache');
               }
             } catch (err) {
               if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
@@ -114,6 +116,8 @@ export function AuthProvider({ children }) {
 
               if (response.data.token) {
                 localStorage.setItem('token', response.data.token);
+                // Clear stale subscription cache on page load sync
+                localStorage.removeItem('subscription_cache');
               }
             } catch (err) {
               // CRITICAL: Never treat abort/cancel as a real error
@@ -169,6 +173,9 @@ export function AuthProvider({ children }) {
       // Store JWT for subsequent API calls
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
+        // Clear stale subscription cache on new login - forces fresh fetch
+        // Prevents stale 'free' cache from overriding actual premium status
+        localStorage.removeItem('subscription_cache');
       }
 
       return response.data;
