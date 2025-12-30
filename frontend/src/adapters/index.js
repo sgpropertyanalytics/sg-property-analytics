@@ -3,7 +3,7 @@
  *
  * Adapters provide:
  * - Schema validation (dev-only)
- * - Data normalization (v1/v2 compatibility)
+ * - Data normalization (v2+ contract alignment)
  * - Common transformation patterns
  * - Sorting utilities
  *

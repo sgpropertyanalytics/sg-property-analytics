@@ -115,22 +115,13 @@ const withRetry = async (requestFn, retries = 1) => {
   }
 };
 
-// Request interceptor - attach JWT token and schema version
+// Request interceptor - attach JWT token
 apiClient.interceptors.request.use(
   (config) => {
     // Attach JWT token if available
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    // Add schema=v2 to all GET requests for v2-only responses
-    // This eliminates deprecated snake_case fields from API responses
-    if (config.method === 'get') {
-      config.params = {
-        ...config.params,
-        schema: 'v2'
-      };
     }
 
     return config;

@@ -8,6 +8,7 @@ Endpoint: GET/POST /api/dashboard
 
 from datetime import date
 
+from schemas.api_contract import SaleType, Tenure
 from ..registry import (
     EndpointContract,
     ParamSchema,
@@ -66,13 +67,15 @@ DASHBOARD_PARAM_SCHEMA = ParamSchema(
             name="sale_type",
             type=str,
             nullable=True,
-            description="Sale type filter (New Sale, Resale)"
+            allowed_values=SaleType.ALL,
+            description="Sale type filter (new_sale, resale, sub_sale)"
         ),
         "tenure": FieldSpec(
             name="tenure",
             type=str,
             nullable=True,
-            description="Tenure filter (Freehold, 99-year, 999-year)"
+            allowed_values=Tenure.ALL,
+            description="Tenure filter (freehold, 99_year, 999_year)"
         ),
         "project": FieldSpec(
             name="project",
@@ -169,19 +172,12 @@ DASHBOARD_PARAM_SCHEMA = ParamSchema(
             description="Show full date range in time_series"
         ),
 
-        # Caching and schema
+        # Caching
         "skip_cache": FieldSpec(
             name="skip_cache",
             type=bool,
             default=False,
             description="Bypass cache if true"
-        ),
-        "schema": FieldSpec(
-            name="schema",
-            type=str,
-            default="v1",
-            allowed_values=["v1", "v2"],
-            description="Response schema version (v2 = camelCase only)"
         ),
     },
     aliases={
@@ -237,7 +233,6 @@ DASHBOARD_SERVICE_SCHEMA = ServiceBoundarySchema(
         "histogram_bins": FieldSpec(name="histogram_bins", type=int, default=20),
         "show_full_range": FieldSpec(name="show_full_range", type=bool, default=False),
         "skip_cache": FieldSpec(name="skip_cache", type=bool, default=False),
-        "schema": FieldSpec(name="schema", type=str, default="v1"),
     }
 )
 

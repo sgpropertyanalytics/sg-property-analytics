@@ -10,13 +10,11 @@
 // =============================================================================
 
 export const API_CONTRACT_VERSIONS = {
-  V1: 'v1',
   V2: 'v2',
   V3: 'v3',
 };
 
 export const SUPPORTED_API_CONTRACT_VERSIONS = new Set([
-  API_CONTRACT_VERSIONS.V1,
   API_CONTRACT_VERSIONS.V2,
   API_CONTRACT_VERSIONS.V3,
 ]);

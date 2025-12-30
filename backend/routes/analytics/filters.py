@@ -20,8 +20,7 @@ def filter_options():
     Get available filter options based on current data.
     Returns unique values for each filterable dimension.
 
-    Query params:
-      - schema: 'v2' (default) returns only camelCase + enums, 'v1' returns both for backwards compat
+    Query params: none
     """
     from models.transaction import Transaction
     from models.database import db

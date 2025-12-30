@@ -14,7 +14,6 @@
  * - filterOptions.js: Filter options normalization
  *
  * Version History:
- * - v1: Legacy snake_case fields only
  * - v2: Added camelCase fields, enum normalization
  * - v3: Stabilization release - no breaking changes, version flag for deprecation safety
  */
@@ -52,7 +51,6 @@ export {
   RegionLabels,
   // Floor Level
   FloorLevel,
-  FloorLevelDB,
   FloorLevelLabels,
   FloorLevelLabelsShort,
   isFloorLevel,

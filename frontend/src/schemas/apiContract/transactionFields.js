@@ -46,33 +46,11 @@ export const TxnField = {
 };
 
 // =============================================================================
-// V1 COMPATIBILITY MAPPING
-// =============================================================================
-
-/**
- * Mapping from v2 camelCase to v1 snake_case field names.
- * Used for backwards compatibility during migration.
- */
-const V1_FIELD_MAP = {
-  transactionId: 'id',
-  project: 'project_name',
-  bedroomCount: 'bedroom_count',
-  floorLevel: 'floor_level',
-  transactionDate: 'transaction_date',
-  price: 'price',
-  psf: 'psf',
-  cumulativeGrowthPct: 'cumulative_growth_pct',
-  incrementalGrowthPct: 'incremental_growth_pct',
-  daysSincePrevious: 'days_since_prev',
-  annualizedGrowthPct: 'annualized_growth_pct',
-};
-
-// =============================================================================
 // FIELD ACCESSOR
 // =============================================================================
 
 /**
- * Get field value from transaction object, handling both v1 and v2 formats.
+ * Get field value from transaction object.
  *
  * @param {Object} txn - Transaction object from API
  * @param {string} field - Field name (use TxnField constants)
@@ -83,18 +61,5 @@ const V1_FIELD_MAP = {
  */
 export const getTxnField = (txn, field) => {
   if (!txn) return undefined;
-
-  // Try v2 camelCase first
-  if (txn[field] !== undefined) {
-    return txn[field];
-  }
-
-  // Fallback to v1 snake_case
-  const v1Field = V1_FIELD_MAP[field];
-  if (v1Field && txn[v1Field] !== undefined) {
-    return txn[v1Field];
-  }
-
-  // Field doesn't change between versions (e.g., 'id', 'district')
   return txn[field];
 };

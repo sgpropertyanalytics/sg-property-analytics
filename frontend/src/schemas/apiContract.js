@@ -38,7 +38,6 @@ export {
   RegionLabels,
   // Floor Level
   FloorLevel,
-  FloorLevelDB,
   FloorLevelLabels,
   FloorLevelLabelsShort,
   isFloorLevel,

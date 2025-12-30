@@ -2,13 +2,12 @@
 Contract tests for project analytics endpoints.
 """
 
-import pytest
 import json
 from pathlib import Path
 
 from api.contracts.schemas import projects_analytics
 from api.contracts import get_contract
-from api.contracts.validate import validate_public_params, ContractViolation
+from api.contracts.validate import validate_public_params
 
 
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots"
@@ -43,12 +42,6 @@ class TestProjectPriceBandsContract:
         """Check default values."""
         contract = get_contract("projects/price-bands")
         assert contract.param_schema.fields["window_months"].default == 24
-
-    def test_param_schema_schema_allowed_values(self):
-        """Schema param should have allowed values."""
-        contract = get_contract("projects/price-bands")
-        schema_field = contract.param_schema.fields["schema"]
-        assert "v2" in schema_field.allowed_values
 
 
 class TestResaleProjectsContract:

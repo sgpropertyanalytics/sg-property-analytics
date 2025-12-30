@@ -79,7 +79,6 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
       });
 
       // Use adapter for transformation (schema-safe, sorted)
-      // getPeriod() handles v1/v2 field normalization automatically
       return transformTimeSeries(rawData, timeGrouping);
     },
     [debouncedFilterKey, timeGrouping, saleType],

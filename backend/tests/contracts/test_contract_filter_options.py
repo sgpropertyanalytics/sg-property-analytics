@@ -2,14 +2,13 @@
 Contract tests for /filter-options endpoint.
 """
 
-import pytest
 import json
 from pathlib import Path
 
 # Import contract components
 from api.contracts.schemas import filter_options
 from api.contracts import get_contract
-from api.contracts.validate import validate_public_params, ContractViolation
+from api.contracts.validate import validate_public_params
 
 
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots"
@@ -26,13 +25,11 @@ class TestFilterOptionsContractSchema:
         assert contract.version == "v3"
 
     def test_param_schema_has_schema_field(self):
-        """Param schema should have schema version field."""
+        """Param schema should not expose deprecated schema version field."""
         contract = get_contract("filter-options")
         fields = contract.param_schema.fields
 
-        assert "schema" in fields
-        assert fields["schema"].default == "v1"
-        assert fields["schema"].allowed_values == ["v1", "v2"]
+        assert "schema" not in fields
 
     def test_response_schema_has_required_meta(self):
         """Response schema should require key meta fields."""
@@ -60,34 +57,10 @@ class TestFilterOptionsContractSchema:
 class TestFilterOptionsValidation:
     """Test param validation for filter-options."""
 
-    def test_validate_valid_schema_v1(self):
-        """Valid schema=v1 should pass validation."""
-        contract = get_contract("filter-options")
-        params = {"schema": "v1"}
-        # Should not raise
-        validate_public_params(params, contract.param_schema)
-
-    def test_validate_valid_schema_v2(self):
-        """Valid schema=v2 should pass validation."""
-        contract = get_contract("filter-options")
-        params = {"schema": "v2"}
-        validate_public_params(params, contract.param_schema)
-
-    def test_validate_invalid_schema(self):
-        """Invalid schema should fail validation."""
-        contract = get_contract("filter-options")
-        params = {"schema": "v3"}
-
-        with pytest.raises(ContractViolation) as exc_info:
-            validate_public_params(params, contract.param_schema)
-
-        assert exc_info.value.details["violations"][0]["received"] == "v3"
-
     def test_validate_empty_params(self):
-        """Empty params should pass (uses defaults)."""
+        """Empty params should pass."""
         contract = get_contract("filter-options")
         params = {}
-        # Should not raise - schema defaults to v1
         validate_public_params(params, contract.param_schema)
 
 

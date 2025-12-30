@@ -36,24 +36,7 @@ export const PriceBandsField = {
   API_CONTRACT_VERSION: resolveField('apiContractVersion'),
 };
 
-const V1_PRICE_BANDS_FIELD_MAP = {
-  projectName: 'project_name',
-  dataSource: 'data_source',
-  proxyLabel: 'proxy_label',
-  dataQuality: 'data_quality',
-};
-
 export const getPriceBandsField = (data, field) => {
   if (!data) return undefined;
-
-  if (data[field] !== undefined) {
-    return data[field];
-  }
-
-  const v1Field = V1_PRICE_BANDS_FIELD_MAP[field];
-  if (v1Field && data[v1Field] !== undefined) {
-    return data[v1Field];
-  }
-
   return data[field];
 };

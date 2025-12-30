@@ -22,15 +22,7 @@ from ..registry import (
 # =============================================================================
 
 FILTER_OPTIONS_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "schema": FieldSpec(
-            name="schema",
-            type=str,
-            default="v1",
-            allowed_values=["v1", "v2"],
-            description="Response schema version (v2 = camelCase only)"
-        ),
-    },
+    fields={},
     aliases={}
 )
 
@@ -40,9 +32,7 @@ FILTER_OPTIONS_PARAM_SCHEMA = ParamSchema(
 # =============================================================================
 
 FILTER_OPTIONS_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "schema": FieldSpec(name="schema", type=str, default="v1"),
-    }
+    fields={}
 )
 
 

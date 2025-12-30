@@ -20,6 +20,8 @@ Update: pytest tests/test_regression_snapshots.py --update-snapshots
 """
 
 import pytest
+
+pytestmark = pytest.mark.integration
 import json
 import sys
 from pathlib import Path

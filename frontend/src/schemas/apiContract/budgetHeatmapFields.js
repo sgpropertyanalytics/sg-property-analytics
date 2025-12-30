@@ -59,64 +59,17 @@ export const BudgetHeatmapMetaField = {
   AGE_IS_APPROX: resolveMetaField('ageIsApprox'),
 };
 
-const V1_BUDGET_HEATMAP_FIELD_MAP = {
-  ageBands: 'age_bands',
-  bedroomTypes: 'bedroom_types',
-  totalCount: 'total_count',
-};
-
-const V1_BUDGET_HEATMAP_ROW_FIELD_MAP = {
-  rowTotal: 'row_total',
-  lowSample: 'low_sample',
-};
-
-const V1_BUDGET_HEATMAP_META_FIELD_MAP = {
-  priceRange: 'price_range',
-  monthsLookback: 'months_lookback',
-  ageIsApprox: 'age_is_approx',
-};
-
 export const getBudgetHeatmapField = (data, field) => {
   if (!data) return undefined;
-
-  if (data[field] !== undefined) {
-    return data[field];
-  }
-
-  const v1Field = V1_BUDGET_HEATMAP_FIELD_MAP[field];
-  if (v1Field && data[v1Field] !== undefined) {
-    return data[v1Field];
-  }
-
   return data[field];
 };
 
 export const getBudgetHeatmapRowField = (row, field) => {
   if (!row) return undefined;
-
-  if (row[field] !== undefined) {
-    return row[field];
-  }
-
-  const v1Field = V1_BUDGET_HEATMAP_ROW_FIELD_MAP[field];
-  if (v1Field && row[v1Field] !== undefined) {
-    return row[v1Field];
-  }
-
   return row[field];
 };
 
 export const getBudgetHeatmapMetaField = (meta, field) => {
   if (!meta) return undefined;
-
-  if (meta[field] !== undefined) {
-    return meta[field];
-  }
-
-  const v1Field = V1_BUDGET_HEATMAP_META_FIELD_MAP[field];
-  if (v1Field && meta[v1Field] !== undefined) {
-    return meta[v1Field];
-  }
-
   return meta[field];
 };

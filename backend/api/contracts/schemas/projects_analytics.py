@@ -86,12 +86,6 @@ PROJECT_PRICE_BANDS_PARAM_SCHEMA = ParamSchema(
             type=float,
             description="User's unit PSF for verdict calculation (300-10000)"
         ),
-        "schema": FieldSpec(
-            name="schema",
-            type=str,
-            allowed_values=["v2"],
-            description="'v2' for strict camelCase only"
-        ),
     },
     aliases={}
 )
@@ -101,7 +95,6 @@ PROJECT_PRICE_BANDS_SERVICE_SCHEMA = ServiceBoundarySchema(
         "project_name": FieldSpec(name="project_name", type=str, required=True),
         "window_months": FieldSpec(name="window_months", type=int, default=24),
         "unit_psf": FieldSpec(name="unit_psf", type=float),
-        "strict_v2": FieldSpec(name="strict_v2", type=bool, default=False),
     }
 )
 

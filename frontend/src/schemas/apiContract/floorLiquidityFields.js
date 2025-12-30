@@ -52,32 +52,12 @@ export const FloorLiquidityMetaField = {
   ELAPSED_MS: resolveMetaField('elapsed_ms'),
 };
 
-const V1_FLOOR_LIQUIDITY_META_FIELD_MAP = {
-  filtersApplied: 'filters_applied',
-  cacheHit: 'cache_hit',
-};
-
 export const getFloorLiquidityField = (data, field) => {
   if (!data) return undefined;
-
-  if (data[field] !== undefined) {
-    return data[field];
-  }
-
   return data[field];
 };
 
 export const getFloorLiquidityMetaField = (meta, field) => {
   if (!meta) return undefined;
-
-  if (meta[field] !== undefined) {
-    return meta[field];
-  }
-
-  const v1Field = V1_FLOOR_LIQUIDITY_META_FIELD_MAP[field];
-  if (v1Field && meta[v1Field] !== undefined) {
-    return meta[v1Field];
-  }
-
   return meta[field];
 };

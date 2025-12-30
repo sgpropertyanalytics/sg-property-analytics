@@ -11,6 +11,7 @@ Endpoints:
 - GET /api/budget-heatmap
 """
 
+from schemas.api_contract import SaleType, Tenure
 from ..registry import (
     EndpointContract,
     ParamSchema,
@@ -272,18 +273,14 @@ PSF_BY_PRICE_BAND_PARAM_SCHEMA = ParamSchema(
         "sale_type": FieldSpec(
             name="sale_type",
             type=str,
-            description="Sale type filter"
+            allowed_values=SaleType.ALL,
+            description="Sale type filter (new_sale, resale, sub_sale)"
         ),
         "tenure": FieldSpec(
             name="tenure",
             type=str,
-            description="Tenure filter"
-        ),
-        "schema": FieldSpec(
-            name="schema",
-            type=str,
-            allowed_values=["v1", "v2"],
-            description="Response schema version"
+            allowed_values=Tenure.ALL,
+            description="Tenure filter (freehold, 99_year, 999_year)"
         ),
     },
     aliases={
@@ -364,7 +361,8 @@ BUDGET_HEATMAP_PARAM_SCHEMA = ParamSchema(
         "tenure": FieldSpec(
             name="tenure",
             type=str,
-            description="Tenure type"
+            allowed_values=Tenure.ALL,
+            description="Tenure type (freehold, 99_year, 999_year)"
         ),
         "months_lookback": FieldSpec(
             name="months_lookback",

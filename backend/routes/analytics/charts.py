@@ -489,8 +489,6 @@ def budget_heatmap():
         district: District code (D01-D28)
         tenure: Tenure type (Freehold/99-year/999-year)
         months_lookback: Time window in months (default 24, range 6-60)
-        schema: v2 for camelCase response
-
     Returns:
         Matrix of transaction percentages by bedroom (X) and age band (Y)
         with k-anonymity suppression for low-count cells.
@@ -542,12 +540,6 @@ def budget_heatmap():
             skip_cache=skip_cache
         )
 
-        # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
-        schema_version = request.args.get('schema', 'v2')
-        if schema_version == 'v1':
-            return jsonify(result)
-
-        # v2 response (default)
         return jsonify(serialize_heatmap_v2(result))
 
     except Exception as e:

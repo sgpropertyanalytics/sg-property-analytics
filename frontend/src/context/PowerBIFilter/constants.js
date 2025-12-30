@@ -79,13 +79,13 @@ export const INITIAL_FILTER_OPTIONS = {
   tenures: [],
   marketSegments: [],
   propertyAgeBuckets: [],
-  // Ranges (same structure in v1/v2)
+  // Ranges
   dateRange: { min: null, max: null },
   psfRange: { min: null, max: null },
   sizeRange: { min: null, max: null },
-  // Legacy compatibility fields
-  districtsRaw: [],          // Raw district codes for existing logic
-  regionsLegacy: null,       // {CCR: [...], RCR: [...], OCR: [...]} for legacy
+  // Raw values for existing UI logic
+  districtsRaw: [],
+  regionsLegacy: null,
   // State
   loading: true,
   error: null,

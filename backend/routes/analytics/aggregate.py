@@ -158,7 +158,7 @@ def aggregate():
       - district: comma-separated districts (D01,D02,...)
       - bedroom: comma-separated bedroom counts (2,3,4)
       - segment: CCR, RCR, OCR (filters by market segment)
-      - sale_type: New Sale, Resale
+      - sale_type: new_sale, resale, sub_sale
       - date_from: YYYY-MM-DD
       - date_to: YYYY-MM-DD
       - psf_min: minimum PSF
@@ -282,7 +282,9 @@ def aggregate():
     # Sale type filter (case-insensitive to handle data variations)
     sale_type = params.get("sale_type")
     if sale_type:
-        filter_conditions.append(func.lower(Transaction.sale_type) == sale_type.lower())
+        from schemas.api_contract import SaleType
+        sale_type_db = SaleType.to_db(sale_type)
+        filter_conditions.append(func.lower(Transaction.sale_type) == sale_type_db.lower())
         filters_applied["sale_type"] = sale_type
 
     # Date range filter
@@ -669,8 +671,8 @@ def aggregate_summary():
       - district: Filter by district(s), comma-separated
       - segment: Filter by CCR/RCR/OCR
       - bedroom: Filter by bedroom count(s)
-      - saleType/sale_type: Filter by New Sale/Resale
-      - tenure: Filter by Freehold/99-year
+      - saleType/sale_type: Filter by new_sale/resale/sub_sale
+      - tenure: Filter by freehold/99_year/999_year
       - date_from, date_to: Date range filter
       - price_min, price_max: Price range filter
       - psf_min, psf_max: PSF range filter
@@ -770,7 +772,7 @@ def aggregate_summary():
     from schemas.api_contract import SaleType
     sale_type_param = params.get("sale_type")
     if sale_type_param:
-        sale_type_db = SaleType.to_db(sale_type_param) if sale_type_param in SaleType.ALL else sale_type_param
+        sale_type_db = SaleType.to_db(sale_type_param)
         query = query.filter(func.lower(Transaction.sale_type) == sale_type_db.lower())
 
     # Date range filter

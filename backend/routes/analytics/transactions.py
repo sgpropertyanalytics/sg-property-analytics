@@ -38,18 +38,15 @@ def get_transaction_price_growth():
         Filters:
         - project: Project name (partial match)
         - bedroom: Bedroom count (1-5)
-        - floor_level: Floor tier (Low, Mid-Low, Mid, Mid-High, High, Luxury, Unknown)
+        - floor_level: Floor tier (low, mid_low, mid, mid_high, high, luxury, unknown)
         - district: District code (D01-D28)
         - date_from: Start date (YYYY-MM-DD)
         - date_to: End date (YYYY-MM-DD)
-        - sale_type: Sale type ('New Sale', 'Resale', 'Sub Sale')
+        - sale_type: Sale type ('new_sale', 'resale', 'sub_sale')
 
         Pagination:
         - page: Page number (default 1)
         - per_page: Records per page (default 50, max 500)
-
-        Schema:
-        - schema: 'v2' for strict camelCase only, omit for dual-mode
 
     Example:
         GET /api/transactions/price-growth?project=THE%20ORIE&bedroom=2&page=1
@@ -64,6 +61,14 @@ def get_transaction_price_growth():
         bedroom_count = params.get("bedroom")
         floor_level = params.get("floor_level")
         sale_type = params.get("sale_type")
+
+        if floor_level:
+            from schemas.api_contract import FloorLevel
+            floor_level = FloorLevel.to_db(floor_level)
+
+        if sale_type:
+            from schemas.api_contract import SaleType
+            sale_type = SaleType.to_db(sale_type)
 
         district = params.get("district")
         if district is None:
@@ -84,10 +89,6 @@ def get_transaction_price_growth():
 
     try:
 
-        # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
-        schema_version = (params.get("schema") or "v2").lower()
-        strict_v2 = schema_version != 'v1'
-
         # Compute price growth
         result = compute_growth(
             project_name=project_name,
@@ -102,14 +103,9 @@ def get_transaction_price_growth():
         )
 
         # Serialize response (future: add proper serializer in api_contract.py)
-        # For now, return as-is with schema mode handling
-        if strict_v2:
-            # TODO: Implement serialize_price_growth_v2 in api_contract.py
-            response = result
-            response['apiContractVersion'] = 'v2'
-        else:
-            # Default: return raw result (already in camelCase from service)
-            response = result
+        # For now, return as-is with v2 metadata.
+        response = result
+        response['apiContractVersion'] = 'v2'
 
         elapsed = time.time() - start
         print(f"GET /api/transactions/price-growth completed in {elapsed:.4f}s")
@@ -136,8 +132,6 @@ def get_price_growth_segments():
         - project: Project name (partial match)
         - district: District code (D01-D28)
         - sale_type: Sale type ('New Sale', 'Resale', 'Sub Sale')
-        - schema: 'v2' for strict camelCase only, omit for dual-mode
-
     Example:
         GET /api/transactions/price-growth/segments?district=D09
     """
@@ -149,15 +143,14 @@ def get_price_growth_segments():
 
         project_name = params.get("project")
         sale_type = params.get("sale_type")
+        if sale_type:
+            from schemas.api_contract import SaleType
+            sale_type = SaleType.to_db(sale_type)
 
         district = params.get("district")
         if district is None:
             districts = params.get("districts") or []
             district = districts[0] if districts else None
-
-        # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
-        schema_version = (params.get("schema") or "v2").lower()
-        strict_v2 = schema_version != 'v1'
 
         # Get segment summary
         segments = get_segment_summary(
@@ -167,9 +160,7 @@ def get_price_growth_segments():
         )
 
         # Build response
-        response = {"data": segments}
-        if strict_v2:
-            response['apiContractVersion'] = 'v2'
+        response = {"data": segments, "apiContractVersion": "v2"}
 
         elapsed = time.time() - start
         print(f"GET /api/transactions/price-growth/segments completed in {elapsed:.4f}s")

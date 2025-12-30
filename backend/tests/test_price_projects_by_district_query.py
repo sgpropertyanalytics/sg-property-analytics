@@ -2,6 +2,10 @@
 SQL-only query tests for price_projects_by_district.
 """
 
+import pytest
+
+pytestmark = pytest.mark.integration
+
 from datetime import date
 from sqlalchemy.dialects import postgresql
 

@@ -8,6 +8,7 @@ Endpoint: GET /api/aggregate
 """
 
 from datetime import date
+from schemas.api_contract import SaleType, Tenure
 
 from ..registry import (
     EndpointContract,
@@ -74,13 +75,15 @@ AGGREGATE_PARAM_SCHEMA = ParamSchema(
             name="sale_type",
             type=str,
             nullable=True,
-            description="Sale type filter (New Sale, Resale)"
+            allowed_values=SaleType.ALL,
+            description="Sale type filter (new_sale, resale, sub_sale)"
         ),
         "tenure": FieldSpec(
             name="tenure",
             type=str,
             nullable=True,
-            description="Tenure filter (Freehold, 99-year, 999-year)"
+            allowed_values=Tenure.ALL,
+            description="Tenure filter (freehold, 99_year, 999_year)"
         ),
         "project": FieldSpec(
             name="project",
@@ -148,13 +151,6 @@ AGGREGATE_PARAM_SCHEMA = ParamSchema(
             default=False,
             description="Bypass cache if true"
         ),
-        "schema": FieldSpec(
-            name="schema",
-            type=str,
-            default="v2",
-            allowed_values=["v2"],
-            description="Response schema version (v2 = camelCase only)"
-        ),
     },
     aliases={
         # Frontend may send camelCase
@@ -195,7 +191,6 @@ AGGREGATE_SERVICE_SCHEMA = ServiceBoundarySchema(
         "size_max": FieldSpec(name="size_max", type=float, nullable=True),
         "limit": FieldSpec(name="limit", type=int, default=1000),
         "skip_cache": FieldSpec(name="skip_cache", type=bool, default=False),
-        "schema": FieldSpec(name="schema", type=str, default="v1"),
     }
 )
 
@@ -355,13 +350,15 @@ AGGREGATE_SUMMARY_PARAM_SCHEMA = ParamSchema(
             name="sale_type",
             type=str,
             nullable=True,
-            description="Sale type filter (New Sale, Resale)"
+            allowed_values=SaleType.ALL,
+            description="Sale type filter (new_sale, resale, sub_sale)"
         ),
         "tenure": FieldSpec(
             name="tenure",
             type=str,
             nullable=True,
-            description="Tenure filter (Freehold, 99-year)"
+            allowed_values=Tenure.ALL,
+            description="Tenure filter (freehold, 99_year, 999_year)"
         ),
         "date_from": FieldSpec(
             name="date_from",

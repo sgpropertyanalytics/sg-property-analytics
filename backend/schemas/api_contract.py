@@ -14,6 +14,7 @@ Version History:
 
 from typing import Any, Dict, Optional
 from datetime import datetime
+from utils.normalize import ValidationError
 
 # =============================================================================
 # API CONTRACT VERSIONING
@@ -185,6 +186,7 @@ class FloorLevel:
         'Luxury': LUXURY,
         'Unknown': UNKNOWN,
     }
+    API_TO_DB = {v: k for k, v in DB_TO_API.items()}
 
     @classmethod
     def from_db(cls, db_value: Optional[str]) -> Optional[str]:
@@ -192,6 +194,13 @@ class FloorLevel:
         if db_value is None:
             return None
         return cls.DB_TO_API.get(db_value, db_value.lower().replace('-', '_') if db_value else None)
+
+    @classmethod
+    def to_db(cls, api_value: Optional[str]) -> Optional[str]:
+        """Convert API floor_level enum to DB value."""
+        if api_value is None:
+            return None
+        return cls.API_TO_DB.get(api_value, api_value)
 
 
 class PropertyAgeBucket:
@@ -481,7 +490,7 @@ def _mask_psf(psf: Optional[float]) -> Optional[str]:
 # =============================================================================
 
 def parse_filter_params(request_args: dict) -> Dict[str, Any]:
-    """Parse and validate filter parameters, accepting both v1 and v2 formats.
+    """Parse and validate filter parameters (v2 enums only).
 
     Canonicalizes all filter inputs at the API boundary.
     Use the returned values for DB queries.
@@ -505,23 +514,27 @@ def parse_filter_params(request_args: dict) -> Dict[str, Any]:
     """
     params = {}
 
-    # Sale type: accept both saleType (v2) and sale_type (v1)
+    # Sale type: accept v2 enum values only
     sale_type = request_args.get('saleType') or request_args.get('sale_type')
     if sale_type:
-        # If it's a v2 enum, convert to DB value
-        if sale_type in SaleType.ALL:
-            params['sale_type_db'] = SaleType.to_db(sale_type)
-        else:
-            # Assume v1 DB value (backwards compat)
-            params['sale_type_db'] = sale_type
+        if sale_type not in SaleType.ALL:
+            raise ValidationError(
+                f"Invalid sale_type: {sale_type!r}",
+                field="sale_type",
+                received_value=sale_type
+            )
+        params['sale_type_db'] = SaleType.to_db(sale_type)
 
-    # Tenure: accept both tenure (v2 enum) and tenure (v1 DB value)
+    # Tenure: accept v2 enum values only
     tenure = request_args.get('tenure')
     if tenure:
-        if tenure in Tenure.ALL:
-            params['tenure_db'] = Tenure.to_db(tenure)
-        else:
-            params['tenure_db'] = tenure
+        if tenure not in Tenure.ALL:
+            raise ValidationError(
+                f"Invalid tenure: {tenure!r}",
+                field="tenure",
+                received_value=tenure
+            )
+        params['tenure_db'] = Tenure.to_db(tenure)
 
     # Region/segment: accept both region (v2) and segment (v1)
     # Supports comma-separated values (e.g., "CCR,RCR" or "ccr,rcr")

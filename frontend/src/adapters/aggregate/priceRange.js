@@ -69,8 +69,8 @@ export function transformPriceRangeMatrix(response, options = {}) {
 
   // Populate matrix from API response
   for (const row of data) {
-    const ageBand = row.age_band || row.ageBand;
-    const bedroom = row.bedroom;
+    const ageBand = row.ageBand;
+    const bedroom = row.bedroomCount;
     const count = row.count || 0;
 
     // Skip unknown bands or invalid bedroom
@@ -88,16 +88,16 @@ export function transformPriceRangeMatrix(response, options = {}) {
       continue;
     }
 
-    // Extract price metrics (handle both snake_case and camelCase)
-    const priceQ1 = row.price_25th ?? row.price25th;
-    const priceMedian = row.median_price ?? row.medianPrice;
-    const priceQ3 = row.price_75th ?? row.price75th;
-    const priceMin = row.min_price ?? row.minPrice;
-    const priceMax = row.max_price ?? row.maxPrice;
+    // Extract price metrics
+    const priceQ1 = row.price25th;
+    const priceMedian = row.medianPrice;
+    const priceQ3 = row.price75th;
+    const priceMin = row.minPrice;
+    const priceMax = row.maxPrice;
 
     // Extract PSF metrics
-    const psfQ1 = row.psf_25th ?? row.psf25th;
-    const psfQ3 = row.psf_75th ?? row.psf75th;
+    const psfQ1 = row.psf25th;
+    const psfQ3 = row.psf75th;
 
     // Calculate budget position (where does user's budget fall?)
     let budgetZone = null;

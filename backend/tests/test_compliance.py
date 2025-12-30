@@ -13,6 +13,8 @@ Key checks:
 """
 
 import pytest
+
+pytestmark = pytest.mark.integration
 import json
 from typing import Any
 

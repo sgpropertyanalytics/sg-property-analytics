@@ -36,10 +36,10 @@ def dashboard():
         - district: comma-separated districts (D01,D02,...)
         - bedroom: comma-separated bedroom counts (2,3,4)
         - segment: CCR, RCR, OCR
-        - sale_type: 'New Sale' or 'Resale'
+        - sale_type: 'new_sale', 'resale', 'sub_sale'
         - psf_min, psf_max: PSF range
         - size_min, size_max: sqft range
-        - tenure: Freehold, 99-year, 999-year
+        - tenure: freehold, 99_year, 999_year
         - project: project name filter (partial match)
 
       Options:
@@ -122,7 +122,7 @@ def dashboard():
         sale_type = params.get("sale_type")
         if sale_type:
             from schemas.api_contract import SaleType
-            filters["sale_type"] = SaleType.to_db(sale_type) if sale_type in SaleType.ALL else sale_type
+            filters["sale_type"] = SaleType.to_db(sale_type)
 
         if params.get("psf_min") is not None:
             filters["psf_min"] = params.get("psf_min")
@@ -132,8 +132,10 @@ def dashboard():
             filters["size_min"] = params.get("size_min")
         if params.get("size_max") is not None:
             filters["size_max"] = params.get("size_max")
-        if params.get("tenure"):
-            filters["tenure"] = params.get("tenure")
+        tenure = params.get("tenure")
+        if tenure:
+            from schemas.api_contract import Tenure
+            filters["tenure"] = Tenure.to_db(tenure)
         if params.get("property_age_min") is not None:
             filters["property_age_min"] = params.get("property_age_min")
         if params.get("property_age_max") is not None:

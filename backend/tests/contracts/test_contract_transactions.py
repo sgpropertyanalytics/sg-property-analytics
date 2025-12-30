@@ -10,7 +10,6 @@ from pathlib import Path
 from api.contracts.schemas import transactions
 from api.contracts import get_contract
 from api.contracts.validate import validate_public_params, ContractViolation
-from api.contracts.normalize import normalize_params
 
 
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots"
@@ -48,7 +47,6 @@ class TestPriceGrowthContractSchema:
         assert fields["page"].default == 1
         assert "per_page" in fields
         assert fields["per_page"].default == 50
-        assert fields["schema"].default == "v2"
 
     def test_param_schema_has_aliases(self):
         """Param schema should have camelCase aliases."""
@@ -75,7 +73,7 @@ class TestPriceGrowthValidation:
     def test_validate_valid_floor_level(self):
         """Valid floor_level should pass."""
         contract = get_contract("transactions/price-growth")
-        params = {"floor_level": "Mid"}
+        params = {"floor_level": "mid"}
         validate_public_params(params, contract.param_schema)
 
     def test_validate_invalid_floor_level(self):
@@ -111,7 +109,6 @@ class TestSegmentsContractSchema:
         assert "project" in fields
         assert "district" in fields
         assert "sale_type" in fields
-        assert fields["schema"].default == "v2"
 
     def test_response_schema_has_required_meta(self):
         """Response schema should require key meta fields."""
