@@ -24,6 +24,8 @@ import ResaleMetricsCards from '../components/powerbi/ResaleMetricsCards';
 import UnitPsfInput from '../components/powerbi/UnitPsfInput';
 import { KeyInsightBox } from '../components/ui/KeyInsightBox';
 import { ChartSkeleton } from '../components/common/ChartSkeleton';
+import { ErrorState } from '../components/common/ErrorState';
+import { getQueryErrorMessage } from '../components/common/QueryState';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import {
   ProjectNamesField,
@@ -531,16 +533,11 @@ export function ExitRiskContent() {
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-            <p className="text-red-700 text-sm">
-              <strong>Error:</strong> {error}
-            </p>
-            <button
-              onClick={() => setSelectedProject({ ...selectedProject })}
-              className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-            >
-              Try again
-            </button>
+          <div className="mb-6">
+            <ErrorState
+              message={getQueryErrorMessage(error)}
+              onRetry={() => setSelectedProject({ ...selectedProject })}
+            />
           </div>
         )}
 

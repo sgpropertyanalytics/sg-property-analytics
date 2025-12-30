@@ -6,6 +6,8 @@ import { getRegionBadgeClass } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
 import { UpcomingLaunchesField, getUpcomingLaunchesField } from '../../schemas/apiContract';
 import { VerificationBadge } from '../verification';
+import { ErrorState } from '../common/ErrorState';
+import { getQueryErrorMessage } from '../common/QueryState';
 
 /**
  * Upcoming Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
@@ -55,7 +57,7 @@ export function UpcomingLaunchesTable({
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
   // enabled: shouldFetch ensures we only fetch when visible (deferred fetch)
-  const { data, loading, error } = useAbortableQuery(
+  const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       const params = {
         limit: 100,
@@ -175,9 +177,7 @@ export function UpcomingLaunchesTable({
       {/* Mobile Card View */}
       <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: height }}>
         {error ? (
-          <div className="flex items-center justify-center h-40 text-red-500">
-            Error: {error}
-          </div>
+          <ErrorState message={getQueryErrorMessage(error)} onRetry={refetch} />
         ) : loading ? (
           [...Array(5)].map((_, i) => (
             <div key={i} className="p-3 bg-card rounded-lg border border-[#94B4C1]/30 animate-pulse">
@@ -239,8 +239,8 @@ export function UpcomingLaunchesTable({
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-auto" style={{ maxHeight: height }}>
         {error ? (
-          <div className="flex items-center justify-center h-40 text-red-500">
-            Error: {error}
+          <div className="p-3">
+            <ErrorState message={getQueryErrorMessage(error)} onRetry={refetch} />
           </div>
         ) : (
           <table className="w-full text-sm">

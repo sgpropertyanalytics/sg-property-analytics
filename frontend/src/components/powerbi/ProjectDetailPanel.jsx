@@ -12,6 +12,8 @@ import {
 } from '../../schemas/apiContract';
 import { SuppressedValue } from '../SuppressedValue';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { ErrorState } from '../common/ErrorState';
+import { getQueryErrorMessage } from '../common/QueryState';
 
 // K-anonymity threshold for project-level data
 const K_PROJECT_THRESHOLD = 15;
@@ -74,6 +76,7 @@ function ProjectDetailPanelInner({
   const [inventoryData, setInventoryData] = useState(null);
   // State for price histogram data
   const [histogramData, setHistogramData] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Request tracking for stale request prevention
   const requestIdRef = useRef(0);
@@ -147,7 +150,7 @@ function ProjectDetailPanelInner({
         const [trendResponse, priceResponse, inventoryResponse, histogramResponse] = await Promise.all([
           getAggregate(trendParams, { signal }),
           getAggregate(priceParams, { signal }),
-          getProjectInventory(selectedProject.name),
+          getProjectInventory(selectedProject.name, { signal }),
           getDashboard(histogramParams, { signal }),
         ]);
 
@@ -184,7 +187,7 @@ function ProjectDetailPanelInner({
         // Ignore errors from stale requests
         if (requestId !== requestIdRef.current) return;
         console.error('Error fetching project data:', err);
-        setError(err.message);
+        setError(err);
       } finally {
         // Only clear loading for the current request
         if (requestId === requestIdRef.current) {
@@ -201,7 +204,7 @@ function ProjectDetailPanelInner({
         abortControllerRef.current.abort();
       }
     };
-  }, [selectedProject.name, filters, setTrendData, setPriceData, setLoading, setError]);
+  }, [selectedProject.name, filters, refreshKey, setTrendData, setPriceData, setLoading, setError]);
 
   const districtName = selectedProject.district
     ? DISTRICT_NAMES[selectedProject.district] || selectedProject.district
@@ -474,7 +477,12 @@ function ProjectDetailPanelInner({
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-red-500">Error: {error}</div>
+              <div className="w-full max-w-md">
+                <ErrorState
+                  message={getQueryErrorMessage(error)}
+                  onRetry={() => setRefreshKey((prev) => prev + 1)}
+                />
+              </div>
             </div>
           ) : (
             <div className="space-y-6">

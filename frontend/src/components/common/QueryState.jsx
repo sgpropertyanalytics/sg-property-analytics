@@ -2,7 +2,7 @@ import React from 'react';
 import { ErrorState } from "./ErrorState";
 import { ChartSkeleton } from "./ChartSkeleton";
 
-const getQueryErrorMessage = (error) => {
+export const getQueryErrorMessage = (error) => {
   const status = error?.response?.status;
   if (status === 400) {
     return error?.response?.data?.error || 'Invalid request. Please adjust filters and try again.';

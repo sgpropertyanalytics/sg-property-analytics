@@ -7,6 +7,8 @@ import { SuppressedValue } from '../SuppressedValue';
 import { getRegionBadgeClass } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
 import { HotProjectsField, getHotProjectsField } from '../../schemas/apiContract';
+import { ErrorState } from '../common/ErrorState';
+import { getQueryErrorMessage } from '../common/QueryState';
 
 /**
  * Active New Sales Table - Shows LAUNCHED projects with sales progress
@@ -51,7 +53,7 @@ export function HotProjectsTable({
   const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data, loading, error } = useAbortableQuery(
+  const { data, loading, error, refetch } = useAbortableQuery(
     async (signal) => {
       const params = { limit: 200 };
 
@@ -221,9 +223,7 @@ export function HotProjectsTable({
       {/* Mobile Card View */}
       <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: height }}>
         {error ? (
-          <div className="flex items-center justify-center h-40 text-red-500">
-            Error: {error}
-          </div>
+          <ErrorState message={getQueryErrorMessage(error)} onRetry={refetch} />
         ) : loading ? (
           [...Array(5)].map((_, i) => (
             <div key={i} className="p-3 bg-card rounded-lg border border-[#94B4C1]/30 animate-pulse">
@@ -300,8 +300,8 @@ export function HotProjectsTable({
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-auto" style={{ maxHeight: height }}>
         {error ? (
-          <div className="flex items-center justify-center h-40 text-red-500">
-            Error: {error}
+          <div className="p-3">
+            <ErrorState message={getQueryErrorMessage(error)} onRetry={refetch} />
           </div>
         ) : (
           <table className="w-full text-sm">
