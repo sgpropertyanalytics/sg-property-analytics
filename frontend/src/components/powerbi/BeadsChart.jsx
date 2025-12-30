@@ -36,9 +36,16 @@ const REGION_COLORS = {
  * This chart answers ONE question:
  * "How much are 1BR, 2BR, 3BR, 4BR, 5BR selling for in CCR, RCR, and OCR?"
  */
-export const BeadsChart = React.memo(function BeadsChart({ height = 300, saleType = null }) {
+export const BeadsChart = React.memo(function BeadsChart({
+  height = 300,
+  saleType = null,
+  sharedData = null,
+  sharedLoading = false,
+}) {
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const chartRef = useRef(null);
+
+  const useShared = sharedData != null;
 
   // Data fetching with useAbortableQuery
   const { data: chartData, loading, error, refetch } = useAbortableQuery(
@@ -71,12 +78,16 @@ export const BeadsChart = React.memo(function BeadsChart({ height = 300, saleTyp
         stats: { priceRange: { min: 0, max: 0 }, volumeRange: { min: 0, max: 0 }, totalTransactions: 0 },
         stringRanges: { CCR: { min: 0, max: 0 }, RCR: { min: 0, max: 0 }, OCR: { min: 0, max: 0 } },
       },
+      enabled: !useShared,
       keepPreviousData: true,
     }
   );
 
-  const hasData = chartData?.datasets?.length > 0;
-  const { stats, stringRanges } = chartData;
+  const resolvedData = useShared ? transformBeadsChartSeries(sharedData) : chartData;
+  const resolvedLoading = useShared ? sharedLoading : loading;
+
+  const hasData = resolvedData?.datasets?.length > 0;
+  const { stats, stringRanges } = resolvedData;
 
   // Build annotation lines for the "strings" and row separators
   const stringAnnotations = useMemo(() => {
@@ -266,10 +277,10 @@ export const BeadsChart = React.memo(function BeadsChart({ height = 300, saleTyp
 
   return (
     <QueryState
-      loading={loading}
+      loading={resolvedLoading}
       error={error}
       onRetry={refetch}
-      empty={!hasData && !loading}
+      empty={!hasData && !resolvedLoading}
       emptyMessage="No transaction data available for the selected filters"
       skeleton="bar"
       height={350}

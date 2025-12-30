@@ -948,7 +948,12 @@ def get_dashboard_data(
             query_fn = PANEL_QUERIES.get(panel)
             if query_fn:
                 try:
-                    data[panel] = query_fn(filters, options)
+                    panel_filters = filters
+                    # Beads chart ignores segment filter by design (always show all regions)
+                    if panel == 'beads_chart' and filters.get('segments'):
+                        panel_filters = {**filters}
+                        panel_filters.pop('segments', None)
+                    data[panel] = query_fn(panel_filters, options)
                 except Exception as e:
                     logger.error(f"Error querying {panel}: {e}")
                     data[panel] = {'error': str(e)}
