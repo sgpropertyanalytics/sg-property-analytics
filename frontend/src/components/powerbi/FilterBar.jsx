@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilter';
 import { PowerBIFilterSidebar } from './PowerBIFilterSidebar';
 
@@ -17,6 +17,44 @@ import { PowerBIFilterSidebar } from './PowerBIFilterSidebar';
 export function FilterBar() {
   const { activeFilterCount } = usePowerBIFilters();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  // Body scroll lock when filter drawer is open (iOS Safari fix)
+  useEffect(() => {
+    if (mobileFilterOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
+  }, [mobileFilterOpen]);
+
+  // Escape key to close filter drawer
+  useEffect(() => {
+    if (!mobileFilterOpen) return;
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        setMobileFilterOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [mobileFilterOpen]);
 
   return (
     <>

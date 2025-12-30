@@ -109,6 +109,44 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
     setMobileNavOpen(false);
   }, [activePage]);
 
+  // Body scroll lock when mobile nav drawer is open (iOS Safari fix)
+  useEffect(() => {
+    if (mobileNavOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+    };
+  }, [mobileNavOpen]);
+
+  // Escape key to close mobile nav drawer
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        setMobileNavOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [mobileNavOpen]);
+
   const handleMobileNavClose = () => setMobileNavOpen(false);
 
   return (
