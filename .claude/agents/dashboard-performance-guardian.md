@@ -220,3 +220,62 @@ Rules:
 ### Contract safety
 - [ ] No response shape changes without adapter/versioning
 - [ ] Existing clients continue to function unchanged
+
+---
+
+## 12. CODE REVIEW CHECKLIST (CODEX)
+
+Goal: make charts feel "instant" by ensuring we only fetch small, pre-shaped data,
+avoid repeated heavy queries, cache aggressively, and keep frontend renders cheap.
+
+### A) Data Volume & Payload Shape (MUST)
+- [ ] For each chart endpoint, verify it returns ONLY what the chart needs:
+  - aggregated series (e.g., month -> value), not raw transactions
+  - limited columns (no wide rows)
+  - capped number of points (downsample if needed)
+- [ ] Flag any endpoint returning raw rows for chart rendering (anti-pattern)
+- [ ] Verify server-side filtering exists (timeframe/date bounds, segment filters),
+  not client-side filtering over huge arrays
+- [ ] Add hard limits / guards:
+  - require timeframe/date bounds for analytics endpoints
+  - cap max rows / max points per chart response
+
+### B) Backend Query Efficiency (MUST)
+- [ ] Identify endpoints doing expensive GROUP BY / window funcs on large tables per request.
+  Flag if latency scales with table size.
+- [ ] Ensure correct indexes for common filters:
+  - date/period column indexes
+  - compound indexes for (date, district/segment) if used frequently
+- [ ] Replace repeated ad-hoc aggregations with:
+  - materialized views OR
+  - precomputed rollup tables (daily/weekly ETL)
+- [ ] Avoid offset pagination for deep pages; prefer keyset/cursor pagination for tables
+
+### C) Caching & Response Semantics (MUST)
+- [ ] Confirm GET chart endpoints are cacheable:
+  - stable/canonical query params (e.g., timeframe=M6 instead of arbitrary dates where possible)
+  - set Cache-Control (s-maxage, stale-while-revalidate) where safe
+  - support ETag/If-None-Match for large static-ish datasets
+- [ ] Flag "unique request explosion" (too many param combos preventing cache hits).
+  Propose canonicalization + bucketing
+
+### D) Request Fanout (SHOULD)
+- [ ] Count dashboard API calls on initial load:
+  - Flag > ~10-15 chart requests as likely causing slow "feel"
+- [ ] Consolidate related charts into a single endpoint per page section
+  OR add server-side batching
+- [ ] Ensure requests are parallelized but with sane concurrency caps
+
+### E) Frontend Compute & Rendering Cost (MUST)
+- [ ] Flag heavy client-side transforms over large arrays in render path.
+  - Move to backend aggregation or memoize with useMemo
+- [ ] Verify charts are not re-computing on every state change (deps too broad).
+  - useMemo for derived datasets
+  - memoize chart components where appropriate
+- [ ] Flag huge DOM/SVG node counts (thousands+) from charts/tables.
+  - downsample points for charts
+  - virtualize tables (react-window/react-virtualized)
+- [ ] Ensure progressive rendering:
+  - show skeleton/placeholder immediately
+  - load critical charts first
+  - defer below-fold content
