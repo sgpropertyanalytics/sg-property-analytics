@@ -18,8 +18,9 @@ from typing import Dict, Any
 from constants import SALE_TYPE_RESALE
 from services.kpi.base import (
     KPISpec, KPIResult,
-    build_monthly_comparison_bounds, build_filter_clause
+    build_monthly_comparison_bounds
 )
+from utils.filter_builder import build_sql_where
 
 # Minimum sample size for reliable median
 MIN_SAMPLE_SIZE = 20
@@ -35,7 +36,7 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     # Add filter params
-    filter_parts, filter_params = build_filter_clause(filters)
+    filter_parts, filter_params = build_sql_where(filters)
     params.update(filter_params)
     params['_filter_parts'] = filter_parts  # Store for SQL building
 

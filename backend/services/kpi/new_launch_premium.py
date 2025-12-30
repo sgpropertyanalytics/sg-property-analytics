@@ -8,9 +8,8 @@ Uses canonical PropertyAgeBucket.RECENTLY_TOP age range.
 from typing import Dict, Any
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
 from api.contracts.contract_schema import PropertyAgeBucket
-from services.kpi.base import (
-    KPIResult, build_date_bounds, build_filter_clause
-)
+from services.kpi.base import KPIResult, build_date_bounds
+from utils.filter_builder import build_sql_where
 
 
 def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
@@ -20,7 +19,7 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
         lookback_days=365  # 12 months for premium calculation
     )
 
-    filter_parts, filter_params = build_filter_clause(filters)
+    filter_parts, filter_params = build_sql_where(filters)
     params.update(filter_params)
     params['_filter_parts'] = filter_parts
     params['sale_type_new'] = SALE_TYPE_NEW

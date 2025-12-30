@@ -28,16 +28,6 @@ from utils.filter_builder import build_sql_where
 logger = logging.getLogger('beads_chart')
 
 
-def _build_where_clause(filters: Dict[str, Any]) -> tuple:
-    """
-    Build WHERE clause parts and params dict for the query.
-
-    Returns:
-        tuple: (where_parts list, params dict)
-    """
-    return build_sql_where(filters)
-
-
 def query_beads_chart(filters: Dict[str, Any], options: Dict[str, Any]) -> List[Dict]:
     """
     Query volume-weighted median prices by region and bedroom type.
@@ -57,7 +47,7 @@ def query_beads_chart(filters: Dict[str, Any], options: Dict[str, Any]) -> List[
         - transactionCount: Number of transactions (int)
         - totalValue: Sum of all transaction prices (float)
     """
-    where_parts, params = _build_where_clause(filters)
+    where_parts, params = build_sql_where(filters)
     where_clause = " AND ".join(where_parts) if where_parts else "1=1"
 
     # Build CCR/RCR district lists for the CASE expression

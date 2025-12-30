@@ -17,9 +17,8 @@ Interpretation (annualized = velocity × 4):
 from typing import Dict, Any, Tuple
 from datetime import date
 from constants import SALE_TYPE_RESALE
-from services.kpi.base import (
-    KPIResult, build_filter_clause
-)
+from services.kpi.base import KPIResult
+from utils.filter_builder import build_sql_where
 
 
 # Configuration
@@ -62,7 +61,7 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
         'sale_type_resale': SALE_TYPE_RESALE,
     }
 
-    filter_parts, filter_params = build_filter_clause(filters)
+    filter_parts, filter_params = build_sql_where(filters)
     params.update(filter_params)
     params['_filter_parts'] = filter_parts
 
@@ -114,7 +113,7 @@ def get_total_units_for_scope(filters: Dict[str, Any]) -> Tuple[int, int]:
     from sqlalchemy import text
 
     # Build filter clause for district/segment/bedroom filtering
-    filter_parts, filter_params = build_filter_clause(filters)
+    filter_parts, filter_params = build_sql_where(filters)
     base_filter = " AND ".join(filter_parts) if filter_parts else "1=1"
 
     # Get distinct projects with resale transactions in scope

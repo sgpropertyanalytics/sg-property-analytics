@@ -35,8 +35,9 @@ from sqlalchemy import text
 from constants import SALE_TYPE_RESALE
 from models.database import db
 from services.kpi.base import (
-    KPIResult, build_filter_clause, _months_back
+    KPIResult, _months_back
 )
+from utils.filter_builder import build_sql_where
 
 # Confidence thresholds (deals per quarter)
 HIGH_CONFIDENCE_MIN = 20
@@ -81,7 +82,7 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
         'max_date': max_date,
     }
 
-    filter_parts, filter_params = build_filter_clause(filters)
+    filter_parts, filter_params = build_sql_where(filters)
     params.update(filter_params)
     params['_filter_parts'] = filter_parts
     # Store for fallback query
@@ -207,7 +208,7 @@ def _fetch_fallback_data(filters: Dict[str, Any], max_exclusive: date) -> Tuple[
         (fallback_current_psf, fallback_current_count, fallback_prev_psf, fallback_prev_count)
     """
     # Build filter clause
-    filter_parts, filter_params = build_filter_clause(filters)
+    filter_parts, filter_params = build_sql_where(filters)
     base_filter = " AND ".join(filter_parts) if filter_parts else "1=1"
 
     resale_filter = f"sale_type = '{SALE_TYPE_RESALE}'"

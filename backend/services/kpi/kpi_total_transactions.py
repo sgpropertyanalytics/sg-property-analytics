@@ -12,9 +12,8 @@ Signal interpretation:
 
 from typing import Dict, Any
 from constants import SALE_TYPE_RESALE
-from services.kpi.base import (
-    KPIResult, build_filter_clause
-)
+from services.kpi.base import KPIResult
+from utils.filter_builder import build_sql_where
 from datetime import date, timedelta
 
 
@@ -54,7 +53,7 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
         'sale_type_resale': SALE_TYPE_RESALE,
     }
 
-    filter_parts, filter_params = build_filter_clause(filters)
+    filter_parts, filter_params = build_sql_where(filters)
     params.update(filter_params)
     params['_filter_parts'] = filter_parts
 

@@ -285,20 +285,3 @@ def execute_kpis(specs: List[KPISpec], filters: Dict[str, Any]) -> List[KPIResul
             ))
     return results
 
-
-# =============================================================================
-# FILTER HELPERS (Reusable across KPIs)
-# =============================================================================
-
-def build_filter_clause(filters: Dict[str, Any]) -> tuple:
-    """
-    Build WHERE clause parts from standard filters.
-
-    Returns:
-        (sql_parts: list, params: dict)
-
-    Usage:
-        parts, params = build_filter_clause(filters)
-        where = " AND ".join(parts)
-    """
-    return build_sql_where(filters)
