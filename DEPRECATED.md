@@ -35,7 +35,6 @@ These files were initially flagged as unused but deeper analysis confirmed they 
 | File | Reason Initially Flagged | Actual Usage |
 |------|-------------------------|--------------|
 | `backend/services/project_location_service.py` | No direct imports in services/routes | Used by `scripts/upload.py:2651` for incremental project location updates |
-| `backend/services/data_computation.py` | No direct imports in services/routes | Used by `scripts/upload.py` and `scripts/recompute_stats.py` for precomputed stats |
 | `backend/models/processed_webhook.py` | Not in main app flow | Used by `routes/payments.py` for Stripe webhook idempotency checking |
 
 ---
@@ -90,11 +89,10 @@ Run these before removing any file:
 ```bash
 # Check for imports
 grep -r "from services.project_location_service" backend/
-grep -r "from services.data_computation" backend/
 grep -r "ProcessedWebhook" backend/routes/ backend/services/
 
 # Check CLI/scripts usage
-grep -r "project_location_service\|data_computation" scripts/
+grep -r "project_location_service" scripts/
 
 # Check git history (recent usage)
 git log --oneline -20 -- <file_path>
