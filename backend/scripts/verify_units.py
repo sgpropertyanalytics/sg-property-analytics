@@ -274,7 +274,7 @@ def verify_project(project_name, current_units):
     txn_result = db.session.execute(text("""
         SELECT COUNT(*) as txn_count
         FROM transactions
-        WHERE UPPER(project) LIKE UPPER(:project_pattern)
+        WHERE UPPER(project_name) LIKE UPPER(:project_pattern)
           AND sale_type = 'New Sale'
     """), {"project_pattern": f"%{project_name}%"}).fetchone()
 
