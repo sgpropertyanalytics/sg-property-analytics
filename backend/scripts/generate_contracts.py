@@ -5,13 +5,22 @@ Generate frontend contract artifacts from backend/api/contracts.
 Outputs:
 - frontend/src/generated/apiContract.json
 - frontend/src/generated/apiContract.ts
+
+Usage:
+    python backend/scripts/generate_contracts.py   # From repo root
+    python scripts/generate_contracts.py           # From backend/
 """
 
 import json
-import os
+import sys
 import hashlib
 from datetime import date, datetime, timezone
 from pathlib import Path
+
+# Ensure backend/ is in Python path (for imports like `from api.contracts...`)
+_BACKEND_ROOT = Path(__file__).resolve().parents[1]
+if str(_BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_ROOT))
 
 
 def _backend_root() -> Path:
