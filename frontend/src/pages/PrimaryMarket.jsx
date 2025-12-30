@@ -36,17 +36,17 @@ export function PrimaryMarketContent() {
 
           {/* Chart Grid */}
           <div className="animate-view-enter space-y-4 md:space-y-6">
-            {/* New Launch Activity Timeline - Projects launched per period */}
-            <ErrorBoundary name="New Launch Timeline Chart" compact>
-              <ChartWatermark>
-                <NewLaunchTimelineChart height={chartHeight} />
-              </ChartWatermark>
-            </ErrorBoundary>
-
             {/* New Sale vs Recently TOP Chart - Full width */}
             <ErrorBoundary name="New vs Resale Chart" compact>
               <ChartWatermark>
                 <NewVsResaleChart height={chartHeight} />
+              </ChartWatermark>
+            </ErrorBoundary>
+
+            {/* New Launch Activity Timeline - Projects launched per period */}
+            <ErrorBoundary name="New Launch Timeline Chart" compact>
+              <ChartWatermark>
+                <NewLaunchTimelineChart height={chartHeight} />
               </ChartWatermark>
             </ErrorBoundary>
           </div>
