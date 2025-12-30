@@ -90,11 +90,11 @@ export function KPICardV2({
         {loading ? (
           <div className="h-8 bg-[#94B4C1]/30 rounded w-24 animate-pulse" />
         ) : typeof value === 'string' ? (
-          <span className="text-[22px] sm:text-[32px] font-medium text-[#0f172a] font-mono tabular-nums leading-none">
+          <span className="text-[22px] sm:text-[32px] font-medium text-[#0f172a] font-mono tabular-nums leading-none truncate">
             {value}
           </span>
         ) : (
-          <div className="space-y-1">{value}</div>
+          <div className="space-y-1 min-w-0 overflow-hidden">{value}</div>
         )}
       </div>
     </div>

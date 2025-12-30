@@ -17,7 +17,7 @@
  * PERFORMANCE: Chart.js components are lazy-loaded to reduce initial bundle size.
  */
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
-import { getProjectNames, getProjectExitQueue, getProjectPriceBands, getProjectPriceGrowth } from '../api/client';
+import { getProjectNames, getProjectExitQueue, getProjectPriceBands, getProjectPriceGrowth, asArray } from '../api/client';
 import ExitRiskDashboard from '../components/powerbi/ExitRiskDashboard';
 import ProjectFundamentalsPanel from '../components/powerbi/ProjectFundamentalsPanel';
 import ResaleMetricsCards from '../components/powerbi/ResaleMetricsCards';
@@ -136,7 +136,7 @@ export function ExitRiskContent() {
       try {
         const response = await getProjectNames({ signal: controller.signal });
         const responseData = response.data || {};
-        const projects = getProjectNamesField(responseData, ProjectNamesField.PROJECTS) || [];
+        const projects = asArray(getProjectNamesField(responseData, ProjectNamesField.PROJECTS));
         setProjectOptions(projects);
 
         // Validate stored project exists
@@ -392,9 +392,9 @@ export function ExitRiskContent() {
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={projectOptionsLoading}
-                  className="w-full px-3 py-2.5 text-sm border border-[#94B4C1]/50 rounded-lg text-left bg-[#EAE0CF]/20 focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent flex items-center justify-between"
+                  className="w-full px-3 py-2.5 text-sm border border-[#94B4C1]/50 rounded-lg text-left bg-[#EAE0CF]/20 focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent flex items-center justify-between min-w-0"
                 >
-                  <span className={selectedProject ? 'text-[#213448] truncate font-medium' : 'text-[#94B4C1]'}>
+                  <span className={selectedProject ? 'text-[#213448] truncate font-medium min-w-0' : 'text-[#94B4C1] min-w-0'}>
                     {selectedProject
                       ? `${selectedProject.name} (${selectedProject.district})`
                       : projectOptionsLoading
@@ -443,11 +443,11 @@ export function ExitRiskContent() {
                             key={p.name}
                             type="button"
                             onClick={() => handleProjectSelect(p)}
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-[#EAE0CF]/50 flex justify-between items-center ${
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-[#EAE0CF]/50 flex justify-between items-center min-w-0 ${
                               selectedProject?.name === p.name ? 'bg-[#EAE0CF]/30 text-[#213448] font-medium' : 'text-[#547792]'
                             }`}
                           >
-                            <span className="truncate">{p.name}</span>
+                            <span className="truncate min-w-0">{p.name}</span>
                             <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
                           </button>
                         ))
@@ -615,7 +615,7 @@ export function ExitRiskContent() {
               </div>
 
               {/* Row 3: Price Band + Exit Risk */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-stretch">
                 <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
                   <PriceBandChart
                     bands={getPriceBandsField(priceBandsData, PriceBandsField.BANDS) || []}

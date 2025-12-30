@@ -1646,6 +1646,8 @@ OVERFLOW:
 [ ] Long text has truncation
 [ ] Tables: no horizontal scroll on desktop/tablet (HF-5)
 [ ] Tables: clipped columns = FAIL at any viewport
+[ ] Numeric values fully visible at all viewports (HF-6)
+[ ] KPI/stat values use compact format on mobile ($1.23M not $1,234,567)
 
 RESPONSIVE:
 [ ] Desktop (1440px): Full layout
@@ -2107,6 +2109,208 @@ tables.forEach(table => {
 **Note:** Consider card layout or stacked rows for better mobile UX.
 ```
 
+#### HF-6: Numeric Value Overflow (GLOBAL RULE)
+
+**Rule:** All numeric values rendered inside cards or panels MUST remain fully visible at ALL supported viewport sizes.
+
+**Why This Matters:**
+Numeric overflow breaks:
+- **Data integrity** — users see incomplete numbers, leading to misinterpretation
+- **Trust** — clipped/scrolled values look broken and unprofessional
+- **Usability** — critical metrics (prices, counts, percentages) become unreadable
+- **Accessibility** — screen readers may announce partial values
+
+**Applies Globally To:**
+- KPI cards (transaction counts, PSF values, percentages)
+- Stat panels (totals, averages, medians)
+- Metric displays (prices, areas, volumes)
+- Chart legends with numeric values
+- Table cells with numeric data
+- Any component rendering numbers
+
+**Failure Modes (ALL are HARD FAIL):**
+
+| Failure Mode | Detection | Example |
+|--------------|-----------|---------|
+| **Scroll overflow** | `scrollWidth > clientWidth` on numeric element | Number causes horizontal scroll in container |
+| **Clipped content** | Number extends beyond container with `overflow: hidden` | "$1,234,56..." cut off |
+| **Forced page scroll** | Numeric element causes `documentElement.scrollWidth > innerWidth` | Large number pushes entire page |
+
+```javascript
+// Detection logic for numeric overflow
+const isNumericElement = (el) => {
+  const text = el.textContent?.trim() || '';
+  // Match: $1,234 | 1,234,567 | 12.5% | 1.2M | $2.5B | 99.9 sqft
+  return /^[\$]?[\d,]+(\.\d+)?[%MBK]?(\s*(sqft|psf|units?))?$/i.test(text) ||
+         /^[\d,]+(\.\d+)?$/.test(text);
+};
+
+const checkNumericOverflow = () => {
+  const failures = [];
+  const allElements = document.querySelectorAll('*');
+
+  allElements.forEach(el => {
+    // Skip if not a leaf node with numeric content
+    if (el.children.length > 0) return;
+    if (!isNumericElement(el)) return;
+
+    // Mode 1: Scroll overflow
+    if (el.scrollWidth > el.clientWidth + 1) {
+      failures.push({
+        mode: 'SCROLL_OVERFLOW',
+        element: getSelector(el),
+        content: el.textContent?.trim(),
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+        overflow: el.scrollWidth - el.clientWidth
+      });
+    }
+
+    // Mode 2: Clipped content (parent has overflow: hidden)
+    let parent = el.parentElement;
+    while (parent && parent !== document.body) {
+      const parentStyle = getComputedStyle(parent);
+      if (parentStyle.overflow === 'hidden' || parentStyle.overflowX === 'hidden') {
+        const parentRect = parent.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        if (elRect.right > parentRect.right + 1 || elRect.left < parentRect.left - 1) {
+          failures.push({
+            mode: 'CLIPPED_CONTENT',
+            element: getSelector(el),
+            content: el.textContent?.trim(),
+            container: getSelector(parent),
+            clippedBy: elRect.right - parentRect.right
+          });
+          break;
+        }
+      }
+      parent = parent.parentElement;
+    }
+
+    // Mode 3: Check if parent allows shrink
+    parent = el.parentElement;
+    if (parent) {
+      const parentStyle = getComputedStyle(parent);
+      if (parentStyle.display === 'flex' || parentStyle.display === 'inline-flex') {
+        if (parentStyle.minWidth !== '0px' && !parent.classList.contains('min-w-0')) {
+          if (el.scrollWidth > parent.clientWidth) {
+            failures.push({
+              mode: 'SHRINK_BLOCKED',
+              element: getSelector(el),
+              content: el.textContent?.trim(),
+              parent: getSelector(parent),
+              issue: 'Parent flex container missing min-w-0'
+            });
+          }
+        }
+      }
+    }
+  });
+
+  return failures;
+};
+```
+
+**Tolerance:** 1px (for sub-pixel rendering)
+**Action:** Immediate fail, report element and overflow amount
+
+**Auto-Fix Priority Order:**
+
+| Priority | Fix | When to Use |
+|----------|-----|-------------|
+| 1 | Add `min-w-0` to parent | Parent is flex/grid and blocks shrink |
+| 2 | Apply `clamp()` font sizing | Number uses fixed font size that's too large |
+| 3 | Add `whitespace-nowrap text-ellipsis overflow-hidden` | Number must truncate as last resort |
+| 4 | Reduce numeric precision | Format `$1,234,567` as `$1.23M` |
+
+**Required Patterns:**
+
+```jsx
+// ✅ CORRECT: Flex parent allows shrink
+<div className="flex items-center min-w-0">
+  <span className="text-2xl font-bold truncate">{formatCurrency(value)}</span>
+</div>
+
+// ✅ CORRECT: Responsive font sizing with clamp
+<span className="text-[clamp(1rem,3vw,1.5rem)] font-bold">
+  {formatCurrency(value)}
+</span>
+
+// ✅ CORRECT: Formatted large numbers
+<span className="text-xl">{formatCompact(1234567)}</span>  // Shows "$1.23M"
+
+// ✅ CORRECT: Explicit truncation for edge cases
+<span className="whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+  {formatCurrency(value)}
+</span>
+
+// ❌ FORBIDDEN: Fixed large font without shrink safety
+<div className="flex">  {/* Missing min-w-0 */}
+  <span className="text-4xl">{value}</span>  {/* Will overflow on mobile */}
+</div>
+
+// ❌ FORBIDDEN: Long unformatted numbers
+<span>{1234567890}</span>  {/* Shows "1234567890" - overflows on mobile */}
+
+// ❌ FORBIDDEN: No overflow handling
+<div className="w-[100px]">
+  <span className="text-xl">{value}</span>  {/* May clip if value is large */}
+</div>
+```
+
+**Viewport-Specific Thresholds:**
+
+| Viewport | Max Safe Digits | Font Size Guidance |
+|----------|-----------------|-------------------|
+| Desktop (1440px+) | 15+ digits | `text-2xl` to `text-4xl` safe |
+| Tablet (768-1023px) | 12 digits | `text-xl` to `text-2xl` safe |
+| Mobile (430px) | 8 digits | `text-lg` max, use compact format |
+| Small Mobile (375px) | 6-7 digits | `text-base`, always use compact format |
+
+**Format Helper (Recommended):**
+
+```js
+// Use this for all large numbers in KPI/stat components
+function formatCompact(value, options = {}) {
+  const { currency = true, decimals = 2 } = options;
+
+  if (value >= 1_000_000_000) {
+    return `${currency ? '$' : ''}${(value / 1_000_000_000).toFixed(decimals)}B`;
+  }
+  if (value >= 1_000_000) {
+    return `${currency ? '$' : ''}${(value / 1_000_000).toFixed(decimals)}M`;
+  }
+  if (value >= 1_000) {
+    return `${currency ? '$' : ''}${(value / 1_000).toFixed(decimals)}K`;
+  }
+  return `${currency ? '$' : ''}${value.toLocaleString()}`;
+}
+```
+
+**Report Format for HF-6:**
+```markdown
+#### HARD FAIL: HF-6 Numeric Value Overflow
+
+**Element:** `.kpi-card-volume .stat-value`
+**Viewport:** 430×932 (Mobile)
+**Content:** "$1,234,567,890"
+
+**Failure Mode:** SCROLL_OVERFLOW
+- scrollWidth: 142px
+- clientWidth: 98px
+- Overflow: 44px
+
+**Root Cause:**
+- Parent `.flex` missing `min-w-0`
+- Font size `text-2xl` too large for mobile
+- Value not formatted (should be "$1.23B")
+
+**Required Fix (Priority Order):**
+1. Add `min-w-0` to parent flex container
+2. Use `text-[clamp(1rem,4vw,1.5rem)]` for responsive sizing
+3. Format as `formatCompact(value)` → "$1.23B"
+```
+
 ### DOM Scan Report Format
 
 ```markdown
@@ -2326,6 +2530,38 @@ git diff --stat frontend/tests/baselines/
 
 **Note:** This is a last resort. Prefer AF-7 (hidden columns) or card layout.
 
+#### AF-9: Numeric Value Overflow Fix
+
+**Trigger:** Numeric value overflows container (HF-6 violation)
+**Fix:** Apply fixes in priority order based on root cause
+**Scope:** KPI cards, stat panels, metric displays
+
+**Priority 1: Add shrink safety to parent**
+```diff
+- <div className="flex items-center">
++ <div className="flex items-center min-w-0">
+    <span className="text-2xl">{value}</span>
+  </div>
+```
+
+**Priority 2: Apply responsive font sizing**
+```diff
+- <span className="text-2xl font-bold">{value}</span>
++ <span className="text-[clamp(1rem,4vw,1.5rem)] font-bold">{value}</span>
+```
+
+**Priority 3: Add truncation (last resort)**
+```diff
+- <span className="text-xl">{value}</span>
++ <span className="text-xl whitespace-nowrap overflow-hidden text-ellipsis">{value}</span>
+```
+
+**Priority 4: Format large numbers**
+```diff
+- <span>{1234567890}</span>
++ <span>{formatCompact(1234567890)}</span>  // Shows "$1.23B"
+```
+
 ### Forbidden Fixes
 
 | Pattern | Why Forbidden |
@@ -2342,7 +2578,7 @@ git diff --stat frontend/tests/baselines/
 Before applying ANY auto-fix:
 
 ```
-[ ] Fix uses approved pattern (AF-1 through AF-6)
+[ ] Fix uses approved pattern (AF-1 through AF-9)
 [ ] Fix is applied at component level (not inline)
 [ ] Fix does not introduce route-specific logic
 [ ] Fix does not use magic pixel values
@@ -2552,6 +2788,47 @@ test.describe('UI Layout Validation', () => {
           expect(tableScrollIssues).toHaveLength(0);
         }
 
+        // HF-6: No numeric value overflow
+        const numericOverflows = await page.evaluate(() => {
+          const issues: string[] = [];
+
+          const isNumericElement = (el: Element) => {
+            const text = el.textContent?.trim() || '';
+            return /^[\$]?[\d,]+(\.\d+)?[%MBK]?(\s*(sqft|psf|units?))?$/i.test(text) ||
+                   /^[\d,]+(\.\d+)?$/.test(text);
+          };
+
+          const allElements = document.querySelectorAll('*');
+          allElements.forEach((el, idx) => {
+            // Skip if not a leaf node with numeric content
+            if (el.children.length > 0) return;
+            if (!isNumericElement(el)) return;
+
+            // Check scroll overflow
+            if (el.scrollWidth > el.clientWidth + 1) {
+              issues.push(`Numeric overflow: "${el.textContent?.trim()}" (${el.scrollWidth}px > ${el.clientWidth}px)`);
+            }
+
+            // Check clipped content
+            let parent = el.parentElement;
+            while (parent && parent !== document.body) {
+              const style = getComputedStyle(parent);
+              if (style.overflow === 'hidden' || style.overflowX === 'hidden') {
+                const parentRect = parent.getBoundingClientRect();
+                const elRect = el.getBoundingClientRect();
+                if (elRect.right > parentRect.right + 1) {
+                  issues.push(`Numeric clipped: "${el.textContent?.trim()}" clipped by ${elRect.right - parentRect.right}px`);
+                  break;
+                }
+              }
+              parent = parent.parentElement;
+            }
+          });
+
+          return issues;
+        });
+        expect(numericOverflows).toHaveLength(0);
+
         // Visual regression
         await expect(page).toHaveScreenshot(`${route.slice(1)}-${viewport.name}.png`, {
           threshold: 0.005,  // 0.5%
@@ -2702,12 +2979,13 @@ jobs:
 
 ```
 [ ] All 5 viewports tested per route
-[ ] All 5 HARD FAIL conditions checked:
+[ ] All 6 HARD FAIL conditions checked:
     - HF-1: Horizontal page scroll
     - HF-2: Element content overflow
     - HF-3: Element exceeds viewport
     - HF-4: Interactive element overlap
     - HF-5: Table horizontal scroll (desktop/tablet)
+    - HF-6: Numeric value overflow (global)
 [ ] Visual regression compared to baselines
 [ ] Issues categorized and prioritized
 ```

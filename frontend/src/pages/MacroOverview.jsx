@@ -191,7 +191,7 @@ export function MacroOverviewContent() {
                     const pctStr = score_change_pct != null ? (score_change_pct >= 0 ? `+${score_change_pct}%` : `${score_change_pct}%`) : '';
                     return (
                       <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
+                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate">
                           {current_score} <span className={`text-xs font-bold uppercase tracking-wider ${conditionColorClass}`}>{label}</span>
                         </div>
                         {score_change_pct != null && (
@@ -224,7 +224,7 @@ export function MacroOverviewContent() {
                     const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
                     return (
                       <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
+                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate">
                           ${current_psf?.toLocaleString()} <span className="text-sm sm:text-base font-normal">psf</span>
                         </div>
                         {pct_change != null && (
@@ -257,7 +257,7 @@ export function MacroOverviewContent() {
                     const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
                     return (
                       <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
+                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate">
                           {current_count?.toLocaleString()} <span className={`text-xs font-bold uppercase tracking-wider ${colorClass}`}>{label}</span>
                         </div>
                         {pct_change != null && (
@@ -294,7 +294,7 @@ export function MacroOverviewContent() {
                     const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
                     return (
                       <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
+                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate">
                           {getKpiField(kpi, KpiField.FORMATTED_VALUE)} <span className={`text-xs font-bold uppercase tracking-wider ${labelColorClass}`}>{label}</span>
                         </div>
                         {pct_change != null && (
@@ -334,7 +334,7 @@ export function MacroOverviewContent() {
                 {/* Desktop/Tablet: 50/50 grid | Mobile: Stacked */}
                 {/* Lazy-loaded with Suspense for faster initial page load */}
                 {/* SHARED DATA: Both charts receive pre-fetched compressionData (W4 fix) */}
-                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-stretch">
                   <ErrorBoundary name="Price Compression" compact>
                     <ChartWatermark>
                       <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
