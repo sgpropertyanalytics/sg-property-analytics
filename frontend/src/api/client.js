@@ -241,6 +241,8 @@ const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
 
 export const getHealth = () => apiClient.get('/health');
 
+export const getMetadata = () => apiClient.get('/metadata');
+
 export const getDistricts = () => apiClient.get('/districts');
 
 /**

@@ -142,24 +142,24 @@ export function MacroOverviewContent() {
             <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
               Market Overview
             </h1>
-            {/* Data source info - shows last update date and records added */}
+            {/* Data source info - shows last update, total records, new additions, and outliers removed */}
             {apiMetadata && (
-              <p className="text-[#547792] text-xs md:text-sm italic truncate">
-                Last updated: {apiMetadata.last_batch_date
-                  ? new Date(apiMetadata.last_batch_date).toLocaleDateString('en-US', {
+              <p className="text-[#547792] text-xs md:text-sm italic">
+                Last updated: {apiMetadata.last_updated
+                  ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric'
                     })
-                  : apiMetadata.last_updated
-                    ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })
-                    : 'N/A'}
-                {apiMetadata.last_batch_rows > 0 && (
-                  <> | +{apiMetadata.last_batch_rows.toLocaleString()} records</>
+                  : 'N/A'}
+                {apiMetadata.total_records > 0 && (
+                  <> | Total records: {apiMetadata.total_records.toLocaleString()}</>
+                )}
+                {apiMetadata.records_added_last_ingestion > 0 && (
+                  <> (+{apiMetadata.records_added_last_ingestion.toLocaleString()} new)</>
+                )}
+                {apiMetadata.outliers_excluded > 0 && (
+                  <> | Statistical outliers removed: {apiMetadata.outliers_excluded.toLocaleString()}</>
                 )}
               </p>
             )}
