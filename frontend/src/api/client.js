@@ -517,8 +517,8 @@ export const getHotProjects = (params = {}, options = {}) =>
  *   disclaimer: string
  * }>}
  */
-export const getProjectInventory = (projectName) =>
-  apiClient.get(`/projects/${encodeURIComponent(projectName)}/inventory`);
+export const getProjectInventory = (projectName, options = {}) =>
+  apiClient.get(`/projects/${encodeURIComponent(projectName)}/inventory`, { signal: options.signal });
 
 // ===== Deal Checker API Functions =====
 
