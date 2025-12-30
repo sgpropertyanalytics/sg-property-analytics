@@ -193,13 +193,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           <div className="flex items-center gap-3 flex-shrink-0">
             {/* Region Segmented Track */}
             <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200/80">
-              {/* "All" button - subtle when active (default state) */}
+              {/* "All" button - dark blue when active (default state) */}
               <button
                 type="button"
                 onClick={() => setSegments([])}
                 className={`px-4 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                   filters.segments.length === 0
-                    ? 'bg-slate-100/80 text-slate-900 font-semibold'
+                    ? 'bg-[#213448] text-white shadow-inner'
                     : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
                 }`}
               >
@@ -242,13 +242,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
 
             {/* Bedroom Segmented Track */}
             <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200/80">
-              {/* "All" button - subtle when active */}
+              {/* "All" button - dark blue when active */}
               <button
                 type="button"
                 onClick={() => setBedroomTypes([])}
                 className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                   filters.bedroomTypes.length === 0
-                    ? 'bg-slate-100/80 text-slate-900 font-semibold'
+                    ? 'bg-[#213448] text-white shadow-inner'
                     : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
                 }`}
               >
