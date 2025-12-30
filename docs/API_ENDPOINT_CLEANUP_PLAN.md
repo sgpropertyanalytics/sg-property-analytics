@@ -24,7 +24,7 @@
 |------|-----------|-------|--------|
 | `routes/analytics/precomputed.py` | 5 | 166 | All endpoints orphaned, replaced by `/aggregate` |
 | `routes/analytics/trends.py` | 5 | 393 | All endpoints orphaned, zero frontend refs |
-| `services/data_computation.py` | N/A | 210 | Only called by precomputed.py |
+| `services/data_computation.py` | N/A | 210 | Removed (precomputed pipeline retired) |
 
 ### 1.2 Precomputed Endpoints (DELETE ALL)
 
@@ -182,7 +182,7 @@ GET  /api/dashboard/cache          → Cache management
 
 - [ ] Delete `backend/routes/analytics/precomputed.py`
 - [ ] Delete `backend/routes/analytics/trends.py`
-- [ ] Delete `backend/services/data_computation.py`
+- [x] Delete `backend/services/data_computation.py`
 - [ ] Update `backend/routes/analytics/__init__.py` (remove imports)
 - [ ] Delete `backend/tests/contracts/test_contract_precomputed.py`
 - [ ] Delete `backend/tests/contracts/test_contract_trends.py`
