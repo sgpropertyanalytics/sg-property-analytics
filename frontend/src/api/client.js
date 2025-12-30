@@ -404,6 +404,13 @@ export const getNewLaunchTimeline = (params = {}, options = {}) =>
   apiClient.get(`/new-launch-timeline?${buildQueryString(params)}`, { signal: options.signal });
 
 /**
+ * Get new launch absorption rates - projects launched per period with avg launch-month absorption
+ * Used by AbsorptionChart on New Launch Market page
+ */
+export const getNewLaunchAbsorption = (params = {}, options = {}) =>
+  apiClient.get(`/new-launch-absorption?${buildQueryString(params)}`, { signal: options.signal });
+
+/**
  * Get market activity heatmap by bedroom and property age
  * Used by ValueParityPanel's Explore Budget tab
  *

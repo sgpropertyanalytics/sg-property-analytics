@@ -62,4 +62,7 @@ export {
   // New Launch Timeline
   transformNewLaunchTimeline,
   formatPeriodLabel,
+  // New Launch Absorption
+  transformNewLaunchAbsorption,
+  is2020Period,
 } from './aggregate';

@@ -22,6 +22,7 @@ from . import upcoming_launches
 from . import auth
 from . import gls
 from . import new_launch_timeline
+from . import new_launch_absorption
 
 __all__ = [
     'aggregate', 'kpi_summary', 'dashboard', 'filter_options',
@@ -29,4 +30,5 @@ __all__ = [
     'charts', 'trends',
     'projects', 'projects_analytics', 'deal_checker',
     'upcoming_launches', 'auth', 'gls', 'new_launch_timeline',
+    'new_launch_absorption',
 ]

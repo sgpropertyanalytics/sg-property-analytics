@@ -3,6 +3,7 @@ import { PowerBIFilterProvider } from '../context/PowerBIFilter';
 import { FilterBar } from '../components/powerbi/FilterBar';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { NewLaunchTimelineChart } from '../components/powerbi/NewLaunchTimelineChart';
+import { AbsorptionChart } from '../components/powerbi/AbsorptionChart';
 import { ErrorBoundary, ChartWatermark } from '../components/ui';
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 import { PageHeader } from '../components/ui';
@@ -47,6 +48,13 @@ export function PrimaryMarketContent() {
             <ErrorBoundary name="New Launch Timeline Chart" compact>
               <ChartWatermark>
                 <NewLaunchTimelineChart height={chartHeight} />
+              </ChartWatermark>
+            </ErrorBoundary>
+
+            {/* Absorption Chart - Launch-month absorption rates */}
+            <ErrorBoundary name="Absorption Chart" compact>
+              <ChartWatermark>
+                <AbsorptionChart height={chartHeight} />
               </ChartWatermark>
             </ErrorBoundary>
           </div>

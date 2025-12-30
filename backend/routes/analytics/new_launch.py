@@ -12,7 +12,7 @@ import time
 from flask import jsonify, g
 from routes.analytics import analytics_bp
 from api.contracts import api_contract
-from services.new_launch_service import get_new_launch_timeline
+from services.new_launch_service import get_new_launch_timeline, get_new_launch_absorption
 
 
 @analytics_bp.route("/new-launch-timeline", methods=["GET"])
@@ -64,3 +64,33 @@ def new_launch_timeline():
     return jsonify({
         "data": result,
     })
+
+
+@analytics_bp.route("/new-launch-absorption", methods=["GET"])
+@api_contract("new-launch-absorption")
+def new_launch_absorption():
+    """
+    Get new launch activity with launch-month absorption rates.
+
+    Query params (normalized by @api_contract):
+        - time_grain: month, quarter, year (default: quarter)
+        - district: Comma-separated district codes
+        - segment: Market segment (CCR, RCR, OCR)
+        - bedroom: Comma-separated bedroom counts
+        - date_from: Start date (inclusive), YYYY-MM-DD
+        - date_to: End date (inclusive), YYYY-MM-DD
+
+    Response: { data: [...] } with meta injected by decorator.
+    """
+    params = getattr(g, "normalized_params", {}) or {}
+
+    result = get_new_launch_absorption(
+        time_grain=params["time_grain"],
+        districts=params.get("districts"),
+        segments=params.get("segments"),
+        bedrooms=params.get("bedrooms"),
+        date_from=params.get("date_from"),
+        date_to_exclusive=params.get("date_to_exclusive"),
+    )
+
+    return jsonify({"data": result})

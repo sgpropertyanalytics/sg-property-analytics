@@ -100,6 +100,11 @@ import {
   formatPeriodLabel,
 } from './newLaunchTimeline';
 
+import {
+  transformNewLaunchAbsorption,
+  is2020Period,
+} from './newLaunchAbsorption';
+
 // Named exports
 export {
   // Validation
@@ -156,6 +161,9 @@ export {
   // New Launch Timeline
   transformNewLaunchTimeline,
   formatPeriodLabel,
+  // New Launch Absorption
+  transformNewLaunchAbsorption,
+  is2020Period,
 };
 
 // Default export for backwards compatibility
@@ -210,4 +218,7 @@ export default {
   // New Launch Timeline
   transformNewLaunchTimeline,
   formatPeriodLabel,
+  // New Launch Absorption
+  transformNewLaunchAbsorption,
+  is2020Period,
 };
