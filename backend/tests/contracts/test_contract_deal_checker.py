@@ -14,38 +14,6 @@ from api.contracts.validate import validate_public_params, ContractViolation
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots"
 
 
-class TestNearbyTransactionsContract:
-    """Test deal-checker/nearby-transactions contract."""
-
-    def test_contract_registered(self):
-        """Contract should be registered."""
-        contract = get_contract("deal-checker/nearby-transactions")
-        assert contract is not None
-        assert contract.version == "v3"
-
-    def test_required_params(self):
-        """Required params should be enforced."""
-        contract = get_contract("deal-checker/nearby-transactions")
-        project_name_field = contract.param_schema.fields["project_name"]
-        bedroom_field = contract.param_schema.fields["bedroom"]
-        price_field = contract.param_schema.fields["price"]
-        assert project_name_field.required is True
-        assert bedroom_field.required is True
-        assert price_field.required is True
-
-    def test_validate_missing_required(self):
-        """Missing required params should fail."""
-        contract = get_contract("deal-checker/nearby-transactions")
-        params = {"project_name": "Test Project"}  # Missing bedroom and price
-        with pytest.raises(ContractViolation):
-            validate_public_params(params, contract.param_schema)
-
-    def test_param_schema_defaults(self):
-        """Check default values."""
-        contract = get_contract("deal-checker/nearby-transactions")
-        assert contract.param_schema.fields["radius_km"].default == 1.0
-
-
 class TestMultiScopeContract:
     """Test deal-checker/multi-scope contract."""
 
@@ -100,7 +68,6 @@ class TestDealCheckerSnapshots:
             assert snapshot.get("_version") == "v3"
 
             endpoints = [
-                ("deal-checker/nearby-transactions", "nearby_transactions"),
                 ("deal-checker/multi-scope", "multi_scope"),
                 ("deal-checker/project-names", "project_names"),
             ]

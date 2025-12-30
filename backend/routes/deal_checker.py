@@ -2,7 +2,6 @@
 Deal Checker API Routes
 
 Provides endpoints for the Deal Checker feature:
-- /api/deal-checker/nearby-transactions - Find transactions within radius, compute histogram
 - /api/deal-checker/multi-scope - Enhanced endpoint with same-project, 1km, and 2km scopes
 - /api/projects/names - Get project names for dropdown
 
@@ -210,19 +209,6 @@ def get_bedroom_filter(bedroom):
     if bedroom >= 5:
         return Transaction.bedroom_count >= 5
     return Transaction.bedroom_count == bedroom
-
-
-@deal_checker_bp.route("/deal-checker/nearby-transactions", methods=["GET"])
-@api_contract("deal-checker/nearby-transactions")
-def get_nearby_transactions():
-    """Deprecated endpoint. Use /api/deal-checker/multi-scope instead."""
-    return jsonify({
-        "error": "Endpoint deprecated",
-        "code": "ENDPOINT_DEPRECATED",
-        "replacement": "/api/deal-checker/multi-scope",
-        "deprecatedAt": "2025-01-15",
-        "removalDate": "2025-02-15"
-    }), 410
 
 
 def compute_scope_stats(project_names, bedroom, buyer_price, sqft=None):

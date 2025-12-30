@@ -150,21 +150,7 @@ def find_date_price_pairs(obj: Any, path: str = "",
 # SCHEMA ALLOWLISTS PER ENDPOINT
 # =============================================================================
 
-ENDPOINT_SCHEMAS = {
-    '/aggregate-summary': {
-        'allowed_top_keys': {
-            'summary', 'bedroomMix', 'saleMix',
-            'psfDistribution', 'meta', 'warning'
-        },
-        'allowed_array_keys': {
-            'bedroomMix', 'saleMix', 'psfDistribution'
-        },
-        'allowed_bin_fields': {
-            'bedroom', 'count', 'pct', 'saleType',
-            'binStart', 'binEnd'
-        },
-    },
-}
+ENDPOINT_SCHEMAS = {}
 
 
 def check_schema_compliance(endpoint: str, data: dict) -> list:
@@ -203,7 +189,7 @@ def client():
 
 @pytest.fixture
 def sample_aggregate_response():
-    """Sample valid aggregate-summary response."""
+    """Sample valid aggregate response."""
     return {
         "summary": {
             "observationCount": 1500,
@@ -351,31 +337,6 @@ class TestDatePricePairs:
         assert not violations
 
 
-class TestSchemaCompliance:
-    """Test schema allowlist enforcement."""
-
-    def test_aggregate_summary_schema(self, sample_aggregate_response):
-        """Aggregate summary should comply with schema."""
-        violations = check_schema_compliance(
-            '/aggregate-summary', sample_aggregate_response
-        )
-        assert not violations
-
-    def test_extra_keys_detected(self):
-        """Unexpected keys should be flagged."""
-        data = {
-            "summary": {},
-            "bedroomMix": [],
-            "saleMix": [],
-            "psfDistribution": [],
-            "meta": {},
-            "transactions": [],  # FORBIDDEN
-        }
-        violations = check_schema_compliance('/aggregate-summary', data)
-        assert len(violations) == 1
-        assert 'transactions' in str(violations[0])
-
-
 # =============================================================================
 # INTEGRATION TESTS (require Flask app)
 # =============================================================================
@@ -418,51 +379,6 @@ class TestDeprecatedEndpoints:
         assert 'deprecated' in data['error'].lower()
         # Verify alternatives are suggested
         assert 'alternatives' in data
-
-
-class TestAggregateSummaryCompliance:
-    """Test aggregate-summary endpoint for compliance."""
-
-    def test_no_forbidden_keys_in_response(self, client):
-        """Response should not contain forbidden keys."""
-        response = client.get('/api/aggregate-summary')
-        assert response.status_code == 410
-        data = response.get_json()
-        assert data.get("code") == "ENDPOINT_DEPRECATED"
-
-    def test_no_record_arrays_in_response(self, client):
-        """Response should not contain record-like arrays."""
-        response = client.get('/api/aggregate-summary')
-        assert response.status_code == 410
-
-    def test_no_date_price_pairs(self, client):
-        """Response should not have date+price pairs."""
-        response = client.get('/api/aggregate-summary')
-        assert response.status_code == 410
-
-    def test_schema_compliance(self, client):
-        """Response should comply with endpoint schema."""
-        response = client.get('/api/aggregate-summary')
-        assert response.status_code == 410
-
-
-# =============================================================================
-# K-ANONYMITY TESTS
-# =============================================================================
-
-class TestKAnonymity:
-    """Test K-anonymity enforcement."""
-
-    def test_small_result_blocked(self, client):
-        """Requests with <K results should be blocked."""
-        # Request very specific filters that likely return few results
-        response = client.get('/api/aggregate-summary?district=D01&bedroom=5&saleType=new_sale')
-        assert response.status_code == 410
-
-    def test_market_level_passes(self, client):
-        """Market-level (no filters) should pass K-anonymity."""
-        response = client.get('/api/aggregate-summary')
-        assert response.status_code == 410
 
 
 # =============================================================================

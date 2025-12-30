@@ -3,10 +3,6 @@
     "response_structure": "districts array + meta",
     "required_meta": ["requestId", "elapsedMs", "apiVersion"]
   },
-  "district_summary": {
-    "response_structure": "flat object with stats, bedroom_breakdown, top_projects",
-    "required_meta": ["requestId", "elapsedMs", "apiVersion"]
-  },
   "district_liquidity": {
     "response_structure": "districts array with liquidity_metrics + meta",
     "required_meta": ["requestId", "elapsedMs", "apiVersion"]

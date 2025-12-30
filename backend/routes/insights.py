@@ -332,19 +332,6 @@ def district_psf():
         return jsonify({"error": str(e)}), 500
 
 
-@insights_bp.route("/district-summary", methods=["GET"])
-@api_contract("insights/district-summary")
-def district_summary():
-    """Deprecated endpoint. Use /api/aggregate?group_by=district instead."""
-    return jsonify({
-        "error": "Endpoint deprecated",
-        "code": "ENDPOINT_DEPRECATED",
-        "replacement": "/api/aggregate?group_by=district",
-        "deprecatedAt": "2025-01-15",
-        "removalDate": "2025-02-15"
-    }), 410
-
-
 @insights_bp.route("/district-liquidity", methods=["GET"])
 @api_contract("insights/district-liquidity")
 def district_liquidity():

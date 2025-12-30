@@ -5,7 +5,6 @@ Flexible aggregation endpoints for Power BI-style dynamic filtering.
 
 Endpoints:
 - /aggregate - Flexible GROUP BY queries (THE STANDARD)
-- /aggregate-summary - URA-compliant summary without transaction records
 """
 
 import time
@@ -656,16 +655,3 @@ def _make_aggregate_cache_key(params: dict) -> str:
     )
     param_str = '&'.join(f"{k}={v}" for k, v in sorted_params)
     return f"agg_summary:{param_str}"
-
-
-@analytics_bp.route("/aggregate-summary", methods=["GET"])
-@api_contract("aggregate-summary")
-def aggregate_summary():
-    """Deprecated endpoint. Use /api/aggregate instead."""
-    return jsonify({
-        "error": "Endpoint deprecated",
-        "code": "ENDPOINT_DEPRECATED",
-        "replacement": "/api/aggregate",
-        "deprecatedAt": "2025-01-15",
-        "removalDate": "2025-02-15"
-    }), 410
