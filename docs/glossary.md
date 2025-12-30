@@ -169,8 +169,8 @@
 
 | Concept | Backend | Frontend |
 |---------|---------|----------|
-| API Contract | `schemas/api_contract.py` | `schemas/apiContract.js` |
-| Enums | `schemas/api_contract.py` | `schemas/apiContract.js` |
+| API Contract | `api/contracts/contract_schema.py` | `frontend/src/schemas/apiContract` |
+| Enums | `api/contracts/contract_schema.py` | `frontend/src/schemas/apiContract` |
 | Filter Logic | `routes/analytics.py` | `contexts/FilterContext.jsx` |
 | Adapters | N/A | `adapters/` |
 | Services | `services/` | N/A |

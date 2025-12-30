@@ -30,7 +30,7 @@ from dataclasses import dataclass
 from sqlalchemy import text
 
 from models.database import db
-from schemas.api_contract import SaleType
+from api.contracts.contract_schema import SaleType
 
 logger = logging.getLogger('price_growth')
 

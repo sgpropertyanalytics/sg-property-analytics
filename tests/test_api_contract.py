@@ -10,7 +10,7 @@ Verifies:
 4. API accepts both v1 (sale_type) and v2 (saleType) filter params
 5. Response meta includes API contract version
 
-Run with: pytest tests/test_api_contract.py -v
+Run with: pytest tests/test_contract_schema.py -v
 """
 
 import sys
@@ -26,7 +26,7 @@ class TestSaleTypeEnums:
 
     def test_db_to_api_mapping(self):
         """Verify DB values map to lowercase API enums."""
-        from schemas.api_contract import SaleType
+        from api.contracts.contract_schema import SaleType
 
         assert SaleType.from_db('New Sale') == 'new_sale'
         assert SaleType.from_db('Resale') == 'resale'
@@ -34,7 +34,7 @@ class TestSaleTypeEnums:
 
     def test_api_to_db_mapping(self):
         """Verify API enums map back to DB values."""
-        from schemas.api_contract import SaleType
+        from api.contracts.contract_schema import SaleType
 
         assert SaleType.to_db('new_sale') == 'New Sale'
         assert SaleType.to_db('resale') == 'Resale'
@@ -42,7 +42,7 @@ class TestSaleTypeEnums:
 
     def test_all_enums_are_lowercase(self):
         """Verify all API enum values are lowercase snake_case."""
-        from schemas.api_contract import SaleType
+        from api.contracts.contract_schema import SaleType
 
         for enum_val in SaleType.ALL:
             assert enum_val == enum_val.lower(), f"Enum {enum_val} should be lowercase"
@@ -50,7 +50,7 @@ class TestSaleTypeEnums:
 
     def test_unknown_values_pass_through(self):
         """Unknown values should pass through unchanged."""
-        from schemas.api_contract import SaleType
+        from api.contracts.contract_schema import SaleType
 
         assert SaleType.from_db('Unknown') == 'Unknown'
         assert SaleType.from_db(None) is None
@@ -62,7 +62,7 @@ class TestTenureEnums:
 
     def test_db_to_api_mapping(self):
         """Verify DB values map to API enums."""
-        from schemas.api_contract import Tenure
+        from api.contracts.contract_schema import Tenure
 
         assert Tenure.from_db('Freehold') == 'freehold'
         assert Tenure.from_db('99-year') == '99_year'
@@ -74,7 +74,7 @@ class TestTransactionSerializer:
 
     def test_serialize_returns_camel_case(self):
         """Verify serialization produces camelCase keys."""
-        from schemas.api_contract import serialize_transaction, TransactionFields
+        from api.contracts.contract_schema import serialize_transaction, TransactionFields
 
         # Create a mock transaction object
         class MockTransaction:
@@ -111,7 +111,7 @@ class TestTransactionSerializer:
 
     def test_serialize_sale_type_is_enum(self):
         """Verify saleType is converted to lowercase enum."""
-        from schemas.api_contract import serialize_transaction, SaleType
+        from api.contracts.contract_schema import serialize_transaction, SaleType
 
         class MockTransaction:
             id = 1
@@ -138,7 +138,7 @@ class TestTransactionSerializer:
 
     def test_dual_mode_includes_both_formats(self):
         """Verify dual mode (default) includes both old and new keys."""
-        from schemas.api_contract import serialize_transaction
+        from api.contracts.contract_schema import serialize_transaction
 
         class MockTransaction:
             id = 1
@@ -175,7 +175,7 @@ class TestApiContractVersion:
 
     def test_contract_version_defined(self):
         """Verify API_CONTRACT_VERSION is defined."""
-        from schemas.api_contract import API_CONTRACT_VERSION
+        from api.contracts.contract_schema import API_CONTRACT_VERSION
 
         assert API_CONTRACT_VERSION is not None
         assert API_CONTRACT_VERSION == 'v2'
@@ -186,7 +186,7 @@ class TestFilterParamParsing:
 
     def test_parses_v2_sale_type_param(self):
         """Verify v2 saleType enum is converted to DB value."""
-        from schemas.api_contract import parse_filter_params
+        from api.contracts.contract_schema import parse_filter_params
 
         params = parse_filter_params({'saleType': 'new_sale'})
         assert params.get('sale_type_db') == 'New Sale'
@@ -196,14 +196,14 @@ class TestFilterParamParsing:
 
     def test_parses_v1_sale_type_param(self):
         """Verify v1 sale_type (DB value) is passed through."""
-        from schemas.api_contract import parse_filter_params
+        from api.contracts.contract_schema import parse_filter_params
 
         params = parse_filter_params({'sale_type': 'New Sale'})
         assert params.get('sale_type_db') == 'New Sale'
 
     def test_v2_takes_precedence(self):
         """If both v1 and v2 params present, v2 (saleType) takes precedence."""
-        from schemas.api_contract import parse_filter_params
+        from api.contracts.contract_schema import parse_filter_params
 
         params = parse_filter_params({
             'saleType': 'resale',
@@ -401,7 +401,7 @@ class TestTransactionsListEndpointContract:
             pytest.skip("API not available")
 
         data = response.get_json()
-        from schemas.api_contract import SaleType
+        from api.contracts.contract_schema import SaleType
 
         for txn in data.get('transactions', []):
             sale_type = txn.get('saleType')
@@ -451,7 +451,7 @@ class TestTransactionsListEndpointContract:
             pytest.skip("API not available")
 
         data = response.get_json()
-        from schemas.api_contract import API_CONTRACT_VERSION
+        from api.contracts.contract_schema import API_CONTRACT_VERSION
 
         assert 'meta' in data
         assert data['meta'].get('apiContractVersion') == API_CONTRACT_VERSION
@@ -463,7 +463,7 @@ class TestAggregateSerializer:
 
     def test_serialize_aggregate_row_transforms_sale_type(self):
         """Verify sale_type is converted to lowercase enum."""
-        from schemas.api_contract import serialize_aggregate_row, SaleType
+        from api.contracts.contract_schema import serialize_aggregate_row, SaleType
 
         row = {'sale_type': 'New Sale', 'count': 10, 'avg_psf': 1500.0}
         result = serialize_aggregate_row(row, include_deprecated=False)
@@ -473,7 +473,7 @@ class TestAggregateSerializer:
 
     def test_serialize_aggregate_row_transforms_region(self):
         """Verify region is converted to lowercase."""
-        from schemas.api_contract import serialize_aggregate_row
+        from api.contracts.contract_schema import serialize_aggregate_row
 
         row = {'region': 'CCR', 'count': 10}
         result = serialize_aggregate_row(row, include_deprecated=False)
@@ -482,7 +482,7 @@ class TestAggregateSerializer:
 
     def test_serialize_aggregate_row_transforms_bedroom(self):
         """Verify bedroom → bedroomCount."""
-        from schemas.api_contract import serialize_aggregate_row
+        from api.contracts.contract_schema import serialize_aggregate_row
 
         row = {'bedroom': 3, 'count': 10}
         result = serialize_aggregate_row(row, include_deprecated=False)
@@ -492,7 +492,7 @@ class TestAggregateSerializer:
 
     def test_serialize_aggregate_row_transforms_metrics(self):
         """Verify metric fields are camelCased."""
-        from schemas.api_contract import serialize_aggregate_row
+        from api.contracts.contract_schema import serialize_aggregate_row
 
         row = {
             'avg_psf': 1500.0,
@@ -511,7 +511,7 @@ class TestAggregateSerializer:
 
     def test_serialize_aggregate_row_dual_mode(self):
         """Verify dual mode includes both old and new fields."""
-        from schemas.api_contract import serialize_aggregate_row
+        from api.contracts.contract_schema import serialize_aggregate_row
 
         row = {'sale_type': 'Resale', 'avg_psf': 1500.0, 'bedroom': 2}
         result = serialize_aggregate_row(row, include_deprecated=True)
@@ -526,7 +526,7 @@ class TestAggregateSerializer:
 
     def test_serialize_aggregate_response_adds_meta(self):
         """Verify response includes API contract version in meta."""
-        from schemas.api_contract import serialize_aggregate_response, API_CONTRACT_VERSION
+        from api.contracts.contract_schema import serialize_aggregate_response, API_CONTRACT_VERSION
 
         data = [{'month': '2024-01', 'count': 10}]
         meta = {'total_records': 100}
@@ -564,7 +564,7 @@ class TestAggregateEndpointContract:
             pytest.skip("API not available")
 
         data = response.get_json()
-        from schemas.api_contract import SaleType
+        from api.contracts.contract_schema import SaleType
 
         for row in data.get('data', []):
             sale_type = row.get('saleType')
@@ -648,7 +648,7 @@ class TestAggregateEndpointContract:
             pytest.skip("API not available")
 
         data = response.get_json()
-        from schemas.api_contract import API_CONTRACT_VERSION
+        from api.contracts.contract_schema import API_CONTRACT_VERSION
 
         assert 'meta' in data
         assert data['meta'].get('apiContractVersion') == API_CONTRACT_VERSION
@@ -664,7 +664,7 @@ class TestAggregateEndpointContract:
             pytest.skip("API not available")
 
         data = response.get_json()
-        from schemas.api_contract import API_CONTRACT_VERSION
+        from api.contracts.contract_schema import API_CONTRACT_VERSION
 
         assert data['data'] == []
         assert 'meta' in data
@@ -676,7 +676,7 @@ class TestFilterOptionsSerializer:
 
     def test_serialize_filter_options_sale_types_as_value_label(self):
         """Verify sale_types are returned as {value, label} objects."""
-        from schemas.api_contract import serialize_filter_options, SaleType
+        from api.contracts.contract_schema import serialize_filter_options, SaleType
 
         result = serialize_filter_options(
             districts=['D01', 'D02'],
@@ -709,7 +709,7 @@ class TestFilterOptionsSerializer:
 
     def test_serialize_filter_options_tenures_as_value_label(self):
         """Verify tenures are returned as {value, label} objects."""
-        from schemas.api_contract import serialize_filter_options, Tenure
+        from api.contracts.contract_schema import serialize_filter_options, Tenure
 
         result = serialize_filter_options(
             districts=['D01'],
@@ -746,7 +746,7 @@ class TestFilterOptionsSerializer:
 
     def test_serialize_filter_options_regions_as_value_label(self):
         """Verify regions are returned as {value, label} objects."""
-        from schemas.api_contract import serialize_filter_options
+        from api.contracts.contract_schema import serialize_filter_options
 
         result = serialize_filter_options(
             districts=['D01', 'D15', 'D18'],
@@ -784,7 +784,7 @@ class TestFilterOptionsSerializer:
 
     def test_serialize_filter_options_districts_as_value_label(self):
         """Verify districts are returned as {value, label} objects."""
-        from schemas.api_contract import serialize_filter_options
+        from api.contracts.contract_schema import serialize_filter_options
 
         result = serialize_filter_options(
             districts=['D01', 'D15'],
@@ -813,7 +813,7 @@ class TestFilterOptionsSerializer:
 
     def test_serialize_filter_options_bedrooms_as_value_label(self):
         """Verify bedrooms are returned as {value, label} with 5_plus handling."""
-        from schemas.api_contract import serialize_filter_options, Bedroom
+        from api.contracts.contract_schema import serialize_filter_options, Bedroom
 
         result = serialize_filter_options(
             districts=['D01'],
@@ -848,7 +848,7 @@ class TestFilterOptionsSerializer:
 
     def test_serialize_filter_options_includes_market_segments(self):
         """Verify marketSegments field is included."""
-        from schemas.api_contract import serialize_filter_options, FilterOptionsFields
+        from api.contracts.contract_schema import serialize_filter_options, FilterOptionsFields
 
         result = serialize_filter_options(
             districts=['D01'],
@@ -873,7 +873,7 @@ class TestFilterOptionsSerializer:
 
     def test_serialize_filter_options_dual_mode(self):
         """Verify dual mode includes both v2 {value,label} and v1 raw values."""
-        from schemas.api_contract import serialize_filter_options
+        from api.contracts.contract_schema import serialize_filter_options
 
         result = serialize_filter_options(
             districts=['D01'],
@@ -904,7 +904,7 @@ class TestFilterOptionsSerializer:
 
     def test_serialize_filter_options_includes_contract_version(self):
         """Verify API contract version is included."""
-        from schemas.api_contract import serialize_filter_options, API_CONTRACT_VERSION
+        from api.contracts.contract_schema import serialize_filter_options, API_CONTRACT_VERSION
 
         result = serialize_filter_options(
             districts=[],
@@ -923,7 +923,7 @@ class TestFilterOptionsSerializer:
 
     def test_serialize_filter_options_preserves_camel_case_fields(self):
         """Verify camelCase field names are used."""
-        from schemas.api_contract import serialize_filter_options, FilterOptionsFields
+        from api.contracts.contract_schema import serialize_filter_options, FilterOptionsFields
 
         result = serialize_filter_options(
             districts=['D01'],
@@ -975,7 +975,7 @@ class TestFilterOptionsEndpointContract:
             pytest.skip("API not available")
 
         data = response.get_json()
-        from schemas.api_contract import SaleType
+        from api.contracts.contract_schema import SaleType
 
         sale_types = data.get('saleTypes', [])
         assert len(sale_types) > 0, "Should have sale type options"
@@ -1055,7 +1055,7 @@ class TestFilterOptionsEndpointContract:
             pytest.skip("API not available")
 
         data = response.get_json()
-        from schemas.api_contract import Bedroom
+        from api.contracts.contract_schema import Bedroom
 
         bedrooms = data.get('bedrooms', [])
         assert len(bedrooms) > 0, "Should have bedroom options"
@@ -1143,7 +1143,7 @@ class TestFilterOptionsEndpointContract:
             pytest.skip("API not available")
 
         data = response.get_json()
-        from schemas.api_contract import API_CONTRACT_VERSION
+        from api.contracts.contract_schema import API_CONTRACT_VERSION
 
         assert data.get('apiContractVersion') == API_CONTRACT_VERSION
 
@@ -1186,7 +1186,7 @@ class TestDashboardSerializer:
 
     def test_serialize_time_series_panel_camel_case(self):
         """Verify time_series panel uses camelCase."""
-        from schemas.api_contract import serialize_time_series_panel
+        from api.contracts.contract_schema import serialize_time_series_panel
 
         data = [
             {'period': '2024-01', 'count': 10, 'avg_psf': 1500.0, 'median_psf': 1450.0,
@@ -1210,7 +1210,7 @@ class TestDashboardSerializer:
 
     def test_serialize_time_series_panel_dual_mode(self):
         """Verify dual mode includes both old and new fields."""
-        from schemas.api_contract import serialize_time_series_panel
+        from api.contracts.contract_schema import serialize_time_series_panel
 
         data = [{'period': '2024-01', 'count': 10, 'avg_psf': 1500.0}]
         result = serialize_time_series_panel(data, include_deprecated=True)
@@ -1221,7 +1221,7 @@ class TestDashboardSerializer:
 
     def test_serialize_bedroom_mix_transforms_sale_type(self):
         """Verify bedroom_mix transforms sale_type to enum."""
-        from schemas.api_contract import serialize_bedroom_mix_panel, SaleType
+        from api.contracts.contract_schema import serialize_bedroom_mix_panel, SaleType
 
         data = [
             {'period': '2024-01', 'bedroom': 3, 'sale_type': 'New Sale', 'count': 10}
@@ -1236,7 +1236,7 @@ class TestDashboardSerializer:
 
     def test_serialize_bedroom_mix_dual_mode(self):
         """Verify dual mode includes both old and new fields."""
-        from schemas.api_contract import serialize_bedroom_mix_panel
+        from api.contracts.contract_schema import serialize_bedroom_mix_panel
 
         data = [{'period': '2024-01', 'bedroom': 3, 'sale_type': 'Resale', 'count': 10}]
         result = serialize_bedroom_mix_panel(data, include_deprecated=True)
@@ -1249,7 +1249,7 @@ class TestDashboardSerializer:
 
     def test_serialize_sale_type_breakdown_transforms_sale_type(self):
         """Verify sale_type_breakdown transforms sale_type to enum."""
-        from schemas.api_contract import serialize_sale_type_breakdown_panel, SaleType
+        from api.contracts.contract_schema import serialize_sale_type_breakdown_panel, SaleType
 
         data = [
             {'period': '2024-01', 'sale_type': 'Resale', 'count': 100, 'total_value': 150000000}
@@ -1264,7 +1264,7 @@ class TestDashboardSerializer:
 
     def test_serialize_summary_panel_camel_case(self):
         """Verify summary panel uses camelCase."""
-        from schemas.api_contract import serialize_summary_panel
+        from api.contracts.contract_schema import serialize_summary_panel
 
         data = {
             'total_count': 1000,
@@ -1296,7 +1296,7 @@ class TestDashboardSerializer:
 
     def test_serialize_dashboard_response_adds_meta(self):
         """Verify dashboard response includes API contract version."""
-        from schemas.api_contract import serialize_dashboard_response, API_CONTRACT_VERSION
+        from api.contracts.contract_schema import serialize_dashboard_response, API_CONTRACT_VERSION
 
         data = {'summary': {'total_count': 100}}
         meta = {'cache_hit': True, 'elapsed_ms': 50.0}
@@ -1309,7 +1309,7 @@ class TestDashboardSerializer:
 
     def test_serialize_volume_by_location_camel_case(self):
         """Verify volume_by_location uses camelCase."""
-        from schemas.api_contract import serialize_volume_by_location_panel
+        from api.contracts.contract_schema import serialize_volume_by_location_panel
 
         data = [
             {'location': 'CCR', 'count': 100, 'total_value': 150000000, 'avg_psf': 2500.0}
@@ -1374,7 +1374,7 @@ class TestDashboardEndpointContract:
             pytest.skip("API not available")
 
         data = response.get_json()
-        from schemas.api_contract import SaleType
+        from api.contracts.contract_schema import SaleType
 
         bedroom_mix = data.get('data', {}).get('bedroom_mix', [])
         for row in bedroom_mix:
@@ -1398,7 +1398,7 @@ class TestDashboardEndpointContract:
             pytest.skip("API not available")
 
         data = response.get_json()
-        from schemas.api_contract import SaleType
+        from api.contracts.contract_schema import SaleType
 
         breakdown = data.get('data', {}).get('sale_type_breakdown', [])
         for row in breakdown:
@@ -1465,7 +1465,7 @@ class TestDashboardEndpointContract:
             pytest.skip("API not available")
 
         data = response.get_json()
-        from schemas.api_contract import API_CONTRACT_VERSION
+        from api.contracts.contract_schema import API_CONTRACT_VERSION
 
         assert 'meta' in data
         assert data['meta'].get('apiContractVersion') == API_CONTRACT_VERSION

@@ -1,7 +1,7 @@
 {
   "_metadata": {
-    "generated_at": "2025-12-28T05:03:16.997570+00:00",
-    "git_sha": "3c536d3",
+    "generated_at": "2025-12-29T14:44:56.798766+00:00",
+    "git_sha": "b98d32d",
     "api_version": "v3",
     "slice_count": 9
   },
@@ -14,10 +14,10 @@
         "date_to": "2025-10-01"
       },
       "metrics": {
-        "count": 1171,
-        "median_psf": 2733.381725021349,
-        "avg_psf": 2675.702211784799,
-        "total_value": 3111849702.0
+        "count": 2363,
+        "median_psf": 2734.202285230639,
+        "avg_psf": 2677.95846804909,
+        "total_value": 6283010092.0
       }
     },
     "segment_CCR_2025-10": {
@@ -28,10 +28,10 @@
         "date_to": "2025-11-01"
       },
       "metrics": {
-        "count": 1081,
-        "median_psf": 2783.6975023126734,
-        "avg_psf": 2711.5675948196117,
-        "total_value": 2912111066.0
+        "count": 2190,
+        "median_psf": 2781.981735159817,
+        "avg_psf": 2711.651415525114,
+        "total_value": 5901948735.0
       }
     },
     "segment_CCR_2025-11": {
@@ -42,10 +42,10 @@
         "date_to": "2025-12-01"
       },
       "metrics": {
-        "count": 191,
-        "median_psf": 2307.0,
-        "avg_psf": 2426.57,
-        "total_value": 535145020.0
+        "count": 540,
+        "median_psf": 2302.1111111111113,
+        "avg_psf": 2405.7496296296295,
+        "total_value": 1505489111.0
       }
     },
     "segment_RCR_2025-09": {
@@ -56,10 +56,10 @@
         "date_to": "2025-10-01"
       },
       "metrics": {
-        "count": 2228,
-        "median_psf": 2583.2603231597845,
-        "avg_psf": 2463.1837881508077,
-        "total_value": 5240034748.0
+        "count": 4537,
+        "median_psf": 2580.111086621115,
+        "avg_psf": 2458.77794137095,
+        "total_value": 10639750736.0
       }
     },
     "segment_RCR_2025-10": {
@@ -70,10 +70,10 @@
         "date_to": "2025-11-01"
       },
       "metrics": {
-        "count": 2118,
-        "median_psf": 2637.2223796033995,
-        "avg_psf": 2512.133975448536,
-        "total_value": 5028986137.0
+        "count": 4324,
+        "median_psf": 2629.004625346901,
+        "avg_psf": 2504.0625485661426,
+        "total_value": 10223811490.0
       }
     },
     "segment_RCR_2025-11": {
@@ -84,10 +84,10 @@
         "date_to": "2025-12-01"
       },
       "metrics": {
-        "count": 422,
-        "median_psf": 2083.5,
-        "avg_psf": 2124.2,
-        "total_value": 923778959.0
+        "count": 1193,
+        "median_psf": 2058.924559932942,
+        "avg_psf": 2092.6116512992458,
+        "total_value": 2549439552.0
       }
     },
     "segment_OCR_2025-09": {
@@ -98,10 +98,10 @@
         "date_to": "2025-10-01"
       },
       "metrics": {
-        "count": 1154,
-        "median_psf": 1643.9064124783363,
-        "avg_psf": 1679.890485268631,
-        "total_value": 1992484528.0
+        "count": 2371,
+        "median_psf": 1651.5474483340363,
+        "avg_psf": 1683.8915183466893,
+        "total_value": 4089385608.0
       }
     },
     "segment_OCR_2025-10": {
@@ -112,10 +112,10 @@
         "date_to": "2025-11-01"
       },
       "metrics": {
-        "count": 1062,
-        "median_psf": 1681.8483992467043,
-        "avg_psf": 1738.166177024482,
-        "total_value": 1887102846.0
+        "count": 2216,
+        "median_psf": 1688.3366425992779,
+        "avg_psf": 1739.879869133574,
+        "total_value": 3922508956.0
       }
     },
     "segment_OCR_2025-11": {
@@ -126,10 +126,10 @@
         "date_to": "2025-12-01"
       },
       "metrics": {
-        "count": 466,
-        "median_psf": 1724.5,
-        "avg_psf": 1778.5,
-        "total_value": 835479182.0
+        "count": 1318,
+        "median_psf": 1706.5561456752655,
+        "avg_psf": 1755.1273444613048,
+        "total_value": 2358473527.0
       }
     }
   }

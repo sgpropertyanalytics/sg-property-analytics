@@ -105,14 +105,14 @@ class TestRegionParamAlias:
 
         source = inspect.getsource(aggregate)
 
-        # Check that region param is read
-        assert 'request.args.get("region")' in source, \
-            "region param should be read from request"
+        # Route should use normalized params (contract parsing owns aliases)
+        assert "normalized_params" in source, \
+            "aggregate route should read g.normalized_params"
 
-        # Check that it's used (either aliased to segment or handled)
-        assert 'segment = request.args.get("segment") or request.args.get("region")' in source or \
-               'region' in source.lower(), \
-            "region param should be aliased to segment"
+        # Contract schema should expose region as an alias for segment
+        from api.contracts.schemas.aggregate import AGGREGATE_PARAM_SCHEMA
+        assert "region" in AGGREGATE_PARAM_SCHEMA.fields, \
+            "aggregate contract should accept region alias"
 
 
 class TestMedianVsAvgValues:

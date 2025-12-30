@@ -10,7 +10,6 @@ from pathlib import Path
 from api.contracts.schemas import transactions
 from api.contracts import get_contract
 from api.contracts.validate import validate_public_params, ContractViolation
-from api.contracts.normalize import normalize_params
 
 
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots"
@@ -74,7 +73,7 @@ class TestPriceGrowthValidation:
     def test_validate_valid_floor_level(self):
         """Valid floor_level should pass."""
         contract = get_contract("transactions/price-growth")
-        params = {"floor_level": "Mid"}
+        params = {"floor_level": "mid"}
         validate_public_params(params, contract.param_schema)
 
     def test_validate_invalid_floor_level(self):

@@ -4,14 +4,14 @@
 
 ## Core Rule
 All categorical "bucket" keys (age bands, sale type, region, labels, etc.) MUST come from the canonical enums in:
-- `backend/schemas/api_contract.py`
+- `backend/api/contracts/contract_schema.py`
 
 No other file (SQL, routes, frontend, utils) may invent, rename, or extend bucket keys.
 
 ---
 
 ## 1) Single Source of Truth
-**Canonical:** `PropertyAgeBucket` (and other enums) in `backend/schemas/api_contract.py`
+**Canonical:** `PropertyAgeBucket` (and other enums) in `backend/api/contracts/contract_schema.py`
 
 ✅ Allowed
 - Backend computes `age_band` using the canonical enum keys.
@@ -20,7 +20,7 @@ No other file (SQL, routes, frontend, utils) may invent, rename, or extend bucke
 ❌ Forbidden
 - Adding new bucket keys not present in the enum (e.g., `just_top`).
 - Duplicating bucket definitions in SQL or frontend.
-- Hardcoding bucket strings outside `api_contract.py`.
+- Hardcoding bucket strings outside `contract_schema.py`.
 
 ---
 
@@ -30,7 +30,7 @@ Age band classification MUST happen in backend code, using `PropertyAgeBucket.cl
 ✅ Required pattern
 ```python
 # Use canonical classifier
-from schemas.api_contract import PropertyAgeBucket
+from api.contracts.contract_schema import PropertyAgeBucket
 
 age_band = PropertyAgeBucket.classify(
     age=property_age,
@@ -72,7 +72,7 @@ This ensures bucket keys come from the canonical source.
 ---
 
 ## 4) Contract Tests (Hard Guardrail)
-Tests in `tests/test_api_contract.py` enforce:
+Tests in `tests/test_contract_schema.py` enforce:
 
 - `test_classify_returns_valid_keys_only` - classify() only returns valid keys
 - `test_enum_key_snapshot` - enum keys don't change without intent
@@ -83,7 +83,7 @@ If enum keys change, tests fail immediately.
 ---
 
 ## 5) Review Checklist (Before Merge)
-- [ ] No new bucket strings added outside `api_contract.py`
+- [ ] No new bucket strings added outside `contract_schema.py`
 - [ ] SQL uses PropertyAgeBucket constants (not hardcoded strings)
 - [ ] Backend is the only place mapping age → age_band
 - [ ] All tests in TestPropertyAgeBucket pass

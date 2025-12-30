@@ -65,7 +65,7 @@ The following backwards compatibility layers have been removed:
 
 | Pattern | Former Purpose | Removal Reason |
 |---------|----------------|----------------|
-| `api_contract.py` dual serializers | Returned both v1 (snake_case) and v2 (camelCase) fields | Frontend migrated to v2-only, all endpoints default to v2 |
+| `contract_schema.py` dual serializers | Returned both v1 (snake_case) and v2 (camelCase) fields | Frontend migrated to v2-only, all endpoints default to v2 |
 | `?schema=v2` parameter | Allowed clients to opt into v2-only output | Now v2-only by default, parameter ignored |
 | `include_deprecated` parameter | Controlled whether v1 fields were included | Removed from all serializers, v1 fields deleted |
 
@@ -117,4 +117,4 @@ git log --oneline -20 -- <file_path>
 | Date | Action | Files |
 |------|--------|-------|
 | 2024-12-29 | Initial inventory created | N/A |
-| 2025-12-29 | v2 API migration complete - removed dual serializers | `api_contract.py`, routes, tests |
+| 2025-12-29 | v2 API migration complete - removed dual serializers | `contract_schema.py`, routes, tests |

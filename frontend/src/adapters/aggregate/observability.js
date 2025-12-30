@@ -6,6 +6,7 @@
  */
 
 import { isDev } from './validation';
+import { API_CONTRACT_VERSION } from '../../schemas/apiContract';
 
 /**
  * Log debug information about a data fetch.
@@ -26,7 +27,7 @@ export const logFetchDebug = (chartName, { endpoint, timeGrain, response, rowCou
   console.log('Endpoint:', endpoint);
   console.log('Time Grain:', timeGrain);
   if (response?.meta) {
-    console.log('API Contract Version:', response.meta.apiContractVersion || 'v1');
+    console.log('API Contract Version:', response.meta.apiContractVersion || API_CONTRACT_VERSION);
   }
   console.log('Row Count:', rowCount);
   if (rowCount > 0 && response?.data?.[0]) {

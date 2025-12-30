@@ -26,7 +26,7 @@ from services.classifier_extended import (
     classify_remaining_lease_band,
 )
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE, get_region_for_district
-from schemas.api_contract import PropertyAgeBucket
+from api.contracts.contract_schema import PropertyAgeBucket
 
 # Table name constant for reference
 MASTER_TABLE = "transactions"  # Use SQLAlchemy transactions table

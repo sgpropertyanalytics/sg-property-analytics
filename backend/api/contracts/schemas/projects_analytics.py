@@ -37,7 +37,17 @@ PROJECT_INVENTORY_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 PROJECT_INVENTORY_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "project_name": FieldSpec(name="project_name", type=str, required=True),
+        "cumulative_new_sales": FieldSpec(name="cumulative_new_sales", type=int, required=True),
+        "cumulative_resales": FieldSpec(name="cumulative_resales", type=int, required=False),
+        "total_transactions": FieldSpec(name="total_transactions", type=int, required=False),
+        "total_units": FieldSpec(name="total_units", type=int, required=False),
+        "estimated_unsold": FieldSpec(name="estimated_unsold", type=int, required=False),
+        "percent_sold": FieldSpec(name="percent_sold", type=float, required=False),
+        "data_source": FieldSpec(name="data_source", type=str, required=False),
+        "message": FieldSpec(name="message", type=str, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
@@ -76,12 +86,6 @@ PROJECT_PRICE_BANDS_PARAM_SCHEMA = ParamSchema(
             type=float,
             description="User's unit PSF for verdict calculation (300-10000)"
         ),
-        "schema": FieldSpec(
-            name="schema",
-            type=str,
-            allowed_values=["v2"],
-            description="'v2' for strict camelCase only"
-        ),
     },
     aliases={}
 )
@@ -91,12 +95,22 @@ PROJECT_PRICE_BANDS_SERVICE_SCHEMA = ServiceBoundarySchema(
         "project_name": FieldSpec(name="project_name", type=str, required=True),
         "window_months": FieldSpec(name="window_months", type=int, default=24),
         "unit_psf": FieldSpec(name="unit_psf", type=float),
-        "strict_v2": FieldSpec(name="strict_v2", type=bool, default=False),
     }
 )
 
 PROJECT_PRICE_BANDS_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "projectName": FieldSpec(name="projectName", type=str, required=False),
+        "dataSource": FieldSpec(name="dataSource", type=str, required=False),
+        "proxyLabel": FieldSpec(name="proxyLabel", type=str, required=False),
+        "bands": FieldSpec(name="bands", type=list, required=False),
+        "latest": FieldSpec(name="latest", type=dict, required=False),
+        "trend": FieldSpec(name="trend", type=dict, required=False),
+        "verdict": FieldSpec(name="verdict", type=dict, required=False),
+        "dataQuality": FieldSpec(name="dataQuality", type=dict, required=False),
+        "error": FieldSpec(name="error", type=str, required=False),
+        "apiContractVersion": FieldSpec(name="apiContractVersion", type=str, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
@@ -159,27 +173,25 @@ register_contract(RESALE_PROJECTS_CONTRACT)
 # =============================================================================
 
 PROJECT_EXIT_QUEUE_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "v2": FieldSpec(
-            name="v2",
-            type=str,
-            default="true",
-            allowed_values=["true", "false"],
-            description="Include _v2 nested object with camelCase keys"
-        ),
-    },
+    fields={},
     aliases={}
 )
 
 PROJECT_EXIT_QUEUE_SERVICE_SCHEMA = ServiceBoundarySchema(
     fields={
         "project_name": FieldSpec(name="project_name", type=str, required=True),
-        "include_v2": FieldSpec(name="include_v2", type=bool, default=True),
     }
 )
 
 PROJECT_EXIT_QUEUE_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "projectName": FieldSpec(name="projectName", type=str, required=False),
+        "dataQuality": FieldSpec(name="dataQuality", type=dict, required=False),
+        "fundamentals": FieldSpec(name="fundamentals", type=dict, required=False),
+        "resaleMetrics": FieldSpec(name="resaleMetrics", type=dict, required=False),
+        "riskAssessment": FieldSpec(name="riskAssessment", type=dict, required=False),
+        "gatingFlags": FieldSpec(name="gatingFlags", type=dict, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),

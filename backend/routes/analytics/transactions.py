@@ -9,10 +9,11 @@ Endpoints:
 """
 
 import time
-from flask import request, jsonify
+from datetime import timedelta
+from flask import jsonify, g
 from routes.analytics import analytics_bp
 from utils.normalize import (
-    to_int, to_date, clamp_date_to_today,
+    clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
@@ -37,18 +38,15 @@ def get_transaction_price_growth():
         Filters:
         - project: Project name (partial match)
         - bedroom: Bedroom count (1-5)
-        - floor_level: Floor tier (Low, Mid-Low, Mid, Mid-High, High, Luxury, Unknown)
+        - floor_level: Floor tier (low, mid_low, mid, mid_high, high, luxury, unknown)
         - district: District code (D01-D28)
         - date_from: Start date (YYYY-MM-DD)
         - date_to: End date (YYYY-MM-DD)
-        - sale_type: Sale type ('New Sale', 'Resale', 'Sub Sale')
+        - sale_type: Sale type ('new_sale', 'resale', 'sub_sale')
 
         Pagination:
         - page: Page number (default 1)
         - per_page: Records per page (default 50, max 500)
-
-        Schema:
-        - schema: 'v2' for strict camelCase only, omit for dual-mode
 
     Example:
         GET /api/transactions/price-growth?project=THE%20ORIE&bedroom=2&page=1
@@ -57,29 +55,39 @@ def get_transaction_price_growth():
     from services.price_growth_service import get_transaction_price_growth as compute_growth
 
     try:
-        # Parse filter params using normalize utilities
-        project_name = request.args.get('project')
-        bedroom_count = to_int(request.args.get('bedroom'), field='bedroom')
-        floor_level = request.args.get('floor_level')
-        district = request.args.get('district')
-        sale_type = request.args.get('sale_type')
+        params = getattr(g, "normalized_params", {}) or {}
 
-        # Parse date params (must be Python date objects for SQL guardrails)
-        date_from = to_date(request.args.get('date_from'), field='date_from')
-        date_to = clamp_date_to_today(to_date(request.args.get('date_to'), field='date_to'))
+        project_name = params.get("project")
+        bedroom_count = params.get("bedroom")
+        floor_level = params.get("floor_level")
+        sale_type = params.get("sale_type")
 
-        # Parse pagination params
-        page = to_int(request.args.get('page'), default=1, field='page')
-        per_page = to_int(request.args.get('per_page'), default=50, field='per_page')
+        if floor_level:
+            from api.contracts.contract_schema import FloorLevel
+            floor_level = FloorLevel.to_db(floor_level)
+
+        if sale_type:
+            from api.contracts.contract_schema import SaleType
+            sale_type = SaleType.to_db(sale_type)
+
+        district = params.get("district")
+        if district is None:
+            districts = params.get("districts") or []
+            district = districts[0] if districts else None
+
+        date_from = params.get("date_from")
+        date_to = None
+        date_to_exclusive = params.get("date_to_exclusive")
+        if date_to_exclusive:
+            date_to = clamp_date_to_today(date_to_exclusive - timedelta(days=1))
+
+        page = params.get("page", 1)
+        per_page = params.get("per_page", 50)
 
     except NormalizeValidationError as e:
         return validation_error_response(e)
 
     try:
-
-        # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
-        schema_version = request.args.get('schema', 'v2').lower()
-        strict_v2 = schema_version != 'v1'
 
         # Compute price growth
         result = compute_growth(
@@ -94,15 +102,10 @@ def get_transaction_price_growth():
             per_page=per_page
         )
 
-        # Serialize response (future: add proper serializer in api_contract.py)
-        # For now, return as-is with schema mode handling
-        if strict_v2:
-            # TODO: Implement serialize_price_growth_v2 in api_contract.py
-            response = result
-            response['apiContractVersion'] = 'v2'
-        else:
-            # Default: return raw result (already in camelCase from service)
-            response = result
+        # Serialize response (future: add proper serializer in api/contracts/contract_schema.py)
+        # For now, return as-is with v2 metadata.
+        response = result
+        response['apiContractVersion'] = 'v2'
 
         elapsed = time.time() - start
         print(f"GET /api/transactions/price-growth completed in {elapsed:.4f}s")
@@ -128,9 +131,7 @@ def get_price_growth_segments():
     Query params:
         - project: Project name (partial match)
         - district: District code (D01-D28)
-        - sale_type: Sale type ('New Sale', 'Resale', 'Sub Sale')
-        - schema: 'v2' for strict camelCase only, omit for dual-mode
-
+        - sale_type: Sale type ('new_sale', 'resale', 'sub_sale')
     Example:
         GET /api/transactions/price-growth/segments?district=D09
     """
@@ -138,14 +139,18 @@ def get_price_growth_segments():
     from services.price_growth_service import get_segment_summary
 
     try:
-        # Parse filter params
-        project_name = request.args.get('project')
-        district = request.args.get('district')
-        sale_type = request.args.get('sale_type')
+        params = getattr(g, "normalized_params", {}) or {}
 
-        # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
-        schema_version = request.args.get('schema', 'v2').lower()
-        strict_v2 = schema_version != 'v1'
+        project_name = params.get("project")
+        sale_type = params.get("sale_type")
+        if sale_type:
+            from api.contracts.contract_schema import SaleType
+            sale_type = SaleType.to_db(sale_type)
+
+        district = params.get("district")
+        if district is None:
+            districts = params.get("districts") or []
+            district = districts[0] if districts else None
 
         # Get segment summary
         segments = get_segment_summary(
@@ -155,9 +160,7 @@ def get_price_growth_segments():
         )
 
         # Build response
-        response = {"data": segments}
-        if strict_v2:
-            response['apiContractVersion'] = 'v2'
+        response = {"data": segments, "apiContractVersion": "v2"}
 
         elapsed = time.time() - start
         print(f"GET /api/transactions/price-growth/segments completed in {elapsed:.4f}s")

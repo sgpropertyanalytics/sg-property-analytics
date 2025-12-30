@@ -1,9 +1,32 @@
 /**
  * API Contract Enums
  *
- * Enum values, labels, and type-checking helpers for API v2 responses.
- * Includes backwards compatibility with v1 DB string values.
+ * Enum values, labels, and type-checking helpers for API v2+ responses.
  */
+
+import { getContract } from '../../generated/apiContract';
+
+const warnOrThrow = (message) => {
+  if (import.meta.env.MODE === 'test') {
+    throw new Error(message);
+  }
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.warn(message);
+  }
+};
+
+const assertEnumMatch = (name, expected, actual, normalize = (val) => val) => {
+  if (!expected || expected.length === 0) return;
+  const expectedSet = new Set(expected.map(normalize));
+  const actualSet = new Set(actual.map(normalize));
+  for (const value of expectedSet) {
+    if (!actualSet.has(value)) {
+      warnOrThrow(`[API CONTRACT] ${name} enum missing value: ${value}`);
+      break;
+    }
+  }
+};
 
 // =============================================================================
 // SALE TYPE
@@ -11,7 +34,6 @@
 
 /**
  * Sale type enum values.
- * API returns these lowercase values in v2, but DB stores 'New Sale', 'Resale', etc.
  */
 export const SaleType = {
   NEW_SALE: 'new_sale',
@@ -28,22 +50,18 @@ export const SaleTypeLabels = {
   [SaleType.SUB_SALE]: 'Sub Sale',
 };
 
-/**
- * Helpers to check sale type regardless of v1 (DB) or v2 (API) format.
- */
 export const isSaleType = {
-  newSale: (val) => val === SaleType.NEW_SALE || val === 'New Sale',
-  resale: (val) => val === SaleType.RESALE || val === 'Resale',
-  subSale: (val) => val === SaleType.SUB_SALE || val === 'Sub Sale',
+  newSale: (val) => val === SaleType.NEW_SALE,
+  resale: (val) => val === SaleType.RESALE,
+  subSale: (val) => val === SaleType.SUB_SALE,
 };
 
 /**
- * Get display label for any sale type value (v1 or v2 format).
+ * Get display label for any sale type value.
  */
 export const getSaleTypeLabel = (val) => {
   if (!val) return 'Unknown';
   if (SaleTypeLabels[val]) return SaleTypeLabels[val];
-  if (['New Sale', 'Resale', 'Sub Sale'].includes(val)) return val;
   return val;
 };
 
@@ -79,27 +97,19 @@ export const TenureLabelsShort = {
 };
 
 /**
- * Get display label for any tenure value (v1 or v2 format).
+ * Get display label for any tenure value.
  */
 export const getTenureLabel = (val, short = false) => {
   if (!val) return 'Unknown';
   const labels = short ? TenureLabelsShort : TenureLabels;
   if (labels[val]) return labels[val];
-  if (['Freehold', '99-year', '999-year'].includes(val)) {
-    return short
-      ? { Freehold: 'FH', '99-year': '99yr', '999-year': '999yr' }[val]
-      : val;
-  }
   return val;
 };
 
-/**
- * Helpers to check tenure regardless of v1 (DB) or v2 (API) format.
- */
 export const isTenure = {
-  freehold: (val) => val === Tenure.FREEHOLD || val === 'Freehold',
-  leasehold99: (val) => val === Tenure.LEASEHOLD_99 || val === '99-year',
-  leasehold999: (val) => val === Tenure.LEASEHOLD_999 || val === '999-year',
+  freehold: (val) => val === Tenure.FREEHOLD,
+  leasehold99: (val) => val === Tenure.LEASEHOLD_99,
+  leasehold999: (val) => val === Tenure.LEASEHOLD_999,
 };
 
 // =============================================================================
@@ -124,12 +134,23 @@ export const RegionLabels = {
   [Region.OCR]: 'OCR',
 };
 
+const regionAllowed =
+  getContract('aggregate')?.param_schema?.fields?.segment?.allowed_values ||
+  getContract('dashboard')?.param_schema?.fields?.segment?.allowed_values ||
+  [];
+assertEnumMatch(
+  'Region',
+  regionAllowed,
+  Object.values(Region),
+  (val) => String(val).toLowerCase()
+);
+
 // =============================================================================
 // FLOOR LEVEL
 // =============================================================================
 
 /**
- * Floor level enum values (v2 API format - lowercase).
+ * Floor level enum values (API format - lowercase).
  *
  * Source of truth: backend/services/classifier_extended.py
  * Floor Classification Tiers:
@@ -151,24 +172,9 @@ export const FloorLevel = {
 };
 
 /**
- * Floor level DB values (what classifier_extended.py outputs).
- * Used for v1 API responses and aggregate endpoints.
- */
-export const FloorLevelDB = {
-  LOW: 'Low',
-  MID_LOW: 'Mid-Low',
-  MID: 'Mid',
-  MID_HIGH: 'Mid-High',
-  HIGH: 'High',
-  LUXURY: 'Luxury',
-  UNKNOWN: 'Unknown',
-};
-
-/**
  * Display labels for floor levels (with floor ranges).
  */
 export const FloorLevelLabels = {
-  // v2 API format
   [FloorLevel.LOW]: 'Low (01-05)',
   [FloorLevel.MID_LOW]: 'Mid-Low (06-10)',
   [FloorLevel.MID]: 'Mid (11-20)',
@@ -176,21 +182,22 @@ export const FloorLevelLabels = {
   [FloorLevel.HIGH]: 'High (31-40)',
   [FloorLevel.LUXURY]: 'Luxury (41+)',
   [FloorLevel.UNKNOWN]: 'Unknown',
-  // v1 DB format (for backwards compatibility)
-  [FloorLevelDB.LOW]: 'Low (01-05)',
-  [FloorLevelDB.MID_LOW]: 'Mid-Low (06-10)',
-  [FloorLevelDB.MID]: 'Mid (11-20)',
-  [FloorLevelDB.MID_HIGH]: 'Mid-High (21-30)',
-  [FloorLevelDB.HIGH]: 'High (31-40)',
-  [FloorLevelDB.LUXURY]: 'Luxury (41+)',
-  [FloorLevelDB.UNKNOWN]: 'Unknown',
 };
+
+const floorLevelAllowed =
+  getContract('transactions/price-growth')?.param_schema?.fields?.floor_level?.allowed_values ||
+  [];
+assertEnumMatch(
+  'FloorLevel',
+  floorLevelAllowed,
+  Object.values(FloorLevel),
+  (val) => String(val).toLowerCase().replace(/-/g, '_')
+);
 
 /**
  * Short labels for floor levels (just the classification name).
  */
 export const FloorLevelLabelsShort = {
-  // v2 API format
   [FloorLevel.LOW]: 'Low',
   [FloorLevel.MID_LOW]: 'Mid-Low',
   [FloorLevel.MID]: 'Mid',
@@ -198,31 +205,20 @@ export const FloorLevelLabelsShort = {
   [FloorLevel.HIGH]: 'High',
   [FloorLevel.LUXURY]: 'Luxury',
   [FloorLevel.UNKNOWN]: 'Unknown',
-  // v1 DB format
-  [FloorLevelDB.LOW]: 'Low',
-  [FloorLevelDB.MID_LOW]: 'Mid-Low',
-  [FloorLevelDB.MID]: 'Mid',
-  [FloorLevelDB.MID_HIGH]: 'Mid-High',
-  [FloorLevelDB.HIGH]: 'High',
-  [FloorLevelDB.LUXURY]: 'Luxury',
-  [FloorLevelDB.UNKNOWN]: 'Unknown',
 };
 
-/**
- * Helpers to check floor level regardless of v1 (DB) or v2 (API) format.
- */
 export const isFloorLevel = {
-  low: (val) => val === FloorLevel.LOW || val === FloorLevelDB.LOW,
-  midLow: (val) => val === FloorLevel.MID_LOW || val === FloorLevelDB.MID_LOW,
-  mid: (val) => val === FloorLevel.MID || val === FloorLevelDB.MID,
-  midHigh: (val) => val === FloorLevel.MID_HIGH || val === FloorLevelDB.MID_HIGH,
-  high: (val) => val === FloorLevel.HIGH || val === FloorLevelDB.HIGH,
-  luxury: (val) => val === FloorLevel.LUXURY || val === FloorLevelDB.LUXURY,
-  unknown: (val) => val === FloorLevel.UNKNOWN || val === FloorLevelDB.UNKNOWN,
+  low: (val) => val === FloorLevel.LOW,
+  midLow: (val) => val === FloorLevel.MID_LOW,
+  mid: (val) => val === FloorLevel.MID,
+  midHigh: (val) => val === FloorLevel.MID_HIGH,
+  high: (val) => val === FloorLevel.HIGH,
+  luxury: (val) => val === FloorLevel.LUXURY,
+  unknown: (val) => val === FloorLevel.UNKNOWN,
 };
 
 /**
- * Get display label for any floor level value (v1 or v2 format).
+ * Get display label for any floor level value.
  */
 export const getFloorLevelLabel = (val, short = false) => {
   if (!val) return 'Unknown';

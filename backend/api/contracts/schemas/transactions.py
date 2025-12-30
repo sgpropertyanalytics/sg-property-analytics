@@ -10,6 +10,7 @@ Endpoints:
 
 from datetime import date
 
+from api.contracts.contract_schema import SaleType, FloorLevel
 from ..registry import (
     EndpointContract,
     ParamSchema,
@@ -44,8 +45,8 @@ PRICE_GROWTH_PARAM_SCHEMA = ParamSchema(
             name="floor_level",
             type=str,
             nullable=True,
-            allowed_values=["Low", "Mid-Low", "Mid", "Mid-High", "High", "Luxury", "Unknown"],
-            description="Floor tier"
+            allowed_values=FloorLevel.ALL + [FloorLevel.UNKNOWN],
+            description="Floor tier (low, mid_low, mid, mid_high, high, luxury, unknown)"
         ),
         "district": FieldSpec(
             name="district",
@@ -57,7 +58,8 @@ PRICE_GROWTH_PARAM_SCHEMA = ParamSchema(
             name="sale_type",
             type=str,
             nullable=True,
-            description="Sale type (New Sale, Resale, Sub Sale)"
+            allowed_values=SaleType.ALL,
+            description="Sale type (new_sale, resale, sub_sale)"
         ),
         "date_from": FieldSpec(
             name="date_from",
@@ -86,14 +88,6 @@ PRICE_GROWTH_PARAM_SCHEMA = ParamSchema(
             description="Records per page (max 500)"
         ),
 
-        # Schema version
-        "schema": FieldSpec(
-            name="schema",
-            type=str,
-            default="v1",
-            allowed_values=["v1", "v2"],
-            description="Response schema version"
-        ),
     },
     aliases={
         "saleType": "sale_type",
@@ -115,7 +109,7 @@ PRICE_GROWTH_SERVICE_SCHEMA = ServiceBoundarySchema(
         "date_to": FieldSpec(name="date_to", type=date, nullable=True),
         "page": FieldSpec(name="page", type=int, default=1),
         "per_page": FieldSpec(name="per_page", type=int, default=50),
-        "schema": FieldSpec(name="schema", type=str, default="v1"),
+        
     }
 )
 
@@ -184,14 +178,8 @@ SEGMENTS_PARAM_SCHEMA = ParamSchema(
             name="sale_type",
             type=str,
             nullable=True,
-            description="Sale type (New Sale, Resale, Sub Sale)"
-        ),
-        "schema": FieldSpec(
-            name="schema",
-            type=str,
-            default="v1",
-            allowed_values=["v1", "v2"],
-            description="Response schema version"
+            allowed_values=SaleType.ALL,
+            description="Sale type (new_sale, resale, sub_sale)"
         ),
     },
     aliases={
@@ -204,7 +192,6 @@ SEGMENTS_SERVICE_SCHEMA = ServiceBoundarySchema(
         "project": FieldSpec(name="project", type=str, nullable=True),
         "district": FieldSpec(name="district", type=str, nullable=True),
         "sale_type": FieldSpec(name="sale_type", type=str, nullable=True),
-        "schema": FieldSpec(name="schema", type=str, default="v1"),
     }
 )
 

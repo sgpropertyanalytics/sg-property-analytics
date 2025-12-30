@@ -14,7 +14,7 @@ Tests:
 """
 
 import pytest
-from schemas.api_contract import (
+from api.contracts.contract_schema import (
     serialize_aggregate_row,
     serialize_aggregate_response,
     AggregateFields,

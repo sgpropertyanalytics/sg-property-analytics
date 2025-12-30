@@ -19,7 +19,16 @@ import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterCon
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { transformNewVsResaleSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
-import { SaleType, SaleTypeLabels, PremiumTrendLabels, isPremiumTrend, PropertyAgeBucket, PropertyAgeBucketLabels } from '../../schemas/apiContract';
+import {
+  SaleType,
+  SaleTypeLabels,
+  PremiumTrendLabels,
+  isPremiumTrend,
+  PropertyAgeBucket,
+  PropertyAgeBucketLabels,
+  NewVsResaleField,
+  getNewVsResaleField,
+} from '../../schemas/apiContract';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -141,7 +150,7 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
       const response = await getNewVsResale(params, { signal });
 
       // DEBUG: Log raw API response
-      const rawChartData = response.data?.chartData || [];
+      const rawChartData = getNewVsResaleField(response.data, NewVsResaleField.CHART_DATA) || [];
       const resalePrices = rawChartData.map(r => r.resalePrice);
       const hasAnyResaleData = resalePrices.some(p => p !== null && p !== undefined);
 
@@ -151,7 +160,7 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
         resalePricesWithData: resalePrices.filter(p => p !== null).length,
         hasAnyResaleData,
         sampleData: rawChartData.slice(0, 3),
-        summary: response.data?.summary,
+        summary: getNewVsResaleField(response.data, NewVsResaleField.SUMMARY),
       });
 
       // CRITICAL WARNING: Log if resale data is completely missing
@@ -160,7 +169,7 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
           message: 'API returned chart data but ALL resalePrice values are null!',
           periods: rawChartData.map(r => r.period),
           resaleCounts: rawChartData.map(r => r.resaleCount),
-          appliedFilters: response.data?.appliedFilters,
+          appliedFilters: getNewVsResaleField(response.data, NewVsResaleField.APPLIED_FILTERS),
         });
       }
 
@@ -172,8 +181,8 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
       logFetchDebug('NewVsResaleChart', {
         endpoint: '/api/new-vs-resale',
         timeGrain: timeGrouping,
-        appliedFilters: response.data?.appliedFilters,
-        rowCount: response.data?.chartData?.length || 0,
+        appliedFilters: getNewVsResaleField(response.data, NewVsResaleField.APPLIED_FILTERS),
+        rowCount: rawChartData.length || 0,
       });
 
       // Use adapter for transformation

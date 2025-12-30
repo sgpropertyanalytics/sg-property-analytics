@@ -312,7 +312,7 @@ WHERE COALESCE(is_outlier, false) = false  -- EVERY transaction query
 ## SQL
 - `:param` only (no `%(param)s`, no f-strings)
 - Python `date` objects (not strings)
-- Enums via `api_contract.py`
+- Enums via `contract_schema.py`
 - SQL in `services/`, not `routes/`
 - Deterministic ORDER BY: `ORDER BY date, id` (not just date)
   - Required for: window functions, cumulative sums, first/last row
@@ -728,7 +728,7 @@ backend/
 │       ├── request_id.py  # X-Request-ID injection
 │       └── error_envelope.py
 ├── constants.py           # District/region mappings
-├── schemas/api_contract.py # Enums, field names
+├── api/contracts/contract_schema.py # Enums, field names
 ├── services/*_service.py  # Business logic + SQL
 ├── routes/                # Thin handlers (parse only)
 └── utils/normalize.py     # to_int, to_date, coerce_to_date

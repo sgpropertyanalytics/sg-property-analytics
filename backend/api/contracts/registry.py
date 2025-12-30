@@ -27,6 +27,37 @@ def _get_default_mode() -> SchemaMode:
     return SchemaMode.STRICT if mode == 'strict' else SchemaMode.WARN
 
 
+def _is_production_env() -> bool:
+    """Detect production environment for contract enforcement."""
+    env = (
+        os.environ.get("ENV")
+        or os.environ.get("FLASK_ENV")
+        or os.environ.get("APP_ENV")
+        or ""
+    ).lower()
+    return env in {"prod", "production"}
+
+
+DEFAULT_STRICT_ENDPOINTS = {
+    "dashboard",
+    "aggregate",
+    "kpi-summary-v2",
+    "charts/projects-by-district",
+    "charts/price-projects-by-district",
+    "charts/floor-liquidity-heatmap",
+    "charts/psf-by-price-band",
+    "charts/budget-heatmap",
+}
+
+
+def _get_strict_endpoints() -> List[str]:
+    """Get endpoints that must be strict in production."""
+    raw = os.environ.get("CONTRACT_STRICT_ENDPOINTS")
+    if raw:
+        return [e.strip() for e in raw.split(",") if e.strip()]
+    return list(DEFAULT_STRICT_ENDPOINTS)
+
+
 @dataclass
 class FieldSpec:
     """Specification for a single field."""
@@ -143,6 +174,8 @@ def register_contract(contract: EndpointContract) -> None:
     if contract.endpoint in CONTRACTS:
         # Allow re-registration (for testing/hot-reload)
         pass
+    if _is_production_env() and contract.endpoint in _get_strict_endpoints():
+        contract.mode = SchemaMode.STRICT
     CONTRACTS[contract.endpoint] = contract
 
 

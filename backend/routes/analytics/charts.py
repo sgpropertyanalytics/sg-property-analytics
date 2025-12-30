@@ -125,10 +125,7 @@ def price_projects_by_district():
       - bedroom: comma-separated bedroom counts, e.g. 2,3,4
       - months: timeframe length (default 15)
     """
-    from models.transaction import Transaction
-    from models.database import db
     from datetime import datetime, timedelta
-    from sqlalchemy import func
 
     district = request.args.get("district")
     if not district:
@@ -155,63 +152,73 @@ def price_projects_by_district():
         # Calculate date cutoff
         cutoff_date = datetime.now() - timedelta(days=months * 30)
 
-        # Query transactions
-        transactions = db.session.query(Transaction).filter(
-            Transaction.district == d,
-            Transaction.bedroom_count.in_(bedroom_types),
-            Transaction.transaction_date >= cutoff_date
-        ).all()
+        query = _build_price_projects_by_district_query(
+            district=d,
+            bedroom_types=bedroom_types,
+            cutoff_date=cutoff_date
+        )
 
-        # Group by project and calculate quartiles
-        from collections import defaultdict
-        project_data = defaultdict(lambda: {'prices': [], 'psfs': [], 'sale_types': []})
-
-        for txn in transactions:
-            project_data[txn.project_name]['prices'].append(txn.price)
-            project_data[txn.project_name]['psfs'].append(txn.psf)
-            if hasattr(txn, 'sale_type') and txn.sale_type:
-                project_data[txn.project_name]['sale_types'].append(txn.sale_type)
+        rows = query.all()
 
         projects = []
-        for project_name, data in project_data.items():
-            if len(data['prices']) < 3:
-                continue
-
-            prices = sorted(data['prices'])
-            psfs = sorted(data['psfs'])
-
-            def quartile(arr, q):
-                idx = int(len(arr) * q)
-                return arr[idx] if idx < len(arr) else arr[-1]
-
+        for row in rows:
             # Determine sale_type_label (New Launch vs Resale)
             sale_type_label = None
-            if data['sale_types']:
-                new_sale_count = sum(1 for st in data['sale_types'] if st == SALE_TYPE_NEW)
-                resale_count = sum(1 for st in data['sale_types'] if st == SALE_TYPE_RESALE)
-                if new_sale_count > resale_count:
-                    sale_type_label = 'New Launch'
-                elif resale_count > 0:
-                    sale_type_label = 'Resale'
+            if row.new_sale_count > row.resale_count:
+                sale_type_label = 'New Launch'
+            elif row.resale_count > 0:
+                sale_type_label = 'Resale'
 
             projects.append({
-                'project_name': project_name,
-                'price_25th': quartile(prices, 0.25),
-                'price_median': quartile(prices, 0.5),
-                'price_75th': quartile(prices, 0.75),
-                'psf_25th': quartile(psfs, 0.25),
-                'psf_median': quartile(psfs, 0.5),
-                'psf_75th': quartile(psfs, 0.75),
-                'count': len(data['prices']),
+                'project_name': row.project_name,
+                'price_25th': row.price_25th,
+                'price_median': row.price_median,
+                'price_75th': row.price_75th,
+                'psf_25th': row.psf_25th,
+                'psf_median': row.psf_median,
+                'psf_75th': row.psf_75th,
+                'count': row.transaction_count,
                 'sale_type_label': sale_type_label
             })
-
-        projects.sort(key=lambda x: x['count'], reverse=True)
 
         return jsonify({"projects": projects})
     except Exception as e:
         print(f"GET /api/price_projects_by_district ERROR: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+def _build_price_projects_by_district_query(district, bedroom_types, cutoff_date):
+    """Build SQL-only aggregation query for project price quartiles."""
+    from models.transaction import Transaction
+    from models.database import db
+    from sqlalchemy import func, case
+    from db.sql import exclude_outliers
+
+    query = db.session.query(
+        Transaction.project_name.label('project_name'),
+        func.count(Transaction.id).label('transaction_count'),
+        func.percentile_cont(0.25).within_group(Transaction.price).label('price_25th'),
+        func.percentile_cont(0.50).within_group(Transaction.price).label('price_median'),
+        func.percentile_cont(0.75).within_group(Transaction.price).label('price_75th'),
+        func.percentile_cont(0.25).within_group(Transaction.psf).label('psf_25th'),
+        func.percentile_cont(0.50).within_group(Transaction.psf).label('psf_median'),
+        func.percentile_cont(0.75).within_group(Transaction.psf).label('psf_75th'),
+        func.sum(case((Transaction.sale_type == SALE_TYPE_NEW, 1), else_=0)).label('new_sale_count'),
+        func.sum(case((Transaction.sale_type == SALE_TYPE_RESALE, 1), else_=0)).label('resale_count'),
+    ).filter(
+        Transaction.district == district,
+        Transaction.bedroom_count.in_(bedroom_types),
+        Transaction.transaction_date >= cutoff_date,
+        exclude_outliers(Transaction)
+    ).group_by(
+        Transaction.project_name
+    ).having(
+        func.count(Transaction.id) >= 3
+    ).order_by(
+        func.count(Transaction.id).desc()
+    )
+
+    return query
 
 
 @analytics_bp.route("/floor-liquidity-heatmap", methods=["GET"])
@@ -482,8 +489,6 @@ def budget_heatmap():
         district: District code (D01-D28)
         tenure: Tenure type (Freehold/99-year/999-year)
         months_lookback: Time window in months (default 24, range 6-60)
-        schema: v2 for camelCase response
-
     Returns:
         Matrix of transaction percentages by bedroom (X) and age band (Y)
         with k-anonymity suppression for low-count cells.
@@ -535,12 +540,6 @@ def budget_heatmap():
             skip_cache=skip_cache
         )
 
-        # Schema version: v2 (default) returns camelCase only, v1 returns both for backwards compat
-        schema_version = request.args.get('schema', 'v2')
-        if schema_version == 'v1':
-            return jsonify(result)
-
-        # v2 response (default)
         return jsonify(serialize_heatmap_v2(result))
 
     except Exception as e:

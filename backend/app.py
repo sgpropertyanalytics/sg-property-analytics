@@ -88,6 +88,10 @@ def create_app():
     from api.middleware import setup_query_timing_middleware
     setup_query_timing_middleware(app)
 
+    # Request usage logging (sampling + watchlist)
+    from api.middleware import setup_request_logging_middleware
+    setup_request_logging_middleware(app)
+
     # Load contract schemas (registers contracts on import)
     try:
         from api.contracts import schemas  # noqa: F401
@@ -237,8 +241,14 @@ def create_app():
         from models.project_location import ProjectLocation
         # Note: ProjectInventory removed - total_units now in static JSON file
 
-        db.create_all()
-        print("✓ Database initialized - using SQL-only aggregation for memory efficiency")
+        env = (os.environ.get("ENV") or os.environ.get("FLASK_ENV") or os.environ.get("APP_ENV") or "").lower()
+        is_prod = env in {"prod", "production"}
+        allow_create = app.config.get("TESTING") or not is_prod
+        if allow_create:
+            db.create_all()
+            print("✓ Database initialized - using SQL-only aggregation for memory efficiency")
+        else:
+            print("✓ Database ready (schema creation disabled in non-dev environments)")
 
         # Print database connection info for verification
         try:

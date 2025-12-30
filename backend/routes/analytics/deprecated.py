@@ -25,7 +25,7 @@ def transactions_deprecated():
     logging.warning(f"Deprecated /transactions called from {request.remote_addr}")
     return jsonify({
         "error": "This endpoint has been deprecated",
-        "message": "Use /aggregate-summary for market insights",
+        "message": "Use /aggregate for market insights",
         "migration_guide": "https://docs.sgpropertytrend.com/api/migration",
         "reason": "URA compliance - raw transaction data no longer exposed"
     }), 410
@@ -40,11 +40,11 @@ def transactions_list_deprecated():
     logging.warning(f"Deprecated /transactions/list called from {request.remote_addr}")
     return jsonify({
         "error": "This endpoint has been deprecated",
-        "message": "Use /aggregate-summary for market insights",
+        "message": "Use /aggregate for market insights",
         "migration_guide": "https://docs.sgpropertytrend.com/api/migration",
         "reason": "URA compliance - raw transaction data no longer exposed",
         "alternatives": {
-            "aggregate_summary": "/api/aggregate-summary - Market metrics and distributions",
+            "aggregate": "/api/aggregate - Market metrics and distributions",
             "project_summary": "/api/projects/<name>/summary - Project-level aggregates"
         }
     }), 410
@@ -59,7 +59,7 @@ def comparable_value_analysis_deprecated():
     logging.warning(f"Deprecated /comparable_value_analysis called from {request.remote_addr}")
     return jsonify({
         "error": "This endpoint has been deprecated",
-        "message": "Use /aggregate-summary for market insights",
+        "message": "Use /aggregate for market insights",
         "reason": "URA compliance - transaction-level comparisons no longer exposed",
         "alternatives": {
             "aggregate": "/api/aggregate - Flexible aggregation",

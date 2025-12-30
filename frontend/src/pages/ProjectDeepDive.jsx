@@ -11,7 +11,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { getFilterOptions } from '../api/client';
-import { isDistrictInRegion, SALE_TYPE_OPTIONS, TENURE_OPTIONS, SaleType, SaleTypeLabels } from '../constants';
+import { isDistrictInRegion, SALE_TYPE_OPTIONS, TENURE_OPTIONS, SaleType } from '../constants';
 import { HotProjectsTable } from '../components/powerbi/HotProjectsTable';
 import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
 import { ResultsSummaryBar } from '../components/ResultsSummaryBar';
@@ -339,7 +339,7 @@ export function ProjectDeepDiveContent() {
                           className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
                         >
                           <option value="">All</option>
-                          {SALE_TYPE_OPTIONS.filter(opt => opt.value !== SaleTypeLabels[SaleType.SUB_SALE]).map(opt => (
+                          {SALE_TYPE_OPTIONS.filter(opt => opt.value !== SaleType.SUB_SALE).map(opt => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                           ))}
                         </select>

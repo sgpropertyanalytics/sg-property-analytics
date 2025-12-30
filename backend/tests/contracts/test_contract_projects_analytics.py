@@ -2,13 +2,12 @@
 Contract tests for project analytics endpoints.
 """
 
-import pytest
 import json
 from pathlib import Path
 
 from api.contracts.schemas import projects_analytics
 from api.contracts import get_contract
-from api.contracts.validate import validate_public_params, ContractViolation
+from api.contracts.validate import validate_public_params
 
 
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots"
@@ -44,12 +43,6 @@ class TestProjectPriceBandsContract:
         contract = get_contract("projects/price-bands")
         assert contract.param_schema.fields["window_months"].default == 24
 
-    def test_param_schema_schema_allowed_values(self):
-        """Schema param should have allowed values."""
-        contract = get_contract("projects/price-bands")
-        schema_field = contract.param_schema.fields["schema"]
-        assert "v2" in schema_field.allowed_values
-
 
 class TestResaleProjectsContract:
     """Test projects/resale-projects contract."""
@@ -76,13 +69,11 @@ class TestProjectExitQueueContract:
         assert contract is not None
         assert contract.version == "v3"
 
-    def test_param_schema_v2_allowed_values(self):
-        """v2 param should have allowed values."""
+    def test_no_required_params(self):
+        """No params should be required."""
         contract = get_contract("projects/exit-queue")
-        v2_field = contract.param_schema.fields["v2"]
-        assert "true" in v2_field.allowed_values
-        assert "false" in v2_field.allowed_values
-        assert v2_field.default == "true"
+        params = {}
+        validate_public_params(params, contract.param_schema)
 
 
 class TestProjectsAnalyticsSnapshots:

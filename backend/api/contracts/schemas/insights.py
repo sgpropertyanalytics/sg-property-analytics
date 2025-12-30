@@ -5,7 +5,6 @@ Visual Analytics endpoints for the Insights page.
 
 Endpoints:
 - GET /api/insights/district-psf
-- GET /api/insights/district-summary
 - GET /api/insights/district-liquidity
 """
 
@@ -96,71 +95,6 @@ DISTRICT_PSF_CONTRACT = EndpointContract(
 )
 
 register_contract(DISTRICT_PSF_CONTRACT)
-
-
-# =============================================================================
-# /insights/district-summary
-# =============================================================================
-
-DISTRICT_SUMMARY_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "district": FieldSpec(
-            name="district",
-            type=str,
-            required=True,
-            description="District ID (e.g., D09)"
-        ),
-        "period": FieldSpec(
-            name="period",
-            type=str,
-            default="12m",
-            allowed_values=["3m", "6m", "12m", "all"],
-            description="Time period filter"
-        ),
-        "bed": FieldSpec(
-            name="bed",
-            type=str,
-            default="all",
-            allowed_values=["all", "1", "2", "3", "4", "4+"],
-            description="Bedroom filter"
-        ),
-    },
-    aliases={}
-)
-
-DISTRICT_SUMMARY_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "district": FieldSpec(name="district", type=str, required=True),
-        "period": FieldSpec(name="period", type=str, default="12m"),
-        "bed": FieldSpec(name="bed", type=str, default="all"),
-    }
-)
-
-DISTRICT_SUMMARY_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={
-        # Response is flat object with stats, bedroom_breakdown, top_projects
-    },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-        "period": FieldSpec(name="period", type=str, required=False),
-        "bed_filter": FieldSpec(name="bed_filter", type=str, required=False),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
-    data_is_list=False,
-)
-
-DISTRICT_SUMMARY_CONTRACT = EndpointContract(
-    endpoint="insights/district-summary",
-    version="v3",
-    param_schema=DISTRICT_SUMMARY_PARAM_SCHEMA,
-    service_schema=DISTRICT_SUMMARY_SERVICE_SCHEMA,
-    response_schema=DISTRICT_SUMMARY_RESPONSE_SCHEMA,
-    mode=SchemaMode.WARN,
-)
-
-register_contract(DISTRICT_SUMMARY_CONTRACT)
 
 
 # =============================================================================

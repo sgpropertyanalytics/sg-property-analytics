@@ -213,7 +213,7 @@ class RuleRegistry:
             backend_dir / 'services' / 'classifier.py',
             backend_dir / 'services' / 'classifier_extended.py',
             backend_dir / 'constants.py',
-            backend_dir / 'schemas' / 'api_contract.py',
+            backend_dir / 'api' / 'contracts' / 'contract_schema.py',
         ]
 
         combined = ""

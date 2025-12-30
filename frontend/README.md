@@ -16,6 +16,14 @@ npm run dev
 
 The app will be available at `http://localhost:3000`
 
+### Contract Generation
+
+The frontend relies on generated API contract artifacts. Run this once after pull or whenever backend contracts change:
+
+```bash
+./scripts/generate_contracts.sh
+```
+
 ## Build
 
 ```bash
@@ -89,4 +97,3 @@ All analytics endpoints are publicly accessible (no authentication required).
 ## Development
 
 The Vite dev server proxies `/api` requests to `http://localhost:5000` automatically.
-

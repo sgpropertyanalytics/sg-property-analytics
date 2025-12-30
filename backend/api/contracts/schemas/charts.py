@@ -11,6 +11,7 @@ Endpoints:
 - GET /api/budget-heatmap
 """
 
+from api.contracts.contract_schema import SaleType, Tenure
 from ..registry import (
     EndpointContract,
     ParamSchema,
@@ -209,14 +210,23 @@ FLOOR_LIQUIDITY_HEATMAP_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 FLOOR_LIQUIDITY_HEATMAP_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "projects": FieldSpec(name="projects", type=list, required=False),
+        "floor_zone_order": FieldSpec(name="floor_zone_order", type=list, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
         "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
         "window_months": FieldSpec(name="window_months", type=int),
         "filters_applied": FieldSpec(name="filters_applied", type=dict),
+        "filtersApplied": FieldSpec(name="filtersApplied", type=dict),
         "total_projects": FieldSpec(name="total_projects", type=int),
+        "projects_returned": FieldSpec(name="projects_returned", type=int),
+        "exclusions": FieldSpec(name="exclusions", type=dict),
+        "cache_hit": FieldSpec(name="cache_hit", type=bool),
+        "cacheHit": FieldSpec(name="cacheHit", type=bool),
+        "elapsed_ms": FieldSpec(name="elapsed_ms", type=int),
     },
     required_meta=["requestId", "elapsedMs", "apiVersion"],
     data_is_list=False,
@@ -263,18 +273,14 @@ PSF_BY_PRICE_BAND_PARAM_SCHEMA = ParamSchema(
         "sale_type": FieldSpec(
             name="sale_type",
             type=str,
-            description="Sale type filter"
+            allowed_values=SaleType.ALL,
+            description="Sale type filter (new_sale, resale, sub_sale)"
         ),
         "tenure": FieldSpec(
             name="tenure",
             type=str,
-            description="Tenure filter"
-        ),
-        "schema": FieldSpec(
-            name="schema",
-            type=str,
-            allowed_values=["v1", "v2"],
-            description="Response schema version"
+            allowed_values=Tenure.ALL,
+            description="Tenure filter (freehold, 99_year, 999_year)"
         ),
     },
     aliases={
@@ -355,7 +361,8 @@ BUDGET_HEATMAP_PARAM_SCHEMA = ParamSchema(
         "tenure": FieldSpec(
             name="tenure",
             type=str,
-            description="Tenure type"
+            allowed_values=Tenure.ALL,
+            description="Tenure type (freehold, 99_year, 999_year)"
         ),
         "months_lookback": FieldSpec(
             name="months_lookback",
@@ -368,12 +375,6 @@ BUDGET_HEATMAP_PARAM_SCHEMA = ParamSchema(
             type=bool,
             default=False,
             description="Bypass cache"
-        ),
-        "schema": FieldSpec(
-            name="schema",
-            type=str,
-            allowed_values=["v1", "v2"],
-            description="Response schema version"
         ),
     },
     aliases={}
@@ -393,11 +394,25 @@ BUDGET_HEATMAP_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 BUDGET_HEATMAP_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        # v2 response keys (camelCase)
+        "matrix": FieldSpec(name="matrix", type=dict, required=False),
+        "ageBands": FieldSpec(name="ageBands", type=list, required=False),
+        "bedroomTypes": FieldSpec(name="bedroomTypes", type=list, required=False),
+        "totalCount": FieldSpec(name="totalCount", type=int, required=False),
+        "insight": FieldSpec(name="insight", type=str, required=False),
+        "meta": FieldSpec(name="meta", type=dict, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
         "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
+        # v2 meta fields (camelCase)
+        "budget": FieldSpec(name="budget", type=int),
+        "tolerance": FieldSpec(name="tolerance", type=int),
+        "priceRange": FieldSpec(name="priceRange", type=dict),
+        "monthsLookback": FieldSpec(name="monthsLookback", type=int),
+        "ageIsApprox": FieldSpec(name="ageIsApprox", type=bool),
     },
     required_meta=["requestId", "elapsedMs", "apiVersion"],
     data_is_list=False,

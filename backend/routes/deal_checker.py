@@ -2,7 +2,6 @@
 Deal Checker API Routes
 
 Provides endpoints for the Deal Checker feature:
-- /api/deal-checker/nearby-transactions - Find transactions within radius, compute histogram
 - /api/deal-checker/multi-scope - Enhanced endpoint with same-project, 1km, and 2km scopes
 - /api/projects/names - Get project names for dropdown
 
@@ -25,7 +24,7 @@ from utils.normalize import (
 deal_checker_bp = Blueprint('deal_checker', __name__)
 
 # Import contract versioning for HTTP header
-from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+from api.contracts.contract_schema import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
 from api.contracts.wrapper import api_contract
 
 
@@ -210,142 +209,6 @@ def get_bedroom_filter(bedroom):
     if bedroom >= 5:
         return Transaction.bedroom_count >= 5
     return Transaction.bedroom_count == bedroom
-
-
-@deal_checker_bp.route("/deal-checker/nearby-transactions", methods=["GET"])
-@api_contract("deal-checker/nearby-transactions")
-def get_nearby_transactions():
-    """
-    Find transactions within radius of a project, filtered by bedroom type.
-
-    PREMIUM FEATURE: Requires active subscription.
-
-    Query params:
-        project_name (required): Name of the project
-        bedroom (required): Bedroom count (1-5)
-        price (required): Buyer's price paid
-        sqft (optional): Unit size in sqft
-        radius_km (optional): Search radius, default 1.0
-
-    Returns:
-        JSON with project info, histogram, percentile, nearby projects
-    """
-    # SECURITY: Premium feature - require subscription
-    from utils.subscription import is_premium_user
-    if not is_premium_user():
-        return jsonify({
-            "error": "Premium subscription required",
-            "code": "PREMIUM_REQUIRED",
-            "message": "The Deal Checker is a premium feature. Subscribe to analyze your deals."
-        }), 403
-    start_time = time.time()
-
-    # Get and validate parameters
-    project_name = request.args.get('project_name')
-    bedroom = request.args.get('bedroom')
-    buyer_price = request.args.get('price')
-    sqft = request.args.get('sqft')
-
-    try:
-        radius_km = to_float(request.args.get('radius_km'), default=1.0, field='radius_km')
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
-
-    if not all([project_name, bedroom, buyer_price]):
-        return jsonify({
-            "error": "Missing required parameters: project_name, bedroom, price"
-        }), 400
-
-    try:
-        bedroom = int(bedroom)
-        buyer_price = float(buyer_price)
-        sqft = float(sqft) if sqft else None
-    except ValueError:
-        return jsonify({"error": "Invalid parameter format"}), 400
-
-    # Get project coordinates from ProjectLocation
-    project = ProjectLocation.query.filter_by(
-        project_name=project_name,
-        geocode_status='success'
-    ).first()
-
-    if not project or not project.latitude or not project.longitude:
-        return jsonify({
-            "error": f"Project '{project_name}' not found or not geocoded"
-        }), 404
-
-    center_lat = float(project.latitude)
-    center_lng = float(project.longitude)
-
-    # Find all projects within radius
-    nearby_projects = find_projects_within_radius(center_lat, center_lng, radius_km)
-    nearby_project_names = [p['project_name'] for p in nearby_projects]
-
-    if not nearby_project_names:
-        return jsonify({
-            "error": "No projects found within radius"
-        }), 404
-
-    # Query transactions for those projects with SAME bedroom type
-    # CRITICAL: Always exclude outliers (null-safe)
-    # Note: bedroom >= 5 handles "5+ BR" option from frontend
-    query = db.session.query(Transaction.price).filter(
-        exclude_outliers(Transaction),
-        Transaction.project_name.in_(nearby_project_names),
-        get_bedroom_filter(bedroom)
-    )
-
-    transactions = query.all()
-    prices = [t.price for t in transactions]
-
-    # Compute histogram bins (server-side aggregation)
-    bins = compute_histogram_bins(prices, num_bins=20)
-
-    # Compute percentile rank
-    percentile_data = compute_percentile(buyer_price, prices)
-
-    # Add transaction count to nearby projects
-    tx_counts = db.session.query(
-        Transaction.project_name,
-        func.count(Transaction.id).label('count')
-    ).filter(
-        exclude_outliers(Transaction),
-        Transaction.project_name.in_(nearby_project_names),
-        get_bedroom_filter(bedroom)
-    ).group_by(Transaction.project_name).all()
-
-    tx_count_map = {t.project_name: t.count for t in tx_counts}
-
-    for p in nearby_projects:
-        p['transaction_count'] = tx_count_map.get(p['project_name'], 0)
-
-    elapsed_ms = int((time.time() - start_time) * 1000)
-
-    return jsonify({
-        "project": {
-            "name": project_name,
-            "district": project.district,
-            "market_segment": project.market_segment,
-            "latitude": center_lat,
-            "longitude": center_lng
-        },
-        "filters": {
-            "bedroom": bedroom,
-            "radius_km": radius_km,
-            "buyer_price": buyer_price,
-            "buyer_sqft": sqft
-        },
-        "histogram": {
-            "bins": bins,
-            "total_count": len(prices)
-        },
-        "percentile": percentile_data,
-        "nearby_projects": nearby_projects[:50],  # Limit for performance
-        "meta": {
-            "elapsed_ms": elapsed_ms,
-            "projects_in_radius": len(nearby_projects)
-        }
-    })
 
 
 def compute_scope_stats(project_names, bedroom, buyer_price, sqft=None):

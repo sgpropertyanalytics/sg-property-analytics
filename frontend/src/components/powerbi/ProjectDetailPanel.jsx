@@ -15,7 +15,12 @@ import { Line, Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
 import { getAggregate, getProjectInventory, getDashboard } from '../../api/client';
 import { DISTRICT_NAMES } from '../../constants';
-import { getAggField, AggField } from '../../schemas/apiContract';
+import {
+  getAggField,
+  AggField,
+  ProjectInventoryField,
+  getProjectInventoryField,
+} from '../../schemas/apiContract';
 import { SuppressedValue } from '../SuppressedValue';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 
@@ -172,21 +177,21 @@ function ProjectDetailPanelInner({
         // Ignore stale responses - a newer request has started
         if (requestId !== requestIdRef.current) return;
 
-        // Sort trend data by month (use getAggField for v1/v2 compatibility)
+        // Sort trend data by month (use getAggField for contract-safe access)
         const sortedTrend = (trendResponse.data.data || [])
           .filter(d => getAggField(d, AggField.COUNT) > 0)
           .sort((a, b) => (a.month || '').localeCompare(b.month || ''));
 
-        // Sort price data by bedroom (use getAggField for v1/v2 compatibility)
+        // Sort price data by bedroom (use getAggField for contract-safe access)
         const sortedPrice = (priceResponse.data.data || [])
           .filter(d => getAggField(d, AggField.COUNT) > 0)
           .sort((a, b) => (getAggField(a, AggField.BEDROOM_COUNT) || 0) - (getAggField(b, AggField.BEDROOM_COUNT) || 0));
 
         // Extract inventory data (includes cumulative sales from backend)
-        const inventory = inventoryResponse.data;
+        const inventory = inventoryResponse.data || {};
         setSalesByType({
-          newSale: inventory.cumulative_new_sales || 0,
-          resale: inventory.cumulative_resales || 0
+          newSale: getProjectInventoryField(inventory, ProjectInventoryField.CUMULATIVE_NEW_SALES) || 0,
+          resale: getProjectInventoryField(inventory, ProjectInventoryField.CUMULATIVE_RESALES) || 0
         });
         setInventoryData(inventory);
 
@@ -225,7 +230,7 @@ function ProjectDetailPanelInner({
     ? DISTRICT_NAMES[selectedProject.district] || selectedProject.district
     : null;
 
-  // Chart data for trend (use getAggField for v1/v2 compatibility)
+  // Chart data for trend (use getAggField for contract-safe access)
   const trendChartData = {
     labels: trendData.map(d => {
       const [year, month] = (d.month || '').split('-');
@@ -309,7 +314,7 @@ function ProjectDetailPanelInner({
     },
   };
 
-  // Chart data for bedroom breakdown (use getAggField for v1/v2 compatibility)
+  // Chart data for bedroom breakdown (use getAggField for contract-safe access)
   const bedroomChartData = {
     labels: priceData.map(d => {
       const bedroom = getAggField(d, AggField.BEDROOM_COUNT);
@@ -368,7 +373,7 @@ function ProjectDetailPanelInner({
     },
   };
 
-  // Calculate summary stats (use getAggField for v1/v2 compatibility)
+  // Calculate summary stats (use getAggField for contract-safe access)
   const totalTransactions = priceData.reduce((sum, d) => sum + (getAggField(d, AggField.COUNT) || 0), 0);
   const overallMedianPsf = priceData.length > 0
     ? Math.round(priceData.reduce((sum, d) => sum + (getAggField(d, AggField.MEDIAN_PSF) || 0) * (getAggField(d, AggField.COUNT) || 0), 0) / totalTransactions)

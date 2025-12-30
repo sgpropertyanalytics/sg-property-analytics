@@ -71,6 +71,7 @@ api/contracts/
 ├── wrapper.py        # @api_contract decorator
 ├── normalize.py      # Param normalization (aliases, types, dates, districts)
 ├── validate.py       # Schema validation logic
+├── contract_schema.py   # Enums + serialization
 └── schemas/          # 17 endpoint-specific contracts
     ├── aggregate.py
     ├── dashboard.py
@@ -416,7 +417,7 @@ ORDER BY transaction_date
 **Use API contract methods:**
 
 ```python
-from schemas.api_contract import SaleType
+from api.contracts.contract_schema import SaleType
 
 # Convert API value to DB value
 sale_type_db = SaleType.to_db(SaleType.RESALE)  # → "Resale"
@@ -457,13 +458,24 @@ sale_type_api = SaleType.to_api("Resale")  # → "resale"
 | `/api/deal-checker/multi-scope` | GET | Value analysis | Optional |
 | `/api/supply/waterfall` | GET | Supply pipeline data | Optional |
 
-### Admin/Debug
+### Admin/Internal
 
 | Endpoint | Method | Description | Auth |
 |----------|--------|-------------|------|
 | `/api/health` | GET | Health check | Public |
-| `/debug/data-status` | GET | Data loading status | Admin |
-| `/admin/filter-outliers` | POST | Outlier management | Admin |
+| `/api/debug/data-status` | GET | Data loading status | Admin |
+| `/api/admin/filter-outliers` | POST | Outlier management | Admin |
+| `/api/admin/update-metadata` | POST | Metadata updates | Admin |
+| `/api/dashboard/cache` | GET/DELETE | Dashboard cache status/clear | Admin |
+| `/api/projects/compute-school-flags` | POST | Compute school proximity flags | Admin |
+| `/api/gls/needs-review` | GET | GLS review queue | Admin |
+| `/api/gls/scrape` | POST | Manual scrape trigger | Admin |
+| `/api/gls/reset` | POST | Reset GLS data | Admin |
+| `/api/gls/cron-refresh` | POST | Scheduled refresh | Admin |
+| `/api/gls/refresh-status` | GET | Refresh status | Admin |
+| `/api/gls/trigger-refresh` | POST | Manual refresh | Admin |
+| `/api/upcoming-launches/needs-review` | GET | Upcoming launches review queue | Admin |
+| `/api/upcoming-launches/reset` | POST | Reset upcoming launches data | Admin |
 
 ### Deprecated Endpoints (410 Gone)
 
@@ -676,7 +688,7 @@ Before any query:
 
 - [ ] Uses `:param` style only (no `%(param)s`)
 - [ ] Date params are Python `date` objects
-- [ ] Enums use `api_contract.py` methods
+- [ ] Enums use `contract_schema.py` methods
 - [ ] Outlier filter uses `COALESCE`
 - [ ] Numeric values are parameterized
 - [ ] SQL lives in service file, not route
@@ -708,7 +720,7 @@ pytest tests/test_regression_snapshots.py --update-snapshots
 ### Current Version: v3
 
 ```python
-# schemas/api_contract.py
+# api/contracts/contract_schema.py
 CURRENT_API_CONTRACT_VERSION = "v3"
 SUPPORTED_API_CONTRACT_VERSIONS = {"v1", "v2", "v3"}
 ```

@@ -16,6 +16,7 @@
 import React from 'react';
 import { useSupplyData } from '../../context/SupplyDataContext';
 import { KPICardV2, KPICardV2Group } from '../ui';
+import { SupplyField, getSupplyField } from '../../schemas/apiContract';
 
 /**
  * Format large numbers with commas and K/M suffixes for readability
@@ -44,7 +45,7 @@ export function SupplyKpiCards({
   const { data, loading, error, includeGls, launchYear } = useSupplyData();
 
   // Extract totals from response
-  const totals = data?.totals || {};
+  const totals = getSupplyField(data, SupplyField.TOTALS) || {};
   const unsoldInventory = totals.unsoldInventory || 0;
   const upcomingLaunches = totals.upcomingLaunches || 0;
   const glsPipeline = totals.glsPipeline || 0;

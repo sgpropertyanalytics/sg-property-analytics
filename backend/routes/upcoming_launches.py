@@ -28,7 +28,7 @@ from utils.normalize import (
 upcoming_launches_bp = Blueprint('upcoming_launches', __name__)
 
 # Import contract versioning for HTTP header
-from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+from api.contracts.contract_schema import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
 from api.contracts.wrapper import api_contract
 
 
@@ -39,6 +39,7 @@ def add_contract_version_header(response):
     return response
 
 
+# --- Public endpoints ---
 @upcoming_launches_bp.route("/all", methods=["GET"])
 @api_contract("upcoming-launches/all")
 def get_all():
@@ -146,163 +147,7 @@ def get_all():
         return jsonify({"error": str(e)}), 500
 
 
-@upcoming_launches_bp.route("/by-segment", methods=["GET"])
-@api_contract("upcoming-launches/by-segment")
-def get_by_segment():
-    """
-    Get upcoming launches grouped by market segment.
-
-    Query params:
-        - launch_year: Filter by launch year (default: 2026)
-
-    Returns:
-        Projects grouped by CCR, RCR, OCR
-    """
-    start = time.time()
-
-    launch_year = to_int(request.args.get("launch_year"), default=2026, field="launch_year")
-
-    try:
-        launches = db.session.query(UpcomingLaunch).filter(
-            UpcomingLaunch.launch_year == launch_year
-        ).order_by(UpcomingLaunch.market_segment, UpcomingLaunch.project_name).all()
-
-        # Group by segment
-        by_segment = {'CCR': [], 'RCR': [], 'OCR': [], 'Unknown': []}
-        for l in launches:
-            seg = l.market_segment or 'Unknown'
-            by_segment.setdefault(seg, []).append(l.to_dict(include_sources=False))
-
-        # Calculate totals
-        totals = {}
-        for seg, projects in by_segment.items():
-            totals[seg] = {
-                'count': len(projects),
-                'total_units': sum(p.get('total_units') or 0 for p in projects),
-                'avg_psf_low': sum(p.get('indicative_psf_low') or 0 for p in projects) / len(projects) if projects else 0,
-            }
-
-        elapsed = time.time() - start
-        print(f"GET /api/upcoming-launches/by-segment took: {elapsed:.4f} seconds")
-
-        return jsonify({
-            "launch_year": launch_year,
-            "totals": totals,
-            "by_segment": by_segment
-        })
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/upcoming-launches/by-segment ERROR (took {elapsed:.4f}s): {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@upcoming_launches_bp.route("/supply-pipeline", methods=["GET"])
-@api_contract("upcoming-launches/supply-pipeline")
-def get_supply_pipeline():
-    """
-    Get aggregate supply pipeline from upcoming launches.
-
-    Query params:
-        - launch_year: Filter by launch year (default: 2026)
-        - market_segment: CCR, RCR, or OCR (optional)
-
-    Returns:
-        Aggregate units by region
-    """
-    start = time.time()
-
-    launch_year = to_int(request.args.get("launch_year"), default=2026, field="launch_year")
-    market_segment = request.args.get("market_segment")
-
-    try:
-        from sqlalchemy import func
-
-        query = db.session.query(
-            UpcomingLaunch.market_segment,
-            func.sum(UpcomingLaunch.total_units).label('total_units'),
-            func.count(UpcomingLaunch.id).label('project_count'),
-            func.avg(UpcomingLaunch.indicative_psf_low).label('avg_psf_low'),
-            func.avg(UpcomingLaunch.indicative_psf_high).label('avg_psf_high'),
-        ).filter(
-            UpcomingLaunch.launch_year == launch_year
-        )
-
-        if market_segment:
-            query = query.filter(UpcomingLaunch.market_segment == market_segment.upper())
-
-        query = query.group_by(UpcomingLaunch.market_segment)
-        results = query.all()
-
-        pipeline = {
-            'launch_year': launch_year,
-            'disclaimer': 'Based on cross-validated data from EdgeProp, PropNex, ERA',
-            'by_segment': {},
-            'total_units': 0,
-            'total_projects': 0,
-        }
-
-        for row in results:
-            segment = row.market_segment or 'Unknown'
-            units = int(row.total_units) if row.total_units else 0
-            count = int(row.project_count)
-
-            pipeline['by_segment'][segment] = {
-                'units': units,
-                'project_count': count,
-                'avg_psf_low': round(float(row.avg_psf_low), 2) if row.avg_psf_low else None,
-                'avg_psf_high': round(float(row.avg_psf_high), 2) if row.avg_psf_high else None,
-            }
-            pipeline['total_units'] += units
-            pipeline['total_projects'] += count
-
-        elapsed = time.time() - start
-        print(f"GET /api/upcoming-launches/supply-pipeline took: {elapsed:.4f} seconds")
-
-        return jsonify(pipeline)
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/upcoming-launches/supply-pipeline ERROR (took {elapsed:.4f}s): {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@upcoming_launches_bp.route("/project/<project_name>", methods=["GET"])
-@api_contract("upcoming-launches/project")
-def get_project_detail(project_name: str):
-    """
-    Get details for a specific project.
-
-    Args:
-        project_name: Project name (URL encoded)
-
-    Returns:
-        Full project details including source data
-    """
-    start = time.time()
-
-    try:
-        from urllib.parse import unquote
-        decoded_name = unquote(project_name)
-
-        launch = db.session.query(UpcomingLaunch).filter(
-            UpcomingLaunch.project_name.ilike(f"%{decoded_name}%")
-        ).first()
-
-        if not launch:
-            return jsonify({"error": f"Project not found: {decoded_name}"}), 404
-
-        elapsed = time.time() - start
-        print(f"GET /api/upcoming-launches/project/{project_name} took: {elapsed:.4f} seconds")
-
-        return jsonify(launch.to_dict(include_sources=True))
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/upcoming-launches/project/{project_name} ERROR (took {elapsed:.4f}s): {e}")
-        return jsonify({"error": str(e)}), 500
-
-
+# --- Admin endpoints ---
 @upcoming_launches_bp.route("/needs-review", methods=["GET"])
 @api_contract("upcoming-launches/needs-review")
 def get_needs_review():
@@ -381,78 +226,4 @@ def reset_data():
         print(f"POST /api/upcoming-launches/reset ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@upcoming_launches_bp.route("/stats", methods=["GET"])
-@api_contract("upcoming-launches/stats")
-def get_stats():
-    """
-    Get summary statistics for upcoming launches data.
-
-    Returns:
-        Overview of project counts and values
-    """
-    start = time.time()
-
-    try:
-        from sqlalchemy import func
-
-        # Total counts
-        total = db.session.query(UpcomingLaunch).count()
-        needs_review = db.session.query(UpcomingLaunch).filter(UpcomingLaunch.needs_review == True).count()
-        with_gls_link = db.session.query(UpcomingLaunch).filter(UpcomingLaunch.gls_tender_id.isnot(None)).count()
-
-        # By year
-        by_year = db.session.query(
-            UpcomingLaunch.launch_year,
-            func.count(UpcomingLaunch.id).label('count'),
-            func.sum(UpcomingLaunch.total_units).label('total_units')
-        ).group_by(UpcomingLaunch.launch_year).all()
-
-        year_stats = {
-            row.launch_year: {
-                'count': row.count,
-                'total_units': int(row.total_units) if row.total_units else 0
-            }
-            for row in by_year
-        }
-
-        # By segment for 2026
-        by_segment = db.session.query(
-            UpcomingLaunch.market_segment,
-            func.count(UpcomingLaunch.id).label('count'),
-            func.sum(UpcomingLaunch.total_units).label('total_units')
-        ).filter(
-            UpcomingLaunch.launch_year == 2026
-        ).group_by(UpcomingLaunch.market_segment).all()
-
-        segment_stats = {
-            (row.market_segment or 'Unknown'): {
-                'count': row.count,
-                'total_units': int(row.total_units) if row.total_units else 0
-            }
-            for row in by_segment
-        }
-
-        # Last updated
-        last_updated = db.session.query(
-            func.max(UpcomingLaunch.updated_at)
-        ).scalar()
-
-        elapsed = time.time() - start
-        print(f"GET /api/upcoming-launches/stats took: {elapsed:.4f} seconds")
-
-        return jsonify({
-            "total_projects": total,
-            "needs_review": needs_review,
-            "with_gls_link": with_gls_link,
-            "by_year": year_stats,
-            "by_segment_2026": segment_stats,
-            "last_updated": last_updated.isoformat() if last_updated else None
-        })
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/upcoming-launches/stats ERROR (took {elapsed:.4f}s): {e}")
         return jsonify({"error": str(e)}), 500

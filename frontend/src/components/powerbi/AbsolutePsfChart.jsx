@@ -264,7 +264,7 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
                 Absolute PSF by Region
               </h3>
               <p className="text-xs text-[#547792] mt-0.5">
-                Median price per square foot trend ({TIME_LABELS[timeGrouping]})
+                Median PSF trend ({TIME_LABELS[timeGrouping]}) • Values show latest {TIME_LABELS[timeGrouping].toLowerCase()}
               </p>
             </div>
           </div>

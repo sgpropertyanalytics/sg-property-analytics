@@ -13,6 +13,12 @@ import { getProjectNames, getDealCheckerMultiScope } from '../../api/client';
 import { PriceDistributionHeroChart } from '../PriceDistributionHeroChart';
 import DealCheckerMap from './DealCheckerMap';
 import ScopeSummaryCards from './ScopeSummaryCards';
+import {
+  DealCheckerField,
+  ProjectNamesField,
+  getDealCheckerField,
+  getProjectNamesField,
+} from '../../schemas/apiContract';
 
 // K-anonymity threshold for project-level data (min 15 for privacy)
 const K_PROJECT_THRESHOLD = 15;
@@ -136,7 +142,9 @@ export default function DealCheckerContent() {
     const loadProjects = async () => {
       try {
         const response = await getProjectNames();
-        setProjectOptions(response.data.projects || []);
+        const responseData = response.data || {};
+        const projects = getProjectNamesField(responseData, ProjectNamesField.PROJECTS) || [];
+        setProjectOptions(projects);
       } catch (err) {
         console.error('Failed to load project names:', err);
       } finally {
@@ -211,9 +219,22 @@ export default function DealCheckerContent() {
       }
 
       const response = await getDealCheckerMultiScope(params);
-      setResult(response.data);
+      const responseData = response.data || {};
+      const project = getDealCheckerField(responseData, DealCheckerField.PROJECT) || {};
+      const filters = getDealCheckerField(responseData, DealCheckerField.FILTERS) || {};
+      const scopes = getDealCheckerField(responseData, DealCheckerField.SCOPES) || {};
+      const mapData = getDealCheckerField(responseData, DealCheckerField.MAP_DATA) || {};
+      const meta = getDealCheckerField(responseData, DealCheckerField.META) || {};
+
+      setResult({
+        project,
+        filters,
+        scopes,
+        map_data: mapData,
+        meta,
+      });
       // Default to 1km scope, or same_project if it has more data
-      if (response.data.scopes?.same_project?.transaction_count > 10) {
+      if (scopes?.same_project?.transaction_count > 10) {
         setActiveScope('same_project');
       } else {
         setActiveScope('radius_1km');

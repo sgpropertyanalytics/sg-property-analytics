@@ -4,7 +4,7 @@ API Contract Schema v3 - Single Source of Truth
 Defines the stable API interface between backend and frontend.
 - Enums: lowercase snake_case (new_sale, resale, sub_sale)
 - Response fields: camelCase (projectName, bedroomCount)
-- Supports dual-mode output for backwards compatibility during migration
+ - v2+ response fields only (camelCase)
 
 Version History:
 - v1: Legacy snake_case fields only
@@ -14,6 +14,7 @@ Version History:
 
 from typing import Any, Dict, Optional
 from datetime import datetime
+from utils.normalize import ValidationError
 
 # =============================================================================
 # API CONTRACT VERSIONING
@@ -185,6 +186,7 @@ class FloorLevel:
         'Luxury': LUXURY,
         'Unknown': UNKNOWN,
     }
+    API_TO_DB = {v: k for k, v in DB_TO_API.items()}
 
     @classmethod
     def from_db(cls, db_value: Optional[str]) -> Optional[str]:
@@ -192,6 +194,13 @@ class FloorLevel:
         if db_value is None:
             return None
         return cls.DB_TO_API.get(db_value, db_value.lower().replace('-', '_') if db_value else None)
+
+    @classmethod
+    def to_db(cls, api_value: Optional[str]) -> Optional[str]:
+        """Convert API floor_level enum to DB value."""
+        if api_value is None:
+            return None
+        return cls.API_TO_DB.get(api_value, api_value)
 
 
 class PropertyAgeBucket:
@@ -481,7 +490,7 @@ def _mask_psf(psf: Optional[float]) -> Optional[str]:
 # =============================================================================
 
 def parse_filter_params(request_args: dict) -> Dict[str, Any]:
-    """Parse and validate filter parameters, accepting both v1 and v2 formats.
+    """Parse and validate filter parameters (v2 enums only).
 
     Canonicalizes all filter inputs at the API boundary.
     Use the returned values for DB queries.
@@ -505,23 +514,27 @@ def parse_filter_params(request_args: dict) -> Dict[str, Any]:
     """
     params = {}
 
-    # Sale type: accept both saleType (v2) and sale_type (v1)
+    # Sale type: accept v2 enum values only
     sale_type = request_args.get('saleType') or request_args.get('sale_type')
     if sale_type:
-        # If it's a v2 enum, convert to DB value
-        if sale_type in SaleType.ALL:
-            params['sale_type_db'] = SaleType.to_db(sale_type)
-        else:
-            # Assume v1 DB value (backwards compat)
-            params['sale_type_db'] = sale_type
+        if sale_type not in SaleType.ALL:
+            raise ValidationError(
+                f"Invalid sale_type: {sale_type!r}",
+                field="sale_type",
+                received_value=sale_type
+            )
+        params['sale_type_db'] = SaleType.to_db(sale_type)
 
-    # Tenure: accept both tenure (v2 enum) and tenure (v1 DB value)
+    # Tenure: accept v2 enum values only
     tenure = request_args.get('tenure')
     if tenure:
-        if tenure in Tenure.ALL:
-            params['tenure_db'] = Tenure.to_db(tenure)
-        else:
-            params['tenure_db'] = tenure
+        if tenure not in Tenure.ALL:
+            raise ValidationError(
+                f"Invalid tenure: {tenure!r}",
+                field="tenure",
+                received_value=tenure
+            )
+        params['tenure_db'] = Tenure.to_db(tenure)
 
     # Region/segment: accept both region (v2) and segment (v1)
     # Supports comma-separated values (e.g., "CCR,RCR" or "ccr,rcr")
@@ -1210,58 +1223,6 @@ class AgeSource:
     INSUFFICIENT_DATA = 'insufficient_data'
 
 
-def serialize_exit_queue_v1(result) -> Dict[str, Any]:
-    """
-    Serialize ExitQueueResult to v1 schema (snake_case keys).
-    This is the current production format for backwards compatibility.
-
-    Note: Turnover values should be displayed as "X transactions per 100 units" in UI,
-    NOT as "X%" - the *_pct suffix is internal naming only.
-    """
-    return {
-        "project_name": result.project_name,
-        "data_quality": {
-            "has_top_year": result.data_quality.has_top_year,
-            "has_total_units": result.data_quality.has_total_units,
-            "completeness": result.data_quality.completeness,
-            "sample_window_months": result.data_quality.sample_window_months,
-            "warnings": result.data_quality.warnings,
-            "unit_source": result.data_quality.unit_source,
-            "unit_confidence": result.data_quality.unit_confidence,
-            "unit_note": result.data_quality.unit_note,
-        },
-        "fundamentals": {
-            "total_units": result.fundamentals.total_units,
-            "top_year": result.fundamentals.top_year,
-            "property_age_years": result.fundamentals.property_age_years,
-            "age_source": result.fundamentals.age_source,
-            "tenure": result.fundamentals.tenure,
-            "district": result.fundamentals.district,
-            "developer": result.fundamentals.developer,
-            "first_resale_date": result.fundamentals.first_resale_date.isoformat() if result.fundamentals.first_resale_date else None
-        },
-        "resale_metrics": {
-            "total_resale_transactions": result.resale_metrics.total_resale_transactions,
-            "resales_12m": result.resale_metrics.resales_12m,
-            "market_turnover_pct": result.resale_metrics.market_turnover_pct,
-            "recent_turnover_pct": result.resale_metrics.recent_turnover_pct
-        },
-        "risk_assessment": {
-            "market_turnover_zone": result.risk_assessment.market_turnover_zone,
-            "recent_turnover_zone": result.risk_assessment.recent_turnover_zone,
-            "overall_risk": result.risk_assessment.overall_risk,
-            "interpretation": result.risk_assessment.interpretation
-        },
-        "gating_flags": {
-            "is_boutique": result.gating_flags.is_boutique,
-            "is_brand_new": result.gating_flags.is_brand_new,
-            "is_ultra_luxury": result.gating_flags.is_ultra_luxury,
-            "is_thin_data": result.gating_flags.is_thin_data,
-            "unit_type_mixed": result.gating_flags.unit_type_mixed
-        }
-    }
-
-
 def serialize_exit_queue_v2(result) -> Dict[str, Any]:
     """
     Serialize ExitQueueResult to v2 schema (camelCase keys + enum values).
@@ -1310,24 +1271,7 @@ def serialize_exit_queue_v2(result) -> Dict[str, Any]:
             ExitQueueFields.IS_THIN_DATA: result.gating_flags.is_thin_data,
             ExitQueueFields.UNIT_TYPE_MIXED: result.gating_flags.unit_type_mixed
         }
-    }
-
-
-def serialize_exit_queue_dual(result, include_v2: bool = True) -> Dict[str, Any]:
-    """
-    Serialize ExitQueueResult with dual-mode support.
-    Returns v1 schema with optional _v2 nested object for new consumers.
-
-    Args:
-        result: ExitQueueResult from exit_queue_service
-        include_v2: If True, include _v2 nested object with camelCase schema
-    """
-    response = serialize_exit_queue_v1(result)
-
-    if include_v2:
-        response["_v2"] = serialize_exit_queue_v2(result)
-
-    return response
+}
 
 
 # =============================================================================
@@ -1427,20 +1371,6 @@ class PriceBandsFields:
 # PRICE BANDS SERIALIZERS
 # =============================================================================
 
-def _serialize_band_v1(band: Dict[str, Any]) -> Dict[str, Any]:
-    """Serialize a single band to v1 schema (snake_case)."""
-    return {
-        'month': band.get('month'),
-        'count': band.get('count'),
-        'p25': band.get('p25'),
-        'p50': band.get('p50'),
-        'p75': band.get('p75'),
-        'p25_s': band.get('p25_s'),
-        'p50_s': band.get('p50_s'),
-        'p75_s': band.get('p75_s'),
-    }
-
-
 def _serialize_band_v2(band: Dict[str, Any]) -> Dict[str, Any]:
     """Serialize a single band to v2 schema (camelCase)."""
     return {
@@ -1452,18 +1382,6 @@ def _serialize_band_v2(band: Dict[str, Any]) -> Dict[str, Any]:
         PriceBandsFields.P25_S: band.get('p25_s'),
         PriceBandsFields.P50_S: band.get('p50_s'),
         PriceBandsFields.P75_S: band.get('p75_s'),
-    }
-
-
-def _serialize_latest_v1(latest: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """Serialize latest values to v1 schema."""
-    if not latest:
-        return None
-    return {
-        'month': latest.get('month'),
-        'p25_s': latest.get('p25_s'),
-        'p50_s': latest.get('p50_s'),
-        'p75_s': latest.get('p75_s'),
     }
 
 
@@ -1479,36 +1397,12 @@ def _serialize_latest_v2(latest: Optional[Dict[str, Any]]) -> Optional[Dict[str,
     }
 
 
-def _serialize_trend_v1(trend: Dict[str, Any]) -> Dict[str, Any]:
-    """Serialize trend to v1 schema."""
-    return {
-        'floor_direction': trend.get('floor_direction'),
-        'floor_slope_pct': trend.get('floor_slope_pct'),
-        'observation_months': trend.get('observation_months'),
-    }
-
-
 def _serialize_trend_v2(trend: Dict[str, Any]) -> Dict[str, Any]:
     """Serialize trend to v2 schema."""
     return {
         PriceBandsFields.FLOOR_DIRECTION: trend.get('floor_direction'),
         PriceBandsFields.FLOOR_SLOPE_PCT: trend.get('floor_slope_pct'),
         PriceBandsFields.OBSERVATION_MONTHS: trend.get('observation_months'),
-    }
-
-
-def _serialize_verdict_v1(verdict: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """Serialize verdict to v1 schema."""
-    if not verdict:
-        return None
-    return {
-        'unit_psf': verdict.get('unit_psf'),
-        'position': verdict.get('position'),
-        'position_label': verdict.get('position_label'),
-        'vs_floor_pct': verdict.get('vs_floor_pct'),
-        'badge': verdict.get('badge'),
-        'badge_label': verdict.get('badge_label'),
-        'explanation': verdict.get('explanation'),
     }
 
 
@@ -1527,18 +1421,6 @@ def _serialize_verdict_v2(verdict: Optional[Dict[str, Any]]) -> Optional[Dict[st
     }
 
 
-def _serialize_data_quality_v1(dq: Dict[str, Any]) -> Dict[str, Any]:
-    """Serialize data quality to v1 schema."""
-    return {
-        'total_trades': dq.get('total_trades'),
-        'months_with_data': dq.get('months_with_data'),
-        'is_valid': dq.get('is_valid'),
-        'fallback_reason': dq.get('fallback_reason'),
-        'window_months': dq.get('window_months'),
-        'smoothing': dq.get('smoothing'),
-    }
-
-
 def _serialize_data_quality_v2(dq: Dict[str, Any]) -> Dict[str, Any]:
     """Serialize data quality to v2 schema."""
     return {
@@ -1548,24 +1430,6 @@ def _serialize_data_quality_v2(dq: Dict[str, Any]) -> Dict[str, Any]:
         PriceBandsFields.FALLBACK_REASON: dq.get('fallback_reason'),
         PriceBandsFields.WINDOW_MONTHS: dq.get('window_months'),
         PriceBandsFields.SMOOTHING: dq.get('smoothing'),
-    }
-
-
-def serialize_price_bands_v1(result: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Serialize price bands result to v1 schema (snake_case keys).
-    This is the current production format for backwards compatibility.
-    """
-    return {
-        'project_name': result.get('project_name'),
-        'data_source': result.get('data_source'),
-        'proxy_label': result.get('proxy_label'),
-        'bands': [_serialize_band_v1(b) for b in result.get('bands', [])],
-        'latest': _serialize_latest_v1(result.get('latest')),
-        'trend': _serialize_trend_v1(result.get('trend', {})),
-        'verdict': _serialize_verdict_v1(result.get('verdict')),
-        'data_quality': _serialize_data_quality_v1(result.get('data_quality', {})),
-        'error': result.get('error'),
     }
 
 

@@ -4,7 +4,6 @@ Contract schemas for Deal Checker endpoints.
 Deal Checker provides transaction comparison and percentile analysis.
 
 Endpoints:
-- GET /api/deal-checker/nearby-transactions
 - GET /api/deal-checker/multi-scope
 - GET /api/projects/names
 """
@@ -18,78 +17,6 @@ from ..registry import (
     register_contract,
     SchemaMode,
 )
-
-
-# =============================================================================
-# /deal-checker/nearby-transactions
-# =============================================================================
-
-NEARBY_TRANSACTIONS_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "project_name": FieldSpec(
-            name="project_name",
-            type=str,
-            required=True,
-            description="Name of the project"
-        ),
-        "bedroom": FieldSpec(
-            name="bedroom",
-            type=int,
-            required=True,
-            description="Bedroom count (1-5, where 5 means 5+)"
-        ),
-        "price": FieldSpec(
-            name="price",
-            type=float,
-            required=True,
-            description="Buyer's price paid"
-        ),
-        "sqft": FieldSpec(
-            name="sqft",
-            type=float,
-            description="Unit size in sqft"
-        ),
-        "radius_km": FieldSpec(
-            name="radius_km",
-            type=float,
-            default=1.0,
-            description="Search radius in km"
-        ),
-    },
-    aliases={}
-)
-
-NEARBY_TRANSACTIONS_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "project_name": FieldSpec(name="project_name", type=str, required=True),
-        "bedroom": FieldSpec(name="bedroom", type=int, required=True),
-        "buyer_price": FieldSpec(name="buyer_price", type=float, required=True),
-        "sqft": FieldSpec(name="sqft", type=float),
-        "radius_km": FieldSpec(name="radius_km", type=float, default=1.0),
-    }
-)
-
-NEARBY_TRANSACTIONS_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
-    data_is_list=False,
-)
-
-NEARBY_TRANSACTIONS_CONTRACT = EndpointContract(
-    endpoint="deal-checker/nearby-transactions",
-    version="v3",
-    param_schema=NEARBY_TRANSACTIONS_PARAM_SCHEMA,
-    service_schema=NEARBY_TRANSACTIONS_SERVICE_SCHEMA,
-    response_schema=NEARBY_TRANSACTIONS_RESPONSE_SCHEMA,
-    mode=SchemaMode.WARN,
-)
-
-register_contract(NEARBY_TRANSACTIONS_CONTRACT)
 
 
 # =============================================================================
@@ -135,7 +62,13 @@ MULTI_SCOPE_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 MULTI_SCOPE_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "project": FieldSpec(name="project", type=dict, required=True),
+        "filters": FieldSpec(name="filters", type=dict, required=True),
+        "scopes": FieldSpec(name="scopes", type=dict, required=True),
+        "map_data": FieldSpec(name="map_data", type=dict, required=True),
+        "meta": FieldSpec(name="meta", type=dict, required=False),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
@@ -171,7 +104,10 @@ PROJECT_NAMES_SERVICE_SCHEMA = ServiceBoundarySchema(
 )
 
 PROJECT_NAMES_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "projects": FieldSpec(name="projects", type=list, required=True),
+        "count": FieldSpec(name="count", type=int, required=True),
+    },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),

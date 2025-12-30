@@ -17,6 +17,13 @@
  * RULE: Chart component receives this and renders. No math in component.
  */
 
+import {
+  getSupplyField,
+  getSupplyMetaField,
+  SupplyField,
+  SupplyMetaField,
+} from '../../schemas/apiContract';
+
 // Colors for supply charts (muted warm tones)
 const COLORS = {
   unsoldInventory: '#6b4226',  // Muted chocolate brown (darkest)
@@ -72,7 +79,9 @@ function formatNumber(value) {
  */
 export function transformRegionalWaterfall(apiResponse, options = {}) {
   const { region = null, includeGls = true } = options;
-  const { byRegion, totals, meta } = apiResponse;
+  const byRegion = getSupplyField(apiResponse, SupplyField.BY_REGION) || {};
+  const totals = getSupplyField(apiResponse, SupplyField.TOTALS) || {};
+  const meta = getSupplyField(apiResponse, SupplyField.META) || {};
 
   // Get values for selected region or all regions
   let unsold, upcoming, gls;
@@ -117,8 +126,8 @@ export function transformRegionalWaterfall(apiResponse, options = {}) {
       subtitle: region
         ? `${region} Supply Pipeline`
         : 'All Regions Combined',
-      asOf: formatDate(meta?.asOfDate),
-      launchYear: meta?.launchYear || 2026,
+      asOf: formatDate(getSupplyMetaField(meta, SupplyMetaField.AS_OF_DATE)),
+      launchYear: getSupplyMetaField(meta, SupplyMetaField.LAUNCH_YEAR) || 2026,
       includesGls: includeGls,
       selectedRegion: region,
     },
@@ -238,7 +247,8 @@ function buildConnectorPoints(unsold, upcoming, gls, includeGls) {
  */
 export function transformDistrictWaterfall(apiResponse, selectedRegion, options = {}) {
   const { includeGls = true } = options;
-  const { byDistrict, meta } = apiResponse;
+  const byDistrict = getSupplyField(apiResponse, SupplyField.BY_DISTRICT) || {};
+  const meta = getSupplyField(apiResponse, SupplyField.META) || {};
 
   // Filter districts by selected region (or show all if null)
   const filteredDistricts = Object.entries(byDistrict)
@@ -252,8 +262,8 @@ export function transformDistrictWaterfall(apiResponse, selectedRegion, options 
       totals: { unsoldInventory: 0, upcomingLaunches: 0, glsPipeline: 0, totalEffectiveSupply: 0 },
       displayMeta: {
         subtitle: selectedRegion ? `No districts in ${selectedRegion}` : 'No district data',
-        asOf: formatDate(meta?.asOfDate),
-        launchYear: meta?.launchYear || 2026,
+        asOf: formatDate(getSupplyMetaField(meta, SupplyMetaField.AS_OF_DATE)),
+        launchYear: getSupplyMetaField(meta, SupplyMetaField.LAUNCH_YEAR) || 2026,
         includesGls: includeGls,
       },
     };

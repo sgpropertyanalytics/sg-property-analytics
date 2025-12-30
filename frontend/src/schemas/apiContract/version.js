@@ -2,7 +2,7 @@
  * API Contract Versioning
  *
  * Defines supported API versions and version assertion helpers.
- * Must match backend/schemas/api_contract.py
+ * Must match backend/api/contracts/contract_schema.py
  */
 
 // =============================================================================
@@ -10,13 +10,11 @@
 // =============================================================================
 
 export const API_CONTRACT_VERSIONS = {
-  V1: 'v1',
   V2: 'v2',
   V3: 'v3',
 };
 
 export const SUPPORTED_API_CONTRACT_VERSIONS = new Set([
-  API_CONTRACT_VERSIONS.V1,
   API_CONTRACT_VERSIONS.V2,
   API_CONTRACT_VERSIONS.V3,
 ]);

@@ -32,7 +32,7 @@ from functools import wraps
 import threading
 
 from sqlalchemy import text, func, case, literal, and_, or_, extract, cast, Integer, Float, exists
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from models.database import db
 from models.transaction import Transaction
@@ -437,47 +437,7 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
     # Freehold excluded (their lease_start_year is land grant date, not building age)
     property_age_bucket = filters.get('property_age_bucket')
     if property_age_bucket:
-        from schemas.api_contract import PropertyAgeBucket, SaleType
-
-        if property_age_bucket == PropertyAgeBucket.NEW_SALE:
-            # CORRELATED SUBQUERY: project has 0 resale transactions
-            # This is a market state, not age-based
-            # Use text() directly with NOT EXISTS for proper SQL generation
-            resale_db_value = SaleType.to_db(SaleType.RESALE)
-            not_exists_clause = text("""
-                NOT EXISTS (
-                    SELECT 1 FROM transactions t2
-                    WHERE t2.project_name = transactions.project_name
-                      AND LOWER(t2.sale_type) = LOWER(:resale_type)
-                      AND COALESCE(t2.is_outlier, false) = false
-                )
-            """).bindparams(resale_type=resale_db_value)
-            conditions.append(not_exists_clause)
-
-        elif property_age_bucket == PropertyAgeBucket.FREEHOLD:
-            # Freehold properties (no lease)
-            conditions.append(Transaction.tenure.ilike('%freehold%'))
-
-        else:
-            # Age-based buckets (leasehold only)
-            age_range = PropertyAgeBucket.get_age_range(property_age_bucket)
-            if age_range:
-                min_age, max_age = age_range
-                lease_age_expr = extract('year', Transaction.transaction_date) - Transaction.lease_start_year
-
-                # MUST be leasehold with valid lease_start_year
-                is_leasehold = and_(
-                    Transaction.lease_start_year.isnot(None),
-                    ~Transaction.tenure.ilike('%freehold%')
-                )
-
-                bucket_conditions = [is_leasehold]
-                if min_age is not None:
-                    bucket_conditions.append(lease_age_expr >= min_age)
-                if max_age is not None:
-                    bucket_conditions.append(lease_age_expr < max_age)  # EXCLUSIVE upper bound
-
-                conditions.append(and_(*bucket_conditions))
+        conditions.append(build_property_age_bucket_filter(property_age_bucket))
 
     return conditions
 
@@ -498,28 +458,26 @@ def build_property_age_bucket_filter(bucket: str, txn_table=None):
 
     Example:
         from services.dashboard_service import build_property_age_bucket_filter
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         filter_expr = build_property_age_bucket_filter(PropertyAgeBucket.YOUNG_RESALE)
         query = query.filter(filter_expr)
     """
-    from schemas.api_contract import PropertyAgeBucket, SaleType
+    from api.contracts.contract_schema import PropertyAgeBucket, SaleType
 
     T = txn_table if txn_table is not None else Transaction
     lease_age_expr = extract('year', T.transaction_date) - T.lease_start_year
 
     if bucket == PropertyAgeBucket.NEW_SALE:
-        # CORRELATED SUBQUERY: project has 0 resale transactions
-        # Use text() directly with NOT EXISTS for proper SQL generation
+        # CORRELATED SUBQUERY: project has 0 resale transactions (alias-safe)
         resale_db_value = SaleType.to_db(SaleType.RESALE)
-        return text("""
-            NOT EXISTS (
-                SELECT 1 FROM transactions t2
-                WHERE t2.project_name = transactions.project_name
-                  AND LOWER(t2.sale_type) = LOWER(:resale_type)
-                  AND COALESCE(t2.is_outlier, false) = false
-            )
-        """).bindparams(resale_type=resale_db_value)
+        t2 = aliased(Transaction)
+        has_resale = exists().where(
+            t2.project_name == T.project_name,
+            func.lower(t2.sale_type) == resale_db_value.lower(),
+            func.coalesce(t2.is_outlier, False) == False,
+        )
+        return ~has_resale
 
     elif bucket == PropertyAgeBucket.FREEHOLD:
         # Freehold properties (no lease)

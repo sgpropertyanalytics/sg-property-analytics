@@ -1,7 +1,7 @@
 {
   "_metadata": {
-    "generated_at": "2025-12-28T05:03:45.305261+00:00",
-    "git_sha": "3c536d3",
+    "generated_at": "2025-12-29T14:45:17.559737+00:00",
+    "git_sha": "b98d32d",
     "api_version": "v3",
     "slice_count": 7
   },
@@ -14,10 +14,10 @@
         "date_to": "2025-10-01"
       },
       "metrics": {
-        "count": 136,
+        "count": 272,
         "median_psf": 2522.25,
         "avg_psf": 2514.249705882353,
-        "total_value": 320149061.0
+        "total_value": 640298122.0
       }
     },
     "district_D03_2025-Q3": {
@@ -28,10 +28,10 @@
         "date_to": "2025-10-01"
       },
       "metrics": {
-        "count": 1553,
-        "median_psf": 2875.007083065035,
-        "avg_psf": 2838.656690276883,
-        "total_value": 3928056245.0
+        "count": 3118,
+        "median_psf": 2872.2822322001284,
+        "avg_psf": 2837.2276555484286,
+        "total_value": 7881785266.0
       }
     },
     "district_D09_2025-Q3": {
@@ -42,10 +42,10 @@
         "date_to": "2025-10-01"
       },
       "metrics": {
-        "count": 935,
-        "median_psf": 3032.068449197861,
-        "avg_psf": 2920.580941176471,
-        "total_value": 2251439278.0
+        "count": 1884,
+        "median_psf": 3030.5021231422506,
+        "avg_psf": 2920.1593630573248,
+        "total_value": 4538148356.0
       }
     },
     "district_D10_2025-Q3": {
@@ -56,10 +56,10 @@
         "date_to": "2025-10-01"
       },
       "metrics": {
-        "count": 1082,
-        "median_psf": 2950.125693160813,
-        "avg_psf": 2834.365563770795,
-        "total_value": 3013674031.0
+        "count": 2175,
+        "median_psf": 2950.52183908046,
+        "avg_psf": 2835.7639310344825,
+        "total_value": 6070863062.0
       }
     },
     "district_D15_2025-Q3": {
@@ -70,10 +70,10 @@
         "date_to": "2025-10-01"
       },
       "metrics": {
-        "count": 529,
-        "median_psf": 2314.7315689981097,
-        "avg_psf": 2228.318922495274,
-        "total_value": 1433653268.0
+        "count": 1073,
+        "median_psf": 2314.891891891892,
+        "avg_psf": 2232.9203355079217,
+        "total_value": 2905750424.0
       }
     },
     "district_D19_2025-Q3": {
@@ -84,10 +84,10 @@
         "date_to": "2025-10-01"
       },
       "metrics": {
-        "count": 546,
-        "median_psf": 1702.2472527472528,
-        "avg_psf": 1709.917564102564,
-        "total_value": 881256448.0
+        "count": 1110,
+        "median_psf": 1703.2567567567567,
+        "avg_psf": 1713.98,
+        "total_value": 1786561784.0
       }
     },
     "district_D23_2025-Q3": {
@@ -98,10 +98,10 @@
         "date_to": "2025-10-01"
       },
       "metrics": {
-        "count": 285,
-        "median_psf": 1559.0526315789473,
-        "avg_psf": 1534.4184210526316,
-        "total_value": 451248878.0
+        "count": 587,
+        "median_psf": 1566.5996592844974,
+        "avg_psf": 1539.8592504258943,
+        "total_value": 927737644.0
       }
     }
   }

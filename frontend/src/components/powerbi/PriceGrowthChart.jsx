@@ -26,6 +26,7 @@ import { Line } from 'react-chartjs-2';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { ChartSkeleton } from '../common/ChartSkeleton';
+import { getTxnField, TxnField } from '../../schemas/apiContract';
 
 ChartJS.register(
   CategoryScale,
@@ -72,9 +73,11 @@ const aggregateByQuarter = (transactions) => {
   const quarters = {};
 
   transactions.forEach(txn => {
-    if (!txn.transaction_date || txn.psf == null) return;
+    const txnDate = getTxnField(txn, TxnField.TRANSACTION_DATE);
+    const psf = getTxnField(txn, TxnField.PSF);
+    if (!txnDate || psf == null) return;
 
-    const date = new Date(txn.transaction_date);
+    const date = new Date(txnDate);
     const q = Math.ceil((date.getMonth() + 1) / 3);
     const qKey = `${date.getFullYear()}-Q${q}`;
 
@@ -82,10 +85,11 @@ const aggregateByQuarter = (transactions) => {
       quarters[qKey] = { psf: [], growth: [] };
     }
 
-    quarters[qKey].psf.push(txn.psf);
+    quarters[qKey].psf.push(psf);
 
-    if (txn.cumulative_growth_pct != null) {
-      quarters[qKey].growth.push(txn.cumulative_growth_pct);
+    const cumulativeGrowth = getTxnField(txn, TxnField.CUMULATIVE_GROWTH_PCT);
+    if (cumulativeGrowth != null) {
+      quarters[qKey].growth.push(cumulativeGrowth);
     }
   });
 
@@ -288,15 +292,15 @@ export const PriceGrowthChart = React.memo(function PriceGrowthChart({
 
     const txns = data.data;
     const growthValues = txns
-      .map(t => t.cumulative_growth_pct)
+      .map(t => getTxnField(t, TxnField.CUMULATIVE_GROWTH_PCT))
       .filter(v => v != null);
 
     const latestGrowth = growthValues.length > 0
       ? growthValues[growthValues.length - 1]
       : null;
 
-    const firstDate = txns[0]?.transaction_date;
-    const lastDate = txns[txns.length - 1]?.transaction_date;
+    const firstDate = getTxnField(txns[0], TxnField.TRANSACTION_DATE);
+    const lastDate = getTxnField(txns[txns.length - 1], TxnField.TRANSACTION_DATE);
 
     return {
       totalTransactions: txns.length,

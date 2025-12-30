@@ -6,6 +6,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { SuppressedValue } from '../SuppressedValue';
 import { getRegionBadgeClass } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
+import { HotProjectsField, getHotProjectsField } from '../../schemas/apiContract';
 
 /**
  * Active New Sales Table - Shows LAUNCHED projects with sales progress
@@ -68,7 +69,8 @@ export function HotProjectsTable({
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/hot-projects');
 
-      const projects = response.data.projects || [];
+      const responseData = response.data || {};
+      const projects = getHotProjectsField(responseData, HotProjectsField.PROJECTS) || [];
 
       // Notify parent of data count
       if (onDataLoad) {

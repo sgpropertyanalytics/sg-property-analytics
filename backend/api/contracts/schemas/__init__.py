@@ -15,7 +15,6 @@ from . import insights
 from . import supply
 from . import charts
 from . import trends
-from . import precomputed
 from . import projects
 from . import projects_analytics
 from . import deal_checker
@@ -26,7 +25,7 @@ from . import gls
 __all__ = [
     'aggregate', 'kpi_summary', 'dashboard', 'filter_options',
     'transactions', 'insights', 'supply',
-    'charts', 'trends', 'precomputed',
+    'charts', 'trends',
     'projects', 'projects_analytics', 'deal_checker',
     'upcoming_launches', 'auth', 'gls',
 ]

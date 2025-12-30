@@ -91,7 +91,7 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
       rawData.forEach(row => {
         const district = row.district;
         if (district && districtData[district]) {
-          // Use getAggField for v1/v2 compatibility
+          // Use getAggField for contract-safe access
           const medianPsf = getAggField(row, AggField.MEDIAN_PSF) || getAggField(row, AggField.AVG_PSF) || 0;
           const totalValue = getAggField(row, AggField.TOTAL_VALUE) || 0;
           districtData[district].push({

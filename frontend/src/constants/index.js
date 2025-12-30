@@ -283,12 +283,12 @@ export const classifyBedroom = (areaSqft) => {
  * - Resale units (legacy larger sizes)
  *
  * @param {number} areaSqft - Unit area in square feet
- * @param {string|null} saleType - 'New Sale' or 'Resale' (defaults to Resale if null)
+ * @param {string|null} saleType - 'new_sale' or 'resale' (defaults to resale if null)
  * @param {Date|string|null} transactionDate - Transaction date
  * @returns {number} Estimated bedroom count (1-5)
  */
 export const classifyBedroomThreeTier = (areaSqft, saleType = null, transactionDate = null) => {
-  const saleTypeStr = (saleType || '').toString().trim() || 'Resale';
+  const saleTypeStr = (saleType || '').toString().trim() || 'resale';
 
   // Parse transaction date
   let saleDate = null;
@@ -300,7 +300,7 @@ export const classifyBedroomThreeTier = (areaSqft, saleType = null, transactionD
   }
 
   // Determine which tier to use
-  // Use isSaleType helper to handle both v1 ('New Sale') and v2 ('new_sale') formats
+  // Use isSaleType helper to handle canonical enum values
   if (isSaleType.newSale(saleTypeStr) && saleDate !== null) {
     if (saleDate >= HARMONIZATION_DATE) {
       // Tier 1: Post-Harmonization New Sale
@@ -317,12 +317,12 @@ export const classifyBedroomThreeTier = (areaSqft, saleType = null, transactionD
 /**
  * Get classification tier name (for debugging/display)
  *
- * @param {string|null} saleType - 'New Sale' or 'Resale'
+ * @param {string|null} saleType - 'new_sale' or 'resale'
  * @param {Date|string|null} transactionDate - Transaction date
  * @returns {string} Tier name
  */
 export const getBedroomClassificationTier = (saleType, transactionDate) => {
-  const saleTypeStr = (saleType || '').toString().trim() || 'Resale';
+  const saleTypeStr = (saleType || '').toString().trim() || 'resale';
 
   let saleDate = null;
   if (transactionDate) {
@@ -332,7 +332,7 @@ export const getBedroomClassificationTier = (saleType, transactionDate) => {
     if (isNaN(saleDate.getTime())) saleDate = null;
   }
 
-  // Use isSaleType helper to handle both v1 ('New Sale') and v2 ('new_sale') formats
+  // Use isSaleType helper to handle canonical enum values
   if (isSaleType.newSale(saleTypeStr) && saleDate !== null) {
     if (saleDate >= HARMONIZATION_DATE) {
       return 'Tier 1: New Sale Post-Harmonization (Ultra Compact)';
@@ -547,11 +547,11 @@ export { SaleType, SaleTypeLabels, Tenure, TenureLabels, TenureLabelsShort, isSa
 export const SALE_TYPE_VALUES = [SaleType.NEW_SALE, SaleType.RESALE, SaleType.SUB_SALE];
 
 /**
- * Sale type options for dropdowns/selects (uses DB values for backend compatibility)
- * Each option has { value: dbString, label: displayString }
+ * Sale type options for dropdowns/selects.
+ * Each option has { value: enum, label: displayString }
  */
 export const SALE_TYPE_OPTIONS = SALE_TYPE_VALUES.map(v => ({
-  value: SaleTypeLabels[v],  // DB string value: 'New Sale', 'Resale', 'Sub Sale'
+  value: v,
   label: SaleTypeLabels[v],
 }));
 
@@ -567,23 +567,7 @@ export const SALE_TYPE_FILTER_OPTIONS = [
 ];
 
 /**
- * Legacy: DB string values (for backward compatibility during migration)
- * @deprecated Use SALE_TYPE_VALUES with enum values instead
- */
-export const SALE_TYPES = ['New Sale', 'Resale', 'Sub Sale'];
-
-/**
- * Legacy: Sale type display labels keyed by DB string
- * @deprecated Use SaleTypeLabels from apiContract instead
- */
-export const SALE_TYPE_LABELS = {
-  'New Sale': 'New Sale',
-  'Resale': 'Resale',
-  'Sub Sale': 'Sub Sale',
-};
-
-/**
- * Get sale type label for display (handles both enum and DB string)
+ * Get sale type label for display.
  */
 export const getSaleTypeLabel = getContractSaleTypeLabel;
 
@@ -591,7 +575,7 @@ export const getSaleTypeLabel = getContractSaleTypeLabel;
  * Check if a sale type value is valid (handles both enum and DB string)
  */
 export const isValidSaleType = (saleType) => {
-  return SALE_TYPE_VALUES.includes(saleType) || SALE_TYPES.includes(saleType);
+  return SALE_TYPE_VALUES.includes(saleType);
 };
 
 // =============================================================================
@@ -604,42 +588,16 @@ export const isValidSaleType = (saleType) => {
 export const TENURE_VALUES = [Tenure.FREEHOLD, Tenure.LEASEHOLD_99, Tenure.LEASEHOLD_999];
 
 /**
- * Tenure options for dropdowns/selects (uses DB values for backend compatibility)
- * Each option has { value: dbString, label: displayString }
+ * Tenure options for dropdowns/selects.
+ * Each option has { value: enum, label: displayString }
  */
 export const TENURE_OPTIONS = TENURE_VALUES.map(v => ({
-  value: TenureLabels[v],  // DB string value: 'Freehold', '99-year', '999-year'
+  value: v,
   label: TenureLabels[v],
 }));
 
 /**
- * Legacy: DB string values (for backward compatibility during migration)
- * @deprecated Use TENURE_VALUES with enum values instead
- */
-export const TENURE_TYPES = ['Freehold', '99-year', '999-year'];
-
-/**
- * Legacy: Tenure type display labels keyed by DB string (full)
- * @deprecated Use TenureLabels from apiContract instead
- */
-export const TENURE_TYPE_LABELS = {
-  'Freehold': 'Freehold',
-  '99-year': '99-year Leasehold',
-  '999-year': '999-year Leasehold',
-};
-
-/**
- * Legacy: Tenure type short labels keyed by DB string
- * @deprecated Use TenureLabelsShort from apiContract instead
- */
-export const TENURE_TYPE_LABELS_SHORT = {
-  'Freehold': 'FH',
-  '99-year': '99yr',
-  '999-year': '999yr',
-};
-
-/**
- * Get tenure label for display (handles both enum and DB string)
+ * Get tenure label for display.
  */
 export const getTenureLabel = getContractTenureLabel;
 
@@ -647,7 +605,7 @@ export const getTenureLabel = getContractTenureLabel;
  * Check if a tenure value is valid (handles both enum and DB string)
  */
 export const isValidTenure = (tenure) => {
-  return TENURE_VALUES.includes(tenure) || TENURE_TYPES.includes(tenure);
+  return TENURE_VALUES.includes(tenure);
 };
 
 // =============================================================================
@@ -665,12 +623,12 @@ export const isValidTenure = (tenure) => {
  *
  * | Band          | Age Range | Boundary Logic          |
  * |---------------|-----------|-------------------------|
- * | new_sale      | N/A       | sale_type == 'New Sale' |
+ * | new_sale      | N/A       | sale_type == 'new_sale' |
  * | recently_top  | 4-7 yrs   | age >= 4 AND age < 8    |
  * | young_resale  | 8-14 yrs  | age >= 8 AND age < 15   |
  * | resale        | 15-24 yrs | age >= 15 AND age < 25  |
  * | mature_resale | 25+ yrs   | age >= 25               |
- * | freehold      | N/A       | tenure == 'Freehold'    |
+ * | freehold      | N/A       | tenure == 'freehold'    |
  *
  * Note: Resale properties aged 0-4 years are rare (sub-sales)
  * and will show as '-' (unclassified)

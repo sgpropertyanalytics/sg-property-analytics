@@ -2,7 +2,7 @@
  * API Contract Schema v3 - Single Source of Truth
  *
  * Defines the stable API interface between backend and frontend.
- * Must match backend/schemas/api_contract.py
+ * Must match backend/api/contracts/contract_schema.py
  *
  * Module Structure:
  * - version.js: API contract versioning and version assertion
@@ -14,7 +14,6 @@
  * - filterOptions.js: Filter options normalization
  *
  * Version History:
- * - v1: Legacy snake_case fields only
  * - v2: Added camelCase fields, enum normalization
  * - v3: Stabilization release - no breaking changes, version flag for deprecation safety
  */
@@ -52,7 +51,6 @@ export {
   RegionLabels,
   // Floor Level
   FloorLevel,
-  FloorLevelDB,
   FloorLevelLabels,
   FloorLevelLabelsShort,
   isFloorLevel,
@@ -86,6 +84,15 @@ export {
 } from './transactionFields';
 
 // =============================================================================
+// KPI FIELDS
+// =============================================================================
+
+export {
+  KpiField,
+  getKpiField,
+} from './kpiFields';
+
+// =============================================================================
 // AGGREGATE FIELDS
 // =============================================================================
 
@@ -104,12 +111,123 @@ export {
 export {
   DashboardField,
   getDashboardField,
+  DashboardMetaField,
+  getDashboardMetaField,
   normalizeSummaryPanel,
   normalizeTimeSeriesRow,
   normalizeLocationRow,
   normalizeBedroomMixRow,
   normalizeSaleTypeRow,
 } from './dashboardFields';
+
+// =============================================================================
+// NEW VS RESALE FIELDS
+// =============================================================================
+
+export {
+  NewVsResaleField,
+  getNewVsResaleField,
+} from './newVsResaleFields';
+
+// =============================================================================
+// BUDGET HEATMAP FIELDS
+// =============================================================================
+
+export {
+  BudgetHeatmapField,
+  BudgetHeatmapRowField,
+  BudgetHeatmapMetaField,
+  getBudgetHeatmapField,
+  getBudgetHeatmapRowField,
+  getBudgetHeatmapMetaField,
+} from './budgetHeatmapFields';
+
+// =============================================================================
+// FLOOR LIQUIDITY FIELDS
+// =============================================================================
+
+export {
+  FloorLiquidityField,
+  FloorLiquidityMetaField,
+  getFloorLiquidityField,
+  getFloorLiquidityMetaField,
+} from './floorLiquidityFields';
+
+// =============================================================================
+// SUPPLY FIELDS
+// =============================================================================
+
+export {
+  SupplyField,
+  SupplyMetaField,
+  getSupplyField,
+  getSupplyMetaField,
+} from './supplyFields';
+
+// =============================================================================
+// GLS FIELDS
+// =============================================================================
+
+export {
+  GlsAllField,
+  getGlsAllField,
+} from './glsFields';
+
+// =============================================================================
+// UPCOMING LAUNCHES FIELDS
+// =============================================================================
+
+export {
+  UpcomingLaunchesField,
+  getUpcomingLaunchesField,
+} from './upcomingLaunchFields';
+
+// =============================================================================
+// HOT PROJECTS FIELDS
+// =============================================================================
+
+export {
+  HotProjectsField,
+  getHotProjectsField,
+} from './hotProjectsFields';
+
+// =============================================================================
+// DEAL CHECKER FIELDS
+// =============================================================================
+
+export {
+  DealCheckerField,
+  ProjectNamesField,
+  getDealCheckerField,
+  getProjectNamesField,
+} from './dealCheckerFields';
+
+// =============================================================================
+// PROJECT INVENTORY FIELDS
+// =============================================================================
+
+export {
+  ProjectInventoryField,
+  getProjectInventoryField,
+} from './projectInventoryFields';
+
+// =============================================================================
+// PRICE BANDS FIELDS
+// =============================================================================
+
+export {
+  PriceBandsField,
+  getPriceBandsField,
+} from './priceBandsFields';
+
+// =============================================================================
+// EXIT QUEUE FIELDS
+// =============================================================================
+
+export {
+  ExitQueueField,
+  normalizeExitQueueResponse,
+} from './exitQueueFields';
 
 // =============================================================================
 // API PARAMETERS

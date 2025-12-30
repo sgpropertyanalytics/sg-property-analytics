@@ -9,11 +9,10 @@ Endpoints:
 """
 
 import time
-from flask import request, jsonify
+from datetime import timedelta
+from flask import request, jsonify, g
 from routes.analytics import analytics_bp
-from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
 from utils.normalize import (
-    to_int, to_float, to_date, to_list, to_bool, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
@@ -37,10 +36,10 @@ def dashboard():
         - district: comma-separated districts (D01,D02,...)
         - bedroom: comma-separated bedroom counts (2,3,4)
         - segment: CCR, RCR, OCR
-        - sale_type: 'New Sale' or 'Resale'
+        - sale_type: 'new_sale', 'resale', 'sub_sale'
         - psf_min, psf_max: PSF range
         - size_min, size_max: sqft range
-        - tenure: Freehold, 99-year, 999-year
+        - tenure: freehold, 99_year, 999_year
         - project: project name filter (partial match)
 
       Options:
@@ -74,125 +73,93 @@ def dashboard():
       GET /api/dashboard?segment=CCR&panels=time_series,summary
     """
     from services.dashboard_service import get_dashboard_data, ValidationError, get_cache_stats
-    from schemas.api_contract import serialize_dashboard_response
+    from api.contracts.contract_schema import serialize_dashboard_response
 
     start = time.time()
 
     try:
-        # Schema version: v2 only (v1 deprecated fields removed)
+        params = getattr(g, "normalized_params", {}) or {}
+        filters = {}
+        options = {}
+        panels_param = None
 
-        # Parse parameters from GET query string or POST JSON body
-        if request.method == 'POST' and request.is_json:
-            body = request.get_json()
-            filters = body.get('filters', {})
-            panels_param = body.get('panels', [])
-            options = body.get('options', {})
-            skip_cache = body.get('skip_cache', False)
-        else:
-            # Parse from query params using normalize utilities
-            filters = {}
-            options = {}
-
+        def _expand_csv_list(value, item_type=str):
+            if value is None:
+                return []
+            items = value if isinstance(value, list) else [value]
+            expanded = []
+            for item in items:
+                if isinstance(item, str) and "," in item:
+                    expanded.extend([p.strip() for p in item.split(",") if p.strip()])
+                else:
+                    expanded.append(item)
             try:
-                # Date filters - parse to Python date objects
-                date_from = to_date(request.args.get('date_from'), field='date_from')
-                if date_from:
-                    filters['date_from'] = date_from
+                if item_type is int:
+                    return [int(v) for v in expanded]
+            except (ValueError, TypeError):
+                raise NormalizeValidationError("Invalid list value")
+            return expanded
 
-                date_to = clamp_date_to_today(to_date(request.args.get('date_to'), field='date_to'))
-                if date_to:
-                    filters['date_to'] = date_to
+        date_from = params.get("date_from")
+        date_to_exclusive = params.get("date_to_exclusive")
+        if date_from:
+            filters["date_from"] = date_from
+        if date_to_exclusive:
+            filters["date_to"] = date_to_exclusive - timedelta(days=1)
 
-                # District filter
-                districts = to_list(request.args.get('district'), field='district')
-                if districts:
-                    filters['districts'] = districts
+        districts = params.get("districts") or []
+        if districts:
+            filters["districts"] = districts
 
-                # Bedroom filter
-                bedrooms = to_list(request.args.get('bedroom'), item_type=int, field='bedroom')
-                if bedrooms:
-                    filters['bedrooms'] = bedrooms
+        bedrooms = _expand_csv_list(params.get("bedrooms"), item_type=int)
+        if bedrooms:
+            filters["bedrooms"] = bedrooms
 
-                # Segment filter - supports comma-separated values (e.g., "CCR,RCR")
-                segments = to_list(request.args.get('segment'), field='segment')
-                if segments:
-                    filters['segments'] = [s.upper() for s in segments]
+        segments = _expand_csv_list(params.get("segments"))
+        if segments:
+            filters["segments"] = [s.upper() for s in segments]
 
-                # Sale type filter (v2: saleType, v1: sale_type)
-                sale_type = request.args.get('saleType') or request.args.get('sale_type')
-                if sale_type:
-                    # Convert v2 enum to DB value if needed
-                    from schemas.api_contract import SaleType
-                    if sale_type in SaleType.ALL:
-                        filters['sale_type'] = SaleType.to_db(sale_type)
-                    else:
-                        filters['sale_type'] = sale_type
+        sale_type = params.get("sale_type")
+        if sale_type:
+            from api.contracts.contract_schema import SaleType
+            filters["sale_type"] = SaleType.to_db(sale_type)
 
-                # PSF range
-                psf_min = to_float(request.args.get('psf_min'), field='psf_min')
-                if psf_min is not None:
-                    filters['psf_min'] = psf_min
+        if params.get("psf_min") is not None:
+            filters["psf_min"] = params.get("psf_min")
+        if params.get("psf_max") is not None:
+            filters["psf_max"] = params.get("psf_max")
+        if params.get("size_min") is not None:
+            filters["size_min"] = params.get("size_min")
+        if params.get("size_max") is not None:
+            filters["size_max"] = params.get("size_max")
+        tenure = params.get("tenure")
+        if tenure:
+            from api.contracts.contract_schema import Tenure
+            filters["tenure"] = Tenure.to_db(tenure)
+        if params.get("property_age_min") is not None:
+            filters["property_age_min"] = params.get("property_age_min")
+        if params.get("property_age_max") is not None:
+            filters["property_age_max"] = params.get("property_age_max")
+        if params.get("property_age_bucket"):
+            filters["property_age_bucket"] = params.get("property_age_bucket")
+        if params.get("project_exact"):
+            filters["project_exact"] = params.get("project_exact")
+        elif params.get("project"):
+            filters["project"] = params.get("project")
 
-                psf_max = to_float(request.args.get('psf_max'), field='psf_max')
-                if psf_max is not None:
-                    filters['psf_max'] = psf_max
+        panels_param = _expand_csv_list(params.get("panels"))
+        if not panels_param:
+            panels_param = None
 
-                # Size range
-                size_min = to_float(request.args.get('size_min'), field='size_min')
-                if size_min is not None:
-                    filters['size_min'] = size_min
+        if params.get("time_grain"):
+            options["time_grain"] = params.get("time_grain")
+        if params.get("location_grain"):
+            options["location_grain"] = params.get("location_grain")
+        if params.get("histogram_bins") is not None:
+            options["histogram_bins"] = params.get("histogram_bins")
+        options["show_full_range"] = params.get("show_full_range", False)
 
-                size_max = to_float(request.args.get('size_max'), field='size_max')
-                if size_max is not None:
-                    filters['size_max'] = size_max
-
-                # Tenure filter
-                if request.args.get('tenure'):
-                    filters['tenure'] = request.args.get('tenure')
-
-                # Property age filter (years since TOP/lease start)
-                # Note: This only applies to leasehold properties (freehold excluded)
-                property_age_min = to_int(request.args.get('property_age_min'), field='property_age_min')
-                if property_age_min is not None:
-                    filters['property_age_min'] = property_age_min
-
-                property_age_max = to_int(request.args.get('property_age_max'), field='property_age_max')
-                if property_age_max is not None:
-                    filters['property_age_max'] = property_age_max
-
-                # Property age bucket filter (v2: propertyAgeBucket, v1: property_age_bucket)
-                from schemas.api_contract import PropertyAgeBucket
-                property_age_bucket = request.args.get('propertyAgeBucket') or request.args.get('property_age_bucket')
-                if property_age_bucket and PropertyAgeBucket.is_valid(property_age_bucket):
-                    filters['property_age_bucket'] = property_age_bucket
-
-                # Project filter - supports both partial match (search) and exact match (drill-through)
-                if request.args.get('project_exact'):
-                    filters['project_exact'] = request.args.get('project_exact')
-                elif request.args.get('project'):
-                    filters['project'] = request.args.get('project')
-
-                # Panels
-                panels_param = to_list(request.args.get('panels'), field='panels')
-                if not panels_param:
-                    panels_param = None  # Will use default
-
-                # Options
-                if request.args.get('time_grain'):
-                    options['time_grain'] = request.args.get('time_grain')
-                if request.args.get('location_grain'):
-                    options['location_grain'] = request.args.get('location_grain')
-
-                histogram_bins = to_int(request.args.get('histogram_bins'), field='histogram_bins')
-                if histogram_bins is not None:
-                    options['histogram_bins'] = histogram_bins
-
-                options['show_full_range'] = to_bool(request.args.get('show_full_range'), default=False)
-
-                skip_cache = to_bool(request.args.get('skip_cache'), default=False)
-
-            except NormalizeValidationError as e:
-                return validation_error_response(e)
+        skip_cache = params.get("skip_cache", False)
 
         # Get dashboard data
         result = get_dashboard_data(
@@ -224,6 +191,9 @@ def dashboard():
 
         return jsonify(serialized)
 
+    except NormalizeValidationError as e:
+        return validation_error_response(e)
+
     except ValidationError as e:
         elapsed = time.time() - start
         print(f"GET /api/dashboard validation error (took {elapsed:.4f}s): {e}")
@@ -241,19 +211,3 @@ def dashboard():
             "error": str(e)
         }), 500
 
-
-@analytics_bp.route("/dashboard/cache", methods=["GET", "DELETE"])
-def dashboard_cache():
-    """
-    Dashboard cache management endpoint.
-
-    GET: Return cache statistics
-    DELETE: Clear cache
-    """
-    from services.dashboard_service import get_cache_stats, clear_dashboard_cache
-
-    if request.method == 'DELETE':
-        clear_dashboard_cache()
-        return jsonify({"status": "cache cleared"})
-
-    return jsonify(get_cache_stats())

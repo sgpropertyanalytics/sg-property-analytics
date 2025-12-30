@@ -60,7 +60,7 @@ def build_property_age_filter(age_filter):
 insights_bp = Blueprint('insights', __name__)
 
 # Import contract versioning for HTTP header
-from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+from api.contracts.contract_schema import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
 
 
 @insights_bp.after_request
@@ -332,179 +332,6 @@ def district_psf():
         return jsonify({"error": str(e)}), 500
 
 
-@insights_bp.route("/district-summary", methods=["GET"])
-@api_contract("insights/district-summary")
-def district_summary():
-    """
-    Get summary statistics for a specific district.
-    Used for the tooltip/detail panel when hovering over a district.
-
-    Query params:
-      - district: District ID (e.g., D09)
-      - period: Time period filter - 3m, 6m, 12m, all (default: 12m)
-      - bed: Bedroom filter - all, 1, 2, 3, 4+ (default: all)
-
-    Returns detailed stats for that district.
-    """
-    start = time.time()
-
-    district = request.args.get("district")
-    if not district:
-        return jsonify({"error": "district parameter is required"}), 400
-
-    # Normalize district
-    district = district.strip().upper()
-    if not district.startswith("D"):
-        district = f"D{district.zfill(2)}"
-
-    period = request.args.get("period", "12m")
-    bed_filter = request.args.get("bed", "all")
-
-    # Calculate date range
-    today = datetime.now().date()
-    if period == "3m":
-        date_from = months_ago(today, 3)
-    elif period == "6m":
-        date_from = months_ago(today, 6)
-    elif period == "12m":
-        date_from = months_ago(today, 12)
-    elif period == "all":
-        date_from = None
-    else:
-        date_from = months_ago(today, 12)
-
-    # Build filter conditions
-    filter_conditions = [
-        Transaction.outlier_filter(),
-        Transaction.district == district
-    ]
-
-    if date_from:
-        filter_conditions.append(Transaction.transaction_date >= date_from)
-
-    if bed_filter != "all":
-        if bed_filter == "1":
-            filter_conditions.append(Transaction.bedroom_count == 1)
-        elif bed_filter == "2":
-            filter_conditions.append(Transaction.bedroom_count == 2)
-        elif bed_filter == "3":
-            filter_conditions.append(Transaction.bedroom_count == 3)
-        elif bed_filter in ["4", "4+"]:
-            filter_conditions.append(Transaction.bedroom_count >= 4)
-
-    try:
-        # Get detailed stats
-        stats = db.session.query(
-            func.count(Transaction.id).label("tx_count"),
-            func.percentile_cont(0.5).within_group(Transaction.psf).label("median_psf"),
-            func.percentile_cont(0.25).within_group(Transaction.psf).label("psf_25th"),
-            func.percentile_cont(0.75).within_group(Transaction.psf).label("psf_75th"),
-            func.min(Transaction.psf).label("min_psf"),
-            func.max(Transaction.psf).label("max_psf"),
-            func.sum(Transaction.price).label("total_value"),
-            func.percentile_cont(0.5).within_group(Transaction.price).label("median_price")
-        ).filter(
-            and_(*filter_conditions)
-        ).first()
-
-        # Get bedroom breakdown
-        bedroom_breakdown = db.session.query(
-            Transaction.bedroom_count,
-            func.count(Transaction.id).label("count"),
-            func.percentile_cont(0.5).within_group(Transaction.psf).label("median_psf")
-        ).filter(
-            and_(*filter_conditions)
-        ).group_by(
-            Transaction.bedroom_count
-        ).order_by(
-            Transaction.bedroom_count
-        ).all()
-
-        # Get top projects
-        top_projects = db.session.query(
-            Transaction.project_name,
-            func.count(Transaction.id).label("tx_count"),
-            func.percentile_cont(0.5).within_group(Transaction.psf).label("median_psf")
-        ).filter(
-            and_(*filter_conditions)
-        ).group_by(
-            Transaction.project_name
-        ).order_by(
-            func.count(Transaction.id).desc()
-        ).limit(5).all()
-
-        # Get region
-        if district in CCR_DISTRICTS:
-            region = "CCR"
-        elif district in RCR_DISTRICTS:
-            region = "RCR"
-        else:
-            region = "OCR"
-
-        elapsed = time.time() - start
-
-        # SECURITY: Mask project names and PSF values for free users
-        from utils.subscription import is_premium_user
-        is_premium = is_premium_user()
-
-        if is_premium:
-            top_projects_data = [
-                {
-                    "name": row.project_name,
-                    "tx_count": row.tx_count,
-                    "median_psf": round(row.median_psf, 0) if row.median_psf else None
-                }
-                for row in top_projects
-            ]
-        else:
-            top_projects_data = [
-                {
-                    "name": f"{district} Project #{i+1}",
-                    "tx_count": row.tx_count,
-                    "median_psf": f"${int(row.median_psf // 500) * 500:,} - ${int(row.median_psf // 500 + 1) * 500:,}" if row.median_psf else None,
-                    "_is_teaser": True
-                }
-                for i, row in enumerate(top_projects)
-            ]
-
-        return jsonify({
-            "district_id": district,
-            "name": DISTRICT_NAMES.get(district, district),
-            "region": region,
-            "stats": {
-                "tx_count": stats.tx_count if stats else 0,
-                "median_psf": round(stats.median_psf, 0) if stats and stats.median_psf else None,
-                "psf_25th": round(stats.psf_25th, 0) if stats and stats.psf_25th else None,
-                "psf_75th": round(stats.psf_75th, 0) if stats and stats.psf_75th else None,
-                "min_psf": round(stats.min_psf, 0) if stats and stats.min_psf else None,
-                "max_psf": round(stats.max_psf, 0) if stats and stats.max_psf else None,
-                "total_value": round(stats.total_value, 0) if stats and stats.total_value else None,
-                "median_price": round(stats.median_price, 0) if stats and stats.median_price else None,
-            },
-            "bedroom_breakdown": [
-                {
-                    "bedroom": row.bedroom_count,
-                    "count": row.count,
-                    "median_psf": round(row.median_psf, 0) if row.median_psf else None
-                }
-                for row in bedroom_breakdown
-            ],
-            "top_projects": top_projects_data,
-            "meta": {
-                "period": period,
-                "bed_filter": bed_filter,
-                "elapsed_ms": int(elapsed * 1000)
-            }
-        })
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/insights/district-summary ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
 @insights_bp.route("/district-liquidity", methods=["GET"])
 @api_contract("insights/district-liquidity")
 def district_liquidity():
@@ -516,7 +343,7 @@ def district_liquidity():
     Query params:
       - period: Time period - 3m, 6m, 12m, all (default: 12m)
       - bed: Bedroom filter - all, 1, 2, 3, 4, 5 (default: all)
-      - sale_type: Sale type filter - all, New Sale, Resale (default: all)
+      - sale_type: Sale type filter - all, new_sale, resale (default: all)
 
     Returns:
       {
@@ -556,7 +383,7 @@ def district_liquidity():
     start = time.time()
 
     # Parse query params
-    from schemas.api_contract import SaleType
+    from api.contracts.contract_schema import SaleType
 
     period = request.args.get("period", "12m")
     bed_filter = request.args.get("bed", "all")

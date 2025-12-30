@@ -4,8 +4,7 @@ Tests for Exit Queue Risk Analysis
 Tests:
 1. Integration test - known project returns non-empty exit queue metrics
 2. Contract test - v2 keys + enum formats
-3. Dual-mode test - returns both v1 and v2 fields by default
-4. Null-handling test - graceful handling of missing data
+3. Null-handling test - graceful handling of missing data
 """
 
 import pytest
@@ -32,10 +31,8 @@ from services.exit_queue_service import (
 )
 
 # Import serializers from api_contract
-from schemas.api_contract import (
-    serialize_exit_queue_v1,
+from api.contracts.contract_schema import (
     serialize_exit_queue_v2,
-    serialize_exit_queue_dual,
     ExitQueueFields,
     LiquidityZone,
     OverallRisk,
@@ -370,50 +367,6 @@ class TestV2SchemaContract:
 
 
 # =============================================================================
-# DUAL-MODE SERIALIZATION TESTS
-# =============================================================================
-
-class TestDualModeSerialization:
-    """Tests for dual-mode v1 + v2 serialization."""
-
-    def test_dual_mode_includes_v2_by_default(self, sample_result):
-        """Dual mode includes _v2 by default."""
-        response = serialize_exit_queue_dual(sample_result, include_v2=True)
-
-        assert "_v2" in response
-        assert "projectName" in response["_v2"]
-
-    def test_dual_mode_v1_fields_present(self, sample_result):
-        """Dual mode includes v1 snake_case fields at top level."""
-        response = serialize_exit_queue_dual(sample_result)
-
-        assert "project_name" in response
-        assert "data_quality" in response
-        assert "fundamentals" in response
-        assert "resale_metrics" in response
-        assert "risk_assessment" in response
-        assert "gating_flags" in response
-
-    def test_dual_mode_can_exclude_v2(self, sample_result):
-        """Dual mode can exclude _v2 when include_v2=False."""
-        response = serialize_exit_queue_dual(sample_result, include_v2=False)
-
-        assert "_v2" not in response
-        assert "project_name" in response  # v1 still present
-
-    def test_dual_mode_values_match(self, complete_result):
-        """v1 and v2 values are equivalent."""
-        response = serialize_exit_queue_dual(complete_result)
-
-        # Compare key values
-        assert response["project_name"] == response["_v2"]["projectName"]
-        assert response["fundamentals"]["total_units"] == response["_v2"]["fundamentals"]["totalUnits"]
-        assert response["resale_metrics"]["total_resale_transactions"] == response["_v2"]["resaleMetrics"]["totalResaleTransactions"]
-        assert response["resale_metrics"]["resales_12m"] == response["_v2"]["resaleMetrics"]["resales12m"]
-        assert response["resale_metrics"]["market_turnover_pct"] == response["_v2"]["resaleMetrics"]["marketTurnoverPct"]
-
-
-# =============================================================================
 # NULL HANDLING TESTS
 # =============================================================================
 
@@ -422,11 +375,11 @@ class TestNullHandling:
 
     def test_null_total_units(self, sample_result):
         """Handles null total_units gracefully."""
-        v1 = serialize_exit_queue_v1(sample_result)
+        v2 = serialize_exit_queue_v2(sample_result)
 
-        assert v1["fundamentals"]["total_units"] is None
-        assert v1["resale_metrics"]["market_turnover_pct"] is None
-        assert v1["resale_metrics"]["recent_turnover_pct"] is None
+        assert v2["fundamentals"]["totalUnits"] is None
+        assert v2["resaleMetrics"]["marketTurnoverPct"] is None
+        assert v2["resaleMetrics"]["recentTurnoverPct"] is None
 
     def test_null_first_resale_date(self):
         """Handles null first_resale_date gracefully."""
@@ -439,8 +392,8 @@ class TestNullHandling:
             gating_flags=GatingFlags(False, False, False, True, False)
         )
 
-        v1 = serialize_exit_queue_v1(result)
-        assert v1["fundamentals"]["first_resale_date"] is None
+        v2 = serialize_exit_queue_v2(result)
+        assert v2["fundamentals"]["firstResaleDate"] is None
 
     def test_null_turnover_metrics(self, sample_result):
         """Handles null turnover metrics gracefully."""
@@ -453,16 +406,16 @@ class TestNullHandling:
             gating_flags=sample_result.gating_flags
         )
 
-        v1 = serialize_exit_queue_v1(result)
-        assert v1["resale_metrics"]["market_turnover_pct"] is None
-        assert v1["resale_metrics"]["recent_turnover_pct"] is None
+        v2 = serialize_exit_queue_v2(result)
+        assert v2["resaleMetrics"]["marketTurnoverPct"] is None
+        assert v2["resaleMetrics"]["recentTurnoverPct"] is None
 
     def test_warnings_list_handling(self, sample_result):
         """Warnings list is correctly serialized."""
-        v1 = serialize_exit_queue_v1(sample_result)
+        v2 = serialize_exit_queue_v2(sample_result)
 
-        assert isinstance(v1["data_quality"]["warnings"], list)
-        assert len(v1["data_quality"]["warnings"]) == 1
+        assert isinstance(v2["dataQuality"]["warnings"], list)
+        assert len(v2["dataQuality"]["warnings"]) == 1
 
 
 # =============================================================================

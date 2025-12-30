@@ -24,6 +24,13 @@ import ResaleMetricsCards from '../components/powerbi/ResaleMetricsCards';
 import UnitPsfInput from '../components/powerbi/UnitPsfInput';
 import { KeyInsightBox } from '../components/ui/KeyInsightBox';
 import { ChartSkeleton } from '../components/common/ChartSkeleton';
+import {
+  ProjectNamesField,
+  getProjectNamesField,
+  normalizeExitQueueResponse,
+  PriceBandsField,
+  getPriceBandsField,
+} from '../schemas/apiContract';
 
 // PERFORMANCE: Lazy-load Chart.js components (~170KB bundle reduction)
 const PriceBandChart = lazy(() => import('../components/powerbi/PriceBandChart'));
@@ -97,6 +104,11 @@ export function ExitRiskContent() {
   const [priceGrowthLoading, setPriceGrowthLoading] = useState(false);
   const [priceGrowthError, setPriceGrowthError] = useState(null);
 
+  const normalizedExitQueue = useMemo(
+    () => normalizeExitQueueResponse(exitQueueData),
+    [exitQueueData]
+  );
+
   // Persist selectedProject to sessionStorage
   useEffect(() => {
     if (selectedProject) {
@@ -123,7 +135,8 @@ export function ExitRiskContent() {
       setProjectOptionsLoading(true);
       try {
         const response = await getProjectNames({ signal: controller.signal });
-        const projects = response.data.projects || [];
+        const responseData = response.data || {};
+        const projects = getProjectNamesField(responseData, ProjectNamesField.PROJECTS) || [];
         setProjectOptions(projects);
 
         // Validate stored project exists
@@ -295,12 +308,12 @@ export function ExitRiskContent() {
   };
 
   const renderGatingWarnings = () => {
-    if (!exitQueueData?.gating_flags) return null;
+    if (!normalizedExitQueue?.gatingFlags) return null;
 
-    const flags = exitQueueData.gating_flags;
+    const flags = normalizedExitQueue.gatingFlags;
     const warnings = [];
 
-    if (flags.is_thin_data) {
+    if (flags.isThinData) {
       warnings.push({
         variant: 'warning',
         title: 'Limited Data',
@@ -308,15 +321,15 @@ export function ExitRiskContent() {
       });
     }
 
-    if (flags.is_boutique) {
+    if (flags.isBoutique) {
       warnings.push({
         variant: 'info',
         title: 'Boutique Development',
-        content: `This is a smaller development with ${exitQueueData.fundamentals?.total_units || 'few'} units. Small sample sizes may cause metrics to be less statistically reliable.`
+        content: `This is a smaller development with ${normalizedExitQueue.fundamentals?.totalUnits || 'few'} units. Small sample sizes may cause metrics to be less statistically reliable.`
       });
     }
 
-    if (flags.is_brand_new) {
+    if (flags.isBrandNew) {
       warnings.push({
         variant: 'info',
         title: 'Recently Completed',
@@ -324,7 +337,7 @@ export function ExitRiskContent() {
       });
     }
 
-    if (flags.is_ultra_luxury) {
+    if (flags.isUltraLuxury) {
       warnings.push({
         variant: 'info',
         title: 'Premium Development',
@@ -332,7 +345,7 @@ export function ExitRiskContent() {
       });
     }
 
-    if (flags.unit_type_mixed) {
+    if (flags.unitTypeMixed) {
       warnings.push({
         variant: 'default',
         title: 'Mixed Unit Types',
@@ -533,10 +546,10 @@ export function ExitRiskContent() {
         )}
 
         {/* Results */}
-        {!loading && exitQueueData && (
+        {!loading && normalizedExitQueue && (
           <div className="space-y-6 animate-fade-in">
             {/* No Resales Warning */}
-            {exitQueueData.data_quality?.completeness === 'no_resales' && (
+            {normalizedExitQueue.dataQuality?.completeness === 'no_resales' && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="text-amber-700 text-sm">
                   <strong>No resale transactions found</strong> for this project. Exit queue analysis is not available until resale transactions occur.
@@ -549,20 +562,20 @@ export function ExitRiskContent() {
               {/* Row 1: KPI Cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 <ProjectFundamentalsPanel
-                  totalUnits={exitQueueData.fundamentals?.total_units}
-                  topYear={exitQueueData.fundamentals?.top_year}
-                  propertyAgeYears={exitQueueData.fundamentals?.property_age_years}
-                  ageSource={exitQueueData.fundamentals?.age_source}
-                  firstResaleDate={exitQueueData.fundamentals?.first_resale_date}
+                  totalUnits={normalizedExitQueue.fundamentals?.totalUnits}
+                  topYear={normalizedExitQueue.fundamentals?.topYear}
+                  propertyAgeYears={normalizedExitQueue.fundamentals?.propertyAgeYears}
+                  ageSource={normalizedExitQueue.fundamentals?.ageSource}
+                  firstResaleDate={normalizedExitQueue.fundamentals?.firstResaleDate}
                   compact
                 />
-                {exitQueueData.resale_metrics ? (
+                {normalizedExitQueue.resaleMetrics ? (
                   <ResaleMetricsCards
-                    totalResaleTransactions={exitQueueData.resale_metrics?.total_resale_transactions}
-                    resales12m={exitQueueData.resale_metrics?.resales_12m}
-                    marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
-                    recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
-                    totalUnits={exitQueueData.fundamentals?.total_units}
+                    totalResaleTransactions={normalizedExitQueue.resaleMetrics?.totalResaleTransactions}
+                    resales12m={normalizedExitQueue.resaleMetrics?.resales12m}
+                    marketTurnoverPct={normalizedExitQueue.resaleMetrics?.marketTurnoverPct}
+                    recentTurnoverPct={normalizedExitQueue.resaleMetrics?.recentTurnoverPct}
+                    totalUnits={normalizedExitQueue.fundamentals?.totalUnits}
                     compact
                   />
                 ) : (
@@ -591,7 +604,7 @@ export function ExitRiskContent() {
                     height={400}
                   />
                 </Suspense>
-                {exitQueueData.resale_metrics && (
+                {normalizedExitQueue.resaleMetrics && (
                   <Suspense fallback={<ChartSkeleton type="table" height={400} />}>
                     <FloorLiquidityHeatmap
                       district={selectedProject?.district}
@@ -605,29 +618,29 @@ export function ExitRiskContent() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
                   <PriceBandChart
-                    bands={priceBandsData?.bands || []}
-                    latest={priceBandsData?.latest}
-                    trend={priceBandsData?.trend}
-                    verdict={priceBandsData?.verdict}
+                    bands={getPriceBandsField(priceBandsData, PriceBandsField.BANDS) || []}
+                    latest={getPriceBandsField(priceBandsData, PriceBandsField.LATEST)}
+                    trend={getPriceBandsField(priceBandsData, PriceBandsField.TREND)}
+                    verdict={getPriceBandsField(priceBandsData, PriceBandsField.VERDICT)}
                     unitPsf={unitPsf}
-                    dataSource={priceBandsData?.data_source}
-                    proxyLabel={priceBandsData?.proxy_label}
-                    dataQuality={priceBandsData?.data_quality}
-                    totalResaleTransactions={exitQueueData?.resale_metrics?.total_resale_transactions}
+                    dataSource={getPriceBandsField(priceBandsData, PriceBandsField.DATA_SOURCE)}
+                    proxyLabel={getPriceBandsField(priceBandsData, PriceBandsField.PROXY_LABEL)}
+                    dataQuality={getPriceBandsField(priceBandsData, PriceBandsField.DATA_QUALITY)}
+                    totalResaleTransactions={normalizedExitQueue?.resaleMetrics?.totalResaleTransactions}
                     loading={priceBandsLoading}
                     error={priceBandsError}
                     projectName={selectedProject?.name}
                     height={400}
                   />
                 </Suspense>
-                {exitQueueData.resale_metrics && (
+                {normalizedExitQueue.resaleMetrics && (
                   <ExitRiskDashboard
-                    marketTurnoverPct={exitQueueData.resale_metrics?.market_turnover_pct}
-                    recentTurnoverPct={exitQueueData.resale_metrics?.recent_turnover_pct}
-                    marketTurnoverZone={exitQueueData.risk_assessment?.market_turnover_zone}
-                    recentTurnoverZone={exitQueueData.risk_assessment?.recent_turnover_zone}
-                    overallRisk={exitQueueData.risk_assessment?.overall_risk}
-                    interpretation={exitQueueData.risk_assessment?.interpretation}
+                    marketTurnoverPct={normalizedExitQueue.resaleMetrics?.marketTurnoverPct}
+                    recentTurnoverPct={normalizedExitQueue.resaleMetrics?.recentTurnoverPct}
+                    marketTurnoverZone={normalizedExitQueue.riskAssessment?.marketTurnoverZone}
+                    recentTurnoverZone={normalizedExitQueue.riskAssessment?.recentTurnoverZone}
+                    overallRisk={normalizedExitQueue.riskAssessment?.overallRisk}
+                    interpretation={normalizedExitQueue.riskAssessment?.interpretation}
                   />
                 )}
               </div>
@@ -647,22 +660,22 @@ export function ExitRiskContent() {
             {renderGatingWarnings()}
 
             {/* Data Quality Notes */}
-            {exitQueueData.data_quality?.warnings?.length > 0 && (
+            {normalizedExitQueue.dataQuality?.warnings?.length > 0 && (
               <div className="bg-[#EAE0CF]/30 rounded-xl p-4 border border-[#94B4C1]/30">
                 <h4 className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-2">
                   Data Notes
                 </h4>
                 <ul className="text-xs text-[#547792] space-y-1">
-                  {exitQueueData.data_quality.warnings.map((warning, i) => (
+                  {normalizedExitQueue.dataQuality.warnings.map((warning, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="text-[#94B4C1]">-</span>
                       <span>{warning}</span>
                     </li>
                   ))}
                 </ul>
-                {exitQueueData.data_quality.sample_window_months > 0 && (
+                {normalizedExitQueue.dataQuality.sampleWindowMonths > 0 && (
                   <p className="text-xs text-[#94B4C1] mt-2">
-                    Data spans {exitQueueData.data_quality.sample_window_months} months of resale history.
+                    Data spans {normalizedExitQueue.dataQuality.sampleWindowMonths} months of resale history.
                   </p>
                 )}
               </div>

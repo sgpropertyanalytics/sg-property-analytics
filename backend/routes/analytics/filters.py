@@ -20,14 +20,13 @@ def filter_options():
     Get available filter options based on current data.
     Returns unique values for each filterable dimension.
 
-    Query params:
-      - schema: 'v2' (default) returns only camelCase + enums, 'v1' returns both for backwards compat
+    Query params: none
     """
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func, distinct
     from constants import get_region_for_district
-    from schemas.api_contract import serialize_filter_options, PropertyAgeBucket
+    from api.contracts.contract_schema import serialize_filter_options, PropertyAgeBucket
 
     # Schema version: v2 only (v1 deprecated fields removed)
 

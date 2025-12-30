@@ -15,7 +15,7 @@ import { AGE_BAND_LABELS_SHORT } from '../../constants';
 const DEFAULT_MIN_UNITS = 100;
 
 // Age band order: New Sale first, then age ascending (youngest to oldest)
-// Matches canonical PropertyAgeBucket from backend/schemas/api_contract.py
+// Matches canonical PropertyAgeBucket from backend/api/contracts/contract_schema.py
 const AGE_BAND_ORDER = ['new_sale', 'recently_top', 'young_resale', 'resale', 'mature_resale', 'freehold', 'unknown'];
 
 /**

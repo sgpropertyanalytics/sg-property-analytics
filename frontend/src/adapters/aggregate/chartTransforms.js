@@ -6,7 +6,12 @@
  * - transformGrowthDumbbellSeries: District growth comparison
  */
 
-import { getAggField, AggField } from '../../schemas/apiContract';
+import {
+  getAggField,
+  AggField,
+  getNewVsResaleField,
+  NewVsResaleField,
+} from '../../schemas/apiContract';
 import { isDev } from './validation';
 
 /**
@@ -31,8 +36,9 @@ export const transformNewVsResaleSeries = (rawData) => {
   }
 
   // Extract and normalize chartData
-  const chartData = Array.isArray(rawData.chartData)
-    ? rawData.chartData.map((row) => ({
+  const rawChartData = getNewVsResaleField(rawData, NewVsResaleField.CHART_DATA);
+  const chartData = Array.isArray(rawChartData)
+    ? rawChartData.map((row) => ({
         period: row.period || null,
         newLaunchPrice: row.newLaunchPrice ?? null,
         resalePrice: row.resalePrice ?? null,
@@ -43,7 +49,7 @@ export const transformNewVsResaleSeries = (rawData) => {
     : [];
 
   // Extract and normalize summary with defaults
-  const rawSummary = rawData.summary || {};
+  const rawSummary = getNewVsResaleField(rawData, NewVsResaleField.SUMMARY) || {};
   const summary = {
     currentPremium: rawSummary.currentPremium ?? null,
     avgPremium10Y: rawSummary.avgPremium10Y ?? null,

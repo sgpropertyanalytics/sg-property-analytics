@@ -177,7 +177,7 @@ flowchart TB
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │ CONSTANTS & ENUMS                                                                │
 │ ┌─────────────────────────────────────────┐  ┌──────────────────────────────┐   │
-│ │ constants.py (SINGLE SOURCE OF TRUTH)   │  │ schemas/api_contract.py      │   │
+│ │ constants.py (SINGLE SOURCE OF TRUTH)   │  │ api/contracts/contract_schema.py      │   │
 │ │  • District→Region mappings             │  │  • SaleType enum             │   │
 │ │  • Sale types, Tenures                  │  │  • DB↔API field mappings     │   │
 │ │  • CCR/RCR/OCR definitions              │  │  • Version management        │   │
@@ -518,8 +518,9 @@ sg-property-analyzer/
 │   ├── db/
 │   │   └── sql.py                # SQL helpers, outlier filter
 │   │
-│   ├── schemas/
-│   │   └── api_contract.py       # Enums, version, serialization
+│   ├── api/
+│   │   ├── contracts/
+│   │   │   └── contract_schema.py   # Enums, version, serialization
 │   │
 │   ├── utils/
 │   │   └── normalize.py          # Input boundary (to_int, to_date)

@@ -13,7 +13,6 @@ from ..registry import (
     ParamSchema,
     ServiceBoundarySchema,
     ResponseSchema,
-    CompatMap,
     FieldSpec,
     register_contract,
 )
@@ -95,26 +94,11 @@ KPI_SUMMARY_RESPONSE_SCHEMA = ResponseSchema(
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "elapsed_ms": FieldSpec(name="elapsed_ms", type=float, required=False),  # v1 compat
         "filtersApplied": FieldSpec(name="filtersApplied", type=dict, required=True),
-        "filters_applied": FieldSpec(name="filters_applied", type=dict, required=False),
         "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
     },
     required_meta=["requestId", "elapsedMs", "apiVersion"],
     data_is_list=True,
-)
-
-
-# =============================================================================
-# BACKWARDS COMPATIBILITY
-# =============================================================================
-
-KPI_SUMMARY_COMPAT_MAP = CompatMap(
-    params={},
-    response={
-        "elapsed_ms": "elapsedMs",
-        "filters_applied": "filtersApplied",
-    }
 )
 
 
@@ -192,7 +176,6 @@ KPI_SUMMARY_CONTRACT = EndpointContract(
     param_schema=KPI_SUMMARY_PARAM_SCHEMA,
     service_schema=KPI_SUMMARY_SERVICE_SCHEMA,
     response_schema=KPI_SUMMARY_RESPONSE_SCHEMA,
-    compat_map=KPI_SUMMARY_COMPAT_MAP,
     serializer=None,
 )
 

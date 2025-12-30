@@ -52,11 +52,6 @@ const regionAggregateData = [
   { period: '2024-Q3', periodGrain: 'quarter', region: 'ocr', medianPsf: 1550, count: 440 },
 ];
 
-// Legacy v1 format (fallback)
-const v1AggregateData = [
-  { quarter: '2024-Q4', sale_type: 'New Sale', count: 400, total_value: 600000000 },
-  { quarter: '2024-Q4', sale_type: 'Resale', count: 388, total_value: 575004395 },
-];
 
 // =============================================================================
 // TRANSFORM TIME SERIES TESTS
@@ -81,15 +76,6 @@ describe('transformTimeSeries', () => {
 
     expect(result[0].period).toBe('2024-Q3');
     expect(result[1].period).toBe('2024-Q4');
-  });
-
-  test('handles v1 legacy format (fallback)', () => {
-    const result = transformTimeSeries(v1AggregateData, 'quarter');
-
-    expect(result).toHaveLength(1);
-    expect(result[0].period).toBe('2024-Q4');
-    expect(result[0].newSaleCount).toBe(400);
-    expect(result[0].resaleCount).toBe(388);
   });
 
   test('handles empty data', () => {
@@ -293,28 +279,13 @@ describe('Adapter Smoke Test', () => {
 });
 
 // =============================================================================
-// getPeriod TESTS - v1/v2 compatibility
+// getPeriod TESTS
 // =============================================================================
 
 describe('getPeriod', () => {
   test('extracts period from v2 format (canonical)', () => {
     const v2Row = { period: '2024-Q4', periodGrain: 'quarter' };
     expect(getPeriod(v2Row)).toBe('2024-Q4');
-  });
-
-  test('extracts period from v1 quarter format (fallback)', () => {
-    const v1Row = { quarter: '2024-Q3', sale_type: 'New Sale' };
-    expect(getPeriod(v1Row)).toBe('2024-Q3');
-  });
-
-  test('extracts period from v1 month format (fallback)', () => {
-    const v1Row = { month: '2024-06', sale_type: 'Resale' };
-    expect(getPeriod(v1Row)).toBe('2024-06');
-  });
-
-  test('extracts period from v1 year format (fallback)', () => {
-    const v1Row = { year: 2024, count: 1000 };
-    expect(getPeriod(v1Row)).toBe(2024);
   });
 
   test('returns null for row with no period fields', () => {
@@ -327,9 +298,9 @@ describe('getPeriod', () => {
     expect(getPeriod(undefined)).toBeNull();
   });
 
-  test('prefers v2 period over v1 fields when both present', () => {
-    const mixedRow = { period: '2024-Q4', quarter: '2024-Q3' };
-    expect(getPeriod(mixedRow)).toBe('2024-Q4'); // v2 takes precedence
+  test('returns v2 period when provided', () => {
+    const row = { period: '2024-Q4', quarter: '2024-Q3' };
+    expect(getPeriod(row)).toBe('2024-Q4');
   });
 });
 
@@ -343,22 +314,13 @@ describe('isSaleType', () => {
     expect(isSaleType.newSale('new_sale')).toBe(true);
   });
 
-  test('recognizes v1 New Sale DB value', () => {
-    expect(isSaleType.newSale('New Sale')).toBe(true);
-  });
-
   test('recognizes v2 resale enum', () => {
     expect(isSaleType.resale(SaleType.RESALE)).toBe(true);
     expect(isSaleType.resale('resale')).toBe(true);
   });
 
-  test('recognizes v1 Resale DB value', () => {
-    expect(isSaleType.resale('Resale')).toBe(true);
-  });
-
   test('correctly identifies sub_sale', () => {
     expect(isSaleType.subSale('sub_sale')).toBe(true);
-    expect(isSaleType.subSale('Sub Sale')).toBe(true);
   });
 
   test('returns false for mismatched sale types', () => {
@@ -372,11 +334,6 @@ describe('getSaleTypeLabel', () => {
     expect(getSaleTypeLabel(SaleType.NEW_SALE)).toBe('New Sale');
     expect(getSaleTypeLabel(SaleType.RESALE)).toBe('Resale');
     expect(getSaleTypeLabel(SaleType.SUB_SALE)).toBe('Sub Sale');
-  });
-
-  test('passes through v1 labels unchanged', () => {
-    expect(getSaleTypeLabel('New Sale')).toBe('New Sale');
-    expect(getSaleTypeLabel('Resale')).toBe('Resale');
   });
 
   test('returns Unknown for null/undefined', () => {
@@ -399,13 +356,6 @@ describe('assertKnownVersion', () => {
 
   afterEach(() => {
     warnSpy.mockRestore();
-  });
-
-  test('does not warn for known v1 version', () => {
-    const response = { data: [], meta: { apiContractVersion: 'v1' } };
-    assertKnownVersion(response, '/api/aggregate');
-    // In production, no warning is logged (dev-only check)
-    // This test mainly ensures no throw
   });
 
   test('does not warn for known v2 version', () => {
@@ -561,9 +511,9 @@ describe('transformDistributionSeries', () => {
 
     const result = transformDistributionSeries(data);
 
-    expect(result.bins[0].label).toBe('$500K-$600K');
+    expect(result.bins[0].label).toBe('$500\u2013600K');
     // 2 decimals for millions (user requested for price precision)
-    expect(result.bins[1].label).toBe('$1.50M-$2.00M');
+    expect(result.bins[1].label).toBe('$1.5\u20132.0M');
   });
 
   test('handles missing count gracefully', () => {
@@ -962,24 +912,18 @@ describe('API Contract Versioning', () => {
       expect(CURRENT_API_CONTRACT_VERSION).toBe('v3');
     });
 
-    test('supported versions include v1, v2, v3', () => {
-      expect(SUPPORTED_API_CONTRACT_VERSIONS.has('v1')).toBe(true);
+    test('supported versions include v2, v3', () => {
       expect(SUPPORTED_API_CONTRACT_VERSIONS.has('v2')).toBe(true);
       expect(SUPPORTED_API_CONTRACT_VERSIONS.has('v3')).toBe(true);
     });
 
     test('API_CONTRACT_VERSIONS object has correct values', () => {
-      expect(API_CONTRACT_VERSIONS.V1).toBe('v1');
       expect(API_CONTRACT_VERSIONS.V2).toBe('v2');
       expect(API_CONTRACT_VERSIONS.V3).toBe('v3');
     });
   });
 
   describe('assertKnownVersion (from apiContract)', () => {
-    test('returns true for v1', () => {
-      expect(assertKnownVersionFromContract({ apiContractVersion: 'v1' })).toBe(true);
-    });
-
     test('returns true for v2', () => {
       expect(assertKnownVersionFromContract({ apiContractVersion: 'v2' })).toBe(true);
     });
@@ -1020,12 +964,6 @@ describe('API Contract Versioning', () => {
   });
 
   describe('Adapter assertKnownVersion', () => {
-    test('does not throw for v1 response', () => {
-      expect(() => {
-        assertKnownVersion({ meta: { apiContractVersion: 'v1' }, data: [] }, '/api/test');
-      }).not.toThrow();
-    });
-
     test('does not throw for v2 response', () => {
       expect(() => {
         assertKnownVersion({ meta: { apiContractVersion: 'v2' }, data: [] }, '/api/test');

@@ -4,7 +4,7 @@ import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { BeadsChart } from '../components/powerbi/BeadsChart';
 // NewVsResaleChart moved to Primary Market page
-import { SaleType } from '../schemas/apiContract';
+import { SaleType, getKpiField, KpiField } from '../schemas/apiContract';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
@@ -105,7 +105,7 @@ export function MacroOverviewContent() {
   const kpis = { items: kpiData, loading: kpisLoading };
 
   // Helper to get KPI by ID from the array
-  const getKpi = (kpiId) => kpis.items.find(k => k.kpi_id === kpiId);
+  const getKpi = (kpiId) => kpis.items.find(k => getKpiField(k, KpiField.KPI_ID) === kpiId);
 
   // SHARED DATA FETCH: Compression/Absolute PSF charts use identical API call
   // Hoisted to parent to eliminate duplicate request (W4 performance fix)
@@ -207,7 +207,7 @@ export function MacroOverviewContent() {
                       </>
                     );
                   })()}
-                  footnote={getKpi('market_momentum')?.insight}
+                  footnote={getKpiField(getKpi('market_momentum'), KpiField.INSIGHT)}
                   tooltip={getKpi('market_momentum')?.meta?.description}
                   loading={kpis.loading}
                 />
@@ -240,7 +240,7 @@ export function MacroOverviewContent() {
                       </>
                     );
                   })()}
-                  footnote={getKpi('median_psf')?.insight}
+                  footnote={getKpiField(getKpi('median_psf'), KpiField.INSIGHT)}
                   tooltip={getKpi('median_psf')?.meta?.description}
                   loading={kpis.loading}
                 />
@@ -273,7 +273,7 @@ export function MacroOverviewContent() {
                       </>
                     );
                   })()}
-                  footnote={getKpi('total_transactions')?.insight}
+                  footnote={getKpiField(getKpi('total_transactions'), KpiField.INSIGHT)}
                   tooltip={getKpi('total_transactions')?.meta?.description}
                   loading={kpis.loading}
                 />
@@ -285,8 +285,9 @@ export function MacroOverviewContent() {
                     const kpi = getKpi('resale_velocity');
                     if (!kpi?.value && kpi?.value !== 0) return '—';
                     const { prior_annualized, pct_change } = kpi.meta || {};
-                    const direction = kpi.trend?.direction;
-                    const label = kpi.trend?.label;
+                    const trend = getKpiField(kpi, KpiField.TREND);
+                    const direction = trend?.direction;
+                    const label = trend?.label;
                     const labelColorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
                     const arrow = pct_change > 0 ? '▲' : pct_change < 0 ? '▼' : '—';
                     const changeColorClass = pct_change > 0 ? 'text-green-600' : pct_change < 0 ? 'text-red-600' : 'text-gray-500';
@@ -294,7 +295,7 @@ export function MacroOverviewContent() {
                     return (
                       <>
                         <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
-                          {kpi.formatted_value} <span className={`text-xs font-bold uppercase tracking-wider ${labelColorClass}`}>{label}</span>
+                          {getKpiField(kpi, KpiField.FORMATTED_VALUE)} <span className={`text-xs font-bold uppercase tracking-wider ${labelColorClass}`}>{label}</span>
                         </div>
                         {pct_change != null && (
                           <div className={`text-xs sm:text-sm font-medium ${changeColorClass}`}>
@@ -309,7 +310,7 @@ export function MacroOverviewContent() {
                       </>
                     );
                   })()}
-                  footnote={getKpi('resale_velocity')?.insight}
+                  footnote={getKpiField(getKpi('resale_velocity'), KpiField.INSIGHT)}
                   tooltip={getKpi('resale_velocity')?.meta?.description}
                   loading={kpis.loading}
                 />

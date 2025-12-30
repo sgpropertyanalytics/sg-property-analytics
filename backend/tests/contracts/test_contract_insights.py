@@ -86,42 +86,6 @@ class TestDistrictPsfValidation:
         validate_public_params(params, contract.param_schema)
 
 
-class TestDistrictSummaryContractSchema:
-    """Test insights/district-summary contract."""
-
-    def test_district_summary_contract_registered(self):
-        """District summary contract should be registered."""
-        contract = get_contract("insights/district-summary")
-        assert contract is not None
-        assert contract.endpoint == "insights/district-summary"
-        assert contract.version == "v3"
-
-    def test_param_schema_district_required(self):
-        """District param should be required."""
-        contract = get_contract("insights/district-summary")
-        district_field = contract.param_schema.fields["district"]
-
-        assert district_field.required is True
-
-
-class TestDistrictSummaryValidation:
-    """Test param validation for district-summary."""
-
-    def test_validate_missing_district(self):
-        """Missing district should fail (required field)."""
-        contract = get_contract("insights/district-summary")
-        params = {"period": "12m"}
-
-        with pytest.raises(ContractViolation):
-            validate_public_params(params, contract.param_schema)
-
-    def test_validate_with_district(self):
-        """With district should pass."""
-        contract = get_contract("insights/district-summary")
-        params = {"district": "D09"}
-        validate_public_params(params, contract.param_schema)
-
-
 class TestDistrictLiquidityContractSchema:
     """Test insights/district-liquidity contract."""
 
@@ -166,11 +130,6 @@ class TestInsightsSnapshots:
             # Verify district-psf meta
             contract = get_contract("insights/district-psf")
             for field in snapshot["district_psf"]["required_meta"]:
-                assert field in contract.response_schema.required_meta
-
-            # Verify district-summary meta
-            contract = get_contract("insights/district-summary")
-            for field in snapshot["district_summary"]["required_meta"]:
                 assert field in contract.response_schema.required_meta
 
             # Verify district-liquidity meta
