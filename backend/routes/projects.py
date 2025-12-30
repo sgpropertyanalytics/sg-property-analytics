@@ -5,7 +5,7 @@ Endpoints:
 - GET /api/projects/locations - List all project locations with geocoding status
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 import time
 from models.project_location import ProjectLocation
 from models.popular_school import PopularSchool
@@ -196,15 +196,17 @@ def get_hot_projects():
         from sqlalchemy import func, case, text, literal_column
         from constants import get_region_for_district, get_districts_for_region
 
+        normalized_params = getattr(g, "normalized_params", {}) or {}
+
         # Get filter params
-        limit = to_int(request.args.get("limit"), default=100, field="limit")
+        limit = normalized_params.get("limit") or 100
 
         # Filter params
-        market_segment = request.args.get("market_segment") or request.args.get("region")
-        district_param = request.args.get("district")
-        bedroom = request.args.get("bedroom")
-        price_min = request.args.get("price_min")
-        price_max = request.args.get("price_max")
+        market_segment = normalized_params.get("market_segment")
+        districts = normalized_params.get("districts") or []
+        bedrooms = normalized_params.get("bedrooms") or []
+        price_min = normalized_params.get("price_min")
+        price_max = normalized_params.get("price_max")
 
         # Build dynamic WHERE clauses
         # IMPORTANT: units_sold is a HARD FACT - total confirmed New Sale transactions
@@ -217,7 +219,7 @@ def get_hot_projects():
         # Filter clauses - affect project visibility and median calculations, NOT units_sold
         filter_clauses = []
         outer_where_clauses = []
-        params = {
+        sql_params = {
             "limit": limit,
             "sale_type_new": SALE_TYPE_NEW,
             "sale_type_resale": SALE_TYPE_RESALE,
@@ -225,22 +227,30 @@ def get_hot_projects():
 
         # Bedroom filter - affects which projects are shown (must have sales in this bedroom type)
         # but does NOT affect the units_sold count
-        if bedroom:
+        if bedrooms:
+            bedroom_values = []
+            for item in bedrooms:
+                if isinstance(item, str) and "," in item:
+                    bedroom_values.extend([v.strip() for v in item.split(",") if v.strip()])
+                else:
+                    bedroom_values.append(item)
+            bedroom_val = bedroom_values[0] if bedroom_values else None
             try:
-                bedroom_val = int(bedroom)
+                bedroom_val = int(bedroom_val) if bedroom_val is not None else None
+            except (TypeError, ValueError):
+                bedroom_val = None
+            if bedroom_val is not None:
                 if bedroom_val >= 4:
                     filter_clauses.append(f"t.bedroom_count >= {bedroom_val}")
                 else:
                     filter_clauses.append("t.bedroom_count = :bedroom")
-                    params["bedroom"] = bedroom_val
-            except ValueError:
-                pass
+                    sql_params["bedroom"] = bedroom_val
 
         # District filter - can be comma-separated
-        if district_param:
-            districts = [d.strip().upper() for d in district_param.split(",") if d.strip()]
+        if districts:
             normalized = []
             for d in districts:
+                d = str(d).strip().upper()
                 if not d.startswith("D"):
                     d = f"D{d.zfill(2)}"
                 normalized.append(d)
@@ -248,7 +258,7 @@ def get_hot_projects():
                 placeholders = ", ".join([f":district_{i}" for i in range(len(normalized))])
                 filter_clauses.append(f"t.district IN ({placeholders})")
                 for i, d in enumerate(normalized):
-                    params[f"district_{i}"] = d
+                    sql_params[f"district_{i}"] = d
 
         # Market segment (region) filter - expand to districts
         if market_segment and market_segment.upper() in ('CCR', 'RCR', 'OCR'):
@@ -257,20 +267,20 @@ def get_hot_projects():
                 placeholders = ", ".join([f":seg_district_{i}" for i in range(len(segment_districts))])
                 filter_clauses.append(f"t.district IN ({placeholders})")
                 for i, d in enumerate(segment_districts):
-                    params[f"seg_district_{i}"] = d
+                    sql_params[f"seg_district_{i}"] = d
 
         # Price filters - applied in outer query on median_price
         if price_min:
             try:
                 outer_where_clauses.append("fs.median_price >= :price_min")
-                params["price_min"] = float(price_min)
+                sql_params["price_min"] = float(price_min)
             except ValueError:
                 pass
 
         if price_max:
             try:
                 outer_where_clauses.append("fs.median_price <= :price_max")
-                params["price_max"] = float(price_max)
+                sql_params["price_max"] = float(price_max)
             except ValueError:
                 pass
 
@@ -352,7 +362,7 @@ def get_hot_projects():
             for s in schools
         ]
 
-        results = db.session.execute(sql, params).fetchall()
+        results = db.session.execute(sql, sql_params).fetchall()
 
         # Format response - use JSON lookup for total_units
         projects = []

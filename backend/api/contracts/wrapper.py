@@ -164,7 +164,21 @@ def api_contract(endpoint_name: str):
                     response_data.headers['X-API-Contract-Version'] = contract.version
                     return response_data, status_code
 
-            # 9. Validate response schema (only for successful responses)
+            # 9. Normalize response envelope and inject meta before validation
+            if isinstance(response_data, dict):
+                if status_code == 200 and 'data' not in response_data:
+                    response_data = {"data": response_data, "meta": {}}
+
+                if 'meta' not in response_data:
+                    response_data['meta'] = {}
+
+                response_data['meta'].update({
+                    'requestId': request_id,
+                    'elapsedMs': round(elapsed_ms, 2),
+                    'apiVersion': contract.version,
+                })
+
+            # 10. Validate response schema (only for successful responses)
             if status_code == 200 and isinstance(response_data, dict):
                 try:
                     validate_response(response_data, contract.response_schema)
@@ -179,16 +193,6 @@ def api_contract(endpoint_name: str):
                         )
                     else:
                         _log_violation(endpoint_name, e, request_id, stage="response")
-
-            # 10. Inject meta fields
-            if isinstance(response_data, dict):
-                if 'meta' not in response_data:
-                    response_data['meta'] = {}
-                response_data['meta'].update({
-                    'requestId': request_id,
-                    'elapsedMs': round(elapsed_ms, 2),
-                    'apiVersion': contract.version,
-                })
 
             # 11. Apply serializer if defined
             if contract.serializer and isinstance(response_data, dict):
@@ -215,6 +219,10 @@ def _collect_raw_params() -> Dict[str, Any]:
     if request.method in ('POST', 'PUT', 'PATCH') and request.is_json:
         body = request.get_json(silent=True) or {}
         params.update(body)
+
+    # Merge path params (e.g., /projects/<project_name>)
+    if request.view_args:
+        params.update(request.view_args)
 
     return params
 

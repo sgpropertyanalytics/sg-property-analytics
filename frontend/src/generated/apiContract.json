@@ -2954,20 +2954,20 @@
       },
       "service_schema": {
         "fields": {
-          "bedroom": {
+          "bedrooms": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "bedroom",
+            "name": "bedrooms",
             "nullable": true,
             "required": true,
-            "type": "int"
+            "type": "list"
           },
-          "buyer_price": {
+          "price": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "buyer_price",
+            "name": "price",
             "nullable": true,
             "required": true,
             "type": "float"
@@ -3520,10 +3520,14 @@
               "3m",
               "6m",
               "12m",
+              "1y",
+              "2y",
+              "3y",
+              "5y",
               "all"
             ],
-            "default": "12m",
-            "description": "Time period filter",
+            "default": null,
+            "description": "[DEPRECATED] Use 'timeframe' instead",
             "name": "period",
             "nullable": true,
             "required": false,
@@ -3534,6 +3538,29 @@
             "default": "all",
             "description": "Sale type filter",
             "name": "sale_type",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "timeframe": {
+            "allowed_values": [
+              "all",
+              "M3",
+              "M6",
+              "Y1",
+              "Y3",
+              "Y5",
+              "3m",
+              "6m",
+              "12m",
+              "1y",
+              "2y",
+              "3y",
+              "5y"
+            ],
+            "default": "Y1",
+            "description": "Time period filter (default: Y1 = last 12 months)",
+            "name": "timeframe",
             "nullable": true,
             "required": false,
             "type": "str"
@@ -3695,10 +3722,14 @@
               "3m",
               "6m",
               "12m",
+              "1y",
+              "2y",
+              "3y",
+              "5y",
               "all"
             ],
-            "default": "12m",
-            "description": "Time period filter",
+            "default": null,
+            "description": "[DEPRECATED] Use 'timeframe' instead",
             "name": "period",
             "nullable": true,
             "required": false,
@@ -3713,6 +3744,29 @@
             "default": "all",
             "description": "Sale type filter",
             "name": "sale_type",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "timeframe": {
+            "allowed_values": [
+              "all",
+              "M3",
+              "M6",
+              "Y1",
+              "Y3",
+              "Y5",
+              "3m",
+              "6m",
+              "12m",
+              "1y",
+              "2y",
+              "3y",
+              "5y"
+            ],
+            "default": "Y1",
+            "description": "Time period filter (default: Y1 = last 12 months)",
+            "name": "timeframe",
             "nullable": true,
             "required": false,
             "type": "str"
@@ -4501,7 +4555,17 @@
       "mode": "warn",
       "param_schema": {
         "aliases": {},
-        "fields": {}
+        "fields": {
+          "project_name": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Project name from URL path",
+            "name": "project_name",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          }
+        }
       },
       "response_schema": {
         "data_fields": {
@@ -4782,14 +4846,14 @@
       },
       "service_schema": {
         "fields": {
-          "bedroom": {
+          "bedrooms": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "bedroom",
+            "name": "bedrooms",
             "nullable": true,
             "required": false,
-            "type": "str"
+            "type": "list"
           },
           "districts": {
             "allowed_values": null,
@@ -4849,7 +4913,17 @@
       "mode": "warn",
       "param_schema": {
         "aliases": {},
-        "fields": {}
+        "fields": {
+          "project_name": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Project name from URL path",
+            "name": "project_name",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          }
+        }
       },
       "response_schema": {
         "data_fields": {
@@ -5264,6 +5338,15 @@
       "param_schema": {
         "aliases": {},
         "fields": {
+          "project_name": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Project name from URL path",
+            "name": "project_name",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "unit_psf": {
             "allowed_values": null,
             "default": null,
@@ -5964,14 +6047,14 @@
       },
       "service_schema": {
         "fields": {
-          "bedroom": {
+          "bedrooms": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "bedroom",
+            "name": "bedrooms",
             "nullable": true,
             "required": false,
-            "type": "int"
+            "type": "list"
           },
           "date_from": {
             "allowed_values": null,
@@ -5982,23 +6065,23 @@
             "required": false,
             "type": "date"
           },
-          "date_to": {
+          "date_to_exclusive": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "date_to",
+            "name": "date_to_exclusive",
             "nullable": true,
             "required": false,
             "type": "date"
           },
-          "district": {
+          "districts": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "district",
+            "name": "districts",
             "nullable": true,
             "required": false,
-            "type": "str"
+            "type": "list"
           },
           "floor_level": {
             "allowed_values": null,
@@ -6189,14 +6272,14 @@
       },
       "service_schema": {
         "fields": {
-          "district": {
+          "districts": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "district",
+            "name": "districts",
             "nullable": true,
             "required": false,
-            "type": "str"
+            "type": "list"
           },
           "project": {
             "allowed_values": null,

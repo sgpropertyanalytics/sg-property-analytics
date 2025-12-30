@@ -138,7 +138,7 @@ export default function DealCheckerContent() {
     const loadProjects = async () => {
       try {
         const response = await getProjectNames();
-        const responseData = response.data || {};
+        const responseData = response.data?.data || {};
         const projects = getProjectNamesField(responseData, ProjectNamesField.PROJECTS) || [];
         setProjectOptions(projects);
       } catch (err) {
@@ -215,7 +215,7 @@ export default function DealCheckerContent() {
       }
 
       const response = await getDealCheckerMultiScope(params);
-      const responseData = response.data || {};
+      const responseData = response.data?.data || {};
       const project = getDealCheckerField(responseData, DealCheckerField.PROJECT) || {};
       const filters = getDealCheckerField(responseData, DealCheckerField.FILTERS) || {};
       const scopes = getDealCheckerField(responseData, DealCheckerField.SCOPES) || {};

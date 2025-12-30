@@ -771,12 +771,22 @@ def serialize_aggregate_response(
     """
     serialized_data = [serialize_aggregate_row(row) for row in data]
 
+    # Normalize meta casing for contract alignment
+    meta_v2 = dict(meta)
+    if 'filters_applied' in meta_v2 and 'filtersApplied' not in meta_v2:
+        meta_v2['filtersApplied'] = meta_v2.pop('filters_applied')
+    if 'total_records' in meta_v2 and 'totalRecords' not in meta_v2:
+        meta_v2['totalRecords'] = meta_v2.pop('total_records')
+    if 'cache_hit' in meta_v2 and 'cacheHit' not in meta_v2:
+        meta_v2['cacheHit'] = meta_v2.pop('cache_hit')
+    if 'elapsed_ms' in meta_v2 and 'elapsedMs' not in meta_v2:
+        meta_v2['elapsedMs'] = meta_v2.pop('elapsed_ms')
+
     # Add API contract version and schema hash to meta
-    meta_v2 = {
-        **meta,
+    meta_v2.update({
         'apiContractVersion': API_CONTRACT_VERSION,
         'contractHash': get_schema_hash('aggregate'),
-    }
+    })
 
     return {
         'data': serialized_data,

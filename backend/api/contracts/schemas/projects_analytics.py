@@ -26,7 +26,14 @@ from ..registry import (
 # =============================================================================
 
 PROJECT_INVENTORY_PARAM_SCHEMA = ParamSchema(
-    fields={},  # project_name comes from URL path
+    fields={
+        "project_name": FieldSpec(
+            name="project_name",
+            type=str,
+            required=True,
+            description="Project name from URL path"
+        ),
+    },
     aliases={}
 )
 
@@ -75,6 +82,12 @@ register_contract(PROJECT_INVENTORY_CONTRACT)
 
 PROJECT_PRICE_BANDS_PARAM_SCHEMA = ParamSchema(
     fields={
+        "project_name": FieldSpec(
+            name="project_name",
+            type=str,
+            required=True,
+            description="Project name from URL path"
+        ),
         "window_months": FieldSpec(
             name="window_months",
             type=int,
@@ -173,7 +186,14 @@ register_contract(RESALE_PROJECTS_CONTRACT)
 # =============================================================================
 
 PROJECT_EXIT_QUEUE_PARAM_SCHEMA = ParamSchema(
-    fields={},
+    fields={
+        "project_name": FieldSpec(
+            name="project_name",
+            type=str,
+            required=True,
+            description="Project name from URL path"
+        ),
+    },
     aliases={}
 )
 

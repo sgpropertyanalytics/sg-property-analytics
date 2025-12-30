@@ -55,8 +55,8 @@ MULTI_SCOPE_PARAM_SCHEMA = ParamSchema(
 MULTI_SCOPE_SERVICE_SCHEMA = ServiceBoundarySchema(
     fields={
         "project_name": FieldSpec(name="project_name", type=str, required=True),
-        "bedroom": FieldSpec(name="bedroom", type=int, required=True),
-        "buyer_price": FieldSpec(name="buyer_price", type=float, required=True),
+        "bedrooms": FieldSpec(name="bedrooms", type=list, required=True),
+        "price": FieldSpec(name="price", type=float, required=True),
         "sqft": FieldSpec(name="sqft", type=float),
     }
 )

@@ -7,7 +7,7 @@ Provides endpoints for the Deal Checker feature:
 
 CRITICAL: All queries MUST include COALESCE(is_outlier, false) = false filter
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from models.project_location import ProjectLocation
 from models.transaction import Transaction
 from models.database import db
@@ -305,11 +305,13 @@ def get_multi_scope_comparison():
 
     start_time = time.time()
 
-    # Get and validate parameters
-    project_name = request.args.get('project_name')
-    bedroom = request.args.get('bedroom')
-    buyer_price = request.args.get('price')
-    sqft = request.args.get('sqft')
+    # Get and validate parameters (contract-normalized)
+    params = getattr(g, "normalized_params", {}) or {}
+    project_name = params.get("project_name")
+    bedrooms = params.get("bedrooms") or []
+    bedroom = bedrooms[0] if isinstance(bedrooms, list) and bedrooms else None
+    buyer_price = params.get("price")
+    sqft = params.get("sqft")
 
     if not all([project_name, bedroom, buyer_price]):
         return jsonify({
@@ -319,8 +321,8 @@ def get_multi_scope_comparison():
     try:
         bedroom = int(bedroom)
         buyer_price = float(buyer_price)
-        sqft = float(sqft) if sqft else None
-    except ValueError:
+        sqft = float(sqft) if sqft is not None else None
+    except (TypeError, ValueError):
         return jsonify({"error": "Invalid parameter format"}), 400
 
     # Get project coordinates

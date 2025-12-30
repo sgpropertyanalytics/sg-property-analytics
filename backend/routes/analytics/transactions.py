@@ -58,7 +58,22 @@ def get_transaction_price_growth():
         params = getattr(g, "normalized_params", {}) or {}
 
         project_name = params.get("project")
-        bedroom_count = params.get("bedroom")
+        bedrooms = params.get("bedrooms") or []
+        if isinstance(bedrooms, list):
+            bedroom_values = []
+            for item in bedrooms:
+                if isinstance(item, str) and "," in item:
+                    bedroom_values.extend([v.strip() for v in item.split(",") if v.strip()])
+                else:
+                    bedroom_values.append(item)
+            bedroom_count = bedroom_values[0] if bedroom_values else None
+        else:
+            bedroom_count = bedrooms
+        if bedroom_count is not None:
+            try:
+                bedroom_count = int(bedroom_count)
+            except (TypeError, ValueError):
+                bedroom_count = None
         floor_level = params.get("floor_level")
         sale_type = params.get("sale_type")
 
@@ -70,10 +85,8 @@ def get_transaction_price_growth():
             from api.contracts.contract_schema import SaleType
             sale_type = SaleType.to_db(sale_type)
 
-        district = params.get("district")
-        if district is None:
-            districts = params.get("districts") or []
-            district = districts[0] if districts else None
+        districts = params.get("districts") or []
+        district = districts[0] if isinstance(districts, list) and districts else None
 
         date_from = params.get("date_from")
         date_to = None
@@ -147,10 +160,8 @@ def get_price_growth_segments():
             from api.contracts.contract_schema import SaleType
             sale_type = SaleType.to_db(sale_type)
 
-        district = params.get("district")
-        if district is None:
-            districts = params.get("districts") or []
-            district = districts[0] if districts else None
+        districts = params.get("districts") or []
+        district = districts[0] if isinstance(districts, list) and districts else None
 
         # Get segment summary
         segments = get_segment_summary(

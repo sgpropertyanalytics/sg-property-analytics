@@ -69,7 +69,7 @@ export function HotProjectsTable({
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/hot-projects');
 
-      const responseData = response.data || {};
+      const responseData = response.data?.data || {};
       const projects = getHotProjectsField(responseData, HotProjectsField.PROJECTS) || [];
 
       // Notify parent of data count

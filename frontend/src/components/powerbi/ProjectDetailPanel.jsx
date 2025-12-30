@@ -165,7 +165,7 @@ function ProjectDetailPanelInner({
           .sort((a, b) => (getAggField(a, AggField.BEDROOM_COUNT) || 0) - (getAggField(b, AggField.BEDROOM_COUNT) || 0));
 
         // Extract inventory data (includes cumulative sales from backend)
-        const inventory = inventoryResponse.data || {};
+        const inventory = inventoryResponse.data?.data || {};
         setSalesByType({
           newSale: getProjectInventoryField(inventory, ProjectInventoryField.CUMULATIVE_NEW_SALES) || 0,
           resale: getProjectInventoryField(inventory, ProjectInventoryField.CUMULATIVE_RESALES) || 0
