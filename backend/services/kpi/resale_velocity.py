@@ -103,13 +103,13 @@ def get_total_units_for_scope(filters: Dict[str, Any]) -> Tuple[int, int]:
     """
     Get aggregated total_units for projects matching filter scope.
 
-    Uses hybrid lookup (CSV + database + transaction estimation) for unit counts.
+    Uses CSV data for unit counts (fast, no N+1 queries).
     Excludes boutique projects (<100 units).
 
     Returns:
         (total_units, projects_counted)
     """
-    from services.new_launch_units import get_project_units
+    from services.new_launch_units import _load_data
     from models.database import db
     from sqlalchemy import text
 
@@ -128,16 +128,18 @@ def get_total_units_for_scope(filters: Dict[str, Any]) -> Tuple[int, int]:
 
     project_names = [r[0] for r in projects_result]
 
+    # Load CSV data for unit counts (includes older completed projects)
+    csv_data = _load_data()
+
     total_units = 0
     projects_counted = 0
 
-    # Use hybrid lookup for each project (CSV + database + estimation)
     for name in project_names:
-        result = get_project_units(name)
-        units = result.get('total_units')
-        if units and units >= MIN_UNITS_THRESHOLD:
-            total_units += units
-            projects_counted += 1
+        if name in csv_data:
+            units = csv_data[name].get('total_units')
+            if units and units >= MIN_UNITS_THRESHOLD:
+                total_units += units
+                projects_counted += 1
 
     return total_units, projects_counted
 
