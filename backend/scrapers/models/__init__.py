@@ -1,6 +1,6 @@
-"""Scraper SQLAlchemy Models."""
+"""Scraper/Ingestion SQLAlchemy Models."""
 
-from .scrape_run import ScrapeRun
+from .ingestion_run import IngestionRun, ScrapeRun, SourceType
 from .scraped_entity import ScrapedEntity
 from .canonical_entity import CanonicalEntity
 from .entity_candidate import EntityCandidate
@@ -9,7 +9,9 @@ from .discovered_link import DiscoveredLink
 from .verification_candidate import VerificationCandidate, MIN_SOURCES_FOR_AUTO_CONFIRM
 
 __all__ = [
-    "ScrapeRun",
+    # Primary models
+    "IngestionRun",
+    "SourceType",
     "ScrapedEntity",
     "CanonicalEntity",
     "EntityCandidate",
@@ -17,4 +19,6 @@ __all__ = [
     "DiscoveredLink",
     "VerificationCandidate",
     "MIN_SOURCES_FOR_AUTO_CONFIRM",
+    # Backwards compatibility
+    "ScrapeRun",  # Alias for IngestionRun
 ]

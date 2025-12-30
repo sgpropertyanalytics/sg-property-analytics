@@ -114,23 +114,26 @@ class BaseScraper(ABC):
         self,
         config: Dict[str, Any],
         triggered_by: str = "manual",
+        source_type: str = "scrape",
     ):
         """
-        Start a new scrape run.
+        Start a new ingestion run.
 
         Args:
             config: Run configuration
             triggered_by: 'manual', 'cron', or 'webhook'
+            source_type: 'scrape', 'csv_upload', 'api', or 'manual'
 
         Returns:
-            ScrapeRun model instance
+            IngestionRun model instance
         """
-        from .models import ScrapeRun
+        from .models import IngestionRun
 
-        self._run = ScrapeRun(
+        self._run = IngestionRun(
             scraper_name=self.SCRAPER_NAME,
             source_domain=self.SOURCE_DOMAIN,
             source_tier=self.source_tier.value,
+            source_type=source_type,
             config_snapshot=config,
             triggered_by=triggered_by,
         )

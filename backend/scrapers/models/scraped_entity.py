@@ -34,10 +34,10 @@ class ScrapedEntity(db.Model):
         db.String(64), nullable=False, index=True
     )  # SHA256 for change detection
 
-    # Scrape tracking
+    # Ingestion run tracking
     run_id = db.Column(
         db.String(36),
-        db.ForeignKey("scrape_runs.run_id", ondelete="CASCADE"),
+        db.ForeignKey("ingestion_runs.run_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

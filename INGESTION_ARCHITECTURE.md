@@ -116,13 +116,14 @@ Unit counts use a 3-tier confidence system:
 |------|--------|
 | Legacy scraper | ✅ Active |
 | Orchestrator infrastructure | ✅ Built |
-| Orchestrator in production | ❌ Not yet |
-| Diff vs existing | ❌ Missing |
-| Conflict detection | ❌ Missing |
-| Promotion gating | ❌ Missing |
-| Multi-source ingestion | ❌ Not used |
+| Orchestrator in production | ⚠️ Ready (needs migration) |
+| Diff vs existing | ✅ Implemented |
+| Conflict detection | ✅ Implemented |
+| Promotion gating | ✅ Implemented |
+| Multi-source ingestion | ✅ Ready (adapters built) |
+| Cross-validation (Phase 3) | ✅ Complete |
 
-> ⚠️ Two systems exist, but only the old one writes to production.
+> **Note:** Run migration 014 to enable unified ingestion tracking.
 
 ---
 
@@ -298,17 +299,19 @@ Top Issues:
 
 ## 11. Implementation Roadmap
 
-### Phase 1: Unified Ingestion Pattern
-- [ ] Rename `scrape_runs` → `ingestion_runs`
-- [ ] Add `source_type` column (scrape, csv_upload, api)
-- [ ] Add diff detection to orchestrator
-- [ ] Add promotion gating logic
+### Phase 1: Unified Ingestion Pattern ✅ COMPLETE
+- [x] Rename `scrape_runs` → `ingestion_runs` (migration 014)
+- [x] Add `source_type` column (scrape, csv_upload, api, manual)
+- [x] Add diff detection to orchestrator (`scrapers/utils/diff.py`)
+- [x] Add promotion gating logic (`orchestrator.py` - `promote_with_diff()`)
+- [x] Create `IngestionRun` model with `SourceType` enum
+- [x] Maintain backwards compatibility (`ScrapeRun` alias)
 
 ### Phase 2: Apply to All Pipelines
-- [ ] GLS scrape → orchestrator with diff
+- [x] GLS scrape → orchestrator with diff (`run_scraper_with_diff()`)
+- [x] Upcoming launches CSV → orchestrator with diff (`compute_diff_for_upcoming_launches()`)
+- [x] New launch units CSV → orchestrator with diff (`compute_diff_for_new_launch_units()`)
 - [ ] URA REALIS ETL → orchestrator with diff
-- [ ] `upcoming_launches.csv` → orchestrator with diff
-- [ ] `new_launch_units.csv` → orchestrator with diff
 
 ### Phase 3: Verification Mode ✅ COMPLETE
 - [x] Create `verification_candidates` table (migration 012)
@@ -334,8 +337,39 @@ Top Issues:
 | `backend/scrapers/orchestrator.py` | Main ingestion controller |
 | `backend/scrapers/tier_system.py` | Source trust levels |
 | `backend/scrapers/field_authority.py` | Field ownership rules |
+| `backend/scrapers/base.py` | Base scraper class |
+| `backend/scrapers/utils/diff.py` | Diff detection module |
+| `backend/scrapers/utils/cross_validator.py` | Cross-validation logic |
 | `backend/services/gls_scraper.py` | Legacy GLS scraper |
 | `backend/services/new_launch_units.py` | 3-tier unit lookup |
+| `backend/services/verification_service.py` | Verification orchestration |
+| `backend/services/verification_report.py` | Report generator |
+
+### Models
+| File | Purpose |
+|------|---------|
+| `backend/scrapers/models/ingestion_run.py` | IngestionRun + SourceType |
+| `backend/scrapers/models/scraped_entity.py` | Per-source extraction |
+| `backend/scrapers/models/canonical_entity.py` | Merged truth |
+| `backend/scrapers/models/verification_candidate.py` | Cross-validation results |
+
+### Verification Adapters
+| File | Purpose |
+|------|---------|
+| `backend/scrapers/adapters/verification_base.py` | Base adapter class |
+| `backend/scrapers/adapters/propertyguru_verification.py` | PropertyGuru |
+| `backend/scrapers/adapters/edgeprop_verification.py` | EdgeProp |
+| `backend/scrapers/adapters/ninety_nine_verification.py` | 99.co |
+| `backend/scrapers/adapters/era_verification.py` | ERA |
+| `backend/scrapers/adapters/propnex_verification.py` | PropNex |
+
+### Migrations
+| File | Purpose |
+|------|---------|
+| `backend/migrations/010_create_scraper_tables.sql` | Initial scraper tables |
+| `backend/migrations/012_create_verification_candidates.sql` | Verification candidates |
+| `backend/migrations/013_add_verification_status_columns.sql` | Domain table columns |
+| `backend/migrations/014_rename_scrape_runs_to_ingestion_runs.sql` | Unified ingestion |
 
 ### Data Files
 | File | Purpose |

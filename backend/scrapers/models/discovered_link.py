@@ -27,7 +27,7 @@ class DiscoveredLink(db.Model):
     discovered_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     run_id = db.Column(
         db.String(36),
-        db.ForeignKey("scrape_runs.run_id", ondelete="SET NULL"),
+        db.ForeignKey("ingestion_runs.run_id", ondelete="SET NULL"),
         nullable=True,
     )
 
