@@ -1,28 +1,30 @@
 """
-New Launch Units Service - Hybrid Unit Lookup
+New Launch Units Service - Verified Unit Lookup
 
-Provides total_units data from multiple sources with confidence labeling:
+Provides total_units data from verified sources ONLY with confidence labeling:
 
-1. CSV file (backend/data/new_launch_units.csv) - Authoritative for new launches
-2. upcoming_launches database table - Secondary source with data provenance
-3. Transaction-based estimation - Fallback for older projects
+1. CSV file (backend/data/new_launch_units.csv) - Authoritative for completed projects
+2. upcoming_launches database table - For future/upcoming projects
+
+IMPORTANT: No estimation algorithms. All data must be from verified sources.
+This ensures data integrity - if a project's unit count is unknown, it stays unknown.
 
 Each response includes:
 - total_units: The unit count (or None if unavailable)
-- unit_source: 'csv', 'database', 'estimated', or None
-- confidence: 'high', 'medium', 'low', or None
+- unit_source: 'csv', 'database', or None
+- confidence: 'high', 'medium', or None
 - note: Human-readable explanation of data source
 
 Usage:
     from services.new_launch_units import get_project_units
 
-    # Hybrid lookup with confidence labeling
+    # Lookup with confidence labeling
     result = get_project_units("D'LEEDON")
     # Returns: {
     #     "total_units": 1715,
-    #     "unit_source": "estimated",
-    #     "confidence": "medium",
-    #     "note": "Estimated from max unit number in transactions"
+    #     "unit_source": "csv",
+    #     "confidence": "high",
+    #     "note": "Official data from CSV"
     # }
 
 Legacy functions still available:
@@ -241,22 +243,20 @@ def get_new_launch_projects() -> List[Dict[str, Any]]:
 
 # Confidence levels for unit data sources
 CONFIDENCE_HIGH = 'high'      # Official sources (CSV, verified database)
-CONFIDENCE_MEDIUM = 'medium'  # Estimated from unit numbers
-CONFIDENCE_LOW = 'low'        # Estimated from unique units (less reliable)
+CONFIDENCE_MEDIUM = 'medium'  # Database source with data provenance
 
-# Estimation correction factor for unique units approach
-# Accounts for units that haven't transacted yet
-UNIQUE_UNITS_CORRECTION_FACTOR = 1.15
 
 
 def get_project_units(project_name: str) -> Dict[str, Any]:
     """
-    Get total units for a project using hybrid lookup with confidence labeling.
+    Get total units for a project using verified data sources only.
 
     Lookup hierarchy:
-    1. CSV file (authoritative for new launches) - HIGH confidence
-    2. upcoming_launches database table - confidence from data_confidence column
-    3. Transaction-based estimation - MEDIUM/LOW confidence
+    1. CSV file (authoritative for completed projects) - HIGH confidence
+    2. upcoming_launches database table (future projects) - from data_confidence column
+
+    NOTE: No estimation fallback. If project not in CSV or upcoming_launches,
+    returns None for total_units. This ensures data integrity.
 
     Args:
         project_name: The project name to look up
@@ -264,8 +264,8 @@ def get_project_units(project_name: str) -> Dict[str, Any]:
     Returns:
         Dict with:
         - total_units: int or None
-        - unit_source: 'csv', 'database', 'estimated', or None
-        - confidence: 'high', 'medium', 'low', or None
+        - unit_source: 'csv', 'database', or None
+        - confidence: 'high', 'medium', or None
         - note: Human-readable explanation
         - top: TOP year if available
         - developer: Developer name if available
@@ -326,24 +326,8 @@ def get_project_units(project_name: str) -> Dict[str, Any]:
         logger.debug(f"Found {project_name} in upcoming_launches: {db_result['total_units']} units")
         return result
 
-    # -------------------------------------------------------------------------
-    # Source 3: Transaction-based estimation
-    # -------------------------------------------------------------------------
-    estimation = _estimate_units_from_transactions(normalized)
-    if estimation and estimation.get('total_units'):
-        result.update({
-            "total_units": estimation['total_units'],
-            "unit_source": "estimated",
-            "confidence": estimation['confidence'],
-            "note": estimation['note'],
-            "district": estimation.get('district'),
-            "tenure": estimation.get('tenure'),
-        })
-        logger.debug(f"Estimated {project_name}: {estimation['total_units']} units")
-        return result
-
-    # No data available
-    result["note"] = "No unit data available from any source"
+    # No data available from verified sources
+    result["note"] = "No unit data available from verified sources (CSV or database)"
     return result
 
 
@@ -373,158 +357,6 @@ def _lookup_upcoming_launches(project_name_upper: str) -> Optional[Dict[str, Any
     return None
 
 
-def _estimate_units_from_transactions(project_name_upper: str) -> Optional[Dict[str, Any]]:
-    """
-    Estimate total units from transaction patterns.
-
-    IMPORTANT: The transactions table uses floor_range (e.g., "01 to 05") which
-    groups multiple floors together. This means simply counting unique
-    (floor_range, area) combinations will UNDERESTIMATE the true unit count.
-
-    Estimation approach:
-    1. Count distinct floor ranges (e.g., "01 to 05", "06 to 10" = 2 ranges)
-    2. Estimate floors per range (typically 5)
-    3. Count unique unit types per floor range
-    4. Multiply: unit_types × floors_per_range × num_ranges × units_per_type_factor
-
-    Returns None if insufficient data for estimation.
-    """
-    try:
-        from models.database import db
-        from sqlalchemy import text
-        from db.sql import OUTLIER_FILTER
-
-        # Step 1: Get distinct floor ranges and unit types per range
-        floor_analysis = db.session.execute(text(f"""
-            SELECT
-                COUNT(DISTINCT floor_range) as num_floor_ranges,
-                COUNT(DISTINCT ROUND(area_sqft)) as num_unit_types,
-                COUNT(*) as transaction_count,
-                MAX(district) as district,
-                MAX(tenure) as tenure
-            FROM transactions
-            WHERE UPPER(project_name) = :project_name
-              AND {OUTLIER_FILTER}
-              AND floor_range IS NOT NULL
-        """), {"project_name": project_name_upper}).fetchone()
-
-        if not floor_analysis or not floor_analysis[0]:
-            # Fallback: No floor_range data, use simple unique combination count
-            return _estimate_units_simple(project_name_upper)
-
-        num_floor_ranges = floor_analysis[0]
-        num_unit_types = floor_analysis[1]
-        transaction_count = floor_analysis[2]
-        district = floor_analysis[3]
-        tenure = floor_analysis[4]
-
-        if num_unit_types < 3:
-            return None  # Not enough data
-
-        # Step 2: Estimate floors per range
-        # floor_range like "01 to 05" = 5 floors, "06 to 10" = 5 floors
-        # Most URA data uses 5-floor ranges
-        floors_per_range = 5
-
-        # Step 3: Estimate units per floor
-        # Average unit types per range gives us types per "band"
-        # Typical condo: 4-8 units per floor
-        avg_types_per_range = db.session.execute(text(f"""
-            SELECT AVG(type_count)::float
-            FROM (
-                SELECT floor_range, COUNT(DISTINCT ROUND(area_sqft)) as type_count
-                FROM transactions
-                WHERE UPPER(project_name) = :project_name
-                  AND {OUTLIER_FILTER}
-                  AND floor_range IS NOT NULL
-                GROUP BY floor_range
-            ) sub
-        """), {"project_name": project_name_upper}).scalar() or num_unit_types
-
-        # Step 4: Calculate estimate
-        # Conservative estimate: types_per_range × floors_per_range × num_ranges
-        # This assumes 1 unit per type per floor (underestimate for developments
-        # with multiple units of same type per floor)
-        base_estimate = int(avg_types_per_range * floors_per_range * num_floor_ranges)
-
-        # Apply a correction factor for multiple units of same type per floor
-        # Tested against known projects (KOVAN MELODY, D'LEEDON, THE INTERLACE, etc.):
-        # - Factor 1.5: Avg error 22% (best overall balance)
-        # - Factor 1.75: Avg error 23% (better for some, worse for others)
-        # - Factor 2.0: Avg error 32% (over-estimates most projects)
-        # Some projects like KOVAN MELODY still underestimate due to unusual layouts
-        MULTI_UNIT_FACTOR = 1.5
-
-        estimated_units = int(base_estimate * MULTI_UNIT_FACTOR)
-
-        # Confidence is always LOW for estimates - they can be off by 50%+
-        note = (
-            f"Estimated from {num_unit_types} unit types across {num_floor_ranges} floor ranges "
-            f"({transaction_count} transactions). Actual count may differ."
-        )
-
-        return {
-            "total_units": estimated_units,
-            "confidence": CONFIDENCE_LOW,
-            "note": note,
-            "district": district,
-            "tenure": tenure,
-        }
-
-    except Exception as e:
-        logger.warning(f"Error estimating units for {project_name_upper}: {e}")
-
-    return None
-
-
-def _estimate_units_simple(project_name_upper: str) -> Optional[Dict[str, Any]]:
-    """
-    Simple fallback estimation when floor_range data is not available.
-    Uses unique (floor_level, area) combinations with a correction factor.
-    """
-    try:
-        from models.database import db
-        from sqlalchemy import text
-        from db.sql import OUTLIER_FILTER
-
-        result = db.session.execute(text(f"""
-            SELECT
-                COUNT(DISTINCT CONCAT(
-                    COALESCE(floor_level, ''),
-                    '-',
-                    COALESCE(ROUND(area_sqft)::text, '')
-                )) as unique_combos,
-                COUNT(*) as transaction_count,
-                MAX(district) as district,
-                MAX(tenure) as tenure
-            FROM transactions
-            WHERE UPPER(project_name) = :project_name
-              AND {OUTLIER_FILTER}
-        """), {"project_name": project_name_upper}).fetchone()
-
-        if result and result[0] and result[0] >= 5:
-            unique_combos = result[0]
-            transaction_count = result[1]
-
-            # Apply large correction factor since floor_level is even more aggregated
-            # (High/Mid/Low instead of specific ranges)
-            SIMPLE_CORRECTION_FACTOR = 8.0
-            estimated_units = int(unique_combos * SIMPLE_CORRECTION_FACTOR)
-
-            return {
-                "total_units": estimated_units,
-                "confidence": CONFIDENCE_LOW,
-                "note": f"Rough estimate from {unique_combos} unit patterns ({transaction_count} transactions). Actual count may differ significantly.",
-                "district": result[2],
-                "tenure": result[3],
-            }
-
-    except Exception as e:
-        logger.warning(f"Error in simple estimation for {project_name_upper}: {e}")
-
-    return None
-
-
 def get_project_units_batch(project_names: List[str]) -> Dict[str, Dict[str, Any]]:
     """
     Get units for multiple projects efficiently.
@@ -539,3 +371,128 @@ def get_project_units_batch(project_names: List[str]) -> Dict[str, Dict[str, Any
     for name in project_names:
         results[name] = get_project_units(name)
     return results
+
+
+# =============================================================================
+# DISTRICT-LEVEL AGGREGATION FOR RESALE METRICS
+# =============================================================================
+
+def get_district_units_for_resale(
+    db_session,
+    date_from: Optional['date'] = None,
+    date_to: Optional['date'] = None,
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Calculate total units per district from projects with resale transactions.
+
+    Uses CSV data ONLY (no upcoming_launches, no estimation) to ensure
+    data integrity for resale turnover calculations.
+
+    Args:
+        db_session: SQLAlchemy database session
+        date_from: Optional start date filter (inclusive)
+        date_to: Optional end date filter (exclusive)
+
+    Returns:
+        Dict mapping district to unit data:
+        {
+            "D01": {
+                "total_units": 5000,
+                "project_count": 15,
+                "projects_with_units": 12,
+                "coverage_pct": 80.0,
+            },
+            ...
+        }
+    """
+    from sqlalchemy import text
+    from db.sql import OUTLIER_FILTER
+    from constants import SALE_TYPE_RESALE
+
+    # Load CSV data (source of truth for unit counts)
+    csv_data = _load_data()
+
+    # Build date filter clause
+    date_clause = ""
+    params = {"sale_type": SALE_TYPE_RESALE}
+
+    if date_from:
+        date_clause += " AND transaction_date >= :date_from"
+        params["date_from"] = date_from
+    if date_to:
+        date_clause += " AND transaction_date < :date_to"
+        params["date_to"] = date_to
+
+    # Query distinct (district, project_name) pairs with resale transactions
+    query = text(f"""
+        SELECT
+            district,
+            UPPER(TRIM(project_name)) as project_name
+        FROM transactions
+        WHERE sale_type = :sale_type
+          AND {OUTLIER_FILTER}
+          AND district IS NOT NULL
+          AND project_name IS NOT NULL
+          {date_clause}
+        GROUP BY district, UPPER(TRIM(project_name))
+    """)
+
+    rows = db_session.execute(query, params).fetchall()
+
+    # Aggregate by district
+    district_data: Dict[str, Dict[str, Any]] = {}
+
+    for row in rows:
+        district = row[0]
+        project_name = row[1]
+
+        if district not in district_data:
+            district_data[district] = {
+                "total_units": 0,
+                "project_count": 0,
+                "projects_with_units": 0,
+                "projects_without_units": [],
+            }
+
+        district_data[district]["project_count"] += 1
+
+        # Look up units from CSV only
+        if project_name in csv_data:
+            units = csv_data[project_name].get("total_units")
+            if units:
+                district_data[district]["total_units"] += units
+                district_data[district]["projects_with_units"] += 1
+            else:
+                district_data[district]["projects_without_units"].append(project_name)
+        else:
+            district_data[district]["projects_without_units"].append(project_name)
+
+    # Calculate coverage percentage and clean up
+    for district, data in district_data.items():
+        if data["project_count"] > 0:
+            data["coverage_pct"] = round(
+                100.0 * data["projects_with_units"] / data["project_count"], 1
+            )
+        else:
+            data["coverage_pct"] = 0.0
+
+        # Remove the list of missing projects (used for debugging only)
+        del data["projects_without_units"]
+
+    return district_data
+
+
+def get_csv_units_for_project(project_name: str) -> Optional[int]:
+    """
+    Get total units for a project from CSV only.
+
+    This is a fast lookup that bypasses database queries.
+    Returns None if project not found in CSV.
+    """
+    csv_data = _load_data()
+    normalized = project_name.upper().strip()
+
+    if normalized in csv_data:
+        return csv_data[normalized].get("total_units")
+
+    return None

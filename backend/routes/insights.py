@@ -12,6 +12,7 @@ from models.transaction import Transaction
 from models.database import db
 from sqlalchemy import func, and_, or_, extract, case, literal
 from constants import CCR_DISTRICTS, RCR_DISTRICTS, DISTRICT_NAMES, SALE_TYPE_NEW, SALE_TYPE_RESALE
+from services.new_launch_units import get_district_units_for_resale
 from api.contracts import api_contract
 
 
@@ -522,6 +523,16 @@ def district_liquidity():
         resale_velocity_data = {row.district: row.resale_tx_count for row in resale_velocity_results}
 
         # =================================================================
+        # DISTRICT TOTAL UNITS (for turnover rate normalization)
+        # Uses CSV data only - no estimation
+        # =================================================================
+        district_units_data = get_district_units_for_resale(
+            db_session=db.session,
+            date_from=date_from,
+            date_to=None  # Up to present
+        )
+
+        # =================================================================
         # PRICE STABILITY METRICS (Resale-only: PSF Coefficient of Variation)
         # Lower CV = more consistent pricing = healthier market
         # =================================================================
@@ -604,35 +615,108 @@ def district_liquidity():
                 "top_project_share": round(max(project_counts) / sum(project_counts) * 100, 1) if project_counts else 0
             }
 
-        # Calculate velocities and Z-scores (RESALE ONLY for exit safety)
-        # Velocity = resale transactions / months (organic demand signal)
-        velocities = []
+        # =================================================================
+        # TURNOVER RATE & ROBUST Z-SCORES (Normalized by housing stock)
+        # Turnover = (resale_transactions / total_units) * 100 per period
+        # This normalizes for district size - fairer comparison
+        # =================================================================
+
+        # Robust Z-score function (uses median/MAD instead of mean/stddev)
+        def compute_robust_z_scores(values_dict):
+            """
+            Compute robust Z-scores using median and MAD.
+
+            Robust Z-score handles right-skewed distributions better than
+            standard Z-score (housing turnover is typically right-skewed).
+
+            Formula: z_robust = (x - median) / MAD
+            Where MAD = median(|x_i - median(x)|)
+            """
+            if len(values_dict) < 3:
+                return {k: 0.0 for k in values_dict}
+
+            values = list(values_dict.values())
+            median_val = statistics.median(values)
+            deviations = [abs(v - median_val) for v in values]
+            mad = statistics.median(deviations)
+
+            # Avoid division by zero
+            if mad < 0.001:
+                return {k: 0.0 for k in values_dict}
+
+            return {k: (v - median_val) / mad for k, v in values_dict.items()}
+
+        # Calculate velocities and turnover rates
+        velocities_data = {}  # district -> {velocity, turnover_rate, tx_count, total_units, coverage}
         for district, resale_tx_count in resale_velocity_data.items():
             velocity = resale_tx_count / months_in_period
-            velocities.append((district, velocity, resale_tx_count))
 
-        # Calculate mean and stddev for Z-score (resale velocity)
-        if len(velocities) > 1:
-            velocity_values = [v for _, v, _ in velocities]
-            mean_velocity = statistics.mean(velocity_values)
-            stddev_velocity = statistics.stdev(velocity_values)
-        else:
-            mean_velocity = velocities[0][1] if velocities else 0
-            stddev_velocity = 1  # Avoid division by zero
+            # Get unit data for this district
+            units_info = district_units_data.get(district, {})
+            total_units = units_info.get("total_units", 0)
+            coverage_pct = units_info.get("coverage_pct", 0)
 
-        # Calculate Z-scores (resale velocity deviation from mean)
-        z_scores = {}
-        resale_velocities = {}
-        for district, velocity, resale_count in velocities:
-            resale_velocities[district] = velocity
-            if stddev_velocity > 0:
-                z_scores[district] = (velocity - mean_velocity) / stddev_velocity
+            # Calculate turnover rate (per 100 units per period)
+            # If no unit data, turnover_rate is None
+            if total_units and total_units > 0:
+                turnover_rate = (resale_tx_count / total_units) * 100
             else:
-                z_scores[district] = 0
+                turnover_rate = None
 
-        # Determine liquidity tier based on Z-score (resale-based)
+            velocities_data[district] = {
+                "velocity": velocity,
+                "turnover_rate": turnover_rate,
+                "tx_count": resale_tx_count,
+                "total_units": total_units,
+                "coverage_pct": coverage_pct,
+                "low_units_confidence": coverage_pct < 50 if coverage_pct else True
+            }
+
+        # Calculate mean velocity (for backwards compatibility)
+        velocity_values = [d["velocity"] for d in velocities_data.values()]
+        if velocity_values:
+            mean_velocity = statistics.mean(velocity_values)
+            stddev_velocity = statistics.stdev(velocity_values) if len(velocity_values) > 1 else 1
+        else:
+            mean_velocity = 0
+            stddev_velocity = 1
+
+        # Calculate turnover rate stats (for districts with unit data)
+        turnover_values = {k: v["turnover_rate"] for k, v in velocities_data.items()
+                          if v["turnover_rate"] is not None}
+        if turnover_values:
+            mean_turnover_rate = statistics.mean(turnover_values.values())
+            median_turnover_rate = statistics.median(turnover_values.values())
+        else:
+            mean_turnover_rate = 0
+            median_turnover_rate = 0
+
+        # Calculate Z-scores based on turnover rate (robust method)
+        # For districts without unit data, use velocity-based Z-score as fallback
+        z_scores = {}
+        if turnover_values:
+            # Primary: Robust Z-score on turnover rate
+            robust_z = compute_robust_z_scores(turnover_values)
+            z_scores.update(robust_z)
+
+        # Fallback for districts without turnover data: velocity-based Z-score
+        for district, data in velocities_data.items():
+            if district not in z_scores:
+                # Standard Z-score on velocity as fallback
+                if stddev_velocity > 0:
+                    z_scores[district] = (data["velocity"] - mean_velocity) / stddev_velocity
+                else:
+                    z_scores[district] = 0
+
+        # Convenient accessor for velocities
+        resale_velocities = {k: v["velocity"] for k, v in velocities_data.items()}
+
+        # Total housing stock across all districts
+        total_housing_stock = sum(d["total_units"] for d in velocities_data.values() if d["total_units"])
+
+        # Determine liquidity tier based on Z-score
         def get_liquidity_tier(z_score):
-            """Tier based on resale velocity Z-score (exit safety indicator)"""
+            """Tier based on turnover rate Z-score (exit safety indicator)"""
             if z_score >= 1.5:
                 return "Very High"
             elif z_score >= 0.5:
@@ -759,6 +843,13 @@ def district_liquidity():
                 z_score = round(z_scores.get(district_id, 0), 2)
                 liquidity_tier = get_liquidity_tier(z_score)
 
+                # TURNOVER METRICS (Normalized by housing stock)
+                district_turnover_data = velocities_data.get(district_id, {})
+                turnover_rate = district_turnover_data.get("turnover_rate")
+                total_units = district_turnover_data.get("total_units", 0)
+                units_coverage_pct = district_turnover_data.get("coverage_pct", 0)
+                low_units_confidence = district_turnover_data.get("low_units_confidence", True)
+
                 # Calculate percentages
                 new_sale_pct = round((new_sale_count / tx_count) * 100, 1) if tx_count > 0 else 0
                 resale_pct = round((resale_count / tx_count) * 100, 1) if tx_count > 0 else 0
@@ -808,9 +899,14 @@ def district_liquidity():
                         "resale_pct": resale_pct,
                         "project_count": project_count,  # All active projects
                         # Exit Safety (Resale-only)
-                        "monthly_velocity": monthly_velocity,  # Resale velocity
-                        "z_score": z_score,  # Resale velocity Z-score
-                        "liquidity_tier": liquidity_tier,  # Based on resale Z-score
+                        "monthly_velocity": monthly_velocity,  # Resale velocity (raw)
+                        "z_score": z_score,  # Robust Z-score based on turnover rate
+                        "liquidity_tier": liquidity_tier,  # Based on turnover Z-score
+                        # Turnover Metrics (Normalized by housing stock)
+                        "turnover_rate": round(turnover_rate, 2) if turnover_rate else None,
+                        "total_units": total_units,
+                        "units_coverage_pct": round(units_coverage_pct, 1),
+                        "low_units_confidence": low_units_confidence,
                         # Concentration Risks (Resale-only)
                         "concentration_gini": concentration["gini"],
                         "fragility_label": concentration["fragility"],
@@ -844,6 +940,11 @@ def district_liquidity():
                         "monthly_velocity": 0,
                         "z_score": None,
                         "liquidity_tier": None,
+                        # Turnover Metrics (Normalized by housing stock)
+                        "turnover_rate": None,
+                        "total_units": 0,
+                        "units_coverage_pct": 0,
+                        "low_units_confidence": True,
                         # Concentration Risks (Resale-only)
                         "concentration_gini": None,
                         "fragility_label": None,
@@ -869,14 +970,21 @@ def district_liquidity():
                     "to": today.isoformat()
                 },
                 "total_transactions": total_transactions,
+                # Velocity stats (raw, for backwards compat)
                 "mean_velocity": round(mean_velocity, 2),
                 "stddev_velocity": round(stddev_velocity, 2),
+                # Turnover stats (normalized by housing stock)
+                "mean_turnover_rate": round(mean_turnover_rate, 2),
+                "median_turnover_rate": round(median_turnover_rate, 2),
+                "total_housing_stock": total_housing_stock,
                 "methodology_notes": {
                     "liquidity_score": "Composite 0-100 score: Exit Safety (60%) + Market Health (40%)",
                     "exit_safety_metrics": "Velocity (35%), Breadth (15%), Concentration (10%) - RESALE only",
                     "market_health_metrics": "Volume (18%), Diversity (9%), Stability (8%), Organic (5%)",
                     "concentration_metrics": "Gini, Fragility, Top Share calculated on RESALE only (avoids developer release distortion)",
-                    "market_structure_metrics": "Transactions, Projects, New%/Resale% include all sale types (total activity)"
+                    "market_structure_metrics": "Transactions, Projects, New%/Resale% include all sale types (total activity)",
+                    "turnover_rate": "Resales per 100 units per period - normalized for district size",
+                    "z_score": "Robust Z-score using median/MAD - handles skewed distributions"
                 },
                 "elapsed_ms": int(elapsed * 1000)
             }

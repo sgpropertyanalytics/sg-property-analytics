@@ -511,9 +511,9 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px]">
-                    <span className="text-[#547792]">Avg Velocity</span>
+                    <span className="text-[#547792]">Avg Turnover</span>
                     <span className="font-semibold text-[#213448]">
-                      {meta.mean_velocity?.toFixed(1)}/mo
+                      {meta.mean_turnover_rate?.toFixed(1) ?? meta.mean_velocity?.toFixed(1)} per 100 units
                     </span>
                   </div>
                 </div>

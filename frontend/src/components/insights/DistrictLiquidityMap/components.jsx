@@ -50,7 +50,7 @@ export function InfoTooltip({ text, color = '#94B4C1' }) {
 export function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered }) {
   const hasData = data?.has_data;
   const metrics = data?.liquidity_metrics || {};
-  const velocity = metrics.monthly_velocity || 0;
+  const turnoverRate = metrics.turnover_rate ?? metrics.monthly_velocity ?? 0;
   const tier = metrics.liquidity_tier;
   const isCompact = zoom < 11.2;
 
@@ -97,7 +97,7 @@ export function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovere
           ${isCompact ? 'text-[9px]' : 'text-[11px]'}
         `}
       >
-        {hasData ? `${velocity.toFixed(1)}/mo` : '-'}
+        {hasData ? `${turnoverRate.toFixed(1)}` : '-'}
       </div>
 
       {/* District info label */}
@@ -169,11 +169,18 @@ export function HoverCard({ district, data }) {
 
         {/* Stats */}
         <div className="space-y-1.5">
+          {/* Turnover Rate (normalized by housing stock) */}
           <div className="flex justify-between items-center">
-            <span className="text-xs text-[#547792]">Monthly Velocity</span>
-            <span className="font-bold text-[#213448] text-sm">
-              {metrics.monthly_velocity?.toFixed(1) || 0}
-            </span>
+            <span className="text-xs text-[#547792]">Turnover Rate</span>
+            <div className="flex items-center gap-1">
+              <span className="font-bold text-[#213448] text-sm">
+                {metrics.turnover_rate?.toFixed(1) ?? metrics.monthly_velocity?.toFixed(1) ?? 0}
+              </span>
+              <span className="text-[9px] text-[#547792]">per 100</span>
+              {metrics.low_units_confidence && (
+                <span className="text-amber-500 text-[10px]" title="Low data coverage">⚠</span>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-between items-center">
@@ -191,6 +198,16 @@ export function HoverCard({ district, data }) {
               {metrics.z_score !== null ? metrics.z_score?.toFixed(2) : '-'}
             </span>
           </div>
+
+          {/* Housing Stock Coverage */}
+          {metrics.total_units > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-[#547792]">Housing Stock</span>
+              <span className="font-semibold text-[#213448] text-xs">
+                {metrics.total_units?.toLocaleString()} units
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="h-px bg-[#94B4C1]/30 my-2" />
@@ -302,14 +319,18 @@ export function RegionSummaryBar({ districtData, meta: _meta }) {
       );
 
       if (districts.length === 0) {
-        return { region, velocity: 0, txCount: 0, avgZScore: null };
+        return { region, avgTurnover: null, txCount: 0, avgZScore: null, totalUnits: 0 };
       }
 
       const totalTx = districts.reduce((sum, d) => sum + (d.liquidity_metrics?.tx_count || 0), 0);
-      const totalVelocity = districts.reduce(
-        (sum, d) => sum + (d.liquidity_metrics?.monthly_velocity || 0),
-        0
-      );
+      const totalUnits = districts.reduce((sum, d) => sum + (d.liquidity_metrics?.total_units || 0), 0);
+
+      // Average turnover rate for region (weighted by units would be better, but simple average for now)
+      const turnoverRates = districts
+        .filter((d) => d.liquidity_metrics?.turnover_rate !== null && d.liquidity_metrics?.turnover_rate !== undefined)
+        .map((d) => d.liquidity_metrics.turnover_rate);
+      const avgTurnover =
+        turnoverRates.length > 0 ? turnoverRates.reduce((a, b) => a + b, 0) / turnoverRates.length : null;
 
       // Average Z-score for region
       const zScores = districts
@@ -320,8 +341,9 @@ export function RegionSummaryBar({ districtData, meta: _meta }) {
 
       return {
         region,
-        velocity: totalVelocity,
+        avgTurnover,
         txCount: totalTx,
+        totalUnits,
         avgZScore,
       };
     });
@@ -363,7 +385,7 @@ export function RegionSummaryBar({ districtData, meta: _meta }) {
             {/* Stats */}
             <div className="flex items-baseline gap-2 sm:justify-between flex-1 sm:flex-none">
               <span className="text-base sm:text-lg font-bold text-[#213448]">
-                {stat.velocity.toFixed(1)}/mo
+                {stat.avgTurnover?.toFixed(1) ?? '-'}<span className="text-xs font-normal text-[#547792]">/100</span>
               </span>
               <span className="text-[10px] sm:text-xs text-[#547792]">
                 {stat.txCount.toLocaleString()} tx
@@ -465,6 +487,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
         [
           'liquidity_score',
           'monthly_velocity',
+          'turnover_rate',
           'z_score',
           'tx_count',
           'project_count',
@@ -556,9 +579,9 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
               {/* Key Metrics Grid - 4 columns with Score first */}
               <div className="grid grid-cols-4 gap-1.5 text-center">
                 <div className="bg-sky-50/50 rounded p-1.5">
-                  <div className="text-[10px] text-[#547792]">Velocity</div>
+                  <div className="text-[10px] text-[#547792]">Turnover</div>
                   <div className="text-sm text-[#213448]">
-                    {m.monthly_velocity?.toFixed(1) || '0'}
+                    {m.turnover_rate?.toFixed(1) ?? m.monthly_velocity?.toFixed(1) ?? '0'}
                   </div>
                 </div>
                 <div className="bg-[#EAE0CF]/30 rounded p-1.5">
@@ -698,13 +721,13 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
               </th>
               <th
                 className="px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
-                onClick={() => handleSort('monthly_velocity')}
+                onClick={() => handleSort('turnover_rate')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
-                  Velocity/mo
-                  <SortIcon column="monthly_velocity" />
+                  Turnover
+                  <SortIcon column="turnover_rate" />
                   <InfoTooltip
-                    text="Average resale transactions per month. Higher velocity = easier to exit. Based on resale only."
+                    text="Resales per 100 units - normalized for district size. Higher = easier to exit. Based on resale only."
                     color="#34d399"
                   />
                 </span>
@@ -843,9 +866,14 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                     </span>
                   </td>
 
-                  {/* Exit Safety Group - Monthly Velocity (Resale-only) */}
+                  {/* Exit Safety Group - Turnover Rate (Normalized, Resale-only) */}
                   <td className="px-3 py-2 text-right text-[#213448] bg-emerald-50/40 font-mono tabular-nums">
-                    {m.monthly_velocity?.toFixed(1) || '0'}
+                    <span className="inline-flex items-center gap-1">
+                      {m.turnover_rate?.toFixed(1) ?? m.monthly_velocity?.toFixed(1) ?? '0'}
+                      {m.low_units_confidence && (
+                        <span className="text-amber-500 text-[10px]" title="Low data coverage">⚠</span>
+                      )}
+                    </span>
                   </td>
 
                   {/* Exit Safety Group - Z-Score (Resale-only) */}
