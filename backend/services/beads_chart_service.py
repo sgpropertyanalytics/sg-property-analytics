@@ -17,14 +17,13 @@ Volume-Weighted Median Algorithm:
 """
 
 import logging
-from datetime import timedelta
 from typing import Dict, Any, List
 
 from sqlalchemy import text
 
 from models.database import db
-from db.sql import OUTLIER_FILTER
-from constants import CCR_DISTRICTS, RCR_DISTRICTS, get_districts_for_region
+from constants import CCR_DISTRICTS, RCR_DISTRICTS
+from utils.filter_builder import build_sql_where
 
 logger = logging.getLogger('beads_chart')
 
@@ -36,98 +35,7 @@ def _build_where_clause(filters: Dict[str, Any]) -> tuple:
     Returns:
         tuple: (where_parts list, params dict)
     """
-    where_parts = []
-    params = {}
-
-    # Date range
-    if filters.get('date_from'):
-        where_parts.append("transaction_date >= :date_from")
-        params['date_from'] = filters['date_from']
-    if filters.get('date_to'):
-        # Use < next_day instead of <= date_to to include all transactions on date_to
-        # PostgreSQL treats date as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
-        where_parts.append("transaction_date < :date_to_exclusive")
-        params['date_to_exclusive'] = filters['date_to'] + timedelta(days=1)
-
-    # Districts (explicit) - accept both 'district' and 'districts' keys
-    districts = filters.get('districts') or filters.get('district', [])
-    if districts:
-        if isinstance(districts, str):
-            districts = [d.strip() for d in districts.split(',')]
-        placeholders = ','.join([f":district_{i}" for i in range(len(districts))])
-        where_parts.append(f"district IN ({placeholders})")
-        for i, d in enumerate(districts):
-            params[f'district_{i}'] = d.upper().strip()
-    else:
-        # Handle segments (convert to districts)
-        segments = filters.get('segments', [])
-        if not segments:
-            single_segment = filters.get('segment')
-            if single_segment:
-                segments = [single_segment]
-
-        if segments:
-            all_segment_districts = []
-            for seg in segments:
-                seg_districts = get_districts_for_region(seg)
-                if seg_districts:
-                    all_segment_districts.extend(seg_districts)
-            if all_segment_districts:
-                placeholders = ','.join([f":seg_district_{i}" for i in range(len(all_segment_districts))])
-                where_parts.append(f"district IN ({placeholders})")
-                for i, d in enumerate(all_segment_districts):
-                    params[f'seg_district_{i}'] = d
-
-    # Bedrooms filter - accept both 'bedroom' and 'bedrooms' keys
-    bedrooms = filters.get('bedrooms') or filters.get('bedroom', [])
-    if bedrooms:
-        if isinstance(bedrooms, str):
-            bedrooms = [int(b.strip()) for b in bedrooms.split(',')]
-        placeholders = ','.join([f":bedroom_{i}" for i in range(len(bedrooms))])
-        where_parts.append(f"bedroom_count IN ({placeholders})")
-        for i, b in enumerate(bedrooms):
-            params[f'bedroom_{i}'] = b
-
-    # Sale type
-    if filters.get('sale_type'):
-        where_parts.append("LOWER(sale_type) = LOWER(:sale_type)")
-        params['sale_type'] = filters['sale_type']
-
-    # PSF range
-    if filters.get('psf_min') is not None:
-        where_parts.append("psf >= :psf_min")
-        params['psf_min'] = float(filters['psf_min'])
-    if filters.get('psf_max') is not None:
-        where_parts.append("psf <= :psf_max")
-        params['psf_max'] = float(filters['psf_max'])
-
-    # Price range
-    if filters.get('price_min') is not None:
-        where_parts.append("price >= :price_min")
-        params['price_min'] = float(filters['price_min'])
-    if filters.get('price_max') is not None:
-        where_parts.append("price <= :price_max")
-        params['price_max'] = float(filters['price_max'])
-
-    # Size range
-    if filters.get('size_min') is not None:
-        where_parts.append("area_sqft >= :size_min")
-        params['size_min'] = float(filters['size_min'])
-    if filters.get('size_max') is not None:
-        where_parts.append("area_sqft <= :size_max")
-        params['size_max'] = float(filters['size_max'])
-
-    # Tenure filter
-    if filters.get('tenure'):
-        where_parts.append("LOWER(tenure) = LOWER(:tenure)")
-        params['tenure'] = filters['tenure']
-
-    # Project filter
-    if filters.get('project'):
-        where_parts.append("project_name ILIKE :project")
-        params['project'] = f"%{filters['project']}%"
-
-    return where_parts, params
+    return build_sql_where(filters)
 
 
 def query_beads_chart(filters: Dict[str, Any], options: Dict[str, Any]) -> List[Dict]:
@@ -177,12 +85,11 @@ def query_beads_chart(filters: Dict[str, Any], options: Dict[str, Any]) -> List[
             END as region,
             CASE WHEN bedroom_count >= 5 THEN 5 ELSE bedroom_count END as bedroom
         FROM transactions
-        WHERE {OUTLIER_FILTER}
+        WHERE {where_clause}
           AND price IS NOT NULL
           AND price > 0
           AND bedroom_count IS NOT NULL
           AND bedroom_count > 0
-          AND {where_clause}
     ),
     ranked AS (
         SELECT

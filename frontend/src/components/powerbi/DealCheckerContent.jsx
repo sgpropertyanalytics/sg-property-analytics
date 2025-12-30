@@ -19,6 +19,7 @@ import {
   getDealCheckerField,
   getProjectNamesField,
 } from '../../schemas/apiContract';
+import { getPercentile } from '../../utils/statistics';
 
 // K-anonymity threshold for project-level data (min 15 for privacy)
 const K_PROJECT_THRESHOLD = 15;
@@ -64,11 +65,6 @@ function calculateVolumeThresholds(projects) {
   if (volumes.length === 0) {
     return { p40: 0, p70: 0, p90: 0 };
   }
-
-  const getPercentile = (arr, p) => {
-    const index = Math.ceil((p / 100) * arr.length) - 1;
-    return arr[Math.max(0, index)];
-  };
 
   return {
     p40: getPercentile(volumes, 40),

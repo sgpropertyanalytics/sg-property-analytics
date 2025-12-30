@@ -15,7 +15,6 @@ Formula:
 """
 
 from typing import Dict, Any
-from db.sql import OUTLIER_FILTER
 from constants import SALE_TYPE_RESALE
 from services.kpi.base import (
     KPISpec, KPIResult,
@@ -46,9 +45,7 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
 def get_sql(params: Dict[str, Any]) -> str:
     """Build SQL with resale-only filter."""
     filter_parts = params.pop('_filter_parts', [])
-    base_filter = OUTLIER_FILTER
-    if filter_parts:
-        base_filter += " AND " + " AND ".join(filter_parts)
+    base_filter = " AND ".join(filter_parts) if filter_parts else "1=1"
 
     # CRITICAL: Resale only - exclude new sale/developer sales
     resale_filter = f"sale_type = '{SALE_TYPE_RESALE}'"

@@ -18,6 +18,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 import pytest
+
+pytestmark = pytest.mark.integration
 from sqlalchemy import text
 
 

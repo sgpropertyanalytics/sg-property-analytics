@@ -36,7 +36,8 @@ from sqlalchemy.orm import Session, aliased
 
 from models.database import db
 from models.transaction import Transaction
-from db.sql import OUTLIER_FILTER, exclude_outliers
+from db.sql import OUTLIER_FILTER
+from utils.filter_builder import build_sqlalchemy_filters, build_sql_where
 
 # Configure logging
 logger = logging.getLogger('dashboard')
@@ -260,22 +261,6 @@ def log_timing(operation: str):
 # FILTER BUILDING
 # ============================================================================
 
-def normalize_district(district: str) -> str:
-    """Normalize district format to DXX."""
-    d = str(district).strip().upper()
-    if not d.startswith('D'):
-        d = f"D{d.zfill(2)}"
-    return d
-
-
-# get_region_for_district is imported from constants.py (SINGLE SOURCE OF TRUTH)
-# get_districts_for_region is imported from constants.py (SINGLE SOURCE OF TRUTH)
-
-def get_districts_for_segment(segment: str) -> List[str]:
-    """Get all districts for a market segment. Wrapper for get_districts_for_region."""
-    return get_districts_for_region(segment)
-
-
 def build_filter_conditions(filters: Dict[str, Any]) -> List:
     """
     Build SQLAlchemy filter conditions from filter dict.
@@ -283,84 +268,11 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
     Returns list of conditions to be combined with and_().
     Always excludes outliers using COALESCE(is_outlier, false) = false.
     """
-    conditions = []
-
-    # ALWAYS exclude outliers from all queries (null-safe)
-    conditions.append(exclude_outliers(Transaction))
-
-    # Date range
-    # Note: Routes should pass date objects (via to_date()), but we accept strings for legacy compatibility
-    if filters.get('date_from'):
-        try:
-            from_dt = _coerce_to_date(filters['date_from'])
-            conditions.append(Transaction.transaction_date >= from_dt)
-        except ValueError:
-            pass
-
-    if filters.get('date_to'):
-        try:
-            to_dt = _coerce_to_date(filters['date_to'])
-            # Use < next_day instead of <= to_dt to include all transactions on to_dt
-            conditions.append(Transaction.transaction_date < to_dt + timedelta(days=1))
-        except ValueError:
-            pass
-
-    # Districts
-    districts = filters.get('districts', [])
-    if districts:
-        if isinstance(districts, str):
-            districts = [d.strip() for d in districts.split(',')]
-        normalized = [normalize_district(d) for d in districts]
-        conditions.append(Transaction.district.in_(normalized))
-
-    # Segment (market region) - convert to districts, supports multiple segments
-    # Issue B16: Both 'segments' (plural, preferred) and 'segment' (singular) are supported
-    # for API compatibility. Frontend uses 'segments', some legacy code uses 'segment'.
-    segments = filters.get('segments', [])
-    if not segments:
-        # Backwards compatibility: check for single 'segment' key
-        single_segment = filters.get('segment')
-        if single_segment:
-            segments = [single_segment]
-
-    if segments and not districts:  # Only apply if no explicit districts
-        all_segment_districts = []
-        for seg in segments:
-            seg_districts = get_districts_for_segment(seg)
-            if seg_districts:
-                all_segment_districts.extend(seg_districts)
-        if all_segment_districts:
-            conditions.append(Transaction.district.in_(all_segment_districts))
-
-    # Bedrooms
-    bedrooms = filters.get('bedrooms', [])
-    if bedrooms:
-        if isinstance(bedrooms, str):
-            bedrooms = [int(b.strip()) for b in bedrooms.split(',')]
-        conditions.append(Transaction.bedroom_count.in_(bedrooms))
-
-    # Sale type (case-insensitive)
-    sale_type = filters.get('sale_type')
-    if sale_type:
-        conditions.append(func.lower(Transaction.sale_type) == sale_type.lower())
-
-    # PSF range
-    if filters.get('psf_min') is not None:
-        conditions.append(Transaction.psf >= float(filters['psf_min']))
-    if filters.get('psf_max') is not None:
-        conditions.append(Transaction.psf <= float(filters['psf_max']))
-
-    # Price range (for cross-filter from price distribution chart)
-    if filters.get('price_min') is not None:
-        conditions.append(Transaction.price >= float(filters['price_min']))
-    if filters.get('price_max') is not None:
-        conditions.append(Transaction.price <= float(filters['price_max']))
-
-    # Size range
-    if filters.get('size_min') is not None:
-        conditions.append(Transaction.area_sqft >= float(filters['size_min']))
-    if filters.get('size_max') is not None:
-        conditions.append(Transaction.area_sqft <= float(filters['size_max']))
+    conditions = build_sqlalchemy_filters(
+        filters,
+        include_project=False,
+        include_tenure=False
+    )
 
     # Tenure
     tenure = filters.get('tenure')
@@ -627,60 +539,11 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> D
     show_full_range = options.get('show_full_range', False)
 
     # Build WHERE clause for raw SQL
-    where_parts = []
-    params = {}
-
-    if filters.get('date_from'):
-        where_parts.append("transaction_date >= :date_from")
-        params['date_from'] = filters['date_from']
-    if filters.get('date_to'):
-        # Use < next_day instead of <= date_to to include all transactions on date_to
-        # PostgreSQL treats date as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
-        where_parts.append("transaction_date < :date_to_exclusive")
-        params['date_to_exclusive'] = filters['date_to'] + timedelta(days=1)
-
-    districts = filters.get('districts', [])
-    if districts:
-        if isinstance(districts, str):
-            districts = [d.strip() for d in districts.split(',')]
-        normalized = [normalize_district(d) for d in districts]
-        placeholders = ','.join([f":district_{i}" for i in range(len(normalized))])
-        where_parts.append(f"district IN ({placeholders})")
-        for i, d in enumerate(normalized):
-            params[f'district_{i}'] = d
-    else:
-        # Handle segments (supports multiple segments)
-        segments = filters.get('segments', [])
-        if not segments:
-            # Backwards compatibility: check for single 'segment' key
-            single_segment = filters.get('segment')
-            if single_segment:
-                segments = [single_segment]
-
-        if segments:
-            all_segment_districts = []
-            for seg in segments:
-                seg_districts = get_districts_for_segment(seg)
-                if seg_districts:
-                    all_segment_districts.extend(seg_districts)
-            if all_segment_districts:
-                placeholders = ','.join([f":seg_district_{i}" for i in range(len(all_segment_districts))])
-                where_parts.append(f"district IN ({placeholders})")
-                for i, d in enumerate(all_segment_districts):
-                    params[f'seg_district_{i}'] = d
-
-    bedrooms = filters.get('bedrooms', [])
-    if bedrooms:
-        if isinstance(bedrooms, str):
-            bedrooms = [int(b.strip()) for b in bedrooms.split(',')]
-        placeholders = ','.join([f":bedroom_{i}" for i in range(len(bedrooms))])
-        where_parts.append(f"bedroom_count IN ({placeholders})")
-        for i, b in enumerate(bedrooms):
-            params[f'bedroom_{i}'] = b
-
-    if filters.get('sale_type'):
-        where_parts.append("LOWER(sale_type) = LOWER(:sale_type)")
-        params['sale_type'] = filters['sale_type']
+    where_parts, params = build_sql_where(
+        filters,
+        include_outliers=True,
+        include_project=False
+    )
 
     # Project filter - supports both partial match (search) and exact match (drill-through)
     if filters.get('project_exact'):
@@ -691,20 +554,6 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> D
         # Case-insensitive match - for search functionality
         where_parts.append("LOWER(project_name) = LOWER(:project)")
         params['project'] = filters['project']
-
-    if filters.get('psf_min') is not None:
-        where_parts.append("psf >= :psf_min")
-        params['psf_min'] = float(filters['psf_min'])
-    if filters.get('psf_max') is not None:
-        where_parts.append("psf <= :psf_max")
-        params['psf_max'] = float(filters['psf_max'])
-
-    if filters.get('size_min') is not None:
-        where_parts.append("area_sqft >= :size_min")
-        params['size_min'] = float(filters['size_min'])
-    if filters.get('size_max') is not None:
-        where_parts.append("area_sqft <= :size_max")
-        params['size_max'] = float(filters['size_max'])
 
     where_clause = " AND ".join(where_parts) if where_parts else "1=1"
 
