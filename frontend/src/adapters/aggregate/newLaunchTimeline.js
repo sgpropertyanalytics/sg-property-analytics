@@ -46,7 +46,7 @@ export const formatPeriodLabel = (date, timeGrain) => {
 /**
  * Transform new launch timeline API response.
  *
- * @param {Array} rawData - Raw data from /api/analytics/new-launch-timeline
+ * @param {Array} rawData - Raw data from /api/new-launch-timeline
  * @param {string} timeGrain - 'year', 'quarter', or 'month'
  * @returns {Array} Transformed and sorted data with structure:
  *   { periodStart: Date, periodLabel: string, projectCount: number, totalUnits: number, avgUnitsPerProject: number }

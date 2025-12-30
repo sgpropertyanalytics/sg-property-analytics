@@ -388,7 +388,7 @@ export const getFilterOptions = () =>
  * }>}
  */
 export const getNewLaunchTimeline = (params = {}, options = {}) =>
-  apiClient.get(`/analytics/new-launch-timeline?${buildQueryString(params)}`, { signal: options.signal });
+  apiClient.get(`/new-launch-timeline?${buildQueryString(params)}`, { signal: options.signal });
 
 /**
  * Get market activity heatmap by bedroom and property age
