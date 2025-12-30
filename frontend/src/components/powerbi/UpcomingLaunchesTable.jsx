@@ -5,7 +5,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { getRegionBadgeClass } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
 import { UpcomingLaunchesField, getUpcomingLaunchesField } from '../../schemas/apiContract';
-import { ConfidenceBadgeInline, VerificationStatusDot } from '../verification';
+import { VerificationBadge } from '../verification';
 
 /**
  * Upcoming Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
@@ -222,11 +222,11 @@ export function UpcomingLaunchesTable({
                   )}
                   {/* Mobile verification indicator */}
                   {project.verification_status && (
-                    <div className="mt-1 flex items-center justify-end gap-1">
-                      <VerificationStatusDot status={project.verification_status} size="small" />
-                      {project.units_confidence_score !== undefined && (
-                        <ConfidenceBadgeInline score={project.units_confidence_score} />
-                      )}
+                    <div className="mt-1 flex items-center justify-end">
+                      <VerificationBadge
+                        status={project.verification_status}
+                        confidence={project.units_confidence_score}
+                      />
                     </div>
                   )}
                 </div>
@@ -338,12 +338,10 @@ export function UpcomingLaunchesTable({
                     {/* Verification Status */}
                     <td className="px-3 py-2 border-b border-slate-100 text-center">
                       {project.verification_status ? (
-                        <div className="flex items-center justify-center gap-1">
-                          <VerificationStatusDot status={project.verification_status} size="small" />
-                          {project.units_confidence_score !== undefined && project.units_confidence_score !== null && (
-                            <ConfidenceBadgeInline score={project.units_confidence_score} />
-                          )}
-                        </div>
+                        <VerificationBadge
+                          status={project.verification_status}
+                          confidence={project.units_confidence_score}
+                        />
                       ) : (
                         <span className="text-slate-300 text-xs">-</span>
                       )}

@@ -319,22 +319,16 @@ Top Issues:
 > **Note:** CSV/file processing is handled by the `etl-pipeline` agent, NOT the scraping orchestrator.
 > The scraping orchestrator is for WEB SCRAPING only.
 
-### Phase 3: Verification Mode ✅ COMPLETE
-- [x] Create `verification_candidates` table (migration 012)
-- [x] Implement cross-validation logic (`scrapers/utils/cross_validator.py`)
-- [x] Add verification status fields to domain tables (migration 013)
-- [x] Build verification report generator (`services/verification_report.py`)
-- [x] Create 5 Tier B adapters (PropertyGuru, EdgeProp, 99.co, ERA, PropNex)
-- [x] Build verification API routes (`/api/verification/*`)
-- [x] Enforce 3-source minimum for auto-confirm
+### Phase 3: Verification Mode ✅ COMPLETE (Simplified)
+- [x] Add verification status columns to domain tables (migration 013)
+- [x] Create simple verification script (`scripts/verify_units.py`)
 
-### Phase 4: UI Integration ✅ COMPLETE
-- [x] Confidence badges (`components/verification/ConfidenceBadge.jsx`)
-- [x] Verification status indicators (`components/verification/VerificationStatusIndicator.jsx`)
+> **Note:** Verification is a one-off backend operation.
+> Run `python scripts/verify_units.py` to check data accuracy.
+
+### Phase 4: UI Integration ✅ COMPLETE (Simplified)
+- [x] Simple verification badge (`components/verification/VerificationBadge.jsx`)
 - [x] Integration into UpcomingLaunchesTable (inline display)
-
-> **Note:** This is display-only. No review UI or API endpoints.
-> Verification runs are one-off backend operations triggered manually.
 
 ---
 
@@ -348,11 +342,8 @@ Top Issues:
 | `backend/scrapers/field_authority.py` | Field ownership rules |
 | `backend/scrapers/base.py` | Base scraper class |
 | `backend/scrapers/utils/diff.py` | Diff detection module |
-| `backend/scrapers/utils/cross_validator.py` | Cross-validation logic |
 | `backend/services/gls_scraper.py` | Legacy GLS scraper |
 | `backend/services/new_launch_units.py` | 3-tier unit lookup |
-| `backend/services/verification_service.py` | Verification orchestration |
-| `backend/services/verification_report.py` | Report generator |
 
 ### Models
 | File | Purpose |
@@ -360,23 +351,16 @@ Top Issues:
 | `backend/scrapers/models/ingestion_run.py` | IngestionRun + SourceType |
 | `backend/scrapers/models/scraped_entity.py` | Per-source extraction |
 | `backend/scrapers/models/canonical_entity.py` | Merged truth |
-| `backend/scrapers/models/verification_candidate.py` | Cross-validation results |
 
-### Verification Adapters
+### Scripts
 | File | Purpose |
 |------|---------|
-| `backend/scrapers/adapters/verification_base.py` | Base adapter class |
-| `backend/scrapers/adapters/propertyguru_verification.py` | PropertyGuru |
-| `backend/scrapers/adapters/edgeprop_verification.py` | EdgeProp |
-| `backend/scrapers/adapters/ninety_nine_verification.py` | 99.co |
-| `backend/scrapers/adapters/era_verification.py` | ERA |
-| `backend/scrapers/adapters/propnex_verification.py` | PropNex |
+| `backend/scripts/verify_units.py` | One-off unit verification |
 
 ### Migrations
 | File | Purpose |
 |------|---------|
 | `backend/migrations/010_create_scraper_tables.sql` | Initial scraper tables |
-| `backend/migrations/012_create_verification_candidates.sql` | Verification candidates |
 | `backend/migrations/013_add_verification_status_columns.sql` | Domain table columns |
 | `backend/migrations/014_rename_scrape_runs_to_ingestion_runs.sql` | Unified ingestion |
 
@@ -386,11 +370,10 @@ Top Issues:
 | `backend/data/new_launch_units.csv` | Manual unit counts |
 | `backend/data/upcoming_launches.csv` | Launch schedule |
 
-### Frontend (Phase 4 - Display Only)
+### Frontend
 | File | Purpose |
 |------|---------|
-| `frontend/src/components/verification/ConfidenceBadge.jsx` | Confidence score badges |
-| `frontend/src/components/verification/VerificationStatusIndicator.jsx` | Status indicators |
+| `frontend/src/components/verification/VerificationBadge.jsx` | Inline verification indicator |
 
 ### Agents
 | Agent | Purpose |
