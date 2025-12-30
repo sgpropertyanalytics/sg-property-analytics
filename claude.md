@@ -166,6 +166,133 @@ Before merging ANY analytics-related change:
 
 ---
 
+# 0.5 DATA CORRECTNESS INVARIANTS
+
+These principles prevent silent correctness bugs in data processing and analytics.
+
+## Single Source of Truth for Meaning
+
+**Rule:** Define "what parameters mean" and "what response means" ONCE, enforce it everywhere.
+
+| Layer | Defines | Enforces |
+|-------|---------|----------|
+| Contract schema | Parameter types, response shapes | Validation |
+| Constants | Enum values, display labels | Lookup |
+| Service | Business logic | Computation |
+
+**Smell:** Param schema says "comma-separated string" but service expects `list[int]`. That's drift-by-design.
+
+## Stable Identity > Display Strings
+
+**Rule:** Always join/group on stable keys (IDs), not display names.
+
+| ❌ Wrong | ✅ Correct |
+|----------|-----------|
+| `JOIN ON project_name` | `JOIN ON project_id` |
+| `GROUP BY project_name` | `GROUP BY project_id` |
+| `UPPER(TRIM(project_name))` everywhere | Canonicalize once → `canonical_key` column |
+
+**Why:** Display names change (typos, duplicates, normalization). IDs don't.
+
+## Two-Phase Computation
+
+**Rule:** Compute invariant truth FIRST (Phase A), then filter as membership (Phase B).
+
+```
+Phase A: Compute globally (before any filtering)
+  - launch_date = MIN(transaction_date) for ALL transactions
+  - cohorts = defined by global launch_date
+  - outlier_flags = computed before filtering
+
+Phase B: Apply filters as membership, not redefinition
+  - Filter selects which rows to SHOW
+  - Filter does NOT change how metrics are COMPUTED
+  - launch_date does NOT shift when you filter by district
+```
+
+**Smell:** `MIN(transaction_date)` inside filtered subquery → "launch date shifts when I filter".
+
+## Deterministic Transformations
+
+**Rule:** Every transformation must produce same output for same input.
+
+| ❌ Non-deterministic | ✅ Deterministic |
+|---------------------|-----------------|
+| `MODE()` (arbitrary tie-break) | Explicit rule: "earliest row wins" |
+| `array_agg(x)` (unordered) | `array_agg(x ORDER BY id)` |
+| `MIN(project_name)` as canonical | `project_id` lookup |
+| Relying on implicit row order | `ORDER BY date, id` always |
+
+## DB Does Set Work; Python Does Orchestration
+
+| Layer | Responsibility |
+|-------|----------------|
+| **DB** | Filtering, joining, aggregation, set operations |
+| **Python** | Param validation, calling DB once, formatting response |
+
+**Forbidden:**
+```python
+# ❌ WRONG: O(n²) pattern
+names = db.execute("SELECT DISTINCT project_name FROM txn").fetchall()
+for name in names:
+    units = get_units_for_project(name)  # N queries!
+```
+
+**Required:**
+```python
+# ✅ CORRECT: Single bulk query
+result = db.execute("""
+    SELECT p.project_name, u.unit_count
+    FROM projects p
+    JOIN units u ON p.project_id = u.project_id
+""")
+```
+
+## Static SQL + Param Guards
+
+**Rule:** Prefer static queries with NULL guards over dynamic string building.
+
+```python
+# ❌ FORBIDDEN: Dynamic SQL string building
+query = "SELECT * FROM txn WHERE 1=1"
+if bedroom:
+    query += f" AND bedroom = {bedroom}"  # Injection risk + messy
+
+# ✅ CORRECT: Static SQL with NULL guards
+query = """
+    SELECT * FROM txn
+    WHERE (:bedroom IS NULL OR bedroom = :bedroom)
+      AND (:district IS NULL OR district = :district)
+"""
+```
+
+## Contract is a Boundary, Not Decoration
+
+**Rule:** Contract schemas must match exact runtime behavior.
+
+| ❌ Contract Drift | ✅ Contract Truth |
+|------------------|------------------|
+| Schema says `List[str]`, service expects `str` | Types match exactly |
+| Schema documents `filtersApplied`, backend doesn't produce it | Only document what's produced |
+| Schema says camelCase, adapter outputs snake_case | End-to-end consistency |
+
+**Smell:** Contract file exists but tests pass even when schema is wrong.
+
+## Canonical Shapes End-to-End
+
+**Rule:** Pick ONE canonical shape and make it consistent across all layers.
+
+```
+Request params  → Normalized params (g.normalized_params) → Response keys
+   snake_case   →      snake_case                        →   camelCase (v2)
+```
+
+- Adapters do minimal reshaping, not meaning conversion
+- Backend emits consistent field names
+- Frontend adapters handle v1/v2 normalization
+
+---
+
 # 1. HARD CONSTRAINTS
 
 ## Memory (512MB)
@@ -762,6 +889,26 @@ Regions: CCR=#213448, RCR=#547792, OCR=#94B4C1
 3. No hidden side effects
 4. Assume messier data in future
 5. If unsure → ask
+
+## Data Correctness
+
+Before any data/analytics change:
+
+**Correctness:**
+- [ ] Invariants computed globally before filters (Two-Phase)
+- [ ] Joins use stable keys (IDs), not display names
+- [ ] Aggregations are deterministic (explicit ORDER BY or tie-break rule)
+- [ ] No `MODE()` or unordered `array_agg()`
+
+**Consistency:**
+- [ ] One canonical param + response shape
+- [ ] Contracts reflect runtime exactly (no drift)
+- [ ] Centralized canonicalization (no scattered UPPER/TRIM)
+
+**Maintainability:**
+- [ ] Static SQL with param guards (no string concatenation)
+- [ ] DB does set work; Python does orchestration (no N+1 queries)
+- [ ] No repeated implementations of business rules
 
 ---
 

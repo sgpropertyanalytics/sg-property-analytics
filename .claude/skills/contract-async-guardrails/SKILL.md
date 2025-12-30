@@ -171,6 +171,109 @@ const psf = getTxnField(row, 'psf');
 
 ---
 
+## Part 4b: Contract is a Boundary, Not a Decoration
+
+### The Problem
+
+Contracts exist but don't reflect runtime reality:
+- Schema says `List[str]`, service expects comma-separated `str`
+- Schema documents `filtersApplied`, backend doesn't produce it
+- Schema says camelCase, adapter outputs snake_case
+
+**Smell:** Contract file exists but tests pass even when schema is wrong.
+
+### The Rule
+
+**Contract schemas must match exact runtime behavior.**
+
+| ❌ Contract Drift | ✅ Contract Truth |
+|------------------|------------------|
+| Schema says `List[str]`, service expects `str` | Types match exactly at runtime |
+| Schema documents fields backend doesn't produce | Only document what's actually returned |
+| Schema says camelCase, adapter emits snake_case | End-to-end shape consistency |
+| Contract allows `null`, code crashes on `null` | Nullability matches actual behavior |
+
+### Enforcement Pattern
+
+```javascript
+// adapters/aggregateAdapter.js
+
+// 1. Assert version for breaking changes
+function assertKnownVersion(response) {
+  const version = response.meta?.apiVersion || 'v1';
+  if (!['v1', 'v2'].includes(version)) {
+    console.warn(`Unknown API version: ${version}`);
+  }
+}
+
+// 2. Validate shape matches contract
+function validateResponseShape(data, expectedFields) {
+  const missing = expectedFields.filter(f => !(f in data));
+  if (missing.length > 0) {
+    console.error(`Contract violation: missing fields ${missing}`);
+  }
+}
+
+// 3. Transform with explicit field mapping
+export function transformTimeSeries(response) {
+  assertKnownVersion(response);
+
+  return response.data.map(row => ({
+    // Explicit mapping - no silent field access
+    medianPsf: row.medianPsf ?? row.median_psf,
+    period: row.period,
+    count: row.count,
+  }));
+}
+```
+
+### Single Source of Truth for Meaning
+
+**Rule:** Define parameter meaning and response meaning ONCE, enforce everywhere.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Contract Schema (schemas/apiContract.js)                        │
+│  - Defines: what params mean, what response contains            │
+│  - Enforces: validation, type checking                          │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          ▼                ▼                ▼
+    Route Handler      Adapter        Component
+    (validates)     (transforms)      (consumes)
+
+All three reference the SAME contract definition.
+```
+
+### Canonical Shapes End-to-End
+
+Pick ONE canonical shape and enforce consistency:
+
+```
+Request params   →   Normalized params   →   Response keys
+  snake_case     →      snake_case       →    camelCase (v2)
+
+Frontend sends: { date_from: '2024-01-01', bedroom: '2,3' }
+Backend emits:  { medianPsf: 1500, count: 42 }
+Adapter maps:   response → { medianPsf, count }
+Component uses: data.medianPsf (never data.median_psf)
+```
+
+### Checklist
+
+```
+[ ] Contract schema exists for endpoint
+[ ] Schema types match runtime behavior
+[ ] Schema only documents fields that are actually returned
+[ ] Adapter calls assertKnownVersion()
+[ ] Adapter does explicit field mapping (no silent access)
+[ ] Component only uses adapter output shape
+```
+
+---
+
 ## Part 5: Common Mistakes Quick Reference
 
 | Anti-Pattern | Symptom | Grep to Find | Fix |
