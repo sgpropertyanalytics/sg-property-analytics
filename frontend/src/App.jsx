@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
-import { PowerBIFilterProvider } from './context/PowerBIFilterContext';
+import { PowerBIFilterProvider } from './context/PowerBIFilter';
 import LandingPage from './pages/Landing';
 import Login from './pages/Login';
 import Pricing from './pages/Pricing';

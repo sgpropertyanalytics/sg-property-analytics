@@ -15,7 +15,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { getNewVsResale } from '../../api/client';
-import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
+import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { transformNewVsResaleSeries, logFetchDebug, assertKnownVersion } from '../../adapters';

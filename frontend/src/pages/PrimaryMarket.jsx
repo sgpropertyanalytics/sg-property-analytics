@@ -1,5 +1,5 @@
 import React from 'react';
-import { PowerBIFilterProvider } from '../context/PowerBIFilterContext';
+import { PowerBIFilterProvider } from '../context/PowerBIFilter';
 import { FilterBar } from '../components/powerbi/FilterBar';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { ErrorBoundary, ChartWatermark } from '../components/ui';

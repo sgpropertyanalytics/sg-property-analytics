@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
+import { usePowerBIFilters } from '../../context/PowerBIFilter';
 
 /**
  * Drill-down Breadcrumb Navigation

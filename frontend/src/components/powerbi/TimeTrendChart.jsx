@@ -15,7 +15,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
-import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilterContext';
+import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';

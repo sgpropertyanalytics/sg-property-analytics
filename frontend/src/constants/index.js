@@ -535,7 +535,7 @@ export const getFloorLevelIndex = (floorLevel) => {
 };
 
 // =============================================================================
-// SALE TYPE CLASSIFICATION - USES CANONICAL ENUMS FROM apiContract.js
+// SALE TYPE CLASSIFICATION - USES CANONICAL ENUMS FROM apiContract/
 // =============================================================================
 
 // Re-export enums for convenience
@@ -579,7 +579,7 @@ export const isValidSaleType = (saleType) => {
 };
 
 // =============================================================================
-// TENURE CLASSIFICATION - USES CANONICAL ENUMS FROM apiContract.js
+// TENURE CLASSIFICATION - USES CANONICAL ENUMS FROM apiContract/
 // =============================================================================
 
 /**
