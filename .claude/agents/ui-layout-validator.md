@@ -7,12 +7,13 @@ description: >
   - Post-implementation check for responsive behavior
   - Debugging layout issues (overflow, misalignment, viewport breakage)
   - User mentions horizontal scroll, cropped content, or responsive bugs
+  - Diagnosing "page doesn't reset", "stale selection", "blocked UI on re-entry"
+  - Pages with sessionStorage/localStorage state persistence
 
   SHOULD NOT be used for:
   - Chart internals (axis scales, data transformation, click handlers)
   - Data correctness (use data-integrity-validator)
   - Color palette or typography choices (use dashboard-design)
-  - Filter state logic or API calls
   - Touch target sizing (use dashboard-design)
   - Tooltip text, values, or formatting (content, not layout)
 tools: Read, Grep, Glob, Bash
@@ -60,6 +61,7 @@ You are a **UI Layout Validator** for dashboard components.
 | **Nice Axis Ticks** | Human-readable tick max/step (no 2,196 or step=137) |
 | **Control Bar Consistency** | Same height across all controls, baseline alignment, consistent gaps |
 | **Template Conformance** | Pages must use shared ControlBar, no reimplementation |
+| **State Persistence** | Persisted state validated on mount, no stale selections causing blocked UI |
 
 ### What This Agent Does NOT Validate
 
@@ -576,6 +578,162 @@ ControlBar Padding Analysis:
   ❌ Dropdown: px-3 py-2 — expected px-4
   ✅ SegmentedControl: px-4 py-2
   ❌ FilterPill: px-2 py-1 — expected px-4 py-2
+```
+
+### INV-17: Stale State Persistence on Route Re-entry
+
+**CRITICAL:** Pages with persisted/controlled state MUST validate or reset state on mount.
+
+**Also Known As:**
+- "Stale route state / unreset controlled state on re-entry"
+- "State not reset on remount"
+- "Persisted selection causing invalid initial render"
+- "Missing page-level state reset"
+
+**Why This Matters:**
+When a user navigates away and returns via SPA routing, React may:
+- Remount the component with stale state from sessionStorage/localStorage
+- Render with a previously selected value that no longer exists in fresh API data
+- Block the UI waiting for data that will never arrive (deleted project, expired filter)
+
+**Detection Criteria:**
+
+Flag pages that have ALL of:
+1. User-controlled state (selected project, filters, search, etc.)
+2. State persistence (sessionStorage, localStorage, URL params, React state that survives remount)
+3. Dependency on async data (API calls that populate dropdown options, validate selections)
+4. SPA navigation (React Router, no full page refresh)
+
+AND do NOT have:
+1. State reset on mount (`useEffect(() => reset(), [])`)
+2. Selection validation against fresh API data
+3. Route-aware reset (`useEffect(() => reset(), [location.pathname])`)
+4. Handling for "previous selection no longer valid" case
+
+**Check Process:**
+```
+1. Find pages with state initialization from storage:
+   - useState(() => sessionStorage.getItem(...))
+   - useState(() => localStorage.getItem(...))
+   - useState with non-null default that affects API calls
+
+2. For each such page, verify ONE of these patterns exists:
+
+   Pattern A: Reset on mount
+   useEffect(() => {
+     resetPageState();
+   }, []);
+
+   Pattern B: Validate against fresh data
+   useEffect(() => {
+     if (!isValidSelection(selectedValue, freshOptions)) {
+       clearSelection();
+     }
+   }, [freshOptions]);
+
+   Pattern C: Route-aware reset
+   useEffect(() => {
+     reset();
+   }, [location.pathname]);
+
+3. Flag if NONE of these patterns found
+```
+
+**Example Violation (BEFORE):**
+```jsx
+// ❌ WRONG: Stale state causes blocked UI on re-entry
+const [selectedProject, setSelectedProject] = useState(
+  () => JSON.parse(sessionStorage.getItem('project'))
+);
+
+// No validation! If project was deleted, page is stuck
+useEffect(() => {
+  if (selectedProject) {
+    fetchProjectData(selectedProject.name);  // May 404, no recovery
+  }
+}, [selectedProject]);
+```
+
+**Correct Pattern (AFTER):**
+```jsx
+// ✅ CORRECT: Validate persisted state against fresh data
+const [selectedProject, setSelectedProject] = useState(
+  () => JSON.parse(sessionStorage.getItem('project'))
+);
+
+useEffect(() => {
+  const fetchProjects = async () => {
+    const projects = await getProjectList();
+
+    // CRITICAL: Validate stored selection
+    if (selectedProject) {
+      const exists = projects.some(p => p.name === selectedProject.name);
+      if (!exists) {
+        setSelectedProject(null);
+        sessionStorage.removeItem('project');
+      }
+    }
+  };
+  fetchProjects();
+}, []);
+```
+
+**Alternative Correct Pattern (Route Reset):**
+```jsx
+// ✅ CORRECT: Reset state on route change
+import { useLocation } from 'react-router-dom';
+
+const location = useLocation();
+
+useEffect(() => {
+  // Clear selections when entering page
+  setSelectedProject(null);
+  setFilters(DEFAULT_FILTERS);
+}, [location.pathname]);
+```
+
+**Fail Condition:**
+- Page has persisted state + async dependency + NO validation/reset pattern
+- Selected entity is reused without checking if it still exists
+- UI renders in blocked/invalid state due to stale selection
+
+**Severity:** Blocker (causes unusable page state)
+**Fix Confidence:** Safe (validation pattern is straightforward)
+
+**Actionable Output:**
+```
+INV-17: Stale State Persistence
+
+Page: /exit-risk (ExitRisk.jsx)
+Persisted State: selectedProject (sessionStorage)
+Async Dependency: getProjectNames(), getProjectExitQueue()
+
+Validation Pattern: ✅ FOUND
+  - Line 142-148: Validates selectedProject exists in fresh project list
+  - Clears selection if project no longer exists
+
+Status: PASS
+```
+
+```
+INV-17: Stale State Persistence
+
+Page: /explore (Explore.jsx)
+Persisted State: selectedFilters (sessionStorage)
+Async Dependency: getFilterOptions()
+
+Validation Pattern: ❌ NOT FOUND
+  - No useEffect validates filters against fresh options
+  - No route-aware reset
+  - Stale filter values may reference deleted options
+
+Status: FAIL
+
+Required Fix:
+Add validation in data fetch effect:
+  if (!availableOptions.includes(storedFilter)) {
+    setStoredFilter(null);
+  }
 ```
 
 ---
@@ -1242,6 +1400,166 @@ grep -oE "p[xy]-[0-9]+" "$CONTROL_BAR" | sort | uniq -c
 #   15 py-2
 ```
 
+### Stale State Persistence Check (INV-17)
+
+**Purpose:** Detect pages with persisted state that don't validate/reset on route re-entry.
+
+**Spec:**
+```
+1. Find all page files in src/pages/
+2. For each page, detect state persistence patterns:
+   - sessionStorage.getItem in useState initializer
+   - localStorage.getItem in useState initializer
+   - URL search params persisted to state
+3. For pages with persistence, check for validation patterns:
+   - Pattern A: useEffect with reset in empty dependency array
+   - Pattern B: Selection validation against async data
+   - Pattern C: Route-aware reset using location.pathname
+4. Flag pages with persistence but NO validation pattern
+
+RISK INDICATORS:
+- useState(() => sessionStorage.getItem(...))
+- useState(() => localStorage.getItem(...))
+- useSearchParams() → useState
+- Selected state used directly in API calls without validation
+```
+
+**Static Analysis Check (grep-based):**
+```bash
+# Find pages with sessionStorage/localStorage in useState
+for page in frontend/src/pages/*.jsx; do
+  # Check for storage-based state initialization
+  if grep -q "useState.*sessionStorage\|useState.*localStorage" "$page"; then
+    echo "=== $page: Has persisted state ==="
+
+    # Check for validation patterns
+    HAS_VALIDATION=false
+
+    # Pattern A: Reset on mount (empty deps array after state-resetting code)
+    if grep -q "useEffect.*reset\|setSelected.*null.*\[\]" "$page"; then
+      HAS_VALIDATION=true
+      echo "  ✅ Pattern A: Reset on mount"
+    fi
+
+    # Pattern B: Validation against fresh data (exists/includes check)
+    if grep -q "\.some\|\.includes\|\.find.*exists\|isValid" "$page"; then
+      HAS_VALIDATION=true
+      echo "  ✅ Pattern B: Validates against fresh data"
+    fi
+
+    # Pattern C: Route-aware reset
+    if grep -q "location\.pathname\|useLocation" "$page"; then
+      HAS_VALIDATION=true
+      echo "  ✅ Pattern C: Route-aware reset"
+    fi
+
+    if [ "$HAS_VALIDATION" = false ]; then
+      echo "  ❌ NO VALIDATION PATTERN FOUND"
+      echo "  RISK: Stale state may cause blocked UI on re-entry"
+    fi
+  fi
+done
+```
+
+**Deep Analysis (AST-based for production):**
+```javascript
+// Pseudo-code for AST analysis
+function checkStaleStateRisk(pageAST) {
+  const findings = { hasPersistedState: false, hasValidation: false, details: [] };
+
+  // Step 1: Find useState with storage initializers
+  const useStateNodes = findNodes(pageAST, 'CallExpression', { callee: 'useState' });
+
+  for (const node of useStateNodes) {
+    const initializer = node.arguments[0];
+    if (isArrowFunction(initializer)) {
+      const body = initializer.body;
+      if (containsStorageCall(body, ['sessionStorage', 'localStorage'])) {
+        findings.hasPersistedState = true;
+        findings.details.push({
+          type: 'PERSISTED_STATE',
+          location: node.loc,
+          storage: getStorageType(body),
+          stateName: getParentBinding(node)
+        });
+      }
+    }
+  }
+
+  if (!findings.hasPersistedState) return { risk: 'NONE' };
+
+  // Step 2: Find validation patterns
+  const useEffectNodes = findNodes(pageAST, 'CallExpression', { callee: 'useEffect' });
+
+  for (const effect of useEffectNodes) {
+    const callback = effect.arguments[0];
+    const deps = effect.arguments[1];
+
+    // Pattern A: Reset in empty deps
+    if (isEmptyArray(deps) && containsStateReset(callback)) {
+      findings.hasValidation = true;
+      findings.details.push({ type: 'RESET_ON_MOUNT', location: effect.loc });
+    }
+
+    // Pattern B: Validation against async data
+    if (containsValidationLogic(callback, ['some', 'includes', 'find'])) {
+      findings.hasValidation = true;
+      findings.details.push({ type: 'DATA_VALIDATION', location: effect.loc });
+    }
+
+    // Pattern C: Route-aware reset
+    if (depsInclude(deps, 'location.pathname')) {
+      findings.hasValidation = true;
+      findings.details.push({ type: 'ROUTE_RESET', location: effect.loc });
+    }
+  }
+
+  return {
+    risk: findings.hasValidation ? 'MITIGATED' : 'HIGH',
+    ...findings
+  };
+}
+```
+
+**Actionable Output:**
+```markdown
+### INV-17: Stale State Persistence Check
+
+| Page | Persisted State | Async Deps | Validation | Status |
+|------|-----------------|------------|------------|--------|
+| ExitRisk.jsx | selectedProject (session) | getProjectNames | ✅ Pattern B (L142) | PASS |
+| ValueCheck.jsx | selectedUnit (session) | getUnitOptions | ❌ None found | **FAIL** |
+| Explore.jsx | filters (local) | getFilterOptions | ✅ Pattern C (L89) | PASS |
+
+#### FAIL: ValueCheck.jsx
+
+**Risk:** Stale state persistence on route re-entry
+**Impact:** If previously selected unit was deleted, page shows blocked/error state
+
+**Persisted State (L45):**
+```jsx
+const [selectedUnit, setSelectedUnit] = useState(
+  () => JSON.parse(sessionStorage.getItem('valueCheck:unit'))
+);
+```
+
+**Missing Pattern:** No validation of selectedUnit against fresh unit list
+
+**Required Fix:**
+```jsx
+// Add after fetching units (L78):
+useEffect(() => {
+  if (selectedUnit && units.length > 0) {
+    const exists = units.some(u => u.id === selectedUnit.id);
+    if (!exists) {
+      setSelectedUnit(null);
+      sessionStorage.removeItem('valueCheck:unit');
+    }
+  }
+}, [units]);
+```
+```
+
 ---
 
 ## 7. OVERFLOW SAFETY STRATEGY
@@ -1691,6 +2009,13 @@ ROBUSTNESS:
 [ ] Long labels handled (truncate/line-clamp)
 [ ] Empty states have min-height
 [ ] Tooltips/legends don't cause overflow
+
+STATE MANAGEMENT (INV-17):
+[ ] Pages with sessionStorage/localStorage state have validation pattern
+[ ] Persisted selections validated against fresh API data on mount
+[ ] Invalid/stale selections cleared automatically
+[ ] No blocked UI state when stored entity no longer exists
+[ ] Either: reset on mount, validate against data, OR route-aware reset
 ```
 
 ---
