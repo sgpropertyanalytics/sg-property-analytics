@@ -129,11 +129,11 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
   const projectCounts = filteredData.map(d => d.projectCount);
   const totalUnits = filteredData.map(d => d.totalUnits);
 
-  // Y-axis scaling
+  // Y-axis scaling - niceMax already rounds up, so minimal extra headroom needed
   const maxProjects = Math.max(...projectCounts, 1);
   const maxUnits = Math.max(...totalUnits, 1);
-  const yAxisMax = niceMax(Math.ceil(maxProjects * 1.2));
-  const y1AxisMax = niceMax(Math.ceil(maxUnits * 1.2));
+  const yAxisMax = niceMax(Math.ceil(maxProjects * 1.05));  // 5% headroom, niceMax adds rest
+  const y1AxisMax = niceMax(Math.ceil(maxUnits * 1.05));    // 5% headroom, niceMax adds rest
 
   // Calculate summary stats
   const totalProjectCount = projectCounts.reduce((sum, v) => sum + v, 0);
