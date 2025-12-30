@@ -222,7 +222,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
 
   return (
     <nav
-      className={`bg-[#213448] w-full flex flex-col py-4 flex-shrink-0 h-full overflow-y-auto overflow-x-hidden transition-[padding] duration-500 ease-[cubic-bezier(0.2,0,0,1)] ${collapsed ? 'px-2' : 'px-3'} ${isPending ? 'opacity-90' : ''}`}
+      className={`bg-[#213448] w-full flex flex-col py-4 flex-shrink-0 h-full overflow-y-auto overflow-x-visible transition-[padding] duration-500 ease-[cubic-bezier(0.2,0,0,1)] ${collapsed ? 'px-2' : 'px-3'} ${isPending ? 'opacity-90' : ''}`}
       aria-label="Main navigation"
     >
       {/* Logo / Home - Links to Market Overview */}
