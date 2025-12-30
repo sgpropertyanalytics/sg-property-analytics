@@ -130,11 +130,12 @@ export function SubscriptionProvider({ children }) {
         // Guard: Check stale after error
         if (isStale(requestId)) return;
 
-        // If endpoint doesn't exist yet or fails, default to free
-        console.warn('Failed to fetch subscription status:', err.message);
-        const freeSub = { tier: 'free', subscribed: false, ends_at: null };
-        setSubscription(freeSub);
-        cacheSubscription(freeSub);
+        // CRITICAL FIX: On API failure, DO NOT overwrite cached subscription!
+        // Keep the existing cached value to prevent premium→free downgrade from
+        // temporary network issues, server cold starts, or API errors.
+        // Only log the error - the cached subscription remains in state.
+        console.warn('[Subscription] Failed to fetch status, keeping cached value:', err.message);
+        // DO NOT: setSubscription(freeSub) or cacheSubscription(freeSub)
       } finally {
         // Only clear loading if not stale
         if (!isStale(requestId)) {
