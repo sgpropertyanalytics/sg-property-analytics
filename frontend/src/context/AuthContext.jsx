@@ -266,6 +266,54 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Refresh token - get new Firebase ID token and sync with backend
+  // Call this when you suspect the JWT may be expired
+  const refreshToken = useCallback(async () => {
+    if (!user) {
+      console.warn('[Auth] Cannot refresh token - no user');
+      return false;
+    }
+
+    const requestId = startRequest();
+
+    try {
+      // Force refresh the Firebase ID token
+      const idToken = await user.getIdToken(true); // true = force refresh
+
+      const response = await apiClient.post('/auth/firebase-sync', {
+        idToken,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+      }, {
+        signal: getSignal(),
+      });
+
+      // Guard: Don't update if request is stale
+      if (isStale(requestId)) return false;
+
+      // Store new JWT
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        // Token refresh succeeded - subscriber status will be re-fetched automatically
+        return true;
+      }
+
+      return false;
+    } catch (err) {
+      // Ignore abort/cancel errors
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return false;
+      }
+
+      // Guard: Check stale after error
+      if (isStale(requestId)) return false;
+
+      console.error('[Auth] Token refresh failed:', err);
+      return false;
+    }
+  }, [user, startRequest, isStale, getSignal]);
+
   const value = useMemo(() => ({
     user,
     loading,
@@ -274,6 +322,7 @@ export function AuthProvider({ children }) {
     signInWithGoogle,
     logout,
     syncWithBackend,
+    refreshToken, // NEW: Expose token refresh for components that need it
     isAuthenticated: !!user,
     isConfigured: isFirebaseConfigured(),
   }), [
@@ -284,6 +333,7 @@ export function AuthProvider({ children }) {
     signInWithGoogle,
     logout,
     syncWithBackend,
+    refreshToken,
   ]);
 
   return (

@@ -57,7 +57,7 @@ const cacheSubscription = (sub) => {
 };
 
 export function SubscriptionProvider({ children }) {
-  const { user, isAuthenticated, initialized } = useAuth();
+  const { user, isAuthenticated, initialized, refreshToken } = useAuth();
   // Initialize from cache to prevent flash of free→premium
   const [subscription, setSubscription] = useState(getCachedSubscription);
   const [loading, setLoading] = useState(false);
@@ -97,17 +97,44 @@ export function SubscriptionProvider({ children }) {
       // Ensure we have a token before fetching
       const token = localStorage.getItem('token');
       if (!token) {
-        console.warn('[Subscription] No token available, skipping fetch');
-        if (isStale(requestId)) return;
-        setSubscription({ tier: 'free', subscribed: false, ends_at: null });
+        // CRITICAL FIX: When token is missing but user is authenticated (Firebase),
+        // DON'T downgrade to free. Keep cached value and wait for token sync.
+        // The AuthContext will re-sync with backend and restore the token.
+        console.warn('[Subscription] No token available, keeping cached subscription');
+        // Don't overwrite cached subscription - this prevents premium→free flicker
+        // when token is temporarily missing during auth refresh
         return;
       }
 
       setLoading(true);
-      try {
+
+      // Helper to fetch subscription
+      const fetchSub = async () => {
         const response = await apiClient.get('/auth/subscription', {
           signal: getSignal(),
         });
+        return response;
+      };
+
+      try {
+        let response;
+        try {
+          response = await fetchSub();
+        } catch (fetchErr) {
+          // On 401, try refreshing the token once and retry
+          if (fetchErr.response?.status === 401 && refreshToken) {
+            console.warn('[Subscription] Got 401, attempting token refresh...');
+            const refreshed = await refreshToken();
+            if (refreshed && !isStale(requestId)) {
+              // Token refreshed successfully, retry the fetch
+              response = await fetchSub();
+            } else {
+              throw fetchErr; // Re-throw if refresh failed
+            }
+          } else {
+            throw fetchErr;
+          }
+        }
 
         // Guard: Don't update state if stale
         if (isStale(requestId)) return;
@@ -145,7 +172,7 @@ export function SubscriptionProvider({ children }) {
     };
 
     fetchSubscription();
-  }, [initialized, isAuthenticated, user?.email, startRequest, isStale, getSignal]);
+  }, [initialized, isAuthenticated, user?.email, startRequest, isStale, getSignal, refreshToken]);
 
   // Derived state: is user a premium subscriber?
   const isPremium = useMemo(() => {

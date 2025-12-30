@@ -132,18 +132,46 @@ apiClient.interceptors.request.use(
 );
 
 // Response interceptor - handle errors
+// Track consecutive 401 errors to detect genuine auth failure vs transient issues
+let consecutive401Count = 0;
+const MAX_401_BEFORE_CLEAR = 2; // Only clear token after 2 consecutive 401s on auth endpoints
+
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Reset 401 counter on successful response
+    consecutive401Count = 0;
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid - clear stored token
-      // Note: Do NOT redirect here - ProtectedRoute handles auth redirects
-      // Redirecting on 401 would break public pages that make API calls
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      const requestUrl = error.config?.url || '';
+      const isAuthEndpoint = requestUrl.includes('/auth/');
+
+      if (isAuthEndpoint) {
+        // 401 on auth endpoint - likely genuine token expiry
+        consecutive401Count++;
+
+        if (consecutive401Count >= MAX_401_BEFORE_CLEAR) {
+          // Only clear token after multiple consecutive auth failures
+          // This prevents clearing on transient network issues
+          console.warn('[API] Multiple auth failures, clearing token');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          // Note: Do NOT clear subscription_cache here - let SubscriptionContext handle it
+          // based on isAuthenticated state change
+          consecutive401Count = 0;
+        }
+      }
+      // For non-auth endpoints, DON'T clear token
+      // The request may have raced with a token refresh, or be a transient issue
+      // Let the specific component/context handle retry logic
+
       if (!error.message || error.message.includes('status code 401')) {
         error.message = 'Session expired. Please sign in again.';
       }
+    } else {
+      // Non-401 error - reset counter
+      consecutive401Count = 0;
     }
     return Promise.reject(error);
   }
