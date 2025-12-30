@@ -1,14 +1,25 @@
 #!/usr/bin/env python3
 """
-Simple script to scrape total units for projects from property websites.
-Scrapes EdgeProp, 99.co, and PropertyGuru for unit counts.
+scrape_total_units.py - Scrape and cross-validate total units from multiple sources.
+
+Sources (in order of reliability):
+1. EdgeProp (JSON-LD structured data - most reliable)
+2. 99.co (structured data)
+3. PropertyGuru (project pages)
+4. Stacked Homes (blog articles)
+
+Cross-validation:
+- Scrapes ALL sources for each project
+- Compares results and calculates confidence
+- Uses most common value when sources agree
+- Flags conflicts for manual review
 
 Usage:
-    python scripts/scrape_total_units.py                    # Process all missing
-    python scripts/scrape_total_units.py --project "PARC CLEMATIS"  # Single project
-    python scripts/scrape_total_units.py --limit 50         # Process 50 projects
-    python scripts/scrape_total_units.py --dry-run          # Preview without saving
     python scripts/scrape_total_units.py --list-missing     # List projects needing data
+    python scripts/scrape_total_units.py --hot              # Focus on high-txn projects
+    python scripts/scrape_total_units.py --limit 50         # Process 50 projects
+    python scripts/scrape_total_units.py --project "NAME"   # Single project lookup
+    python scripts/scrape_total_units.py --dry-run          # Preview without saving
 """
 
 import re
@@ -18,7 +29,9 @@ import random
 import argparse
 import requests
 from pathlib import Path
-from urllib.parse import quote_plus, quote
+from urllib.parse import quote_plus
+from collections import Counter
+from bs4 import BeautifulSoup
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent
@@ -32,147 +45,393 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-# Patterns to extract total units
-UNIT_PATTERNS = [
-    r"total\s+(?:of\s+)?(\d{1,4})\s*(?:residential\s+)?units",
-    r"(\d{1,4})\s*(?:residential\s+)?units",
-    r"comprises?\s+(\d{1,4})\s*units",
-    r"(\d{1,4})\s*(?:condo|condominium)\s*units",
-    r"(\d{1,4})-unit\s+(?:condo|development)",
-    r"development\s+(?:of|with)\s+(\d{1,4})\s*units",
-    r"No\.\s*of\s*Units[:\s]+(\d{1,4})",
-    r"Units[:\s]+(\d{1,4})",
-]
+# Rate limiting
+RATE_LIMIT_MIN = 1.5
+RATE_LIMIT_MAX = 3.0
 
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
 
 def slugify(name: str) -> str:
     """Convert project name to URL slug."""
-    # Remove special characters, replace spaces with hyphens
     slug = re.sub(r"[^\w\s-]", "", name.lower())
     slug = re.sub(r"[\s_]+", "-", slug)
     slug = re.sub(r"-+", "-", slug).strip("-")
     return slug
 
 
-def fetch_url(url: str) -> str:
+def normalize_name(name: str) -> str:
+    """Normalize project name for matching."""
+    name = name.upper()
+    name = re.sub(r'\s*(RESIDENCES|RESIDENCE|CONDO|CONDOMINIUM|EC)\s*$', '', name)
+    name = re.sub(r'[^\w\s]', '', name)
+    return name.strip()
+
+
+def names_match(name1: str, name2: str) -> bool:
+    """Check if two project names match (fuzzy)."""
+    n1 = normalize_name(name1)
+    n2 = normalize_name(name2)
+
+    if n1 == n2:
+        return True
+    if n1 in n2 or n2 in n1:
+        return True
+
+    words1 = n1.split()
+    words2 = n2.split()
+    if words1 and words2 and words1[0] == words2[0]:
+        return True
+
+    return False
+
+
+def fetch_url(url: str, silent: bool = True) -> str:
     """Fetch URL with error handling."""
     try:
         resp = requests.get(url, headers=HEADERS, timeout=15)
         if resp.status_code == 200:
             return resp.text
     except Exception as e:
-        pass
+        if not silent:
+            print(f"      [!] {e}")
     return ""
 
 
-def extract_units_from_html(html: str, source: str = "") -> int | None:
-    """Extract total units from HTML content."""
-    import json
-
-    # Try JSON-LD structured data first (most reliable)
-    # EdgeProp uses: "name":"Number of Units","value":"1,450 condos and 18 landed units"
-    json_ld_match = re.search(r'"Number of Units"[^}]*"value"\s*:\s*"([^"]+)"', html)
-    if json_ld_match:
-        value = json_ld_match.group(1)
-        # Extract all numbers and sum them (e.g., "1,450 condos and 18 landed")
-        numbers = re.findall(r'([\d,]+)', value)
-        if numbers:
-            total = sum(int(n.replace(",", "")) for n in numbers)
-            if 5 <= total <= 5000:
-                return total
-
-    # Try 99.co pattern: "1,468 units" in structured data or text
-    units_match = re.search(r'"totalUnits"\s*:\s*(\d+)', html)
-    if units_match:
-        units = int(units_match.group(1))
-        if 5 <= units <= 5000:
-            return units
-
-    # Try common patterns in page text (less reliable, so be more specific)
-    text = re.sub(r"<[^>]+>", " ", html)
-    text = re.sub(r"\s+", " ", text)
-
-    # Look for "X units" in context of total/development (not "for sale/rent")
-    specific_patterns = [
-        r"(?:total|comprises?|consisting of|development of)\s+(\d{1,4})\s*(?:residential\s+)?units",
-        r"(\d{1,4})\s*(?:residential\s+)?units\s+(?:in total|total)",
-        r"No\.\s*of\s*Units[:\s]+(\d{1,4})",
-    ]
-
-    for pattern in specific_patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE)
-        for match in matches:
-            units = int(match)
-            if 5 <= units <= 5000:
-                return units
-
-    return None
+def rate_limit():
+    """Apply rate limiting between requests."""
+    time.sleep(random.uniform(RATE_LIMIT_MIN, RATE_LIMIT_MAX))
 
 
-def try_edgeprop(project_name: str) -> tuple[int | None, str]:
-    """Try scraping from EdgeProp."""
+# =============================================================================
+# SOURCE SCRAPERS - Each returns (units, confidence) or (None, 0)
+# =============================================================================
+
+def scrape_edgeprop(project_name: str) -> tuple[int | None, float]:
+    """
+    Scrape EdgeProp - most reliable source (JSON-LD structured data).
+    Returns (units, confidence) where confidence is 0.9 for structured data.
+    """
     slug = slugify(project_name)
     url = f"https://www.edgeprop.sg/condo-apartment/{slug}"
     html = fetch_url(url)
-    if html:
-        units = extract_units_from_html(html)
-        if units:
-            return units, "EdgeProp"
-    return None, ""
+
+    if not html:
+        return None, 0
+
+    # Try JSON-LD structured data first (most reliable)
+    json_ld_match = re.search(r'"Number of Units"[^}]*"value"\s*:\s*"([^"]+)"', html)
+    if json_ld_match:
+        value = json_ld_match.group(1)
+        numbers = re.findall(r'([\d,]+)', value)
+        if numbers:
+            total = sum(int(n.replace(",", "")) for n in numbers)
+            if 10 <= total <= 5000:
+                return total, 0.9  # High confidence for structured data
+
+    # Try table/text patterns
+    text = re.sub(r"<[^>]+>", " ", html)
+    patterns = [
+        r"No\.\s*of\s*Units[:\s]+(\d{1,4})",
+        r"Total\s+Units[:\s]+(\d{1,4})",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            units = int(match.group(1))
+            if 10 <= units <= 5000:
+                return units, 0.8
+
+    return None, 0
 
 
-def try_99co(project_name: str) -> tuple[int | None, str]:
-    """Try scraping from 99.co."""
+def scrape_99co(project_name: str) -> tuple[int | None, float]:
+    """
+    Scrape 99.co - good structured data.
+    Returns (units, confidence).
+    """
     slug = slugify(project_name)
     url = f"https://www.99.co/singapore/condos-apartments/{slug}"
     html = fetch_url(url)
-    if html:
-        units = extract_units_from_html(html)
-        if units:
-            return units, "99.co"
-    return None, ""
+
+    if not html:
+        return None, 0
+
+    # Try structured data
+    units_match = re.search(r'"totalUnits"\s*:\s*(\d+)', html)
+    if units_match:
+        units = int(units_match.group(1))
+        if 10 <= units <= 5000:
+            return units, 0.85
+
+    # Try page text with project name context
+    name_upper = normalize_name(project_name)
+    first_word = name_upper.split()[0] if name_upper else ""
+
+    if first_word and first_word in html.upper():
+        # Look for units near project name
+        patterns = [
+            r"(\d{2,4})\s*(?:residential\s+)?units",
+            r"total\s+(?:of\s+)?(\d{2,4})\s*units",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, html, re.IGNORECASE)
+            if match:
+                units = int(match.group(1))
+                if 10 <= units <= 5000:
+                    return units, 0.7
+
+    return None, 0
 
 
-def try_propertyguru_search(project_name: str) -> tuple[int | None, str]:
-    """Try searching PropertyGuru."""
-    # PropertyGuru uses search - harder to scrape directly
-    # But we can try their project pages
+def scrape_propertyguru(project_name: str) -> tuple[int | None, float]:
+    """
+    Scrape PropertyGuru - often blocked but worth trying.
+    Returns (units, confidence).
+    """
     slug = slugify(project_name)
     url = f"https://www.propertyguru.com.sg/project/{slug}"
     html = fetch_url(url)
-    if html:
-        units = extract_units_from_html(html)
-        if units:
-            return units, "PropertyGuru"
-    return None, ""
+
+    if not html:
+        return None, 0
+
+    # PropertyGuru often has structured data
+    units_match = re.search(r'"numberOfUnits"\s*:\s*"?(\d+)"?', html)
+    if units_match:
+        units = int(units_match.group(1))
+        if 10 <= units <= 5000:
+            return units, 0.85
+
+    # Try text patterns
+    text = re.sub(r"<[^>]+>", " ", html)
+    patterns = [
+        r"Total\s+Units[:\s]+(\d{1,4})",
+        r"(\d{2,4})\s*units\s*(?:in\s+)?total",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            units = int(match.group(1))
+            if 10 <= units <= 5000:
+                return units, 0.75
+
+    return None, 0
 
 
-def get_project_units(project_name: str) -> tuple[int | None, str]:
+def scrape_stacked_homes(project_name: str) -> tuple[int | None, float]:
     """
-    Try multiple sources to find total units.
-    Returns (units, source) tuple.
+    Scrape Stacked Homes blog articles.
+    Returns (units, confidence) - lower confidence as it's from articles.
     """
-    # Try EdgeProp first (most reliable)
-    units, source = try_edgeprop(project_name)
-    if units:
-        return units, source
+    search_url = f"https://stackedhomes.com/?s={quote_plus(project_name)}"
+    html = fetch_url(search_url)
 
-    time.sleep(random.uniform(1, 2))
+    if not html:
+        return None, 0
 
-    # Try 99.co
-    units, source = try_99co(project_name)
-    if units:
-        return units, source
+    soup = BeautifulSoup(html, "html.parser")
+    articles = soup.find_all("a", href=True)
 
-    time.sleep(random.uniform(1, 2))
+    for article in articles:
+        href = article.get("href", "")
+        link_text = article.get_text()
 
-    # Try PropertyGuru
-    units, source = try_propertyguru_search(project_name)
-    if units:
-        return units, source
+        if not names_match(link_text, project_name):
+            continue
+        if "stackedhomes.com" not in href:
+            continue
 
-    return None, ""
+        # Fetch the article
+        rate_limit()
+        article_html = fetch_url(href)
+        if not article_html:
+            continue
 
+        # Look for units in article text near project name
+        name_upper = normalize_name(project_name)
+        first_word = name_upper.split()[0] if name_upper else ""
+
+        if first_word and first_word in article_html.upper():
+            patterns = [
+                r"(\d{2,4})\s*(?:residential\s+)?units",
+                r"total\s+(?:of\s+)?(\d{2,4})\s*units",
+                r"comprises?\s+(\d{2,4})\s*units",
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, article_html, re.IGNORECASE)
+                if match:
+                    units = int(match.group(1))
+                    if 50 <= units <= 5000:
+                        return units, 0.6  # Lower confidence for blog
+
+        break  # Only check first matching article
+
+    return None, 0
+
+
+# =============================================================================
+# CROSS-VALIDATION LOGIC
+# =============================================================================
+
+def cross_validate_sources(results: dict[str, tuple[int | None, float]]) -> dict:
+    """
+    Cross-validate results from multiple sources.
+
+    Returns:
+        {
+            'units': int or None,
+            'confidence': float (0-1),
+            'sources': list of source names that agree,
+            'all_values': dict of source -> value,
+            'status': 'confirmed' | 'mismatch' | 'single' | 'none'
+        }
+    """
+    # Filter to sources that found data
+    found = {k: v for k, v in results.items() if v[0] is not None}
+
+    if not found:
+        return {
+            'units': None,
+            'confidence': 0,
+            'sources': [],
+            'all_values': {},
+            'status': 'none'
+        }
+
+    # Get all values
+    all_values = {k: v[0] for k, v in found.items()}
+    values = list(all_values.values())
+
+    if len(found) == 1:
+        source, (units, conf) = list(found.items())[0]
+        return {
+            'units': units,
+            'confidence': conf * 0.8,  # Reduce confidence for single source
+            'sources': [source],
+            'all_values': all_values,
+            'status': 'single'
+        }
+
+    # Check for agreement (within 5% tolerance for rounding differences)
+    def values_agree(v1, v2, tolerance=0.05):
+        if v1 == v2:
+            return True
+        diff = abs(v1 - v2) / max(v1, v2)
+        return diff <= tolerance
+
+    # Find the most common value (or cluster)
+    value_counts = Counter(values)
+    most_common_value, count = value_counts.most_common(1)[0]
+
+    # Find all sources that agree with the most common value
+    agreeing_sources = [k for k, v in all_values.items()
+                        if values_agree(v, most_common_value)]
+
+    if len(agreeing_sources) >= 3:
+        # High confidence - 3+ sources agree
+        return {
+            'units': most_common_value,
+            'confidence': 0.95,
+            'sources': agreeing_sources,
+            'all_values': all_values,
+            'status': 'confirmed'
+        }
+    elif len(agreeing_sources) >= 2:
+        # Medium confidence - 2 sources agree
+        return {
+            'units': most_common_value,
+            'confidence': 0.85,
+            'sources': agreeing_sources,
+            'all_values': all_values,
+            'status': 'confirmed'
+        }
+    else:
+        # Sources disagree - use highest confidence source
+        best_source = max(found.items(), key=lambda x: x[1][1])
+        return {
+            'units': best_source[1][0],
+            'confidence': 0.5,
+            'sources': [best_source[0]],
+            'all_values': all_values,
+            'status': 'mismatch'
+        }
+
+
+def scrape_project(project_name: str, verbose: bool = True) -> dict:
+    """
+    Scrape a project from all sources and cross-validate.
+
+    Returns dict with units, confidence, sources, status.
+    """
+    if verbose:
+        print(f"    Scraping sources...")
+
+    results = {}
+
+    # 1. EdgeProp (most reliable)
+    if verbose:
+        print(f"      EdgeProp...", end=" ", flush=True)
+    units, conf = scrape_edgeprop(project_name)
+    results['EdgeProp'] = (units, conf)
+    if verbose:
+        print(f"{units or '-'}")
+    rate_limit()
+
+    # 2. 99.co
+    if verbose:
+        print(f"      99.co...", end=" ", flush=True)
+    units, conf = scrape_99co(project_name)
+    results['99.co'] = (units, conf)
+    if verbose:
+        print(f"{units or '-'}")
+    rate_limit()
+
+    # 3. PropertyGuru
+    if verbose:
+        print(f"      PropertyGuru...", end=" ", flush=True)
+    units, conf = scrape_propertyguru(project_name)
+    results['PropertyGuru'] = (units, conf)
+    if verbose:
+        print(f"{units or '-'}")
+    rate_limit()
+
+    # 4. Stacked Homes (slowest - fetches article)
+    if verbose:
+        print(f"      StackedHomes...", end=" ", flush=True)
+    units, conf = scrape_stacked_homes(project_name)
+    results['StackedHomes'] = (units, conf)
+    if verbose:
+        print(f"{units or '-'}")
+
+    # Cross-validate
+    validated = cross_validate_sources(results)
+
+    if verbose:
+        status_icon = {
+            'confirmed': '✓',
+            'single': '~',
+            'mismatch': '⚠',
+            'none': '✗'
+        }[validated['status']]
+
+        if validated['units']:
+            sources_str = ", ".join(validated['sources'])
+            print(f"    {status_icon} Result: {validated['units']} units ({validated['confidence']:.0%} confidence)")
+            print(f"      Agreeing: {sources_str}")
+            if validated['status'] == 'mismatch':
+                print(f"      All values: {validated['all_values']}")
+        else:
+            print(f"    {status_icon} No data found")
+
+    return validated
+
+
+# =============================================================================
+# DATA LOADING
+# =============================================================================
 
 def load_existing_csv() -> dict[str, dict]:
     """Load existing CSV into dict keyed by project name."""
@@ -185,45 +444,16 @@ def load_existing_csv() -> dict[str, dict]:
     return projects
 
 
-def get_all_db_projects() -> list[str]:
-    """Get all unique project names from the database."""
-    from models.database import db
-    from app import create_app
-    from sqlalchemy import text
-
-    app = create_app()
-    with app.app_context():
-        result = db.session.execute(text("""
-            SELECT DISTINCT project_name
-            FROM transactions
-            WHERE project_name IS NOT NULL
-            ORDER BY project_name
-        """)).fetchall()
-        return [r[0] for r in result]
-
-
-def get_missing_projects(existing: dict[str, dict], all_projects: list[str]) -> list[str]:
-    """Find projects that don't have total_units data."""
-    missing = []
-    for project in all_projects:
-        key = project.upper().strip()
-        if key not in existing:
-            missing.append(project)
-        elif not existing[key].get("total_units"):
-            missing.append(project)
-    return missing
-
-
 def get_hot_missing_projects(min_txns: int = 15) -> list[tuple[str, int]]:
     """Get projects with >min_txns transactions that are missing total_units."""
     import os
     from sqlalchemy import create_engine, text
 
-    # Direct database connection (avoid app circular imports)
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
-        # Try to load from config
         try:
+            import sys
+            sys.path.insert(0, str(BACKEND_DIR))
             from config import Config
             database_url = Config.SQLALCHEMY_DATABASE_URI
         except Exception as exc:
@@ -231,7 +461,6 @@ def get_hot_missing_projects(min_txns: int = 15) -> list[tuple[str, int]]:
 
     engine = create_engine(database_url)
     with engine.connect() as conn:
-        # Get projects with enough transactions
         result = conn.execute(text("""
             SELECT project_name, COUNT(*) as txn_count
             FROM transactions
@@ -247,9 +476,8 @@ def get_hot_missing_projects(min_txns: int = 15) -> list[tuple[str, int]]:
     # Read existing CSV
     csv_projects = set()
     if CSV_PATH.exists():
-        import csv as csv_module
         with open(CSV_PATH, "r") as f:
-            reader = csv_module.DictReader(f)
+            reader = csv.DictReader(f)
             for row in reader:
                 if row.get("total_units"):
                     csv_projects.add(row["project_name"].upper().strip())
@@ -259,32 +487,76 @@ def get_hot_missing_projects(min_txns: int = 15) -> list[tuple[str, int]]:
     return missing
 
 
+def get_all_missing_projects() -> list[str]:
+    """Get all projects missing from CSV."""
+    import os
+    from sqlalchemy import create_engine, text
+
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        try:
+            import sys
+            sys.path.insert(0, str(BACKEND_DIR))
+            from config import Config
+            database_url = Config.SQLALCHEMY_DATABASE_URI
+        except Exception as exc:
+            raise RuntimeError("DATABASE_URL not set") from exc
+
+    engine = create_engine(database_url)
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+            SELECT DISTINCT project_name
+            FROM transactions
+            WHERE project_name IS NOT NULL
+            ORDER BY project_name
+        """)).fetchall()
+        all_projects = [r[0] for r in result]
+
+    # Read existing CSV
+    existing = load_existing_csv()
+
+    missing = []
+    for project in all_projects:
+        key = project.upper().strip()
+        if key not in existing or not existing[key].get("total_units"):
+            missing.append(project)
+
+    return missing
+
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
 def main():
-    parser = argparse.ArgumentParser(description="Scrape total units for projects")
+    parser = argparse.ArgumentParser(description="Scrape and cross-validate total units")
     parser.add_argument("--project", help="Single project to look up")
     parser.add_argument("--limit", type=int, default=10, help="Max projects to process")
     parser.add_argument("--dry-run", action="store_true", help="Preview without saving")
     parser.add_argument("--list-missing", action="store_true", help="Just list missing projects")
     parser.add_argument("--hot", action="store_true", help="Focus on hot projects (>15 txns)")
     parser.add_argument("--min-txns", type=int, default=15, help="Min transactions for hot projects")
+    parser.add_argument("--all", action="store_true", help="Process all missing projects")
     args = parser.parse_args()
+
+    print("="*60)
+    print("CROSS-VALIDATED UNIT SCRAPER")
+    print("="*60)
+    print("Sources: EdgeProp, 99.co, PropertyGuru, Stacked Homes")
+    print()
+
+    if args.project:
+        # Single project lookup
+        print(f"Project: {args.project}")
+        print("-"*60)
+        result = scrape_project(args.project)
+        return
 
     print("Loading existing data...")
     existing = load_existing_csv()
     print(f"  Found {len(existing)} projects in CSV")
 
-    if args.project:
-        # Single project lookup
-        print(f"\nSearching for: {args.project}")
-        units, source = get_project_units(args.project)
-        if units:
-            print(f"  ✓ Found: {units} units (via {source})")
-        else:
-            print(f"  ✗ Could not find total units")
-        return
-
     if args.hot:
-        # Focus on hot projects with many transactions
         print(f"\nFetching hot projects (>{args.min_txns} transactions)...")
         hot_missing = get_hot_missing_projects(args.min_txns)
         print(f"  Found {len(hot_missing)} hot projects missing total_units")
@@ -297,16 +569,11 @@ def main():
                 print(f"  ... and {len(hot_missing) - 100} more")
             return
 
-        # Process hot projects (just the names)
         to_process = [p for p, c in hot_missing[:args.limit]]
-        print(f"\nProcessing {len(to_process)} hot projects...")
     else:
-        print("\nFetching all projects from database...")
-        all_projects = get_all_db_projects()
-        print(f"  Found {len(all_projects)} unique projects in DB")
-
-        missing = get_missing_projects(existing, all_projects)
-        print(f"  Missing total_units data: {len(missing)} projects")
+        print("\nFetching missing projects...")
+        missing = get_all_missing_projects()
+        print(f"  Found {len(missing)} projects missing total_units")
 
         if args.list_missing:
             print("\nMissing projects:")
@@ -316,43 +583,60 @@ def main():
                 print(f"  ... and {len(missing) - 100} more")
             return
 
-        # Process projects
-        to_process = missing[:args.limit]
-        print(f"\nProcessing {len(to_process)} projects...")
+        if args.all:
+            to_process = missing
+        else:
+            to_process = missing[:args.limit]
+
+    if not to_process:
+        print("\nNo projects to process.")
+        return
+
+    print(f"\nProcessing {len(to_process)} projects...")
+    print("="*60)
 
     results = []
+    stats = {'confirmed': 0, 'single': 0, 'mismatch': 0, 'none': 0}
+
     for i, project in enumerate(to_process, 1):
         print(f"\n[{i}/{len(to_process)}] {project}")
-        units, source = get_project_units(project)
+        result = scrape_project(project)
 
-        if units:
-            print(f"  ✓ Found: {units} units")
+        stats[result['status']] += 1
+
+        if result['units']:
             results.append({
                 "project_name": project,
-                "total_units": units,
-                "source": source,
+                "total_units": result['units'],
+                "confidence": result['confidence'],
+                "sources": ", ".join(result['sources']),
+                "status": result['status'],
+                "all_values": str(result['all_values']),
             })
-        else:
-            print(f"  ✗ Not found")
-
-        # Rate limiting
-        if i < len(to_process):
-            delay = random.uniform(3, 6)
-            print(f"  Waiting {delay:.1f}s...")
-            time.sleep(delay)
 
     # Summary
-    print(f"\n{'='*50}")
-    print(f"Results: Found {len(results)}/{len(to_process)} projects")
+    print(f"\n{'='*60}")
+    print("SUMMARY")
+    print(f"{'='*60}")
+    print(f"  ✓ Confirmed (2+ agree): {stats['confirmed']}")
+    print(f"  ~ Single source:        {stats['single']}")
+    print(f"  ⚠ Mismatch:             {stats['mismatch']}")
+    print(f"  ✗ Not found:            {stats['none']}")
+    print(f"\n  Total found: {len(results)}/{len(to_process)}")
+
+    if results:
+        print(f"\n{'Project':<35} {'Units':>6} {'Conf':>6} {'Status':<10} {'Sources'}")
+        print("-"*80)
+        for r in results:
+            print(f"{r['project_name'][:34]:<35} {r['total_units']:>6} {r['confidence']:>5.0%} {r['status']:<10} {r['sources']}")
 
     if results and not args.dry_run:
         print(f"\nUpdating CSV...")
-        # Merge with existing
         for r in results:
             key = r["project_name"].upper().strip()
             if key in existing:
                 existing[key]["total_units"] = r["total_units"]
-                existing[key]["source"] = r["source"]
+                existing[key]["source"] = r["sources"]
             else:
                 existing[key] = {
                     "project_name": r["project_name"],
@@ -361,7 +645,7 @@ def main():
                     "tenure": "",
                     "top": "",
                     "district": "",
-                    "source": r["source"],
+                    "source": r["sources"],
                 }
 
         # Write updated CSV
@@ -375,10 +659,8 @@ def main():
         print(f"  Saved to: {OUTPUT_PATH}")
         print(f"  Review and rename to {CSV_PATH.name} when ready")
 
-    if results:
-        print("\nFound:")
-        for r in results:
-            print(f"  {r['project_name']}: {r['total_units']} units")
+    if args.dry_run:
+        print(f"\n(Dry run - no changes made)")
 
 
 if __name__ == "__main__":
