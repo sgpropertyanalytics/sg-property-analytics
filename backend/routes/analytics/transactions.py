@@ -131,7 +131,7 @@ def get_price_growth_segments():
     Query params:
         - project: Project name (partial match)
         - district: District code (D01-D28)
-        - sale_type: Sale type ('New Sale', 'Resale', 'Sub Sale')
+        - sale_type: Sale type ('new_sale', 'resale', 'sub_sale')
     Example:
         GET /api/transactions/price-growth/segments?district=D09
     """

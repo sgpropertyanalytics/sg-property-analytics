@@ -376,12 +376,6 @@ BUDGET_HEATMAP_PARAM_SCHEMA = ParamSchema(
             default=False,
             description="Bypass cache"
         ),
-        "schema": FieldSpec(
-            name="schema",
-            type=str,
-            allowed_values=["v1", "v2"],
-            description="Response schema version"
-        ),
     },
     aliases={}
 )
@@ -408,10 +402,6 @@ BUDGET_HEATMAP_RESPONSE_SCHEMA = ResponseSchema(
         "totalCount": FieldSpec(name="totalCount", type=int, required=False),
         "insight": FieldSpec(name="insight", type=str, required=False),
         "meta": FieldSpec(name="meta", type=dict, required=False),
-        # v1 response keys (snake_case)
-        "age_bands": FieldSpec(name="age_bands", type=list, required=False),
-        "bedroom_types": FieldSpec(name="bedroom_types", type=list, required=False),
-        "total_count": FieldSpec(name="total_count", type=int, required=False),
     },
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
@@ -423,10 +413,6 @@ BUDGET_HEATMAP_RESPONSE_SCHEMA = ResponseSchema(
         "priceRange": FieldSpec(name="priceRange", type=dict),
         "monthsLookback": FieldSpec(name="monthsLookback", type=int),
         "ageIsApprox": FieldSpec(name="ageIsApprox", type=bool),
-        # v1 meta fields (snake_case)
-        "price_range": FieldSpec(name="price_range", type=dict),
-        "months_lookback": FieldSpec(name="months_lookback", type=int),
-        "age_is_approx": FieldSpec(name="age_is_approx", type=bool),
     },
     required_meta=["requestId", "elapsedMs", "apiVersion"],
     data_is_list=False,

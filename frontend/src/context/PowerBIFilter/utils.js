@@ -102,6 +102,46 @@ export function generateFilterKey(activeFilters, factFilter) {
 // API PARAMETERS BUILDER
 // =============================================================================
 
+const V2_PARAM_KEY_MAP = {
+  group_by: 'groupBy',
+  sale_type: 'saleType',
+  date_from: 'dateFrom',
+  date_to: 'dateTo',
+  psf_min: 'psfMin',
+  psf_max: 'psfMax',
+  size_min: 'sizeMin',
+  size_max: 'sizeMax',
+  price_min: 'priceMin',
+  price_max: 'priceMax',
+  project_exact: 'projectExact',
+  time_grain: 'timeGrain',
+  location_grain: 'locationGrain',
+  histogram_bins: 'histogramBins',
+  show_full_range: 'showFullRange',
+  property_age_min: 'propertyAgeMin',
+  property_age_max: 'propertyAgeMax',
+  property_age_bucket: 'propertyAgeBucket',
+  skip_cache: 'skipCache',
+  floor_level: 'floorLevel',
+  per_page: 'perPage',
+  window_months: 'windowMonths',
+  min_transactions: 'minTransactions',
+  min_units: 'minUnits',
+  months_lookback: 'monthsLookback',
+};
+
+function toV2ParamKeys(inputParams) {
+  const output = {};
+  Object.entries(inputParams).forEach(([key, value]) => {
+    const mappedKey = V2_PARAM_KEY_MAP[key] || key;
+    if (mappedKey in inputParams && mappedKey !== key) {
+      return;
+    }
+    output[mappedKey] = value;
+  });
+  return output;
+}
+
 /**
  * Build API query params from active filters.
  */
@@ -112,7 +152,7 @@ export function buildApiParamsFromState(
   additionalParams = {},
   options = {}
 ) {
-  const params = { ...additionalParams };
+  const params = toV2ParamKeys({ ...additionalParams });
   const {
     includeFactFilter = false,
     excludeLocationDrill = false,
@@ -120,8 +160,8 @@ export function buildApiParamsFromState(
   } = options;
 
   // Apply date range
-  if (activeFilters.dateRange.start) params.date_from = activeFilters.dateRange.start;
-  if (activeFilters.dateRange.end) params.date_to = activeFilters.dateRange.end;
+  if (activeFilters.dateRange.start) params.dateFrom = activeFilters.dateRange.start;
+  if (activeFilters.dateRange.end) params.dateTo = activeFilters.dateRange.end;
 
   // Districts
   if (excludeOwnDimension !== 'district') {
@@ -149,26 +189,26 @@ export function buildApiParamsFromState(
   // Sale type - page prop takes precedence over filters
   // If sale_type already set in additionalParams (from page), don't override
   // See CLAUDE.md "Business Logic Enforcement" for architectural rationale
-  if (excludeOwnDimension !== 'sale_type' && !params.sale_type && activeFilters.saleType) {
-    params.sale_type = activeFilters.saleType;
+  if (excludeOwnDimension !== 'sale_type' && !params.saleType && activeFilters.saleType) {
+    params.saleType = activeFilters.saleType;
   }
 
   // Ranges
-  if (activeFilters.psfRange.min !== null) params.psf_min = activeFilters.psfRange.min;
-  if (activeFilters.psfRange.max !== null) params.psf_max = activeFilters.psfRange.max;
-  if (activeFilters.sizeRange.min !== null) params.size_min = activeFilters.sizeRange.min;
-  if (activeFilters.sizeRange.max !== null) params.size_max = activeFilters.sizeRange.max;
+  if (activeFilters.psfRange.min !== null) params.psfMin = activeFilters.psfRange.min;
+  if (activeFilters.psfRange.max !== null) params.psfMax = activeFilters.psfRange.max;
+  if (activeFilters.sizeRange.min !== null) params.sizeMin = activeFilters.sizeRange.min;
+  if (activeFilters.sizeRange.max !== null) params.sizeMax = activeFilters.sizeRange.max;
 
   // Fact filter (for transaction tables)
   if (includeFactFilter) {
-    if (factFilter.priceRange?.min !== null) params.price_min = factFilter.priceRange.min;
-    if (factFilter.priceRange?.max !== null) params.price_max = factFilter.priceRange.max;
+    if (factFilter.priceRange?.min !== null) params.priceMin = factFilter.priceRange.min;
+    if (factFilter.priceRange?.max !== null) params.priceMax = factFilter.priceRange.max;
   }
 
   // Other filters
   if (activeFilters.tenure) params.tenure = activeFilters.tenure;
-  if (activeFilters.propertyAge?.min !== null) params.property_age_min = activeFilters.propertyAge.min;
-  if (activeFilters.propertyAge?.max !== null) params.property_age_max = activeFilters.propertyAge.max;
+  if (activeFilters.propertyAge?.min !== null) params.propertyAgeMin = activeFilters.propertyAge.min;
+  if (activeFilters.propertyAge?.max !== null) params.propertyAgeMax = activeFilters.propertyAge.max;
   if (activeFilters.project) params.project = activeFilters.project;
   if (activeFilters.propertyAgeBucket) params.propertyAgeBucket = activeFilters.propertyAgeBucket;
 

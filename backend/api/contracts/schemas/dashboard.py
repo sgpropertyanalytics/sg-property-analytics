@@ -14,7 +14,6 @@ from ..registry import (
     ParamSchema,
     ServiceBoundarySchema,
     ResponseSchema,
-    CompatMap,
     FieldSpec,
     register_contract,
     SchemaMode,
@@ -251,35 +250,14 @@ DASHBOARD_RESPONSE_SCHEMA = ResponseSchema(
     meta_fields={
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "elapsed_ms": FieldSpec(name="elapsed_ms", type=int, required=False),  # v1 compat
         "cacheHit": FieldSpec(name="cacheHit", type=bool, required=False),
-        "cache_hit": FieldSpec(name="cache_hit", type=bool, required=False),
         "filtersApplied": FieldSpec(name="filtersApplied", type=dict, required=True),
-        "filters_applied": FieldSpec(name="filters_applied", type=dict, required=False),
         "totalRecordsMatched": FieldSpec(name="totalRecordsMatched", type=int, required=False),
-        "total_records_matched": FieldSpec(name="total_records_matched", type=int, required=False),
         "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
         "data_masked": FieldSpec(name="data_masked", type=bool, required=False),
     },
     required_meta=["requestId", "elapsedMs", "apiVersion"],
     data_is_list=False,  # Dashboard data is an object with panel keys
-)
-
-
-# =============================================================================
-# BACKWARDS COMPATIBILITY
-# =============================================================================
-
-DASHBOARD_COMPAT_MAP = CompatMap(
-    params={
-        "saleType": "sale_type",
-    },
-    response={
-        "elapsed_ms": "elapsedMs",
-        "cache_hit": "cacheHit",
-        "filters_applied": "filtersApplied",
-        "total_records_matched": "totalRecordsMatched",
-    }
 )
 
 
@@ -293,7 +271,6 @@ DASHBOARD_CONTRACT = EndpointContract(
     param_schema=DASHBOARD_PARAM_SCHEMA,
     service_schema=DASHBOARD_SERVICE_SCHEMA,
     response_schema=DASHBOARD_RESPONSE_SCHEMA,
-    compat_map=DASHBOARD_COMPAT_MAP,
     serializer=None,  # Uses existing serialize_dashboard_response in route
     mode=SchemaMode.WARN,  # Start in warn mode
 )

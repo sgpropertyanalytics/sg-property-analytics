@@ -5,6 +5,8 @@ Active endpoint:
 - GET /api/new-vs-resale
 """
 
+from datetime import date
+
 from ..registry import (
     EndpointContract,
     ParamSchema,
@@ -40,23 +42,27 @@ NEW_VS_RESALE_PARAM_SCHEMA = ParamSchema(
         ),
         "date_from": FieldSpec(
             name="date_from",
-            type=str,
+            type=date,
             description="Start date (YYYY-MM-DD)"
         ),
         "date_to": FieldSpec(
             name="date_to",
-            type=str,
+            type=date,
             description="End date (YYYY-MM-DD)"
         ),
-        "timeGrain": FieldSpec(
-            name="timeGrain",
+        "time_grain": FieldSpec(
+            name="time_grain",
             type=str,
             default="quarter",
             allowed_values=["year", "quarter", "month"],
             description="Time aggregation level"
         ),
     },
-    aliases={}
+    aliases={
+        "dateFrom": "date_from",
+        "dateTo": "date_to",
+        "timeGrain": "time_grain",
+    }
 )
 
 NEW_VS_RESALE_SERVICE_SCHEMA = ServiceBoundarySchema(
@@ -64,8 +70,8 @@ NEW_VS_RESALE_SERVICE_SCHEMA = ServiceBoundarySchema(
         "districts": FieldSpec(name="districts", type=list),
         "bedrooms": FieldSpec(name="bedrooms", type=list),
         "segment": FieldSpec(name="segment", type=str),
-        "date_from": FieldSpec(name="date_from", type=str),
-        "date_to": FieldSpec(name="date_to", type=str),
+        "date_from": FieldSpec(name="date_from", type=date),
+        "date_to": FieldSpec(name="date_to", type=date),
         "time_grain": FieldSpec(name="time_grain", type=str, default="quarter"),
     }
 )

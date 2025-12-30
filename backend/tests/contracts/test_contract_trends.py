@@ -19,7 +19,7 @@ class TestNewVsResaleContract:
     def test_param_schema_time_grain(self):
         """TimeGrain should have allowed values."""
         contract = get_contract("trends/new-vs-resale")
-        time_grain_field = contract.param_schema.fields["timeGrain"]
+        time_grain_field = contract.param_schema.fields["time_grain"]
         assert time_grain_field.default == "quarter"
         assert "year" in time_grain_field.allowed_values
         assert "quarter" in time_grain_field.allowed_values

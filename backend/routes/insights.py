@@ -356,7 +356,7 @@ def district_liquidity():
     Query params:
       - period: Time period - 3m, 6m, 12m, all (default: 12m)
       - bed: Bedroom filter - all, 1, 2, 3, 4, 5 (default: all)
-      - sale_type: Sale type filter - all, New Sale, Resale (default: all)
+      - sale_type: Sale type filter - all, new_sale, resale (default: all)
 
     Returns:
       {

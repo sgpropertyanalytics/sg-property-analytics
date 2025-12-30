@@ -48,34 +48,42 @@ def new_vs_resale():
     start = time.time()
 
     # Parse GLOBAL filter parameters (from sidebar)
-    districts_param = request.args.get("district")
-    districts = None
-    if districts_param:
-        districts = [d.strip().upper() for d in districts_param.split(",") if d.strip()]
-        # Normalize districts
-        normalized = []
-        for d in districts:
-            if not d.startswith("D"):
-                d = f"D{d.zfill(2)}"
-            normalized.append(d)
-        districts = normalized
+    params = getattr(g, "normalized_params", {}) or {}
+
+    districts = params.get("districts")
+
+    def _expand_csv_list(value, item_type=str):
+        if value is None:
+            return []
+        items = value if isinstance(value, list) else [value]
+        expanded = []
+        for item in items:
+            if isinstance(item, str) and "," in item:
+                expanded.extend([p.strip() for p in item.split(",") if p.strip()])
+            else:
+                expanded.append(item)
+        try:
+            if item_type is int:
+                return [int(v) for v in expanded]
+        except (ValueError, TypeError):
+            raise NormalizeValidationError("Invalid list value")
+        return expanded
 
     try:
-        bedrooms = to_list(request.args.get("bedroom"), item_type=int, field="bedroom")
+        bedrooms = _expand_csv_list(params.get("bedrooms"), item_type=int)
     except NormalizeValidationError as e:
         return validation_error_response(e)
 
-    segment = request.args.get("segment")
+    segments = _expand_csv_list(params.get("segments"))
+    segment = segments[0] if segments else None
 
-    # Parse date params as Python date objects (not strings)
-    try:
-        date_from = to_date(request.args.get("date_from"), field="date_from")
-        date_to = clamp_date_to_today(to_date(request.args.get("date_to"), field="date_to"))
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
+    date_from = params.get("date_from")
+    date_to = params.get("date_to")
+    if date_to:
+        date_to = clamp_date_to_today(date_to)
 
     # Parse visual-local parameter (drill level)
-    time_grain = request.args.get("timeGrain", "quarter")
+    time_grain = params.get("time_grain", "quarter")
     valid_time_grains = ["year", "quarter", "month"]
     if time_grain not in valid_time_grains:
         return jsonify({"error": f"Invalid timeGrain. Must be one of: {valid_time_grains}"}), 400

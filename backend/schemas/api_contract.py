@@ -4,7 +4,7 @@ API Contract Schema v3 - Single Source of Truth
 Defines the stable API interface between backend and frontend.
 - Enums: lowercase snake_case (new_sale, resale, sub_sale)
 - Response fields: camelCase (projectName, bedroomCount)
-- Supports dual-mode output for backwards compatibility during migration
+ - v2+ response fields only (camelCase)
 
 Version History:
 - v1: Legacy snake_case fields only
