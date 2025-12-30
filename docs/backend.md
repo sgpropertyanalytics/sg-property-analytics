@@ -106,11 +106,12 @@ Raw HTTP Request
 │       → Resolve aliases (saleType → sale_type)                    │
 │       → Type coercion (string "2,3" → [2, 3])                    │
 │       → Singular→plural (district → districts[])                  │
+│       → Comma-list expansion (panels → [panels])                  │
 │       → District normalization (9 → D09)                          │
 │       → Date bounds (date_to → date_to_exclusive)                │
-│  4. Validate against ServiceBoundarySchema                        │
-│       → Check normalized values                                   │
-│  5. Store in g.normalized_params                                  │
+│  4. Store in g.normalized_params                                  │
+│  5. Validate against ServiceBoundarySchema                        │
+│       → Check normalized values (WARN mode continues on failure)  │
 └───────────────────────────────────────────────────────────────────┘
         │
         ▼
