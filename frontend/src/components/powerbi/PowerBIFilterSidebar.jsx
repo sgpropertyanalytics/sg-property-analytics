@@ -173,113 +173,120 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   // ==================== HORIZONTAL LAYOUT ====================
   // Toolbar-style control bar with implicit labels (no labels, use dividers)
   // Frosted glass - sticky handled by parent FilterBar wrapper
+  // Groups: Primary (Region + District) | Secondary (Bedroom + Date + Granularity) | Actions
   if (layout === 'horizontal') {
     return (
       <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-[#EAE0CF]/70 backdrop-blur-md border-b border-[#94B4C1]/30 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Region/Segment Buttons - implicit label via button content */}
-          <div className="flex gap-1">
-            {REGIONS.map(seg => (
-              <button
-                type="button"
-                key={seg}
-                onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
-                  filters.segments.includes(seg)
-                    ? 'bg-[#547792] text-white border-[#547792]'
-                    : filters.segments.length === 0
-                      ? 'bg-white text-[#213448] border-[#94B4C1]'
-                      : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
-                }`}
-                title="Shift+click to multi-select"
-              >
-                {seg}
-              </button>
-            ))}
-          </div>
-
-          {/* Divider */}
-          <div className="w-px h-10 bg-[#94B4C1]/40" />
-
-          {/* District Dropdown */}
-          <MultiSelectDropdown
-            options={(filterOptions.districtsRaw || []).map(d => {
-              const areaName = DISTRICT_NAMES[d];
-              const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
-              return {
-                value: d,
-                label: areaName ? `${d} (${shortName})` : d
-              };
-            })}
-            selected={filters.districts}
-            onChange={setDistricts}
-            placeholder="All Districts"
-            searchable
-            compact
-          />
-
-          {/* Divider */}
-          <div className="w-px h-10 bg-[#94B4C1]/40" />
-
-          {/* Bedroom Pills - implicit label via button content */}
-          <div className="flex gap-1">
-            {[1, 2, 3, 4, 5].map(br => (
-              <button
-                type="button"
-                key={br}
-                onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                className={`min-h-[44px] min-w-[44px] px-2 py-2 text-sm rounded-md border transition-colors ${
-                  filters.bedroomTypes.includes(br)
-                    ? 'bg-[#547792] text-white border-[#547792]'
-                    : filters.bedroomTypes.length === 0
-                      ? 'bg-white text-[#213448] border-[#94B4C1]'
-                      : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
-                }`}
-                title="Shift+click to multi-select"
-              >
-                {br === 5 ? '5BR' : `${br}BR`}
-              </button>
-            ))}
-          </div>
-
-          {/* Divider */}
-          <div className="w-px h-10 bg-[#94B4C1]/40" />
-
-          {/* Period Preset Buttons - implicit label via button content */}
-          <div className="flex gap-1">
-            {['3M', '6M', '12M', '2Y', '5Y'].map(preset => (
-              <button
-                type="button"
-                key={preset}
-                onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
-                disabled={filterOptions.loading}
-                className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
-                  filterOptions.loading
-                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
-                    : datePreset === preset
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {/* PRIMARY GROUP: Region + District (stays together) */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Region/Segment Buttons */}
+            <div className="flex gap-1">
+              {REGIONS.map(seg => (
+                <button
+                  type="button"
+                  key={seg}
+                  onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
+                  className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
+                    filters.segments.includes(seg)
                       ? 'bg-[#547792] text-white border-[#547792]'
-                      : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
-                }`}
-              >
-                {preset}
-              </button>
-            ))}
+                      : filters.segments.length === 0
+                        ? 'bg-white text-[#213448] border-[#94B4C1]'
+                        : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
+                  }`}
+                  title="Shift+click to multi-select"
+                >
+                  {seg}
+                </button>
+              ))}
+            </div>
+
+            {/* Divider (hidden on wrap via lg:block) */}
+            <div className="hidden lg:block w-px h-10 bg-[#94B4C1]/40" />
+
+            {/* District Dropdown */}
+            <MultiSelectDropdown
+              options={(filterOptions.districtsRaw || []).map(d => {
+                const areaName = DISTRICT_NAMES[d];
+                const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
+                return {
+                  value: d,
+                  label: areaName ? `${d} (${shortName})` : d
+                };
+              })}
+              selected={filters.districts}
+              onChange={setDistricts}
+              placeholder="All Districts"
+              searchable
+              compact
+            />
           </div>
 
-          {/* Divider */}
-          <div className="w-px h-10 bg-[#94B4C1]/40" />
+          {/* Group divider - only visible at xl+ when everything fits */}
+          <div className="hidden xl:block w-px h-10 bg-[#94B4C1]/40 flex-shrink-0" />
 
-          {/* Time Granularity Toggle - Group by Year/Quarter/Month */}
-          <TimeGranularityToggle layout="horizontal" />
+          {/* SECONDARY GROUP: Bedroom + Date + Granularity (stays together) */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Bedroom Pills */}
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map(br => (
+                <button
+                  type="button"
+                  key={br}
+                  onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
+                  className={`min-h-[44px] min-w-[44px] px-2 py-2 text-sm rounded-md border transition-colors ${
+                    filters.bedroomTypes.includes(br)
+                      ? 'bg-[#547792] text-white border-[#547792]'
+                      : filters.bedroomTypes.length === 0
+                        ? 'bg-white text-[#213448] border-[#94B4C1]'
+                        : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
+                  }`}
+                  title="Shift+click to multi-select"
+                >
+                  {br === 5 ? '5BR' : `${br}BR`}
+                </button>
+              ))}
+            </div>
 
-          {/* Spacer to push Clear to far right */}
-          <div className="flex-1" />
+            {/* Divider */}
+            <div className="hidden lg:block w-px h-10 bg-[#94B4C1]/40" />
 
-          {/* Clear filters button */}
+            {/* Period Preset Buttons */}
+            <div className="flex gap-1">
+              {['3M', '6M', '12M', '2Y', '5Y'].map(preset => (
+                <button
+                  type="button"
+                  key={preset}
+                  onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
+                  disabled={filterOptions.loading}
+                  className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
+                    filterOptions.loading
+                      ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
+                      : datePreset === preset
+                        ? 'bg-[#547792] text-white border-[#547792]'
+                        : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="hidden lg:block w-px h-10 bg-[#94B4C1]/40" />
+
+            {/* Time Granularity Toggle */}
+            <TimeGranularityToggle layout="horizontal" />
+          </div>
+
+          {/* Spacer - only effective when not wrapped */}
+          <div className="hidden xl:block flex-1" />
+
+          {/* ACTIONS GROUP: Clear button (right-aligned on large screens, inline on wrap) */}
           {activeFilterCount > 0 && (
             <button
               onClick={handleResetFilters}
-              className="min-h-[44px] px-3 py-2 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-md transition-colors active:scale-[0.98]"
+              className="min-h-[44px] px-3 py-2 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-md transition-colors active:scale-[0.98] flex-shrink-0 ml-auto xl:ml-0"
             >
               Clear all
             </button>
