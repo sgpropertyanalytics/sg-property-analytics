@@ -29,17 +29,19 @@ import '../../lib/chartjs-registry';
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
 /**
- * Helper to detect if a period label falls within 2020 Q4 (Oct-Dec 2020)
- * Handles: quarterly ("2020 Q4"), monthly ("2020-10", "2020-11", "2020-12")
- * Returns false for yearly ("2020") since yearly aggregates aren't skewed
+ * Helper to detect if a period label falls within 2020
+ * 2020 had heavily skewed new launch data - many developers rushed launches
+ * Handles: yearly ("2020"), quarterly ("2020 Q1-Q4"), monthly ("2020-01" to "2020-12")
  */
-const is2020Q4Period = (periodLabel) => {
+const is2020Period = (periodLabel) => {
   if (!periodLabel) return false;
   const label = periodLabel.toString();
-  // Quarterly format: "2020 Q4"
-  if (label === '2020 Q4') return true;
-  // Monthly format: "2020-10", "2020-11", "2020-12"
-  if (/^2020-(10|11|12)/.test(label)) return true;
+  // Yearly format: "2020"
+  if (label === '2020') return true;
+  // Quarterly format: "2020 Q1", "2020 Q2", etc.
+  if (/^2020 Q[1-4]$/.test(label)) return true;
+  // Monthly format: "2020-01" to "2020-12"
+  if (/^2020-(0[1-9]|1[0-2])/.test(label)) return true;
   return false;
 };
 
@@ -55,8 +57,8 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
   // Get GLOBAL filters and timeGrouping from context
   const { buildApiParams, debouncedFilterKey, filters, timeGrouping } = usePowerBIFilters();
 
-  // 2020 Q4 has heavily skewed new launch data - exclude by default
-  const [include2020Q4, setInclude2020Q4] = useState(false);
+  // 2020 had heavily skewed new launch data - exclude by default
+  const [include2020, setInclude2020] = useState(false);
 
   const chartRef = useRef(null);
 
@@ -97,8 +99,8 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
     }
   );
 
-  // Filter out 2020 Q4 if needed
-  const filteredData = include2020Q4 ? data : data.filter(d => !is2020Q4Period(d.periodLabel));
+  // Filter out 2020 if needed (heavily skewed data from COVID-era rush launches)
+  const filteredData = include2020 ? data : data.filter(d => !is2020Period(d.periodLabel));
 
   // Build filter summary for display
   const getFilterSummary = () => {
@@ -285,16 +287,16 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
                   {getFilterSummary()} · by {TIME_LABELS[timeGrouping].toLowerCase()}
                 </p>
               </div>
-              {/* Toggle for 2020 Q4 data - heavily skewed due to many launches */}
+              {/* Toggle for 2020 data - heavily skewed due to COVID-era rush launches */}
               <button
-                onClick={() => setInclude2020Q4(!include2020Q4)}
+                onClick={() => setInclude2020(!include2020)}
                 className={`shrink-0 text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                  include2020Q4
+                  include2020
                     ? 'bg-[#213448] text-white border-[#213448]'
                     : 'bg-white text-[#547792] border-[#94B4C1] hover:bg-[#EAE0CF]/50'
                 }`}
               >
-                {include2020Q4 ? 'Hide 2020 Q4' : 'Include 2020 Q4'}
+                {include2020 ? 'Hide 2020' : 'Include 2020'}
               </button>
             </div>
 
