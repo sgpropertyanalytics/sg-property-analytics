@@ -11,33 +11,12 @@
  */
 
 import React, { useMemo, useRef } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  LineElement,
-  LineController,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+// Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { ChartSkeleton } from '../common/ChartSkeleton';
 import { getTxnField, TxnField } from '../../schemas/apiContract';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  LineElement,
-  LineController,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 // Colors
 const COLORS = {

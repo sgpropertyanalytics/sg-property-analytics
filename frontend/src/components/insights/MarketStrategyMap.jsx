@@ -16,7 +16,9 @@ import { BarChart3, DollarSign } from 'lucide-react';
 import { HelpTooltip } from '../ui/HelpTooltip';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
-import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
+// GeoJSON is lazy-loaded to reduce initial bundle size (~100KB savings)
+// Only SINGAPORE_CENTER is needed at import time for map config
+import { SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 import { DISTRICT_CENTROIDS } from '../../data/districtCentroids';
 import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -450,6 +452,14 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
   const [error, setError] = useState(null);
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
+  // Lazy-load GeoJSON to reduce initial bundle size (~100KB savings)
+  const [geoJSON, setGeoJSON] = useState(null);
+  useEffect(() => {
+    import('../../data/singaporeDistrictsGeoJSON').then((module) => {
+      setGeoJSON(module.singaporeDistrictsGeoJSON);
+    });
+  }, []);
+
   // Support both controlled and uncontrolled modes
   const [internalBed, setInternalBed] = useState('all');
   const [internalPeriod, setInternalPeriod] = useState('Y1');
@@ -728,8 +738,9 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
           maxPitch={0}
           attributionControl={false}
         >
-          {/* District polygons */}
-          <Source id="districts" type="geojson" data={singaporeDistrictsGeoJSON}>
+          {/* District polygons - only render when GeoJSON is loaded */}
+          {geoJSON && (
+          <Source id="districts" type="geojson" data={geoJSON}>
             {/* Region fills */}
             <Layer
               id="district-fill"
@@ -750,6 +761,7 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
               }}
             />
           </Source>
+          )}
 
           {/* District labels */}
           {!loading && districtCentroids.map(district => {

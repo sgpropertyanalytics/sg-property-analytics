@@ -1,6 +1,13 @@
 /**
  * PowerBI-style Filter State Management
  *
+ * PERFORMANCE OPTIMIZATION: Split into 3 contexts to reduce re-renders
+ * - FilterStateContext: State values that change (filters, drillPath, etc.)
+ * - FilterActionsContext: Stable callbacks that never change
+ * - FilterOptionsContext: Filter options from API (changes rarely)
+ *
+ * This prevents charts that only need actions from re-rendering when state changes.
+ *
  * Manages:
  * - Sidebar filters (user-applied filters)
  * - Drill state (current hierarchy level)
@@ -11,7 +18,7 @@
  * Project selection is drill-through only (opens ProjectDetailPanel).
  */
 
-import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 
 // Constants and initial state
 import {
@@ -35,6 +42,12 @@ import {
 // Hooks (consolidated)
 import { useFilterOptions, useRouteReset, useDebouncedFilterKey } from './hooks';
 
+// Split contexts for performance optimization
+const FilterStateContext = createContext(null);
+const FilterActionsContext = createContext(null);
+const FilterOptionsContext = createContext(null);
+
+// Legacy combined context for backward compatibility
 const PowerBIFilterContext = createContext(null);
 
 // Session storage key for filter persistence
@@ -329,30 +342,43 @@ export function PowerBIFilterProvider({ children }) {
     [activeFilters, filters, factFilter]
   );
 
-  // ===== Context Value (Memoized to prevent unnecessary re-renders) =====
-  // PERF FIX: Only state in deps - callbacks are stable via useCallback
-  // Including callbacks in deps caused context value recreation on every render,
-  // triggering re-renders in ALL consumers even when only one filter changed.
+  // ===== Split Context Values for Performance =====
+  // Separating state, actions, and options reduces re-renders significantly.
+  // Components can now subscribe only to what they need.
 
-  const value = useMemo(
+  // State context - changes frequently, triggers re-renders in state consumers
+  const stateValue = useMemo(
     () => ({
-      // State (changes trigger re-render - this is expected)
       filters,
       factFilter,
       drillPath,
       breadcrumbs,
-      filterOptions,
       activeFilters,
       activeFilterCount,
       filterKey,
       debouncedFilterKey,
       selectedProject,
-
-      // Time Grouping (View Context)
       timeGrouping,
-      setTimeGrouping,
+      buildApiParams,
+    }),
+    [
+      filters,
+      factFilter,
+      drillPath,
+      breadcrumbs,
+      activeFilters,
+      activeFilterCount,
+      filterKey,
+      debouncedFilterKey,
+      selectedProject,
+      timeGrouping,
+      buildApiParams,
+    ]
+  );
 
-      // Filter setters (stable callbacks via useCallback)
+  // Actions context - stable callbacks, never triggers re-renders
+  const actionsValue = useMemo(
+    () => ({
       setDateRange,
       setDistricts,
       toggleDistrict,
@@ -368,22 +394,28 @@ export function PowerBIFilterProvider({ children }) {
       setPropertyAgeBucket,
       setProject,
       resetFilters,
-
-      // Drill navigation (stable callbacks)
       drillDown,
       drillUp,
       navigateToBreadcrumb,
-
-      // Project drill-through (stable callbacks)
       setSelectedProject,
       clearSelectedProject,
-
-      // Helpers (stable callback - deps are activeFilters, filters, factFilter)
-      buildApiParams,
+      setTimeGrouping,
     }),
-    [
-      // ONLY state values - callbacks are stable and don't need to be deps
-      // This prevents context value recreation when callbacks haven't changed
+    // Empty deps - all callbacks are stable via useCallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  // Options context - changes rarely (only on initial load or refresh)
+  const optionsValue = useMemo(
+    () => ({ filterOptions }),
+    [filterOptions]
+  );
+
+  // Legacy combined value for backward compatibility with usePowerBIFilters
+  const legacyValue = useMemo(
+    () => ({
+      // State
       filters,
       factFilter,
       drillPath,
@@ -395,15 +427,68 @@ export function PowerBIFilterProvider({ children }) {
       debouncedFilterKey,
       selectedProject,
       timeGrouping,
-      // buildApiParams included because it depends on activeFilters/filters/factFilter
-      // and we want consumers to get the updated function when those change
+
+      // Actions
+      setTimeGrouping,
+      setDateRange,
+      setDistricts,
+      toggleDistrict,
+      setBedroomTypes,
+      toggleBedroomType,
+      setSegments,
+      toggleSegment,
+      setSaleType,
+      setPsfRange,
+      setSizeRange,
+      setTenure,
+      setPropertyAge,
+      setPropertyAgeBucket,
+      setProject,
+      resetFilters,
+      drillDown,
+      drillUp,
+      navigateToBreadcrumb,
+      setSelectedProject,
+      clearSelectedProject,
+
+      // Helpers
+      buildApiParams,
+    }),
+    [
+      filters,
+      factFilter,
+      drillPath,
+      breadcrumbs,
+      filterOptions,
+      activeFilters,
+      activeFilterCount,
+      filterKey,
+      debouncedFilterKey,
+      selectedProject,
+      timeGrouping,
       buildApiParams,
     ]
   );
 
-  return <PowerBIFilterContext.Provider value={value}>{children}</PowerBIFilterContext.Provider>;
+  return (
+    <FilterStateContext.Provider value={stateValue}>
+      <FilterActionsContext.Provider value={actionsValue}>
+        <FilterOptionsContext.Provider value={optionsValue}>
+          <PowerBIFilterContext.Provider value={legacyValue}>
+            {children}
+          </PowerBIFilterContext.Provider>
+        </FilterOptionsContext.Provider>
+      </FilterActionsContext.Provider>
+    </FilterStateContext.Provider>
+  );
 }
 
+// ===== Hooks =====
+
+/**
+ * Legacy hook - returns all state and actions
+ * Use for backward compatibility; prefer targeted hooks for new code
+ */
 export function usePowerBIFilters() {
   const context = useContext(PowerBIFilterContext);
   if (!context) {
@@ -412,4 +497,40 @@ export function usePowerBIFilters() {
   return context;
 }
 
-export { PowerBIFilterContext };
+/**
+ * State-only hook - re-renders when filter state changes
+ * Use when you need: filters, drillPath, activeFilters, filterKey, etc.
+ */
+export function useFilterState() {
+  const context = useContext(FilterStateContext);
+  if (!context) {
+    throw new Error('useFilterState must be used within PowerBIFilterProvider');
+  }
+  return context;
+}
+
+/**
+ * Actions-only hook - NEVER re-renders (stable callbacks)
+ * Use when you only need: setDateRange, resetFilters, drillDown, etc.
+ */
+export function useFilterActions() {
+  const context = useContext(FilterActionsContext);
+  if (!context) {
+    throw new Error('useFilterActions must be used within PowerBIFilterProvider');
+  }
+  return context;
+}
+
+/**
+ * Options-only hook - re-renders only when filter options change (rare)
+ * Use when you only need: filterOptions
+ */
+export function useFilterOptionsContext() {
+  const context = useContext(FilterOptionsContext);
+  if (!context) {
+    throw new Error('useFilterOptionsContext must be used within PowerBIFilterProvider');
+  }
+  return context;
+}
+
+export { PowerBIFilterContext, FilterStateContext, FilterActionsContext, FilterOptionsContext };

@@ -1,16 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import annotationPlugin from 'chartjs-plugin-annotation';
+// Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilter';
 import { getDashboard } from '../../api/client';
@@ -24,16 +15,6 @@ import {
   logFetchDebug,
   assertKnownVersion,
 } from '../../adapters';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  annotationPlugin
-);
 
 /**
  * Price Distribution Chart - Histogram of Transaction Prices

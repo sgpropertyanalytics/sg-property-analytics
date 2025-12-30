@@ -1,16 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
+// Chart.js components registered globally in chartSetup.js
 import { Line, Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilter';
 import { getAggregate, getProjectInventory, getDashboard } from '../../api/client';
@@ -26,18 +15,6 @@ import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 
 // K-anonymity threshold for project-level data
 const K_PROJECT_THRESHOLD = 15;
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 /**
  * Project Detail Panel - Drill-Through View

@@ -1,24 +1,7 @@
 import React, { useMemo } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+// Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
 import { BASE_CHART_OPTIONS, CHART_AXIS_DEFAULTS } from '../constants/chartOptions';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 /**
  * Lines of Code Trend Chart

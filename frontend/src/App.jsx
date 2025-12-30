@@ -1,5 +1,9 @@
 import { lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+// Register Chart.js components globally (MUST be before any chart imports)
+import './chartSetup';
+
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';

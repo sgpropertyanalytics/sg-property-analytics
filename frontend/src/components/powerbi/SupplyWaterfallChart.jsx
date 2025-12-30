@@ -18,16 +18,8 @@
  */
 
 import React, { useRef, useMemo } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  BarController,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+// Chart.js core components registered globally in chartSetup.js
+import { registerPlugin } from '../../chartSetup';
 import { Bar } from 'react-chartjs-2';
 import { useSupplyData } from '../../context/SupplyDataContext';
 import { QueryState } from '../common/QueryState';
@@ -41,17 +33,8 @@ import {
   waterfallConnectorPlugin,
 } from '../../adapters/supply/waterfallAdapter';
 
-// Register Chart.js components and plugins
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  BarController,
-  Title,
-  Tooltip,
-  Legend,
-  waterfallConnectorPlugin
-);
+// Register custom waterfall connector plugin (chart-specific)
+registerPlugin(waterfallConnectorPlugin);
 
 /**
  * Supply Waterfall Chart Component

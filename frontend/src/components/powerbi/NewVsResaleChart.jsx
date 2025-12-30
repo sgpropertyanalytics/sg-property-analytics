@@ -1,18 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { QueryState } from '../common/QueryState';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  LineElement,
-  LineController,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
+// Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
 import { getNewVsResale } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
@@ -66,18 +55,6 @@ if (typeof window !== 'undefined') {
     /* eslint-enable no-console */
   };
 }
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  LineElement,
-  LineController,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 /**
  * New Sale vs Recently TOP (4-7 years age) Comparison Chart

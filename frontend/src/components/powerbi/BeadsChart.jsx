@@ -1,15 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
-import {
-  Chart as ChartJS,
-  LinearScale,
-  PointElement,
-  BubbleController,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import annotationPlugin from 'chartjs-plugin-annotation';
+// Chart.js components registered globally in chartSetup.js
 import { Bubble } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilter';
 import { getDashboard } from '../../api/client';
@@ -23,8 +15,6 @@ import {
   assertKnownVersion,
 } from '../../adapters';
 import { niceMaxMillion } from '../../utils/niceAxisMax';
-
-ChartJS.register(LinearScale, PointElement, BubbleController, Tooltip, Legend, annotationPlugin);
 
 // Region colors for strings and labels (outside component to avoid dependency issues)
 const REGION_COLORS = {

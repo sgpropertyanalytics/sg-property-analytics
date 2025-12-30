@@ -1,13 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  Chart as ChartJS,
-  BarController,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+// Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
@@ -18,16 +10,6 @@ import {
   truncateProjectName,
 } from '../../adapters';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-
-// Register Chart.js components
-ChartJS.register(
-  BarController,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend
-);
 
 // Color palette - age band differentiated
 const COLORS = {

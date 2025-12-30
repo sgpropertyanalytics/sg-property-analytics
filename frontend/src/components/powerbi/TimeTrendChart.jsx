@@ -1,19 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery } from '../../hooks';
 import { QueryState } from '../common/QueryState';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  BarController,
-  LineElement,
-  LineController,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+// Chart.js components registered globally in chartSetup.js
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { getAggregate } from '../../api/client';
@@ -22,19 +10,6 @@ import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOp
 // SaleType imports removed - Market Core is Resale-only
 import { transformTimeSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
 import { niceMax } from '../../utils/niceAxisMax';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  BarController,
-  LineElement,
-  LineController,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 /**
  * Time Trend Chart - Line + Bar Combo

@@ -15,6 +15,13 @@ export {
   PowerBIFilterProvider,
   usePowerBIFilters,
   PowerBIFilterContext,
+  // New targeted hooks for performance optimization
+  useFilterState,
+  useFilterActions,
+  useFilterOptionsContext,
+  FilterStateContext,
+  FilterActionsContext,
+  FilterOptionsContext,
 } from './PowerBIFilterProvider';
 
 // Constants

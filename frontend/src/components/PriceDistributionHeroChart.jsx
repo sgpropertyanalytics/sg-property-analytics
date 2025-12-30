@@ -1,23 +1,6 @@
 import React, { useMemo, useRef } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+// Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 /**
  * Custom Chart.js plugin to draw a vertical marker line at the buyer's price.

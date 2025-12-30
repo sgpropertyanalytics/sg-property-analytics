@@ -7,13 +7,74 @@ These endpoints are optimized for specific visualization needs.
 
 from flask import Blueprint, request, jsonify, g
 import time
+import hashlib
+import threading
 from datetime import datetime, timedelta
+from typing import Dict, Any, Optional
 from models.transaction import Transaction
 from models.database import db
 from sqlalchemy import func, and_, or_, extract, case, literal
 from constants import CCR_DISTRICTS, RCR_DISTRICTS, DISTRICT_NAMES, SALE_TYPE_NEW, SALE_TYPE_RESALE
 from services.new_launch_units import get_district_units_for_resale
 from api.contracts import api_contract
+
+# =============================================================================
+# TTL CACHE FOR INSIGHTS ENDPOINTS
+# =============================================================================
+
+class TTLCache:
+    """Simple TTL cache with max size limit for insights endpoints."""
+
+    def __init__(self, maxsize: int = 200, ttl: int = 600):
+        self._cache = {}
+        self._maxsize = maxsize
+        self._ttl = ttl
+        self._lock = threading.Lock()
+
+    def get(self, key: str) -> Optional[Any]:
+        with self._lock:
+            if key in self._cache:
+                value, timestamp = self._cache[key]
+                if time.time() - timestamp < self._ttl:
+                    return value
+                else:
+                    del self._cache[key]
+            return None
+
+    def set(self, key: str, value: Any) -> None:
+        with self._lock:
+            if len(self._cache) >= self._maxsize:
+                oldest_key = min(self._cache.keys(), key=lambda k: self._cache[k][1])
+                del self._cache[oldest_key]
+            self._cache[key] = (value, time.time())
+
+    def clear(self) -> None:
+        with self._lock:
+            self._cache.clear()
+
+
+# Cache instances for insights endpoints (10 minute TTL)
+_district_psf_cache = TTLCache(maxsize=200, ttl=600)
+_district_liquidity_cache = TTLCache(maxsize=200, ttl=600)
+
+# Locks for cache stampede prevention
+_cache_locks = {}
+_cache_locks_lock = threading.Lock()
+
+
+def _build_cache_key(endpoint: str, params: Dict[str, Any]) -> str:
+    """Build deterministic cache key from endpoint and params."""
+    normalized = {k: str(v) for k, v in sorted(params.items()) if v is not None}
+    key_str = f"{endpoint}:{normalized}"
+    return hashlib.md5(key_str.encode()).hexdigest()
+
+
+def _get_cache_lock(cache_key: str) -> threading.Lock:
+    """Get or create a lock for a specific cache key to prevent stampede."""
+    with _cache_locks_lock:
+        if cache_key not in _cache_locks:
+            _cache_locks[cache_key] = threading.Lock()
+        return _cache_locks[cache_key]
 
 
 def build_property_age_filter(age_filter):
@@ -359,6 +420,22 @@ def district_liquidity():
 
     # Use normalized params from contract layer (centralized timeframe resolution)
     params = getattr(g, 'normalized_params', {})
+
+    # Build cache key from request params
+    cache_params = {
+        'timeframe': params.get('timeframe', 'Y1'),
+        'bed': params.get('bed', 'all'),
+        'sale_type': params.get('sale_type', 'all'),
+    }
+    cache_key = _build_cache_key('district-liquidity', cache_params)
+
+    # Check cache first
+    cached = _district_liquidity_cache.get(cache_key)
+    if cached is not None:
+        elapsed = time.time() - start
+        cached['meta']['elapsed_ms'] = int(elapsed * 1000)
+        cached['meta']['cache_hit'] = True
+        return jsonify(cached)
 
     # Get date bounds from centralized resolution (backend is source of truth)
     date_from = params.get('date_from')
@@ -930,7 +1007,8 @@ def district_liquidity():
 
         elapsed = time.time() - start
 
-        return jsonify({
+        # Build response
+        response_data = {
             "districts": districts_response,
             "meta": {
                 "timeframe": timeframe,
@@ -958,9 +1036,17 @@ def district_liquidity():
                     "turnover_rate": "Resales per 100 units per period - normalized for district size",
                     "z_score": "Robust Z-score using median/MAD - handles skewed distributions"
                 },
-                "elapsed_ms": int(elapsed * 1000)
+                "elapsed_ms": int(elapsed * 1000),
+                "cache_hit": False
             }
-        })
+        }
+
+        # Cache the response (use lock to prevent stampede)
+        lock = _get_cache_lock(cache_key)
+        with lock:
+            _district_liquidity_cache.set(cache_key, response_data)
+
+        return jsonify(response_data)
 
     except Exception as e:
         elapsed = time.time() - start

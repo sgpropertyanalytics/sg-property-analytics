@@ -1,17 +1,7 @@
 import React, { useRef } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { QueryState } from '../common/QueryState';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  LineElement,
-  LineController,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
+// Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
@@ -23,17 +13,6 @@ import {
   logFetchDebug,
   assertKnownVersion,
 } from '../../adapters';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  LineElement,
-  LineController,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };

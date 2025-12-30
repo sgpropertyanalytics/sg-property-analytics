@@ -15,7 +15,7 @@ import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import { BarChart3, DollarSign } from 'lucide-react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../../api/client';
-import { singaporeDistrictsGeoJSON } from '../../../data/singaporeDistrictsGeoJSON';
+// GeoJSON is lazy-loaded to reduce initial bundle size (~100KB savings)
 import { DISTRICT_CENTROIDS } from '../../../data/districtCentroids';
 import { useSubscription } from '../../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../../hooks';
@@ -55,6 +55,14 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
+
+  // Lazy-load GeoJSON to reduce initial bundle size (~100KB savings)
+  const [geoJSON, setGeoJSON] = useState(null);
+  useEffect(() => {
+    import('../../../data/singaporeDistrictsGeoJSON').then((module) => {
+      setGeoJSON(module.singaporeDistrictsGeoJSON);
+    });
+  }, []);
 
   // Support both controlled and uncontrolled modes (like MarketStrategyMap)
   const [internalBed, setInternalBed] = useState('all');
@@ -335,8 +343,9 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
           maxPitch={0}
           attributionControl={false}
         >
-          {/* District polygons */}
-          <Source id="districts" type="geojson" data={singaporeDistrictsGeoJSON}>
+          {/* District polygons - only render when GeoJSON is loaded */}
+          {geoJSON && (
+          <Source id="districts" type="geojson" data={geoJSON}>
             {/* Liquidity fills */}
             <Layer
               id="district-fill"
@@ -357,6 +366,7 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
               }}
             />
           </Source>
+          )}
 
           {/* District labels */}
           {!loading &&
