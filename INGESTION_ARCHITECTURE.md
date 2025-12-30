@@ -310,11 +310,14 @@ Top Issues:
 - [ ] `upcoming_launches.csv` → orchestrator with diff
 - [ ] `new_launch_units.csv` → orchestrator with diff
 
-### Phase 3: Verification Mode
-- [ ] Create `verification_candidates` table
-- [ ] Implement cross-validation logic
-- [ ] Add verification status fields to domain tables
-- [ ] Build verification report generator
+### Phase 3: Verification Mode ✅ COMPLETE
+- [x] Create `verification_candidates` table (migration 012)
+- [x] Implement cross-validation logic (`scrapers/utils/cross_validator.py`)
+- [x] Add verification status fields to domain tables (migration 013)
+- [x] Build verification report generator (`services/verification_report.py`)
+- [x] Create 5 Tier B adapters (PropertyGuru, EdgeProp, 99.co, ERA, PropNex)
+- [x] Build verification API routes (`/api/verification/*`)
+- [x] Enforce 3-source minimum for auto-confirm
 
 ### Phase 4: UI Integration
 - [ ] Show confidence badges on unit counts
