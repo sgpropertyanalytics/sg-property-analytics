@@ -10,7 +10,7 @@ Each endpoint has:
 
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Callable, Type, Union
+from typing import Dict, List, Optional, Any, Callable, Type
 from enum import Enum
 from datetime import date
 
