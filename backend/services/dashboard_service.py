@@ -1015,33 +1015,22 @@ def query_psf_by_price_band(
     Returns:
         List of dicts with keys: price_band, bedroom_group, observation_count, p25, p50, p75
     """
-    # Build filter clauses using :param style ONLY
-    filters = [OUTLIER_FILTER]
-    bind_params = {}
-
-    # Date filters
-    if params.get('date_from'):
-        filters.append("transaction_date >= :date_from")
-        bind_params['date_from'] = params['date_from']  # Python date object
-
-    if params.get('date_to'):
-        # Use < next_day instead of <= date_to to include all transactions on date_to
-        # PostgreSQL treats date as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
-        filters.append("transaction_date < :date_to_exclusive")
-        bind_params['date_to_exclusive'] = params['date_to'] + timedelta(days=1)
-
-    # Sale type filter
-    if params.get('sale_type_db'):
-        filters.append("sale_type = :sale_type")
-        bind_params['sale_type'] = params['sale_type_db']
+    # Build param-guarded filters (static SQL)
+    bind_params = {
+        "date_from": params.get('date_from'),
+        "date_to_exclusive": params['date_to'] + timedelta(days=1) if params.get('date_to') else None,
+        "sale_type": params.get('sale_type_db'),
+        "districts": None,
+        "segment_districts": None,
+        "tenure": params.get('tenure_db'),
+    }
 
     # District filter
     if params.get('districts'):
         districts = params['districts']
         if isinstance(districts, str):
             districts = [districts]
-        filters.append("district = ANY(:districts)")
-        bind_params['districts'] = districts
+        bind_params['districts'] = districts or None
 
     # Region/segment filter - use district mapping (market_segment column may be null/inconsistent)
     if params.get('segments_db'):
@@ -1053,18 +1042,9 @@ def query_psf_by_price_band(
         segment_districts = []
         for seg in segments:
             segment_districts.extend(get_districts_for_region(seg))
-        if segment_districts:
-            filters.append("district = ANY(:segment_districts)")
-            bind_params['segment_districts'] = segment_districts
+        bind_params['segment_districts'] = segment_districts or None
 
-    # Tenure filter
-    if params.get('tenure_db'):
-        filters.append("tenure = :tenure")
-        bind_params['tenure'] = params['tenure_db']
-
-    where_clause = " AND ".join(filters)
-
-    sql = f"""
+    sql = """
     WITH price_banded AS (
       SELECT
         psf,
@@ -1093,7 +1073,13 @@ def query_psf_by_price_band(
           ELSE bedroom_count
         END AS bedroom_group
       FROM transactions
-      WHERE {where_clause}
+      WHERE COALESCE(is_outlier, false) = false
+        AND (:date_from IS NULL OR transaction_date >= :date_from)
+        AND (:date_to_exclusive IS NULL OR transaction_date < :date_to_exclusive)
+        AND (:sale_type IS NULL OR sale_type = :sale_type)
+        AND (:districts IS NULL OR district = ANY(:districts))
+        AND (:segment_districts IS NULL OR district = ANY(:segment_districts))
+        AND (:tenure IS NULL OR tenure = :tenure)
         AND price >= 500000
         AND psf IS NOT NULL
         AND bedroom_count IS NOT NULL

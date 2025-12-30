@@ -101,52 +101,21 @@ def get_transaction_price_growth(
     per_page = min(per_page, MAX_PAGE_SIZE)
     offset = (page - 1) * per_page
 
-    # Build filter conditions
-    filter_conditions = []
+    # Build param-guarded filters (static SQL)
     params = {
         "limit": per_page,
-        "offset": offset
+        "offset": offset,
+        "project_name": f"%{project_name}%" if project_name else None,
+        "bedroom_count": bedroom_count,
+        "floor_level": floor_level,
+        "district": district,
+        "date_from": date_from,
+        "date_to_exclusive": date_to + timedelta(days=1) if date_to else None,
+        "sale_type": SaleType.to_db(sale_type) if sale_type else None,
     }
 
-    if project_name:
-        filter_conditions.append("project_name ILIKE :project_name")
-        params["project_name"] = f"%{project_name}%"
-
-    if bedroom_count is not None:
-        filter_conditions.append("bedroom_count = :bedroom_count")
-        params["bedroom_count"] = bedroom_count
-
-    if floor_level:
-        filter_conditions.append("COALESCE(floor_level, 'Unknown') = :floor_level")
-        params["floor_level"] = floor_level
-
-    if district:
-        filter_conditions.append("district = :district")
-        params["district"] = district
-
-    if date_from:
-        filter_conditions.append("transaction_date >= :date_from")
-        params["date_from"] = date_from
-
-    if date_to:
-        # Use < next_day instead of <= date_to to include all transactions on date_to
-        # PostgreSQL treats date as midnight, so <= 2025-12-27 means <= 2025-12-27 00:00:00
-        filter_conditions.append("transaction_date < :date_to_exclusive")
-        params["date_to_exclusive"] = date_to + timedelta(days=1)
-
-    if sale_type:
-        # Normalize sale type through API contract
-        sale_type_db = SaleType.to_db(sale_type)
-        filter_conditions.append("sale_type = :sale_type")
-        params["sale_type"] = sale_type_db
-
-    # Build WHERE clause
-    where_clause = "COALESCE(is_outlier, false) = false"
-    if filter_conditions:
-        where_clause += " AND " + " AND ".join(filter_conditions)
-
     # Execute main query
-    query = text(f"""
+    query = text("""
         WITH transaction_growth AS (
             SELECT
                 id,
@@ -195,7 +164,14 @@ def get_transaction_price_growth(
                 ) as txn_sequence
 
             FROM transactions
-            WHERE {where_clause}
+            WHERE COALESCE(is_outlier, false) = false
+              AND (:project_name IS NULL OR project_name ILIKE :project_name)
+              AND (:bedroom_count IS NULL OR bedroom_count = :bedroom_count)
+              AND (:floor_level IS NULL OR COALESCE(floor_level, 'Unknown') = :floor_level)
+              AND (:district IS NULL OR district = :district)
+              AND (:date_from IS NULL OR transaction_date >= :date_from)
+              AND (:date_to_exclusive IS NULL OR transaction_date < :date_to_exclusive)
+              AND (:sale_type IS NULL OR sale_type = :sale_type)
         )
         SELECT
             id,
@@ -253,10 +229,17 @@ def get_transaction_price_growth(
     results = db.session.execute(query, params).fetchall()
 
     # Get total count for pagination
-    count_query = text(f"""
+    count_query = text("""
         SELECT COUNT(*)
         FROM transactions
-        WHERE {where_clause}
+        WHERE COALESCE(is_outlier, false) = false
+          AND (:project_name IS NULL OR project_name ILIKE :project_name)
+          AND (:bedroom_count IS NULL OR bedroom_count = :bedroom_count)
+          AND (:floor_level IS NULL OR COALESCE(floor_level, 'Unknown') = :floor_level)
+          AND (:district IS NULL OR district = :district)
+          AND (:date_from IS NULL OR transaction_date >= :date_from)
+          AND (:date_to_exclusive IS NULL OR transaction_date < :date_to_exclusive)
+          AND (:sale_type IS NULL OR sale_type = :sale_type)
     """)
     # Remove pagination params for count query
     count_params = {k: v for k, v in params.items() if k not in ['limit', 'offset']}
@@ -324,29 +307,14 @@ def get_segment_summary(
     Returns:
         List of segment summaries with average growth metrics
     """
-    # Build filter conditions
-    filter_conditions = []
-    params = {}
+    # Build param-guarded filters (static SQL)
+    params = {
+        "project_name": f"%{project_name}%" if project_name else None,
+        "district": district,
+        "sale_type": SaleType.to_db(sale_type) if sale_type else None,
+    }
 
-    if project_name:
-        filter_conditions.append("project_name ILIKE :project_name")
-        params["project_name"] = f"%{project_name}%"
-
-    if district:
-        filter_conditions.append("district = :district")
-        params["district"] = district
-
-    if sale_type:
-        sale_type_db = SaleType.to_db(sale_type)
-        filter_conditions.append("sale_type = :sale_type")
-        params["sale_type"] = sale_type_db
-
-    # Build WHERE clause
-    where_clause = "COALESCE(is_outlier, false) = false"
-    if filter_conditions:
-        where_clause += " AND " + " AND ".join(filter_conditions)
-
-    query = text(f"""
+    query = text("""
         WITH transaction_growth AS (
             SELECT
                 id,
@@ -378,7 +346,10 @@ def get_segment_summary(
                 ) as txn_sequence
 
             FROM transactions
-            WHERE {where_clause}
+            WHERE COALESCE(is_outlier, false) = false
+              AND (:project_name IS NULL OR project_name ILIKE :project_name)
+              AND (:district IS NULL OR district = :district)
+              AND (:sale_type IS NULL OR sale_type = :sale_type)
         ),
         growth_metrics AS (
             SELECT

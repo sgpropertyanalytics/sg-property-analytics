@@ -208,21 +208,20 @@ def get_hot_projects():
         price_min = normalized_params.get("price_min")
         price_max = normalized_params.get("price_max")
 
-        # Build dynamic WHERE clauses
+        # Build param-guarded filters (static SQL with NULL checks).
         # IMPORTANT: units_sold is a HARD FACT - total confirmed New Sale transactions
         # It should NOT be affected by bedroom/district/segment filters
         # Filters only affect: which projects are shown, and median_price/psf calculations
-
-        # Base clause for all queries (outlier exclusion is always applied)
-        base_where = get_outlier_filter_sql('t')
-
-        # Filter clauses - affect project visibility and median calculations, NOT units_sold
-        filter_clauses = []
-        outer_where_clauses = []
         sql_params = {
             "limit": limit,
             "sale_type_new": SALE_TYPE_NEW,
             "sale_type_resale": SALE_TYPE_RESALE,
+            "bedroom_exact": None,
+            "bedroom_min": None,
+            "districts": None,
+            "segment_districts": None,
+            "price_min": None,
+            "price_max": None,
         }
 
         # Bedroom filter - affects which projects are shown (must have sales in this bedroom type)
@@ -241,10 +240,9 @@ def get_hot_projects():
                 bedroom_val = None
             if bedroom_val is not None:
                 if bedroom_val >= 4:
-                    filter_clauses.append(f"t.bedroom_count >= {bedroom_val}")
+                    sql_params["bedroom_min"] = bedroom_val
                 else:
-                    filter_clauses.append("t.bedroom_count = :bedroom")
-                    sql_params["bedroom"] = bedroom_val
+                    sql_params["bedroom_exact"] = bedroom_val
 
         # District filter - can be comma-separated
         if districts:
@@ -255,43 +253,31 @@ def get_hot_projects():
                     d = f"D{d.zfill(2)}"
                 normalized.append(d)
             if normalized:
-                placeholders = ", ".join([f":district_{i}" for i in range(len(normalized))])
-                filter_clauses.append(f"t.district IN ({placeholders})")
-                for i, d in enumerate(normalized):
-                    sql_params[f"district_{i}"] = d
+                sql_params["districts"] = normalized
 
         # Market segment (region) filter - expand to districts
         if market_segment and market_segment.upper() in ('CCR', 'RCR', 'OCR'):
             segment_districts = get_districts_for_region(market_segment.upper())
             if segment_districts:
-                placeholders = ", ".join([f":seg_district_{i}" for i in range(len(segment_districts))])
-                filter_clauses.append(f"t.district IN ({placeholders})")
-                for i, d in enumerate(segment_districts):
-                    sql_params[f"seg_district_{i}"] = d
+                sql_params["segment_districts"] = segment_districts
 
         # Price filters - applied in outer query on median_price
         if price_min:
             try:
-                outer_where_clauses.append("fs.median_price >= :price_min")
                 sql_params["price_min"] = float(price_min)
             except ValueError:
                 pass
 
         if price_max:
             try:
-                outer_where_clauses.append("fs.median_price <= :price_max")
                 sql_params["price_max"] = float(price_max)
             except ValueError:
                 pass
 
-        # Build SQL components
-        filter_where_sql = " AND ".join([base_where] + filter_clauses) if filter_clauses else base_where
-        outer_where_sql = " AND ".join(outer_where_clauses) if outer_where_clauses else "1=1"
-
         # Query with TWO CTEs:
         # 1. total_project_sales: UNFILTERED units_sold (HARD FACT - confirmed transactions)
         # 2. filtered_stats: Filtered median_price/psf for relevance + determines which projects to show
-        sql = text(f"""
+        sql = text("""
             WITH total_project_sales AS (
                 -- HARD FACT: Total confirmed New Sale transactions per project
                 -- This count is NEVER affected by bedroom/district/segment filters
@@ -303,8 +289,19 @@ def get_hot_projects():
                     MIN(t.transaction_date) as first_new_sale,
                     MAX(t.transaction_date) as last_new_sale
                 FROM transactions t
-                WHERE {get_outlier_filter_sql('t')}
+                WHERE COALESCE(t.is_outlier, false) = false
                   AND t.sale_type = :sale_type_new
+                GROUP BY t.project_name, t.district
+            ),
+            resale_project_sales AS (
+                -- Resale presence across the full project (unfiltered)
+                SELECT
+                    t.project_name,
+                    t.district,
+                    COUNT(*) as resale_count
+                FROM transactions t
+                WHERE COALESCE(t.is_outlier, false) = false
+                  AND t.sale_type = :sale_type_resale
                 GROUP BY t.project_name, t.district
             ),
             filtered_stats AS (
@@ -314,15 +311,20 @@ def get_hot_projects():
                     t.project_name,
                     t.district,
                     COUNT(CASE WHEN t.sale_type = :sale_type_new THEN 1 END) as filtered_count,
-                    COUNT(CASE WHEN t.sale_type = :sale_type_resale THEN 1 END) as resale_count,
                     AVG(CASE WHEN t.sale_type = :sale_type_new THEN t.psf END) as avg_psf,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = :sale_type_new THEN t.price END) as median_price,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = :sale_type_new THEN t.psf END) as median_psf
                 FROM transactions t
-                WHERE {filter_where_sql}
+                WHERE COALESCE(t.is_outlier, false) = false
+                  AND (
+                    (:bedroom_exact IS NULL AND :bedroom_min IS NULL)
+                    OR (:bedroom_exact IS NOT NULL AND t.bedroom_count = :bedroom_exact)
+                    OR (:bedroom_min IS NOT NULL AND t.bedroom_count >= :bedroom_min)
+                  )
+                  AND (:districts IS NULL OR t.district = ANY(:districts))
+                  AND (:segment_districts IS NULL OR t.district = ANY(:segment_districts))
                 GROUP BY t.project_name, t.district
                 HAVING COUNT(CASE WHEN t.sale_type = :sale_type_new THEN 1 END) > 0
-                   AND COUNT(CASE WHEN t.sale_type = :sale_type_resale THEN 1 END) = 0
             )
             SELECT
                 tps.project_name,
@@ -341,9 +343,13 @@ def get_hot_projects():
             FROM total_project_sales tps
             INNER JOIN filtered_stats fs
                 ON tps.project_name = fs.project_name AND tps.district = fs.district
+            LEFT JOIN resale_project_sales rps
+                ON tps.project_name = rps.project_name AND tps.district = rps.district
             LEFT JOIN project_locations pl
                 ON LOWER(TRIM(tps.project_name)) = LOWER(TRIM(pl.project_name))
-            WHERE {outer_where_sql}
+            WHERE (:price_min IS NULL OR fs.median_price >= :price_min)
+              AND (:price_max IS NULL OR fs.median_price <= :price_max)
+              AND COALESCE(rps.resale_count, 0) = 0
             ORDER BY tps.units_sold DESC
             LIMIT :limit
         """)
