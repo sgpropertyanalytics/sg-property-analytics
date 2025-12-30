@@ -191,7 +191,7 @@ export function MacroOverviewContent() {
                     const pctStr = score_change_pct != null ? (score_change_pct >= 0 ? `+${score_change_pct}%` : `${score_change_pct}%`) : '';
                     return (
                       <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
+                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate" title={`${current_score} ${label}`}>
                           {current_score} <span className={`text-xs font-bold uppercase tracking-wider ${conditionColorClass}`}>{label}</span>
                         </div>
                         {score_change_pct != null && (
@@ -224,7 +224,7 @@ export function MacroOverviewContent() {
                     const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
                     return (
                       <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
+                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate" title={`$${current_psf?.toLocaleString()} psf`}>
                           ${current_psf?.toLocaleString()} <span className="text-sm sm:text-base font-normal">psf</span>
                         </div>
                         {pct_change != null && (
@@ -257,7 +257,7 @@ export function MacroOverviewContent() {
                     const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
                     return (
                       <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
+                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate" title={`${current_count?.toLocaleString()} ${label}`}>
                           {current_count?.toLocaleString()} <span className={`text-xs font-bold uppercase tracking-wider ${colorClass}`}>{label}</span>
                         </div>
                         {pct_change != null && (
@@ -294,7 +294,7 @@ export function MacroOverviewContent() {
                     const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
                     return (
                       <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums">
+                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate" title={`${getKpiField(kpi, KpiField.FORMATTED_VALUE)} ${label}`}>
                           {getKpiField(kpi, KpiField.FORMATTED_VALUE)} <span className={`text-xs font-bold uppercase tracking-wider ${labelColorClass}`}>{label}</span>
                         </div>
                         {pct_change != null && (

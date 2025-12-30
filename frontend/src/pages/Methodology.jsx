@@ -107,7 +107,7 @@ function DataTable({ headers, rows, className = '' }) {
     <>
       {/* Desktop: table view */}
       <div className={`hidden sm:block overflow-x-auto max-w-full ${className}`}>
-        <table className="w-full text-sm">
+        <table className="min-w-[600px] w-full text-sm">
           <thead>
             <tr className="border-b border-[#94B4C1]/30">
               {headers.map((header, i) => (
