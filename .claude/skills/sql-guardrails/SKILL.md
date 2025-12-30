@@ -256,6 +256,104 @@ def test_v2_response_is_camel_case():
 
 ---
 
+## Part 8: SQL Correctness Patterns
+
+### Stable Keys for Joins
+
+```sql
+-- ❌ WRONG - display name changes break joins
+SELECT * FROM transactions t
+JOIN projects p ON t.project_name = p.project_name
+
+-- ✅ CORRECT - stable identifier
+SELECT * FROM transactions t
+JOIN projects p ON t.project_id = p.project_id
+```
+
+### Deterministic Aggregations
+
+```sql
+-- ❌ WRONG - non-deterministic (arbitrary tie-break)
+SELECT MODE() WITHIN GROUP (ORDER BY project_name) as canonical_name
+
+-- ❌ WRONG - unordered array
+SELECT array_agg(project_name) as names
+
+-- ✅ CORRECT - explicit ordering/tie-break
+SELECT project_name
+FROM projects
+ORDER BY transaction_count DESC, project_id  -- id breaks ties
+LIMIT 1
+
+-- ✅ CORRECT - ordered array
+SELECT array_agg(project_name ORDER BY project_id) as names
+```
+
+### Two-Phase Pattern (Invariant Truth)
+
+```sql
+-- ❌ WRONG - filter changes the definition of launch_date
+WITH filtered AS (
+    SELECT * FROM transactions WHERE district = 'D01'
+)
+SELECT project_id, MIN(transaction_date) as launch_date
+FROM filtered
+GROUP BY project_id  -- Launch date shifts based on filter!
+
+-- ✅ CORRECT - compute globally, then filter membership
+WITH launch_dates AS (
+    -- Phase A: Compute truth globally (no filters)
+    SELECT project_id, MIN(transaction_date) as launch_date
+    FROM transactions
+    GROUP BY project_id
+),
+filtered_projects AS (
+    -- Phase B: Filter is membership, not redefinition
+    SELECT DISTINCT project_id
+    FROM transactions
+    WHERE district = 'D01'
+)
+SELECT ld.*
+FROM launch_dates ld
+WHERE ld.project_id IN (SELECT project_id FROM filtered_projects)
+```
+
+### Static SQL with NULL Guards
+
+```sql
+-- ❌ FORBIDDEN - Dynamic string building in Python
+query = "SELECT * FROM txn WHERE 1=1"
+if bedroom:
+    query += f" AND bedroom = {bedroom}"  -- Injection risk!
+
+-- ✅ CORRECT - Static SQL, all filters in one query
+SELECT * FROM transactions
+WHERE COALESCE(is_outlier, false) = false
+  AND (:bedroom IS NULL OR bedroom = :bedroom)
+  AND (:district IS NULL OR district = :district)
+  AND (:date_from IS NULL OR transaction_date >= :date_from)
+  AND (:date_to IS NULL OR transaction_date < :date_to)
+```
+
+### DB Does Set Work (No N+1)
+
+```python
+# ❌ WRONG - O(n²) Python loop
+project_names = db.execute("SELECT DISTINCT project_name FROM txn").fetchall()
+for name in project_names:
+    units = db.execute("SELECT * FROM units WHERE project_name = :n", {"n": name})
+    # N queries for N projects!
+
+# ✅ CORRECT - Single bulk join
+result = db.execute("""
+    SELECT t.project_name, u.unit_info
+    FROM (SELECT DISTINCT project_name FROM transactions) t
+    LEFT JOIN units u ON t.project_name = u.project_name
+""")
+```
+
+---
+
 ## Quick Reference Card
 
 ```
