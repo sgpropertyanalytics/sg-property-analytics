@@ -10,7 +10,7 @@ Endpoints:
 
 from datetime import date
 
-from schemas.api_contract import SaleType, FloorLevel
+from api.contracts.contract_schema import SaleType, FloorLevel
 from ..registry import (
     EndpointContract,
     ParamSchema,

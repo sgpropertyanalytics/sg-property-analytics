@@ -26,7 +26,7 @@ from services.price_bands_compute import (
 )
 
 # Import serializers from api_contract
-from schemas.api_contract import (
+from api.contracts.contract_schema import (
     serialize_price_bands_v2,
     serialize_price_bands_dual,
     PriceBandsFields,

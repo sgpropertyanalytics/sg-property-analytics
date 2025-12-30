@@ -7,14 +7,14 @@ Broken into layers:
 - Metric calculation: Pure functions for risk metrics
 - Gating flags: Project characteristic flags
 
-Note: Serialization is handled by schemas/api_contract.py for consistency.
+Note: Serialization is handled by api/contracts/contract_schema.py for consistency.
 """
 
 from datetime import datetime, date, timedelta
 from typing import Optional, Dict, Any, Tuple
 from dataclasses import dataclass
 
-from schemas.api_contract import SaleType
+from api.contracts.contract_schema import SaleType
 
 
 # =============================================================================

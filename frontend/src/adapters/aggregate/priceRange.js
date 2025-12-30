@@ -26,7 +26,7 @@ const MIN_CELL_COUNT = 5;
 
 /**
  * Age band order for matrix display.
- * Matches canonical PropertyAgeBucket from backend/schemas/api_contract.py
+ * Matches canonical PropertyAgeBucket from backend/api/contracts/contract_schema.py
  */
 const AGE_BAND_ORDER = [
   'new_sale',

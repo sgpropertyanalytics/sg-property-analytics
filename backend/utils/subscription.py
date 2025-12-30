@@ -181,7 +181,7 @@ def serialize_transactions(transactions, is_premium=None):
     Returns:
         list of dicts - full data for premium, masked data for free/anonymous
     """
-    from schemas.api_contract import serialize_transaction, serialize_transaction_teaser
+    from api.contracts.contract_schema import serialize_transaction, serialize_transaction_teaser
 
     if is_premium is None:
         is_premium = is_premium_user()

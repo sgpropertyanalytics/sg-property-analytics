@@ -73,7 +73,7 @@ def dashboard():
       GET /api/dashboard?segment=CCR&panels=time_series,summary
     """
     from services.dashboard_service import get_dashboard_data, ValidationError, get_cache_stats
-    from schemas.api_contract import serialize_dashboard_response
+    from api.contracts.contract_schema import serialize_dashboard_response
 
     start = time.time()
 
@@ -121,7 +121,7 @@ def dashboard():
 
         sale_type = params.get("sale_type")
         if sale_type:
-            from schemas.api_contract import SaleType
+            from api.contracts.contract_schema import SaleType
             filters["sale_type"] = SaleType.to_db(sale_type)
 
         if params.get("psf_min") is not None:
@@ -134,7 +134,7 @@ def dashboard():
             filters["size_max"] = params.get("size_max")
         tenure = params.get("tenure")
         if tenure:
-            from schemas.api_contract import Tenure
+            from api.contracts.contract_schema import Tenure
             filters["tenure"] = Tenure.to_db(tenure)
         if params.get("property_age_min") is not None:
             filters["property_age_min"] = params.get("property_age_min")

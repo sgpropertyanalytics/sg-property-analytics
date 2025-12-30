@@ -8,7 +8,7 @@ Endpoint: GET/POST /api/dashboard
 
 from datetime import date
 
-from schemas.api_contract import SaleType, Tenure
+from api.contracts.contract_schema import SaleType, Tenure
 from ..registry import (
     EndpointContract,
     ParamSchema,

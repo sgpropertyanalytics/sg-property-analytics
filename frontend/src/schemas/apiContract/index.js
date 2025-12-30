@@ -2,7 +2,7 @@
  * API Contract Schema v3 - Single Source of Truth
  *
  * Defines the stable API interface between backend and frontend.
- * Must match backend/schemas/api_contract.py
+ * Must match backend/api/contracts/contract_schema.py
  *
  * Module Structure:
  * - version.js: API contract versioning and version assertion

@@ -26,7 +26,7 @@ def filter_options():
     from models.database import db
     from sqlalchemy import func, distinct
     from constants import get_region_for_district
-    from schemas.api_contract import serialize_filter_options, PropertyAgeBucket
+    from api.contracts.contract_schema import serialize_filter_options, PropertyAgeBucket
 
     # Schema version: v2 only (v1 deprecated fields removed)
 

@@ -43,7 +43,7 @@ class TestNoLegacyParamStyle:
     BACKEND_ROOT = Path(__file__).parent.parent
 
     # Directories to scan
-    SCAN_DIRS = ['routes', 'services', 'db', 'schemas']
+    SCAN_DIRS = ['routes', 'services', 'db', 'api']
 
     # File extensions to check
     EXTENSIONS = ['.py']
@@ -520,7 +520,7 @@ class TestNoHardcodedEnumStrings:
         '__pycache__',
         'test_',
         'constants.py',  # The source of truth
-        'api_contract.py',  # API contract definitions
+        'contract_schema.py',  # API contract definitions
     ]
 
     # Line patterns to skip (comments, docstrings, UI labels)

@@ -8,7 +8,7 @@ Uses canonical PropertyAgeBucket.RECENTLY_TOP age range.
 from typing import Dict, Any
 from db.sql import OUTLIER_FILTER
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
-from schemas.api_contract import PropertyAgeBucket
+from api.contracts.contract_schema import PropertyAgeBucket
 from services.kpi.base import (
     KPIResult, build_date_bounds, build_filter_clause
 )

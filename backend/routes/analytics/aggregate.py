@@ -22,7 +22,7 @@ from utils.normalize import (
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
-from schemas.api_contract import PropertyAgeBucket
+from api.contracts.contract_schema import PropertyAgeBucket
 
 
 def _get_project_lease_info(project_name: str) -> Tuple[Optional[int], Optional[str]]:
@@ -195,7 +195,7 @@ def aggregate():
     from sqlalchemy import func, and_, or_, extract, cast, String, Integer, literal_column
     from constants import get_region_for_district
     from services.dashboard_service import _dashboard_cache
-    from schemas.api_contract import serialize_aggregate_response
+    from api.contracts.contract_schema import serialize_aggregate_response
 
     start = time.time()
 
@@ -281,7 +281,7 @@ def aggregate():
     # Sale type filter (case-insensitive to handle data variations)
     sale_type = params.get("sale_type")
     if sale_type:
-        from schemas.api_contract import SaleType
+        from api.contracts.contract_schema import SaleType
         sale_type_db = SaleType.to_db(sale_type)
         filter_conditions.append(func.lower(Transaction.sale_type) == sale_type_db.lower())
         filters_applied["sale_type"] = sale_type

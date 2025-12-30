@@ -101,13 +101,13 @@ sg-property-analyzer/
 │   │   ├── contracts/        # @api_contract system
 │   │   │   ├── wrapper.py    # Decorator
 │   │   │   ├── normalize.py  # Param normalization
-│   │   │   └── schemas/      # 17 endpoint contracts
+│   │   │   ├── schemas/      # 17 endpoint contracts
+│   │   │   └── contract_schema.py # Enums + serialization
 │   │   └── middleware/       # request_id, query_timing
 │   ├── routes/
 │   │   └── analytics/        # 12 route modules
 │   ├── services/             # 37 service files
 │   ├── models/               # SQLAlchemy models
-│   ├── schemas/              # api_contract.py (enums)
 │   ├── db/                   # sql.py (helpers)
 │   └── utils/                # normalize.py (input boundary)
 │

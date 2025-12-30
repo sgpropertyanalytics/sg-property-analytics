@@ -16,7 +16,7 @@ Ensure all data classifications, labels, and naming conventions are consistent a
 | Domain | Backend | Frontend |
 |--------|---------|----------|
 | **All Classifications** | `backend/constants.py` | `frontend/src/constants/index.js` |
-| **Enums (Sale Type, Tenure)** | `backend/schemas/api_contract.py` | `frontend/src/schemas/apiContract.js` |
+| **Enums (Sale Type, Tenure)** | `backend/api/contracts/contract_schema.py` | `frontend/src/schemas/apiContract.js` |
 
 **RULE**: If a constant doesn't exist in these files, ADD IT THERE FIRST.
 
@@ -192,7 +192,7 @@ const label = 'Resale';
 ```python
 # CORRECT
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
-from schemas.api_contract import SaleType
+from api.contracts.contract_schema import SaleType
 
 # FORBIDDEN
 if sale_type == 'New Sale':
@@ -476,7 +476,7 @@ export const NEW_CLASSIFICATION_LABELS = { ... };
 ### Step 3: Add to API Contract (if enum)
 
 ```python
-# backend/schemas/api_contract.py
+# backend/api/contracts/contract_schema.py
 class NewEnum(str, Enum):
     VALUE = 'value'
 ```
@@ -520,6 +520,6 @@ Service:  filters.get('districts', [])    // PLURAL
 ADDING NEW CLASSIFICATION:
 1. Add to backend/constants.py
 2. Add to frontend/src/constants/index.js
-3. Add to api_contract.py if enum
+3. Add to contract_schema.py if enum
 4. Update this skill document
 ```

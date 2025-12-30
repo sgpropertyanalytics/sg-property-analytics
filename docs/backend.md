@@ -71,6 +71,7 @@ api/contracts/
 ├── wrapper.py        # @api_contract decorator
 ├── normalize.py      # Param normalization (aliases, types, dates, districts)
 ├── validate.py       # Schema validation logic
+├── contract_schema.py   # Enums + serialization
 └── schemas/          # 17 endpoint-specific contracts
     ├── aggregate.py
     ├── dashboard.py
@@ -416,7 +417,7 @@ ORDER BY transaction_date
 **Use API contract methods:**
 
 ```python
-from schemas.api_contract import SaleType
+from api.contracts.contract_schema import SaleType
 
 # Convert API value to DB value
 sale_type_db = SaleType.to_db(SaleType.RESALE)  # → "Resale"
@@ -687,7 +688,7 @@ Before any query:
 
 - [ ] Uses `:param` style only (no `%(param)s`)
 - [ ] Date params are Python `date` objects
-- [ ] Enums use `api_contract.py` methods
+- [ ] Enums use `contract_schema.py` methods
 - [ ] Outlier filter uses `COALESCE`
 - [ ] Numeric values are parameterized
 - [ ] SQL lives in service file, not route
@@ -719,7 +720,7 @@ pytest tests/test_regression_snapshots.py --update-snapshots
 ### Current Version: v3
 
 ```python
-# schemas/api_contract.py
+# api/contracts/contract_schema.py
 CURRENT_API_CONTRACT_VERSION = "v3"
 SUPPORTED_API_CONTRACT_VERSIONS = {"v1", "v2", "v3"}
 ```

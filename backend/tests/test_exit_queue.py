@@ -31,7 +31,7 @@ from services.exit_queue_service import (
 )
 
 # Import serializers from api_contract
-from schemas.api_contract import (
+from api.contracts.contract_schema import (
     serialize_exit_queue_v2,
     ExitQueueFields,
     LiquidityZone,

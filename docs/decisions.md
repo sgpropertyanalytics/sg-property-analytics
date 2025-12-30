@@ -151,7 +151,7 @@ Frontend UI not yet built.
 
 When v4 is needed:
 
-1. Add version constant to `api_contract.py`
+1. Add version constant to `contract_schema.py`
 2. Add to `SUPPORTED_API_CONTRACT_VERSIONS`
 3. Update adapters
 4. Add tests

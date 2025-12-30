@@ -23,7 +23,7 @@ from api.contracts import api_contract
 gls_bp = Blueprint('gls', __name__)
 
 # Import contract versioning for HTTP header
-from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+from api.contracts.contract_schema import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
 
 
 @gls_bp.after_request

@@ -200,7 +200,7 @@ Before adding ANY backend endpoint:
 [ ] NOT creating a dedicated endpoint for something /aggregate can do
 [ ] If project-scoped: justified why it needs dedicated endpoint
 [ ] SQL follows sql-guardrails (see that skill)
-[ ] Response follows api_contract.py patterns
+[ ] Response follows contract_schema.py patterns
 [ ] Tests cover v1 and v2 schema modes
 ```
 

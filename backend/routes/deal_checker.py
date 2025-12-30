@@ -24,7 +24,7 @@ from utils.normalize import (
 deal_checker_bp = Blueprint('deal_checker', __name__)
 
 # Import contract versioning for HTTP header
-from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+from api.contracts.contract_schema import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
 from api.contracts.wrapper import api_contract
 
 

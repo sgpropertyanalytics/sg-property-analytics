@@ -18,7 +18,7 @@ class TestPropertyAgeBucketEnum:
 
     def test_all_buckets_defined(self):
         """All expected buckets should be defined."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         expected = [
             'new_sale', 'recently_top',
@@ -28,14 +28,14 @@ class TestPropertyAgeBucketEnum:
 
     def test_is_valid_accepts_valid_buckets(self):
         """is_valid should return True for all valid buckets."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         for bucket in PropertyAgeBucket.ALL:
             assert PropertyAgeBucket.is_valid(bucket) is True
 
     def test_is_valid_rejects_invalid_buckets(self):
         """is_valid should return False for invalid values."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         assert PropertyAgeBucket.is_valid('invalid') is False
         assert PropertyAgeBucket.is_valid('') is False
@@ -43,7 +43,7 @@ class TestPropertyAgeBucketEnum:
 
     def test_all_buckets_have_labels(self):
         """Every bucket should have a display label."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         for bucket in PropertyAgeBucket.ALL:
             label = PropertyAgeBucket.get_label(bucket)
@@ -53,7 +53,7 @@ class TestPropertyAgeBucketEnum:
 
     def test_all_buckets_have_short_labels(self):
         """Every bucket should have a short label."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         for bucket in PropertyAgeBucket.ALL:
             label = PropertyAgeBucket.get_label(bucket, short=True)
@@ -62,7 +62,7 @@ class TestPropertyAgeBucketEnum:
 
     def test_age_boundaries_correctness(self):
         """Age range boundaries should be correct."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         # Test each age-based bucket
         assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP) == (4, 8)
@@ -72,13 +72,13 @@ class TestPropertyAgeBucketEnum:
 
     def test_special_buckets_no_age_boundaries(self):
         """new_sale should have no age range (it's market state, not age-based)."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         assert PropertyAgeBucket.get_age_range(PropertyAgeBucket.NEW_SALE) is None
 
     def test_is_age_based_classification(self):
         """is_age_based should correctly classify buckets."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         # Age-based buckets
         assert PropertyAgeBucket.is_age_based(PropertyAgeBucket.RECENTLY_TOP) is True
@@ -91,7 +91,7 @@ class TestPropertyAgeBucketEnum:
 
     def test_boundary_age_8_goes_to_young_resale(self):
         """Age 8 should go to young_resale (not recently_top) due to exclusive upper bound."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         # recently_top: [4, 8) → age 8 is NOT in this bucket
         recently_top_range = PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP)
@@ -109,7 +109,7 @@ class TestPropertyAgeBucketParsing:
 
     def test_parse_v2_camelcase_param(self):
         """v2 camelCase parameter name should be parsed."""
-        from schemas.api_contract import parse_filter_params
+        from api.contracts.contract_schema import parse_filter_params
 
         args = {'propertyAgeBucket': 'recently_top'}
         params = parse_filter_params(args)
@@ -117,7 +117,7 @@ class TestPropertyAgeBucketParsing:
 
     def test_parse_v1_snake_case_param(self):
         """v1 snake_case parameter name should be parsed."""
-        from schemas.api_contract import parse_filter_params
+        from api.contracts.contract_schema import parse_filter_params
 
         args = {'property_age_bucket': 'young_resale'}
         params = parse_filter_params(args)
@@ -125,7 +125,7 @@ class TestPropertyAgeBucketParsing:
 
     def test_v2_takes_precedence_over_v1(self):
         """v2 camelCase should take precedence if both provided."""
-        from schemas.api_contract import parse_filter_params
+        from api.contracts.contract_schema import parse_filter_params
 
         args = {'propertyAgeBucket': 'resale', 'property_age_bucket': 'mature_resale'}
         params = parse_filter_params(args)
@@ -133,7 +133,7 @@ class TestPropertyAgeBucketParsing:
 
     def test_invalid_bucket_ignored(self):
         """Invalid bucket values should be ignored."""
-        from schemas.api_contract import parse_filter_params
+        from api.contracts.contract_schema import parse_filter_params
 
         args = {'propertyAgeBucket': 'invalid_bucket'}
         params = parse_filter_params(args)
@@ -141,7 +141,7 @@ class TestPropertyAgeBucketParsing:
 
     def test_all_valid_buckets_parsed(self):
         """All valid bucket values should be accepted."""
-        from schemas.api_contract import parse_filter_params, PropertyAgeBucket
+        from api.contracts.contract_schema import parse_filter_params, PropertyAgeBucket
 
         for bucket in PropertyAgeBucket.ALL:
             args = {'propertyAgeBucket': bucket}
@@ -154,7 +154,7 @@ class TestPropertyAgeBucketSerialization:
 
     def test_serialize_filter_options_includes_buckets(self):
         """serialize_filter_options should include propertyAgeBuckets."""
-        from schemas.api_contract import serialize_filter_options, PropertyAgeBucket
+        from api.contracts.contract_schema import serialize_filter_options, PropertyAgeBucket
 
         result = serialize_filter_options(
             districts=['D01', 'D02'],
@@ -185,7 +185,7 @@ class TestPropertyAgeBucketSerialization:
 
     def test_default_buckets_when_none_provided(self):
         """When property_age_buckets is None, all buckets should be included."""
-        from schemas.api_contract import serialize_filter_options, PropertyAgeBucket
+        from api.contracts.contract_schema import serialize_filter_options, PropertyAgeBucket
 
         result = serialize_filter_options(
             districts=['D01'],
@@ -209,7 +209,7 @@ class TestPropertyAgeBucketFilterBuilder:
     def test_build_filter_returns_expression(self):
         """build_property_age_bucket_filter should return a SQLAlchemy expression."""
         from services.dashboard_service import build_property_age_bucket_filter
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         # Should not raise
         expr = build_property_age_bucket_filter(PropertyAgeBucket.YOUNG_RESALE)
@@ -233,7 +233,7 @@ class TestAgeBoundaryLogic:
 
     def test_exclusive_upper_bound_8(self):
         """Age 8 should be in young_resale, not recently_top."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         # recently_top: [4, 8) → 4 <= age < 8
         recently_top = PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP)
@@ -249,7 +249,7 @@ class TestAgeBoundaryLogic:
 
     def test_exclusive_upper_bound_15(self):
         """Age 15 should be in resale, not young_resale."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         young_resale = PropertyAgeBucket.get_age_range(PropertyAgeBucket.YOUNG_RESALE)
         min_age, max_age = young_resale
@@ -262,7 +262,7 @@ class TestAgeBoundaryLogic:
 
     def test_mature_resale_unbounded(self):
         """Mature resale should have no upper bound."""
-        from schemas.api_contract import PropertyAgeBucket
+        from api.contracts.contract_schema import PropertyAgeBucket
 
         mature = PropertyAgeBucket.get_age_range(PropertyAgeBucket.MATURE_RESALE)
         min_age, max_age = mature

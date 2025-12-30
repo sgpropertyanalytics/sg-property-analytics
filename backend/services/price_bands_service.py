@@ -29,7 +29,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from sqlalchemy import text
 
 from models.database import db
-from schemas.api_contract import SaleType
+from api.contracts.contract_schema import SaleType
 from constants import (
     get_region_for_district, get_districts_for_region,
     normalize_tenure, TENURE_TYPE_LABELS_SHORT,

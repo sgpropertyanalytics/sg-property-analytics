@@ -11,7 +11,7 @@ Endpoints:
 - GET /api/budget-heatmap
 """
 
-from schemas.api_contract import SaleType, Tenure
+from api.contracts.contract_schema import SaleType, Tenure
 from ..registry import (
     EndpointContract,
     ParamSchema,

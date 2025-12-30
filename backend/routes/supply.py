@@ -20,7 +20,7 @@ supply_bp = Blueprint('supply', __name__)
 def add_contract_version_header(response):
     """Add X-API-Contract-Version header to all supply responses."""
     try:
-        from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+        from api.contracts.contract_schema import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
         response.headers[API_CONTRACT_HEADER] = CURRENT_API_CONTRACT_VERSION
     except ImportError:
         response.headers['X-API-Contract-Version'] = 'v3'

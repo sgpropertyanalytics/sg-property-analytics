@@ -18,7 +18,7 @@ All modules share the same blueprint (analytics_bp) registered at /api.
 
 from flask import Blueprint
 from services.analytics_reader import get_reader
-from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+from api.contracts.contract_schema import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
 
 # Create the shared blueprint
 analytics_bp = Blueprint('analytics', __name__)

@@ -126,7 +126,7 @@ def get_project_price_bands(project_name):
     """
     start = time.time()
     from services.price_bands_service import get_project_price_bands as compute_bands
-    from schemas.api_contract import serialize_price_bands_v2
+    from api.contracts.contract_schema import serialize_price_bands_v2
 
     try:
         # Parse query params
@@ -265,7 +265,7 @@ def get_project_exit_queue(project_name):
         from sqlalchemy import text
         from services.new_launch_units import get_project_units
         from services.exit_queue_service import get_exit_queue_analysis
-        from schemas.api_contract import serialize_exit_queue_v2
+        from api.contracts.contract_schema import serialize_exit_queue_v2
 
         # Call the service - returns (result, error_response, status_code)
         # Uses hybrid lookup: CSV → database → estimation

@@ -60,7 +60,7 @@ def build_property_age_filter(age_filter):
 insights_bp = Blueprint('insights', __name__)
 
 # Import contract versioning for HTTP header
-from schemas.api_contract import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
+from api.contracts.contract_schema import API_CONTRACT_HEADER, CURRENT_API_CONTRACT_VERSION
 
 
 @insights_bp.after_request
@@ -383,7 +383,7 @@ def district_liquidity():
     start = time.time()
 
     # Parse query params
-    from schemas.api_contract import SaleType
+    from api.contracts.contract_schema import SaleType
 
     period = request.args.get("period", "12m")
     bed_filter = request.args.get("bed", "all")

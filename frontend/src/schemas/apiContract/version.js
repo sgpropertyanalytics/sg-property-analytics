@@ -2,7 +2,7 @@
  * API Contract Versioning
  *
  * Defines supported API versions and version assertion helpers.
- * Must match backend/schemas/api_contract.py
+ * Must match backend/api/contracts/contract_schema.py
  */
 
 // =============================================================================

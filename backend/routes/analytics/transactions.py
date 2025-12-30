@@ -63,11 +63,11 @@ def get_transaction_price_growth():
         sale_type = params.get("sale_type")
 
         if floor_level:
-            from schemas.api_contract import FloorLevel
+            from api.contracts.contract_schema import FloorLevel
             floor_level = FloorLevel.to_db(floor_level)
 
         if sale_type:
-            from schemas.api_contract import SaleType
+            from api.contracts.contract_schema import SaleType
             sale_type = SaleType.to_db(sale_type)
 
         district = params.get("district")
@@ -102,7 +102,7 @@ def get_transaction_price_growth():
             per_page=per_page
         )
 
-        # Serialize response (future: add proper serializer in api_contract.py)
+        # Serialize response (future: add proper serializer in api/contracts/contract_schema.py)
         # For now, return as-is with v2 metadata.
         response = result
         response['apiContractVersion'] = 'v2'
@@ -144,7 +144,7 @@ def get_price_growth_segments():
         project_name = params.get("project")
         sale_type = params.get("sale_type")
         if sale_type:
-            from schemas.api_contract import SaleType
+            from api.contracts.contract_schema import SaleType
             sale_type = SaleType.to_db(sale_type)
 
         district = params.get("district")

@@ -1,6 +1,6 @@
 ---
 name: sql-guardrails
-description: Backend SQL and data-access guardrails. ALWAYS activate before writing or modifying ANY SQL queries, service functions, or route handlers. Enforces parameter style (:param only), date handling (Python objects), enum normalization (api_contract.py), outlier filtering (COALESCE), and v2 API compliance. Use before AND after any backend SQL changes.
+description: Backend SQL and data-access guardrails. ALWAYS activate before writing or modifying ANY SQL queries, service functions, or route handlers. Enforces parameter style (:param only), date handling (Python objects), enum normalization (contract_schema.py), outlier filtering (COALESCE), and v2 API compliance. Use before AND after any backend SQL changes.
 ---
 
 # SQL & Backend Guardrails
@@ -38,7 +38,7 @@ Prevent SQL-related bugs and ensure v2 API contract compliance. This skill acts 
 │   └── NO ::date casting unless schema mismatch
 │
 ├── Enum Values
-│   ├── Use api_contract.py methods
+│   ├── Use contract_schema.py methods
 │   ├── SaleType.to_db() for DB values
 │   └── NO hardcoded strings ('Resale', 'New Sale')
 │
@@ -109,7 +109,7 @@ result = db.session.execute(query, params)
 
 ```python
 # ✅ CORRECT - Backend
-from schemas.api_contract import SaleType
+from api.contracts.contract_schema import SaleType
 
 sale_type_db = SaleType.to_db(sale_type_enum)  # → "Resale"
 ```
@@ -263,7 +263,7 @@ SQL GUARDRAILS CHECKLIST
 
 [ ] :param style only (no %(param)s)
 [ ] Python date objects (no strings)
-[ ] Enums via api_contract.py
+[ ] Enums via contract_schema.py
 [ ] COALESCE(is_outlier, false) = false
 [ ] Parameterized numeric values
 [ ] SQL in service files
@@ -288,7 +288,7 @@ Before marking SQL work as complete:
 ### Guardrail Compliance
 - [x] Parameter style: :param only
 - [x] Date handling: Python objects
-- [x] Enum handling: api_contract.py
+- [x] Enum handling: contract_schema.py
 - [x] Outlier filter: COALESCE pattern
 - [x] SQL location: services/ directory
 
