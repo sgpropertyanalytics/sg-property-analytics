@@ -88,6 +88,10 @@ rawdata/
 # Exception: backend/data for static lookup files (tracked in git)
 !backend/data/
 !backend/data/*.csv
+# Exception: CI baselines for data guard (tracked in git)
+!.ci/
+!.ci/baselines/
+!.ci/baselines/*.csv
 *.db
 *.sqlite
 *.sqlite3
