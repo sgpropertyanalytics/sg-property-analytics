@@ -11,7 +11,7 @@
  * Only the drill level (year/quarter/month) is visual-local.
  */
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { Chart } from 'react-chartjs-2';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { QueryState } from '../common/QueryState';
@@ -48,14 +48,15 @@ const is2020Q4Period = (periodLabel) => {
  *
  * @param {Object} props
  * @param {number} props.height - Chart height in pixels
- * @param {boolean} props.include2020Q4 - Whether to include 2020 Q4 data (default: false)
  */
 export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart({
   height = 300,
-  include2020Q4 = false,
 }) {
   // Get GLOBAL filters and timeGrouping from context
   const { buildApiParams, debouncedFilterKey, filters, timeGrouping } = usePowerBIFilters();
+
+  // 2020 Q4 has heavily skewed new launch data - exclude by default
+  const [include2020Q4, setInclude2020Q4] = useState(false);
 
   const chartRef = useRef(null);
 
@@ -272,16 +273,29 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
         >
           {/* Header */}
           <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-[#213448] text-sm md:text-base flex items-center gap-2">
-                New Launch Activity
-                {isFetching && (
-                  <span className="w-3 h-3 border-2 border-[#547792]/30 border-t-[#547792] rounded-full animate-spin" />
-                )}
-              </h3>
-              <p className="text-xs text-[#547792] mt-0.5">
-                {getFilterSummary()} · by {TIME_LABELS[timeGrouping].toLowerCase()}
-              </p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-[#213448] text-sm md:text-base flex items-center gap-2">
+                  New Launch Activity
+                  {isFetching && (
+                    <span className="w-3 h-3 border-2 border-[#547792]/30 border-t-[#547792] rounded-full animate-spin" />
+                  )}
+                </h3>
+                <p className="text-xs text-[#547792] mt-0.5">
+                  {getFilterSummary()} · by {TIME_LABELS[timeGrouping].toLowerCase()}
+                </p>
+              </div>
+              {/* Toggle for 2020 Q4 data - heavily skewed due to many launches */}
+              <button
+                onClick={() => setInclude2020Q4(!include2020Q4)}
+                className={`shrink-0 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                  include2020Q4
+                    ? 'bg-[#213448] text-white border-[#213448]'
+                    : 'bg-white text-[#547792] border-[#94B4C1] hover:bg-[#EAE0CF]/50'
+                }`}
+              >
+                {include2020Q4 ? 'Hide 2020 Q4' : 'Include 2020 Q4'}
+              </button>
             </div>
 
             {/* Summary KPIs */}

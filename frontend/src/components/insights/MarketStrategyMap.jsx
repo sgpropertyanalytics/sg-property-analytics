@@ -390,8 +390,9 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
             {/* Region name, Help tooltip, and YoY */}
             <div className="flex items-center justify-between sm:mb-1 min-w-[60px] sm:min-w-0">
               <div className="flex items-center gap-1">
-                <span className="font-semibold text-[#213448] text-sm">
-                  {stat.region}
+                <span className="font-semibold text-[#213448] text-xs sm:text-sm">
+                  <span className="sm:hidden">{stat.region}</span>
+                  <span className="hidden sm:inline">{stat.region} Median PSF (Weighted by District Txs)</span>
                 </span>
                 <HelpTooltip content={buildMethodologyTooltip(stat)} />
               </div>

@@ -95,22 +95,7 @@ ChartJS.register(
  *
  * Power BI Pattern: Global slicers MUST apply to ALL visuals.
  */
-/**
- * Helper to detect if a period label falls within 2020 Q4 (Oct-Dec 2020)
- * Handles: quarterly ("2020 Q4"), monthly ("2020-10", "2020-11", "2020-12")
- * Returns false for yearly ("2020") since yearly aggregates aren't skewed
- */
-const is2020Q4Period = (periodLabel) => {
-  if (!periodLabel) return false;
-  const label = periodLabel.toString();
-  // Quarterly format: "2020 Q4"
-  if (label === '2020 Q4') return true;
-  // Monthly format: "2020-10", "2020-11", "2020-12"
-  if (/^2020-(10|11|12)/.test(label)) return true;
-  return false;
-};
-
-export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 350, include2020Q4 = false }) {
+export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 350 }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey, filters, timeGrouping } = usePowerBIFilters();
@@ -221,10 +206,8 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
     }
   );
 
-  // Extract transformed data and filter out 2020 Q4 if needed
-  const { chartData: rawChartData, summary, hasData: rawHasData } = data;
-  const chartData = include2020Q4 ? rawChartData : rawChartData.filter(d => !is2020Q4Period(d.period));
-  const hasData = chartData.length > 0 && rawHasData;
+  // Extract transformed data
+  const { chartData, summary, hasData } = data;
 
   // Build filter summary for display
   const getFilterSummary = () => {

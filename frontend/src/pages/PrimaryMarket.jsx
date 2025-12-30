@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { PowerBIFilterProvider } from '../context/PowerBIFilter';
 import { FilterBar } from '../components/powerbi/FilterBar';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
@@ -19,32 +19,16 @@ export function PrimaryMarketContent() {
   // Desktop-first chart height with mobile guardrail
   const chartHeight = useChartHeight(400, MOBILE_CAPS.tall);
 
-  // 2020 Q4 data is heavily skewed - exclude by default
-  const [include2020Q4, setInclude2020Q4] = useState(false);
-
   return (
     <div className="min-h-full bg-[#EAE0CF]/40">
       {/* Main Content Area - scrolling handled by parent DashboardLayout */}
       <div className="p-3 md:p-4 lg:p-6">
           {/* Header */}
           <div className="mb-4 md:mb-6">
-            <div className="flex items-start justify-between gap-4">
-              <PageHeader
-                title="New Launch Market"
-                subtitle="Compare New Sale vs Recently TOP transactions across the market"
-              />
-              {/* Toggle for 2020 Q4 data */}
-              <button
-                onClick={() => setInclude2020Q4(!include2020Q4)}
-                className={`shrink-0 text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                  include2020Q4
-                    ? 'bg-[#213448] text-white border-[#213448]'
-                    : 'bg-white text-[#547792] border-[#94B4C1] hover:bg-[#EAE0CF]/50'
-                }`}
-              >
-                {include2020Q4 ? 'Hide 2020 Q4' : 'Include 2020 Q4'}
-              </button>
-            </div>
+            <PageHeader
+              title="New Launch Market"
+              subtitle="Compare New Sale vs Recently TOP transactions across the market"
+            />
           </div>
 
           {/* Filter Bar - Unified component (desktop: sticky horizontal, mobile: drawer) */}
@@ -55,14 +39,14 @@ export function PrimaryMarketContent() {
             {/* New Sale vs Recently TOP Chart - Full width */}
             <ErrorBoundary name="New vs Resale Chart" compact>
               <ChartWatermark>
-                <NewVsResaleChart height={chartHeight} include2020Q4={include2020Q4} />
+                <NewVsResaleChart height={chartHeight} />
               </ChartWatermark>
             </ErrorBoundary>
 
             {/* New Launch Activity Timeline - Projects launched per period */}
             <ErrorBoundary name="New Launch Timeline Chart" compact>
               <ChartWatermark>
-                <NewLaunchTimelineChart height={chartHeight} include2020Q4={include2020Q4} />
+                <NewLaunchTimelineChart height={chartHeight} />
               </ChartWatermark>
             </ErrorBoundary>
           </div>
