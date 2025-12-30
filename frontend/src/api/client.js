@@ -149,6 +149,14 @@ apiClient.interceptors.response.use(
 // ===== Helper Functions =====
 
 /**
+ * Normalize value to array - prevents "undefined.map()" crashes
+ * Use at API boundary to normalize response arrays once.
+ * @param {any} x - Value to normalize
+ * @returns {Array} - Original array or empty array
+ */
+export const asArray = (x) => (Array.isArray(x) ? x : []);
+
+/**
  * Build query string from params object, filtering out null/undefined values
  */
 const buildQueryString = (params) => {

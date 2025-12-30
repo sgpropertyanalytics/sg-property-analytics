@@ -11,18 +11,47 @@ import { DashboardLayout } from './components/layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PageHeader } from './components/ui';
 
-// ===== Lazy Loading with Retry =====
-// Wraps lazy imports to handle chunk loading failures gracefully.
-// If a chunk fails to load (network error, cache miss, 404), reloads the page.
+// ===== Lazy Loading with Chunk Error Recovery =====
+// Auto-reloads once on chunk-load failure (common after deployments).
+// sessionStorage guard prevents infinite reload loop.
+const CHUNK_RETRY_KEY = 'chunk_reload_attempted';
+
+function isChunkLoadError(error) {
+  return (
+    error?.name === 'ChunkLoadError' ||
+    error?.message?.includes('Loading chunk') ||
+    error?.message?.includes('Failed to fetch dynamically imported module')
+  );
+}
+
+function ChunkLoadErrorFallback() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[200px] p-6 text-center">
+      <p className="text-sm text-gray-600 mb-4">Page failed to load after update.</p>
+      <button
+        onClick={() => { sessionStorage.removeItem(CHUNK_RETRY_KEY); window.location.reload(); }}
+        className="px-4 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300"
+      >
+        Refresh
+      </button>
+    </div>
+  );
+}
+
 function lazyWithRetry(componentImport) {
   return lazy(() =>
     componentImport().catch((error) => {
-      console.error('Chunk load failed, reloading page...', error);
-      // Force full page reload on chunk failure
-      // This ensures fresh chunks are fetched from server
-      window.location.reload();
-      // Return empty component to prevent further errors while reloading
-      return { default: () => null };
+      if (!isChunkLoadError(error)) throw error;
+
+      const alreadyRetried = sessionStorage.getItem(CHUNK_RETRY_KEY);
+      if (!alreadyRetried) {
+        sessionStorage.setItem(CHUNK_RETRY_KEY, '1');
+        window.location.reload();
+        return { default: () => null };
+      }
+
+      sessionStorage.removeItem(CHUNK_RETRY_KEY);
+      return { default: ChunkLoadErrorFallback };
     })
   );
 }

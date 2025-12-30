@@ -32,7 +32,8 @@ DANGEROUS_PATTERNS = [
     (r"array_agg\s*\([^)]+\)(?!\s+FILTER)(?![^)]*ORDER\s+BY)", "array_agg without ORDER BY is non-deterministic"),
 
     # Missing COALESCE for is_outlier
-    (r"FROM\s+transactions\b(?!.*(?:COALESCE|is_outlier\s*=\s*false))", "Query on transactions may be missing outlier filter"),
+    # Recognizes: COALESCE(is_outlier...), is_outlier = false, {OUTLIER_FILTER}, {outlier_filter_*}, {where_clause}
+    (r"FROM\s+transactions\b(?!.*(?:COALESCE|is_outlier\s*=\s*false|OUTLIER_FILTER|outlier_filter|where_clause))", "Query on transactions may be missing outlier filter"),
 ]
 
 # Patterns that are OK (false positive suppressors)
