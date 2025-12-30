@@ -24,6 +24,7 @@ import ResaleMetricsCards from '../components/powerbi/ResaleMetricsCards';
 import UnitPsfInput from '../components/powerbi/UnitPsfInput';
 import { KeyInsightBox } from '../components/ui/KeyInsightBox';
 import { ChartSkeleton } from '../components/common/ChartSkeleton';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import {
   ProjectNamesField,
   getProjectNamesField,
@@ -61,8 +62,17 @@ const STORAGE_KEY_UNIT_PSF = 'exitRisk:unitPsf';
 const getStoredProject = () => {
   try {
     const stored = sessionStorage.getItem(STORAGE_KEY_PROJECT);
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    // Validate required fields - prevents corrupted data from causing issues
+    if (!parsed || typeof parsed.name !== 'string' || !parsed.name.trim()) {
+      sessionStorage.removeItem(STORAGE_KEY_PROJECT);
+      return null;
+    }
+    return parsed;
   } catch {
+    // Clear corrupted data
+    sessionStorage.removeItem(STORAGE_KEY_PROJECT);
     return null;
   }
 };
@@ -165,10 +175,16 @@ export function ExitRiskContent() {
 
   // Parallel fetch for exitQueue + priceGrowth when project changes
   useEffect(() => {
-    if (!selectedProject) {
+    // Guard: Validate project has required name property
+    if (!selectedProject || typeof selectedProject.name !== 'string' || !selectedProject.name.trim()) {
       setExitQueueData(null);
       setPriceGrowthData(null);
       setPriceGrowthError(null);
+      // Clear invalid project from state and storage
+      if (selectedProject) {
+        setSelectedProject(null);
+        sessionStorage.removeItem(STORAGE_KEY_PROJECT);
+      }
       return;
     }
 
@@ -194,8 +210,25 @@ export function ExitRiskContent() {
         } else {
           const err = exitQueueRes.reason;
           if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
-            setError(err.response?.data?.error || 'Failed to load project data');
-            setExitQueueData(null);
+            // Handle 404 - project not found or no resale data
+            if (err.response?.status === 404) {
+              const errorData = err.response?.data;
+              // Check if it's a "no resales" case (project exists but no resale data)
+              if (errorData?.data_quality?.completeness === 'no_resales') {
+                // Show this as data, not error - the project exists but has no resales
+                setExitQueueData(errorData);
+                setError(null);
+              } else {
+                // Project doesn't exist - clear selection
+                setError('Project not found. It may have been removed from the database.');
+                setExitQueueData(null);
+                setSelectedProject(null);
+                sessionStorage.removeItem(STORAGE_KEY_PROJECT);
+              }
+            } else {
+              setError(err.response?.data?.error || 'Failed to load project data');
+              setExitQueueData(null);
+            }
           }
         }
 
@@ -226,7 +259,8 @@ export function ExitRiskContent() {
 
   // Load price bands data when project or unitPsf changes
   useEffect(() => {
-    if (!selectedProject) {
+    // Guard: Validate project has required name property
+    if (!selectedProject || typeof selectedProject.name !== 'string' || !selectedProject.name.trim()) {
       setPriceBandsData(null);
       setPriceBandsError(null);
       return;
@@ -594,45 +628,51 @@ export function ExitRiskContent() {
 
               {/* Row 2: Price Growth + Floor Liquidity */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 lg:items-stretch">
-                <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
-                  <PriceGrowthChart
-                    data={priceGrowthData}
-                    loading={priceGrowthLoading}
-                    error={priceGrowthError}
-                    projectName={selectedProject?.name}
-                    district={selectedProject?.district}
-                    height={400}
-                  />
-                </Suspense>
-                {normalizedExitQueue.resaleMetrics && (
-                  <Suspense fallback={<ChartSkeleton type="table" height={400} />}>
-                    <FloorLiquidityHeatmap
+                <ErrorBoundary name="Price Growth Chart" compact>
+                  <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
+                    <PriceGrowthChart
+                      data={priceGrowthData}
+                      loading={priceGrowthLoading}
+                      error={priceGrowthError}
+                      projectName={selectedProject?.name}
                       district={selectedProject?.district}
-                      highlightProject={selectedProject?.name}
+                      height={400}
                     />
                   </Suspense>
+                </ErrorBoundary>
+                {normalizedExitQueue.resaleMetrics && (
+                  <ErrorBoundary name="Floor Liquidity Heatmap" compact>
+                    <Suspense fallback={<ChartSkeleton type="table" height={400} />}>
+                      <FloorLiquidityHeatmap
+                        district={selectedProject?.district}
+                        highlightProject={selectedProject?.name}
+                      />
+                    </Suspense>
+                  </ErrorBoundary>
                 )}
               </div>
 
               {/* Row 3: Price Band + Exit Risk */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-stretch">
-                <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
-                  <PriceBandChart
-                    bands={getPriceBandsField(priceBandsData, PriceBandsField.BANDS) || []}
-                    latest={getPriceBandsField(priceBandsData, PriceBandsField.LATEST)}
-                    trend={getPriceBandsField(priceBandsData, PriceBandsField.TREND)}
-                    verdict={getPriceBandsField(priceBandsData, PriceBandsField.VERDICT)}
-                    unitPsf={unitPsf}
-                    dataSource={getPriceBandsField(priceBandsData, PriceBandsField.DATA_SOURCE)}
-                    proxyLabel={getPriceBandsField(priceBandsData, PriceBandsField.PROXY_LABEL)}
-                    dataQuality={getPriceBandsField(priceBandsData, PriceBandsField.DATA_QUALITY)}
-                    totalResaleTransactions={normalizedExitQueue?.resaleMetrics?.totalResaleTransactions}
-                    loading={priceBandsLoading}
-                    error={priceBandsError}
-                    projectName={selectedProject?.name}
-                    height={400}
-                  />
-                </Suspense>
+                <ErrorBoundary name="Price Band Chart" compact>
+                  <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
+                    <PriceBandChart
+                      bands={getPriceBandsField(priceBandsData, PriceBandsField.BANDS) || []}
+                      latest={getPriceBandsField(priceBandsData, PriceBandsField.LATEST)}
+                      trend={getPriceBandsField(priceBandsData, PriceBandsField.TREND)}
+                      verdict={getPriceBandsField(priceBandsData, PriceBandsField.VERDICT)}
+                      unitPsf={unitPsf}
+                      dataSource={getPriceBandsField(priceBandsData, PriceBandsField.DATA_SOURCE)}
+                      proxyLabel={getPriceBandsField(priceBandsData, PriceBandsField.PROXY_LABEL)}
+                      dataQuality={getPriceBandsField(priceBandsData, PriceBandsField.DATA_QUALITY)}
+                      totalResaleTransactions={normalizedExitQueue?.resaleMetrics?.totalResaleTransactions}
+                      loading={priceBandsLoading}
+                      error={priceBandsError}
+                      projectName={selectedProject?.name}
+                      height={400}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
                 {normalizedExitQueue.resaleMetrics && (
                   <ExitRiskDashboard
                     marketTurnoverPct={normalizedExitQueue.resaleMetrics?.marketTurnoverPct}
@@ -647,12 +687,14 @@ export function ExitRiskContent() {
 
               {/* Row 4: District Comparison */}
               {selectedProject?.district && (
-                <Suspense fallback={<ChartSkeleton type="bar" height={400} />}>
-                  <DistrictComparisonChart
-                    district={selectedProject.district}
-                    selectedProject={selectedProject.name}
-                  />
-                </Suspense>
+                <ErrorBoundary name="District Comparison Chart" compact>
+                  <Suspense fallback={<ChartSkeleton type="bar" height={400} />}>
+                    <DistrictComparisonChart
+                      district={selectedProject.district}
+                      selectedProject={selectedProject.name}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
               )}
             </div>
 
