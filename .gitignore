@@ -106,6 +106,7 @@ logs/
 *.tmp
 *.temp
 .cache/
+data-validation-logs/
 
 # Generated frontend contracts - MUST be committed for Vercel builds
 # frontend/src/generated/  # Commented out - these files are required at build time
