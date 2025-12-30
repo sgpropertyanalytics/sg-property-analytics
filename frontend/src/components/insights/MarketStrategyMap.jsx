@@ -13,6 +13,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import { BarChart3, DollarSign } from 'lucide-react';
+import { HelpTooltip } from '../ui/HelpTooltip';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
@@ -285,6 +286,36 @@ function HoverCard({ district, data }) {
 // REGION SUMMARY BAR COMPONENT
 // =============================================================================
 
+/**
+ * Build tooltip content string for region methodology
+ */
+function buildMethodologyTooltip(stat) {
+  if (!stat.districtBreakdown || stat.districtBreakdown.length === 0) {
+    return `${stat.region} - No data available`;
+  }
+
+  const lines = [
+    `${stat.region} Calculation`,
+    '',
+    'Formula: Σ(District Median × Tx) / Σ(Tx)',
+    '',
+    'District Breakdown:',
+  ];
+
+  // Add each district's contribution
+  stat.districtBreakdown.forEach(d => {
+    const psf = d.medianPsf ? `$${Math.round(d.medianPsf).toLocaleString()}` : '-';
+    lines.push(`  ${d.district}: ${psf} × ${d.txCount.toLocaleString()} tx`);
+  });
+
+  // Add totals
+  lines.push('');
+  lines.push(`Result: ${stat.medianPsf ? `$${Math.round(stat.medianPsf).toLocaleString()}` : '-'} psf`);
+  lines.push(`Total: ${stat.txCount.toLocaleString()} transactions`);
+
+  return lines.join('\n');
+}
+
 function RegionSummaryBar({ districtData, selectedPeriod }) {
   // Calculate aggregates for each region
   const regionStats = useMemo(() => {
@@ -300,7 +331,7 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
       );
 
       if (districts.length === 0) {
-        return { region, medianPsf: null, txCount: 0, yoyPct: null };
+        return { region, medianPsf: null, txCount: 0, yoyPct: null, districtBreakdown: [] };
       }
 
       // Weighted average PSF by transaction count
@@ -316,11 +347,21 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
         ? districtsWithYoY.reduce((sum, d) => sum + d.yoy_pct, 0) / districtsWithYoY.length
         : null;
 
+      // District breakdown for tooltip (sorted by tx count descending)
+      const districtBreakdown = districts
+        .map(d => ({
+          district: d.district_id,
+          medianPsf: d.median_psf,
+          txCount: d.tx_count || 0,
+        }))
+        .sort((a, b) => b.txCount - a.txCount);
+
       return {
         region,
         medianPsf: weightedPsf,
         txCount: totalTx,
         yoyPct: avgYoY,
+        districtBreakdown,
       };
     });
   }, [districtData]);
@@ -346,11 +387,14 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
         >
           {/* Mobile: horizontal layout, Desktop: vertical */}
           <div className="flex sm:flex-col items-center sm:items-stretch gap-2 sm:gap-0">
-            {/* Region name and YoY */}
+            {/* Region name, Help tooltip, and YoY */}
             <div className="flex items-center justify-between sm:mb-1 min-w-[60px] sm:min-w-0">
-              <span className="font-semibold text-[#213448] text-sm">
-                {stat.region}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="font-semibold text-[#213448] text-sm">
+                  {stat.region}
+                </span>
+                <HelpTooltip content={buildMethodologyTooltip(stat)} />
+              </div>
               {stat.yoyPct !== null && (
                 <span
                   className={`text-xs font-bold ml-2 sm:ml-0 ${
