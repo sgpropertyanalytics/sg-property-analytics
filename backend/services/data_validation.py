@@ -12,6 +12,7 @@ ensuring clean data for downstream computation.
 Pipeline: Load Raw → Validate/Filter/Clean → Store in DB → Compute Stats
 """
 
+import os
 from typing import Tuple, Dict, Any, List, Optional
 from sqlalchemy import text
 from models.database import db
@@ -21,6 +22,15 @@ from db.sql import OUTLIER_FILTER, exclude_outliers
 # IQR multiplier for outlier detection - MUST match scripts/upload.py
 # Relaxed from standard 1.5x to 5.0x to include luxury condos
 IQR_MULTIPLIER = 5.0
+MUTATION_ALLOW_ENV = "ALLOW_DATA_VALIDATION_MUTATIONS"
+
+
+def _ensure_mutations_allowed(action: str) -> None:
+    if os.environ.get(MUTATION_ALLOW_ENV, "").strip().lower() not in {"1", "true", "yes"}:
+        raise RuntimeError(
+            f"Data validation mutation blocked for {action}. "
+            f"Set {MUTATION_ALLOW_ENV}=true to allow."
+        )
 
 
 def calculate_iqr_bounds(column: str = 'price') -> Tuple[float, float, Dict[str, float]]:
@@ -205,6 +215,7 @@ def remove_duplicates_sql() -> int:
     Returns:
         Count of duplicates removed
     """
+    _ensure_mutations_allowed("remove_duplicates_sql")
     before_count = db.session.query(Transaction).count()
 
     # Always try to use floor_range with COALESCE (handles NULLs properly)
@@ -307,6 +318,7 @@ def remove_invalid_records() -> int:
     Returns:
         Count of invalid records removed
     """
+    _ensure_mutations_allowed("remove_invalid_records")
     before_count = db.session.query(Transaction).count()
 
     # Remove records with invalid price

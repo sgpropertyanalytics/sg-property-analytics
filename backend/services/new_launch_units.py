@@ -38,7 +38,9 @@ from typing import Dict, Any, List, Set, Optional
 logger = logging.getLogger('new_launch_units')
 
 
-# Path to CSV file in backend/data folder (tracked in git)
+# Path to CSV file in backend/data folder (tracked in git, READ-ONLY)
+# This file is SOURCE-OF-TRUTH for new launch project data.
+# It must NEVER be mutated by runtime code - use dynamic filtering instead.
 CSV_FILE = os.path.join(
     os.path.dirname(os.path.dirname(__file__)),
     'data',
@@ -231,78 +233,6 @@ def get_new_launch_projects() -> List[Dict[str, Any]]:
             })
 
     return result
-
-
-def cleanup_resale_projects() -> Dict[str, Any]:
-    """
-    Remove projects from CSV that now have resale transactions.
-
-    This function:
-    1. Checks all projects in the CSV against the database
-    2. Removes any that have resale transactions
-    3. Rewrites the CSV file
-    4. Clears the cache
-
-    Call this periodically (e.g., at startup or after data upload) to keep
-    the CSV file clean.
-
-    Returns:
-        Dict with 'removed' (list of removed project names) and 'remaining' count
-    """
-    data = _load_data()
-    resale_projects = _load_resale_projects()
-
-    # Find projects to remove
-    projects_to_remove = []
-    projects_to_keep = {}
-
-    for name, info in data.items():
-        if name in resale_projects:
-            projects_to_remove.append(name)
-        else:
-            projects_to_keep[name] = info
-
-    # If nothing to remove, return early
-    if not projects_to_remove:
-        return {
-            "removed": [],
-            "remaining": len(projects_to_keep),
-            "message": "No projects to remove"
-        }
-
-    # Rewrite CSV with remaining projects
-    try:
-        with open(CSV_FILE, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['project_name', 'total_units', 'developer', 'tenure', 'top', 'district', 'source'])
-
-            for name, info in sorted(projects_to_keep.items()):
-                writer.writerow([
-                    name,
-                    info.get('total_units') or '',
-                    info.get('developer') or '',
-                    info.get('tenure') or '',
-                    info.get('top') or '',
-                    info.get('district') or '',
-                    info.get('source') or '',
-                ])
-
-        # Clear cache to reload updated data
-        clear_cache()
-
-        return {
-            "removed": projects_to_remove,
-            "remaining": len(projects_to_keep),
-            "message": f"Removed {len(projects_to_remove)} projects that now have resale transactions"
-        }
-
-    except Exception as e:
-        return {
-            "removed": [],
-            "remaining": len(data),
-            "error": str(e),
-            "message": f"Failed to update CSV: {e}"
-        }
 
 
 # =============================================================================
