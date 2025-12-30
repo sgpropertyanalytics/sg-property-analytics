@@ -51,10 +51,10 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
     setTimeGrouping(value);
   };
 
-  // Horizontal layout: Pro-style segmented control (squared edges with dividers)
+  // Horizontal layout: Pro-style segmented control (glass effect with dividers)
   if (layout === 'horizontal') {
     return (
-      <div className={`relative inline-flex bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200 ${className}`}>
+      <div className={`relative inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200/80 ${className}`}>
         {options.map(opt => (
           <button
             key={opt.value}
@@ -63,7 +63,7 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
             className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
               timeGrouping === opt.value
                 ? 'bg-[#213448] text-white shadow-inner'
-                : 'bg-white text-slate-500 hover:bg-gray-50 hover:text-slate-900'
+                : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
             }`}
           >
             {opt.label}

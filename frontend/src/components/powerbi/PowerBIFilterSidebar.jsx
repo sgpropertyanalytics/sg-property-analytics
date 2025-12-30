@@ -176,15 +176,15 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {/* ROW 1: Primary Filters - Region + District + Bedroom */}
           <div className="flex items-center gap-3 flex-shrink-0">
             {/* Region Segmented Track */}
-            <div className="inline-flex bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200">
+            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200/80">
               {/* "All" button - subtle when active (default state) */}
               <button
                 type="button"
                 onClick={() => setSegments([])}
                 className={`px-4 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                   filters.segments.length === 0
-                    ? 'bg-slate-100 text-slate-900 font-semibold'
-                    : 'bg-white text-slate-500 hover:bg-gray-50 hover:text-slate-900'
+                    ? 'bg-slate-100/80 text-slate-900 font-semibold'
+                    : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
                 }`}
               >
                 All
@@ -197,7 +197,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   className={`px-4 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                     filters.segments.includes(seg)
                       ? 'bg-[#213448] text-white shadow-inner'
-                      : 'bg-white text-slate-500 hover:bg-gray-50 hover:text-slate-900'
+                      : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
                   }`}
                   title="Shift+click to multi-select"
                 >
@@ -225,15 +225,15 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             />
 
             {/* Bedroom Segmented Track */}
-            <div className="inline-flex bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200">
+            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200/80">
               {/* "All" button - subtle when active */}
               <button
                 type="button"
                 onClick={() => setBedroomTypes([])}
                 className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                   filters.bedroomTypes.length === 0
-                    ? 'bg-slate-100 text-slate-900 font-semibold'
-                    : 'bg-white text-slate-500 hover:bg-gray-50 hover:text-slate-900'
+                    ? 'bg-slate-100/80 text-slate-900 font-semibold'
+                    : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
                 }`}
               >
                 All
@@ -246,7 +246,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                     filters.bedroomTypes.includes(br)
                       ? 'bg-[#213448] text-white shadow-inner'
-                      : 'bg-white text-slate-500 hover:bg-gray-50 hover:text-slate-900'
+                      : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
                   }`}
                   title="Shift+click to multi-select"
                 >
@@ -259,7 +259,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {/* ROW 2: Time Controls - Period + Granularity */}
           <div className="flex items-center gap-3 flex-shrink-0">
             {/* Period Preset Segmented Track */}
-            <div className="inline-flex bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200">
+            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200/80">
               {TIMEFRAME_OPTIONS.map(opt => (
                 <button
                   type="button"
@@ -268,10 +268,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   disabled={filterOptions.loading}
                   className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                     filterOptions.loading
-                      ? 'bg-gray-100 text-gray-400 cursor-wait'
+                      ? 'bg-gray-100/80 text-gray-400 cursor-wait'
                       : datePreset === opt.id
                         ? 'bg-[#213448] text-white shadow-inner'
-                        : 'bg-white text-slate-500 hover:bg-gray-50 hover:text-slate-900'
+                        : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
                   }`}
                 >
                   {opt.label}
@@ -290,7 +290,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {activeFilterCount > 0 && (
             <button
               onClick={handleResetFilters}
-              className="min-h-[38px] px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-gray-50 border border-gray-300 rounded-lg shadow-sm transition-colors flex-shrink-0 ml-auto xl:ml-0"
+              className="min-h-[38px] px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-white/50 bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm transition-colors flex-shrink-0 ml-auto xl:ml-0"
             >
               Clear all
             </button>
@@ -931,11 +931,11 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
 
   // Styles differ based on segmentedStyle prop
   const buttonClasses = segmentedStyle
-    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-1.5 min-h-[38px] text-sm font-medium border border-gray-300 rounded-lg bg-white text-left flex items-center justify-between shadow-sm focus:outline-none focus:ring-2 focus:ring-[#213448]`
+    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-1.5 min-h-[38px] text-sm font-medium border border-gray-300/80 rounded-lg bg-white/60 backdrop-blur-sm text-left flex items-center justify-between shadow-sm focus:outline-none focus:ring-2 focus:ring-[#213448]`
     : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500`;
 
   const dropdownClasses = segmentedStyle
-    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden`
+    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white/95 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-lg max-h-60 overflow-hidden`
     : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-slate-300 rounded-md shadow-lg max-h-60 overflow-hidden`;
 
   return (
