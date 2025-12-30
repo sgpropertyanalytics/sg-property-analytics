@@ -227,3 +227,163 @@ def get_new_launch_timeline(
         })
 
     return timeline
+
+
+def _canonical_period_start(dt: date, time_grain: str) -> str:
+    """Return canonical grain-start string (YYYY-MM-01 format)."""
+    if time_grain == 'month':
+        return dt.replace(day=1).isoformat()
+    elif time_grain == 'quarter':
+        q_month = ((dt.month - 1) // 3) * 3 + 1
+        return dt.replace(month=q_month, day=1).isoformat()
+    else:  # year
+        return dt.replace(month=1, day=1).isoformat()
+
+
+def get_new_launch_absorption(
+    time_grain: str = 'quarter',
+    districts: Optional[List[str]] = None,
+    segments: Optional[List[str]] = None,
+    bedrooms: Optional[List[int]] = None,
+    date_from: Optional[date] = None,
+    date_to_exclusive: Optional[date] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Get new launch activity with launch-month absorption rates.
+
+    Absorption = units_sold_launch_month / total_units (per project, then averaged per period).
+    "Launch month" = calendar month containing the project's first New Sale.
+
+    Args:
+        time_grain: 'month', 'quarter', or 'year'
+        districts: List of districts (segment conversion done here, matching existing pattern)
+        segments: List of segments (converted to districts)
+        bedrooms: List of bedroom counts
+        date_from: Inclusive start date for launch_date
+        date_to_exclusive: Exclusive end date for launch_date
+    """
+    from collections import defaultdict
+
+    if time_grain not in VALID_TIME_GRAINS:
+        raise ValueError(f"time_grain must be one of {VALID_TIME_GRAINS}, got '{time_grain}'")
+
+    # Build outlier filter snippets (matches existing pattern)
+    outlier_filter_t = get_outlier_filter_sql('t')
+    outlier_filter_tx = get_outlier_filter_sql('tx')
+
+    # Convert segments to districts (matches existing get_new_launch_timeline pattern)
+    all_filter_districts = set()
+    if districts:
+        all_filter_districts.update(districts)
+    if segments:
+        for seg in segments:
+            all_filter_districts.update(get_districts_for_region(seg))
+
+    params: Dict[str, Any] = {
+        "sale_type_new": SALE_TYPE_NEW,
+        "time_grain": time_grain,
+        "date_from_is_null": date_from is None,
+        "date_to_is_null": date_to_exclusive is None,
+        "districts_is_null": len(all_filter_districts) == 0,
+        "bedrooms_is_null": not bedrooms,
+        "date_from": date_from or date(1900, 1, 1),
+        "date_to_exclusive": date_to_exclusive or date(2100, 1, 1),
+        "districts": sorted(all_filter_districts) if all_filter_districts else [],
+        "bedrooms": bedrooms or [],
+    }
+
+    # SQL uses f-string for outlier filter (matches existing pattern)
+    # DISTINCT ON with id tie-breaker for determinism (URA dates are month-bucketed)
+    # LEFT JOIN ensures projectCount includes projects with 0 launch-month sales
+    sql = f"""
+    WITH project_launch AS (
+        SELECT DISTINCT ON (UPPER(TRIM(t.project_name)))
+            UPPER(TRIM(t.project_name)) AS project_key,
+            t.transaction_date AS launch_date,
+            DATE_TRUNC('month', t.transaction_date) AS launch_month_start,
+            t.district AS district
+        FROM transactions t
+        WHERE t.sale_type = :sale_type_new
+          AND {outlier_filter_t}
+        ORDER BY UPPER(TRIM(t.project_name)), t.transaction_date ASC, t.id ASC
+    ),
+
+    eligible_projects AS (
+        SELECT pl.project_key, pl.launch_date, pl.launch_month_start,
+               DATE_TRUNC(:time_grain, pl.launch_date) AS period_start
+        FROM project_launch pl
+        WHERE (:date_from_is_null OR pl.launch_date >= :date_from)
+          AND (:date_to_is_null OR pl.launch_date < :date_to_exclusive)
+          AND (:districts_is_null OR pl.district = ANY(:districts))
+          AND (
+            :bedrooms_is_null OR EXISTS (
+                SELECT 1 FROM transactions tx
+                WHERE UPPER(TRIM(tx.project_name)) = pl.project_key
+                  AND tx.sale_type = :sale_type_new
+                  AND tx.bedroom_count = ANY(:bedrooms)
+                  AND {outlier_filter_tx}
+            )
+          )
+    ),
+
+    launch_month_sales AS (
+        SELECT
+            UPPER(TRIM(t.project_name)) AS project_key,
+            COUNT(*) AS units_sold
+        FROM transactions t
+        WHERE t.sale_type = :sale_type_new
+          AND {outlier_filter_t}
+          AND EXISTS (
+              SELECT 1 FROM eligible_projects ep
+              WHERE ep.project_key = UPPER(TRIM(t.project_name))
+                AND t.transaction_date >= ep.launch_month_start
+                AND t.transaction_date < ep.launch_month_start + INTERVAL '1 month'
+          )
+        GROUP BY UPPER(TRIM(t.project_name))
+    )
+
+    SELECT ep.period_start, ep.project_key, COALESCE(lms.units_sold, 0) AS units_sold
+    FROM eligible_projects ep
+    LEFT JOIN launch_month_sales lms ON lms.project_key = ep.project_key
+    ORDER BY ep.period_start, ep.project_key;
+    """
+
+    logger.debug(f"Executing new_launch_absorption SQL with time_grain={time_grain}")
+    result = db.session.execute(text(sql), params).fetchall()
+
+    # Load units map ONCE - keys match SQL: UPPER(TRIM(name))
+    units_map = _build_units_map()
+
+    # Group by period
+    periods: Dict[date, List[Dict[str, Any]]] = defaultdict(list)
+    for row in result:
+        periods[row[0]].append({
+            'project_key': row[1],
+            'units_sold': row[2],
+            'total_units': units_map.get(row[1]),
+        })
+
+    # Aggregate per period
+    output = []
+    for period_start, projects in sorted(periods.items()):
+        absorptions = []
+        projects_with_units = 0
+        projects_missing = 0
+
+        for p in projects:
+            if p['total_units'] and p['total_units'] > 0:
+                absorption = min(100.0, (p['units_sold'] / p['total_units']) * 100)
+                absorptions.append(absorption)
+                projects_with_units += 1
+            else:
+                projects_missing += 1
+
+        output.append({
+            "periodStart": _canonical_period_start(period_start, time_grain),
+            "projectCount": len(projects),
+            "avgAbsorption": round(sum(absorptions) / len(absorptions), 1) if absorptions else None,
+            "projectsWithUnits": projects_with_units,
+            "projectsMissing": projects_missing,
+        })
+
+    return output
