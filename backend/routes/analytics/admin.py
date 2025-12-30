@@ -213,7 +213,7 @@ def get_metadata():
     from models.precomputed_stats import PreComputedStats
     from models.transaction import Transaction
     from models.database import db
-    from db.sql import exclude_outliers
+    from sqlalchemy import text
 
     try:
         # Get stored metadata
@@ -226,9 +226,31 @@ def get_metadata():
         ).count()
         active_count = total_count - outlier_count
 
+        # Get last successful ETL batch info (most reliable source for "new records")
+        last_batch_date = None
+        last_batch_rows = 0
+        try:
+            batch_result = db.session.execute(text("""
+                SELECT completed_at, rows_promoted
+                FROM etl_batches
+                WHERE status = 'completed'
+                ORDER BY completed_at DESC
+                LIMIT 1
+            """)).fetchone()
+            if batch_result:
+                last_batch_date = batch_result[0].isoformat() if batch_result[0] else None
+                last_batch_rows = batch_result[1] or 0
+        except Exception:
+            # etl_batches table may not exist yet
+            pass
+
+        # Use ETL batch info if available, fall back to stored metadata
+        records_added = last_batch_rows if last_batch_rows > 0 else stored_metadata.get('records_added_last_ingestion', 0)
+        last_updated = last_batch_date or stored_metadata.get('last_updated')
+
         return jsonify({
-            "last_updated": stored_metadata.get('last_updated'),
-            "records_added_last_ingestion": stored_metadata.get('records_added_last_ingestion', 0),
+            "last_updated": last_updated,
+            "records_added_last_ingestion": records_added,
             "total_records": total_count,
             "active_records": active_count,
             "outliers_excluded": outlier_count,
