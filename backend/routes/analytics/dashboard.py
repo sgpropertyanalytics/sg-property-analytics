@@ -211,19 +211,3 @@ def dashboard():
             "error": str(e)
         }), 500
 
-
-@analytics_bp.route("/dashboard/cache", methods=["GET", "DELETE"])
-def dashboard_cache():
-    """
-    Dashboard cache management endpoint.
-
-    GET: Return cache statistics
-    DELETE: Clear cache
-    """
-    from services.dashboard_service import get_cache_stats, clear_dashboard_cache
-
-    if request.method == 'DELETE':
-        clear_dashboard_cache()
-        return jsonify({"status": "cache cleared"})
-
-    return jsonify(get_cache_stats())

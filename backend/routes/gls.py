@@ -37,6 +37,7 @@ def add_contract_version_header(response):
 MIN_DISPLAY_YEAR = 2025
 
 
+# --- Public endpoints ---
 @gls_bp.route("/all", methods=["GET"])
 @api_contract("gls/all")
 def get_all():
@@ -110,6 +111,7 @@ def get_all():
         return jsonify({"error": str(e)}), 500
 
 
+# --- Admin endpoints ---
 @gls_bp.route("/needs-review", methods=["GET"])
 @api_contract("gls/needs-review")
 def get_needs_review():

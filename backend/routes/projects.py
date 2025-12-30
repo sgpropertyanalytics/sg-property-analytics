@@ -539,6 +539,7 @@ def get_inventory_status():
         return jsonify({"error": str(e)}), 500
 
 
+# --- Admin endpoints ---
 @projects_bp.route("/projects/compute-school-flags", methods=["POST"])
 def compute_school_flags():
     """

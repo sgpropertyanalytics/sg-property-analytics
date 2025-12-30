@@ -6,6 +6,7 @@ Endpoints:
 - /debug/data-status - Data integrity diagnostics
 - /admin/update-metadata - Manual metadata update
 - /admin/filter-outliers - Outlier management
+- /dashboard/cache - Cache management
 """
 
 import time
@@ -184,6 +185,23 @@ def debug_data_status():
             "error": str(e),
             "traceback": traceback.format_exc()
         }), 500
+
+
+@analytics_bp.route("/dashboard/cache", methods=["GET", "DELETE"])
+def dashboard_cache():
+    """
+    Dashboard cache management endpoint.
+
+    GET: Return cache statistics
+    DELETE: Clear cache
+    """
+    from services.dashboard_service import get_cache_stats, clear_dashboard_cache
+
+    if request.method == 'DELETE':
+        clear_dashboard_cache()
+        return jsonify({"status": "cache cleared"})
+
+    return jsonify(get_cache_stats())
 
 
 @analytics_bp.route("/metadata", methods=["GET"])

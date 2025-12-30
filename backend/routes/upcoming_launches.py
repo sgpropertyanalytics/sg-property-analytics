@@ -39,6 +39,7 @@ def add_contract_version_header(response):
     return response
 
 
+# --- Public endpoints ---
 @upcoming_launches_bp.route("/all", methods=["GET"])
 @api_contract("upcoming-launches/all")
 def get_all():
@@ -146,6 +147,7 @@ def get_all():
         return jsonify({"error": str(e)}), 500
 
 
+# --- Admin endpoints ---
 @upcoming_launches_bp.route("/needs-review", methods=["GET"])
 @api_contract("upcoming-launches/needs-review")
 def get_needs_review():
