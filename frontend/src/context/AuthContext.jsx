@@ -1,8 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import apiClient from '../api/client';
 import { useStaleRequestGuard } from '../hooks';
+
+// Detect mobile browser
+const isMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
 
 /**
  * Authentication Context
@@ -49,6 +54,37 @@ export function AuthProvider({ children }) {
     try {
       const auth = getFirebaseAuth();
       setLoading(true);
+
+      // Handle redirect result (for mobile sign-in)
+      getRedirectResult(auth)
+        .then(async (result) => {
+          if (result?.user) {
+            // User signed in via redirect - sync with backend
+            const requestId = startRequest();
+            try {
+              const idToken = await result.user.getIdToken();
+              const response = await apiClient.post('/auth/firebase-sync', {
+                idToken,
+                email: result.user.email,
+                displayName: result.user.displayName,
+                photoURL: result.user.photoURL,
+              }, {
+                signal: getSignal(),
+              });
+
+              if (!isStale(requestId) && response.data.token) {
+                localStorage.setItem('token', response.data.token);
+              }
+            } catch (err) {
+              if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+                console.error('[Auth] Backend sync failed after redirect:', err);
+              }
+            }
+          }
+        })
+        .catch((err) => {
+          console.error('[Auth] Redirect result error:', err);
+        });
 
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         // Start a new request for each auth state change - cancels any in-flight API calls
@@ -163,6 +199,15 @@ export function AuthProvider({ children }) {
     try {
       const auth = getFirebaseAuth();
       const provider = getGoogleProvider();
+
+      // Use redirect on mobile (popups don't work reliably)
+      if (isMobile()) {
+        await signInWithRedirect(auth, provider);
+        // Redirect will navigate away - result handled in useEffect
+        return null;
+      }
+
+      // Use popup on desktop
       const result = await signInWithPopup(auth, provider);
 
       // Sync with backend to get JWT and subscription status
