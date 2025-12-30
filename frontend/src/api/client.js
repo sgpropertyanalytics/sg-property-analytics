@@ -176,6 +176,7 @@ const buildQueryString = (params) => {
 // Simple in-memory cache for instant drill navigation
 
 const apiCache = new Map();
+const inflightRequests = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL
 const MAX_CACHE_ENTRIES = 200;
 
@@ -218,8 +219,25 @@ const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
     apiCache.delete(cacheKey);
   }
 
+  // Reuse in-flight request for the same cache key
+  if (inflightRequests.has(cacheKey)) {
+    return inflightRequests.get(cacheKey);
+  }
+
+  const pendingRequest = queueRequest(fetchFn, { priority, signal })
+    .then((response) => {
+      inflightRequests.delete(cacheKey);
+      return response;
+    })
+    .catch((error) => {
+      inflightRequests.delete(cacheKey);
+      throw error;
+    });
+
+  inflightRequests.set(cacheKey, pendingRequest);
+
   // Queue the fetch to limit concurrent requests
-  const response = await queueRequest(fetchFn, { priority, signal });
+  const response = await pendingRequest;
 
   // Don't cache if request was aborted
   if (signal?.aborted) {
