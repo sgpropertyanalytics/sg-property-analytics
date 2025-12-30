@@ -661,6 +661,15 @@ class AggregateFields:
     PRICE_25TH = 'price25th'        # v1: price_25th
     PRICE_75TH = 'price75th'        # v1: price_75th
 
+    # Project-specific fields (group_by=project)
+    AGE_BAND = 'ageBand'                        # v1: age_band
+    LEASE_START_YEAR = 'leaseStartYear'         # v1: lease_start_year
+    PROPERTY_AGE_YEARS = 'propertyAgeYears'     # v1: property_age_years
+    TOTAL_UNITS = 'totalUnits'                  # v1: total_units
+    TOP_YEAR = 'topYear'                        # v1: top_year
+    TOTAL_UNITS_SOURCE = 'totalUnitsSource'     # v1: total_units_source
+    TOTAL_UNITS_CONFIDENCE = 'totalUnitsConfidence'  # v1: total_units_confidence
+
 
 # Time field keys for normalization
 TIME_BUCKET_FIELDS = ('month', 'quarter', 'year')
@@ -684,6 +693,14 @@ _AGGREGATE_FIELD_MAP = {
     'psf_75th': AggregateFields.PSF_75TH,
     'price_25th': AggregateFields.PRICE_25TH,
     'price_75th': AggregateFields.PRICE_75TH,
+    # Project-specific fields (group_by=project or age_band)
+    'age_band': AggregateFields.AGE_BAND,
+    'lease_start_year': AggregateFields.LEASE_START_YEAR,
+    'property_age_years': AggregateFields.PROPERTY_AGE_YEARS,
+    'total_units': AggregateFields.TOTAL_UNITS,
+    'top_year': AggregateFields.TOP_YEAR,
+    'total_units_source': AggregateFields.TOTAL_UNITS_SOURCE,
+    'total_units_confidence': AggregateFields.TOTAL_UNITS_CONFIDENCE,
 }
 
 
