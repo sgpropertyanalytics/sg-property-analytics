@@ -1677,3 +1677,704 @@ ROBUSTNESS:
 | **Safe** | Standard pattern, no side effects | Apply directly |
 | **Review** | May affect nearby elements, needs testing | Test after applying |
 | **Risky** | Complex interaction, could break other things | Careful review needed |
+
+---
+
+## 16. AUTOMATED ROUTE CRAWLING
+
+### Route Discovery (MANDATORY)
+
+**Rule:** The validator MUST crawl ALL app routes, not just manually specified pages.
+
+**Discovery Methods (in priority order):**
+
+1. **Router Config Parsing**
+   ```bash
+   # Extract routes from React Router config
+   grep -rn "path:" frontend/src/App.jsx frontend/src/routes/ | grep -oE '"/[^"]*"'
+
+   # Or from route constants
+   cat frontend/src/constants/routes.js
+   ```
+
+2. **Navigation Link Extraction**
+   ```bash
+   # Find all navigation links in sidebar/nav components
+   grep -rn "to=" frontend/src/components/layout/ | grep -oE '"/[^"]*"'
+   ```
+
+3. **Fallback: Known Routes from CLAUDE.md**
+   ```
+   /market-overview
+   /district-overview
+   /new-launch-market
+   /supply-inventory
+   /explore
+   /value-check
+   /exit-risk
+   /methodology
+   ```
+
+### Route Crawl Workflow
+
+```
+1. DISCOVER all routes (router config → nav links → fallback list)
+2. DEDUPLICATE and sort routes
+3. FOR EACH route:
+   a. Navigate to route
+   b. Wait for network idle + content loaded
+   c. Run viewport tests (Section 17)
+   d. Capture screenshots (Section 18)
+   e. Log results
+4. AGGREGATE results into report
+```
+
+---
+
+## 17. VIEWPORT TEST MATRIX (MANDATORY)
+
+### Required Viewports
+
+**All routes MUST be tested at these exact viewport dimensions:**
+
+| Viewport | Width × Height | Device Type | Priority |
+|----------|---------------|-------------|----------|
+| Desktop Large | 1440 × 900 | MacBook 15" | **CRITICAL** |
+| Desktop Medium | 1280 × 800 | MacBook 13" | **CRITICAL** |
+| Tablet Landscape | 1024 × 768 | iPad Landscape | **CRITICAL** |
+| Tablet Portrait | 768 × 1024 | iPad Portrait | **CRITICAL** |
+| Mobile Large | 430 × 932 | iPhone 14 Pro Max | **CRITICAL** |
+
+### Viewport Testing Workflow
+
+```
+FOR EACH route:
+  FOR EACH viewport in [1440×900, 1280×800, 1024×768, 768×1024, 430×932]:
+    1. Set viewport dimensions
+    2. Navigate to route (if not already there)
+    3. Wait for layout stability (no ongoing animations/transitions)
+    4. Run DOM Layout Scan (Section 18)
+    5. Capture screenshot
+    6. Record pass/fail status
+```
+
+---
+
+## 18. DOM LAYOUT SCAN (MANDATORY)
+
+### HARD FAIL Conditions
+
+The following conditions are **automatic failures** and must be detected programmatically:
+
+#### HF-1: Horizontal Page Scroll
+
+```javascript
+// HARD FAIL if true
+const hasHorizontalScroll = document.documentElement.scrollWidth > window.innerWidth + 1;
+```
+
+**Detection:** `documentElement.scrollWidth > innerWidth + 1`
+**Tolerance:** 1px (for sub-pixel rendering)
+**Action:** Immediate fail, identify root cause element
+
+#### HF-2: Element Content Overflow
+
+```javascript
+// For EVERY visible element, check:
+const hasContentOverflow = (el) => {
+  if (isIntentionalScrollContainer(el)) return false;  // Whitelist
+  return el.scrollWidth > el.clientWidth + 2;
+};
+
+// Intentional scroll containers (whitelist):
+// - Elements with explicit overflow-x-auto or overflow-x-scroll
+// - Tables wrapped in scroll containers
+// - Code blocks
+```
+
+**Detection:** `element.scrollWidth > element.clientWidth + 2`
+**Tolerance:** 2px (for borders/padding rounding)
+**Whitelist:** Elements with explicit `overflow-x-auto`, `overflow-x-scroll`, or `overflow-auto`
+**Action:** Fail, report element selector path and dimensions
+
+#### HF-3: Element Exceeds Viewport
+
+```javascript
+// For visible elements, check bounding rect
+const exceedsViewport = (el) => {
+  const rect = el.getBoundingClientRect();
+  return (
+    rect.right > window.innerWidth + 2 ||
+    rect.left < -2
+  );
+};
+```
+
+**Detection:** Bounding rect exceeds viewport by >2px
+**Tolerance:** 2px
+**Action:** Fail, report element and how much it exceeds
+
+#### HF-4: Interactive Element Overlap
+
+```javascript
+// Find all interactive elements
+const interactiveElements = document.querySelectorAll(
+  'button, input, select, textarea, a[href], [role="button"], [tabindex]:not([tabindex="-1"])'
+);
+
+// Check for significant overlap between any two
+const hasSignificantOverlap = (el1, el2) => {
+  const r1 = el1.getBoundingClientRect();
+  const r2 = el2.getBoundingClientRect();
+
+  const overlapX = Math.max(0, Math.min(r1.right, r2.right) - Math.max(r1.left, r2.left));
+  const overlapY = Math.max(0, Math.min(r1.bottom, r2.bottom) - Math.max(r1.top, r2.top));
+  const overlapArea = overlapX * overlapY;
+
+  const minArea = Math.min(r1.width * r1.height, r2.width * r2.height);
+
+  // Significant if overlap > 10% of smaller element
+  return overlapArea > minArea * 0.1;
+};
+```
+
+**Detection:** Two visible interactive elements overlap by >10% of smaller element's area
+**Action:** Fail, report both elements and overlap percentage
+
+### DOM Scan Report Format
+
+```markdown
+### Route: /market-overview
+### Viewport: 430×932 (Mobile Large)
+
+#### HARD FAIL: HF-1 Horizontal Page Scroll
+- scrollWidth: 485px
+- innerWidth: 430px
+- Overflow: 55px
+
+**Root cause element:**
+- Selector: `div.grid.grid-cols-4 > div:nth-child(3)`
+- Element width: 180px (min-content)
+- Parent allows shrink: NO (missing min-w-0)
+
+#### HARD FAIL: HF-2 Element Content Overflow
+- Element: `#kpi-card-volume .text-2xl`
+- scrollWidth: 142px
+- clientWidth: 120px
+- Overflow: 22px
+- Content: "$1,234,567,890" (no truncation)
+
+#### HARD FAIL: HF-4 Interactive Element Overlap
+- Element 1: `button.filter-toggle` (48×36 @ 380,12)
+- Element 2: `button.menu-toggle` (44×36 @ 390,10)
+- Overlap: 380px² (28% of smaller)
+```
+
+---
+
+## 19. VISUAL REGRESSION TESTING
+
+### Baseline Management
+
+**Rule:** Every route+viewport combination must have a baseline screenshot.
+
+```
+frontend/tests/baselines/
+├── market-overview/
+│   ├── 1440x900.png
+│   ├── 1280x800.png
+│   ├── 1024x768.png
+│   ├── 768x1024.png
+│   └── 430x932.png
+├── district-overview/
+│   └── ...
+└── ...
+```
+
+### Screenshot Capture Requirements
+
+1. **Wait for stability** - No pending network requests, no animations
+2. **Hide dynamic content** - Clock, dates, random IDs (use `data-testid` masking)
+3. **Full page capture** - Not just viewport (scroll to capture entire page)
+4. **Consistent state** - Default filters, no selections, closed modals
+
+### Diff Detection
+
+```javascript
+// Using pixelmatch or similar
+const diffPixels = pixelmatch(baseline, current, diff, width, height, {
+  threshold: 0.1,  // Per-pixel sensitivity
+});
+
+const diffPercentage = (diffPixels / (width * height)) * 100;
+
+// FAIL if diff > 0.5%
+const DIFF_THRESHOLD = 0.5;
+if (diffPercentage > DIFF_THRESHOLD) {
+  fail(`Visual regression: ${diffPercentage.toFixed(2)}% diff (threshold: ${DIFF_THRESHOLD}%)`);
+}
+```
+
+**Threshold:** 0.5% pixel difference = FAIL
+**Output:** Diff image highlighting changed regions
+
+### Visual Regression Workflow
+
+```
+FOR EACH route:
+  FOR EACH viewport:
+    1. Capture current screenshot
+    2. Load baseline (if exists)
+    3. IF no baseline:
+       - WARN: "Missing baseline for {route}/{viewport}"
+       - Save current as new baseline candidate
+    4. IF baseline exists:
+       - Compare images
+       - IF diff > threshold:
+         - FAIL
+         - Generate diff artifact
+         - Save to artifacts/diffs/{route}_{viewport}_diff.png
+```
+
+### Baseline Update Policy
+
+```bash
+# Update baselines after intentional visual changes ONLY
+npm run test:visual -- --update-baselines
+
+# Review changes before committing
+git diff --stat frontend/tests/baselines/
+```
+
+---
+
+## 20. AUTO-FIX POLICY
+
+### Guiding Principle
+
+**All fixes MUST be generic and generalizable.** No route-specific conditions or magic pixel values.
+
+### Approved Fix Patterns (Priority Order)
+
+#### AF-1: Add `min-width: 0` to Flex/Grid Children
+
+**Trigger:** Flex child causing overflow
+**Fix:** Add `min-w-0` class
+**Scope:** Component level (not inline)
+
+```diff
+- <div className="flex-1">
++ <div className="flex-1 min-w-0">
+```
+
+#### AF-2: Replace Fixed Width with Max-Width
+
+**Trigger:** Fixed width exceeds container at smaller viewports
+**Fix:** Replace `w-[Xpx]` with `max-w-full` or `w-full max-w-[Xpx]`
+**Scope:** Component level
+
+```diff
+- <div className="w-[800px]">
++ <div className="w-full max-w-[800px]">
+```
+
+#### AF-3: Replace Fixed Height with Auto/Responsive
+
+**Trigger:** Fixed height causes content clipping
+**Fix:** Replace `h-[Xpx]` with `h-auto` or min/max height
+**Scope:** Non-chart containers only
+
+```diff
+- <div className="h-[400px]">
++ <div className="min-h-[200px] h-auto">
+```
+
+**Exception:** Chart containers KEEP fixed height (per INV-7)
+
+#### AF-4: Add `clamp()` for Typography
+
+**Trigger:** Text too large at small viewports, causing overflow
+**Fix:** Use CSS `clamp()` for responsive font sizing
+**Scope:** Headings, large numbers, KPI values
+
+```diff
+- <h1 className="text-4xl">
++ <h1 className="text-[clamp(1.5rem,4vw,2.25rem)]">
+```
+
+#### AF-5: Wrap Horizontal Groups with Overflow-X on Mobile
+
+**Trigger:** Horizontal control group overflows at mobile
+**Fix:**
+- Desktop: `flex flex-wrap` with `gap-2`
+- Mobile: `overflow-x-auto` with horizontal scroll
+
+```diff
+- <div className="flex items-center gap-4">
++ <div className="flex items-center gap-4 overflow-x-auto md:overflow-x-visible md:flex-wrap">
+```
+
+#### AF-6: Truncation (Last Resort)
+
+**Trigger:** Text content cannot be made responsive
+**Fix:** Add `truncate` or `line-clamp-*`
+**Scope:** Labels, names, descriptions (NOT data values)
+
+```diff
+- <span className="text-sm">{projectName}</span>
++ <span className="text-sm truncate max-w-[200px]">{projectName}</span>
+```
+
+### Forbidden Fixes
+
+| Pattern | Why Forbidden |
+|---------|---------------|
+| Route-specific conditions | Not generalizable |
+| Magic pixel values (`ml-[37px]`) | Fragile, not systematic |
+| `!important` overrides | Fighting specificity war |
+| Inline styles for layout | Not maintainable |
+| `overflow: hidden` on everything | Breaks tooltips, dropdowns |
+| Device-specific media queries | Use standard breakpoints |
+
+### Fix Validation Checklist
+
+Before applying ANY auto-fix:
+
+```
+[ ] Fix uses approved pattern (AF-1 through AF-6)
+[ ] Fix is applied at component level (not inline)
+[ ] Fix does not introduce route-specific logic
+[ ] Fix does not use magic pixel values
+[ ] Fix passes Pre-Fix Gate (Section 3.5)
+[ ] Fix does not break other viewports
+```
+
+---
+
+## 21. ITERATIVE VALIDATION
+
+### Re-Run Until Pass Requirement
+
+**Rule:** After applying fixes, the validator MUST re-run all checks until ALL routes pass at ALL viewports.
+
+### Iteration Workflow
+
+```
+iteration = 0
+max_iterations = 5
+
+WHILE iteration < max_iterations:
+  results = run_full_validation()
+
+  IF results.all_pass:
+    REPORT: "All routes pass at all viewports"
+    EXIT success
+
+  IF results.no_fixable_issues:
+    REPORT: "Remaining issues require manual intervention"
+    EXIT with_manual_items
+
+  FOR EACH fixable_issue in results.issues:
+    apply_auto_fix(issue)
+
+  iteration++
+
+IF iteration >= max_iterations:
+  REPORT: "Max iterations reached. {N} issues remain."
+  EXIT with_remaining_issues
+```
+
+### Iteration Report
+
+After each iteration:
+
+```markdown
+## Iteration {N} Results
+
+**Routes Tested:** 8
+**Viewports per Route:** 5
+**Total Checks:** 40
+
+### Pass/Fail by Route
+
+| Route | 1440×900 | 1280×800 | 1024×768 | 768×1024 | 430×932 |
+|-------|----------|----------|----------|----------|---------|
+| /market-overview | ✅ | ✅ | ✅ | ✅ | ❌ |
+| /district-overview | ✅ | ✅ | ✅ | ⚠️ | ❌ |
+| ... | | | | | |
+
+### Fixes Applied This Iteration
+
+1. `frontend/src/components/KPICard.jsx:45`
+   - Issue: HF-2 content overflow
+   - Fix: AF-1 (added min-w-0)
+
+2. `frontend/src/pages/MarketOverview.jsx:112`
+   - Issue: HF-1 horizontal scroll
+   - Fix: AF-2 (w-[800px] → max-w-full)
+
+### Remaining Issues (Require Manual)
+
+1. `/market-overview` @ 430×932
+   - HF-4: Button overlap in header
+   - Reason: Cannot auto-fix layout without design decision
+```
+
+---
+
+## 22. DELIVERABLES
+
+### Required Outputs
+
+When the validator completes, it MUST produce:
+
+#### 1. Playwright Test Suite
+
+**File:** `frontend/tests/ui_layout.spec.ts`
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+const ROUTES = [
+  '/market-overview',
+  '/district-overview',
+  '/new-launch-market',
+  '/supply-inventory',
+  '/explore',
+  '/value-check',
+  '/exit-risk',
+  '/methodology',
+];
+
+const VIEWPORTS = [
+  { name: 'desktop-large', width: 1440, height: 900 },
+  { name: 'desktop-medium', width: 1280, height: 800 },
+  { name: 'tablet-landscape', width: 1024, height: 768 },
+  { name: 'tablet-portrait', width: 768, height: 1024 },
+  { name: 'mobile-large', width: 430, height: 932 },
+];
+
+test.describe('UI Layout Validation', () => {
+  for (const route of ROUTES) {
+    for (const viewport of VIEWPORTS) {
+      test(`${route} @ ${viewport.name}`, async ({ page }) => {
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        await page.goto(route);
+        await page.waitForLoadState('networkidle');
+
+        // HF-1: No horizontal scroll
+        const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+        const innerWidth = await page.evaluate(() => window.innerWidth);
+        expect(scrollWidth).toBeLessThanOrEqual(innerWidth + 1);
+
+        // HF-2: No element content overflow (excluding intentional scroll containers)
+        const overflowingElements = await page.evaluate(() => {
+          const elements = document.querySelectorAll('*');
+          const overflowing: string[] = [];
+          elements.forEach(el => {
+            const style = getComputedStyle(el);
+            if (style.overflowX === 'auto' || style.overflowX === 'scroll') return;
+            if (el.scrollWidth > el.clientWidth + 2) {
+              overflowing.push(getSelector(el));
+            }
+          });
+          return overflowing;
+        });
+        expect(overflowingElements).toHaveLength(0);
+
+        // HF-3: No elements exceeding viewport
+        const exceedingElements = await page.evaluate(() => {
+          const elements = document.querySelectorAll('*');
+          const exceeding: string[] = [];
+          elements.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            if (rect.right > window.innerWidth + 2 || rect.left < -2) {
+              if (getComputedStyle(el).display !== 'none') {
+                exceeding.push(getSelector(el));
+              }
+            }
+          });
+          return exceeding;
+        });
+        expect(exceedingElements).toHaveLength(0);
+
+        // HF-4: No interactive element overlap
+        const overlappingElements = await page.evaluate(() => {
+          // ... overlap detection logic
+        });
+        expect(overlappingElements).toHaveLength(0);
+
+        // Visual regression
+        await expect(page).toHaveScreenshot(`${route.slice(1)}-${viewport.name}.png`, {
+          threshold: 0.005,  // 0.5%
+          fullPage: true,
+        });
+      });
+    }
+  }
+});
+```
+
+#### 2. Local Helper Script (Optional)
+
+**File:** `frontend/scripts/ui_layout_scan.ts`
+
+```typescript
+#!/usr/bin/env npx ts-node
+
+import { chromium } from 'playwright';
+
+const ROUTES = [...];
+const VIEWPORTS = [...];
+
+async function main() {
+  const browser = await chromium.launch({ headless: true });
+  const results: Result[] = [];
+
+  for (const route of ROUTES) {
+    for (const viewport of VIEWPORTS) {
+      const page = await browser.newPage();
+      await page.setViewportSize(viewport);
+      await page.goto(`http://localhost:3000${route}`);
+
+      const issues = await runLayoutScan(page);
+      results.push({ route, viewport, issues });
+
+      await page.close();
+    }
+  }
+
+  printReport(results);
+  await browser.close();
+
+  process.exit(results.some(r => r.issues.length > 0) ? 1 : 0);
+}
+
+main();
+```
+
+#### 3. Style/Component Fixes
+
+Any fixes applied should be:
+- Committed as separate commits with clear messages
+- Documented in the validation report
+- Verified to not break other viewports
+
+### Artifact Directory Structure
+
+```
+frontend/
+├── tests/
+│   ├── ui_layout.spec.ts        # Playwright test suite
+│   └── baselines/               # Visual regression baselines
+│       ├── market-overview/
+│       │   ├── desktop-large.png
+│       │   ├── desktop-medium.png
+│       │   ├── tablet-landscape.png
+│       │   ├── tablet-portrait.png
+│       │   └── mobile-large.png
+│       └── .../
+├── scripts/
+│   └── ui_layout_scan.ts        # Local helper script
+└── test-results/
+    └── diffs/                   # Visual diff artifacts (gitignored)
+```
+
+---
+
+## 23. CI INTEGRATION
+
+### GitHub Actions Workflow
+
+**File:** `.github/workflows/ui-layout-tests.yml`
+
+```yaml
+name: UI Layout Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/src/**/*.jsx'
+      - 'frontend/src/**/*.tsx'
+      - 'frontend/src/**/*.css'
+  pull_request:
+    paths:
+      - 'frontend/src/**/*.jsx'
+      - 'frontend/src/**/*.tsx'
+      - 'frontend/src/**/*.css'
+
+jobs:
+  layout-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Install Playwright
+        run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Start dev server
+        run: cd frontend && npm run dev &
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:3000
+
+      - name: Run layout tests
+        run: cd frontend && npx playwright test tests/ui_layout.spec.ts
+
+      - name: Upload diff artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: frontend/test-results/
+```
+
+---
+
+## 24. SUMMARY CHECKLIST
+
+### Before Running Validator
+
+```
+[ ] All routes discovered (router config or CLAUDE.md fallback)
+[ ] Dev server running (for Playwright tests)
+[ ] Baselines exist (or will be created)
+```
+
+### During Validation
+
+```
+[ ] All 5 viewports tested per route
+[ ] All 4 HARD FAIL conditions checked
+[ ] Visual regression compared to baselines
+[ ] Issues categorized and prioritized
+```
+
+### After Validation
+
+```
+[ ] Auto-fixes applied using approved patterns only
+[ ] Re-ran validation until all pass (or max iterations)
+[ ] Playwright test suite generated/updated
+[ ] Visual diff artifacts saved (if failures)
+[ ] Report generated with all findings
+```
+
+### Deliverables Checklist
+
+```
+[ ] Playwright test: tests/ui_layout.spec.ts
+[ ] Helper script (optional): scripts/ui_layout_scan.ts
+[ ] Style/component fixes committed
+[ ] Baselines updated (if intentional changes)
+[ ] CI workflow configured
+```

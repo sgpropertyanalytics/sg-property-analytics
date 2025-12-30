@@ -12,6 +12,7 @@
 | `/api-contract-guardrails` | API contract changes |
 | `/frontend-design` | Building UI components/pages |
 | `/lazy-import-guardrails` | React.lazy() / dynamic imports |
+| `/backend-impact-guardrails` | **Backend changes (MANDATORY)** |
 
 ## Agents
 | Agent | Trigger |
@@ -22,8 +23,9 @@
 | `data-integrity-validator` | "validate data", "check filters", "wrong counts" |
 | `ingestion-orchestrator` | "scrape", "ingest", "upload CSV", "data sources", "tier A/B/C" |
 | `etl-pipeline` | "upload CSV", "weekly update", "import transactions" |
+| `chart-impact-validator` | **MANDATORY before backend merge** |
 
-Docs: `docs/backend.md`, `docs/frontend.md`, `docs/architecture.md`, `INGESTION_ARCHITECTURE.md`
+Docs: `docs/backend.md`, `docs/frontend.md`, `docs/architecture.md`, `INGESTION_ARCHITECTURE.md`, `docs/BACKEND_CHART_DEPENDENCIES.md`
 
 ## Page Routes
 
@@ -829,6 +831,107 @@ frontend/src/
 
 ---
 
+# 6.5 BACKEND CHANGE RULES (NON-NEGOTIABLE)
+
+> **Reference:** `docs/BACKEND_CHART_DEPENDENCIES.md`
+> **Skill:** `/backend-impact-guardrails` (MANDATORY)
+> **Agent:** `chart-impact-validator` (MANDATORY before merge)
+
+## The 4 Questions (Ask Before Every Backend Change)
+
+```
+1. Does this break the API CONTRACT?
+   → Response shape, field names, required params
+
+2. Does this break FRONTEND RENDERING?
+   → Will pages load? Will components mount?
+
+3. Does this break VISUAL CHARTS?
+   → Will charts display? Data present? No empty states?
+
+4. Does this break CHART LOGIC/CALCULATIONS?
+   → Adapters, transformations, aggregations, metrics
+
+If YES to ANY → STOP. Fix before proceeding.
+```
+
+## Data-to-Chart Dependency Chain
+
+```
+Data Sources → Services → Routes → Endpoints → Adapters → Charts → Pages
+```
+
+**Before ANY backend change, trace this chain.**
+
+## Mandatory Pre-Change Workflow
+
+1. **IDENTIFY** what you're changing (data/service/route/model)
+2. **CONSULT** `docs/BACKEND_CHART_DEPENDENCIES.md`
+3. **MAP** dependencies: data → endpoints → charts → pages
+4. **CATEGORIZE** impact: BREAKING / VALIDATION / SAFE
+5. **IF BREAKING: STOP** — create migration plan first
+6. **RUN** tests + manual page verification
+7. **DOCUMENT** impact assessment
+
+## Impact Categories
+
+| Category | Action | Example |
+|----------|--------|---------|
+| **BREAKING** | STOP. Migration plan required. | Removing data, renaming fields |
+| **VALIDATION** | Manual verification required. | Changing aggregation logic |
+| **SAFE** | Document and proceed. | Adding new optional fields |
+
+## The Resale Data Rule
+
+The MacroOverview page depends entirely on resale transaction data.
+
+```
+Resale CSV data (removed)
+    ↓
+transactions table (sale_type = 'Resale')
+    ↓
+dashboard_service.py aggregations
+    ↓
+/api/aggregate, /api/kpi-summary-v2
+    ↓
+TimeTrendChart, KPI Cards
+    ↓
+MacroOverview page = BROKEN
+```
+
+**This dependency chain MUST be checked before any data removal.**
+
+## Critical Endpoints
+
+| Endpoint | Risk Level | Charts Affected |
+|----------|------------|-----------------|
+| `/api/aggregate` | CRITICAL | 10+ charts |
+| `/api/kpi-summary-v2` | HIGH | All KPI cards |
+| `/insights/district-psf` | HIGH | MarketStrategyMap (v1, no validation) |
+| `/insights/district-liquidity` | HIGH | DistrictLiquidityMap (v1, no validation) |
+
+## Required Tests Before Merge
+
+```bash
+# All must pass
+pytest tests/test_regression_snapshots.py -v
+pytest tests/test_chart_dependencies.py -v
+pytest tests/test_api_invariants.py -v
+```
+
+## Manual Page Verification
+
+ALL pages must be checked after backend changes:
+- [ ] /market-overview
+- [ ] /district-overview
+- [ ] /new-launch-market
+- [ ] /supply-inventory
+- [ ] /explore
+- [ ] /value-check
+- [ ] /exit-risk
+
+---
+
 # 7. CHART.JS
 
 ```jsx
@@ -952,6 +1055,44 @@ Before any data/analytics change:
 - [ ] Static SQL with param guards (no string concatenation)
 - [ ] DB does set work; Python does orchestration (no N+1 queries)
 - [ ] No repeated implementations of business rules
+
+## Backend Change Impact (MANDATORY)
+
+Before ANY backend change affecting data or APIs:
+
+**The 4 Questions:**
+- [ ] 1. API CONTRACT — Response shape, field names, params unchanged (or updated)
+- [ ] 2. FRONTEND RENDERING — All 7 pages load without React errors
+- [ ] 3. VISUAL CHARTS — Charts display with data, no unexpected empty states
+- [ ] 4. CHART LOGIC — Adapters, transformations, calculations still correct
+
+**Dependency Analysis:**
+- [ ] Consulted `docs/BACKEND_CHART_DEPENDENCIES.md`
+- [ ] Mapped data → endpoints → charts → pages
+- [ ] Categorized impact: BREAKING / VALIDATION / SAFE
+
+**If BREAKING:**
+- [ ] STOPPED — Created migration plan
+- [ ] Documented which charts will break
+- [ ] Got explicit approval for breaking change
+
+**Automated Tests:**
+- [ ] `pytest tests/test_regression_snapshots.py -v`
+- [ ] `pytest tests/test_chart_dependencies.py -v`
+- [ ] `pytest tests/test_api_invariants.py -v`
+
+**Manual Page Verification (ALL pages):**
+- [ ] /market-overview
+- [ ] /district-overview
+- [ ] /new-launch-market
+- [ ] /supply-inventory
+- [ ] /explore
+- [ ] /value-check
+- [ ] /exit-risk
+
+**Sign-off:**
+- [ ] No console errors on any page
+- [ ] Updated `BACKEND_CHART_DEPENDENCIES.md` (if applicable)
 
 ---
 
