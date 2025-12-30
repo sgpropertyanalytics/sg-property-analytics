@@ -13,14 +13,14 @@ class TestNormalizeTimeframeId:
     """Test timeframe ID normalization."""
 
     @pytest.mark.parametrize("inp, expected", [
-        (None, None),           # None defaults to None (all data)
+        (None, "Y1"),           # None defaults to Y1 (last 12 months)
         ("Y1", "Y1"),           # Canonical passes through
         ("m3", "M3"),           # Lowercase normalized
         ("12m", "Y1"),          # Legacy maps to canonical
         ("1y", "Y1"),           # Legacy alias
         ("2y", "Y3"),           # 2Y → Y3 (not 24 months)
         ("all", None),          # 'all' returns None (no filter)
-        ("garbage", None),      # Invalid defaults to None (all data)
+        ("garbage", "Y1"),      # Invalid defaults to Y1
     ])
     def test_normalize(self, inp, expected):
         assert normalize_timeframe_id(inp) == expected
@@ -51,12 +51,12 @@ class TestResolveTimeframe:
         assert bounds["date_to_exclusive"] is None
         assert bounds["months_in_period"] is None
 
-    def test_none_defaults_to_all(self):
-        """None input defaults to all (no date filter)."""
+    def test_none_defaults_to_y1(self):
+        """None input defaults to Y1 (last 12 months)."""
         bounds = resolve_timeframe(None, max_date=date(2025, 12, 29))
-        assert bounds["date_from"] is None
-        assert bounds["date_to_exclusive"] is None
-        assert bounds["months_in_period"] is None
+        assert bounds["months_in_period"] == 12
+        assert bounds["date_from"] is not None
+        assert bounds["date_to_exclusive"] is not None
 
     def test_legacy_2y_maps_to_y3(self):
         """Legacy '2y' resolves to 36 months (Y3), not 24."""

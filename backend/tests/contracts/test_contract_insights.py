@@ -37,12 +37,12 @@ class TestDistrictPsfContractSchema:
         assert "sale_type" in fields
 
     def test_param_schema_timeframe_values(self):
-        """Timeframe should have canonical values with 'all' default."""
+        """Timeframe should have canonical values with Y1 default."""
         contract = get_contract("insights/district-psf")
         timeframe_field = contract.param_schema.fields["timeframe"]
 
-        # Canonical IDs with 'all' as default (full database)
-        assert timeframe_field.default == "all"
+        # Canonical IDs with Y1 as default (last 12 months for performance)
+        assert timeframe_field.default == "Y1"
         assert "all" in timeframe_field.allowed_values
         assert "M3" in timeframe_field.allowed_values
         assert "M6" in timeframe_field.allowed_values

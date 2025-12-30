@@ -28,10 +28,10 @@ DISTRICT_PSF_PARAM_SCHEMA = ParamSchema(
         "timeframe": FieldSpec(
             name="timeframe",
             type=str,
-            default="all",  # Default to full database (no date filter)
+            default="Y1",  # Default to last 12 months for performance
             allowed_values=["all", "M3", "M6", "Y1", "Y3", "Y5",
                            "3m", "6m", "12m", "1y", "2y", "3y", "5y"],
-            description="Time period filter (default: all = full database)"
+            description="Time period filter (default: Y1 = last 12 months)"
         ),
         "period": FieldSpec(
             name="period",
@@ -114,10 +114,10 @@ DISTRICT_LIQUIDITY_PARAM_SCHEMA = ParamSchema(
         "timeframe": FieldSpec(
             name="timeframe",
             type=str,
-            default="all",  # Default to full database (no date filter)
+            default="Y1",  # Default to last 12 months for performance
             allowed_values=["all", "M3", "M6", "Y1", "Y3", "Y5",
                            "3m", "6m", "12m", "1y", "2y", "3y", "5y"],
-            description="Time period filter (default: all = full database)"
+            description="Time period filter (default: Y1 = last 12 months)"
         ),
         "period": FieldSpec(
             name="period",

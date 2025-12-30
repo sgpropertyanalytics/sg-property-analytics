@@ -206,13 +206,13 @@ def _normalize_timeframe(params: Dict[str, Any]) -> Dict[str, Any]:
         return params
 
     # Get timeframe ID
-    # Priority: explicit timeframe > legacy period > default (all)
-    # If timeframe is 'all' (default) but period is provided, use period for back-compat
+    # Priority: explicit timeframe > legacy period > default (Y1)
+    # If timeframe is 'all' but period is provided, use period for back-compat
     tf_id = params.get('timeframe')
     period = params.get('period')
 
     if tf_id == 'all' and period:
-        # Legacy period specified, use it instead of default 'all'
+        # Legacy period specified, use it instead of 'all'
         tf_id = period
     elif not tf_id:
         tf_id = period  # Fallback to period if no timeframe

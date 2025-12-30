@@ -562,7 +562,7 @@ TIMEFRAME_OPTIONS = {
     'Y5': {'months': 60, 'label': '5Y'},
 }
 
-DEFAULT_TIMEFRAME = None  # None = 'all' (no date filter, show full database)
+DEFAULT_TIMEFRAME = 'Y1'  # Default to last 12 months for performance
 
 # Back-compat mapping for legacy frontend values
 TIMEFRAME_LEGACY_MAP = {
