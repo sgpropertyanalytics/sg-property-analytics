@@ -586,7 +586,13 @@ def normalize_timeframe_id(tf_id: Optional[str]) -> Optional[str]:
         return DEFAULT_TIMEFRAME
     lower = tf_id.lower()
     upper = tf_id.upper()
-    return TIMEFRAME_LEGACY_MAP.get(lower) or (upper if upper in TIMEFRAME_OPTIONS else DEFAULT_TIMEFRAME)
+    # Check legacy map first (explicit key check to handle 'all' -> None)
+    if lower in TIMEFRAME_LEGACY_MAP:
+        return TIMEFRAME_LEGACY_MAP[lower]
+    # Check canonical IDs
+    if upper in TIMEFRAME_OPTIONS:
+        return upper
+    return DEFAULT_TIMEFRAME
 
 
 def resolve_timeframe(tf_id: Optional[str], max_date: Optional[date] = None) -> dict:

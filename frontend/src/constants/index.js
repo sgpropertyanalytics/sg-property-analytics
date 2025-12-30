@@ -393,14 +393,31 @@ export const BEDROOM_FILTER_OPTIONS_EMPTY = [
   { value: '5', label: '5+ BR', fullLabel: '5-Bedroom+' },
 ];
 
+// =============================================================================
+// TIMEFRAME CONSTANTS - SINGLE SOURCE OF TRUTH
+// Re-export from timeframes.js (backend resolves dates, frontend only passes IDs)
+// =============================================================================
+
+export {
+  TIMEFRAME_IDS,
+  TIMEFRAME_OPTIONS,
+  DEFAULT_TIMEFRAME_ID,
+  normalizeTimeframeId,
+  getTimeframeOption,
+  isValidTimeframe,
+} from './timeframes';
+
 /**
  * Period filter options for time-based dropdowns.
- * Centralized to avoid duplication across components.
+ * [DEPRECATED] Use TIMEFRAME_OPTIONS from './timeframes' instead.
+ * Kept for backward compatibility with components using legacy format.
  */
 export const PERIOD_FILTER_OPTIONS = [
-  { value: '3m', label: '3M', fullLabel: '3 Months' },
-  { value: '6m', label: '6M', fullLabel: '6 Months' },
-  { value: '12m', label: '1Y', fullLabel: '1 Year' },
+  { value: 'M3', label: '3M', fullLabel: '3 Months' },
+  { value: 'M6', label: '6M', fullLabel: '6 Months' },
+  { value: 'Y1', label: '1Y', fullLabel: '1 Year' },
+  { value: 'Y3', label: '3Y', fullLabel: '3 Years' },
+  { value: 'Y5', label: '5Y', fullLabel: '5 Years' },
   { value: 'all', label: 'All', fullLabel: 'All Time' },
 ];
 

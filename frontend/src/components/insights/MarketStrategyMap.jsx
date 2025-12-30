@@ -412,7 +412,7 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
               <span className="text-[10px] sm:text-xs text-[#547792]">
                 {stat.txCount.toLocaleString()} tx
                 <span className="text-[#547792]/60 ml-1">
-                  ({selectedPeriod === 'all' ? 'all time' : PERIOD_FILTER_OPTIONS.find(p => p.value === selectedPeriod)?.label || '12M'} avg)
+                  ({selectedPeriod === 'all' ? 'all time' : PERIOD_FILTER_OPTIONS.find(p => p.value === selectedPeriod)?.label || '1Y'} avg)
                 </span>
               </span>
             </div>
@@ -452,7 +452,7 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
 
   // Support both controlled and uncontrolled modes
   const [internalBed, setInternalBed] = useState('all');
-  const [internalPeriod, setInternalPeriod] = useState('12m');
+  const [internalPeriod, setInternalPeriod] = useState('Y1');
 
   // Use controlled values if provided, otherwise use internal state
   const isControlled = onFilterChange !== undefined;

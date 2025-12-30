@@ -64,7 +64,7 @@ export default function MarketHeatmap() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
-  const [selectedPeriod, setSelectedPeriod] = useState('12m');
+  const [selectedPeriod, setSelectedPeriod] = useState('Y1');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 

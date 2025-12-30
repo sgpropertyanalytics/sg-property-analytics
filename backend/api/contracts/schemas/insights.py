@@ -25,12 +25,20 @@ from ..registry import (
 
 DISTRICT_PSF_PARAM_SCHEMA = ParamSchema(
     fields={
+        "timeframe": FieldSpec(
+            name="timeframe",
+            type=str,
+            default="Y1",
+            allowed_values=["M3", "M6", "Y1", "Y3", "Y5",
+                           "3m", "6m", "12m", "1y", "2y", "3y", "5y", "all"],
+            description="Time period filter (canonical: M3, M6, Y1, Y3, Y5; legacy accepted)"
+        ),
         "period": FieldSpec(
             name="period",
             type=str,
-            default="12m",
-            allowed_values=["3m", "6m", "12m", "all"],
-            description="Time period filter"
+            default=None,
+            allowed_values=["3m", "6m", "12m", "1y", "2y", "3y", "5y", "all"],
+            description="[DEPRECATED] Use 'timeframe' instead"
         ),
         "bed": FieldSpec(
             name="bed",
@@ -103,12 +111,20 @@ register_contract(DISTRICT_PSF_CONTRACT)
 
 DISTRICT_LIQUIDITY_PARAM_SCHEMA = ParamSchema(
     fields={
+        "timeframe": FieldSpec(
+            name="timeframe",
+            type=str,
+            default="Y1",
+            allowed_values=["M3", "M6", "Y1", "Y3", "Y5",
+                           "3m", "6m", "12m", "1y", "2y", "3y", "5y", "all"],
+            description="Time period filter (canonical: M3, M6, Y1, Y3, Y5; legacy accepted)"
+        ),
         "period": FieldSpec(
             name="period",
             type=str,
-            default="12m",
-            allowed_values=["3m", "6m", "12m", "all"],
-            description="Time period filter"
+            default=None,
+            allowed_values=["3m", "6m", "12m", "1y", "2y", "3y", "5y", "all"],
+            description="[DEPRECATED] Use 'timeframe' instead"
         ),
         "bed": FieldSpec(
             name="bed",

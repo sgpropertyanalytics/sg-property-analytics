@@ -3,6 +3,8 @@ import { usePowerBIFilters } from '../../context/PowerBIFilter';
 import {
   REGIONS,
   DISTRICT_NAMES,
+  TIMEFRAME_OPTIONS,
+  DEFAULT_TIMEFRAME_ID,
 } from '../../constants';
 import { TimeGranularityToggle } from './TimeGranularityToggle';
 // SaleType filter removed - Market Core is Resale-only
@@ -63,44 +65,37 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     propertyDetails: true,
   });
 
-  // Date preset state: '3M', '6M', '12M', '2Y', '5Y', 'custom', or null (all data)
+  // Date preset state: canonical ID ('M3', 'M6', 'Y1', 'Y3', 'Y5'), 'custom', or null (all data)
   const [datePreset, setDatePreset] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
 
   // Calculate date range for a preset relative to the latest data date
+  // Uses canonical timeframe IDs (M3, M6, Y1, Y3, Y5)
   // Fix: Fallback to today if maxDate not loaded yet (prevents silent no-op)
   // Fix: Snap to 1st of month because URA data is month-level only
   const calculatePresetDateRange = useCallback((preset, maxDateStr) => {
     // Fallback to today if filter options haven't loaded yet
     const effectiveMaxDate = maxDateStr || new Date().toISOString().split('T')[0];
     const maxDate = new Date(effectiveMaxDate);
-    let startDate;
 
-    switch (preset) {
-      case '3M':
-        startDate = new Date(maxDate);
-        startDate.setMonth(startDate.getMonth() - 3);
-        break;
-      case '6M':
-        startDate = new Date(maxDate);
-        startDate.setMonth(startDate.getMonth() - 6);
-        break;
-      case '12M':
-        startDate = new Date(maxDate);
-        startDate.setMonth(startDate.getMonth() - 12);
-        break;
-      case '2Y':
-        startDate = new Date(maxDate);
-        startDate.setFullYear(startDate.getFullYear() - 2);
-        break;
-      case '5Y':
-        startDate = new Date(maxDate);
-        startDate.setFullYear(startDate.getFullYear() - 5);
-        break;
-      default:
-        return { start: null, end: null };
+    // Map canonical IDs to months (matches backend constants.py)
+    // NOTE: Frontend date calc is for UI display only. Backend is source of truth.
+    const monthsMap = {
+      'M3': 3,
+      'M6': 6,
+      'Y1': 12,
+      'Y3': 36,
+      'Y5': 60,
+    };
+
+    const months = monthsMap[preset];
+    if (!months) {
+      return { start: null, end: null };
     }
+
+    const startDate = new Date(maxDate);
+    startDate.setMonth(startDate.getMonth() - months);
 
     // CRITICAL: Snap to 1st of month for URA data compatibility
     // URA transaction data is month-level only - all transactions within a month
@@ -251,23 +246,23 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             {/* Divider */}
             <div className="hidden lg:block w-px h-10 bg-[#94B4C1]/40" />
 
-            {/* Period Preset Buttons */}
+            {/* Period Preset Buttons - uses canonical timeframe IDs (M3, M6, Y1, Y3, Y5) */}
             <div className="flex gap-1">
-              {['3M', '6M', '12M', '2Y', '5Y'].map(preset => (
+              {TIMEFRAME_OPTIONS.map(opt => (
                 <button
                   type="button"
-                  key={preset}
-                  onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
+                  key={opt.id}
+                  onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                   disabled={filterOptions.loading}
                   className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
                     filterOptions.loading
                       ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
-                      : datePreset === preset
+                      : datePreset === opt.id
                         ? 'bg-[#547792] text-white border-[#547792]'
                         : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
                   }`}
                 >
-                  {preset}
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -432,21 +427,21 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
           >
             <div className="grid grid-cols-5 gap-1.5">
-              {['3M', '6M', '12M', '2Y', '5Y'].map(preset => (
+              {TIMEFRAME_OPTIONS.map(opt => (
                 <button
                   type="button"
-                  key={preset}
-                  onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
+                  key={opt.id}
+                  onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                   disabled={filterOptions.loading}
                   className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
                     filterOptions.loading
                       ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
-                      : datePreset === preset
+                      : datePreset === opt.id
                         ? 'bg-[#547792] text-white border-[#547792]'
                         : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
                   }`}
                 >
-                  {preset}
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -460,10 +455,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 <span className="text-xs text-[#547792] font-medium">Custom range selected</span>
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); handlePresetClick('12M'); }}
+                  onClick={(e) => { e.preventDefault(); handlePresetClick(DEFAULT_TIMEFRAME_ID); }}
                   className="text-xs text-[#547792] hover:text-[#213448] underline"
                 >
-                  Reset to 12M
+                  Reset to 1Y
                 </button>
               </div>
             )}
@@ -715,21 +710,21 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {/* Preset Buttons - Primary interaction */}
           {/* Shows loading indicator when filter options not ready, buttons still work with fallback to today */}
           <div className="grid grid-cols-5 gap-1.5">
-            {['3M', '6M', '12M', '2Y', '5Y'].map(preset => (
+            {TIMEFRAME_OPTIONS.map(opt => (
               <button
                 type="button"
-                key={preset}
-                onClick={(e) => { e.preventDefault(); handlePresetClick(preset); }}
+                key={opt.id}
+                onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                 disabled={filterOptions.loading}
                 className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
                   filterOptions.loading
                     ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
-                    : datePreset === preset
+                    : datePreset === opt.id
                       ? 'bg-[#547792] text-white border-[#547792]'
                       : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
                 }`}
               >
-                {preset}
+                {opt.label}
               </button>
             ))}
           </div>
@@ -746,10 +741,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               <span className="text-xs text-[#547792] font-medium">Custom range selected</span>
               <button
                 type="button"
-                onClick={(e) => { e.preventDefault(); handlePresetClick('12M'); }}
+                onClick={(e) => { e.preventDefault(); handlePresetClick(DEFAULT_TIMEFRAME_ID); }}
                 className="text-xs text-[#547792] hover:text-[#213448] underline"
               >
-                Reset to 12M
+                Reset to 1Y
               </button>
             </div>
           )}

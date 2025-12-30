@@ -5,7 +5,7 @@ Dedicated endpoints for the Insights page visual analytics features.
 These endpoints are optimized for specific visualization needs.
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 import time
 from datetime import datetime, timedelta
 from models.transaction import Transaction
@@ -71,30 +71,6 @@ def add_contract_version_header(response):
     return response
 
 
-def months_ago(date, months):
-    """
-    Calculate a date N months ago.
-    Uses calendar month subtraction for accuracy.
-    """
-    year = date.year
-    month = date.month - months
-    while month <= 0:
-        month += 12
-        year -= 1
-    # Handle day overflow (e.g., March 31 -> Feb 28)
-    day = min(date.day, 28)  # Safe for all months
-    return date.replace(year=year, month=month, day=day)
-
-
-def years_ago(date, years):
-    """Calculate a date N years ago."""
-    try:
-        return date.replace(year=date.year - years)
-    except ValueError:
-        # Handle Feb 29 in non-leap years
-        return date.replace(year=date.year - years, day=28)
-
-
 @insights_bp.route("/district-psf", methods=["GET"])
 @api_contract("insights/district-psf")
 def district_psf():
@@ -143,32 +119,28 @@ def district_psf():
     """
     start = time.time()
 
-    # Parse query params
-    period = request.args.get("period", "12m")
-    bed_filter = request.args.get("bed", "all")
-    age_filter = request.args.get("age", "all")
-    # Accept both v2 (saleType) and v1 (sale_type) params
-    sale_type_filter = request.args.get("saleType") or request.args.get("sale_type", "all")
+    # Use normalized params from contract layer (centralized timeframe resolution)
+    params = getattr(g, 'normalized_params', {})
 
-    # Calculate date range based on period
-    today = datetime.now().date()
-    if period == "3m":
-        date_from = months_ago(today, 3)
-    elif period == "6m":
-        date_from = months_ago(today, 6)
-    elif period == "12m":
-        date_from = months_ago(today, 12)
-    elif period == "all":
-        date_from = None
-    else:
-        date_from = months_ago(today, 12)  # Default to 12m
+    # Get date bounds from centralized resolution (backend is source of truth)
+    date_from = params.get('date_from')
+    date_to_exclusive = params.get('date_to_exclusive')
+    months_in_period = params.get('months_in_period')
+    timeframe = params.get('timeframe', 'Y1')
+
+    # Get other params from normalized params (not raw request.args)
+    bed_filter = params.get("bed", "all")
+    age_filter = params.get("age", "all")
+    sale_type_filter = params.get("sale_type", "all")
 
     # Build base filter conditions (always exclude outliers)
     filter_conditions = [Transaction.outlier_filter()]
 
-    # Apply date filter
+    # Apply date filter using half-open interval [date_from, date_to_exclusive)
     if date_from:
         filter_conditions.append(Transaction.transaction_date >= date_from)
+    if date_to_exclusive:
+        filter_conditions.append(Transaction.transaction_date < date_to_exclusive)
 
     # Apply bedroom filter
     bedroom_filter_label = bed_filter
@@ -210,14 +182,14 @@ def district_psf():
 
         # Query YoY comparison data (same period, 1 year earlier)
         yoy_data = {}
-        if date_from:
-            yoy_from = years_ago(date_from, 1)
-            yoy_to = years_ago(today, 1)
+        if date_from and date_to_exclusive:
+            from dateutil.relativedelta import relativedelta
+            yoy_from = date_from - relativedelta(years=1)
+            yoy_to_exclusive = date_to_exclusive - relativedelta(years=1)
 
             yoy_conditions = [Transaction.outlier_filter()]
             yoy_conditions.append(Transaction.transaction_date >= yoy_from)
-            # Use < next_day instead of <= yoy_to to include all transactions on yoy_to
-            yoy_conditions.append(Transaction.transaction_date < yoy_to + timedelta(days=1))
+            yoy_conditions.append(Transaction.transaction_date < yoy_to_exclusive)
 
             # Apply same bedroom filter for YoY
             if bed_filter != "all":
@@ -312,12 +284,13 @@ def district_psf():
         return jsonify({
             "districts": districts_response,
             "meta": {
-                "period": period,
+                "timeframe": timeframe,
+                "months_in_period": months_in_period,
                 "bed_filter": bedroom_filter_label,
                 "age_filter": age_filter,
                 "date_range": {
                     "from": date_from.isoformat() if date_from else None,
-                    "to": today.isoformat()
+                    "to_exclusive": date_to_exclusive.isoformat() if date_to_exclusive else None
                 },
                 "total_districts": 28,
                 "districts_with_data": districts_with_data,
@@ -380,51 +353,48 @@ def district_liquidity():
       }
     """
     import statistics
+    from datetime import date as date_type
 
     start = time.time()
 
-    # Parse query params
-    from api.contracts.contract_schema import SaleType
+    # Use normalized params from contract layer (centralized timeframe resolution)
+    params = getattr(g, 'normalized_params', {})
 
-    period = request.args.get("period", "12m")
-    bed_filter = request.args.get("bed", "all")
-    # Accept both v2 (saleType) and v1 (sale_type) params, normalize via SaleType.to_db()
-    sale_type_param = request.args.get("saleType") or request.args.get("sale_type", "all")
-    sale_type_filter = SaleType.to_db(sale_type_param) if sale_type_param != "all" else "all"
+    # Get date bounds from centralized resolution (backend is source of truth)
+    date_from = params.get('date_from')
+    date_to_exclusive = params.get('date_to_exclusive')
+    months_in_period = params.get('months_in_period')
+    timeframe = params.get('timeframe', 'Y1')
 
-    # Calculate date range and months count
-    today = datetime.now().date()
-    if period == "3m":
-        date_from = months_ago(today, 3)
-        months_in_period = 3
-    elif period == "6m":
-        date_from = months_ago(today, 6)
-        months_in_period = 6
-    elif period == "12m":
-        date_from = months_ago(today, 12)
-        months_in_period = 12
-    elif period == "all":
+    # Handle "all" timeframe specially (compute months from data)
+    if months_in_period is None:
         # For "all", get the earliest transaction date
         earliest = db.session.query(func.min(Transaction.transaction_date)).filter(
             Transaction.outlier_filter()
         ).scalar()
-        if earliest:
-            date_from = earliest
-            # Calculate months between earliest and today
-            months_in_period = (today.year - earliest.year) * 12 + (today.month - earliest.month)
+        if earliest and date_to_exclusive:
+            # Snap earliest to month boundary (1st of month)
+            earliest = date_type(earliest.year, earliest.month, 1)
+            months_in_period = (date_to_exclusive.year - earliest.year) * 12 + (date_to_exclusive.month - earliest.month)
             months_in_period = max(months_in_period, 1)  # At least 1 month
+            date_from = earliest
         else:
-            date_from = None
             months_in_period = 12  # Default
-    else:
-        date_from = months_ago(today, 12)
-        months_in_period = 12
+
+    # Get other params from normalized params
+    from api.contracts.contract_schema import SaleType
+    bed_filter = params.get("bed", "all")
+    sale_type_param = params.get("sale_type", "all")
+    sale_type_filter = SaleType.to_db(sale_type_param) if sale_type_param != "all" else "all"
 
     # Build base filter conditions
     filter_conditions = [Transaction.outlier_filter()]
 
+    # Apply date filter using half-open interval [date_from, date_to_exclusive)
     if date_from:
         filter_conditions.append(Transaction.transaction_date >= date_from)
+    if date_to_exclusive:
+        filter_conditions.append(Transaction.transaction_date < date_to_exclusive)
 
     # Apply bedroom filter
     if bed_filter != "all":
@@ -496,6 +466,8 @@ def district_liquidity():
         ]
         if date_from:
             resale_filter_conditions.append(Transaction.transaction_date >= date_from)
+        if date_to_exclusive:
+            resale_filter_conditions.append(Transaction.transaction_date < date_to_exclusive)
         # Apply bedroom filter to resale metrics too
         if bed_filter != "all":
             if bed_filter == "1":
@@ -961,13 +933,13 @@ def district_liquidity():
         return jsonify({
             "districts": districts_response,
             "meta": {
-                "period": period,
+                "timeframe": timeframe,
                 "bed_filter": bed_filter,
                 "sale_type_filter": sale_type_filter,
                 "months_in_period": months_in_period,
                 "date_range": {
                     "from": date_from.isoformat() if date_from else None,
-                    "to": today.isoformat()
+                    "to_exclusive": date_to_exclusive.isoformat() if date_to_exclusive else None
                 },
                 "total_transactions": total_transactions,
                 # Velocity stats (raw, for backwards compat)

@@ -160,7 +160,7 @@ export default function MarketHeatmap3D() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
-  const [selectedPeriod, setSelectedPeriod] = useState('12m');
+  const [selectedPeriod, setSelectedPeriod] = useState('Y1');
   const [hoveredDistrictId, setHoveredDistrictId] = useState(null);
   const [popupInfo, setPopupInfo] = useState(null);
   const mapRef = useRef(null);

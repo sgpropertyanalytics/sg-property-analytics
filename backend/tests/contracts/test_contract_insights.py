@@ -30,21 +30,31 @@ class TestDistrictPsfContractSchema:
         contract = get_contract("insights/district-psf")
         fields = contract.param_schema.fields
 
-        assert "period" in fields
+        assert "timeframe" in fields  # Canonical timeframe field
+        assert "period" in fields     # Deprecated, kept for back-compat
         assert "bed" in fields
         assert "age" in fields
         assert "sale_type" in fields
 
-    def test_param_schema_period_values(self):
-        """Period should have allowed values."""
+    def test_param_schema_timeframe_values(self):
+        """Timeframe should have canonical values with Y1 default."""
         contract = get_contract("insights/district-psf")
-        period_field = contract.param_schema.fields["period"]
+        timeframe_field = contract.param_schema.fields["timeframe"]
 
-        assert period_field.default == "12m"
+        # Canonical IDs with Y1 as default
+        assert timeframe_field.default == "Y1"
+        assert "M3" in timeframe_field.allowed_values
+        assert "M6" in timeframe_field.allowed_values
+        assert "Y1" in timeframe_field.allowed_values
+        assert "Y3" in timeframe_field.allowed_values
+        assert "Y5" in timeframe_field.allowed_values
+        # Legacy values also accepted for back-compat
+        assert "12m" in timeframe_field.allowed_values
+
+        # Period is deprecated (no default, kept for back-compat)
+        period_field = contract.param_schema.fields["period"]
+        assert period_field.default is None
         assert "3m" in period_field.allowed_values
-        assert "6m" in period_field.allowed_values
-        assert "12m" in period_field.allowed_values
-        assert "all" in period_field.allowed_values
 
     def test_response_schema_has_required_meta(self):
         """Response schema should require key meta fields."""

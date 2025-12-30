@@ -16,6 +16,9 @@ from typing import Dict, Any, List, Optional
 
 from .registry import ParamSchema, FieldSpec
 
+# Import resolve_timeframe at module level (fail fast if unavailable)
+from constants import resolve_timeframe
+
 try:
     from utils.normalize import to_int, to_date, to_list, to_bool, to_float
 except ImportError:
@@ -181,6 +184,46 @@ def _normalize_districts(params: Dict[str, Any]) -> Dict[str, Any]:
     return params
 
 
+def _normalize_timeframe(params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize timeframe/period param to date bounds.
+
+    Backend is the sole source of truth for date resolution.
+    Frontend passes timeframe ID -> backend resolves to dates.
+
+    Accepts:
+    - timeframe: 'M3', 'M6', 'Y1', 'Y3', 'Y5' (canonical)
+    - period: '3m', '6m', '12m', 'all' (legacy)
+    - date_from + date_to_exclusive: explicit dates (advanced, skip timeframe resolution)
+
+    Outputs:
+    - date_from: Inclusive start date (1st of month)
+    - date_to_exclusive: Exclusive end date (1st of current month)
+    - months_in_period: Number of months in period (for annualization)
+    """
+    # If explicit dates provided, skip timeframe resolution
+    if params.get('date_from') and (params.get('date_to_exclusive') or params.get('date_to')):
+        return params
+
+    # Get timeframe ID (prefer 'timeframe' over legacy 'period')
+    tf_id = params.get('timeframe') or params.get('period')
+
+    # Always resolve timeframe (uses default Y1 if tf_id is None)
+    bounds = resolve_timeframe(tf_id)
+
+    if bounds['date_from'] is not None:
+        params['date_from'] = bounds['date_from']
+        params['date_to_exclusive'] = bounds['date_to_exclusive']
+        params['months_in_period'] = bounds['months_in_period']
+        _log_normalization(
+            'timeframe', 'date_from/date_to_exclusive',
+            f"[{bounds['date_from']}, {bounds['date_to_exclusive']})",
+            "timeframe_resolve"
+        )
+
+    return params
+
+
 def _normalize_date_bounds(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Convert date_to to date_to_exclusive.
@@ -188,7 +231,15 @@ def _normalize_date_bounds(params: Dict[str, Any]) -> Dict[str, Any]:
     Ensures half-open interval: [date_from, date_to_exclusive)
 
     This is the API contract: date_to is exclusive.
+
+    NOTE: Skips if date_to_exclusive is already set (e.g., from _normalize_timeframe).
     """
+    # Skip if date_to_exclusive already set (by _normalize_timeframe or explicit param)
+    if params.get('date_to_exclusive'):
+        # Just clean up legacy date_to if present
+        params.pop('date_to', None)
+        return params
+
     if 'date_to' in params and params['date_to']:
         dt = params['date_to']
         if isinstance(dt, date):
