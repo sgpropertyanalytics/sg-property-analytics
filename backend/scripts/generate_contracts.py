@@ -117,8 +117,8 @@ def main() -> int:
             continue
         contracts[endpoint] = _serialize_contract(contract)
 
+    # Note: No generated_at field - keeps hash deterministic for CI
     payload = {
-        "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "source": "backend/api/contracts",
         "contracts": contracts,
     }
