@@ -47,10 +47,20 @@ def is_premium_user():
     Returns:
         True if user has active premium subscription, False otherwise
         (including unauthenticated users)
+
+    Note: Users in PREMIUM_BYPASS_EMAILS env var always get premium access.
+    This is useful for preview/testing environments where the database
+    may not have the user's subscription synced.
     """
     user = get_user_from_request()
     if not user:
         return False
+
+    # Check bypass list first (for preview branches / testing)
+    from config import Config
+    if user.email and user.email.lower() in Config.PREMIUM_BYPASS_EMAILS:
+        return True
+
     return user.is_subscribed()
 
 
@@ -59,13 +69,19 @@ def get_subscription_tier():
     Get the subscription tier for current request.
 
     Returns:
-        'premium' if active subscription
+        'premium' if active subscription (or in bypass list)
         'free' if authenticated but no subscription
         'anonymous' if not authenticated
     """
     user = get_user_from_request()
     if not user:
         return 'anonymous'
+
+    # Check bypass list first (for preview branches / testing)
+    from config import Config
+    if user.email and user.email.lower() in Config.PREMIUM_BYPASS_EMAILS:
+        return 'premium'
+
     if user.is_subscribed():
         return 'premium'
     return 'free'
