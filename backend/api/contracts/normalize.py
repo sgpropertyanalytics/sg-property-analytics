@@ -105,6 +105,7 @@ def normalize_params(raw: Dict[str, Any], schema: ParamSchema) -> Dict[str, Any]
 
     # 3. Apply domain-specific normalizations
     normalized = _normalize_districts(normalized)
+    normalized = _normalize_timeframe(normalized)
     normalized = _normalize_date_bounds(normalized)
     normalized = _normalize_month_windows(normalized)
     normalized = _singulars_to_plurals(normalized)

@@ -99,7 +99,7 @@ function StrategyMapLoadingFallback() {
     <div className="bg-card rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <h2 className="text-lg font-bold text-[#213448]">
-          District Price Overview
+          Price/PSF Analysis by District
         </h2>
         <p className="text-xs text-[#547792]">
           Median PSF by postal district
@@ -145,7 +145,7 @@ function LiquidityMapLoadingFallback() {
     <div className="bg-card rounded-xl border border-[#94B4C1]/50 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
         <h2 className="text-lg font-bold text-[#213448]">
-          District Liquidity Map
+          Volume/Liquidity Analysis by District
         </h2>
         <p className="text-xs text-[#547792]">
           Transaction velocity by postal district

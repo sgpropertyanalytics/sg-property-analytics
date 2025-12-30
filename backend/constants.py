@@ -534,3 +534,117 @@ def normalize_tenure(tenure_str: str) -> str:
 def is_valid_tenure(tenure: str) -> bool:
     """Check if a tenure value is valid."""
     return tenure in TENURE_TYPES
+
+
+# =============================================================================
+# TIMEFRAME SPECIFICATION - SINGLE SOURCE OF TRUTH
+# =============================================================================
+#
+# Canonical timeframe IDs for date range filtering.
+# Backend is the SOLE source of truth for date resolution.
+# Frontend passes timeframe ID → Backend resolves to dates.
+#
+# Usage:
+#   from constants import resolve_timeframe
+#   bounds = resolve_timeframe('Y1')  # {'date_from': date, 'date_to_exclusive': date, 'months_in_period': 12}
+#
+
+from datetime import date
+from typing import Optional
+from dateutil.relativedelta import relativedelta
+
+# Canonical timeframe options
+TIMEFRAME_OPTIONS = {
+    'M3': {'months': 3, 'label': '3M'},
+    'M6': {'months': 6, 'label': '6M'},
+    'Y1': {'months': 12, 'label': '1Y'},
+    'Y3': {'months': 36, 'label': '3Y'},
+    'Y5': {'months': 60, 'label': '5Y'},
+}
+
+DEFAULT_TIMEFRAME = 'Y1'
+
+# Back-compat mapping for legacy frontend values
+TIMEFRAME_LEGACY_MAP = {
+    '3m': 'M3', '6m': 'M6', '12m': 'Y1', '1y': 'Y1',
+    '2y': 'Y3', '3y': 'Y3', '5y': 'Y5',
+    'all': None,  # No timeframe filter
+}
+
+
+def normalize_timeframe_id(tf_id: Optional[str]) -> Optional[str]:
+    """
+    Normalize timeframe ID with back-compat support.
+
+    Args:
+        tf_id: Timeframe ID (canonical: M3, M6, Y1, Y3, Y5 or legacy: 3m, 6m, 12m, 2y)
+
+    Returns:
+        Canonical ID (M3, M6, Y1, Y3, Y5) or None for 'all' (no filter)
+    """
+    if not tf_id:
+        return DEFAULT_TIMEFRAME
+    lower = tf_id.lower()
+    upper = tf_id.upper()
+    return TIMEFRAME_LEGACY_MAP.get(lower) or (upper if upper in TIMEFRAME_OPTIONS else DEFAULT_TIMEFRAME)
+
+
+def resolve_timeframe(tf_id: Optional[str], max_date: Optional[date] = None) -> dict:
+    """
+    Resolve timeframe to date bounds.
+
+    Uses month boundaries (1st of month) for URA data compatibility.
+    URA transaction dates are always 1st of month.
+
+    Exclusive end = 1st of current month (excludes incomplete current month).
+
+    Args:
+        tf_id: Timeframe ID (M3, M6, Y1, Y3, Y5 or legacy values)
+        max_date: Reference date (defaults to today)
+
+    Returns:
+        {
+            'date_from': date,         # Inclusive start (1st of month)
+            'date_to_exclusive': date, # Exclusive end (1st of current month)
+            'months_in_period': int,   # Number of months in period
+        }
+        All values are None if tf_id is 'all' (no date filter)
+
+    Example:
+        # From Dec 29, 2025 (max_date):
+        # Y1 (12 months) → [2024-12-01, 2025-12-01)
+        # M3 (3 months)  → [2025-09-01, 2025-12-01)
+    """
+    if max_date is None:
+        max_date = date.today()
+
+    normalized = normalize_timeframe_id(tf_id)
+
+    # Handle "all" - no date filter
+    if normalized is None:
+        return {'date_from': None, 'date_to_exclusive': None, 'months_in_period': None}
+
+    option = TIMEFRAME_OPTIONS.get(normalized)
+    if not option:
+        option = TIMEFRAME_OPTIONS[DEFAULT_TIMEFRAME]
+
+    # Exclusive end = 1st of current month (excludes incomplete current month)
+    date_to_exclusive = date(max_date.year, max_date.month, 1)
+
+    # Go back N months for start date
+    date_from = date_to_exclusive - relativedelta(months=option['months'])
+
+    return {
+        'date_from': date_from,
+        'date_to_exclusive': date_to_exclusive,
+        'months_in_period': option['months'],
+    }
+
+
+def is_valid_timeframe(tf_id: Optional[str]) -> bool:
+    """Check if a timeframe ID is valid (canonical or legacy)."""
+    if not tf_id:
+        return False
+    lower = tf_id.lower()
+    upper = tf_id.upper()
+    return lower in TIMEFRAME_LEGACY_MAP or upper in TIMEFRAME_OPTIONS

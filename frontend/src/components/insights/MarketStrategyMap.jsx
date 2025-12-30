@@ -573,7 +573,7 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 sm:gap-3">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-[#213448]">
-              District Price Overview
+              Price/PSF Analysis by District
             </h2>
             <p className="text-[10px] sm:text-xs text-[#547792]">
               <span className="hidden sm:inline">Median PSF by postal district</span>
