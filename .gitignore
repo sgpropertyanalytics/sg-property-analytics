@@ -106,6 +106,15 @@ logs/
 *.tmp
 *.temp
 .cache/
+
+# ============================================================
+# DATA PROTECTION: Generated outputs (NOT tracked)
+# ============================================================
+# These directories are safe for writing - fs_guard.py allows them
+backend/data/generated/
+.data/
+
+# FS guard audit logs
 data-validation-logs/
 
 # Generated frontend contracts - MUST be committed for Vercel builds

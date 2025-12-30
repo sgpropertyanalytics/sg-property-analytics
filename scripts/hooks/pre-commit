@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+# Pre-commit hook: Prevents accidental deletion or corruption of tracked CSV files.
+#
+# This hook blocks commits if:
+#   1. CSV files in backend/data/ are deleted
+#   2. CSV files shrink by more than 20%
+#
+# Install with: ./scripts/hooks/install.sh
+# Bypass with:  git commit --no-verify (use with caution!)
+#
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+echo "Running data guard pre-commit hook..."
+
+# Check for deleted CSV files in protected directories
+DELETED_CSVS=$(git diff --cached --name-status | grep -E "^D.*backend/data/.*\.csv$" || true)
+
+if [ -n "$DELETED_CSVS" ]; then
+    echo ""
+    echo -e "${RED}=================================================${NC}"
+    echo -e "${RED}  BLOCKED: Cannot delete tracked CSV files${NC}"
+    echo -e "${RED}=================================================${NC}"
+    echo ""
+    echo "The following files are staged for deletion:"
+    echo "$DELETED_CSVS" | while read line; do
+        echo "  - $(echo $line | cut -f2)"
+    done
+    echo ""
+    echo "These files are critical reference data and must not be deleted."
+    echo ""
+    echo "If this deletion is truly intentional:"
+    echo "  1. Document the reason in the commit message"
+    echo "  2. Update checksums: python -c \"from utils.data_checksums import save_checksums; save_checksums()\""
+    echo "  3. Run: git commit --no-verify"
+    echo ""
+    exit 1
+fi
+
+# Check for significant row count reduction in staged CSV files
+for file in $(git diff --cached --name-only | grep -E "backend/data/.*\.csv$" || true); do
+    if [ -f "$file" ]; then
+        # Get line counts
+        OLD_LINES=$(git show HEAD:"$file" 2>/dev/null | wc -l | tr -d ' ' || echo 0)
+        NEW_LINES=$(wc -l < "$file" | tr -d ' ')
+
+        if [ "$OLD_LINES" -gt 100 ]; then
+            # Calculate threshold (80% of original)
+            THRESHOLD=$((OLD_LINES * 80 / 100))
+
+            if [ "$NEW_LINES" -lt "$THRESHOLD" ]; then
+                DROP_PCT=$(( (OLD_LINES - NEW_LINES) * 100 / OLD_LINES ))
+
+                echo ""
+                echo -e "${YELLOW}=================================================${NC}"
+                echo -e "${YELLOW}  WARNING: Significant data reduction detected${NC}"
+                echo -e "${YELLOW}=================================================${NC}"
+                echo ""
+                echo "File: $file"
+                echo "Previous: $OLD_LINES lines"
+                echo "Current:  $NEW_LINES lines"
+                echo "Reduction: ${DROP_PCT}%"
+                echo ""
+                echo "This could indicate accidental data loss."
+                echo ""
+                echo "If this change is intentional:"
+                echo "  1. Run: git commit --no-verify"
+                echo "  2. Update checksums after commit"
+                echo ""
+                exit 1
+            fi
+        fi
+    fi
+done
+
+echo -e "${GREEN}Data guard check passed.${NC}"
+exit 0

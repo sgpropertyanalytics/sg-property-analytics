@@ -350,6 +350,21 @@ def create_app():
         except Exception as e:
             print(f"   ⚠️  Data guard check skipped: {e}")
 
+        # Checksum verification: Detect tampering of tracked CSV files
+        # This is a critical data integrity check - logs violations but does NOT block startup
+        try:
+            from utils.data_checksums import verify_all
+            violations = verify_all()
+            if violations:
+                print("   ⚠️  DATA INTEGRITY VIOLATIONS:")
+                for v in violations:
+                    print(f"      - {v}")
+                print("      Run: python -c \"from utils.data_checksums import save_checksums; save_checksums()\"")
+            else:
+                print("   ✓ Data checksum verification passed")
+        except Exception as e:
+            print(f"   ⚠️  Checksum verification skipped: {e}")
+
     # Register routes
     # Analytics routes (PUBLIC - no authentication required)
     from routes.analytics import analytics_bp
