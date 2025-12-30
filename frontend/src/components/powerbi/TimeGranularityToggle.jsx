@@ -51,19 +51,19 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
     setTimeGrouping(value);
   };
 
-  // Horizontal layout: implicit label (no label, just buttons)
+  // Horizontal layout: iOS-style segmented control (pill-shaped track)
   if (layout === 'horizontal') {
     return (
-      <div className={`relative flex gap-1 ${className}`}>
+      <div className={`relative flex bg-white border border-[#94B4C1]/70 rounded-full p-0.5 ${className}`}>
         {options.map(opt => (
           <button
             key={opt.value}
             type="button"
             onClick={() => handleChange(opt.value)}
-            className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
+            className={`px-3 py-2 text-sm font-medium rounded-md transition-all min-h-[40px] ${
               timeGrouping === opt.value
-                ? 'bg-[#547792] text-white border-[#547792]'
-                : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+                ? 'bg-[#213448] text-white active:bg-[#213448]/90'
+                : 'bg-transparent text-[#547792] hover:text-[#213448] active:bg-[#EAE0CF]/50'
             }`}
           >
             {opt.label}

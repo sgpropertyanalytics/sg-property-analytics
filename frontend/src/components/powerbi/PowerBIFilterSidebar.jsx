@@ -166,28 +166,38 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   };
 
   // ==================== HORIZONTAL LAYOUT ====================
-  // Toolbar-style control bar with implicit labels (no labels, use dividers)
+  // iOS-style segmented controls with pill-shaped tracks
   // Frosted glass - sticky handled by parent FilterBar wrapper
-  // Groups: Primary (Region + District) | Secondary (Bedroom + Date + Granularity) | Actions
+  // Row 1: Region + District + Bedroom | Row 2: Period + Granularity
   if (layout === 'horizontal') {
     return (
       <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-[#EAE0CF]/70 backdrop-blur-md border-b border-[#94B4C1]/30 shadow-sm">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          {/* PRIMARY GROUP: Region + District (stays together) */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Region/Segment Buttons */}
-            <div className="flex gap-1">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+          {/* ROW 1: Primary Filters - Region + District + Bedroom */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {/* Region Segmented Track */}
+            <div className="flex bg-white border border-[#94B4C1]/70 rounded-full p-0.5">
+              {/* "All" button - active when no segments selected */}
+              <button
+                type="button"
+                onClick={() => setSegments([])}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-all min-h-[40px] ${
+                  filters.segments.length === 0
+                    ? 'bg-[#213448] text-white active:bg-[#213448]/90'
+                    : 'bg-transparent text-[#547792] hover:text-[#213448] active:bg-[#EAE0CF]/50'
+                }`}
+              >
+                All
+              </button>
               {REGIONS.map(seg => (
                 <button
                   type="button"
                   key={seg}
                   onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                  className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-all min-h-[40px] ${
                     filters.segments.includes(seg)
-                      ? 'bg-[#547792] text-white border-[#547792]'
-                      : filters.segments.length === 0
-                        ? 'bg-white text-[#213448] border-[#94B4C1]'
-                        : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
+                      ? 'bg-[#213448] text-white active:bg-[#213448]/90'
+                      : 'bg-transparent text-[#547792] hover:text-[#213448] active:bg-[#EAE0CF]/50'
                   }`}
                   title="Shift+click to multi-select"
                 >
@@ -196,10 +206,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               ))}
             </div>
 
-            {/* Divider (hidden on wrap via lg:block) */}
-            <div className="hidden lg:block w-px h-10 bg-[#94B4C1]/40" />
-
-            {/* District Dropdown */}
+            {/* District Dropdown - pill-shaped to match tracks */}
             <MultiSelectDropdown
               options={(filterOptions.districtsRaw || []).map(d => {
                 const areaName = DISTRICT_NAMES[d];
@@ -214,27 +221,32 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               placeholder="All Districts"
               searchable
               compact
+              segmentedStyle
             />
-          </div>
 
-          {/* Group divider - only visible at xl+ when everything fits */}
-          <div className="hidden xl:block w-px h-10 bg-[#94B4C1]/40 flex-shrink-0" />
-
-          {/* SECONDARY GROUP: Bedroom + Date + Granularity (stays together) */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Bedroom Pills */}
-            <div className="flex gap-1">
+            {/* Bedroom Segmented Track */}
+            <div className="flex bg-white border border-[#94B4C1]/70 rounded-full p-0.5">
+              {/* "All" button */}
+              <button
+                type="button"
+                onClick={() => setBedroomTypes([])}
+                className={`px-2.5 py-2 text-sm font-medium rounded-md transition-all min-h-[40px] ${
+                  filters.bedroomTypes.length === 0
+                    ? 'bg-[#213448] text-white active:bg-[#213448]/90'
+                    : 'bg-transparent text-[#547792] hover:text-[#213448] active:bg-[#EAE0CF]/50'
+                }`}
+              >
+                All
+              </button>
               {[1, 2, 3, 4, 5].map(br => (
                 <button
                   type="button"
                   key={br}
                   onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                  className={`min-h-[44px] min-w-[44px] px-2 py-2 text-sm rounded-md border transition-colors ${
+                  className={`px-2.5 py-2 text-sm font-medium rounded-md transition-all min-h-[40px] min-w-[40px] ${
                     filters.bedroomTypes.includes(br)
-                      ? 'bg-[#547792] text-white border-[#547792]'
-                      : filters.bedroomTypes.length === 0
-                        ? 'bg-white text-[#213448] border-[#94B4C1]'
-                        : 'bg-white text-[#547792] border-[#94B4C1] hover:border-[#547792]'
+                      ? 'bg-[#213448] text-white active:bg-[#213448]/90'
+                      : 'bg-transparent text-[#547792] hover:text-[#213448] active:bg-[#EAE0CF]/50'
                   }`}
                   title="Shift+click to multi-select"
                 >
@@ -242,33 +254,30 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 </button>
               ))}
             </div>
+          </div>
 
-            {/* Divider */}
-            <div className="hidden lg:block w-px h-10 bg-[#94B4C1]/40" />
-
-            {/* Period Preset Buttons - uses canonical timeframe IDs (M3, M6, Y1, Y3, Y5) */}
-            <div className="flex gap-1">
+          {/* ROW 2: Time Controls - Period + Granularity */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {/* Period Preset Segmented Track */}
+            <div className="flex bg-white border border-[#94B4C1]/70 rounded-full p-0.5">
               {TIMEFRAME_OPTIONS.map(opt => (
                 <button
                   type="button"
                   key={opt.id}
                   onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                   disabled={filterOptions.loading}
-                  className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
+                  className={`px-2.5 py-2 text-sm font-medium rounded-md transition-all min-h-[40px] ${
                     filterOptions.loading
-                      ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
+                      ? 'bg-gray-100 text-gray-400 cursor-wait'
                       : datePreset === opt.id
-                        ? 'bg-[#547792] text-white border-[#547792]'
-                        : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
+                        ? 'bg-[#213448] text-white active:bg-[#213448]/90'
+                        : 'bg-transparent text-[#547792] hover:text-[#213448] active:bg-[#EAE0CF]/50'
                   }`}
                 >
                   {opt.label}
                 </button>
               ))}
             </div>
-
-            {/* Divider */}
-            <div className="hidden lg:block w-px h-10 bg-[#94B4C1]/40" />
 
             {/* Time Granularity Toggle */}
             <TimeGranularityToggle layout="horizontal" />
@@ -281,7 +290,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {activeFilterCount > 0 && (
             <button
               onClick={handleResetFilters}
-              className="min-h-[44px] px-3 py-2 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-md transition-colors active:scale-[0.98] flex-shrink-0 ml-auto xl:ml-0"
+              className="min-h-[44px] px-3 py-2 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-full transition-colors active:scale-[0.98] flex-shrink-0 ml-auto xl:ml-0"
             >
               Clear all
             </button>
@@ -878,7 +887,7 @@ function FilterGroup({ label, children }) {
   );
 }
 
-function MultiSelectDropdown({ options, selected, onChange, placeholder, searchable, compact = false }) {
+function MultiSelectDropdown({ options, selected, onChange, placeholder, searchable, compact = false, segmentedStyle = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -920,18 +929,27 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
     return () => document.removeEventListener('click', handleClick);
   }, [isOpen]);
 
+  // Styles differ based on segmentedStyle prop
+  const buttonClasses = segmentedStyle
+    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-4 py-2 min-h-[44px] text-sm border border-[#94B4C1]/70 rounded-full bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#547792]`
+    : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500`;
+
+  const dropdownClasses = segmentedStyle
+    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-[#94B4C1]/70 rounded-2xl shadow-lg max-h-60 overflow-hidden`
+    : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-slate-300 rounded-md shadow-lg max-h-60 overflow-hidden`;
+
   return (
     <div className={`relative multi-select-dropdown ${compact ? '' : 'w-full'}`}>
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
-        className={`${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500`}
+        className={buttonClasses}
       >
-        <span className={`${selected.length > 0 ? 'text-slate-800' : 'text-slate-500'} truncate min-w-0 flex-shrink`}>
+        <span className={`${selected.length > 0 ? (segmentedStyle ? 'text-[#213448]' : 'text-slate-800') : (segmentedStyle ? 'text-[#547792]' : 'text-slate-500')} truncate min-w-0 flex-shrink`}>
           {getDisplayText()}
         </span>
         <svg
-          className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 ${segmentedStyle ? 'text-[#547792]' : 'text-slate-400'} transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -941,7 +959,7 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
       </button>
 
       {isOpen && (
-        <div className={`absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-slate-300 rounded-md shadow-lg max-h-60 overflow-hidden`}>
+        <div className={dropdownClasses}>
           {searchable && (
             <div className="p-2 border-b border-slate-200">
               <input
