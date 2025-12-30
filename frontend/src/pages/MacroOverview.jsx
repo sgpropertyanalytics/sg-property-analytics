@@ -12,7 +12,7 @@ import { getKpiSummaryV2, getAggregate } from '../api/client';
 import { useData } from '../context/DataContext';
 import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
-import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group } from '../components/ui';
+import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group, KPIHeroContent } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 import { useChartHeight, MOBILE_CAPS, useAbortableQuery } from '../hooks';
 // Unified filter bar component (handles desktop + mobile)
@@ -183,28 +183,14 @@ export function MacroOverviewContent() {
                     const kpi = getKpi('market_momentum');
                     if (!kpi?.meta?.current_score) return '—';
                     const { current_score, prev_score, score_change_pct, change_direction, condition_direction, label } = kpi.meta;
-                    // Arrow based on score CHANGE direction
-                    const arrow = change_direction === 'up' ? '▲' : change_direction === 'down' ? '▼' : '—';
-                    const changeColorClass = change_direction === 'up' ? 'text-green-600' : change_direction === 'down' ? 'text-red-600' : 'text-gray-500';
-                    // Label color based on market CONDITION
-                    const conditionColorClass = condition_direction === 'up' ? 'text-green-600' : condition_direction === 'down' ? 'text-red-600' : 'text-gray-500';
-                    const pctStr = score_change_pct != null ? (score_change_pct >= 0 ? `+${score_change_pct}%` : `${score_change_pct}%`) : '';
+                    const badgeColor = condition_direction === 'up' ? 'green' : condition_direction === 'down' ? 'red' : 'gray';
                     return (
-                      <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate" title={`${current_score} ${label}`}>
-                          {current_score} <span className={`text-xs font-bold uppercase tracking-wider ${conditionColorClass}`}>{label}</span>
-                        </div>
-                        {score_change_pct != null && (
-                          <div className={`text-xs sm:text-sm font-medium ${changeColorClass}`}>
-                            {arrow} {pctStr} QoQ
-                          </div>
-                        )}
-                        {prev_score && (
-                          <div className="text-[10px] sm:text-xs text-gray-500">
-                            Prev: {prev_score}
-                          </div>
-                        )}
-                      </>
+                      <KPIHeroContent
+                        value={current_score}
+                        badge={label ? { text: label, color: badgeColor } : undefined}
+                        change={score_change_pct != null ? { value: score_change_pct, direction: change_direction } : undefined}
+                        previous={prev_score ? { value: prev_score } : undefined}
+                      />
                     );
                   })()}
                   footnote={getKpiField(getKpi('market_momentum'), KpiField.INSIGHT)}
@@ -219,25 +205,13 @@ export function MacroOverviewContent() {
                     const kpi = getKpi('median_psf');
                     if (!kpi?.meta?.current_psf) return '—';
                     const { current_psf, prev_psf, pct_change, direction } = kpi.meta;
-                    const arrow = direction === 'up' ? '▲' : direction === 'down' ? '▼' : '—';
-                    const colorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
-                    const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
                     return (
-                      <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate" title={`$${current_psf?.toLocaleString()} psf`}>
-                          ${current_psf?.toLocaleString()} <span className="text-sm sm:text-base font-normal">psf</span>
-                        </div>
-                        {pct_change != null && (
-                          <div className={`text-xs sm:text-sm font-medium ${colorClass}`}>
-                            {arrow} {pctStr} QoQ
-                          </div>
-                        )}
-                        {prev_psf && (
-                          <div className="text-[10px] sm:text-xs text-gray-500">
-                            Prev: ${prev_psf?.toLocaleString()} psf
-                          </div>
-                        )}
-                      </>
+                      <KPIHeroContent
+                        value={`$${current_psf?.toLocaleString()}`}
+                        unit="psf"
+                        change={pct_change != null ? { value: pct_change, direction } : undefined}
+                        previous={prev_psf ? { value: `$${prev_psf?.toLocaleString()} psf` } : undefined}
+                      />
                     );
                   })()}
                   footnote={getKpiField(getKpi('median_psf'), KpiField.INSIGHT)}
@@ -252,25 +226,14 @@ export function MacroOverviewContent() {
                     const kpi = getKpi('total_transactions');
                     if (!kpi?.meta?.current_count && kpi?.meta?.current_count !== 0) return '—';
                     const { current_count, previous_count, pct_change, direction, label } = kpi.meta;
-                    const arrow = direction === 'up' ? '▲' : direction === 'down' ? '▼' : '—';
-                    const colorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
-                    const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
+                    const badgeColor = direction === 'up' ? 'green' : direction === 'down' ? 'red' : 'gray';
                     return (
-                      <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate" title={`${current_count?.toLocaleString()} ${label}`}>
-                          {current_count?.toLocaleString()} <span className={`text-xs font-bold uppercase tracking-wider ${colorClass}`}>{label}</span>
-                        </div>
-                        {pct_change != null && (
-                          <div className={`text-xs sm:text-sm font-medium ${colorClass}`}>
-                            {arrow} {pctStr} QoQ
-                          </div>
-                        )}
-                        {previous_count != null && (
-                          <div className="text-[10px] sm:text-xs text-gray-500">
-                            Prev: {previous_count?.toLocaleString()} txns
-                          </div>
-                        )}
-                      </>
+                      <KPIHeroContent
+                        value={current_count?.toLocaleString()}
+                        badge={label ? { text: label, color: badgeColor } : undefined}
+                        change={pct_change != null ? { value: pct_change, direction } : undefined}
+                        previous={previous_count != null ? { value: `${previous_count?.toLocaleString()} txns` } : undefined}
+                      />
                     );
                   })()}
                   footnote={getKpiField(getKpi('total_transactions'), KpiField.INSIGHT)}
@@ -288,26 +251,16 @@ export function MacroOverviewContent() {
                     const trend = getKpiField(kpi, KpiField.TREND);
                     const direction = trend?.direction;
                     const label = trend?.label;
-                    const labelColorClass = direction === 'up' ? 'text-green-600' : direction === 'down' ? 'text-red-600' : 'text-gray-500';
-                    const arrow = pct_change > 0 ? '▲' : pct_change < 0 ? '▼' : '—';
-                    const changeColorClass = pct_change > 0 ? 'text-green-600' : pct_change < 0 ? 'text-red-600' : 'text-gray-500';
-                    const pctStr = pct_change != null ? (pct_change >= 0 ? `+${pct_change}%` : `${pct_change}%`) : '';
+                    const badgeColor = direction === 'up' ? 'green' : direction === 'down' ? 'red' : 'gray';
+                    // Change direction based on pct_change sign (separate from badge direction)
+                    const changeDirection = pct_change > 0 ? 'up' : pct_change < 0 ? 'down' : 'neutral';
                     return (
-                      <>
-                        <div className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate" title={`${getKpiField(kpi, KpiField.FORMATTED_VALUE)} ${label}`}>
-                          {getKpiField(kpi, KpiField.FORMATTED_VALUE)} <span className={`text-xs font-bold uppercase tracking-wider ${labelColorClass}`}>{label}</span>
-                        </div>
-                        {pct_change != null && (
-                          <div className={`text-xs sm:text-sm font-medium ${changeColorClass}`}>
-                            {arrow} {pctStr} QoQ
-                          </div>
-                        )}
-                        {prior_annualized != null && (
-                          <div className="text-[10px] sm:text-xs text-gray-500">
-                            Prev: {prior_annualized}%
-                          </div>
-                        )}
-                      </>
+                      <KPIHeroContent
+                        value={getKpiField(kpi, KpiField.FORMATTED_VALUE)}
+                        badge={label ? { text: label, color: badgeColor } : undefined}
+                        change={pct_change != null ? { value: pct_change, direction: changeDirection } : undefined}
+                        previous={prior_annualized != null ? { value: `${prior_annualized}%` } : undefined}
+                      />
                     );
                   })()}
                   footnote={getKpiField(getKpi('resale_velocity'), KpiField.INSIGHT)}
