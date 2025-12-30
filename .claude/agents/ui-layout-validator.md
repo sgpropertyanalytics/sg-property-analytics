@@ -2111,22 +2111,50 @@ tables.forEach(table => {
 
 #### HF-6: Numeric Value Overflow (GLOBAL RULE)
 
-**Rule:** All numeric values rendered inside cards or panels MUST remain fully visible at ALL supported viewport sizes.
+**Rule:** All numeric values MUST remain fully visible OR provide full precision on hover.
 
-**Why This Matters:**
-Numeric overflow breaks:
-- **Data integrity** — users see incomplete numbers, leading to misinterpretation
-- **Trust** — clipped/scrolled values look broken and unprofessional
-- **Usability** — critical metrics (prices, counts, percentages) become unreadable
-- **Accessibility** — screen readers may announce partial values
+---
 
-**Applies Globally To:**
-- KPI cards (transaction counts, PSF values, percentages)
-- Stat panels (totals, averages, medians)
-- Metric displays (prices, areas, volumes)
-- Chart legends with numeric values
-- Table cells with numeric data
-- Any component rendering numbers
+##### MENTAL MODEL: Fix Hierarchy
+
+**Propagate fixes upward. Page patches are last resort.**
+
+```
+1. Shared Component  →  Scales to all pages automatically
+2. Shared Utils      →  Formatting logic reused everywhere
+3. Page-Level        →  ONLY when custom markup bypasses component
+```
+
+If component fix is correct, page-level patches are unnecessary.
+
+---
+
+##### MENTAL MODEL: Numeric Display Order
+
+**For values that may overflow:**
+
+```
+1. Compact format (K/M/B)     →  $1.23M instead of $1,234,567
+2. Truncate as fallback       →  When compact isn't applicable
+3. Always title/tooltip       →  Full precision discoverable on hover
+```
+
+Truncation without discoverability = data loss = violation.
+
+---
+
+##### MENTAL MODEL: Overflow Detection
+
+**Check for these risk patterns:**
+
+```
+□ Long numeric/text inside fixed-width container
+□ Flex child missing min-w-0
+□ Missing overflow-hidden + text-ellipsis
+□ No title attribute on truncated content
+```
+
+---
 
 **Failure Modes (ALL are HARD FAIL):**
 
@@ -2533,10 +2561,37 @@ git diff --stat frontend/tests/baselines/
 #### AF-9: Numeric Value Overflow Fix
 
 **Trigger:** Numeric value overflows container (HF-6 violation)
-**Fix:** Apply fixes in priority order based on root cause
 **Scope:** KPI cards, stat panels, metric displays
 
-**Priority 1: Add shrink safety to parent**
+---
+
+**LAYER PRIORITY (fix at highest-leverage layer first):**
+
+```
+1. Shared Component   →  Fix once, scales everywhere
+2. Shared Utils       →  Formatting functions reused
+3. Page-Level         →  ONLY if custom markup bypasses component
+```
+
+---
+
+**DISPLAY FIX ORDER (within the appropriate layer):**
+
+```
+1. Compact format     →  K/M/B for large numbers
+2. Shrink safety      →  min-w-0 on flex parent
+3. Truncate + title   →  Fallback with discoverability
+```
+
+---
+
+**Fix 1: Compact format (preferred for numerics)**
+```diff
+- <span>{1234567}</span>
++ <span title="$1,234,567">{formatCompact(1234567)}</span>  // "$1.23M"
+```
+
+**Fix 2: Add shrink safety to parent**
 ```diff
 - <div className="flex items-center">
 + <div className="flex items-center min-w-0">
@@ -2544,22 +2599,19 @@ git diff --stat frontend/tests/baselines/
   </div>
 ```
 
-**Priority 2: Apply responsive font sizing**
-```diff
-- <span className="text-2xl font-bold">{value}</span>
-+ <span className="text-[clamp(1rem,4vw,1.5rem)] font-bold">{value}</span>
-```
-
-**Priority 3: Add truncation (last resort)**
+**Fix 3: Truncate with title (accessibility required)**
 ```diff
 - <span className="text-xl">{value}</span>
-+ <span className="text-xl whitespace-nowrap overflow-hidden text-ellipsis">{value}</span>
++ <span className="text-xl truncate" title={value}>{value}</span>
 ```
 
-**Priority 4: Format large numbers**
-```diff
-- <span>{1234567890}</span>
-+ <span>{formatCompact(1234567890)}</span>  // Shows "$1.23B"
+**⚠️ FORBIDDEN: Truncation without discoverability**
+```jsx
+// ❌ WRONG - data loss
+<span className="truncate">{value}</span>
+
+// ✅ CORRECT - full value on hover
+<span className="truncate" title={value}>{value}</span>
 ```
 
 ### Forbidden Fixes
