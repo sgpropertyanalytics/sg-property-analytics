@@ -148,7 +148,7 @@ export function KPICardV2({
     <div
       className={`
         bg-card border border-[#94B4C1]/50 rounded-lg p-4 sm:p-5
-        h-36 flex flex-col
+        min-h-40 flex flex-col
         shadow-sm hover:shadow-md transition-shadow duration-200
         ${className}
       `.trim()}
@@ -177,7 +177,7 @@ export function KPICardV2({
       </div>
 
       {/* Layer 2: Hero Data - fills remaining space, aligned to bottom */}
-      <div className="flex-1 flex items-end pb-1 min-w-0">
+      <div className="flex-1 flex items-end pb-2 min-w-0">
         {loading ? (
           <div className="h-8 bg-[#94B4C1]/30 rounded w-24 animate-pulse" />
         ) : typeof value === 'string' ? (

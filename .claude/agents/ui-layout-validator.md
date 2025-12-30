@@ -736,6 +736,99 @@ Add validation in data fetch effect:
   }
 ```
 
+### INV-18: Card Content Edge Clipping
+
+**CRITICAL:** Card components with fixed or min-height MUST have adequate padding to prevent content from touching edges.
+
+**Why This Matters:**
+Cards with fixed heights and bottom-aligned content (`items-end`) can have their last line of text touch or clip against the card boundary when:
+- Titles wrap to multiple lines (taking more header space)
+- Viewport is narrow (cards compressed horizontally)
+- Content has multiple rows (value + change + previous)
+
+**Detection Criteria:**
+
+Flag cards that have ALL of:
+1. Fixed height (`h-*`) or min-height (`min-h-*`)
+2. Bottom-aligned content (`items-end` or `justify-end`)
+3. Footer/last row content (like "Prev:" values)
+4. Less than 8px bottom padding on content container
+
+**Check Process:**
+```
+1. Find card components with fixed height classes
+2. Check if content is bottom-aligned
+3. Verify padding on content container:
+   - pb-1 (4px) = INSUFFICIENT for multi-row content
+   - pb-2 (8px) = MINIMUM for cards with footer text
+   - pb-3+ (12px+) = SAFE
+
+4. Flag if: fixed height + items-end + pb-1 (or less)
+```
+
+**Example Violation (BEFORE):**
+```jsx
+// ❌ WRONG: Only 4px bottom padding with bottom-aligned content
+<div className="h-36 flex flex-col p-4">
+  <div className="flex-shrink-0">{title}</div>
+  <div className="flex-1 flex items-end pb-1">  {/* pb-1 = 4px only */}
+    <div className="space-y-1">
+      <div>39 SELLER</div>
+      <div>▼ -16.4% QoQ</div>
+      <div>Prev: 47</div>  {/* This touches card edge */}
+    </div>
+  </div>
+</div>
+```
+
+**Correct Pattern (AFTER):**
+```jsx
+// ✅ CORRECT: min-height allows growth + adequate padding
+<div className="min-h-40 flex flex-col p-4">
+  <div className="flex-shrink-0">{title}</div>
+  <div className="flex-1 flex items-end pb-2">  {/* pb-2 = 8px */}
+    <div className="space-y-1">
+      <div>39 SELLER</div>
+      <div>▼ -16.4% QoQ</div>
+      <div>Prev: 47</div>  {/* Proper spacing from edge */}
+    </div>
+  </div>
+</div>
+```
+
+**Key Fixes:**
+1. Use `min-h-*` instead of `h-*` when content can vary (allows growth)
+2. Use `pb-2` (8px) minimum on bottom-aligned content containers
+3. For cards with 3+ rows of content, consider `min-h-40` (160px) over `h-36` (144px)
+
+**Fail Condition:**
+- Card has fixed height + bottom-aligned content + insufficient padding
+- Last line of text visually touches or clips against card boundary
+- "Prev:" or footer text appears squeezed at bottom
+
+**Severity:** High (visual defect, looks unprofessional)
+**Fix Confidence:** Safe (padding/height adjustment)
+
+**Actionable Output:**
+```
+INV-18: Card Content Edge Clipping
+
+Component: KPICardV2
+File: frontend/src/components/ui/KPICardV2.tsx
+
+Issue Found:
+  - Height: h-36 (fixed 144px)
+  - Content alignment: items-end
+  - Bottom padding: pb-1 (4px)
+  - Content rows: 3 (value, change, previous)
+
+Status: FAIL
+
+Required Fix:
+  1. Change h-36 → min-h-40 (allow growth when titles wrap)
+  2. Change pb-1 → pb-2 (adequate edge spacing)
+```
+
 ---
 
 ## 3. FORBIDDEN LAYOUT MUTATIONS
@@ -3499,7 +3592,7 @@ jobs:
 ```
 [ ] All 5 viewports tested per route
 [ ] Viewport sweep run: 1280 → 1024 → 900 → 768 → 640
-[ ] All 7 HARD FAIL conditions checked:
+[ ] All 8 HARD FAIL conditions checked:
     - HF-1: Horizontal page scroll
     - HF-2: Element content overflow
     - HF-3: Element exceeds viewport
@@ -3507,6 +3600,7 @@ jobs:
     - HF-5: Table horizontal scroll (desktop/tablet)
     - HF-6: Numeric value overflow (global)
     - HF-7: Mid-viewport collapse (grids, filters)
+    - HF-8: Card content edge clipping (INV-18)
 [ ] Visual regression compared to baselines
 [ ] Issues categorized and prioritized
 ```
