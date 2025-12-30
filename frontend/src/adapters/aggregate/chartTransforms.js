@@ -101,7 +101,8 @@ export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
 
   rawData.forEach(row => {
     const district = row.district;
-    const quarter = row.quarter;
+    // API v2 uses 'period' as the unified time bucket field (not 'quarter')
+    const quarter = getAggField(row, AggField.PERIOD) || row.quarter;
     const medianPsf = getAggField(row, AggField.MEDIAN_PSF) || getAggField(row, AggField.AVG_PSF) || 0;
 
     // Only include if district is in our list (or if no list provided)
