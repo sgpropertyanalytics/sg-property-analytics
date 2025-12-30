@@ -101,12 +101,12 @@ PRICE_GROWTH_PARAM_SCHEMA = ParamSchema(
 PRICE_GROWTH_SERVICE_SCHEMA = ServiceBoundarySchema(
     fields={
         "project": FieldSpec(name="project", type=str, nullable=True),
-        "bedroom": FieldSpec(name="bedroom", type=int, nullable=True),
+        "bedrooms": FieldSpec(name="bedrooms", type=list, nullable=True),
         "floor_level": FieldSpec(name="floor_level", type=str, nullable=True),
-        "district": FieldSpec(name="district", type=str, nullable=True),
+        "districts": FieldSpec(name="districts", type=list, nullable=True),
         "sale_type": FieldSpec(name="sale_type", type=str, nullable=True),
         "date_from": FieldSpec(name="date_from", type=date, nullable=True),
-        "date_to": FieldSpec(name="date_to", type=date, nullable=True),
+        "date_to_exclusive": FieldSpec(name="date_to_exclusive", type=date, nullable=True),
         "page": FieldSpec(name="page", type=int, default=1),
         "per_page": FieldSpec(name="per_page", type=int, default=50),
         
@@ -190,7 +190,7 @@ SEGMENTS_PARAM_SCHEMA = ParamSchema(
 SEGMENTS_SERVICE_SCHEMA = ServiceBoundarySchema(
     fields={
         "project": FieldSpec(name="project", type=str, nullable=True),
-        "district": FieldSpec(name="district", type=str, nullable=True),
+        "districts": FieldSpec(name="districts", type=list, nullable=True),
         "sale_type": FieldSpec(name="sale_type", type=str, nullable=True),
     }
 )

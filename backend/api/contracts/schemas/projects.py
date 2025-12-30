@@ -110,7 +110,7 @@ PROJECTS_HOT_SERVICE_SCHEMA = ServiceBoundarySchema(
     fields={
         "market_segment": FieldSpec(name="market_segment", type=str),
         "districts": FieldSpec(name="districts", type=list),
-        "bedroom": FieldSpec(name="bedroom", type=str),
+        "bedrooms": FieldSpec(name="bedrooms", type=list),
         "price_min": FieldSpec(name="price_min", type=str),
         "price_max": FieldSpec(name="price_max", type=str),
         "limit": FieldSpec(name="limit", type=int, default=100),

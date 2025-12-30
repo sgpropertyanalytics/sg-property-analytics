@@ -204,8 +204,8 @@ def aggregate():
         cached = _dashboard_cache.get(cache_key)
         if cached is not None:
             elapsed = time.time() - start
-            cached['meta']['cache_hit'] = True
-            cached['meta']['elapsed_ms'] = int(elapsed * 1000)
+            cached['meta']['cacheHit'] = True
+            cached['meta']['elapsedMs'] = int(elapsed * 1000)
             print(f"GET /api/aggregate CACHE HIT in {elapsed:.4f} seconds")
             return jsonify(cached)
 
@@ -349,11 +349,11 @@ def aggregate():
     if total_records == 0:
         elapsed = time.time() - start
         empty_meta = {
-            "total_records": 0,
-            "filters_applied": filters_applied,
+            "totalRecords": 0,
+            "filtersApplied": filters_applied,
             "group_by": group_by,
             "metrics": metrics,
-            "elapsed_ms": int(elapsed * 1000),
+            "elapsedMs": int(elapsed * 1000),
             "schemaVersion": schema_version,
         }
         return jsonify(serialize_aggregate_response([], empty_meta))
@@ -585,12 +585,12 @@ def aggregate():
 
     # Build meta for response
     meta = {
-        "total_records": total_records,
-        "filters_applied": filters_applied,
+        "totalRecords": total_records,
+        "filtersApplied": filters_applied,
         "group_by": group_by,
         "metrics": metrics,
-        "elapsed_ms": int(elapsed * 1000),
-        "cache_hit": False,
+        "elapsedMs": int(elapsed * 1000),
+        "cacheHit": False,
         "schemaVersion": schema_version,
         "subscription": {
             "is_premium": is_premium,

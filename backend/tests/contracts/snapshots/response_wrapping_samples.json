@@ -1,0 +1,28 @@
+{
+  "_version": "v3",
+  "_description": "Expected wrapped response keys for endpoints that return top-level payloads.",
+  "projects_hot": {
+    "data_keys": ["projects", "total_count", "last_updated"],
+    "meta_keys": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "projects_inventory": {
+    "data_keys": ["project_name", "cumulative_new_sales"],
+    "meta_keys": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "projects_price_bands": {
+    "data_keys": ["projectName"],
+    "meta_keys": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "projects_exit_queue": {
+    "data_keys": ["projectName"],
+    "meta_keys": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "deal_checker_multi_scope": {
+    "data_keys": ["project", "filters", "scopes", "map_data"],
+    "meta_keys": ["requestId", "elapsedMs", "apiVersion"]
+  },
+  "deal_checker_project_names": {
+    "data_keys": ["projects", "count"],
+    "meta_keys": ["requestId", "elapsedMs", "apiVersion"]
+  }
+}

@@ -3,11 +3,12 @@ Contract tests for project analytics endpoints.
 """
 
 import json
+import pytest
 from pathlib import Path
 
 from api.contracts.schemas import projects_analytics
 from api.contracts import get_contract
-from api.contracts.validate import validate_public_params
+from api.contracts.validate import validate_public_params, ContractViolation
 
 
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots"
@@ -23,10 +24,12 @@ class TestProjectInventoryContract:
         assert contract.version == "v3"
 
     def test_no_required_params(self):
-        """No params should be required (project_name from URL)."""
+        """project_name should be required from URL path."""
         contract = get_contract("projects/inventory")
         params = {}
-        validate_public_params(params, contract.param_schema)
+        with pytest.raises(ContractViolation):
+            validate_public_params(params, contract.param_schema)
+        assert contract.param_schema.fields["project_name"].required is True
 
 
 class TestProjectPriceBandsContract:
@@ -70,10 +73,12 @@ class TestProjectExitQueueContract:
         assert contract.version == "v3"
 
     def test_no_required_params(self):
-        """No params should be required."""
+        """project_name should be required from URL path."""
         contract = get_contract("projects/exit-queue")
         params = {}
-        validate_public_params(params, contract.param_schema)
+        with pytest.raises(ContractViolation):
+            validate_public_params(params, contract.param_schema)
+        assert contract.param_schema.fields["project_name"].required is True
 
 
 class TestProjectsAnalyticsSnapshots:
