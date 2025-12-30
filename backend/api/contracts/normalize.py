@@ -205,10 +205,19 @@ def _normalize_timeframe(params: Dict[str, Any]) -> Dict[str, Any]:
     if params.get('date_from') and (params.get('date_to_exclusive') or params.get('date_to')):
         return params
 
-    # Get timeframe ID (prefer 'timeframe' over legacy 'period')
-    tf_id = params.get('timeframe') or params.get('period')
+    # Get timeframe ID
+    # Priority: explicit timeframe > legacy period > default (all)
+    # If timeframe is 'all' (default) but period is provided, use period for back-compat
+    tf_id = params.get('timeframe')
+    period = params.get('period')
 
-    # Always resolve timeframe (uses default Y1 if tf_id is None)
+    if tf_id == 'all' and period:
+        # Legacy period specified, use it instead of default 'all'
+        tf_id = period
+    elif not tf_id:
+        tf_id = period  # Fallback to period if no timeframe
+
+    # Resolve timeframe to date bounds
     bounds = resolve_timeframe(tf_id)
 
     if bounds['date_from'] is not None:

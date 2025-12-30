@@ -44,8 +44,11 @@ class TestContractNormalize:
         assert out.get("date_from") is None
         assert out.get("date_to_exclusive") is None
 
-    def test_empty_params_defaults_to_y1(self):
-        """No timeframe param defaults to Y1."""
+    def test_empty_params_defaults_to_all(self):
+        """No timeframe param defaults to all (full database)."""
         out = normalize_params({}, DISTRICT_PSF_PARAM_SCHEMA)
 
-        assert out["months_in_period"] == 12
+        # 'all' means no date bounds
+        assert out.get("date_from") is None
+        assert out.get("date_to_exclusive") is None
+        assert out.get("months_in_period") is None

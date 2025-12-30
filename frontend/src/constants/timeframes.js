@@ -17,6 +17,7 @@
 
 // Canonical timeframe IDs
 export const TIMEFRAME_IDS = {
+  ALL: 'all',
   M3: 'M3',
   M6: 'M6',
   Y1: 'Y1',
@@ -25,7 +26,9 @@ export const TIMEFRAME_IDS = {
 };
 
 // Timeframe options for UI dropdowns
+// 'all' = full database (no date filter) - this is the default
 export const TIMEFRAME_OPTIONS = [
+  { id: 'all', label: 'All', fullLabel: 'All Time' },
   { id: 'M3', label: '3M', fullLabel: '3 Months' },
   { id: 'M6', label: '6M', fullLabel: '6 Months' },
   { id: 'Y1', label: '1Y', fullLabel: '1 Year' },
@@ -33,7 +36,7 @@ export const TIMEFRAME_OPTIONS = [
   { id: 'Y5', label: '5Y', fullLabel: '5 Years' },
 ];
 
-export const DEFAULT_TIMEFRAME_ID = 'Y1';
+export const DEFAULT_TIMEFRAME_ID = 'all';  // Default to full database
 
 // Back-compat mapping for old URL values (frontend only normalizes ID, not dates)
 const LEGACY_MAP = {
@@ -47,12 +50,14 @@ const LEGACY_MAP = {
  * Does NOT compute dates - that's backend's job.
  *
  * @param {string} id - Timeframe ID (canonical or legacy)
- * @returns {string} Canonical ID (M3, M6, Y1, Y3, Y5, or 'all')
+ * @returns {string} Canonical ID (all, M3, M6, Y1, Y3, Y5)
  */
 export function normalizeTimeframeId(id) {
-  if (!id) return DEFAULT_TIMEFRAME_ID;
+  if (!id) return DEFAULT_TIMEFRAME_ID;  // 'all' = full database
   const upper = id.toUpperCase();
   const lower = id.toLowerCase();
+  // Check 'all' first
+  if (lower === 'all') return 'all';
   return LEGACY_MAP[lower] || TIMEFRAME_IDS[upper] || DEFAULT_TIMEFRAME_ID;
 }
 
