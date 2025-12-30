@@ -1,8 +1,8 @@
 /**
  * Verification Components
  *
- * UI components for the data verification system (Phase 4).
- * Includes confidence badges, status indicators, and review queue components.
+ * UI components for displaying verification status inline.
+ * Used to show confidence levels and verification state in tables.
  */
 
 // Confidence badges
@@ -16,8 +16,8 @@ export {
 
 // Verification status indicators
 export {
+  VerificationStatus,
   VerificationStatusIndicator,
   VerificationStatusBadge,
   VerificationStatusDot,
-  VerificationSummaryCard,
 } from './VerificationStatusIndicator';

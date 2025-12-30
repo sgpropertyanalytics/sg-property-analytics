@@ -329,12 +329,12 @@ Top Issues:
 - [x] Enforce 3-source minimum for auto-confirm
 
 ### Phase 4: UI Integration ✅ COMPLETE
-- [x] Show confidence badges on unit counts (`components/verification/ConfidenceBadge.jsx`)
-- [x] Review queue for conflicts (`pages/VerificationReview.jsx`)
+- [x] Confidence badges (`components/verification/ConfidenceBadge.jsx`)
 - [x] Verification status indicators (`components/verification/VerificationStatusIndicator.jsx`)
-- [x] Verification API functions in client.js
-- [x] VerificationContext for state management
-- [x] Integration into UpcomingLaunchesTable
+- [x] Integration into UpcomingLaunchesTable (inline display)
+
+> **Note:** This is display-only. No review UI or API endpoints.
+> Verification runs are one-off backend operations triggered manually.
 
 ---
 
@@ -386,14 +386,11 @@ Top Issues:
 | `backend/data/new_launch_units.csv` | Manual unit counts |
 | `backend/data/upcoming_launches.csv` | Launch schedule |
 
-### Frontend (Phase 4)
+### Frontend (Phase 4 - Display Only)
 | File | Purpose |
 |------|---------|
-| `frontend/src/api/client.js` | Verification API functions |
-| `frontend/src/context/VerificationContext.jsx` | State management |
 | `frontend/src/components/verification/ConfidenceBadge.jsx` | Confidence score badges |
 | `frontend/src/components/verification/VerificationStatusIndicator.jsx` | Status indicators |
-| `frontend/src/pages/VerificationReview.jsx` | Review queue page |
 
 ### Agents
 | Agent | Purpose |

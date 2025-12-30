@@ -9,7 +9,16 @@
  */
 
 import { useState } from 'react';
-import { VerificationStatus } from '../../context/VerificationContext';
+
+/**
+ * Verification status constants
+ */
+export const VerificationStatus = {
+  PENDING: 'pending',
+  CONFIRMED: 'confirmed',
+  MISMATCH: 'mismatch',
+  UNVERIFIED: 'unverified',
+};
 
 const STATUS_CONFIG = {
   [VerificationStatus.CONFIRMED]: {
@@ -205,62 +214,6 @@ export function VerificationStatusDot({
       className={`inline-block ${dotSizes[size]} rounded-full ${config.dotClass}`}
       title={`${config.label}: ${config.description}`}
     />
-  );
-}
-
-/**
- * VerificationSummaryCard - Card showing verification summary stats
- */
-export function VerificationSummaryCard({
-  confirmed = 0,
-  mismatch = 0,
-  pending = 0,
-  unverified = 0,
-  className = '',
-}) {
-  const total = confirmed + mismatch + pending + unverified;
-
-  const stats = [
-    { status: VerificationStatus.CONFIRMED, count: confirmed },
-    { status: VerificationStatus.MISMATCH, count: mismatch },
-    { status: VerificationStatus.PENDING, count: pending },
-    { status: VerificationStatus.UNVERIFIED, count: unverified },
-  ];
-
-  return (
-    <div className={`bg-white rounded-lg border border-gray-200 p-4 ${className}`}>
-      <div className="text-sm text-gray-500 mb-3">Verification Status</div>
-
-      <div className="space-y-2">
-        {stats.map(({ status, count }) => {
-          const config = STATUS_CONFIG[status];
-          const pct = total > 0 ? (count / total) * 100 : 0;
-
-          return (
-            <div key={status} className="flex items-center gap-3">
-              <div className="flex items-center gap-2 w-24">
-                <span className={`w-2 h-2 rounded-full ${config.dotClass}`} />
-                <span className={`text-sm ${config.textClass}`}>{config.label}</span>
-              </div>
-              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full ${config.dotClass} transition-all duration-300`}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <div className="w-12 text-right text-sm text-gray-600">
-                {count}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between text-sm">
-        <span className="text-gray-500">Total</span>
-        <span className="font-medium text-gray-700">{total}</span>
-      </div>
-    </div>
   );
 }
 
