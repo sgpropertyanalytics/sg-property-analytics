@@ -1,4 +1,4 @@
-name: Backend Tests
+name: Regression Suite
 
 on:
   push:
@@ -7,14 +7,16 @@ on:
       - 'backend/**'
       - 'frontend/src/generated/**'
       - 'frontend/src/schemas/**'
-      - '.github/workflows/backend-tests.yml'
+      - 'scripts/**'
+      - '.github/workflows/regression.yml'
   pull_request:
     branches: [main]
     paths:
       - 'backend/**'
       - 'frontend/src/generated/**'
       - 'frontend/src/schemas/**'
-      - '.github/workflows/backend-tests.yml'
+      - 'scripts/**'
+      - '.github/workflows/regression.yml'
 
 jobs:
   # ============================================================
