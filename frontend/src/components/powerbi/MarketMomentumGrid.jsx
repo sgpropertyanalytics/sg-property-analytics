@@ -95,7 +95,7 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
           const medianPsf = getAggField(row, AggField.MEDIAN_PSF) || getAggField(row, AggField.AVG_PSF) || 0;
           const totalValue = getAggField(row, AggField.TOTAL_VALUE) || 0;
           districtData[district].push({
-            quarter: row.quarter,
+            quarter: getAggField(row, AggField.PERIOD),  // API v2 uses "period" not "quarter"
             medianPsf,
             totalValue,
           });
