@@ -176,15 +176,15 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {/* ROW 1: Primary Filters - Region + District + Bedroom */}
           <div className="flex items-center gap-3 flex-shrink-0">
             {/* Region Segmented Track */}
-            <div className="flex bg-white border border-[#94B4C1]/70 rounded-full p-0.5">
-              {/* "All" button - active when no segments selected */}
+            <div className="inline-flex bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200">
+              {/* "All" button - subtle when active (default state) */}
               <button
                 type="button"
                 onClick={() => setSegments([])}
-                className={`px-3 py-2 text-sm font-medium rounded-md transition-all min-h-[40px] ${
+                className={`px-4 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                   filters.segments.length === 0
-                    ? 'bg-[#213448] text-white active:bg-[#213448]/90'
-                    : 'bg-transparent text-[#547792] hover:text-[#213448] active:bg-[#EAE0CF]/50'
+                    ? 'bg-slate-100 text-slate-900 font-semibold'
+                    : 'bg-white text-slate-500 hover:bg-gray-50 hover:text-slate-900'
                 }`}
               >
                 All
@@ -194,10 +194,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={seg}
                   onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-all min-h-[40px] ${
+                  className={`px-4 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                     filters.segments.includes(seg)
-                      ? 'bg-[#213448] text-white active:bg-[#213448]/90'
-                      : 'bg-transparent text-[#547792] hover:text-[#213448] active:bg-[#EAE0CF]/50'
+                      ? 'bg-[#213448] text-white shadow-inner'
+                      : 'bg-white text-slate-500 hover:bg-gray-50 hover:text-slate-900'
                   }`}
                   title="Shift+click to multi-select"
                 >
@@ -225,15 +225,15 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             />
 
             {/* Bedroom Segmented Track */}
-            <div className="flex bg-white border border-[#94B4C1]/70 rounded-full p-0.5">
-              {/* "All" button */}
+            <div className="inline-flex bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200">
+              {/* "All" button - subtle when active */}
               <button
                 type="button"
                 onClick={() => setBedroomTypes([])}
-                className={`px-2.5 py-2 text-sm font-medium rounded-md transition-all min-h-[40px] ${
+                className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                   filters.bedroomTypes.length === 0
-                    ? 'bg-[#213448] text-white active:bg-[#213448]/90'
-                    : 'bg-transparent text-[#547792] hover:text-[#213448] active:bg-[#EAE0CF]/50'
+                    ? 'bg-slate-100 text-slate-900 font-semibold'
+                    : 'bg-white text-slate-500 hover:bg-gray-50 hover:text-slate-900'
                 }`}
               >
                 All
@@ -243,10 +243,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={br}
                   onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                  className={`px-2.5 py-2 text-sm font-medium rounded-md transition-all min-h-[40px] min-w-[40px] ${
+                  className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                     filters.bedroomTypes.includes(br)
-                      ? 'bg-[#213448] text-white active:bg-[#213448]/90'
-                      : 'bg-transparent text-[#547792] hover:text-[#213448] active:bg-[#EAE0CF]/50'
+                      ? 'bg-[#213448] text-white shadow-inner'
+                      : 'bg-white text-slate-500 hover:bg-gray-50 hover:text-slate-900'
                   }`}
                   title="Shift+click to multi-select"
                 >
@@ -259,19 +259,19 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {/* ROW 2: Time Controls - Period + Granularity */}
           <div className="flex items-center gap-3 flex-shrink-0">
             {/* Period Preset Segmented Track */}
-            <div className="flex bg-white border border-[#94B4C1]/70 rounded-full p-0.5">
+            <div className="inline-flex bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200">
               {TIMEFRAME_OPTIONS.map(opt => (
                 <button
                   type="button"
                   key={opt.id}
                   onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                   disabled={filterOptions.loading}
-                  className={`px-2.5 py-2 text-sm font-medium rounded-md transition-all min-h-[40px] ${
+                  className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
                     filterOptions.loading
                       ? 'bg-gray-100 text-gray-400 cursor-wait'
                       : datePreset === opt.id
-                        ? 'bg-[#213448] text-white active:bg-[#213448]/90'
-                        : 'bg-transparent text-[#547792] hover:text-[#213448] active:bg-[#EAE0CF]/50'
+                        ? 'bg-[#213448] text-white shadow-inner'
+                        : 'bg-white text-slate-500 hover:bg-gray-50 hover:text-slate-900'
                   }`}
                 >
                   {opt.label}
@@ -290,7 +290,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {activeFilterCount > 0 && (
             <button
               onClick={handleResetFilters}
-              className="min-h-[44px] px-3 py-2 text-sm text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF]/30 rounded-full transition-colors active:scale-[0.98] flex-shrink-0 ml-auto xl:ml-0"
+              className="min-h-[38px] px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-gray-50 border border-gray-300 rounded-lg shadow-sm transition-colors flex-shrink-0 ml-auto xl:ml-0"
             >
               Clear all
             </button>
@@ -931,11 +931,11 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
 
   // Styles differ based on segmentedStyle prop
   const buttonClasses = segmentedStyle
-    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-4 py-2 min-h-[44px] text-sm border border-[#94B4C1]/70 rounded-full bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#547792]`
+    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-1.5 min-h-[38px] text-sm font-medium border border-gray-300 rounded-lg bg-white text-left flex items-center justify-between shadow-sm focus:outline-none focus:ring-2 focus:ring-[#213448]`
     : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500`;
 
   const dropdownClasses = segmentedStyle
-    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-[#94B4C1]/70 rounded-2xl shadow-lg max-h-60 overflow-hidden`
+    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden`
     : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-slate-300 rounded-md shadow-lg max-h-60 overflow-hidden`;
 
   return (
@@ -945,11 +945,11 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
         onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
         className={buttonClasses}
       >
-        <span className={`${selected.length > 0 ? (segmentedStyle ? 'text-[#213448]' : 'text-slate-800') : (segmentedStyle ? 'text-[#547792]' : 'text-slate-500')} truncate min-w-0 flex-shrink`}>
+        <span className={`${selected.length > 0 ? 'text-slate-900' : 'text-slate-500'} truncate min-w-0 flex-shrink`}>
           {getDisplayText()}
         </span>
         <svg
-          className={`w-4 h-4 ${segmentedStyle ? 'text-[#547792]' : 'text-slate-400'} transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
