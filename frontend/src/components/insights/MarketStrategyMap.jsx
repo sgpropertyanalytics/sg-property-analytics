@@ -289,7 +289,7 @@ function HoverCard({ district, data }) {
 // REGION SUMMARY BAR COMPONENT
 // =============================================================================
 
-function RegionSummaryBar({ districtData }) {
+function RegionSummaryBar({ districtData, selectedPeriod }) {
   // Calculate aggregates for each region
   const regionStats = useMemo(() => {
     const regionDistricts = {
@@ -376,6 +376,9 @@ function RegionSummaryBar({ districtData }) {
               </span>
               <span className="text-[10px] sm:text-xs text-[#547792]">
                 {stat.txCount.toLocaleString()} tx
+                <span className="text-[#547792]/60 ml-1">
+                  ({selectedPeriod === 'all' ? 'all time' : PERIOD_FILTER_OPTIONS.find(p => p.value === selectedPeriod)?.label || '12M'} avg)
+                </span>
               </span>
             </div>
           </div>
@@ -829,7 +832,7 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
       {/* Region summary bar */}
       {!loading && !error && districtData.length > 0 && (
         <div className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
-          <RegionSummaryBar districtData={districtData} />
+          <RegionSummaryBar districtData={districtData} selectedPeriod={selectedPeriod} />
         </div>
       )}
 
