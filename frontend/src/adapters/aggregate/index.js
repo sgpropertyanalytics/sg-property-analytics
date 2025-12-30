@@ -95,6 +95,11 @@ import {
   truncateProjectName,
 } from './districtComparison';
 
+import {
+  transformNewLaunchTimeline,
+  formatPeriodLabel,
+} from './newLaunchTimeline';
+
 // Named exports
 export {
   // Validation
@@ -148,6 +153,9 @@ export {
   // District Comparison
   transformDistrictComparison,
   truncateProjectName,
+  // New Launch Timeline
+  transformNewLaunchTimeline,
+  formatPeriodLabel,
 };
 
 // Default export for backwards compatibility
@@ -199,4 +207,7 @@ export default {
   // District Comparison
   transformDistrictComparison,
   truncateProjectName,
+  // New Launch Timeline
+  transformNewLaunchTimeline,
+  formatPeriodLabel,
 };

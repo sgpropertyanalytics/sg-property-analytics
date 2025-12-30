@@ -59,4 +59,7 @@ export {
   // District Comparison
   transformDistrictComparison,
   truncateProjectName,
+  // New Launch Timeline
+  transformNewLaunchTimeline,
+  formatPeriodLabel,
 } from './aggregate';

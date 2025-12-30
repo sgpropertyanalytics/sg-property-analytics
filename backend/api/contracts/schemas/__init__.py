@@ -21,11 +21,12 @@ from . import deal_checker
 from . import upcoming_launches
 from . import auth
 from . import gls
+from . import new_launch_timeline
 
 __all__ = [
     'aggregate', 'kpi_summary', 'dashboard', 'filter_options',
     'transactions', 'insights', 'supply',
     'charts', 'trends',
     'projects', 'projects_analytics', 'deal_checker',
-    'upcoming_launches', 'auth', 'gls',
+    'upcoming_launches', 'auth', 'gls', 'new_launch_timeline',
 ]

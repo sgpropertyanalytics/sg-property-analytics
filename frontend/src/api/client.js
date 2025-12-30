@@ -371,6 +371,26 @@ export const getFilterOptions = () =>
   apiClient.get('/filter-options');
 
 /**
+ * Get new launch timeline - projects launched per period with unit counts
+ * Used by NewLaunchTimelineChart on New Launch Market page
+ * @param {Object} params - Query parameters
+ * @param {string} params.time_grain - year, quarter, month (default: quarter)
+ * @param {string} params.district - Comma-separated districts (D01,D02,...)
+ * @param {string} params.segment - CCR, RCR, OCR
+ * @param {string} params.bedroom - Comma-separated bedroom counts
+ * @param {string} params.date_from - YYYY-MM-DD (inclusive)
+ * @param {string} params.date_to - YYYY-MM-DD (inclusive, converted to exclusive on backend)
+ * @param {Object} options - Request options
+ * @param {AbortSignal} options.signal - AbortController signal for cancellation
+ * @returns {Promise<{
+ *   data: Array<{periodStart: string, projectCount: number, totalUnits: number}>,
+ *   meta: {requestId: string, elapsedMs: number, apiVersion: string}
+ * }>}
+ */
+export const getNewLaunchTimeline = (params = {}, options = {}) =>
+  apiClient.get(`/analytics/new-launch-timeline?${buildQueryString(params)}`, { signal: options.signal });
+
+/**
  * Get market activity heatmap by bedroom and property age
  * Used by ValueParityPanel's Explore Budget tab
  *

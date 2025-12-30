@@ -2,6 +2,7 @@ import React from 'react';
 import { PowerBIFilterProvider } from '../context/PowerBIFilter';
 import { FilterBar } from '../components/powerbi/FilterBar';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
+import { NewLaunchTimelineChart } from '../components/powerbi/NewLaunchTimelineChart';
 import { ErrorBoundary, ChartWatermark } from '../components/ui';
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 import { PageHeader } from '../components/ui';
@@ -34,7 +35,14 @@ export function PrimaryMarketContent() {
           <FilterBar />
 
           {/* Chart Grid */}
-          <div className="animate-view-enter">
+          <div className="animate-view-enter space-y-4 md:space-y-6">
+            {/* New Launch Activity Timeline - Projects launched per period */}
+            <ErrorBoundary name="New Launch Timeline Chart" compact>
+              <ChartWatermark>
+                <NewLaunchTimelineChart height={chartHeight} />
+              </ChartWatermark>
+            </ErrorBoundary>
+
             {/* New Sale vs Recently TOP Chart - Full width */}
             <ErrorBoundary name="New vs Resale Chart" compact>
               <ChartWatermark>
