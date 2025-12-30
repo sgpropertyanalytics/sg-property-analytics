@@ -29,13 +29,30 @@ import '../../lib/chartjs-registry';
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
 /**
+ * Helper to detect if a period label falls within 2020 Q4 (Oct-Dec 2020)
+ * Handles: quarterly ("2020 Q4"), monthly ("2020-10", "2020-11", "2020-12")
+ * Returns false for yearly ("2020") since yearly aggregates aren't skewed
+ */
+const is2020Q4Period = (periodLabel) => {
+  if (!periodLabel) return false;
+  const label = periodLabel.toString();
+  // Quarterly format: "2020 Q4"
+  if (label === '2020 Q4') return true;
+  // Monthly format: "2020-10", "2020-11", "2020-12"
+  if (/^2020-(10|11|12)/.test(label)) return true;
+  return false;
+};
+
+/**
  * New Launch Timeline Chart Component
  *
  * @param {Object} props
  * @param {number} props.height - Chart height in pixels
+ * @param {boolean} props.include2020Q4 - Whether to include 2020 Q4 data (default: false)
  */
 export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart({
   height = 300,
+  include2020Q4 = false,
 }) {
   // Get GLOBAL filters and timeGrouping from context
   const { buildApiParams, debouncedFilterKey, filters, timeGrouping } = usePowerBIFilters();
@@ -79,6 +96,9 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
     }
   );
 
+  // Filter out 2020 Q4 if needed
+  const filteredData = include2020Q4 ? data : data.filter(d => !is2020Q4Period(d.periodLabel));
+
   // Build filter summary for display
   const getFilterSummary = () => {
     const parts = [];
@@ -99,10 +119,10 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
     return parts.length > 0 ? parts.join(' · ') : 'All data';
   };
 
-  // Prepare chart data
-  const labels = data.map(d => d.periodLabel);
-  const projectCounts = data.map(d => d.projectCount);
-  const totalUnits = data.map(d => d.totalUnits);
+  // Prepare chart data (use filteredData instead of raw data)
+  const labels = filteredData.map(d => d.periodLabel);
+  const projectCounts = filteredData.map(d => d.projectCount);
+  const totalUnits = filteredData.map(d => d.totalUnits);
 
   // Y-axis scaling
   const maxProjects = Math.max(...projectCounts, 1);
@@ -173,8 +193,8 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
             },
             afterBody: (tooltipItems) => {
               const index = tooltipItems[0]?.dataIndex;
-              if (index !== undefined && data[index]) {
-                const d = data[index];
+              if (index !== undefined && filteredData[index]) {
+                const d = filteredData[index];
                 if (d.avgUnitsPerProject > 0) {
                   return [`Avg units/project: ${d.avgUnitsPerProject.toLocaleString()}`];
                 }
@@ -237,10 +257,10 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
         },
       },
     }),
-    [yAxisMax, y1AxisMax, data]
+    [yAxisMax, y1AxisMax, filteredData]
   );
 
-  const hasData = data.length > 0;
+  const hasData = filteredData.length > 0;
   const cardHeight = height + 160;
 
   return (
