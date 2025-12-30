@@ -23,18 +23,11 @@ import pytest
 
 pytestmark = pytest.mark.integration
 import json
-import sys
 from pathlib import Path
 from datetime import date, timedelta
 from typing import Dict, Any, List, Tuple, Optional
 from dataclasses import dataclass, field
 from enum import Enum
-
-# Add backend to path
-backend_path = Path(__file__).parent.parent
-if str(backend_path) not in sys.path:
-    sys.path.insert(0, str(backend_path))
-
 
 # =============================================================================
 # CONSTANTS

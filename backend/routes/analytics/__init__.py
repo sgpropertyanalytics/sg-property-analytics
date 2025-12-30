@@ -47,3 +47,4 @@ from routes.analytics import trends
 from routes.analytics import charts
 from routes.analytics import transactions
 from routes.analytics import projects_analytics
+from routes.analytics import new_launch

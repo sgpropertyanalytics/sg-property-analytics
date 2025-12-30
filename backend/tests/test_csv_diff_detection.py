@@ -15,12 +15,6 @@ import os
 from unittest.mock import MagicMock, patch
 from datetime import date
 
-import sys
-from pathlib import Path
-backend_path = Path(__file__).parent.parent
-if str(backend_path) not in sys.path:
-    sys.path.insert(0, str(backend_path))
-
 from scrapers.utils.diff import (
     DiffStatus,
     ConflictSeverity,

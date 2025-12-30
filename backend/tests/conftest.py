@@ -8,7 +8,6 @@ Provides:
 """
 
 import pytest
-from pathlib import Path
 
 
 def pytest_addoption(parser):
@@ -30,13 +29,6 @@ def update_snapshots(request):
 @pytest.fixture
 def app():
     """Create test Flask application."""
-    import sys
-
-    # Add backend to path
-    backend_path = Path(__file__).parent.parent
-    if str(backend_path) not in sys.path:
-        sys.path.insert(0, str(backend_path))
-
     from app import create_app
 
     app = create_app()

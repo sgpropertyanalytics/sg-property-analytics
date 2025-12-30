@@ -23,9 +23,6 @@ import sys
 import os
 import json
 
-# Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
-
 from app import create_app
 from models.database import db
 from services.new_launch_scraper import validate_new_launches

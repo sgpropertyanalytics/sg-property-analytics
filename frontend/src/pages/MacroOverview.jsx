@@ -1,5 +1,5 @@
 import React, { useState, lazy, Suspense } from 'react';
-import { PowerBIFilterProvider, usePowerBIFilters, TIME_GROUP_BY } from '../context/PowerBIFilterContext';
+import { PowerBIFilterProvider, usePowerBIFilters, TIME_GROUP_BY } from '../context/PowerBIFilter';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { BeadsChart } from '../components/powerbi/BeadsChart';

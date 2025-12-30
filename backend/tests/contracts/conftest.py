@@ -18,13 +18,6 @@ def snapshot_dir():
 @pytest.fixture
 def app():
     """Create test Flask application."""
-    import sys
-    import os
-
-    # Add backend to path
-    backend_path = Path(__file__).parent.parent.parent
-    sys.path.insert(0, str(backend_path))
-
     from app import create_app
 
     app = create_app()

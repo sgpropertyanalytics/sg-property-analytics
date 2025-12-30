@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
+import { usePowerBIFilters } from '../../context/PowerBIFilter';
 
 /**
  * TimeGranularityToggle - Global time grouping control

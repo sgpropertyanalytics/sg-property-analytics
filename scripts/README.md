@@ -1,12 +1,19 @@
 # Scripts Directory
 
+## Prerequisite (One-Time)
+
+Install backend modules so scripts can import without sys.path hacks:
+
+```bash
+pip install -e .
+```
+
 ## upload.py
 Loads CSV files from `rawdata/` folder into the Transaction database table and triggers aggregation.
 
 **Usage:**
 ```bash
-cd scripts
-python upload.py
+python -m scripts.upload
 ```
 
 **What it does:**
@@ -23,8 +30,7 @@ Re-runs the aggregation service to update pre-computed stats without reloading d
 
 **Usage:**
 ```bash
-cd scripts
-python recompute_stats.py
+python -m scripts.recompute_stats
 ```
 
 **What it does:**
@@ -46,7 +52,7 @@ To automatically recompute stats daily at 2 AM:
 crontab -e
 
 # Add this line:
-0 2 * * * cd /path/to/sgpropertytrend && /path/to/venv/bin/python scripts/recompute_stats.py >> /path/to/logs/recompute.log 2>&1
+0 2 * * * cd /path/to/sgpropertytrend && /path/to/venv/bin/python -m scripts.recompute_stats >> /path/to/logs/recompute.log 2>&1
 ```
 
 ## run_etl.py

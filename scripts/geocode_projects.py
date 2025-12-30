@@ -22,9 +22,6 @@ import os
 import time
 from datetime import datetime
 
-# Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
-
 from flask import Flask
 from config import Config
 from models.database import db

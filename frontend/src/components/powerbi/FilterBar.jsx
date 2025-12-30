@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
+import { usePowerBIFilters } from '../../context/PowerBIFilter';
 import { PowerBIFilterSidebar } from './PowerBIFilterSidebar';
 
 /**

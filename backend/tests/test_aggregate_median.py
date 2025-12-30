@@ -10,13 +10,6 @@ Run: cd backend && pytest tests/test_aggregate_median.py -v
 """
 
 import pytest
-import os
-import sys
-
-# Add backend to path for imports
-backend_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if backend_path not in sys.path:
-    sys.path.insert(0, backend_path)
 
 
 class TestMedianPsfCalculation:

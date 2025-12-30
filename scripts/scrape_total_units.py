@@ -187,9 +187,6 @@ def load_existing_csv() -> dict[str, dict]:
 
 def get_all_db_projects() -> list[str]:
     """Get all unique project names from the database."""
-    import sys
-    sys.path.insert(0, str(BACKEND_DIR))
-
     from models.database import db
     from app import create_app
     from sqlalchemy import text
@@ -226,13 +223,11 @@ def get_hot_missing_projects(min_txns: int = 15) -> list[tuple[str, int]]:
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
         # Try to load from config
-        import sys
-        sys.path.insert(0, str(BACKEND_DIR))
         try:
             from config import Config
             database_url = Config.SQLALCHEMY_DATABASE_URI
-        except:
-            raise RuntimeError("DATABASE_URL not set")
+        except Exception as exc:
+            raise RuntimeError("DATABASE_URL not set") from exc
 
     engine = create_engine(database_url)
     with engine.connect() as conn:

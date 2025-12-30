@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
+import { usePowerBIFilters } from '../../context/PowerBIFilter';
 import {
   REGIONS,
   DISTRICT_NAMES,

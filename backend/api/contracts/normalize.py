@@ -16,11 +16,6 @@ from typing import Dict, Any, List, Optional
 
 from .registry import ParamSchema, FieldSpec
 
-# Import existing normalize helpers
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-
 try:
     from utils.normalize import to_int, to_date, to_list, to_bool, to_float
 except ImportError:

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sgpropertytrend"
+version = "0.0.0"
+description = "Singapore property analyzer backend modules"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+package-dir = {"" = "backend"}
+py-modules = ["app", "cli", "config", "constants", "validate_new_vs_resale"]
+
+[tool.setuptools.packages.find]
+where = ["backend"]

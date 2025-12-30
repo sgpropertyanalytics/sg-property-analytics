@@ -10,12 +10,7 @@ Usage:
 Pipeline: Scrape URA -> Classify (launched/awarded) -> Geocode -> Store
 """
 
-import sys
-import os
 import argparse
-
-# Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from flask import Flask
 from config import Config
