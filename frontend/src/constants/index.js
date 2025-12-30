@@ -711,17 +711,6 @@ export const getAgeBandLabel = (age, options = {}) => {
   return short ? AGE_BAND_LABELS_SHORT[key] : AGE_BAND_LABELS_FULL[key];
 };
 
-/**
- * Get tooltip text for age band
- *
- * @param {string} bandKey - Age band key
- * @returns {string|null} Tooltip text or null
- */
-export const getAgeBandTooltip = (_bandKey) => {
-  // No tooltip needed - all bands are clearly labeled from URA data
-  return null;
-};
-
 // =============================================================================
 // LIQUIDITY HEATMAP COLORS
 // =============================================================================
