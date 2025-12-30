@@ -833,10 +833,21 @@ Required Fix:
 
 ### INV-19: Axis Scaling / Data-to-Canvas Mismatch
 
-**CRITICAL:** Chart axes MUST dynamically scale to the actual data range. Static scales that ignore data distribution cause misleading visualizations.
+**CRITICAL:** Enforce chart axis utilization target 0.75 per axis. Use `suggestedMax` (soft cap) over `max` (hard cap). Flag any axis where utilization < 0.70.
 
 **Category:** Visualization Integrity
 **Severity:** Medium–High (misleads interpretation)
+
+**Target Utilization:** `TARGET_UTIL = 0.75` (75%)
+
+**Formula:**
+```js
+// Standard formula for 75% utilization
+suggestedMax = Math.ceil(dataMax / 0.75)
+
+// Small-count override (for integer count axes ≤10)
+if (dataMax <= 10) suggestedMax = dataMax + 2  // e.g., 6 → 8 = 75%
+```
 
 **Definition:**
 The chart's axis scale does not adapt to the actual data range, causing:
@@ -850,10 +861,10 @@ Flag when ANY of these conditions are true:
 
 | Condition | Threshold | Description |
 |-----------|-----------|-------------|
-| **Data-to-axis ratio** | `max(data) < 50%` of axis max | Excessive whitespace |
-| **Visual utilization** | Data occupies `< 40%` of chart height | Compressed/underutilized |
+| **Low utilization** | `dataMax / axisMax < 0.70` | Too much whitespace (flag if < 70%) |
+| **Hard max instead of soft** | Uses `max:` instead of `suggestedMax:` | Can't expand if data exceeds |
 | **Fixed-scale misuse** | Axis max is static while data changes | Scale doesn't adapt to filters |
-| **Dual-axis imbalance** | One axis dominates visual weight | Secondary data invisible |
+| **Dual-axis imbalance** | Utilization differs > 20% between axes | One axis dominates visual weight |
 | **Trend flattening** | Numeric variance > 10% but visual variance < 5% | Important patterns hidden |
 
 **Check Process:**
@@ -862,48 +873,59 @@ Flag when ANY of these conditions are true:
 FOR EACH chart with numeric axis:
 
 1. EXTRACT axis config:
-   - min, max, suggestedMin, suggestedMax
+   - Check for max vs suggestedMax (prefer suggestedMax)
    - beginAtZero setting
    - Any hardcoded values
 
 2. CALCULATE data metrics:
-   - dataMin = min(dataset values)
    - dataMax = max(dataset values)
-   - dataRange = dataMax - dataMin
-   - axisRange = axisMax - axisMin
+   - axisMax = rendered axis max (from scales config or Chart.js)
 
 3. COMPUTE utilization:
-   - ratio = dataRange / axisRange
-   - headroom = (axisMax - dataMax) / axisRange
+   - util = dataMax / axisMax
+   - target = 0.75
 
 4. FLAG violations:
-   IF ratio < 0.4 → "LOW_UTILIZATION"
-   IF headroom > 1.0 AND axis max is hardcoded → "EXCESSIVE_WHITESPACE"
+   IF util < 0.70 → "LOW_UTILIZATION" (more than 30% whitespace)
+   IF uses `max:` instead of `suggestedMax:` → "HARD_CAP"
    IF axis max is constant across filter changes → "STATIC_SCALE"
 
 5. FOR dual-axis charts:
-   - Compare utilization ratios of both axes
-   - IF difference > 50% → "AXIS_IMBALANCE"
+   - Compute util for each axis
+   - IF |util_y - util_y1| > 0.20 → "AXIS_IMBALANCE"
+
+6. ACCEPTANCE TEST (post-render):
+   - util = dataMax / axisMax
+   - IF util < 0.70 → FLAG for review
 ```
 
 **Expected Behavior:**
 
 | Aspect | Requirement |
 |--------|-------------|
-| **Auto-scale** | Axis recalculates based on visible dataset |
-| **Headroom** | `suggestedMax = max(data) × 1.1` to `1.2` (10-20% padding) |
-| **Proportionality** | Data uses ≥ 50% of available chart height |
-| **Independence** | Dual axes scale independently per their data |
+| **Target utilization** | 75% (dataMax uses 75% of axis height) |
+| **Soft cap** | Use `suggestedMax` so axis can expand if data exceeds |
+| **Small counts (≤10)** | `suggestedMax = dataMax + 2` with integer ticks |
+| **Large values (>10)** | `suggestedMax = ceil(dataMax / 0.75)` |
+| **Dual axes** | Each axis scaled independently to 75% target |
 | **Responsiveness** | Scale updates when filters/data change |
 
 **Allowed Patterns:**
 
 ```js
-// Pattern A: Auto-scale (no explicit max)
-scales: { y: { beginAtZero: true } }  // Chart.js auto-calculates
+// Pattern A: 75% utilization formula (PREFERRED)
+const TARGET_UTIL = 0.75;
+const suggestedMax = Math.ceil(dataMax / TARGET_UTIL);
+scales: { y: { suggestedMax } }
 
-// Pattern B: Dynamic max with headroom
-scales: { y: { suggestedMax: dataMax * 1.15 } }
+// Pattern B: Small count override (for axes ≤10)
+const suggestedMax = dataMax <= 10 ? dataMax + 2 : Math.ceil(dataMax / 0.75);
+scales: {
+  y: {
+    suggestedMax,
+    ticks: { stepSize: dataMax <= 10 ? 1 : undefined }  // Integer ticks
+  }
+}
 
 // Pattern C: Intentional fixed scale (document reason)
 scales: { y: { min: 0, max: 100 } }  // Percentage axis: 0-100% is intentional
@@ -912,25 +934,29 @@ scales: { y: { min: 0, max: 100 } }  // Percentage axis: 0-100% is intentional
 **Forbidden Patterns:**
 
 ```js
-// ❌ Hardcoded max ignoring data
-scales: { y: { max: LARGE_CONSTANT } }
+// ❌ Hard max instead of suggestedMax
+scales: { y: { max: 5000 } }  // Can't expand!
+
+// ❌ niceMax creating excessive headroom
+const yMax = niceMax(dataMax * 1.2);  // Double padding!
+scales: { y: { max: yMax } }
+
+// ❌ Low utilization (<70%)
+// dataMax = 6, axisMax = 10 → 60% utilization ❌
+scales: { y: { suggestedMax: 10 } }
 
 // ❌ Static scale with dynamic data source
 const data = useFilteredData();  // Changes!
-scales: { y: { max: 5000 } }     // Doesn't change!
-
-// ❌ beginAtZero compressing non-zero data
-// Data: [980, 985, 990, 995, 1000] → 2% of 0-1000 range visible
-scales: { y: { beginAtZero: true } }
+scales: { y: { suggestedMax: 5000 } }  // Doesn't change!
 ```
 
 **Auto-Fix Strategy:**
 
-1. **Enable dynamic scaling** — Remove hardcoded `max`, let chart auto-scale
-2. **Apply headroom padding** — Use `suggestedMax = max(data) × 1.1`
-3. **Recalculate on data change** — Ensure scale updates when dataset/filters change
-4. **Evaluate beginAtZero** — Only force zero if data is semantically zero-based
-5. **Balance dual axes** — Scale each axis independently to its data range
+1. **Use suggestedMax, not max** — Soft cap allows expansion if needed
+2. **Apply 75% formula** — `suggestedMax = ceil(dataMax / 0.75)`
+3. **Small count override** — If dataMax ≤ 10, use `dataMax + 2` with integer ticks
+4. **Recalculate on data change** — Ensure suggestedMax updates when dataset changes
+5. **Balance dual axes** — Each axis gets independent 75% target
 
 **Fail Condition Template:**
 ```

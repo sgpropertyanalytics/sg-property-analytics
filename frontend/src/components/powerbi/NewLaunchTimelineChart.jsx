@@ -20,7 +20,6 @@ import { getNewLaunchTimeline } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot, KeyInsightBox } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { transformNewLaunchTimeline, assertKnownVersion, logFetchDebug } from '../../adapters';
-import { niceMax } from '../../utils/niceAxisMax';
 
 // Singleton Chart.js registration
 import '../../lib/chartjs-registry';
@@ -113,11 +112,14 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
   const projectCounts = filteredData.map(d => d.projectCount);
   const totalUnits = filteredData.map(d => d.totalUnits);
 
-  // Y-axis scaling - niceMax already rounds up, so minimal extra headroom needed
+  // Y-axis scaling - target 75% utilization (soft cap allows expansion if needed)
+  // Small counts (<=10): dataMax + 2 for clean integer ticks (e.g., 6 → 8 = 75%)
+  // Larger values: ceil(dataMax / 0.75) for 75% target utilization
+  const TARGET_UTIL = 0.75;
   const maxProjects = Math.max(...projectCounts, 1);
   const maxUnits = Math.max(...totalUnits, 1);
-  const yAxisMax = niceMax(Math.ceil(maxProjects * 1.05));  // 5% headroom, niceMax adds rest
-  const y1AxisMax = niceMax(Math.ceil(maxUnits * 1.05));    // 5% headroom, niceMax adds rest
+  const ySuggestedMax = maxProjects <= 10 ? maxProjects + 2 : Math.ceil(maxProjects / TARGET_UTIL);
+  const y1SuggestedMax = Math.ceil(maxUnits / TARGET_UTIL);
 
   // Calculate summary stats
   const totalProjectCount = projectCounts.reduce((sum, v) => sum + v, 0);
@@ -213,7 +215,7 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
         y: {
           type: 'linear',
           position: 'left',
-          max: yAxisMax,
+          suggestedMax: ySuggestedMax,  // Soft cap - can expand if data exceeds
           title: {
             display: true,
             text: 'Projects',
@@ -221,7 +223,7 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
           },
           ticks: {
             ...CHART_AXIS_DEFAULTS.ticks,
-            stepSize: Math.ceil(yAxisMax / 5),
+            stepSize: maxProjects <= 10 ? 1 : Math.ceil(ySuggestedMax / 5),  // Integer ticks for small counts
           },
           grid: {
             color: 'rgba(148, 180, 193, 0.2)',
@@ -230,7 +232,7 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
         y1: {
           type: 'linear',
           position: 'right',
-          max: y1AxisMax,
+          suggestedMax: y1SuggestedMax,  // Soft cap - can expand if data exceeds
           title: {
             display: true,
             text: 'Units',
@@ -246,7 +248,7 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
         },
       },
     }),
-    [yAxisMax, y1AxisMax, filteredData]
+    [ySuggestedMax, y1SuggestedMax, maxProjects, filteredData]
   );
 
   const hasData = filteredData.length > 0;
