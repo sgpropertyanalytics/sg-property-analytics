@@ -9,6 +9,10 @@ on:
     # Security audit runs nightly at 2am UTC
     - cron: '0 2 * * *'
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   # ============================================================
   # Detect which files changed to gate downstream jobs
