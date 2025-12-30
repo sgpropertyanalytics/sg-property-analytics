@@ -57,18 +57,36 @@ domains:
         requests_per_minute: 10
       project_detail:
         requests_per_minute: 15
+      verification:
+        requests_per_minute: 5
+        notes: "Verification lookups - conservative"
 
   propertyguru.com.sg:
     requests_per_minute: 10
     requests_per_hour: 100
     burst_limit: 2
     notes: "Major property portal"
+    routes:
+      search:
+        requests_per_minute: 5
+        notes: "Search queries for verification"
+      project_detail:
+        requests_per_minute: 10
+        notes: "Project detail pages"
+      verification:
+        requests_per_minute: 5
+        notes: "Verification lookups - conservative"
 
   99.co:
     requests_per_minute: 10
     requests_per_hour: 100
     burst_limit: 2
     notes: "Property portal"
+    routes:
+      search:
+        requests_per_minute: 5
+      verification:
+        requests_per_minute: 5
 
   srx.com.sg:
     requests_per_minute: 10
@@ -81,12 +99,22 @@ domains:
     requests_per_hour: 100
     burst_limit: 2
     notes: "Agency website"
+    routes:
+      search:
+        requests_per_minute: 3
+      verification:
+        requests_per_minute: 3
 
   era.com.sg:
     requests_per_minute: 10
     requests_per_hour: 100
     burst_limit: 2
     notes: "Agency website"
+    routes:
+      search:
+        requests_per_minute: 3
+      verification:
+        requests_per_minute: 3
 
   orangetee.com:
     requests_per_minute: 10

@@ -408,6 +408,16 @@ def create_app():
         import traceback
         traceback.print_exc()
 
+    # Verification routes (Tier B cross-validation)
+    try:
+        from routes.verification import verification_bp
+        app.register_blueprint(verification_bp, url_prefix='/api/verification')
+        print("   ✓ Verification routes registered")
+    except Exception as e:
+        print(f"   ⚠️ Failed to register verification routes: {e}")
+        import traceback
+        traceback.print_exc()
+
     # Serve dashboard.html at root
     @app.route("/", methods=["GET"])
     def index():
