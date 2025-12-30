@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { PageHeader } from '../components/ui';
 import apiClient from '../api/client';
+import { LocTrendChart } from '../components/LocTrendChart';
 
 // Classification data from constants
 const BEDROOM_THRESHOLDS = {
@@ -433,6 +434,15 @@ export function MethodologyContent() {
                 SLA.
               </p>
             </div>
+          </SectionCard>
+
+          {/* Codebase Statistics */}
+          <SectionCard title="Codebase Statistics">
+            <p className="text-sm text-[#547792] mb-4">
+              Track the growth and evolution of the application codebase over time.
+              This chart shows lines of code at different points in the development history.
+            </p>
+            <LocTrendChart height={280} />
           </SectionCard>
 
           {/* Disclaimers */}
