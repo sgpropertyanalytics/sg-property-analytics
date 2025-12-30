@@ -308,10 +308,16 @@ Top Issues:
 - [x] Maintain backwards compatibility (`ScrapeRun` alias)
 
 ### Phase 2: Apply to All Pipelines
+**Scraping (orchestrator):**
 - [x] GLS scrape → orchestrator with diff (`run_scraper_with_diff()`)
-- [x] Upcoming launches CSV → orchestrator with diff (`compute_diff_for_upcoming_launches()`)
-- [x] New launch units CSV → orchestrator with diff (`compute_diff_for_new_launch_units()`)
-- [ ] URA REALIS ETL → orchestrator with diff
+
+**ETL (separate pipeline - see `etl-pipeline` agent):**
+- [ ] Upcoming launches CSV → ETL pipeline
+- [ ] New launch units CSV → ETL pipeline
+- [ ] URA REALIS ETL → ETL pipeline
+
+> **Note:** CSV/file processing is handled by the `etl-pipeline` agent, NOT the scraping orchestrator.
+> The scraping orchestrator is for WEB SCRAPING only.
 
 ### Phase 3: Verification Mode ✅ COMPLETE
 - [x] Create `verification_candidates` table (migration 012)
@@ -334,7 +340,7 @@ Top Issues:
 ### Core Infrastructure
 | File | Purpose |
 |------|---------|
-| `backend/scrapers/orchestrator.py` | Main ingestion controller |
+| `backend/scrapers/orchestrator.py` | Scraping orchestrator (web scraping only) |
 | `backend/scrapers/tier_system.py` | Source trust levels |
 | `backend/scrapers/field_authority.py` | Field ownership rules |
 | `backend/scrapers/base.py` | Base scraper class |
