@@ -136,7 +136,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     if (preset === datePreset) {
       // Clicking same preset clears it (show all data)
       setDateRange(null, null);
-      setDatePreset(null);
+      setDatePreset('all');
+    } else if (preset === 'all') {
+      // "All" = no date filter
+      setDateRange(null, null);
+      setDatePreset('all');
     } else {
       const { start, end } = calculatePresetDateRange(preset, filterOptions.dateRange.max);
       if (start && end) {
