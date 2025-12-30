@@ -7,6 +7,15 @@ Provides:
 - Common test utilities
 """
 
+import sys
+from pathlib import Path
+
+# Add backend directory to Python path so imports like
+# `from db.sql import ...` and `from utils.normalize import ...` work
+backend_dir = Path(__file__).parent.parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
 import pytest
 
 
