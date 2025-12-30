@@ -5,7 +5,7 @@ Provides aggregated data about new launch projects over time:
 - Number of projects launched per period
 - Total units launched per period
 
-Endpoint: GET /api/analytics/new-launch-timeline
+Endpoint: GET /api/new-launch-timeline
 """
 
 import time

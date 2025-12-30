@@ -32,6 +32,7 @@ import argparse
 import uuid
 import json
 import time
+import subprocess
 from datetime import datetime
 from typing import Set, List, Tuple, Dict, Any, Optional
 
@@ -211,6 +212,10 @@ ADVISORY_LOCK_ID = 12345  # Unique lock ID for upload process
 STAGING_TABLE = 'transactions_staging'
 PRODUCTION_TABLE = 'transactions'
 PREVIOUS_TABLE = 'transactions_prev'
+DATA_GUARD_SKIP_ENV = 'SKIP_DATA_GUARD'
+DATA_GUARD_SCRIPT = os.path.join(os.path.dirname(__file__), 'data_guard.py')
+DATA_GUARD_FILE = os.path.join(os.path.dirname(__file__), '..', 'backend', 'data', 'new_launch_units.csv')
+DATA_GUARD_BASELINE = os.path.join(os.path.dirname(__file__), '..', '.ci', 'baselines', 'new_launch_units.csv')
 
 EXPECTED_CSV_COLUMNS = {
     'Project Name', 'Street Name', 'Property Type', 'Postal District',
@@ -370,6 +375,38 @@ def run_contract_preflight(csv_files: List[str], logger: 'UploadLogger') -> Tupl
         logger.log("⚠️  Contract preflight check found issues (continuing with existing logic)")
 
     return all_valid, combined_report
+
+
+# =============================================================================
+# DATA GUARD (Preflight)
+# =============================================================================
+
+def run_data_guard_preflight(logger: 'UploadLogger') -> bool:
+    """
+    Run CSV integrity checks before any DB operations.
+    """
+    if os.environ.get(DATA_GUARD_SKIP_ENV, "").strip().lower() in {"1", "true", "yes"}:
+        logger.log(f"Data guard skipped ({DATA_GUARD_SKIP_ENV} set)")
+        return True
+
+    if not os.path.exists(DATA_GUARD_FILE):
+        logger.log(f"❌ Data guard failed: missing {DATA_GUARD_FILE}")
+        return False
+
+    cmd = [sys.executable, DATA_GUARD_SCRIPT, '--mode', 'local', '--file', DATA_GUARD_FILE]
+    if os.path.exists(DATA_GUARD_BASELINE):
+        cmd.extend(['--baseline', DATA_GUARD_BASELINE])
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        logger.log("❌ Data guard failed: critical CSV validation errors")
+        for line in result.stdout.strip().split('\n')[-10:]:
+            if line.strip():
+                logger.log(f"   {line}")
+        return False
+
+    logger.log("✓ Data guard validation passed")
+    return True
 
 
 # =============================================================================
@@ -1885,6 +1922,12 @@ def _idempotent_promote(logger: UploadLogger, batch_id: str, stats: Dict) -> Tup
             text(f"SELECT COUNT(*) FROM {PRODUCTION_TABLE}")
         ).scalar()
 
+        if after_count < before_count:
+            logger.log("❌ PUBLISH FAILED: Production row count decreased")
+            logger.log(f"  Production table: {before_count:,} → {after_count:,}")
+            logger.log("  Investigate for concurrent deletions or migration issues")
+            return False, stats
+
         # Calculate stats
         stats['rows_promoted'] = rows_promoted
         stats['rows_skipped_collision'] = staging_count - rows_promoted
@@ -2341,6 +2384,10 @@ def main():
         print(f"\n❌ Error: CSV folder not found: {csv_folder}")
         sys.exit(1)
 
+    if not run_data_guard_preflight(logger):
+        print("\n❌ Data guard failed. Fix the CSV issues or set SKIP_DATA_GUARD=true to bypass.")
+        sys.exit(1)
+
     # Discover CSV files BEFORE touching the database
     # This prevents "no files found" errors after DB work has started
     if not args.check and not args.publish and not args.rollback:
@@ -2768,26 +2815,6 @@ def main():
                     logger.log("Project location update skipped (module not found)")
                 except Exception as e:
                     logger.log(f"Project location update failed (non-critical): {e}")
-
-                # STAGE 8: Cleanup new launch units CSV
-                # Remove projects that now have resale transactions
-                try:
-                    from services.new_launch_units import cleanup_resale_projects
-                    logger.stage("CLEANUP NEW LAUNCH UNITS")
-                    cleanup_result = cleanup_resale_projects()
-                    if cleanup_result.get('removed'):
-                        logger.log(f"Removed {len(cleanup_result['removed'])} projects from new_launch_units.csv")
-                        for project in cleanup_result['removed'][:5]:
-                            logger.log(f"  - {project}")
-                        if len(cleanup_result['removed']) > 5:
-                            logger.log(f"  ... and {len(cleanup_result['removed']) - 5} more")
-                    else:
-                        logger.log("No projects to remove from new_launch_units.csv")
-                    logger.log(f"Remaining new launch projects: {cleanup_result.get('remaining', 0)}")
-                except ImportError:
-                    logger.log("New launch cleanup skipped (module not found)")
-                except Exception as e:
-                    logger.log(f"New launch cleanup failed (non-critical): {e}")
 
             # Step B: Mark batch as complete
             if run_ctx:

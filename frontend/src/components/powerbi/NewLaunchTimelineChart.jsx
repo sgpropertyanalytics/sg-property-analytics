@@ -59,11 +59,11 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
       const response = await getNewLaunchTimeline(params, { signal });
 
       // Validate API contract version (dev/test only)
-      assertKnownVersion(response.data, '/api/analytics/new-launch-timeline');
+      assertKnownVersion(response.data, '/api/new-launch-timeline');
 
       // Debug logging (dev only)
       logFetchDebug('NewLaunchTimelineChart', {
-        endpoint: '/api/analytics/new-launch-timeline',
+        endpoint: '/api/new-launch-timeline',
         timeGrain: timeGrouping,
         rowCount: response.data?.data?.length || 0,
       });

@@ -12,6 +12,7 @@ ensuring clean data for downstream computation.
 Pipeline: Load Raw → Validate/Filter/Clean → Store in DB → Compute Stats
 """
 
+import os
 from typing import Tuple, Dict, Any, List, Optional
 from sqlalchemy import text
 from models.database import db
@@ -21,6 +22,15 @@ from db.sql import OUTLIER_FILTER, exclude_outliers
 # IQR multiplier for outlier detection - MUST match scripts/upload.py
 # Relaxed from standard 1.5x to 5.0x to include luxury condos
 IQR_MULTIPLIER = 5.0
+MUTATION_ALLOW_ENV = "ALLOW_DATA_VALIDATION_MUTATIONS"
+
+
+def _ensure_mutations_allowed(action: str) -> None:
+    if os.environ.get(MUTATION_ALLOW_ENV, "").strip().lower() not in {"1", "true", "yes"}:
+        raise RuntimeError(
+            f"Data validation mutation blocked for {action}. "
+            f"Set {MUTATION_ALLOW_ENV}=true to allow."
+        )
 
 
 def calculate_iqr_bounds(column: str = 'price') -> Tuple[float, float, Dict[str, float]]:
@@ -86,38 +96,6 @@ def count_outliers(lower_bound: float, upper_bound: float, column: str = 'price'
         count_sql,
         {'lower_bound': lower_bound, 'upper_bound': upper_bound}
     ).scalar()
-
-
-def get_sample_outliers(lower_bound: float, upper_bound: float,
-                        column: str = 'price', limit: int = 10) -> List[Dict[str, Any]]:
-    """
-    Get sample outlier records for preview.
-
-    Args:
-        lower_bound: Lower bound for valid data
-        upper_bound: Upper bound for valid data
-        column: Column to check (default: 'price')
-        limit: Max samples to return
-
-    Returns:
-        List of outlier records with project_name, price, district
-    """
-    sample_sql = text(f"""
-        SELECT project_name, {column}, district
-        FROM transactions
-        WHERE {column} < :lower_bound OR {column} > :upper_bound
-        ORDER BY {column} DESC
-        LIMIT :limit
-    """)
-    samples = db.session.execute(
-        sample_sql,
-        {'lower_bound': lower_bound, 'upper_bound': upper_bound, 'limit': limit}
-    ).fetchall()
-
-    return [
-        {"project": s[0], "price": float(s[1]), "district": s[2]}
-        for s in samples
-    ]
 
 
 def filter_outliers_sql(column: str = 'price', dry_run: bool = False) -> Tuple[int, Dict[str, Any]]:
@@ -237,6 +215,7 @@ def remove_duplicates_sql() -> int:
     Returns:
         Count of duplicates removed
     """
+    _ensure_mutations_allowed("remove_duplicates_sql")
     before_count = db.session.query(Transaction).count()
 
     # Always try to use floor_range with COALESCE (handles NULLs properly)
@@ -316,42 +295,6 @@ def validate_transaction_data(data: Dict[str, Any]) -> Tuple[bool, List[str]]:
     return len(errors) == 0, errors
 
 
-def get_data_quality_report() -> Dict[str, Any]:
-    """
-    Generate a data quality report for the current database.
-
-    Returns:
-        Dictionary with quality metrics
-    """
-    total_count = db.session.query(Transaction).count()
-
-    if total_count == 0:
-        return {"error": "No data in database"}
-
-    # Count records with missing values
-    # NOTE: f-string SQL is safe here because column names are from a hardcoded
-    # list below, NOT from user input. Do not copy this pattern for user-provided values.
-    null_counts = {}
-    VALID_COLUMNS = ['price', 'area_sqft', 'psf', 'district', 'bedroom_count', 'transaction_date']
-    for column in VALID_COLUMNS:
-        sql = text(f"SELECT COUNT(*) FROM transactions WHERE {column} IS NULL")
-        null_counts[column] = db.session.execute(sql).scalar()
-
-    # Get IQR stats
-    _, _, price_stats = calculate_iqr_bounds('price')
-
-    # Count potential outliers (without removing)
-    outlier_count = count_outliers(price_stats['lower_bound'], price_stats['upper_bound'])
-
-    return {
-        'total_records': total_count,
-        'null_counts': null_counts,
-        'price_statistics': price_stats,
-        'potential_outliers': outlier_count,
-        'outlier_percentage': round(outlier_count / total_count * 100, 2) if total_count > 0 else 0
-    }
-
-
 def print_iqr_statistics(stats: Dict[str, float]) -> None:
     """Print IQR statistics in a formatted way."""
     print(f"  📊 IQR Statistics:")
@@ -375,6 +318,7 @@ def remove_invalid_records() -> int:
     Returns:
         Count of invalid records removed
     """
+    _ensure_mutations_allowed("remove_invalid_records")
     before_count = db.session.query(Transaction).count()
 
     # Remove records with invalid price

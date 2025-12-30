@@ -19,6 +19,7 @@ from typing import Dict, Any, Optional, List, Callable
 
 from sqlalchemy import text
 from models.database import db
+from utils.filter_builder import build_sql_where
 
 logger = logging.getLogger('kpi')
 
@@ -298,40 +299,6 @@ def build_filter_clause(filters: Dict[str, Any]) -> tuple:
 
     Usage:
         parts, params = build_filter_clause(filters)
-        where = " AND ".join(["COALESCE(is_outlier, false) = false"] + parts)
+        where = " AND ".join(parts)
     """
-    parts = []
-    params = {}
-
-    # District filter
-    if filters.get('districts'):
-        districts = filters['districts']
-        if isinstance(districts, str):
-            districts = [d.strip().upper() for d in districts.split(',')]
-        placeholders = ','.join([f":district_{i}" for i in range(len(districts))])
-        parts.append(f"district IN ({placeholders})")
-        for i, d in enumerate(districts):
-            params[f'district_{i}'] = d if d.startswith('D') else f'D{d.zfill(2)}'
-
-    # Segment filter (converts to districts)
-    elif filters.get('segment'):
-        from constants import get_districts_for_region
-        segment = filters['segment'].upper()
-        if segment in ['CCR', 'RCR', 'OCR']:
-            seg_districts = get_districts_for_region(segment)
-            placeholders = ','.join([f":seg_d_{i}" for i in range(len(seg_districts))])
-            parts.append(f"district IN ({placeholders})")
-            for i, d in enumerate(seg_districts):
-                params[f'seg_d_{i}'] = d
-
-    # Bedroom filter
-    if filters.get('bedrooms'):
-        bedrooms = filters['bedrooms']
-        if isinstance(bedrooms, str):
-            bedrooms = [int(b.strip()) for b in bedrooms.split(',') if b.strip().isdigit()]
-        placeholders = ','.join([f":bed_{i}" for i in range(len(bedrooms))])
-        parts.append(f"bedroom_count IN ({placeholders})")
-        for i, b in enumerate(bedrooms):
-            params[f'bed_{i}'] = b
-
-    return parts, params
+    return build_sql_where(filters)

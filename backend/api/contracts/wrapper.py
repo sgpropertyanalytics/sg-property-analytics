@@ -93,13 +93,14 @@ def api_contract(endpoint_name: str):
                 # 3. Normalize params
                 normalized = normalize_params(raw_params, contract.param_schema)
 
-                # 4. Validate service params
-                validate_service_params(normalized, contract.service_schema)
-
-                # 5. Inject into request context
+                # 4. Inject into request context BEFORE service validation
+                # This ensures params are available even if service validation fails in WARN mode
                 g.normalized_params = normalized
                 g.contract = contract
                 g.filters_applied = _extract_filters_applied(normalized)
+
+                # 5. Validate service params (may raise ContractViolation)
+                validate_service_params(normalized, contract.service_schema)
 
             except ValidationError as e:
                 return _make_error_response(
@@ -120,7 +121,8 @@ def api_contract(endpoint_name: str):
                         status_code=400,
                     )
                 else:
-                    # Warn mode - log and continue
+                    # Warn mode - log violation and continue
+                    # g.normalized_params already set in step 4
                     _log_violation(endpoint_name, e, request_id, stage="params")
 
             # 6. Call the handler

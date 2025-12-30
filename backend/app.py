@@ -332,6 +332,39 @@ def create_app():
         except Exception as e:
             print(f"   ⚠️  Cache warming skipped: {e}")
 
+        # Data guard: Validate critical CSVs on startup (non-blocking)
+        # This logs warnings if data files have issues but does NOT block startup
+        try:
+            import subprocess
+            result = subprocess.run(
+                ['python3', 'scripts/data_guard.py', '--mode', 'runtime',
+                 '--file', 'backend/data/new_launch_units.csv'],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode != 0:
+                print("   ⚠️  DATA GUARD WARNING: Critical CSV validation failed")
+                for line in result.stdout.strip().split('\n')[-10:]:
+                    print(f"      {line}")
+            else:
+                print("   ✓ Data guard validation passed")
+        except Exception as e:
+            print(f"   ⚠️  Data guard check skipped: {e}")
+
+        # Checksum verification: Detect tampering of tracked CSV files
+        # This is a critical data integrity check - logs violations but does NOT block startup
+        try:
+            from utils.data_checksums import verify_all
+            violations = verify_all()
+            if violations:
+                print("   ⚠️  DATA INTEGRITY VIOLATIONS:")
+                for v in violations:
+                    print(f"      - {v}")
+                print("      Run: python -c \"from utils.data_checksums import save_checksums; save_checksums()\"")
+            else:
+                print("   ✓ Data checksum verification passed")
+        except Exception as e:
+            print(f"   ⚠️  Checksum verification skipped: {e}")
+
     # Register routes
     # Analytics routes (PUBLIC - no authentication required)
     from routes.analytics import analytics_bp

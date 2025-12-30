@@ -21,6 +21,7 @@ import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeCla
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../hooks';
 import { SaleType } from '../../schemas/apiContract';
+import { getPercentile } from '../../utils/statistics';
 
 // =============================================================================
 // CONFIGURATION
@@ -116,11 +117,6 @@ function calculateVolumeThresholds(districtData) {
   if (volumes.length === 0) {
     return { p70: 0, p80: 0, p90: 0 };
   }
-
-  const getPercentile = (arr, p) => {
-    const index = Math.ceil((p / 100) * arr.length) - 1;
-    return arr[Math.max(0, index)];
-  };
 
   return {
     p70: getPercentile(volumes, 70),  // Bottom 70% cutoff

@@ -140,7 +140,7 @@ DASHBOARD_PARAM_SCHEMA = ParamSchema(
             name="panels",
             type=str,
             nullable=True,
-            description="Comma-separated panels: time_series, volume_by_location, price_histogram, bedroom_mix, sale_type_breakdown, summary"
+            description="Comma-separated panels: time_series, volume_by_location, price_histogram, bedroom_mix, sale_type_breakdown, summary, beads_chart"
         ),
 
         # Display options

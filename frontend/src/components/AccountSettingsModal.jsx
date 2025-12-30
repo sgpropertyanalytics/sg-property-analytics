@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { deleteAccount, createPortalSession } from '../api/client';
+import { getInitials } from '../utils/formatters';
 
 /**
  * AccountSettingsModal - Single-view modal for user account management
@@ -74,19 +75,6 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
     });
   };
 
-  // Get initials for avatar fallback
-  const getInitials = () => {
-    if (user.displayName) {
-      return user.displayName
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase();
-    }
-    return user.email?.charAt(0).toUpperCase() || '?';
-  };
-
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
@@ -129,7 +117,7 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
                       />
                     ) : (
                       <div className="w-full h-full bg-[#547792] flex items-center justify-center text-[#EAE0CF] text-xl font-medium">
-                        {getInitials()}
+                        {getInitials(user)}
                       </div>
                     )}
                   </div>

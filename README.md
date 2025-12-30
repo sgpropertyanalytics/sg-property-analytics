@@ -47,6 +47,18 @@ docker run -d --name sg-property-db -p 5432:5432 \
 | Auth | Firebase (Google OAuth) |
 | Hosting | Render |
 
+## Development
+
+### Install Local Guard Hooks
+
+Prevent accidental data corruption in critical CSV files:
+
+```bash
+./scripts/hooks/install_hooks.sh
+```
+
+This installs a pre-commit hook that validates changes to `backend/data/new_launch_units.csv` before commit.
+
 ## Documentation
 
 See [`/docs`](./docs/README.md) for complete documentation:

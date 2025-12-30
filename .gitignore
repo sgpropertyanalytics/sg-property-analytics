@@ -88,6 +88,10 @@ rawdata/
 # Exception: backend/data for static lookup files (tracked in git)
 !backend/data/
 !backend/data/*.csv
+# Exception: CI baselines for data guard (tracked in git)
+!.ci/
+!.ci/baselines/
+!.ci/baselines/*.csv
 *.db
 *.sqlite
 *.sqlite3
@@ -102,6 +106,16 @@ logs/
 *.tmp
 *.temp
 .cache/
+
+# ============================================================
+# DATA PROTECTION: Generated outputs (NOT tracked)
+# ============================================================
+# These directories are safe for writing - fs_guard.py allows them
+backend/data/generated/
+.data/
+
+# FS guard audit logs
+data-validation-logs/
 
 # Generated frontend contracts - MUST be committed for Vercel builds
 # frontend/src/generated/  # Commented out - these files are required at build time

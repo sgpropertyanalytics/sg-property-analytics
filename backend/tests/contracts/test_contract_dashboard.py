@@ -147,6 +147,27 @@ class TestDashboardNormalization:
         assert "CCR" in normalized["segments"]
         assert "segment" not in normalized
 
+    def test_normalize_panels_string_to_list(self):
+        """panels param should normalize from comma-separated string to list."""
+        contract = get_contract("dashboard")
+        raw = {"panels": "time_series,beads_chart"}
+        normalized = normalize_params(raw, contract.param_schema)
+
+        assert "panels" in normalized
+        assert isinstance(normalized["panels"], list)
+        assert "time_series" in normalized["panels"]
+        assert "beads_chart" in normalized["panels"]
+
+    def test_normalize_single_panel_to_list(self):
+        """Single panel value should normalize to list with one element."""
+        contract = get_contract("dashboard")
+        raw = {"panels": "beads_chart"}
+        normalized = normalize_params(raw, contract.param_schema)
+
+        assert "panels" in normalized
+        assert isinstance(normalized["panels"], list)
+        assert normalized["panels"] == ["beads_chart"]
+
 
 class TestDashboardSnapshots:
     """Test response schema matches snapshots."""

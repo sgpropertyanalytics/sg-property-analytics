@@ -59,26 +59,6 @@ export function getLiquidityFill(zScore) {
   return LIQUIDITY_FILLS.veryLow;
 }
 
-/**
- * Get CSS classes for liquidity tier badge.
- */
-export function getTierBadgeStyle(tier) {
-  switch (tier) {
-    case 'Very High':
-      return 'bg-[#213448] text-white';
-    case 'High':
-      return 'bg-[#547792] text-white';
-    case 'Neutral':
-      return 'bg-[#94B4C1] text-[#213448]';
-    case 'Low':
-      return 'bg-[#EAE0CF] text-[#547792]';
-    case 'Very Low':
-      return 'bg-[#EAE0CF] text-[#94B4C1]';
-    default:
-      return 'bg-gray-200 text-gray-500';
-  }
-}
-
 // =============================================================================
 // SCORE STYLING (shared by HoverCard and LiquidityRankingTable)
 // =============================================================================
@@ -146,7 +126,7 @@ export function getFragilityBadge(fragility) {
 /**
  * Get CSS classes for tier badge (table version).
  */
-export function getTierBadge(tier) {
+export function getTierBadgeStyle(tier) {
   switch (tier) {
     case 'Very High':
       return 'bg-[#213448] text-white';

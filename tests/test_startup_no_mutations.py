@@ -19,6 +19,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 
 class TestStartupNoMutations:
     """Test that app startup is read-only."""

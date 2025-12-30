@@ -32,7 +32,6 @@ This does NOT mean cheap or expensive - only momentum relative to historical nor
 from datetime import date
 from typing import Dict, Any, Optional, Tuple
 from sqlalchemy import text
-from db.sql import OUTLIER_FILTER
 from constants import SALE_TYPE_RESALE
 from models.database import db
 from services.kpi.base import (
@@ -108,9 +107,7 @@ def get_sql(params: Dict[str, Any]) -> str:
     params.pop('_max_exclusive', None)
     params.pop('_base_filters', None)
 
-    base_filter = OUTLIER_FILTER
-    if filter_parts:
-        base_filter += " AND " + " AND ".join(filter_parts)
+    base_filter = " AND ".join(filter_parts) if filter_parts else "1=1"
 
     resale_filter = f"sale_type = '{SALE_TYPE_RESALE}'"
 
@@ -211,9 +208,7 @@ def _fetch_fallback_data(filters: Dict[str, Any], max_exclusive: date) -> Tuple[
     """
     # Build filter clause
     filter_parts, filter_params = build_filter_clause(filters)
-    base_filter = OUTLIER_FILTER
-    if filter_parts:
-        base_filter += " AND " + " AND ".join(filter_parts)
+    base_filter = " AND ".join(filter_parts) if filter_parts else "1=1"
 
     resale_filter = f"sale_type = '{SALE_TYPE_RESALE}'"
 

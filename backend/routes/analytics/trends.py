@@ -6,7 +6,7 @@ Only active endpoint:
 """
 
 import time
-from flask import request, jsonify
+from flask import request, jsonify, g
 from routes.analytics import analytics_bp
 from utils.normalize import (
     to_date, to_list, clamp_date_to_today,

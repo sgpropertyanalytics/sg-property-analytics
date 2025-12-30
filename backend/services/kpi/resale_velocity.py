@@ -16,7 +16,6 @@ Interpretation (annualized = velocity × 4):
 
 from typing import Dict, Any, Tuple
 from datetime import date
-from db.sql import OUTLIER_FILTER
 from constants import SALE_TYPE_RESALE
 from services.kpi.base import (
     KPIResult, build_filter_clause
@@ -73,9 +72,7 @@ def build_params(filters: Dict[str, Any]) -> Dict[str, Any]:
 def get_sql(params: Dict[str, Any]) -> str:
     """Build SQL for resale transaction counts using month boundaries."""
     filter_parts = params.pop('_filter_parts', [])
-    base_filter = OUTLIER_FILTER
-    if filter_parts:
-        base_filter += " AND " + " AND ".join(filter_parts)
+    base_filter = " AND ".join(filter_parts) if filter_parts else "1=1"
 
     return f"""
         WITH current_period AS (
@@ -106,7 +103,7 @@ def get_total_units_for_scope(filters: Dict[str, Any]) -> Tuple[int, int]:
     """
     Get aggregated total_units for projects matching filter scope.
 
-    Uses CSV data (high confidence) for unit counts.
+    Uses CSV data for unit counts (fast, no N+1 queries).
     Excludes boutique projects (<100 units).
 
     Returns:
@@ -118,9 +115,7 @@ def get_total_units_for_scope(filters: Dict[str, Any]) -> Tuple[int, int]:
 
     # Build filter clause for district/segment/bedroom filtering
     filter_parts, filter_params = build_filter_clause(filters)
-    base_filter = OUTLIER_FILTER
-    if filter_parts:
-        base_filter += " AND " + " AND ".join(filter_parts)
+    base_filter = " AND ".join(filter_parts) if filter_parts else "1=1"
 
     # Get distinct projects with resale transactions in scope
     filter_params['sale_type_resale'] = SALE_TYPE_RESALE
@@ -133,7 +128,7 @@ def get_total_units_for_scope(filters: Dict[str, Any]) -> Tuple[int, int]:
 
     project_names = [r[0] for r in projects_result]
 
-    # Load CSV data for high-confidence unit counts
+    # Load CSV data for unit counts (includes older completed projects)
     csv_data = _load_data()
 
     total_units = 0

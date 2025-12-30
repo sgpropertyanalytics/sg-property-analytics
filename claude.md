@@ -295,6 +295,49 @@ Request params  → Normalized params (g.normalized_params) → Response keys
 
 # 1. HARD CONSTRAINTS
 
+## Data File Immutability (ABSOLUTE)
+
+**NEVER delete, modify, or overwrite any CSV file in `backend/data/` or `scripts/data/`.**
+
+This is not a guideline - it's a hard constraint. Violation = data loss = catastrophic failure.
+
+### Forbidden Actions
+- `os.remove()`, `Path.unlink()`, `shutil.rmtree()` on data files
+- `open(csv_path, 'w')` - overwriting tracked CSVs
+- `pd.to_csv()` to tracked file paths
+- Any "cleanup" that touches tracked data files
+- Moving, renaming, or "organizing" data files
+
+### Before ANY File Operation
+1. Is this file under `backend/data/` or `scripts/data/`?
+2. Is this file tracked in git (`git ls-files <path>`)?
+3. If YES to both → **STOP. Do not proceed.**
+
+### Allowed Actions
+- READ data files (always safe)
+- Write to `backend/data/generated/` (gitignored)
+- Write to `.data/` (gitignored)
+- Write to `/tmp/` or system temp directories
+
+### Output File Pattern
+```python
+# ❌ FORBIDDEN
+df.to_csv("backend/data/projects.csv")
+
+# ✅ REQUIRED
+df.to_csv("backend/data/generated/projects_cleaned.csv")
+```
+
+### Runtime Protection
+All file mutations go through `backend/utils/fs_guard.py`:
+```python
+from utils.fs_guard import safe_write_text, safe_unlink
+
+# These will CRASH if targeting protected files
+safe_write_text("backend/data/generated/output.csv", data)  # OK
+safe_write_text("backend/data/projects.csv", data)  # RuntimeError!
+```
+
 ## Memory (512MB)
 - SQL aggregation only (no pandas)
 - Paginated queries (never load 100K+ records)

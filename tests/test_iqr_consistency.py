@@ -18,6 +18,9 @@ Run with: pytest tests/test_iqr_consistency.py -v
 import sys
 import os
 import re
+import pytest
+
+pytestmark = pytest.mark.integration
 
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))

@@ -11,6 +11,7 @@
 import React, { useMemo, useState } from 'react';
 import Map, { Marker, Source, Layer, Popup } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { getPercentile } from '../../utils/statistics';
 
 // CartoDB Positron - clean, light basemap
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
@@ -32,11 +33,6 @@ function calculateVolumeThresholds(projects) {
   if (volumes.length === 0) {
     return { p50: 0, p75: 0, p90: 0 };
   }
-
-  const getPercentile = (arr, p) => {
-    const index = Math.ceil((p / 100) * arr.length) - 1;
-    return arr[Math.max(0, index)];
-  };
 
   return {
     p50: getPercentile(volumes, 50),

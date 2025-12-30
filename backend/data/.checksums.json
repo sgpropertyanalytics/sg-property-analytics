@@ -1,0 +1,17 @@
+{
+  "backend/data/new_launch_units.csv": {
+    "sha256": "9c433805884f6040da96cd84cd59dcf8787ad56a29fcc2cd8c0795a8c6abb8cc",
+    "size": 39169,
+    "lines": 1021
+  },
+  "backend/data/new_launch_units_updated.csv": {
+    "sha256": "75487ebd659ad3bfdee9d0db6dab22a61e65becbe3b437dbb636a9f4f73aba6e",
+    "size": 30011,
+    "lines": 720
+  },
+  "backend/data/upcoming_launches.csv": {
+    "sha256": "67805899dacc016191cf70aefd8344e1fdd7bb6be08b57275f3875c9825be5ff",
+    "size": 3308,
+    "lines": 21
+  }
+}

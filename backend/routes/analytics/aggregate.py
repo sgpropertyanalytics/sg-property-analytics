@@ -8,7 +8,6 @@ Endpoints:
 """
 
 import time
-import json
 from flask import jsonify, g
 from routes.analytics import analytics_bp
 from constants import (
@@ -115,22 +114,9 @@ def _expand_csv_list(value, item_type=str) -> list:
 
 
 def _build_aggregate_cache_key(params: dict) -> str:
-    def normalize_value(value):
-        if isinstance(value, (date, datetime)):
-            return value.isoformat()
-        if isinstance(value, list):
-            return [normalize_value(v) for v in value]
-        if isinstance(value, dict):
-            return {k: normalize_value(v) for k, v in sorted(value.items())}
-        return value
+    from utils.cache_key import build_json_cache_key
 
-    filtered = {
-        key: value
-        for key, value in params.items()
-        if value not in (None, "", [], {})
-    }
-    normalized = {k: normalize_value(v) for k, v in sorted(filtered.items())}
-    return f"aggregate:{json.dumps(normalized, sort_keys=True)}"
+    return build_json_cache_key("aggregate", params)
 
 
 @analytics_bp.route("/aggregate", methods=["GET"])
@@ -641,17 +627,6 @@ def _make_aggregate_cache_key(params: dict) -> str:
         'tenure', 'date_from', 'date_to', 'price_min', 'price_max',
         'psf_min', 'psf_max', 'bin_count'
     ]
-    def normalize_value(value):
-        if isinstance(value, list):
-            return ",".join([str(v) for v in value])
-        if isinstance(value, (date, datetime)):
-            return value.isoformat()
-        return value
+    from utils.cache_key import build_query_cache_key
 
-    sorted_params = sorted(
-        (k, normalize_value(params.get(k)))
-        for k in relevant_params
-        if params.get(k)
-    )
-    param_str = '&'.join(f"{k}={v}" for k, v in sorted_params)
-    return f"agg_summary:{param_str}"
+    return build_query_cache_key("agg_summary", params, include_keys=relevant_params)

@@ -269,8 +269,9 @@ def _normalize_comma_lists(params: Dict[str, Any]) -> Dict[str, Any]:
     Handles:
     - group_by="month,district" -> ["month", "district"]
     - metrics="count,median_psf" -> ["count", "median_psf"]
+    - panels="time_series,beads_chart" -> ["time_series", "beads_chart"]
     """
-    list_fields = ['group_by', 'metrics']
+    list_fields = ['group_by', 'metrics', 'panels']
 
     for field in list_fields:
         if field in params and isinstance(params[field], str):

@@ -11,7 +11,7 @@ import {
   getScoreBadgeStyle,
   getScoreLabel,
   getRegionBadge,
-  getTierBadge,
+  getTierBadgeStyle,
   getSpreadLabel,
 } from './utils';
 import { BEDROOM_OPTIONS, PERIOD_OPTIONS, SALE_TYPE_OPTIONS } from './constants';
@@ -837,7 +837,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   {/* Exit Safety Group - Liquidity Tier (Resale-only) */}
                   <td className="px-3 py-2 text-center bg-emerald-50/40">
                     <span
-                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${getTierBadge(m.liquidity_tier)}`}
+                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${getTierBadgeStyle(m.liquidity_tier)}`}
                     >
                       {m.liquidity_tier || '-'}
                     </span>
