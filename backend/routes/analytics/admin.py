@@ -180,10 +180,10 @@ def debug_data_status():
         })
     except Exception as e:
         import traceback
+        traceback.print_exc()  # Log server-side only
         return jsonify({
             "status": "error",
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": "Internal server error"
         }), 500
 
 
@@ -291,10 +291,10 @@ def admin_update_metadata():
         })
     except Exception as e:
         import traceback
+        traceback.print_exc()  # Log server-side only
         return jsonify({
             "status": "error",
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": "Internal server error"
         }), 500
 
 
@@ -344,8 +344,8 @@ def filter_outliers_endpoint():
             })
     except Exception as e:
         import traceback
+        traceback.print_exc()  # Log server-side only
         return jsonify({
             "status": "error",
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": "Internal server error"
         }), 500

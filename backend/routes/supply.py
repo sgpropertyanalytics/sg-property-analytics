@@ -101,12 +101,11 @@ def get_supply_summary():
 
     except Exception as e:
         # Catch ALL errors and return JSON
+        # Log full traceback server-side for debugging, but don't expose to client
         import traceback
-        error_traceback = traceback.format_exc()
         print(f"GET /api/supply/summary FATAL ERROR: {e}")
-        print(error_traceback)
+        traceback.print_exc()
         return jsonify({
-            "error": str(e),
-            "type": type(e).__name__,
-            "traceback": error_traceback.split('\n')[-5:]  # Last 5 lines of traceback
+            "error": "Internal server error",
+            "type": "internal_error"
         }), 500

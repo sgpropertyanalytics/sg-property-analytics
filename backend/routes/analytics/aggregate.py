@@ -17,7 +17,7 @@ from constants import (
 from datetime import timedelta, date, datetime
 from typing import Optional, Tuple
 from utils.normalize import (
-    to_float, to_date, clamp_date_to_today,
+    to_int, to_float, to_date, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
@@ -527,14 +527,15 @@ def aggregate():
             row_dict = dict(row._mapping) if hasattr(row, '_mapping') else {}
 
         # Post-process month/quarter formatting
+        # Use to_int() to safely handle unexpected values (avoids 500 on malformed data)
         if "_year" in row_dict and "_month" in row_dict:
-            year = int(row_dict.pop("_year")) if row_dict.get("_year") else None
-            month = int(row_dict.pop("_month")) if row_dict.get("_month") else None
+            year = to_int(row_dict.pop("_year"))
+            month = to_int(row_dict.pop("_month"))
             if year and month:
                 row_dict["month"] = f"{year}-{month:02d}"
         if "_year" in row_dict and "_quarter" in row_dict:
-            year = int(row_dict.pop("_year")) if row_dict.get("_year") else None
-            quarter = int(row_dict.pop("_quarter")) if row_dict.get("_quarter") else None
+            year = to_int(row_dict.pop("_year"))
+            quarter = to_int(row_dict.pop("_quarter"))
             if year and quarter:
                 row_dict["quarter"] = f"{year}-Q{quarter}"
 
