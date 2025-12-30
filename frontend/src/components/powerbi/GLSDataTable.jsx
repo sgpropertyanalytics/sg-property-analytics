@@ -168,8 +168,15 @@ export function GLSDataTable({ height = 400 }) {
   ];
 
   // Count by status
-  const launchedCount = data.filter(t => t.status === 'launched').length;
-  const awardedCount = data.filter(t => t.status === 'awarded').length;
+  const { launchedCount, awardedCount } = useMemo(() => {
+    let launched = 0;
+    let awarded = 0;
+    data.forEach((item) => {
+      if (item.status === 'launched') launched += 1;
+      if (item.status === 'awarded') awarded += 1;
+    });
+    return { launchedCount: launched, awardedCount: awarded };
+  }, [data]);
 
   return (
     <div ref={containerRef} id="gls-data-table" className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
