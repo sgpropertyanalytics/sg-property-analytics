@@ -1276,12 +1276,39 @@ Page Shell (outermost)
 <span className="line-clamp-2">{multiLineText}</span>
 ```
 
-### Tables
+### Tables (No Horizontal Scroll)
+
+**Rule:** Tables must NOT have horizontal scrollbars on desktop/tablet. See HF-5 for full details.
 
 ```tsx
-// Wrap tables for horizontal scroll when needed
+// ✅ CORRECT: Responsive table with hidden columns
+<table className="w-full table-fixed">
+  <thead>
+    <tr>
+      <th>Project</th>
+      <th>Price</th>
+      <th className="hidden md:table-cell">District</th>
+      <th className="hidden lg:table-cell">Date</th>
+    </tr>
+  </thead>
+</table>
+
+// ✅ CORRECT: Card layout on mobile
+<div className="hidden md:block">
+  <table className="w-full">...</table>
+</div>
+<div className="md:hidden">
+  <CardList>...</CardList>
+</div>
+
+// ✅ ACCEPTABLE: Mobile-only horizontal scroll (last resort)
+<div className="overflow-x-auto md:overflow-x-visible">
+  <table className="min-w-[600px] md:min-w-0 md:w-full">...</table>
+</div>
+
+// ❌ FORBIDDEN: Horizontal scroll on all viewports
 <div className="overflow-x-auto">
-  <table className="min-w-[600px]">...</table>
+  <table className="min-w-[800px]">...</table>
 </div>
 ```
 
@@ -1617,6 +1644,8 @@ OVERFLOW:
 [ ] Chart wrappers have overflow-hidden
 [ ] Flex children have min-w-0 where needed
 [ ] Long text has truncation
+[ ] Tables: no horizontal scroll on desktop/tablet (HF-5)
+[ ] Tables: clipped columns = FAIL at any viewport
 
 RESPONSIVE:
 [ ] Desktop (1440px): Full layout
@@ -1841,6 +1870,243 @@ const hasSignificantOverlap = (el1, el2) => {
 **Detection:** Two visible interactive elements overlap by >10% of smaller element's area
 **Action:** Fail, report both elements and overlap percentage
 
+#### HF-5: Table Horizontal Scroll
+
+**Rule:** Tables MUST NOT introduce horizontal scrolling on desktop and tablet viewports. Mobile horizontal scroll is acceptable as a last resort.
+
+**Why This Matters:**
+Horizontal scrolling on tables breaks:
+- **Readability** — users lose context when scrolling sideways
+- **Scanability** — column comparison becomes impossible
+- **Mobile usability** — conflicts with swipe gestures, unexpected behavior
+- **Visual rhythm** — disrupts the dashboard's visual flow
+
+**Especially Critical For:**
+- Dashboards
+- Analytics tables
+- Admin panels
+- KPI views
+
+**Viewport-Based Rules:**
+
+| Viewport | Horizontal Scroll | Severity |
+|----------|-------------------|----------|
+| Desktop (1024px+) | ❌ FORBIDDEN | **HARD FAIL** |
+| Tablet (768-1023px) | ❌ FORBIDDEN | **HARD FAIL** |
+| Mobile (<768px) | ⚠️ ALLOWED (last resort) | **PASS** (with warning) |
+
+**Failure Modes (HARD FAIL on Desktop/Tablet):**
+
+| Failure Mode | Detection | Example |
+|--------------|-----------|---------|
+| **Page-level scroll** | Table causes `documentElement.scrollWidth > innerWidth` | Wide table pushes entire page |
+| **Container scrollbar** | Table inside `overflow-x: auto/scroll` with `scrollWidth > clientWidth` | Scroll wrapper around table |
+| **Clipped columns** | Table columns extend beyond visible area with `overflow: hidden` | Columns cut off, no scroll |
+
+```javascript
+// Detection logic with mobile exception
+const MOBILE_BREAKPOINT = 768;
+const tables = document.querySelectorAll('table');
+
+const checkTableLayout = (table) => {
+  const failures = [];
+  const tableRect = table.getBoundingClientRect();
+  const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+
+  // Mode 1: Page-level horizontal scroll caused by table
+  if (tableRect.width > window.innerWidth) {
+    failures.push({
+      mode: 'PAGE_SCROLL',
+      message: 'Table causes page-level horizontal scroll',
+      tableWidth: tableRect.width,
+      viewportWidth: window.innerWidth,
+      overflow: tableRect.width - window.innerWidth,
+      isMobileAllowed: isMobile  // Allowed on mobile
+    });
+  }
+
+  // Mode 2: Table inside horizontal scroll container
+  let parent = table.parentElement;
+  while (parent && parent !== document.body) {
+    const style = getComputedStyle(parent);
+    if (style.overflowX === 'auto' || style.overflowX === 'scroll') {
+      if (parent.scrollWidth > parent.clientWidth) {
+        failures.push({
+          mode: 'CONTAINER_SCROLLBAR',
+          message: 'Table has horizontal scrollbar in container',
+          container: getSelector(parent),
+          scrollWidth: parent.scrollWidth,
+          clientWidth: parent.clientWidth,
+          isMobileAllowed: isMobile  // Allowed on mobile
+        });
+        break;
+      }
+    }
+    parent = parent.parentElement;
+  }
+
+  // Mode 3: Clipped columns (overflow: hidden cutting off content)
+  // This is ALWAYS a failure - content should never be clipped
+  parent = table.parentElement;
+  while (parent && parent !== document.body) {
+    const style = getComputedStyle(parent);
+    if (style.overflow === 'hidden' || style.overflowX === 'hidden') {
+      if (table.scrollWidth > parent.clientWidth) {
+        failures.push({
+          mode: 'CLIPPED_COLUMNS',
+          message: 'Table columns are clipped (hidden overflow)',
+          container: getSelector(parent),
+          tableWidth: table.scrollWidth,
+          containerWidth: parent.clientWidth,
+          clippedPixels: table.scrollWidth - parent.clientWidth,
+          isMobileAllowed: false  // NEVER allowed - clipping hides data
+        });
+        break;
+      }
+    }
+    parent = parent.parentElement;
+  }
+
+  return failures;
+};
+
+// Check all tables with mobile exception
+tables.forEach(table => {
+  const failures = checkTableLayout(table);
+
+  // Filter: only fail if not mobile-allowed OR if it's clipped columns
+  const hardFailures = failures.filter(f => !f.isMobileAllowed);
+
+  if (hardFailures.length > 0) {
+    fail(`HF-5: ${hardFailures.map(f => f.mode).join(', ')}`);
+  } else if (failures.length > 0) {
+    warn(`HF-5 (mobile fallback): ${failures.map(f => f.mode).join(', ')}`);
+  }
+});
+```
+
+**Tolerance:**
+- Desktop/Tablet: 0px — No horizontal scroll
+- Mobile: Horizontal scroll ALLOWED as last resort (but stacked/card layout preferred)
+- Clipped columns: NEVER allowed at any viewport
+
+**Action:**
+- Desktop/Tablet with scroll → **HARD FAIL**, must fix
+- Mobile with scroll → **WARN**, acceptable but note in report
+- Clipped columns anywhere → **HARD FAIL**, must fix
+
+**Required Table Patterns:**
+
+| Viewport | Priority 1 (Best) | Priority 2 (Good) | Priority 3 (Fallback) |
+|----------|-------------------|-------------------|----------------------|
+| Desktop (1024px+) | Full table, all columns | — | — |
+| Tablet (768-1023px) | Hidden secondary columns | Full table if fits | — |
+| Mobile (<768px) | Card layout | Stacked rows | Horizontal scroll |
+
+```jsx
+// ✅ CORRECT: Responsive table with hidden columns (desktop/tablet)
+<table className="w-full table-fixed">
+  <thead>
+    <tr>
+      <th className="w-1/3">Project</th>
+      <th className="w-1/4">Price</th>
+      <th className="hidden md:table-cell">District</th>  {/* Hidden on mobile */}
+      <th className="hidden lg:table-cell">Date</th>      {/* Hidden on tablet */}
+    </tr>
+  </thead>
+</table>
+
+// ✅ CORRECT: Card layout on mobile, table on desktop
+<div className="hidden md:block">
+  <table className="w-full">...</table>
+</div>
+<div className="md:hidden space-y-4">
+  {data.map(row => <DataCard key={row.id} {...row} />)}
+</div>
+
+// ✅ CORRECT: Stacked layout on mobile
+<table className="w-full">
+  <tbody>
+    {data.map(row => (
+      <>
+        {/* Desktop: horizontal row */}
+        <tr className="hidden md:table-row">
+          <td>{row.project}</td>
+          <td>{row.price}</td>
+          <td>{row.district}</td>
+        </tr>
+        {/* Mobile: stacked cells */}
+        <tr className="md:hidden">
+          <td colSpan="3">
+            <div className="font-bold">{row.project}</div>
+            <div className="text-sm text-gray-600">{row.district}</div>
+            <div className="text-lg">{row.price}</div>
+          </td>
+        </tr>
+      </>
+    ))}
+  </tbody>
+</table>
+
+// ✅ ACCEPTABLE (mobile-only fallback): Horizontal scroll on mobile
+<div className="overflow-x-auto md:overflow-x-visible">
+  <table className="min-w-[600px] md:min-w-0 md:w-full">...</table>
+</div>
+
+// ❌ FORBIDDEN: Horizontal scroll on desktop/tablet
+<div className="overflow-x-auto">  {/* No md: breakpoint = scroll everywhere */}
+  <table className="min-w-[800px]">...</table>
+</div>
+
+// ❌ FORBIDDEN: Fixed wide table without responsive handling
+<table className="w-[1200px]">...</table>
+
+// ❌ FORBIDDEN: Hidden overflow clipping columns (ANY viewport)
+<div className="overflow-hidden">
+  <table className="w-full">  {/* Columns get clipped - data loss! */}
+</div>
+```
+
+**Report Format for HF-5:**
+```markdown
+#### HARD FAIL: HF-5 Table Horizontal Scroll
+
+**Table:** `#transactions-table`
+**Viewport:** 1024×768 (Tablet Landscape)
+**Status:** ❌ FAIL (horizontal scroll forbidden on tablet)
+
+**Failure Modes:**
+1. CONTAINER_SCROLLBAR
+   - Container: `div.table-wrapper`
+   - scrollWidth: 892px
+   - clientWidth: 698px
+   - Horizontal scroll: 194px
+
+**Columns Detected:** 8
+**Columns Visible Without Scroll:** 5
+
+**Required Fix:**
+- Hide columns 6-8 on tablet: `className="hidden lg:table-cell"`
+- OR reduce column widths to fit 1024px viewport
+```
+
+```markdown
+#### WARNING: HF-5 Table Horizontal Scroll (Mobile Fallback)
+
+**Table:** `#transactions-table`
+**Viewport:** 430×932 (Mobile)
+**Status:** ⚠️ WARN (horizontal scroll allowed on mobile as fallback)
+
+**Failure Modes:**
+1. CONTAINER_SCROLLBAR (mobile-allowed)
+   - Container: `div.table-wrapper.overflow-x-auto.md:overflow-x-visible`
+   - scrollWidth: 600px
+   - clientWidth: 398px
+   - Horizontal scroll: 202px
+
+**Note:** Consider card layout or stacked rows for better mobile UX.
+```
+
 ### DOM Scan Report Format
 
 ```markdown
@@ -2025,6 +2291,41 @@ git diff --stat frontend/tests/baselines/
 + <span className="text-sm truncate max-w-[200px]">{projectName}</span>
 ```
 
+#### AF-7: Responsive Table Columns
+
+**Trigger:** Table has horizontal scroll on desktop/tablet (HF-5 violation)
+**Fix:** Hide secondary columns at smaller breakpoints
+**Scope:** Table headers and cells
+
+```diff
+  <th>Project</th>
+  <th>Price</th>
+- <th>District</th>
+- <th>Date</th>
++ <th className="hidden md:table-cell">District</th>
++ <th className="hidden lg:table-cell">Date</th>
+```
+
+**Priority order for column hiding:**
+1. Hide least critical columns first (dates, IDs, secondary metrics)
+2. Keep primary identifiers visible (name, key value)
+3. On mobile, consider switching to card layout entirely
+
+#### AF-8: Mobile-Only Table Scroll
+
+**Trigger:** Table cannot fit mobile viewport even with hidden columns
+**Fix:** Add mobile-only horizontal scroll with desktop reset
+**Scope:** Table wrapper container
+
+```diff
+- <div>
++ <div className="overflow-x-auto md:overflow-x-visible">
+-   <table className="w-full">
++   <table className="min-w-[500px] md:min-w-0 md:w-full">
+```
+
+**Note:** This is a last resort. Prefer AF-7 (hidden columns) or card layout.
+
 ### Forbidden Fixes
 
 | Pattern | Why Forbidden |
@@ -2204,6 +2505,53 @@ test.describe('UI Layout Validation', () => {
         });
         expect(overlappingElements).toHaveLength(0);
 
+        // HF-5: No table horizontal scroll (desktop/tablet only)
+        const MOBILE_BREAKPOINT = 768;
+        if (viewport.width >= MOBILE_BREAKPOINT) {
+          const tableScrollIssues = await page.evaluate(() => {
+            const issues: string[] = [];
+            const tables = document.querySelectorAll('table');
+
+            tables.forEach((table, idx) => {
+              const tableRect = table.getBoundingClientRect();
+
+              // Check page-level scroll
+              if (tableRect.width > window.innerWidth) {
+                issues.push(`Table ${idx}: causes page scroll (${tableRect.width}px > ${window.innerWidth}px)`);
+              }
+
+              // Check container scrollbar
+              let parent = table.parentElement;
+              while (parent && parent !== document.body) {
+                const style = getComputedStyle(parent);
+                if (style.overflowX === 'auto' || style.overflowX === 'scroll') {
+                  if (parent.scrollWidth > parent.clientWidth) {
+                    issues.push(`Table ${idx}: has scrollbar in container`);
+                    break;
+                  }
+                }
+                parent = parent.parentElement;
+              }
+
+              // Check clipped columns (ALWAYS a failure)
+              parent = table.parentElement;
+              while (parent && parent !== document.body) {
+                const style = getComputedStyle(parent);
+                if (style.overflow === 'hidden' || style.overflowX === 'hidden') {
+                  if (table.scrollWidth > parent.clientWidth) {
+                    issues.push(`Table ${idx}: columns clipped`);
+                    break;
+                  }
+                }
+                parent = parent.parentElement;
+              }
+            });
+
+            return issues;
+          });
+          expect(tableScrollIssues).toHaveLength(0);
+        }
+
         // Visual regression
         await expect(page).toHaveScreenshot(`${route.slice(1)}-${viewport.name}.png`, {
           threshold: 0.005,  // 0.5%
@@ -2354,7 +2702,12 @@ jobs:
 
 ```
 [ ] All 5 viewports tested per route
-[ ] All 4 HARD FAIL conditions checked
+[ ] All 5 HARD FAIL conditions checked:
+    - HF-1: Horizontal page scroll
+    - HF-2: Element content overflow
+    - HF-3: Element exceeds viewport
+    - HF-4: Interactive element overlap
+    - HF-5: Table horizontal scroll (desktop/tablet)
 [ ] Visual regression compared to baselines
 [ ] Issues categorized and prioritized
 ```
