@@ -74,6 +74,15 @@ class Config:
     JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
     JWT_EXPIRATION_HOURS = int(os.getenv('JWT_EXPIRATION_HOURS', '24'))
 
+    # Premium bypass for preview/testing environments
+    # Comma-separated list of emails that always get premium access
+    # Example: "admin@example.com,test@example.com"
+    PREMIUM_BYPASS_EMAILS = set(
+        email.strip().lower()
+        for email in os.getenv('PREMIUM_BYPASS_EMAILS', '').split(',')
+        if email.strip()
+    )
+
     CSV_FOLDER = os.getenv('CSV_FOLDER', 'rawdata')
     DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
 

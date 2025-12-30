@@ -116,7 +116,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
       {/* Desktop: Collapsible with premium physics animation | Mobile: Hidden */}
       <div
-        className="hidden lg:flex flex-shrink-0 relative"
+        className="hidden lg:flex flex-shrink-0 relative overflow-visible"
         style={{
           width: isNavCollapsed ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED,
           transition: 'width 500ms cubic-bezier(0.2, 0, 0, 1)'
