@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { getInitials } from '../../utils/formatters';
 
 /**
  * UserProfileMenu - Bottom-left user profile in GlobalNavRail
@@ -75,19 +76,6 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
     );
   }
 
-  // Get initials for avatar fallback
-  const getInitials = () => {
-    if (user.displayName) {
-      return user.displayName
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase();
-    }
-    return user.email?.charAt(0).toUpperCase() || '?';
-  };
-
   const handleSignOut = async () => {
     setShowDropdown(false);
     try {
@@ -120,7 +108,7 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
             />
           ) : (
             <div className="w-full h-full bg-[#547792] flex items-center justify-center text-[#EAE0CF] text-sm font-medium">
-              {getInitials()}
+              {getInitials(user)}
             </div>
           )}
         </div>
@@ -165,7 +153,7 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
 
       {/* Dropdown Menu */}
       {showDropdown && (
-        <div className="absolute left-full bottom-0 ml-2 w-56 bg-white rounded-lg shadow-xl border border-[#94B4C1]/30 py-1 z-50">
+        <div className="absolute left-0 bottom-full mb-2 w-56 bg-white rounded-lg shadow-xl border border-[#94B4C1]/30 py-1 z-50">
           {/* User info header */}
           <div className="px-4 py-3 border-b border-[#94B4C1]/20">
             <div className="font-medium text-[#213448] truncate">
