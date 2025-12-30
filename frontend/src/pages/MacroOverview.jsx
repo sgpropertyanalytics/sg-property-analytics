@@ -8,7 +8,7 @@ import { SaleType, getKpiField, KpiField } from '../schemas/apiContract';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
-import { getKpiSummaryV2, getAggregate } from '../api/client';
+import { getKpiSummaryV2, getAggregate, getDashboard } from '../api/client';
 import { useData } from '../context/DataContext';
 import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
@@ -124,6 +124,26 @@ export function MacroOverviewContent() {
     },
     [debouncedFilterKey, timeGrouping],
     { initialData: [], keepPreviousData: true }
+  );
+
+  // Shared dashboard panels for histogram + beads (reduces request fanout)
+  // These panels share the same filter behavior: exclude location drill,
+  // but respect global sidebar filters (incl. segment).
+  const { data: dashboardPanels, loading: dashboardLoading } = useAbortableQuery(
+    async (signal) => {
+      const params = buildApiParams(
+        {
+          panels: 'price_histogram,beads_chart',
+          ...(SALE_TYPE && { sale_type: SALE_TYPE }),
+        },
+        { excludeLocationDrill: true }
+      );
+
+      const response = await getDashboard(params, { signal });
+      return response.data?.data || {};
+    },
+    [debouncedFilterKey],
+    { initialData: {}, keepPreviousData: true }
   );
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
@@ -334,6 +354,8 @@ export function MacroOverviewContent() {
                         onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
                         height={standardChartHeight}
                         saleType={SALE_TYPE}
+                        sharedData={dashboardPanels?.price_histogram}
+                        sharedLoading={dashboardLoading}
                       />
                     </ChartWatermark>
                   </ErrorBoundary>
@@ -342,7 +364,12 @@ export function MacroOverviewContent() {
                 <div>
                   <ErrorBoundary name="Price by Region & Bedroom" compact>
                     <ChartWatermark>
-                      <BeadsChart height={standardChartHeight} saleType={SALE_TYPE} />
+                      <BeadsChart
+                        height={standardChartHeight}
+                        saleType={SALE_TYPE}
+                        sharedData={dashboardPanels?.beads_chart}
+                        sharedLoading={dashboardLoading}
+                      />
                     </ChartWatermark>
                   </ErrorBoundary>
                 </div>
