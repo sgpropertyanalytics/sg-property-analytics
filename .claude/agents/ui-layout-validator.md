@@ -9,9 +9,10 @@ description: >
   - User mentions horizontal scroll, cropped content, or responsive bugs
   - Diagnosing "page doesn't reset", "stale selection", "blocked UI on re-entry"
   - Pages with sessionStorage/localStorage state persistence
+  - Chart axis scaling issues ("compressed data", "too much whitespace", "flattened trends")
+  - Data-to-canvas visual mismatch ("chart looks wrong", "data hard to read")
 
   SHOULD NOT be used for:
-  - Chart internals (axis scales, data transformation, click handlers)
   - Data correctness (use data-integrity-validator)
   - Color palette or typography choices (use dashboard-design)
   - Touch target sizing (use dashboard-design)
@@ -59,6 +60,8 @@ You are a **UI Layout Validator** for dashboard components.
 | **Container Constraints** | Chart wrappers with overflow containment + minHeight |
 | **Tooltip/Legend Containment** | Clipping, z-index, portal/overflow issues (layout, not content) |
 | **Nice Axis Ticks** | Human-readable tick max/step (no 2,196 or step=137) |
+| **Axis Scaling** | Dynamic scaling based on data, no excessive whitespace, no flattened trends |
+| **Filter Bar Layout** | No `justify-between` on wrapping rows, use `auto-fit` grid or `justify-start` flex |
 | **Control Bar Consistency** | Same height across all controls, baseline alignment, consistent gaps |
 | **Template Conformance** | Pages must use shared ControlBar, no reimplementation |
 | **State Persistence** | Persisted state validated on mount, no stale selections causing blocked UI |
@@ -67,7 +70,6 @@ You are a **UI Layout Validator** for dashboard components.
 
 | Out of Scope | Use Instead |
 |--------------|-------------|
-| Chart internals (axis config, data) | Manual review |
 | Data correctness | data-integrity-validator |
 | Colors, typography, design tokens | dashboard-design skill |
 | Touch targets (44px minimum) | dashboard-design skill |
@@ -829,6 +831,313 @@ Required Fix:
   2. Change pb-1 → pb-2 (adequate edge spacing)
 ```
 
+### INV-19: Axis Scaling / Data-to-Canvas Mismatch
+
+**CRITICAL:** Chart axes MUST dynamically scale to the actual data range. Static scales that ignore data distribution cause misleading visualizations.
+
+**Category:** Visualization Integrity
+**Severity:** Medium–High (misleads interpretation)
+
+**Definition:**
+The chart's axis scale does not adapt to the actual data range, causing:
+- Excessive empty space (wasted chart area)
+- Compressed or flattened data patterns
+- Reduced readability or distorted trends
+
+**Detection Criteria:**
+
+Flag when ANY of these conditions are true:
+
+| Condition | Threshold | Description |
+|-----------|-----------|-------------|
+| **Data-to-axis ratio** | `max(data) < 50%` of axis max | Excessive whitespace |
+| **Visual utilization** | Data occupies `< 40%` of chart height | Compressed/underutilized |
+| **Fixed-scale misuse** | Axis max is static while data changes | Scale doesn't adapt to filters |
+| **Dual-axis imbalance** | One axis dominates visual weight | Secondary data invisible |
+| **Trend flattening** | Numeric variance > 10% but visual variance < 5% | Important patterns hidden |
+
+**Check Process:**
+
+```
+FOR EACH chart with numeric axis:
+
+1. EXTRACT axis config:
+   - min, max, suggestedMin, suggestedMax
+   - beginAtZero setting
+   - Any hardcoded values
+
+2. CALCULATE data metrics:
+   - dataMin = min(dataset values)
+   - dataMax = max(dataset values)
+   - dataRange = dataMax - dataMin
+   - axisRange = axisMax - axisMin
+
+3. COMPUTE utilization:
+   - ratio = dataRange / axisRange
+   - headroom = (axisMax - dataMax) / axisRange
+
+4. FLAG violations:
+   IF ratio < 0.4 → "LOW_UTILIZATION"
+   IF headroom > 1.0 AND axis max is hardcoded → "EXCESSIVE_WHITESPACE"
+   IF axis max is constant across filter changes → "STATIC_SCALE"
+
+5. FOR dual-axis charts:
+   - Compare utilization ratios of both axes
+   - IF difference > 50% → "AXIS_IMBALANCE"
+```
+
+**Expected Behavior:**
+
+| Aspect | Requirement |
+|--------|-------------|
+| **Auto-scale** | Axis recalculates based on visible dataset |
+| **Headroom** | `suggestedMax = max(data) × 1.1` to `1.2` (10-20% padding) |
+| **Proportionality** | Data uses ≥ 50% of available chart height |
+| **Independence** | Dual axes scale independently per their data |
+| **Responsiveness** | Scale updates when filters/data change |
+
+**Allowed Patterns:**
+
+```js
+// Pattern A: Auto-scale (no explicit max)
+scales: { y: { beginAtZero: true } }  // Chart.js auto-calculates
+
+// Pattern B: Dynamic max with headroom
+scales: { y: { suggestedMax: dataMax * 1.15 } }
+
+// Pattern C: Intentional fixed scale (document reason)
+scales: { y: { min: 0, max: 100 } }  // Percentage axis: 0-100% is intentional
+```
+
+**Forbidden Patterns:**
+
+```js
+// ❌ Hardcoded max ignoring data
+scales: { y: { max: LARGE_CONSTANT } }
+
+// ❌ Static scale with dynamic data source
+const data = useFilteredData();  // Changes!
+scales: { y: { max: 5000 } }     // Doesn't change!
+
+// ❌ beginAtZero compressing non-zero data
+// Data: [980, 985, 990, 995, 1000] → 2% of 0-1000 range visible
+scales: { y: { beginAtZero: true } }
+```
+
+**Auto-Fix Strategy:**
+
+1. **Enable dynamic scaling** — Remove hardcoded `max`, let chart auto-scale
+2. **Apply headroom padding** — Use `suggestedMax = max(data) × 1.1`
+3. **Recalculate on data change** — Ensure scale updates when dataset/filters change
+4. **Evaluate beginAtZero** — Only force zero if data is semantically zero-based
+5. **Balance dual axes** — Scale each axis independently to its data range
+
+**Fail Condition Template:**
+```
+❌ FAIL: [VIOLATION_TYPE]
+   Data range: [dataMin] - [dataMax] ([dataRange] units)
+   Axis range: [axisMin] - [axisMax] ([axisRange] units)
+   Utilization: [ratio]%
+   Cause: [root cause]
+```
+
+**Actionable Output Template:**
+```
+INV-19: Axis Scaling / Data-to-Canvas Mismatch
+
+Chart: [ComponentName]
+File: [file path]
+
+Analysis:
+  Axis Configuration:
+    - [axis].max: [value] ([hardcoded|dynamic])
+    - [axis].beginAtZero: [true|false]
+
+  Current Data:
+    - Data min: [value]
+    - Data max: [value]
+    - Data range: [value] units
+
+  Utilization: [ratio]% of chart height
+
+Status: [PASS|FAIL] - [reason]
+
+Required Fix:
+  1. [specific action]
+  2. [specific action]
+```
+
+**Special Cases (Fixed Scale Allowed):**
+
+| Data Type | Valid Fixed Scale | Reason |
+|-----------|------------------|--------|
+| Percentage | 0-100% | Semantic boundary |
+| Score/Rating | 0-10 or 0-5 | Defined range |
+| Comparison | Shared scale across charts | Visual comparability |
+| Index | 0-100 or custom | Normalized baseline |
+
+### INV-20: Filter Bar Responsive Layout (No Mystery Gaps)
+
+**CRITICAL:** Filter bars with multiple groups MUST use CSS Grid `auto-fit` or Flexbox `justify-start` — NEVER `justify-between` on wrapping rows.
+
+**Category:** Layout Integrity
+**Severity:** High (creates ugly, confusing gaps)
+
+**Definition:**
+Filter bars that wrap to multiple rows create "mystery empty space" when using `justify-between`, because it distributes space between items on EACH row independently.
+
+**The Problem:**
+```
+Row 1: [Group A]          [Group B]          [Group C]
+Row 2: [Group D]                             ← huge gap!
+```
+
+When 4 groups wrap to 2 rows with `justify-between`:
+- Row 1: 3 items spread across full width
+- Row 2: 1 item with massive empty space on right
+
+**Detection Criteria:**
+
+Flag when ANY of these conditions are true:
+
+| Condition | Pattern | Description |
+|-----------|---------|-------------|
+| **justify-between on wrapper** | `justify-between` + `flex-wrap` | Causes uneven gaps on wrap |
+| **Missing min-w-0** | Flex child without `min-w-0` | Child can't shrink, causes overflow |
+| **Fixed widths on groups** | `w-[Xpx]` or `w-XX` on filter groups | Prevents responsive behavior |
+| **No responsive strategy** | Neither `auto-fit` grid nor `flex-wrap justify-start` | Layout doesn't adapt |
+
+**Check Process:**
+
+```
+FOR EACH filter bar / control bar container:
+
+1. CHECK wrapper classes:
+   IF has "justify-between" AND "flex-wrap" → FLAG "JUSTIFY_BETWEEN_WRAP"
+
+2. CHECK all direct children:
+   IF any child missing "min-w-0" → FLAG "MISSING_SHRINK_SAFETY"
+   IF any child has fixed width (w-[Xpx], w-40, etc.) → FLAG "FIXED_WIDTH"
+
+3. VERIFY responsive strategy:
+   IF uses grid with "auto-fit" and "minmax" → PASS
+   IF uses flex with "justify-start" or no justify → PASS
+   IF uses flex with "justify-between" → FLAG
+
+4. CHECK nested pill containers:
+   IF pills have "flex-wrap" but no "gap-*" → FLAG "MISSING_GAP"
+```
+
+**Correct Pattern A: CSS Grid with auto-fit (Recommended for groups)**
+
+```jsx
+// ✅ Filter groups as responsive tiles
+<div className="grid w-full gap-3 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
+  {/* Group 1: Region */}
+  <div className="min-w-0 flex flex-wrap items-center gap-2">
+    <div className="inline-flex flex-wrap gap-1 min-w-0">{/* pills */}</div>
+    <div className="min-w-0">{/* dropdown */}</div>
+  </div>
+
+  {/* Group 2: Bedroom */}
+  <div className="min-w-0 flex flex-wrap items-center gap-2">
+    {/* ... */}
+  </div>
+
+  {/* Group 3, 4, etc. */}
+</div>
+```
+
+**Correct Pattern B: Flexbox with justify-start (For ribbon layout)**
+
+```jsx
+// ✅ Filters as one long ribbon, wrapping left-to-right
+<div className="flex flex-wrap items-center gap-3">
+  {/* NO justify-between! */}
+  <FilterPill />
+  <FilterPill />
+  <Dropdown />
+  {/* Items pack left-to-right, wrap cleanly */}
+</div>
+```
+
+**Forbidden Patterns:**
+
+```jsx
+// ❌ justify-between causes gaps when wrapping
+<div className="flex flex-wrap justify-between gap-3">
+  <Group1 />
+  <Group2 />
+  <Group3 />
+  <Group4 />  {/* Row 2 has huge gap! */}
+</div>
+
+// ❌ Missing min-w-0 causes overflow
+<div className="flex flex-wrap gap-3">
+  <div>{/* No min-w-0 - can't shrink! */}</div>
+</div>
+
+// ❌ Fixed widths prevent responsiveness
+<div className="flex flex-wrap gap-3">
+  <div className="w-[300px]">{/* Fixed! */}</div>
+  <div className="w-80">{/* Fixed! */}</div>
+</div>
+```
+
+**Why auto-fit Works:**
+- `auto-fit` + `minmax(260px, 1fr)` automatically calculates how many groups fit per row
+- Groups expand to fill available space evenly
+- No "mystery empty space" because grid handles distribution
+- Responsive without media queries
+
+**Key Rules:**
+
+| Layout Type | Strategy | Never Use |
+|-------------|----------|-----------|
+| Filter groups | `grid-cols-[repeat(auto-fit,minmax(Xpx,1fr))]` | `justify-between` |
+| Filter ribbon | `flex flex-wrap justify-start gap-*` | `justify-between` |
+| Pills inside group | `inline-flex flex-wrap gap-1` | Fixed widths |
+| Dropdowns | `min-w-0` on container | Unbounded width |
+
+**Gotchas That Cause This Issue:**
+
+1. **`justify-between` on wrapping rows** — Creates huge gaps when items wrap
+2. **Child missing `min-w-0`** — Text/select can't shrink, causes weird spacing
+3. **Fixed widths** (`w-[...]`) on filter groups or pill containers
+4. **No gap-* on flex-wrap** — Items touch or have inconsistent spacing
+
+**Fail Condition Template:**
+```
+❌ FAIL: [VIOLATION_TYPE]
+   Container: [selector or component]
+   Issue: [description]
+   Pattern found: [classes]
+   Expected: [correct pattern]
+```
+
+**Actionable Output Template:**
+```
+INV-20: Filter Bar Responsive Layout
+
+Component: [ComponentName]
+File: [file path]
+
+Analysis:
+  Wrapper classes: [list]
+  Responsive strategy: [grid auto-fit | flex justify-start | NONE]
+
+Violations:
+  □ justify-between on flex-wrap: [YES/NO]
+  □ Children missing min-w-0: [list]
+  □ Fixed widths found: [list]
+
+Status: [PASS|FAIL]
+
+Required Fix:
+  1. [specific action]
+  2. [specific action]
+```
+
 ---
 
 ## 3. FORBIDDEN LAYOUT MUTATIONS
@@ -942,6 +1251,8 @@ POST-FIX GATE CHECKLIST
    □ INV-9: No space-y-* + h-full combination
    □ INV-10: Sibling charts in same grid have matching height definitions
    □ INV-11: Axis ticks use nice max/step (no ugly 2,196 or step=137)
+   □ INV-19: Axis scaling adapts to data range (no excessive whitespace, compression, or trend flattening)
+   □ INV-20: Filter bars use auto-fit grid or justify-start flex (no justify-between on wrap)
 
 □ 2. REGRESSION CHECK
    Q: Does the fix break any PASSING invariant?
@@ -1342,6 +1653,291 @@ const niceMax = Math.ceil(dataMax / 100) * 100;  // Round up to nearest 100
 1. Compute niceMax = ceil(dataMax / 100) * 100 → 2200
 2. Apply: `scales.y.max = 2200`
 3. Set: `ticks.stepSize = 200` (5 even ticks)
+```
+
+### Axis Scaling / Data-to-Canvas Check (INV-19)
+
+**Purpose:** Detect charts where axis scale does not adapt to data range, causing excessive whitespace, compressed data, or flattened trends.
+
+**Spec:**
+```
+1. Find all Chart.js chart components (Bar, Line, Scatter, etc.)
+
+2. For each chart, extract:
+   a. Axis configuration (min, max, suggestedMin, suggestedMax, beginAtZero)
+   b. Data source (static array, useState, API response, filtered data)
+   c. Whether axis values are hardcoded vs computed
+
+3. Calculate utilization metrics:
+   dataMin = min(dataset values)
+   dataMax = max(dataset values)
+   dataRange = dataMax - dataMin
+
+   IF axis has explicit max:
+     axisRange = axisMax - (axisMin || 0)
+     utilization = dataRange / axisRange
+   ELSE:
+     utilization = "auto-scaled" (likely OK)
+
+4. Flag violations:
+
+   A) LOW_UTILIZATION:
+      IF utilization < 0.4 → flag
+      Severity: Major
+
+   B) EXCESSIVE_WHITESPACE:
+      IF (axisMax - dataMax) / dataRange > 1.0 AND axis max is hardcoded → flag
+      Severity: Major
+
+   C) STATIC_SCALE_WITH_DYNAMIC_DATA:
+      IF axis max is constant (hardcoded number)
+      AND data source is dynamic (useState, API, filters)
+      → flag
+      Severity: High
+
+   D) TREND_FLATTENING:
+      IF dataRange / dataMax > 0.10 (>10% variance)
+      AND beginAtZero = true
+      AND dataMin > dataMax * 0.5 (data far from zero)
+      → flag (zero-based compression)
+      Severity: Medium
+
+   E) DUAL_AXIS_IMBALANCE:
+      IF chart has y and y1 axes
+      AND utilization(y) / utilization(y1) > 2 OR < 0.5
+      → flag
+      Severity: Medium
+
+5. For each violation, determine root cause:
+   - Hardcoded max value
+   - beginAtZero on non-zero-based data
+   - Missing suggestedMax
+   - Static scale with dynamic data source
+   - Imbalanced dual-axis configuration
+```
+
+**Static Analysis Checks:**
+```bash
+# Find charts with hardcoded max (potential issue)
+grep -rn "max:\s*[0-9]" src/components/powerbi/*.jsx
+
+# Find charts with beginAtZero (may compress non-zero data)
+grep -rn "beginAtZero:\s*true" src/components/powerbi/*.jsx
+
+# Find dual-axis charts (y1 axis) for imbalance check
+grep -rn "y1:" src/components/powerbi/*.jsx
+
+# Find charts with suggestedMax (good practice)
+grep -rn "suggestedMax" src/components/powerbi/*.jsx
+
+# Find charts relying purely on auto-scale (usually OK)
+grep -rn "scales:" src/components/powerbi/*.jsx | \
+  xargs -I{} sh -c 'grep -L "max:" {} && echo "AUTO-SCALED: {}"'
+```
+
+**Runtime Analysis (Browser/Playwright):**
+```js
+// Get rendered axis bounds from Chart.js instance
+const chart = Chart.getChart(canvasElement);
+const yScale = chart.scales.y;
+
+const axisMin = yScale.min;
+const axisMax = yScale.max;
+const dataMin = Math.min(...chart.data.datasets[0].data);
+const dataMax = Math.max(...chart.data.datasets[0].data);
+
+const utilization = (dataMax - dataMin) / (axisMax - axisMin);
+const headroom = (axisMax - dataMax) / (dataMax - dataMin);
+
+console.log({
+  utilization: `${(utilization * 100).toFixed(1)}%`,
+  headroom: `${(headroom * 100).toFixed(1)}%`,
+  violation: utilization < 0.4 ? 'LOW_UTILIZATION' : 'OK'
+});
+```
+
+**Violation Examples:**
+
+```jsx
+// ❌ EXCESSIVE_WHITESPACE: Hardcoded max ignoring data
+// Data max: 200, Axis max: 5000 → 96% whitespace
+scales: { y: { max: 5000 } }
+
+// ❌ STATIC_SCALE_WITH_DYNAMIC_DATA: Scale doesn't adapt
+const [data, setData] = useState([]);  // Changes with filters!
+scales: { y: { max: 3000 } }           // Static!
+
+// ❌ TREND_FLATTENING: beginAtZero compresses variance
+// Data: [980, 985, 990, 995, 1000] → 2% visible range
+scales: { y: { beginAtZero: true } }
+
+// ❌ DUAL_AXIS_IMBALANCE: Left axis dominates
+scales: {
+  y:  { max: 100 },     // Left: 40-60 uses 20% of 0-100
+  y1: { max: 1000000 }  // Right: 500K-600K uses 10% of 0-1M
+}
+```
+
+**Correct Patterns:**
+
+```jsx
+// ✅ Auto-scale (Chart.js handles it)
+scales: { y: { beginAtZero: true } }  // No max = auto-scale
+
+// ✅ Dynamic suggestedMax with headroom
+const dataMax = Math.max(...values);
+scales: { y: { suggestedMax: dataMax * 1.15 } }
+
+// ✅ Responsive to data changes
+useEffect(() => {
+  setChartOptions(prev => ({
+    ...prev,
+    scales: { y: { suggestedMax: Math.max(...data) * 1.1 } }
+  }));
+}, [data]);
+
+// ✅ Intentional fixed scale (percentage)
+scales: { y: { min: 0, max: 100 } }  // Percentage data
+```
+
+**Validator Output Template:**
+```markdown
+### ❌ Check: Axis Scaling (INV-19)
+
+**Chart:** [ComponentName]
+**File:** [path]
+
+**Axis Configuration:**
+  - y.max: [value] ([hardcoded|dynamic])
+  - y.beginAtZero: [true|false]
+  - Data source: [static|useState|API|filtered]
+
+**Data Analysis:**
+  - Data min: [value]
+  - Data max: [value]
+  - Data range: [value] units
+
+**Utilization:** [X]% of chart height
+
+**Violation:** [VIOLATION_TYPE]
+**Severity:** [High|Medium|Low]
+
+**Root Cause:** [description]
+
+**Fix:**
+1. [specific action]
+2. [specific action]
+```
+
+### Filter Bar Responsive Layout Check (INV-20)
+
+**Purpose:** Detect filter bars with `justify-between` on wrapping rows, missing `min-w-0`, or fixed widths that cause "mystery gaps."
+
+**Spec:**
+```
+1. Find all filter bar / control bar containers:
+   - Components with "FilterBar", "ControlBar", "FilterRow" in name
+   - Elements with multiple filter-related children (Dropdown, Select, pills)
+
+2. For each container, extract classes and check:
+
+   A) JUSTIFY_BETWEEN_WRAP:
+      IF has "justify-between" AND "flex-wrap" → FLAG
+      Severity: High
+
+   B) MISSING_SHRINK_SAFETY:
+      FOR EACH direct child:
+        IF child is flex child AND missing "min-w-0" → FLAG
+      Severity: Medium
+
+   C) FIXED_WIDTH:
+      FOR EACH child:
+        IF has "w-[Xpx]" or "w-XX" (Tailwind fixed width) → FLAG
+      Severity: Medium
+
+   D) NO_RESPONSIVE_STRATEGY:
+      IF container has neither:
+        - "grid" with "auto-fit"
+        - "flex" with "justify-start" (or no justify)
+      → FLAG
+      Severity: Low
+
+3. For nested pill containers:
+   IF has "flex-wrap" but no "gap-*" → FLAG "MISSING_GAP"
+```
+
+**Static Analysis Checks:**
+```bash
+# Find filter bars with justify-between + flex-wrap (violation)
+grep -rn "justify-between" src/components/ | xargs grep -l "flex-wrap"
+
+# Find flex children missing min-w-0
+grep -rn "flex.*gap" src/components/ | xargs grep -L "min-w-0"
+
+# Find fixed widths on filter groups
+grep -rn "w-\[[0-9]*px\]" src/components/*Filter*.jsx
+grep -rn "w-[0-9][0-9]" src/components/*Filter*.jsx
+
+# Find filter bars using auto-fit (good pattern)
+grep -rn "auto-fit" src/components/
+
+# Find flex-wrap without gap (potential issue)
+grep -rn "flex-wrap" src/components/ | xargs grep -L "gap-"
+```
+
+**Runtime Analysis (Browser/Playwright):**
+```js
+// Check for mystery gaps in filter bars
+const filterBar = document.querySelector('[class*="FilterBar"], [class*="ControlBar"]');
+const children = filterBar.children;
+const rows = new Map();
+
+// Group children by their top offset (row detection)
+for (const child of children) {
+  const top = child.getBoundingClientRect().top;
+  if (!rows.has(top)) rows.set(top, []);
+  rows.get(top).push(child);
+}
+
+// Check for uneven distribution across rows
+for (const [top, rowChildren] of rows) {
+  const totalWidth = rowChildren.reduce((sum, c) => sum + c.offsetWidth, 0);
+  const containerWidth = filterBar.offsetWidth;
+  const gapSpace = containerWidth - totalWidth;
+  const avgGap = gapSpace / (rowChildren.length + 1);
+
+  if (rowChildren.length === 1 && gapSpace > containerWidth * 0.5) {
+    console.log('MYSTERY GAP: Single item row with >50% empty space');
+  }
+}
+```
+
+**Validator Output Template:**
+```markdown
+### ❌ Check: Filter Bar Responsive Layout (INV-20)
+
+**Component:** [ComponentName]
+**File:** [path]
+
+**Wrapper Analysis:**
+  - Classes: [class list]
+  - Has justify-between: [YES/NO]
+  - Has flex-wrap: [YES/NO]
+  - Uses auto-fit grid: [YES/NO]
+
+**Child Analysis:**
+  - Children missing min-w-0: [list or "none"]
+  - Children with fixed widths: [list or "none"]
+
+**Violation:** [VIOLATION_TYPE]
+**Severity:** [High|Medium|Low]
+
+**Visual Symptom:** [description of gap issue]
+
+**Fix:**
+1. [specific action - e.g., "Remove justify-between"]
+2. [specific action - e.g., "Add grid-cols-[repeat(auto-fit,minmax(260px,1fr))]"]
+3. [specific action - e.g., "Add min-w-0 to all filter group children"]
 ```
 
 ### Control Bar Template Conformance Check (INV-12)
