@@ -66,7 +66,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   });
 
   // Date preset state: canonical ID ('M3', 'M6', 'Y1', 'Y3', 'Y5'), 'custom', or null (all data)
-  const [datePreset, setDatePreset] = useState(null);
+  // Default to Y1 (last 12 months) for performance - matches backend default
+  const [datePreset, setDatePreset] = useState(DEFAULT_TIMEFRAME_ID);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
 
@@ -117,12 +118,18 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     };
   }, []);
 
-  // Mark as initialized when filter options load (no default filter applied)
+  // Apply default Y1 filter when filter options load
+  // This ensures the visual state (Y1 highlighted) matches the actual filter
   useEffect(() => {
     if (!hasInitialized && filterOptions.dateRange.max && !filterOptions.loading) {
+      // Apply Y1 date range by default
+      const { start, end } = calculatePresetDateRange(DEFAULT_TIMEFRAME_ID, filterOptions.dateRange.max);
+      if (start && end) {
+        setDateRange(start, end);
+      }
       setHasInitialized(true);
     }
-  }, [filterOptions.dateRange.max, filterOptions.loading, hasInitialized]);
+  }, [filterOptions.dateRange.max, filterOptions.loading, hasInitialized, calculatePresetDateRange, setDateRange]);
 
   // Handle preset button click
   const handlePresetClick = useCallback((preset) => {
@@ -153,10 +160,15 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   // Wrap resetFilters to also reset local datePreset state
   const handleResetFilters = useCallback(() => {
     resetFilters();
-    // Reset to no filter (all data)
-    setDatePreset(null);
+    // Reset to Y1 (default for performance)
+    setDatePreset(DEFAULT_TIMEFRAME_ID);
+    // Re-apply Y1 date range
+    const { start, end } = calculatePresetDateRange(DEFAULT_TIMEFRAME_ID, filterOptions.dateRange.max);
+    if (start && end) {
+      setDateRange(start, end);
+    }
     setShowAdvanced(false);
-  }, [resetFilters]);
+  }, [resetFilters, calculatePresetDateRange, filterOptions.dateRange.max, setDateRange]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
