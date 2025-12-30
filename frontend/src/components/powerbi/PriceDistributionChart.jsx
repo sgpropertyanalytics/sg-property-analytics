@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { useAbortableQuery } from '../../hooks';
+import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
@@ -28,11 +28,25 @@ import {
  *
  * This chart answers ONE question: "Where do most transactions happen?"
  */
-export const PriceDistributionChart = React.memo(function PriceDistributionChart({ height = 300, numBins = 20, saleType = null }) {
+export const PriceDistributionChart = React.memo(function PriceDistributionChart({
+  height = 300,
+  numBins = 20,
+  saleType = null,
+  sharedData = null,
+  sharedLoading = false,
+}) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const [showFullRange, setShowFullRange] = useState(false);
   const chartRef = useRef(null);
+
+  const useShared = sharedData != null && !showFullRange;
+
+  const { shouldFetch, containerRef } = useDeferredFetch({
+    filterKey: `${debouncedFilterKey}:${numBins}:${showFullRange}:${saleType || ''}`,
+    priority: 'low',
+    fetchOnMount: false,
+  });
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
   const { data: histogramData, loading, error, refetch } = useAbortableQuery(
@@ -70,11 +84,19 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
       return transformDistributionSeries(apiData.price_histogram);
     },
     [debouncedFilterKey, numBins, showFullRange, saleType],
-    { initialData: { bins: [], stats: {}, tail: {}, totalCount: 0 }, keepPreviousData: true }
+    {
+      initialData: { bins: [], stats: {}, tail: {}, totalCount: 0 },
+      enabled: !useShared && shouldFetch,
+      keepPreviousData: true,
+    }
   );
 
+  const resolvedData = useShared ? transformDistributionSeries(sharedData) : histogramData;
+  const deferredLoading = !useShared && !shouldFetch;
+  const resolvedLoading = useShared ? sharedLoading : loading || deferredLoading;
+
   // Extract transformed data
-  const { bins, stats, tail, totalCount } = histogramData;
+  const { bins, stats, tail, totalCount } = resolvedData;
 
   // Derive chart data from transformed bins
   const labels = bins.map(b => b.label);
@@ -225,7 +247,8 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
   const cardHeight = height + 190; // height prop for chart + ~190px for header(with stats)/note/footer
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!bins || bins.length === 0} skeleton="bar" height={350}>
+    <div ref={containerRef}>
+    <QueryState loading={resolvedLoading} error={error} onRetry={refetch} empty={!bins || bins.length === 0} skeleton="bar" height={350}>
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
@@ -297,6 +320,7 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
       </div>
       </div>
     </QueryState>
+    </div>
   );
 });
 

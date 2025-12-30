@@ -83,7 +83,10 @@ export const DistrictComparisonChart = React.memo(function DistrictComparisonCha
   const { groups, stats } = transformedData || { groups: [], stats: {} };
 
   // Calculate total projects for dynamic height
-  const totalProjects = groups.reduce((sum, g) => sum + g.projects.length, 0);
+  const totalProjects = useMemo(
+    () => groups.reduce((sum, group) => sum + group.projects.length, 0),
+    [groups]
+  );
   const chartHeight = propHeight || Math.max(300, Math.min(800, totalProjects * ROW_HEIGHT + 60));
 
   // Flatten groups into rows for table + chart alignment
