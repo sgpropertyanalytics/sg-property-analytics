@@ -800,6 +800,11 @@ frontend/src/
 7. **No Import-Time Side Effects** — No fetch/DB/I/O at module top-level
 8. **Never Leak Premium Data** — Backend masks for free users (CSS blur = bypass)
 9. **ESLint Disables Explained** — Scoped + justification comment required
+10. **Simplest Rule Wins** — When fixing bugs:
+    - Prefer business intent over technical correctness
+    - Avoid regex unless explicitly required
+    - Do not parse display strings to infer logic
+    - Ask: "What is the simplest rule that satisfies the product requirement?"
 
 ---
 
