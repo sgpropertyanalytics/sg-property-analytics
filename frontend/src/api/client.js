@@ -141,6 +141,9 @@ apiClient.interceptors.response.use(
       // Redirecting on 401 would break public pages that make API calls
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      if (!error.message || error.message.includes('status code 401')) {
+        error.message = 'Session expired. Please sign in again.';
+      }
     }
     return Promise.reject(error);
   }

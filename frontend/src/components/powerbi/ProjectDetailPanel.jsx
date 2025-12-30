@@ -27,6 +27,26 @@ import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 // K-anonymity threshold for project-level data
 const K_PROJECT_THRESHOLD = 15;
 
+const getProjectErrorMessage = (error) => {
+  const status = error?.response?.status;
+  if (status === 400) {
+    return error?.response?.data?.error || 'Invalid request. Please adjust filters and try again.';
+  }
+  if (status === 401) {
+    return 'Session expired. Please sign in again.';
+  }
+  if (status >= 500) {
+    return 'Server error. Please try again in a moment.';
+  }
+  if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+    return 'Request timed out. Please retry.';
+  }
+  if (error?.code === 'ERR_NETWORK' || !error?.response) {
+    return 'Network error. Check your connection and retry.';
+  }
+  return error?.message || 'Failed to load project data.';
+};
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -207,7 +227,7 @@ function ProjectDetailPanelInner({
         // Ignore errors from stale requests
         if (requestId !== requestIdRef.current) return;
         console.error('Error fetching project data:', err);
-        setError(err.message);
+        setError(getProjectErrorMessage(err));
       } finally {
         // Only clear loading for the current request
         if (requestId === requestIdRef.current) {
