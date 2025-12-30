@@ -5,6 +5,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { getRegionBadgeClass } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
 import { UpcomingLaunchesField, getUpcomingLaunchesField } from '../../schemas/apiContract';
+import { ConfidenceBadgeInline, VerificationStatusDot } from '../verification';
 
 /**
  * Upcoming Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
@@ -141,6 +142,7 @@ export function UpcomingLaunchesTable({
     { key: 'market_segment', label: 'Segment', sortable: true, width: 'w-20' },
     { key: 'total_units', label: 'Total Units', sortable: true, width: 'w-20', align: 'right' },
     { key: 'indicative_psf', label: 'Est. PSF', sortable: false, width: 'w-32', align: 'right' },
+    { key: 'verification', label: 'Verified', sortable: false, width: 'w-16', align: 'center' },
   ];
 
   return (
@@ -216,6 +218,15 @@ export function UpcomingLaunchesTable({
                   {(project.indicative_psf_low || project.indicative_psf_high) && (
                     <div className="text-xs text-[#213448] font-medium mt-1">
                       {formatPSFRange(project.indicative_psf_low, project.indicative_psf_high)} PSF
+                    </div>
+                  )}
+                  {/* Mobile verification indicator */}
+                  {project.verification_status && (
+                    <div className="mt-1 flex items-center justify-end gap-1">
+                      <VerificationStatusDot status={project.verification_status} size="small" />
+                      {project.units_confidence_score !== undefined && (
+                        <ConfidenceBadgeInline score={project.units_confidence_score} />
+                      )}
                     </div>
                   )}
                 </div>
@@ -322,6 +333,19 @@ export function UpcomingLaunchesTable({
                         </span>
                       ) : (
                         <span className="text-slate-400 italic">-</span>
+                      )}
+                    </td>
+                    {/* Verification Status */}
+                    <td className="px-3 py-2 border-b border-slate-100 text-center">
+                      {project.verification_status ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <VerificationStatusDot status={project.verification_status} size="small" />
+                          {project.units_confidence_score !== undefined && project.units_confidence_score !== null && (
+                            <ConfidenceBadgeInline score={project.units_confidence_score} />
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-300 text-xs">-</span>
                       )}
                     </td>
                   </tr>

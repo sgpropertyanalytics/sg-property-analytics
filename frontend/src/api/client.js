@@ -678,4 +678,95 @@ export const getProjectPriceGrowth = (projectName, options = {}) =>
 export const getSupplySummary = (params = {}, options = {}) =>
   apiClient.get(`/supply/summary?${buildQueryString(params)}`, { signal: options.signal });
 
+// ===== Verification API Functions =====
+// These endpoints are for data verification and cross-validation
+// Phase 4: UI integration for verification system
+
+/**
+ * Get verification candidates (pending review queue)
+ * @param {Object} params - Query parameters
+ * @param {string} [params.entity_type] - Filter by type: 'unit_count', 'upcoming_launch', 'gls_tender', 'project_location'
+ * @param {string} [params.review_status] - Filter by status: 'open', 'approved', 'rejected', 'auto_confirmed'
+ * @param {string} [params.verification_status] - 'pending', 'confirmed', 'mismatch', 'unverified'
+ * @param {number} [params.limit] - Max results (default 50)
+ * @param {number} [params.offset] - Pagination offset
+ * @param {string} [params.sort] - Field to sort by
+ * @param {string} [params.order] - 'asc' or 'desc'
+ * @returns {Promise<{candidates: Array, total: number, pagination: Object}>}
+ */
+export const getVerificationCandidates = (params = {}, options = {}) =>
+  apiClient.get(`/verification/candidates?${buildQueryString(params)}`, { signal: options.signal });
+
+/**
+ * Get a single verification candidate by ID
+ * @param {number} id - Candidate ID
+ * @returns {Promise<{candidate: Object}>}
+ */
+export const getVerificationCandidate = (id, options = {}) =>
+  apiClient.get(`/verification/candidates/${id}`, { signal: options.signal });
+
+/**
+ * Approve a verification candidate
+ * @param {number} id - Candidate ID
+ * @param {Object} data - Approval data
+ * @param {string} data.resolution - 'keep_current' or 'update_to_verified'
+ * @param {string} [data.notes] - Optional approval notes
+ * @returns {Promise<{success: boolean, candidate: Object}>}
+ */
+export const approveVerificationCandidate = (id, data = {}) =>
+  apiClient.post(`/verification/candidates/${id}/approve`, data);
+
+/**
+ * Reject a verification candidate
+ * @param {number} id - Candidate ID
+ * @param {Object} data - Rejection data
+ * @param {string} [data.notes] - Rejection reason/notes
+ * @returns {Promise<{success: boolean, candidate: Object}>}
+ */
+export const rejectVerificationCandidate = (id, data = {}) =>
+  apiClient.post(`/verification/candidates/${id}/reject`, data);
+
+/**
+ * Trigger a verification run
+ * @param {Object} data - Run configuration
+ * @param {string} data.entity_type - Type to verify: 'unit_count', 'upcoming_launch', etc.
+ * @param {string[]} [data.project_names] - Specific projects to verify (optional)
+ * @param {string[]} [data.sources] - Sources to use (optional, defaults to all Tier B)
+ * @returns {Promise<{run_id: string, status: string}>}
+ */
+export const triggerVerificationRun = (data = {}) =>
+  apiClient.post('/verification/run', data);
+
+/**
+ * Get verification run status
+ * @param {string} runId - Run ID
+ * @returns {Promise<{run_id: string, status: string, progress: Object}>}
+ */
+export const getVerificationRunStatus = (runId, options = {}) =>
+  apiClient.get(`/verification/status/${runId}`, { signal: options.signal });
+
+/**
+ * Get verification report for a run
+ * @param {string} runId - Run ID
+ * @param {Object} params - Query parameters
+ * @param {string} [params.format] - 'json' or 'markdown'
+ * @returns {Promise<{report: Object}>}
+ */
+export const getVerificationReport = (runId, params = {}, options = {}) =>
+  apiClient.get(`/verification/report/${runId}?${buildQueryString(params)}`, { signal: options.signal });
+
+/**
+ * Get verification summary statistics
+ * @param {Object} params - Query parameters
+ * @param {string} [params.entity_type] - Filter by entity type
+ * @returns {Promise<{
+ *   total_candidates: number,
+ *   by_status: {confirmed: number, mismatch: number, pending: number, unverified: number},
+ *   by_entity_type: Object,
+ *   recent_runs: Array
+ * }>}
+ */
+export const getVerificationSummary = (params = {}, options = {}) =>
+  apiClient.get(`/verification/summary?${buildQueryString(params)}`, { signal: options.signal });
+
 export default apiClient;
