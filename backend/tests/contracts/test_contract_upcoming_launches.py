@@ -47,20 +47,6 @@ class TestUpcomingAllContract:
             validate_public_params(params, contract.param_schema)
 
 
-class TestUpcomingProjectContract:
-    """Test upcoming-launches/project contract."""
-
-    def test_contract_registered(self):
-        contract = get_contract("upcoming-launches/project")
-        assert contract is not None
-        assert contract.version == "v3"
-
-    def test_no_required_params(self):
-        contract = get_contract("upcoming-launches/project")
-        params = {}
-        validate_public_params(params, contract.param_schema)
-
-
 class TestUpcomingNeedsReviewContract:
     """Test upcoming-launches/needs-review contract."""
 

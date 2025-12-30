@@ -106,7 +106,7 @@ backend/api/contracts/schemas/trends.py (if exists)
 | `/upcoming-launches/all` | KEEP | Single source of truth |
 | `/upcoming-launches/by-segment` | DELETE | Can filter /all |
 | `/upcoming-launches/supply-pipeline` | DELETE | Can aggregate /all |
-| `/upcoming-launches/project/<name>` | EVALUATE | May be useful for detail views |
+| `/upcoming-launches/project/<name>` | DELETE | Unused detail endpoint; rely on /all |
 | `/upcoming-launches/stats` | DELETE | Can compute from /all |
 
 **Location:** `backend/routes/upcoming_launches.py:149-458`

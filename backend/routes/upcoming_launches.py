@@ -146,42 +146,6 @@ def get_all():
         return jsonify({"error": str(e)}), 500
 
 
-@upcoming_launches_bp.route("/project/<project_name>", methods=["GET"])
-@api_contract("upcoming-launches/project")
-def get_project_detail(project_name: str):
-    """
-    Get details for a specific project.
-
-    Args:
-        project_name: Project name (URL encoded)
-
-    Returns:
-        Full project details including source data
-    """
-    start = time.time()
-
-    try:
-        from urllib.parse import unquote
-        decoded_name = unquote(project_name)
-
-        launch = db.session.query(UpcomingLaunch).filter(
-            UpcomingLaunch.project_name.ilike(f"%{decoded_name}%")
-        ).first()
-
-        if not launch:
-            return jsonify({"error": f"Project not found: {decoded_name}"}), 404
-
-        elapsed = time.time() - start
-        print(f"GET /api/upcoming-launches/project/{project_name} took: {elapsed:.4f} seconds")
-
-        return jsonify(launch.to_dict(include_sources=True))
-
-    except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/upcoming-launches/project/{project_name} ERROR (took {elapsed:.4f}s): {e}")
-        return jsonify({"error": str(e)}), 500
-
-
 @upcoming_launches_bp.route("/needs-review", methods=["GET"])
 @api_contract("upcoming-launches/needs-review")
 def get_needs_review():
@@ -261,4 +225,3 @@ def reset_data():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-

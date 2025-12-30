@@ -3,7 +3,6 @@ Contract schemas for /upcoming-launches endpoints.
 
 Active endpoints:
 - GET /api/upcoming-launches/all
-- GET /api/upcoming-launches/project/<project_name>
 - GET /api/upcoming-launches/needs-review
 """
 
@@ -104,43 +103,6 @@ UPCOMING_ALL_CONTRACT = EndpointContract(
 )
 
 register_contract(UPCOMING_ALL_CONTRACT)
-
-
-# =============================================================================
-# /upcoming-launches/project/<project_name>
-# =============================================================================
-
-UPCOMING_PROJECT_PARAM_SCHEMA = ParamSchema(
-    fields={},  # project_name comes from URL path
-    aliases={}
-)
-
-UPCOMING_PROJECT_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "project_name": FieldSpec(name="project_name", type=str, required=True),
-    }
-)
-
-UPCOMING_PROJECT_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
-    data_is_list=False,
-)
-
-UPCOMING_PROJECT_CONTRACT = EndpointContract(
-    endpoint="upcoming-launches/project",
-    version="v3",
-    param_schema=UPCOMING_PROJECT_PARAM_SCHEMA,
-    service_schema=UPCOMING_PROJECT_SERVICE_SCHEMA,
-    response_schema=UPCOMING_PROJECT_RESPONSE_SCHEMA,
-)
-
-register_contract(UPCOMING_PROJECT_CONTRACT)
 
 
 # =============================================================================
