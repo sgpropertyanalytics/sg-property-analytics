@@ -88,6 +88,10 @@ def create_app():
     from api.middleware import setup_query_timing_middleware
     setup_query_timing_middleware(app)
 
+    # Request usage logging (sampling + watchlist)
+    from api.middleware import setup_request_logging_middleware
+    setup_request_logging_middleware(app)
+
     # Load contract schemas (registers contracts on import)
     try:
         from api.contracts import schemas  # noqa: F401

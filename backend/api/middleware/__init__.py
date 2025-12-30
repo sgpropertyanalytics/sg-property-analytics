@@ -10,9 +10,11 @@ Provides:
 from .request_id import setup_request_id_middleware
 from .error_envelope import setup_error_handlers
 from .query_timing import setup_query_timing_middleware
+from .request_logging import setup_request_logging_middleware
 
 __all__ = [
     'setup_request_id_middleware',
     'setup_error_handlers',
     'setup_query_timing_middleware',
+    'setup_request_logging_middleware',
 ]
