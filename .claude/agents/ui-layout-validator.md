@@ -1655,13 +1655,16 @@ OVERFLOW:
 [ ] Page shell has overflow containment
 [ ] Chart wrappers have overflow-hidden
 [ ] Flex children have min-w-0 where needed
-[ ] Long text has truncation
+[ ] Long text has truncation + title tooltip
 [ ] Tables: no horizontal scroll on desktop/tablet (HF-5)
 [ ] Tables: clipped columns = FAIL at any viewport
 [ ] Numeric values fully visible at all viewports (HF-6)
 [ ] KPI/stat values use compact format on mobile ($1.23M not $1,234,567)
+[ ] Filter/chip rows wrap or scroll intentionally (HF-7)
 
-RESPONSIVE:
+RESPONSIVE (HF-7 Viewport Sweep):
+[ ] Run sweep: 1280 → 1024 → 900 → 768 → 640
+[ ] Grids collapse: 4 → 2 → 1 columns at breakpoints
 [ ] Desktop (1440px): Full layout
 [ ] Tablet (768px): 2-column or collapsed
 [ ] Mobile (375px): Single column
@@ -2382,6 +2385,133 @@ function formatCompact(value, options = {}) {
 
 ---
 
+#### HF-7: Mid-Viewport Collapse (VIEWPORT SWEEP RULE)
+
+**Rule:** Layouts must gracefully collapse at breakpoints. No overflow or cramped layouts at mid-viewport widths.
+
+---
+
+##### VIEWPORT SWEEP
+
+**Run this sweep before any layout sign-off:**
+
+```
+1280px → 1024px → 900px → 768px → 640px
+```
+
+At each step, flag:
+- Any horizontal scroll (`documentElement.scrollWidth > innerWidth`)
+- Any text overflow (`scrollWidth > clientWidth` on text nodes)
+- Any grid that doesn't collapse (fixed columns below breakpoint)
+- Any filter/chip row that doesn't wrap or scroll intentionally
+
+---
+
+##### DETECTION: Grid Collapse
+
+**Check:** Grids must step down columns at breakpoints.
+
+```
+Expected progression:
+  Desktop (1024px+)  →  4 columns (or 3)
+  Tablet (768-1023px) →  2 columns
+  Mobile (<768px)     →  1 column
+```
+
+```javascript
+const checkGridCollapse = (viewport) => {
+  const grids = document.querySelectorAll('[class*="grid-cols"]');
+  const failures = [];
+
+  grids.forEach(grid => {
+    const style = getComputedStyle(grid);
+    const cols = style.gridTemplateColumns.split(' ').length;
+
+    // Flag: Too many columns for viewport
+    if (viewport <= 768 && cols > 2) {
+      failures.push({ grid, cols, viewport, issue: 'Grid should be 1-2 cols at tablet' });
+    }
+    if (viewport <= 640 && cols > 1) {
+      failures.push({ grid, cols, viewport, issue: 'Grid should be 1 col at mobile' });
+    }
+  });
+
+  return failures;
+};
+```
+
+**Fix Pattern:**
+```jsx
+// ❌ No breakpoints - stays 4 cols everywhere
+<div className="grid grid-cols-4">
+
+// ✅ Responsive collapse
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+```
+
+---
+
+##### DETECTION: Filter/Chip Row Handling
+
+**Check:** Filter rows must either wrap, scroll intentionally, or collapse.
+
+```javascript
+const checkFilterRows = () => {
+  const filterRows = document.querySelectorAll('[class*="filter"], [class*="chip"]');
+  const failures = [];
+
+  filterRows.forEach(row => {
+    const style = getComputedStyle(row);
+    const hasWrap = style.flexWrap === 'wrap';
+    const hasScroll = style.overflowX === 'auto' || style.overflowX === 'scroll';
+    const overflows = row.scrollWidth > row.clientWidth;
+
+    // Flag: Overflows without intentional handling
+    if (overflows && !hasWrap && !hasScroll) {
+      failures.push({ row, issue: 'Filter row overflows without wrap or scroll' });
+    }
+  });
+
+  return failures;
+};
+```
+
+**Acceptable Patterns:**
+
+| Pattern | When to Use |
+|---------|-------------|
+| `flex-wrap` | Few filters, enough vertical space |
+| `overflow-x-auto` on row only | Many filters, horizontal scroll acceptable |
+| Collapse to dropdown | Mobile, too many filters |
+
+**Fix Patterns:**
+```jsx
+// ✅ Wrap at breakpoint
+<div className="flex flex-wrap gap-2">
+
+// ✅ Intentional scroll (row only, not page)
+<div className="flex gap-2 overflow-x-auto md:overflow-x-visible md:flex-wrap">
+
+// ✅ Collapse to dropdown on mobile
+<div className="hidden md:flex gap-2">...</div>
+<select className="md:hidden">...</select>
+```
+
+---
+
+##### FIX POLICY (No Page-Specific Hardcoding)
+
+| Issue | Fix | Scope |
+|-------|-----|-------|
+| Grid doesn't collapse | Add responsive breakpoints | Component class |
+| Text overflows | `min-w-0` + `truncate` + `title` | Component wrapper |
+| Filter row overflows | `flex-wrap` or `overflow-x-auto` | Filter container |
+| KPI values overflow | Compact format + `title` | Shared util + component |
+
+**Forbidden:** Route-specific fixes, magic pixel values, `!important`.
+
+---
+
 ## 19. VISUAL REGRESSION TESTING
 
 ### Baseline Management
@@ -3043,13 +3173,15 @@ jobs:
 
 ```
 [ ] All 5 viewports tested per route
-[ ] All 6 HARD FAIL conditions checked:
+[ ] Viewport sweep run: 1280 → 1024 → 900 → 768 → 640
+[ ] All 7 HARD FAIL conditions checked:
     - HF-1: Horizontal page scroll
     - HF-2: Element content overflow
     - HF-3: Element exceeds viewport
     - HF-4: Interactive element overlap
     - HF-5: Table horizontal scroll (desktop/tablet)
     - HF-6: Numeric value overflow (global)
+    - HF-7: Mid-viewport collapse (grids, filters)
 [ ] Visual regression compared to baselines
 [ ] Issues categorized and prioritized
 ```
