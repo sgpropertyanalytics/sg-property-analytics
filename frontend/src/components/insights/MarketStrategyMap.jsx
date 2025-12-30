@@ -366,12 +366,6 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
     });
   }, [districtData]);
 
-  const regionLabels = {
-    CCR: { name: 'Core Central', desc: 'Premium Districts' },
-    RCR: { name: 'Rest of Central', desc: 'City Fringe' },
-    OCR: { name: 'Outside Central', desc: 'Suburban' },
-  };
-
   const regionStyles = {
     CCR: 'border-[#213448]/20 bg-[#213448]/5',
     RCR: 'border-[#547792]/20 bg-[#547792]/5',
@@ -392,7 +386,7 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
               <div className="flex items-center gap-1">
                 <span className="font-semibold text-[#213448] text-xs sm:text-sm">
                   <span className="sm:hidden">{stat.region}</span>
-                  <span className="hidden sm:inline">{stat.region} Median PSF (Weighted by District Txs)</span>
+                  <span className="hidden sm:inline">{stat.region} Median PSF</span>
                 </span>
                 <HelpTooltip content={buildMethodologyTooltip(stat)} />
               </div>
@@ -408,7 +402,7 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
             </div>
             {/* Description - hidden on mobile */}
             <p className="hidden sm:block text-[10px] text-[#547792] mb-2">
-              {regionLabels[stat.region].desc}
+              Volume-weighted by District Txs
             </p>
             {/* Stats */}
             <div className="flex items-baseline gap-2 sm:justify-between flex-1 sm:flex-none">
