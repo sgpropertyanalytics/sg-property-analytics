@@ -607,12 +607,12 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
         })}
       </div>
 
-      {/* Desktop Table View */}
-      <div className="hidden lg:block overflow-x-auto max-w-full">
+      {/* Desktop Table View - no overflow-x-auto to prevent horizontal scroll (HF-5) */}
+      <div className="hidden lg:block max-w-full">
         <table className="w-full text-xs">
           <thead>
-            {/* Group Header Row - Exit Safety + Concentration */}
-            <tr className="bg-[#EAE0CF]/20">
+            {/* Group Header Row - Exit Safety + Concentration (only shown on xl+ when all columns visible) */}
+            <tr className="hidden xl:table-row bg-[#EAE0CF]/20">
               <th colSpan={6} className="border-b border-[#94B4C1]/20"></th>
               <th
                 colSpan={3}
@@ -668,7 +668,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
+                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('project_count')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -736,7 +736,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
+                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
                 onClick={() => handleSort('concentration_gini')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -749,7 +749,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
+                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-[#213448] whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
                 onClick={() => handleSort('top_project_share')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -814,8 +814,8 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                     </span>
                   </td>
 
-                  {/* Project Count (Market Structure - Combined) */}
-                  <td className="px-3 py-2 text-right text-[#213448] font-mono tabular-nums">{m.project_count || 0}</td>
+                  {/* Project Count (Market Structure - Combined) - hidden on lg, shown on xl+ */}
+                  <td className="hidden xl:table-cell px-3 py-2 text-right text-[#213448] font-mono tabular-nums">{m.project_count || 0}</td>
 
                   {/* Transaction Count (Market Structure - Combined) with inline bar */}
                   <td className="px-3 py-2 text-[#213448]">
@@ -868,13 +868,13 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                     {getSpreadLabel(m.fragility_label)}
                   </td>
 
-                  {/* Concentration Risks Group - Gini Index (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-[#213448] bg-rose-50/40 font-mono tabular-nums">
+                  {/* Concentration Risks Group - Gini Index (Resale-only) - hidden on lg, shown on xl+ */}
+                  <td className="hidden xl:table-cell px-3 py-2 text-right text-[#213448] bg-rose-50/40 font-mono tabular-nums">
                     {m.concentration_gini?.toFixed(2) || '-'}
                   </td>
 
-                  {/* Concentration Risks Group - Top Project Share (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-[#213448] bg-rose-50/40 font-mono tabular-nums">
+                  {/* Concentration Risks Group - Top Project Share (Resale-only) - hidden on lg, shown on xl+ */}
+                  <td className="hidden xl:table-cell px-3 py-2 text-right text-[#213448] bg-rose-50/40 font-mono tabular-nums">
                     {m.top_project_share?.toFixed(0) || '0'}%
                   </td>
                 </tr>
