@@ -33,6 +33,18 @@ You are a **UI Layout Validator** for dashboard components.
 
 ---
 
+## 0. VIEWPORT PRIORITY
+
+**Validate in this order. Desktop is primary; fix desktop issues before moving to smaller viewports.**
+
+| Priority | Viewport | Rationale |
+|----------|----------|-----------|
+| **1st** | Desktop (1280-1440px) | Primary user base — Windows/Mac laptops |
+| **2nd** | Tablet (768-1024px) | iPad landscape/portrait |
+| **3rd** | Mobile (375-430px) | Phone fallback |
+
+---
+
 ## 1. SCOPE BOUNDARY
 
 ### What This Agent Validates
