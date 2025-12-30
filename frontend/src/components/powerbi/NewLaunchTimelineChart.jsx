@@ -28,24 +28,8 @@ import '../../lib/chartjs-registry';
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
-/**
- * Helper to detect if a period label falls within 2020
- * 2020 had heavily skewed new launch data - many developers rushed launches
- * Handles: yearly ("2020"), quarterly ("Q4 2020" or "2020 Q4"), monthly ("2020-01" to "2020-12")
- */
-const is2020Period = (periodLabel) => {
-  if (!periodLabel) return false;
-  const label = periodLabel.toString();
-  // Yearly format: "2020"
-  if (label === '2020') return true;
-  // Quarterly format: "Q1 2020", "Q2 2020", etc. (actual format from API)
-  if (/^Q[1-4] 2020$/.test(label)) return true;
-  // Quarterly format alt: "2020 Q1", "2020 Q2", etc.
-  if (/^2020 Q[1-4]$/.test(label)) return true;
-  // Monthly format: "2020-01" to "2020-12"
-  if (/^2020-(0[1-9]|1[0-2])/.test(label)) return true;
-  return false;
-};
+// 2020 had heavily skewed new launch data - exclude by default
+const is2020Period = (label) => label?.toString().includes('2020');
 
 /**
  * New Launch Timeline Chart Component
