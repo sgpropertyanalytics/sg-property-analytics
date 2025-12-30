@@ -7,6 +7,10 @@ This guide covers deploying the Singapore Property Analyzer with proper database
 - PostgreSQL database (Render, Railway, or local)
 - Python 3.10+
 - `DATABASE_URL` environment variable set
+- Backend modules installed for local CLI/tools:
+  ```bash
+  pip install -e .
+  ```
 
 ## Database Migrations
 
@@ -28,7 +32,6 @@ psql "$DATABASE_URL" -f backend/migrations/001_add_all_missing_columns.sql
 
 # Option 2: Verify via schema check
 python -c "
-import sys; sys.path.insert(0, 'backend')
 from app import create_app
 from services.schema_check import check_and_report
 app = create_app()

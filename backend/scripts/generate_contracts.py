@@ -9,7 +9,6 @@ Outputs:
 
 import json
 import os
-import sys
 import hashlib
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -96,7 +95,6 @@ def _serialize_contract(contract):
 def main() -> int:
     backend_root = _backend_root()
     repo_root = _repo_root()
-    sys.path.insert(0, str(backend_root))
 
     # Register contracts
     from api.contracts.registry import list_contracts

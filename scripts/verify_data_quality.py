@@ -5,11 +5,7 @@ Runs diagnostic checks on recent ETL ingestion without modifying data.
 """
 
 import sys
-import os
 from datetime import datetime
-
-# Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from sqlalchemy import create_engine, text
 from config import Config

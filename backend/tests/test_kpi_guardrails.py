@@ -13,10 +13,6 @@ import re
 from datetime import date, timedelta
 from pathlib import Path
 
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from services.kpi.base import (
     validate_sql_params,
     build_date_bounds,

@@ -8,15 +8,10 @@ These tests prevent SQL parameter style regressions and enforce best practices:
 
 Run with: pytest tests/test_sql_guardrails.py -v
 """
-import os
 import re
 import pytest
 from datetime import date, datetime
 from pathlib import Path
-
-# Import the SQL helper module
-import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from db.sql import (
     validate_sql_text,

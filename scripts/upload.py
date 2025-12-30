@@ -35,9 +35,6 @@ import time
 from datetime import datetime
 from typing import Set, List, Tuple, Dict, Any, Optional
 
-# Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
-
 from flask import Flask
 from sqlalchemy import text, inspect
 from sqlalchemy.exc import OperationalError, SQLAlchemyError

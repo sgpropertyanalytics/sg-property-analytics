@@ -14,10 +14,6 @@ from datetime import date
 from unittest.mock import MagicMock, patch
 from dataclasses import asdict
 
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from services.kpi.resale_velocity import (
     build_params,
     get_sql,

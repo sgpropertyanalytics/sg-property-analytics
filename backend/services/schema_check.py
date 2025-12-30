@@ -250,10 +250,6 @@ def check_and_report() -> bool:
 # CLI entry point
 if __name__ == '__main__':
     import sys
-    import os
-
-    # Add backend to path
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
     from app import create_app
 

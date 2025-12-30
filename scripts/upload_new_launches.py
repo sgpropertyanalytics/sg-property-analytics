@@ -12,9 +12,6 @@ import argparse
 import sys
 import os
 
-# Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
-
 from app import create_app
 from models.database import db
 from services.new_launch_upload import upload_new_launches

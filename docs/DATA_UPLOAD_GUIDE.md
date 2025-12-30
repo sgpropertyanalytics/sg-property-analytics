@@ -4,6 +4,16 @@ Production-grade data upload with **zero downtime** using staging + atomic publi
 
 ---
 
+## Prerequisite (One-Time)
+
+Install backend modules so scripts can import without sys.path hacks:
+
+```bash
+pip install -e .
+```
+
+---
+
 ## Table of Contents
 
 1. [Quick Reference](#quick-reference)
@@ -448,7 +458,6 @@ psql -c "DROP TABLE IF EXISTS transactions_staging"
 
 ```bash
 python -c "
-import sys; sys.path.insert(0, 'backend')
 from app import create_app
 from models.transaction import Transaction
 

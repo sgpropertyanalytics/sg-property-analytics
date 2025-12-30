@@ -9,12 +9,6 @@ This can be run:
 Pipeline: Load Raw → Validate/Filter → Store in DB → **Compute Stats**
 """
 
-import sys
-import os
-
-# Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
-
 from flask import Flask
 from config import Config
 from models.database import db
@@ -79,4 +73,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -17,12 +17,6 @@ After running this script:
 - Frontend displays "xxx outlier records excluded" message
 """
 
-import sys
-import os
-
-# Add backend to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
-
 from flask import Flask
 from sqlalchemy import text
 from config import Config
