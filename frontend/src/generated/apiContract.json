@@ -4288,6 +4288,210 @@
       },
       "version": "v3"
     },
+    "new-launch-timeline": {
+      "compat_map": {
+        "params": {},
+        "response": {}
+      },
+      "endpoint": "new-launch-timeline",
+      "mode": "warn",
+      "param_schema": {
+        "aliases": {
+          "dateFrom": "date_from",
+          "dateTo": "date_to",
+          "timeGrain": "time_grain"
+        },
+        "fields": {
+          "bedroom": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Comma-separated bedroom counts (2, 3, 4)",
+            "name": "bedroom",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "date_from": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Start date (inclusive) for launch_date filter, YYYY-MM-DD",
+            "name": "date_from",
+            "nullable": true,
+            "required": false,
+            "type": "date"
+          },
+          "date_to": {
+            "allowed_values": null,
+            "default": null,
+            "description": "End date (inclusive) for launch_date filter, YYYY-MM-DD",
+            "name": "date_to",
+            "nullable": true,
+            "required": false,
+            "type": "date"
+          },
+          "district": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Comma-separated district codes (D01, D02, or just 1, 2)",
+            "name": "district",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "segment": {
+            "allowed_values": [
+              "CCR",
+              "RCR",
+              "OCR"
+            ],
+            "default": null,
+            "description": "Market segment filter (CCR, RCR, OCR)",
+            "name": "segment",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "time_grain": {
+            "allowed_values": [
+              "month",
+              "quarter",
+              "year"
+            ],
+            "default": "quarter",
+            "description": "Time grouping: month, quarter, or year",
+            "name": "time_grain",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          }
+        }
+      },
+      "response_schema": {
+        "data_fields": {
+          "periodStart": {
+            "allowed_values": null,
+            "default": null,
+            "description": "ISO date string for period start (e.g., '2024-01-01')",
+            "name": "periodStart",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "projectCount": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Number of projects launched in this period",
+            "name": "projectCount",
+            "nullable": true,
+            "required": true,
+            "type": "int"
+          },
+          "totalUnits": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Total units launched in this period",
+            "name": "totalUnits",
+            "nullable": true,
+            "required": true,
+            "type": "int"
+          }
+        },
+        "data_is_list": true,
+        "meta_fields": {
+          "apiVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "elapsedMs": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "elapsedMs",
+            "nullable": true,
+            "required": true,
+            "type": "float"
+          },
+          "requestId": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "requestId",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          }
+        },
+        "required_meta": [
+          "requestId",
+          "elapsedMs",
+          "apiVersion"
+        ]
+      },
+      "service_schema": {
+        "fields": {
+          "bedrooms": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "bedrooms",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          },
+          "date_from": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "date_from",
+            "nullable": true,
+            "required": false,
+            "type": "date"
+          },
+          "date_to_exclusive": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "date_to_exclusive",
+            "nullable": true,
+            "required": false,
+            "type": "date"
+          },
+          "districts": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "districts",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          },
+          "segments": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "segments",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          },
+          "time_grain": {
+            "allowed_values": null,
+            "default": "quarter",
+            "description": "",
+            "name": "time_grain",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          }
+        }
+      },
+      "version": "v1"
+    },
     "projects/exit-queue": {
       "compat_map": {
         "params": {},
@@ -6520,6 +6724,6 @@
       "version": "v3"
     }
   },
-  "generated_at": "2025-12-30T02:10:28.176544Z",
+  "generated_at": "2025-12-30T03:35:22.570967Z",
   "source": "backend/api/contracts"
 }
