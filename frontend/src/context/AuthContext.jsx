@@ -388,10 +388,11 @@ export function AuthProvider({ children }) {
 
       try {
         const result = await refreshToken();
-        lastRefreshTime = Date.now();
         console.log('[Auth] Token refresh result:', result);
 
         if (result.ok) {
+          // Only update lastRefreshTime on SUCCESS (requirement: debounce successful refreshes)
+          lastRefreshTime = Date.now();
           // Emit event so components can retry their failed requests
           window.dispatchEvent(new CustomEvent('auth:token-refreshed', {
             detail: { originalUrl: url }
