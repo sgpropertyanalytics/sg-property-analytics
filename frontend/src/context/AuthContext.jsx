@@ -51,20 +51,49 @@ export function useAuth() {
   return context;
 }
 
+/**
+ * Token status state machine
+ * - 'present': Token exists in localStorage
+ * - 'missing': No token, user authenticated (need sync)
+ * - 'refreshing': Token sync in progress
+ * - 'error': Token sync failed (non-abort)
+ *
+ * INVARIANT: tokenStatus does NOT mean "sync succeeded".
+ * Subscription fetch must not deadlock if backend sync fails.
+ */
+const TokenStatus = {
+  PRESENT: 'present',
+  MISSING: 'missing',
+  REFRESHING: 'refreshing',
+  ERROR: 'error',
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [initialized, setInitialized] = useState(false);
 
-  // Abort/stale request protection for API calls
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+  // Token status state machine - initialize based on localStorage
+  const [tokenStatus, setTokenStatus] = useState(() => {
+    return localStorage.getItem('token') ? TokenStatus.PRESENT : TokenStatus.MISSING;
+  });
+
+  // SEPARATE stale guards to prevent cross-abort between operations
+  // P0 FIX: refreshToken() must NOT abort syncTokenWithBackend()
+  const authStateGuard = useStaleRequestGuard();  // For onAuthStateChanged sync
+  const tokenRefreshGuard = useStaleRequestGuard(); // For refreshToken() calls
+
+  // Legacy alias for backwards compatibility (used by syncWithBackend)
+  const { startRequest, isStale, getSignal } = authStateGuard;
 
   // Initialize auth listener only if Firebase is configured
   useEffect(() => {
     if (!isFirebaseConfigured()) {
       // Firebase not configured - skip auth listener
       setInitialized(true);
+      // No user = token not needed
+      setTokenStatus(TokenStatus.PRESENT);
       return;
     }
 
@@ -107,7 +136,8 @@ export function AuthProvider({ children }) {
 
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         // Start a new request for each auth state change - cancels any in-flight API calls
-        const requestId = startRequest();
+        // Uses authStateGuard - separate from tokenRefreshGuard to avoid cross-abort
+        const requestId = authStateGuard.startRequest();
         // Local flag to track if we've set initialized in this callback
         let didSetInitialized = false;
 
@@ -120,21 +150,45 @@ export function AuthProvider({ children }) {
           // CRITICAL: Set initialized=true SYNCHRONOUSLY after we know auth state.
           // This is the ONLY place initialized should be set for normal auth flow.
           // Guard: Only set if this is still the current request (prevents race conditions)
-          if (!isStale(requestId)) {
+          if (!authStateGuard.isStale(requestId)) {
             setLoading(false);
             setInitialized(true);
             didSetInitialized = true;
           }
 
-          // === OPTIONAL: Backend token sync (runs AFTER boot is unblocked) ===
-          // If user is signed in, ensure we have a valid JWT token.
-          // This handles page refresh when Firebase session exists but JWT might be missing/expired.
-          // IMPORTANT: This is async and may fail/abort - that's OK, boot already completed above.
-          if (firebaseUser) {
-            const existingToken = localStorage.getItem('token');
-            if (!existingToken) {
-              // No token - sync with backend to get one (best-effort, not blocking)
-              await syncTokenWithBackend(firebaseUser, requestId, getSignal, isStale);
+          // === TOKEN STATUS STATE MACHINE ===
+          if (!firebaseUser) {
+            // No user → token not needed (treat as 'present' for gating purposes)
+            setTokenStatus(TokenStatus.PRESENT);
+          } else if (localStorage.getItem('token')) {
+            // User exists, token exists
+            setTokenStatus(TokenStatus.PRESENT);
+          } else {
+            // User exists, no token → need sync
+            setTokenStatus(TokenStatus.REFRESHING);
+
+            // Sync with backend to get token
+            const result = await syncTokenWithBackend(
+              firebaseUser,
+              requestId,
+              authStateGuard.getSignal,
+              authStateGuard.isStale
+            );
+
+            // Update token status based on result
+            // Guard: Only update if this is still the current request
+            if (!authStateGuard.isStale(requestId)) {
+              if (result.aborted) {
+                // Abort is transient → stay in REFRESHING (effect can retry)
+                // DO NOT set to ERROR or MISSING
+                console.log('[Auth] Token sync aborted, staying in REFRESHING');
+              } else if (result.ok) {
+                setTokenStatus(TokenStatus.PRESENT);
+              } else {
+                // Non-abort error → set error state
+                // SubscriptionContext should handle this appropriately
+                setTokenStatus(TokenStatus.ERROR);
+              }
             }
           }
         } catch (err) {
@@ -147,7 +201,7 @@ export function AuthProvider({ children }) {
           // SAFETY NET: Guarantee initialized is set even if everything above fails.
           // This is defensive programming - the try block should always set it,
           // but this ensures no code path can leave boot stuck.
-          if (!isStale(requestId) && !didSetInitialized) {
+          if (!authStateGuard.isStale(requestId) && !didSetInitialized) {
             console.warn('[Auth] Safety net: setting initialized in finally block');
             setLoading(false);
             setInitialized(true);
@@ -159,8 +213,10 @@ export function AuthProvider({ children }) {
        * Sync JWT token with backend (best-effort, non-blocking)
        * This is separated to make the main auth flow clearer.
        * Abort/cancel is expected control flow and logged at debug level.
+       *
+       * @returns {{ ok: boolean, aborted: boolean, error?: Error }}
        */
-      async function syncTokenWithBackend(firebaseUser, requestId, getSignal, isStale) {
+      async function syncTokenWithBackend(firebaseUser, requestId, getSignalFn, isStaleFn) {
         try {
           const idToken = await firebaseUser.getIdToken();
           const response = await apiClient.post('/auth/firebase-sync', {
@@ -169,17 +225,22 @@ export function AuthProvider({ children }) {
             displayName: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
           }, {
-            signal: getSignal(),
+            signal: getSignalFn(),
           });
 
           // Guard: Don't update if auth state changed again
-          if (isStale(requestId)) return;
+          if (isStaleFn(requestId)) {
+            return { ok: false, aborted: false, stale: true };
+          }
 
           if (response.data.token) {
             localStorage.setItem('token', response.data.token);
             // Clear stale subscription cache on page load sync
             localStorage.removeItem('subscription_cache');
+            return { ok: true, aborted: false };
           }
+
+          return { ok: false, aborted: false, error: new Error('No token in response') };
         } catch (err) {
           // Abort/cancel is EXPECTED control flow (not an error)
           if (isAbortError(err)) {
@@ -187,13 +248,16 @@ export function AuthProvider({ children }) {
             if (process.env.NODE_ENV === 'development') {
               console.log('[Auth] Token sync cancelled (expected during boot/navigation)');
             }
-            return;
+            return { ok: false, aborted: true };
           }
           // Guard: Check stale after error
-          if (isStale(requestId)) return;
+          if (isStaleFn(requestId)) {
+            return { ok: false, aborted: false, stale: true };
+          }
 
           // Real error - log but don't throw (non-blocking)
           console.error('[Auth] Backend token sync failed:', err);
+          return { ok: false, aborted: false, error: err };
         }
       }
 
@@ -202,8 +266,11 @@ export function AuthProvider({ children }) {
       console.error('Failed to initialize Firebase auth:', err);
       setLoading(false);
       setInitialized(true);
+      // If init fails, mark token as present (no blocking)
+      setTokenStatus(TokenStatus.PRESENT);
     }
-  }, [startRequest, isStale, getSignal]);
+  // authStateGuard methods are stable, but list them for clarity
+  }, [authStateGuard]);
 
   // Sync Firebase user with backend
   const syncWithBackend = useCallback(async (firebaseUser) => {
@@ -334,6 +401,7 @@ export function AuthProvider({ children }) {
   // Refresh token - get new Firebase ID token and sync with backend
   // Call this when you suspect the JWT may be expired
   // Returns structured result: { ok: boolean, tokenStored: boolean, reason?: string }
+  // P0 FIX: Uses separate tokenRefreshGuard to avoid aborting syncTokenWithBackend
   const refreshToken = useCallback(async () => {
     console.log('[Auth] refreshToken called, user:', user?.email);
 
@@ -342,7 +410,11 @@ export function AuthProvider({ children }) {
       return { ok: false, tokenStored: false, reason: 'no_user' };
     }
 
-    const requestId = startRequest();
+    // Use SEPARATE guard to avoid aborting syncTokenWithBackend
+    const requestId = tokenRefreshGuard.startRequest();
+
+    // Update token status to refreshing
+    setTokenStatus(TokenStatus.REFRESHING);
 
     try {
       // Force refresh the Firebase ID token
@@ -357,7 +429,7 @@ export function AuthProvider({ children }) {
         displayName: user.displayName,
         photoURL: user.photoURL,
       }, {
-        signal: getSignal(),
+        signal: tokenRefreshGuard.getSignal(),
       });
 
       console.log('[Auth] firebase-sync response:', {
@@ -368,7 +440,7 @@ export function AuthProvider({ children }) {
       });
 
       // Guard: Don't update if request is stale
-      if (isStale(requestId)) {
+      if (tokenRefreshGuard.isStale(requestId)) {
         return { ok: false, tokenStored: false, reason: 'stale_request' };
       }
 
@@ -378,19 +450,24 @@ export function AuthProvider({ children }) {
         const storedToken = localStorage.getItem('token');
         const tokenStored = storedToken === response.data.token;
         console.log('[Auth] Token stored successfully:', tokenStored);
+        // Update token status
+        setTokenStatus(TokenStatus.PRESENT);
         return { ok: true, tokenStored, reason: null };
       }
 
       console.warn('[Auth] firebase-sync response missing token');
+      setTokenStatus(TokenStatus.ERROR);
       return { ok: false, tokenStored: false, reason: 'no_token_in_response' };
     } catch (err) {
       // Ignore abort/cancel errors
       if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        // Abort is transient - stay in REFRESHING, caller can retry
+        // DO NOT set to ERROR
         return { ok: false, tokenStored: false, reason: 'aborted' };
       }
 
       // Guard: Check stale after error
-      if (isStale(requestId)) {
+      if (tokenRefreshGuard.isStale(requestId)) {
         return { ok: false, tokenStored: false, reason: 'stale_request' };
       }
 
@@ -406,9 +483,11 @@ export function AuthProvider({ children }) {
         data: err.response?.data,
       });
 
+      // Non-abort error → set error state
+      setTokenStatus(TokenStatus.ERROR);
       return { ok: false, tokenStored: false, reason };
     }
-  }, [user, startRequest, isStale, getSignal]);
+  }, [user, tokenRefreshGuard]);
 
   // Listen for auth:token-expired events from API client
   // When a 401 occurs on non-auth endpoints, the client dispatches this event
@@ -477,6 +556,9 @@ export function AuthProvider({ children }) {
     };
   }, [user, refreshToken]);
 
+  // Derived: is token ready for API calls?
+  const tokenReady = tokenStatus === TokenStatus.PRESENT;
+
   const value = useMemo(() => ({
     user,
     loading,
@@ -488,6 +570,9 @@ export function AuthProvider({ children }) {
     refreshToken, // Exposed for explicit token refresh
     isAuthenticated: !!user,
     isConfigured: isFirebaseConfigured(),
+    // Token state machine
+    tokenStatus, // 'present' | 'missing' | 'refreshing' | 'error'
+    tokenReady,  // Derived: tokenStatus === 'present'
   }), [
     user,
     loading,
@@ -497,6 +582,8 @@ export function AuthProvider({ children }) {
     logout,
     syncWithBackend,
     refreshToken,
+    tokenStatus,
+    tokenReady,
   ]);
 
   return (

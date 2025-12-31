@@ -105,6 +105,7 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
   // Stable refs to avoid useCallback churn
   const hasDataRef = useRef(false); // Track if we've received data (avoids data in deps)
   const retriedFor401Ref = useRef(null); // Track which 401 error we've retried (prevents infinite loops)
+  const prevEnabledRef = useRef(enabled); // Track enabled state for transition detection
 
   // Track mounted state to prevent updates after unmount
   useEffect(() => {
@@ -209,6 +210,25 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
     executeQuery();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, enabled]);
+
+  // P0 INVARIANT: When enabled transitions false → true, ensure clean slate
+  // This guarantees queries re-execute when boot completes (not stuck in cached state)
+  useEffect(() => {
+    const wasDisabled = prevEnabledRef.current === false;
+    const isNowEnabled = enabled === true;
+
+    if (wasDisabled && isNowEnabled) {
+      // Reset hasDataRef to ensure loading state shows (not isFetching)
+      // for the first fetch after re-enable. This prevents
+      // keepPreviousData from showing stale data from before disable.
+      hasDataRef.current = false;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[useAbortableQuery] enabled transitioned false → true, reset hasDataRef');
+      }
+    }
+
+    prevEnabledRef.current = enabled;
+  }, [enabled]);
 
   // Stable refs for token refresh handler (avoids effect churn)
   const errorRef = useRef(error);

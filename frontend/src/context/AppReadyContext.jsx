@@ -11,13 +11,14 @@ const BOOT_CRITICAL_THRESHOLD_MS = 10000; // Critical: Likely a bug
  * AppReadyContext - Global boot synchronization gate
  *
  * CRITICAL INVARIANT:
- * `appReady` = "Firebase auth state is KNOWN" AND "subscription resolved" AND "filters hydrated"
+ * `appReady` = "Firebase auth state is KNOWN" AND "subscription resolved" AND "tier known" AND "filters hydrated"
  * `appReady` ≠ "Backend API calls complete" (that's separate from boot)
  *
- * The three conditions are:
+ * The four conditions are:
  * 1. authInitialized: Firebase onAuthStateChanged has fired (user or null known)
  * 2. isSubscriptionReady: Subscription status is resolved (premium check complete)
- * 3. filtersReady: Filters are hydrated from storage (prevents stale params)
+ * 3. tierResolved: Tier is known (not 'unknown' loading state) - OR user not authenticated
+ * 4. filtersReady: Filters are hydrated from storage (prevents stale params)
  *
  * WATCHDOG:
  * If appReady doesn't become true within BOOT_WARNING_THRESHOLD_MS, a warning is logged.
@@ -65,14 +66,23 @@ export function useAppReadyOptional() {
 }
 
 export function AppReadyProvider({ children }) {
-  const { initialized: authInitialized } = useAuth();
-  const { isSubscriptionReady } = useSubscription();
+  const { initialized: authInitialized, isAuthenticated } = useAuth();
+  const { isSubscriptionReady, isTierKnown } = useSubscription();
 
   // filtersReady comes from PowerBIFilterProvider
   const { filtersReady } = useFilterState();
 
-  // App is ready when all three conditions are met
-  const appReady = authInitialized && isSubscriptionReady && filtersReady;
+  // P0 CONSTRAINT: App is NOT ready while tier is 'unknown'
+  // Exception: if user is NOT authenticated, tier='free' is immediate (no waiting)
+  // isTierKnown = true when subscription.tier !== 'unknown'
+  const tierResolved = !isAuthenticated || isTierKnown;
+
+  // App is ready when ALL conditions are met:
+  // 1. Auth initialized (Firebase state known)
+  // 2. Subscription resolved from backend
+  // 3. Tier is known (not 'unknown' loading state)
+  // 4. Filters hydrated from storage
+  const appReady = authInitialized && isSubscriptionReady && tierResolved && filtersReady;
 
   // Track boot start time for stuck detection
   const bootStartRef = useRef(Date.now());
@@ -84,9 +94,11 @@ export function AppReadyProvider({ children }) {
   const bootStatus = useMemo(() => ({
     authInitialized,
     isSubscriptionReady,
+    isTierKnown,
+    tierResolved,
     filtersReady,
     appReady,
-  }), [authInitialized, isSubscriptionReady, filtersReady, appReady]);
+  }), [authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady, appReady]);
 
   /**
    * Build telemetry payload for boot stuck events
@@ -97,6 +109,7 @@ export function AppReadyProvider({ children }) {
     const blockedBy = [];
     if (!authInitialized) blockedBy.push('auth');
     if (!isSubscriptionReady) blockedBy.push('subscription');
+    if (!tierResolved) blockedBy.push('tier_unknown');
     if (!filtersReady) blockedBy.push('filters');
 
     return {
@@ -106,6 +119,8 @@ export function AppReadyProvider({ children }) {
       flags: {
         auth_initialized: authInitialized,
         subscription_ready: isSubscriptionReady,
+        tier_known: isTierKnown,
+        tier_resolved: tierResolved,
         filters_ready: filtersReady,
       },
       timestamp: new Date().toISOString(),
@@ -162,7 +177,7 @@ export function AppReadyProvider({ children }) {
       clearTimeout(criticalTimeoutId);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- buildTelemetryPayload is stable
-  }, [appReady, authInitialized, isSubscriptionReady, filtersReady]);
+  }, [appReady, authInitialized, isSubscriptionReady, tierResolved, filtersReady]);
 
   // Log boot state changes (dev only)
   useEffect(() => {
@@ -187,6 +202,8 @@ export function AppReadyProvider({ children }) {
             appReady,
             authInitialized,
             isSubscriptionReady,
+            isTierKnown,
+            tierResolved,
             filtersReady,
             bootElapsed: `${Date.now() - bootStartRef.current}ms`,
           };
@@ -198,7 +215,7 @@ export function AppReadyProvider({ children }) {
         delete window.__APP_READY_DEBUG__;
       }
     };
-  }, [appReady, authInitialized, isSubscriptionReady, filtersReady]);
+  }, [appReady, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady]);
 
   const value = useMemo(() => ({
     appReady,
@@ -206,8 +223,10 @@ export function AppReadyProvider({ children }) {
     // Individual flags for specific checks
     authInitialized,
     isSubscriptionReady,
+    isTierKnown,
+    tierResolved,
     filtersReady,
-  }), [appReady, bootStatus, authInitialized, isSubscriptionReady, filtersReady]);
+  }), [appReady, bootStatus, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady]);
 
   return (
     <AppReadyContext.Provider value={value}>
