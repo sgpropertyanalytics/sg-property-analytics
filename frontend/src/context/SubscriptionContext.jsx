@@ -283,9 +283,6 @@ export function SubscriptionProvider({ children }) {
         // Guard: Don't update state if stale
         if (isStale(requestId)) return;
 
-        // Reset retry count on success
-        setRetryCount(0);
-
         // Unwrap enveloped response: {data: {tier, ...}, meta: {...}}
         const subData = unwrapSubscriptionResponse(response.data);
         if (subData) {
