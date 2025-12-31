@@ -8,6 +8,7 @@ import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { PowerBIFilterProvider } from './context/PowerBIFilter';
+import { DebugProvider } from './context/DebugContext';
 import LandingPage from './pages/Landing';
 import Login from './pages/Login';
 import Pricing from './pages/Pricing';
@@ -116,6 +117,7 @@ function App() {
     <AuthProvider>
       <SubscriptionProvider>
         <DataProvider>
+          <DebugProvider>
           <BrowserRouter>
             {/* PowerBIFilterProvider wraps all routes to prevent context recreation on navigation */}
             <PowerBIFilterProvider>
@@ -197,6 +199,7 @@ function App() {
             </Routes>
             </PowerBIFilterProvider>
           </BrowserRouter>
+          </DebugProvider>
         </DataProvider>
       </SubscriptionProvider>
     </AuthProvider>

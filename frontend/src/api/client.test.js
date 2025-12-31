@@ -90,8 +90,11 @@ describe('envelope unwrap regression', () => {
   it('should not have response.data.data patterns in components (apiClient unwraps automatically)', async () => {
     const { execSync } = await import('child_process');
     const path = await import('path');
+    const { fileURLToPath } = await import('url');
 
-    const srcDir = path.resolve(__dirname, '..');
+    // Get __dirname equivalent in ES modules
+    const currentFile = fileURLToPath(import.meta.url);
+    const srcDir = path.resolve(path.dirname(currentFile), '..');
 
     // Grep for .data?.data or .data.data patterns
     // Exclude: test files, comments, Chart.js patterns (chart.data.datasets)

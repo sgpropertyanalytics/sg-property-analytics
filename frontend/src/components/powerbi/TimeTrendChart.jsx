@@ -1,5 +1,5 @@
 import React, { useRef, useMemo } from 'react';
-import { useAbortableQuery } from '../../hooks';
+import { useAbortableQuery, useDebugOverlay } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 // Chart.js components registered globally in chartSetup.js
 import { Chart } from 'react-chartjs-2';
@@ -27,6 +27,9 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
   const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
   const chartRef = useRef(null);
 
+  // Debug overlay for API diagnostics (toggle with Ctrl+Shift+D)
+  const { captureRequest, captureResponse, captureError, DebugOverlay } = useDebugOverlay('TimeTrendChart');
+
   // Fetch and transform data using adapter pattern
   // useAbortableQuery handles: abort controller, stale request protection, loading/error states
   const { data, loading, error, refetch } = useAbortableQuery(
@@ -38,23 +41,34 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
         ...(saleType && { sale_type: saleType }),
       });
 
-      const response = await getAggregate(params, { signal, priority: 'high' });
+      // Capture request for debug overlay
+      captureRequest('/api/aggregate', params);
 
-      // Validate API contract version (dev/test only)
-      assertKnownVersion(response.data, '/api/aggregate');
+      try {
+        const response = await getAggregate(params, { signal, priority: 'high' });
 
-      const rawData = response.data || [];
+        // Validate API contract version (dev/test only)
+        assertKnownVersion(response.data, '/api/aggregate');
 
-      // Debug logging (dev only)
-      logFetchDebug('TimeTrendChart', {
-        endpoint: '/api/aggregate',
-        timeGrain: timeGrouping,
-        response: response.data,
-        rowCount: rawData.length,
-      });
+        const rawData = response.data || [];
 
-      // Use adapter for transformation (schema-safe, sorted)
-      return transformTimeSeries(rawData, timeGrouping);
+        // Capture response for debug overlay
+        captureResponse(response, rawData.length);
+
+        // Debug logging (dev only)
+        logFetchDebug('TimeTrendChart', {
+          endpoint: '/api/aggregate',
+          timeGrain: timeGrouping,
+          response: response.data,
+          rowCount: rawData.length,
+        });
+
+        // Use adapter for transformation (schema-safe, sorted)
+        return transformTimeSeries(rawData, timeGrouping);
+      } catch (err) {
+        captureError(err);
+        throw err;
+      }
     },
     [debouncedFilterKey, timeGrouping, saleType],
     { initialData: [], keepPreviousData: true }
@@ -218,9 +232,11 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
   return (
     <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="bar" height={height + 80}>
       <div
-        className="bg-card rounded-lg border border-[#94B4C1]/30 overflow-hidden flex flex-col shadow-sm"
+        className="bg-card rounded-lg border border-[#94B4C1]/30 overflow-hidden flex flex-col shadow-sm relative"
         style={{ height: cardHeight }}
       >
+        {/* Debug overlay - shows API call info when Ctrl+Shift+D is pressed */}
+        <DebugOverlay />
         {/* Header - refined typography */}
         <div className="px-5 py-4 border-b border-[#94B4C1]/20 shrink-0">
           <div className="flex items-baseline justify-between">

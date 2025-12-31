@@ -5,6 +5,7 @@ import { ErrorBoundary } from '../ui';
 import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PricingModal } from '../PricingModal';
+import { DebugModeIndicator } from '../debug/DebugModeIndicator';
 
 // localStorage key for nav collapse state persistence
 const NAV_STORAGE_KEY = 'nav-collapsed';
@@ -263,6 +264,9 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
       {/* Pricing Modal - Global paywall trigger */}
       <PricingModal isOpen={showPricingModal} onClose={hidePaywall} />
+
+      {/* Debug Mode Indicator - Shows when Ctrl+Shift+D is pressed */}
+      <DebugModeIndicator />
     </div>
   );
 });
