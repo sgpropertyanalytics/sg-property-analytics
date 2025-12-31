@@ -125,9 +125,12 @@ export function useDeferredFetch({
     };
   }, [filterKey, isVisible, priority, fetchOnMount]);
 
-  // When chart becomes visible and has pending filter change, trigger fetch
+  // When chart becomes visible, trigger fetch if:
+  // 1. Filter key changed while hidden (filterKey !== lastFilterKeyRef)
+  // 2. OR initial visibility when fetchOnMount was false (shouldFetch is still false)
   useEffect(() => {
-    if (isVisible && filterKey !== lastFilterKeyRef.current) {
+    const needsFetch = filterKey !== lastFilterKeyRef.current || !shouldFetch;
+    if (isVisible && needsFetch) {
       const delay = PRIORITY_DELAYS[priority] || PRIORITY_DELAYS.medium;
       deferTimeoutRef.current = setTimeout(() => {
         setShouldFetch(true);
@@ -140,7 +143,7 @@ export function useDeferredFetch({
         }
       };
     }
-  }, [isVisible, filterKey, priority]);
+  }, [isVisible, filterKey, priority, shouldFetch]);
 
   // Reset shouldFetch to false after it's been consumed (for next filter change)
   const markFetched = useCallback(() => {
