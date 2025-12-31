@@ -64,6 +64,10 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
         getNewLaunchAbsorption(params, { signal }),
       ]);
 
+      // Unwrap envelope (axios .data → response body → .data array)
+      const timelinePayload = timelineRes.data?.data || timelineRes.data || [];
+      const absorptionPayload = absorptionRes.data?.data || absorptionRes.data || [];
+
       // Validate API contract versions (dev/test only)
       assertKnownVersion(timelineRes.data, '/api/new-launch-timeline');
       assertKnownVersion(absorptionRes.data, '/api/new-launch-absorption');
@@ -72,13 +76,13 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
       logFetchDebug('NewLaunchTimelineChart', {
         endpoint: '/api/new-launch-timeline + /api/new-launch-absorption',
         timeGrain: timeGrouping,
-        timelineRows: timelineRes.data?.length || 0,
-        absorptionRows: absorptionRes.data?.length || 0,
+        timelineRows: timelinePayload?.length || 0,
+        absorptionRows: absorptionPayload?.length || 0,
       });
 
       // Transform each dataset
-      const timelineData = transformNewLaunchTimeline(timelineRes.data || [], TIME_GROUP_BY[timeGrouping]);
-      const absorptionData = transformNewLaunchAbsorption(absorptionRes.data || [], TIME_GROUP_BY[timeGrouping]);
+      const timelineData = transformNewLaunchTimeline(timelinePayload, TIME_GROUP_BY[timeGrouping]);
+      const absorptionData = transformNewLaunchAbsorption(absorptionPayload, TIME_GROUP_BY[timeGrouping]);
 
       // Merge by periodLabel (join on period)
       return timelineData.map(t => {
