@@ -42,12 +42,15 @@ export function useGatedAbortableQuery(queryFn, deps = [], options = {}) {
   const userEnabled = options.enabled ?? true;
   const effectiveEnabled = userEnabled && appReady;
 
+  // P0 SAFETY: Only enable token refresh retry when appReady=true
+  // During boot, auth isn't ready so retrying 401s makes no sense
+  const shouldRetryOnTokenRefresh = appReady && (options.retryOnTokenRefresh ?? true);
+
   const result = useAbortableQuery(queryFn, deps, {
     ...options,
     enabled: effectiveEnabled,
-    // Enable token refresh retry by default for authenticated queries
-    // Can be explicitly disabled via options.retryOnTokenRefresh = false
-    retryOnTokenRefresh: options.retryOnTokenRefresh ?? true,
+    // Enable token refresh retry only when app is ready and user didn't disable it
+    retryOnTokenRefresh: shouldRetryOnTokenRefresh,
   });
 
   // isBootPending is true when we're waiting for boot to complete

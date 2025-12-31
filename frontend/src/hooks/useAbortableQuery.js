@@ -102,6 +102,10 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
   const mountedRef = useRef(true);
 
+  // Stable refs to avoid useCallback churn
+  const hasDataRef = useRef(false); // Track if we've received data (avoids data in deps)
+  const retriedFor401Ref = useRef(null); // Track which 401 error we've retried (prevents infinite loops)
+
   // Track mounted state to prevent updates after unmount
   useEffect(() => {
     mountedRef.current = true;
@@ -121,14 +125,16 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
 
     // keepPreviousData: Only show loading state if we have no data yet
     // This prevents loading flash when filters change - chart stays visible
-    const hasExistingData = data !== null && data !== initialData;
-    if (keepPreviousData && hasExistingData) {
+    // Use ref to avoid data/initialData in useCallback deps (causes churn)
+    if (keepPreviousData && hasDataRef.current) {
       setIsFetching(true); // Background fetch indicator
       // Don't set loading=true - keep showing previous data
     } else {
       setLoading(true);
     }
     setError(null);
+    // Clear 401 retry guard on new query attempt
+    retriedFor401Ref.current = null;
 
     // Retry loop for network failures (cold start resilience)
     let lastError = null;
@@ -153,6 +159,7 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
         if (!mountedRef.current) return;
 
         setData(result);
+        hasDataRef.current = true; // Mark that we have data (for keepPreviousData)
         setLoading(false);
         setIsFetching(false);
 
@@ -194,7 +201,8 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
         onError(lastError);
       }
     }
-  }, [queryFn, enabled, startRequest, getSignal, isStale, onSuccess, onError, retries, keepPreviousData, data, initialData]);
+  // Note: data/initialData removed from deps - using hasDataRef instead to avoid churn
+  }, [queryFn, enabled, startRequest, getSignal, isStale, onSuccess, onError, retries, keepPreviousData]);
 
   // Execute query when dependencies change
   useEffect(() => {
@@ -202,17 +210,34 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, enabled]);
 
+  // Stable refs for token refresh handler (avoids effect churn)
+  const errorRef = useRef(error);
+  errorRef.current = error;
+  const executeQueryRef = useRef(executeQuery);
+  executeQueryRef.current = executeQuery;
+
   // Listen for token refresh events and retry failed requests
   // This handles the case where a 401 caused a failure, then AuthContext refreshed the token
   useEffect(() => {
     if (!retryOnTokenRefresh) return;
 
     const handleTokenRefreshed = () => {
-      // Only retry if there was an auth error
-      if (error?.response?.status === 401 || error?.message?.includes('401')) {
-        console.log('[useAbortableQuery] Token refreshed, retrying failed request');
-        executeQuery();
+      const currentError = errorRef.current;
+
+      // P0 SAFETY: Only retry on STRUCTURED 401 (no string matching)
+      const is401 = currentError?.response?.status === 401;
+      if (!is401) return;
+
+      // P0 SAFETY: Retry once per 401 - prevent infinite loops
+      // If we've already retried for this exact error object, skip
+      if (retriedFor401Ref.current === currentError) {
+        console.log('[useAbortableQuery] Already retried for this 401, skipping');
+        return;
       }
+
+      console.log('[useAbortableQuery] Token refreshed, retrying failed 401 request');
+      retriedFor401Ref.current = currentError; // Mark as retried
+      executeQueryRef.current();
     };
 
     window.addEventListener('auth:token-refreshed', handleTokenRefreshed);
@@ -220,7 +245,7 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
     return () => {
       window.removeEventListener('auth:token-refreshed', handleTokenRefreshed);
     };
-  }, [retryOnTokenRefresh, error, executeQuery]);
+  }, [retryOnTokenRefresh]); // Stable deps - refs handle the rest
 
   return {
     data,
