@@ -11,7 +11,64 @@ Prevent endpoint proliferation by enforcing use of the generic `/api/aggregate` 
 
 ---
 
+## Part 0: API Design Principles
+
+Before creating ANY endpoint, understand what should vs. shouldn't be an API.
+
+### What Should Be an API Endpoint
+
+Create an API when the data is a **first-class concept** with independent meaning:
+
+| Criterion | Example |
+|-----------|---------|
+| **Real domain resource** (CRUD-able) | projects, transactions, users, subscriptions |
+| **Expensive/requires DB access** | aggregations, joins, filtered queries |
+| **Access-controlled** | subscription tiers, user data |
+| **Multiple screens need it** | shared contract, centralized caching |
+| **Must be stable/versionable** | future clients (mobile, partner APIs) |
+
+### What Should NOT Be an Endpoint
+
+| Anti-Pattern | Why | Solution |
+|--------------|-----|----------|
+| **Enum-like UI options** | Not resources, just metadata | Bundle into `/api/filter-options` |
+| **Derived subset of another endpoint** | Creates drift, maintenance burden | Pick ONE canonical source |
+| **"Convenience" shortcuts** | Gets deleted during refactors, breaks prod | Use existing endpoint with params |
+
+### 6-Point Decision Checklist
+
+**Create separate endpoint only if ≥2 answers are YES:**
+
+```
+[ ] Does it represent a real domain object?
+[ ] Does it need auth/permissions?
+[ ] Does it require DB joins/aggregations?
+[ ] Is it reused across multiple pages/clients?
+[ ] Does it need its own caching/TTL?
+[ ] Will it evolve independently (schema changes)?
+
+If NO to most → bundle into existing endpoint
+```
+
+### Concrete Example: Districts
+
+Districts are **enum-like filter metadata**, not a resource.
+
+| Approach | Verdict |
+|----------|---------|
+| Keep inside `/api/filter-options` | ✅ Correct |
+| Keep `/api/districts` as deprecated alias | ⚠️ Temporary only |
+| Maintain both as "equal citizens" | ❌ Creates drift |
+
+**Rule of thumb:** If it's just a piece of metadata that belongs to a bigger contract, don't give it its own endpoint.
+
+---
+
 ## Part 1: The Decision Tree
+
+> **Prerequisite:** If Part 0 suggests the data doesn't warrant an endpoint at all, STOP here.
+>
+> If you've determined a new endpoint IS warranted, use this decision tree to determine if it should extend `/aggregate`:
 
 ### Before Creating ANY New Endpoint, Ask:
 
