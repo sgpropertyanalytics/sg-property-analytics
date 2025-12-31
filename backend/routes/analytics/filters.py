@@ -13,6 +13,25 @@ from routes.analytics import analytics_bp
 from api.contracts import api_contract
 
 
+@analytics_bp.route("/districts", methods=["GET"])
+def get_districts():
+    """
+    Get list of all districts.
+    Simple endpoint for DataContext initialization.
+    """
+    from models.transaction import Transaction
+    from models.database import db
+    from sqlalchemy import distinct
+
+    try:
+        outlier_filter = Transaction.outlier_filter()
+        districts = [d[0] for d in db.session.query(distinct(Transaction.district)).filter(outlier_filter).order_by(Transaction.district).all()]
+        return jsonify({"districts": districts})
+    except Exception as e:
+        print(f"GET /api/districts ERROR: {e}")
+        return jsonify({"error": str(e), "districts": []}), 500
+
+
 @analytics_bp.route("/filter-options", methods=["GET"])
 @api_contract("filter-options")
 def filter_options():
