@@ -22,7 +22,7 @@ import { getInitials } from '../utils/formatters';
  */
 export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
   const { user, logout } = useAuth();
-  const { subscription, isPremium, daysUntilExpiry } = useSubscription();
+  const { subscription, isPremium, isTierKnown, daysUntilExpiry } = useSubscription();
 
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -173,7 +173,9 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className={`text-lg font-bold ${isPremium ? 'text-[#213448]' : 'text-[#547792]'}`}>
-                        {isPremium ? 'Premium' : 'Free'}
+                        {!isTierKnown ? (
+                          <span className="inline-block h-6 w-20 bg-[#94B4C1]/30 rounded animate-pulse" />
+                        ) : isPremium ? 'Premium' : 'Free'}
                       </div>
                       {isPremium && subscription?.ends_at && (
                         <div className="text-sm text-[#547792]">
@@ -183,7 +185,7 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
                           }
                         </div>
                       )}
-                      {!isPremium && (
+                      {isTierKnown && !isPremium && (
                         <div className="text-sm text-[#94B4C1]">
                           Limited access to transaction data
                         </div>

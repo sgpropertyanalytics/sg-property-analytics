@@ -40,7 +40,7 @@ export const BeadsChart = React.memo(function BeadsChart({
   height = 300,
   saleType = null,
   sharedData = null,
-  sharedLoading = false,
+  sharedStatus = 'idle',
 }) {
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const chartRef = useRef(null);
@@ -105,10 +105,8 @@ export const BeadsChart = React.memo(function BeadsChart({
   );
 
   const resolvedData = useShared ? transformBeadsChartSeries(sharedData) : chartData;
-  // Derive status for shared data mode (sharedLoading=true means loading)
-  const resolvedStatus = useShared
-    ? (sharedLoading ? QueryStatus.LOADING : QueryStatus.SUCCESS)
-    : status;
+  // Use parent's status directly when using shared data
+  const resolvedStatus = useShared ? sharedStatus : status;
 
   const hasData = resolvedData?.datasets?.length > 0;
   const { stats, stringRanges } = resolvedData;

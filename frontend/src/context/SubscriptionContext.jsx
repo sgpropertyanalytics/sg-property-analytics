@@ -243,6 +243,11 @@ export function SubscriptionProvider({ children }) {
           response = await fetchSub();
           console.log('[Subscription] Fetch success, status:', response.status);
         } catch (fetchErr) {
+          // Abort is intentional (filter change, re-render) - silently return
+          if (fetchErr.name === 'CanceledError' || fetchErr.name === 'AbortError') {
+            console.log('[Subscription] Fetch aborted (intentional)');
+            return;
+          }
           console.error('[Subscription] Fetch error:', {
             status: fetchErr.response?.status,
             message: fetchErr.message,

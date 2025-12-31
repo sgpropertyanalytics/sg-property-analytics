@@ -33,7 +33,7 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
   numBins = 20,
   saleType = null,
   sharedData = null,
-  sharedLoading = false,
+  sharedStatus = 'idle',
 }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
@@ -84,10 +84,8 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
   );
 
   const resolvedData = useShared ? transformDistributionSeries(sharedData) : histogramData;
-  // Derive status for shared data mode (sharedLoading=true means loading)
-  const resolvedStatus = useShared
-    ? (sharedLoading ? QueryStatus.LOADING : QueryStatus.SUCCESS)
-    : status;
+  // Use parent's status directly when using shared data
+  const resolvedStatus = useShared ? sharedStatus : status;
 
   // Extract transformed data
   const { bins, stats, tail, totalCount } = resolvedData;

@@ -148,7 +148,7 @@ export function MacroOverviewContent() {
   // Shared dashboard panels for histogram + beads (reduces request fanout)
   // These panels share the same filter behavior: exclude location drill,
   // but respect global sidebar filters (incl. segment).
-  const { data: dashboardPanels, loading: dashboardLoading, isBootPending: dashboardBootPending } = useGatedAbortableQuery(
+  const { data: dashboardPanels, status: dashboardStatus, isBootPending: dashboardBootPending } = useGatedAbortableQuery(
     async (signal) => {
       const params = buildApiParams(
         {
@@ -387,7 +387,7 @@ export function MacroOverviewContent() {
                           height={standardChartHeight}
                           saleType={SALE_TYPE}
                           sharedData={dashboardPanels?.price_histogram}
-                          sharedLoading={shouldFetchPanels ? dashboardLoading : true}
+                          sharedStatus={shouldFetchPanels ? dashboardStatus : 'pending'}
                         />
                       </ChartWatermark>
                     </ErrorBoundary>
@@ -400,7 +400,7 @@ export function MacroOverviewContent() {
                           height={standardChartHeight}
                           saleType={SALE_TYPE}
                           sharedData={dashboardPanels?.beads_chart}
-                          sharedLoading={shouldFetchPanels ? dashboardLoading : true}
+                          sharedStatus={shouldFetchPanels ? dashboardStatus : 'pending'}
                         />
                       </ChartWatermark>
                     </ErrorBoundary>
