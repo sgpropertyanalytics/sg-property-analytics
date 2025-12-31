@@ -275,18 +275,24 @@ export function AuthProvider({ children }) {
 
   // Refresh token - get new Firebase ID token and sync with backend
   // Call this when you suspect the JWT may be expired
+  // Returns structured result: { ok: boolean, tokenStored: boolean, reason?: string }
   const refreshToken = useCallback(async () => {
+    console.log('[Auth] refreshToken called, user:', user?.email);
+
     if (!user) {
       console.warn('[Auth] Cannot refresh token - no user');
-      return false;
+      return { ok: false, tokenStored: false, reason: 'no_user' };
     }
 
     const requestId = startRequest();
 
     try {
       // Force refresh the Firebase ID token
+      console.log('[Auth] Getting fresh Firebase ID token...');
       const idToken = await user.getIdToken(true); // true = force refresh
+      console.log('[Auth] Got Firebase ID token, length:', idToken?.length);
 
+      console.log('[Auth] Calling /auth/firebase-sync...');
       const response = await apiClient.post('/auth/firebase-sync', {
         idToken,
         email: user.email,
@@ -296,28 +302,53 @@ export function AuthProvider({ children }) {
         signal: getSignal(),
       });
 
+      console.log('[Auth] firebase-sync response:', {
+        status: response.status,
+        hasToken: !!response.data?.token,
+        tokenLength: response.data?.token?.length,
+        subscription: response.data?.subscription,
+      });
+
       // Guard: Don't update if request is stale
-      if (isStale(requestId)) return false;
+      if (isStale(requestId)) {
+        return { ok: false, tokenStored: false, reason: 'stale_request' };
+      }
 
       // Store new JWT
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
-        // Token refresh succeeded - subscriber status will be re-fetched automatically
-        return true;
+        const storedToken = localStorage.getItem('token');
+        const tokenStored = storedToken === response.data.token;
+        console.log('[Auth] Token stored successfully:', tokenStored);
+        return { ok: true, tokenStored, reason: null };
       }
 
-      return false;
+      console.warn('[Auth] firebase-sync response missing token');
+      return { ok: false, tokenStored: false, reason: 'no_token_in_response' };
     } catch (err) {
       // Ignore abort/cancel errors
       if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        return false;
+        return { ok: false, tokenStored: false, reason: 'aborted' };
       }
 
       // Guard: Check stale after error
-      if (isStale(requestId)) return false;
+      if (isStale(requestId)) {
+        return { ok: false, tokenStored: false, reason: 'stale_request' };
+      }
 
-      console.error('[Auth] Token refresh failed:', err);
-      return false;
+      const reason = err.response?.status === 401 ? '401_unauthorized'
+        : err.response?.status === 500 ? '500_server_error'
+        : err.message?.includes('Network') ? 'network_error'
+        : 'unknown_error';
+
+      console.error('[Auth] Token refresh failed:', {
+        reason,
+        status: err.response?.status,
+        message: err.message,
+        data: err.response?.data,
+      });
+
+      return { ok: false, tokenStored: false, reason };
     }
   }, [user, startRequest, isStale, getSignal]);
 

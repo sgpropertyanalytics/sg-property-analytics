@@ -16,6 +16,17 @@ from routes.analytics import analytics_bp, reader
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
 
 
+@analytics_bp.route("/ping", methods=["GET"])
+def ping():
+    """
+    Dead-simple ping endpoint - no DB, no auth, just returns ok.
+    Use this to verify API is reachable from public internet.
+
+    curl https://www.sgpropertytrend.com/api/ping
+    """
+    return jsonify({"ok": True})
+
+
 @analytics_bp.route("/health", methods=["GET"])
 def health():
     """Health check endpoint."""

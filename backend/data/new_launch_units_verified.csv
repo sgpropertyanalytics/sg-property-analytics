@@ -1,0 +1,11 @@
+project_name,total_units,developer,tenure,top,district,source,verification_status,confidence,verified_sources,all_values,suggested_units
+# 1 SUITES,112,,,,,EdgeProp,high_conf,0.9,"EdgeProp,99.co","{'EdgeProp': 112, '99.co': 112}",
+10 EVELYN,56,,,,,EdgeProp,high_conf,0.9,"EdgeProp,99.co","{'EdgeProp': 56, '99.co': 56}",
+15 HOLLAND HILL,57,,,,,EdgeProp,high_conf,0.9,"EdgeProp,99.co","{'EdgeProp': 57, '99.co': 57}",
+19 NASSIM,101,,,,,EdgeProp,high_conf,0.95,"EdgeProp,99.co,NewLaunchesCondo","{'EdgeProp': 101, '99.co': 101, 'NewLaunchesCondo': 101}",
+1953,58,Oxley Amethyst,Freehold,,D08,EdgeProp,high_conf,0.9,"EdgeProp,99.co","{'EdgeProp': 58, '99.co': 58}",
+26 NEWTON,180,,,,,EdgeProp,high_conf,0.9,"EdgeProp,99.co","{'EdgeProp': 180, '99.co': 180}",
+35 GILSTEAD,70,TEE Land & TG Development,Freehold,,D11,EdgeProp,high_conf,0.9,"EdgeProp,99.co","{'EdgeProp': 70, '99.co': 70}",
+368 THOMSON,157,,,,,EdgeProp,high_conf,0.9,"EdgeProp,99.co","{'EdgeProp': 157, '99.co': 157}",
+38 I SUITES,120,,,,,EdgeProp,high_conf,0.9,"EdgeProp,99.co","{'EdgeProp': 120, '99.co': 120}",
+76 SHENTON,202,,,,,EdgeProp,high_conf,0.9,"EdgeProp,99.co","{'EdgeProp': 202, '99.co': 202}",
