@@ -159,7 +159,7 @@ export function MethodologyContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiClient.get('/api/metadata')
+    apiClient.get('/metadata')
       .then(response => {
         setMetadata(response.data);
       })

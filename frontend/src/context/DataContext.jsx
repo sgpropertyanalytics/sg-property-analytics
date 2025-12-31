@@ -9,7 +9,7 @@
  * Prevents redundant API calls by fetching static data once at the app level.
  */
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getDistricts, getMetadata } from '../api/client';
+import { getFilterOptions, getMetadata } from '../api/client';
 
 const DataContext = createContext(null);
 
@@ -27,12 +27,17 @@ export function DataProvider({ children }) {
 
       try {
         // Fetch districts and metadata in parallel
-        const [districtsRes, metadataRes] = await Promise.all([
-          getDistricts().catch(() => ({ data: { districts: [] } })),
+        const [filterOptionsRes, metadataRes] = await Promise.all([
+          getFilterOptions().catch(() => ({ data: { districts: [] } })),
           getMetadata().catch(() => ({ data: null }))
         ]);
 
-        setAvailableDistricts(districtsRes.data.districts || []);
+        const districtOptions = filterOptionsRes.data.districts || [];
+        const districts = districtOptions.map((option) =>
+          typeof option === 'string' ? option : option?.value
+        ).filter(Boolean);
+
+        setAvailableDistricts(districts);
         setApiMetadata(metadataRes.data);
       } catch (err) {
         console.error('Error fetching static data:', err);
@@ -83,4 +88,3 @@ export function useData() {
 }
 
 export default DataContext;
-
