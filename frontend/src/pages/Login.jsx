@@ -19,7 +19,7 @@ import { useAuth } from '../context/AuthContext';
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInWithGoogle, error: authError, loading: authLoading, isConfigured } = useAuth();
+  const { signInWithGoogle, error: authError, authUiLoading, isConfigured } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState('');
@@ -208,7 +208,7 @@ function Login() {
           {isConfigured ? (
             <button
               onClick={handleGoogleSignIn}
-              disabled={isSigningIn || authLoading}
+              disabled={authUiLoading || isSigningIn}
               className="w-full h-14 bg-white border border-slate-400 text-slate-700 rounded-xl font-medium hover:bg-slate-50 hover:border-slate-500 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-md"
             >
               {/* Standard multi-color Google 'G' icon */}

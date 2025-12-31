@@ -74,6 +74,11 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null);
   const [initialized, setInitialized] = useState(false);
 
+  // Separate UI loading state for Google button (5s max)
+  // This allows the button to become enabled even if Firebase is slow
+  // Cleared by: 1) onAuthStateChanged callback, or 2) 5s timeout fallback
+  const [authUiLoading, setAuthUiLoading] = useState(true);
+
   // Token status state machine - initialize based on localStorage
   const [tokenStatus, setTokenStatus] = useState(() => {
     return localStorage.getItem('token') ? TokenStatus.PRESENT : TokenStatus.MISSING;
@@ -84,6 +89,21 @@ export function AuthProvider({ children }) {
   const authStateGuard = useStaleRequestGuard();  // For onAuthStateChanged sync
   const tokenRefreshGuard = useStaleRequestGuard(); // For refreshToken() calls
 
+  // 5s safety net for authUiLoading - enables Google button even if Firebase is slow
+  useEffect(() => {
+    if (!authUiLoading) return; // Already cleared
+
+    const uiLoadingTimeout = setTimeout(() => {
+      if (authUiLoading) {
+        console.warn('[Auth] UI loading timeout (5s) - enabling Google button');
+        setAuthUiLoading(false);
+        // NOTE: Does NOT set initialized - that's a separate contract
+      }
+    }, 5000);
+
+    return () => clearTimeout(uiLoadingTimeout);
+  }, [authUiLoading]);
+
   // Legacy alias for backwards compatibility (used by syncWithBackend)
   const { startRequest, isStale, getSignal } = authStateGuard;
 
@@ -92,6 +112,7 @@ export function AuthProvider({ children }) {
     if (!isFirebaseConfigured()) {
       // Firebase not configured - skip auth listener
       setInitialized(true);
+      setAuthUiLoading(false); // Clear UI loading
       // No user = token not needed
       setTokenStatus(TokenStatus.PRESENT);
       return;
@@ -152,6 +173,7 @@ export function AuthProvider({ children }) {
           // Guard: Only set if this is still the current request (prevents race conditions)
           if (!authStateGuard.isStale(requestId)) {
             setLoading(false);
+            setAuthUiLoading(false); // Clear UI loading on first auth state
             setInitialized(true);
             didSetInitialized = true;
           }
@@ -489,6 +511,69 @@ export function AuthProvider({ children }) {
     }
   }, [user, tokenRefreshGuard]);
 
+  // Manual retry for token sync (called by BootStuckBanner)
+  // P0 FIX: Uses tokenRefreshGuard (not authStateGuard) to avoid cross-abort
+  // P0 FIX: On missing token, set MISSING (not ERROR) to avoid re-entering deadlock
+  // P0 FIX: On abort, set MISSING (not stay REFRESHING) to avoid stuck state
+  const retryTokenSync = useCallback(async () => {
+    if (!user) {
+      console.warn('[Auth] Cannot retry token sync - no user');
+      return { ok: false, reason: 'no_user' };
+    }
+
+    console.log('[Auth] Manual token sync retry triggered');
+    setTokenStatus(TokenStatus.REFRESHING);
+
+    // Use tokenRefreshGuard - separate from authStateGuard
+    const requestId = tokenRefreshGuard.startRequest();
+
+    try {
+      const idToken = await user.getIdToken(true); // Force refresh
+      const response = await apiClient.post('/auth/firebase-sync', {
+        idToken,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+      }, {
+        signal: tokenRefreshGuard.getSignal(),
+      });
+
+      // Guard: Don't update if request is stale
+      if (tokenRefreshGuard.isStale(requestId)) {
+        return { ok: false, reason: 'stale_request' };
+      }
+
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.removeItem('subscription_cache'); // Clear stale cache
+        setTokenStatus(TokenStatus.PRESENT);
+        console.log('[Auth] Token sync retry succeeded');
+        return { ok: true, reason: null };
+      }
+
+      // No token in response → set MISSING (not ERROR) to avoid deadlock
+      console.warn('[Auth] Token sync response missing token');
+      setTokenStatus(TokenStatus.MISSING);
+      return { ok: false, reason: 'no_token_in_response' };
+    } catch (err) {
+      // Abort is transient - set MISSING (safe fallback, not stuck REFRESHING)
+      if (isAbortError(err)) {
+        console.log('[Auth] Token sync retry aborted');
+        setTokenStatus(TokenStatus.MISSING);
+        return { ok: false, reason: 'aborted' };
+      }
+
+      // Guard: Check stale after error
+      if (tokenRefreshGuard.isStale(requestId)) {
+        return { ok: false, reason: 'stale_request' };
+      }
+
+      console.error('[Auth] Token sync retry failed:', err);
+      setTokenStatus(TokenStatus.ERROR);
+      return { ok: false, reason: 'error' };
+    }
+  }, [user, tokenRefreshGuard]);
+
   // Listen for auth:token-expired events from API client
   // When a 401 occurs on non-auth endpoints, the client dispatches this event
   // We handle it by refreshing the token and notifying listeners to retry
@@ -562,12 +647,14 @@ export function AuthProvider({ children }) {
   const value = useMemo(() => ({
     user,
     loading,
+    authUiLoading, // Separate UI loading for Google button (5s max)
     initialized,
     error,
     signInWithGoogle,
     logout,
     syncWithBackend,
     refreshToken, // Exposed for explicit token refresh
+    retryTokenSync, // Manual retry for BootStuckBanner
     isAuthenticated: !!user,
     isConfigured: isFirebaseConfigured(),
     // Token state machine
@@ -576,12 +663,14 @@ export function AuthProvider({ children }) {
   }), [
     user,
     loading,
+    authUiLoading,
     initialized,
     error,
     signInWithGoogle,
     logout,
     syncWithBackend,
     refreshToken,
+    retryTokenSync,
     tokenStatus,
     tokenReady,
   ]);

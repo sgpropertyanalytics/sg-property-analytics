@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import apiClient from '../api/client';
 import { useStaleRequestGuard } from '../hooks';
@@ -32,7 +32,7 @@ const SUBSCRIPTION_CACHE_KEY = 'subscription_cache';
 
 // Cache version - bump this to invalidate all existing caches on deploy
 // This ensures stale 'free' caches are cleared for all users automatically
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 
 // Get cached subscription from localStorage (instant, no flicker)
 const getCachedSubscription = () => {
@@ -98,6 +98,12 @@ const SubscriptionStatus = {
   ERROR: 'error',       // Fetch failed (non-abort) - show error state, NOT free
 };
 
+// Max manual retries to prevent 401 spam loops
+const MAX_MANUAL_RETRIES = 2;
+
+// Timeout for subscription fetch (prevents infinite pending)
+const SUBSCRIPTION_FETCH_TIMEOUT_MS = 15000;
+
 /**
  * Unwrap API response envelope.
  * Backend returns {data: {...}, meta: {...}} but axios wraps that in response.data.
@@ -140,9 +146,14 @@ export function SubscriptionProvider({ children }) {
   // Abort/stale request protection
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
-  // Retry counter for abort handling
+  // Retry counter for auto-retry on abort
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
+
+  // Manual retry state (separate from auto-retry, for BootStuckBanner)
+  const [manualAttempt, setManualAttempt] = useState(0); // Nonce to trigger fetch
+  const [manualRetryCount, setManualRetryCount] = useState(0); // Count for retry cap
+  const attemptIdRef = useRef(0); // Track current attempt for stale closure prevention
 
   // Analytics context for upsell tracking
   // Tracks which field/source triggered the paywall
@@ -156,6 +167,9 @@ export function SubscriptionProvider({ children }) {
   // P0 FIX: Wait for BOTH initialized AND tokenReady before fetching
   useEffect(() => {
     const requestId = startRequest();
+    // Bump attempt ID to detect stale closures in timeout
+    attemptIdRef.current += 1;
+    const attemptId = attemptIdRef.current;
 
     const fetchSubscription = async () => {
       // Debug logging for subscription state tracking
@@ -168,6 +182,8 @@ export function SubscriptionProvider({ children }) {
         cachedSub: getCachedSubscription(),
         status,
         retryCount,
+        manualAttempt,
+        attemptId,
       });
 
       // P0 FIX: Don't fetch until auth is fully initialized
@@ -190,9 +206,11 @@ export function SubscriptionProvider({ children }) {
         return;
       }
 
-      // P0 FIX: Wait for token to be ready
+      // P0 FIX: Wait for token to be ready, but allow ERROR to proceed (for manual retry)
       // tokenStatus: 'present' | 'missing' | 'refreshing' | 'error'
-      if (tokenStatus !== 'present') {
+      // Wait on: MISSING, REFRESHING (token not yet available)
+      // Proceed on: PRESENT (normal), ERROR (allows manual retry to break deadlock)
+      if (tokenStatus === 'missing' || tokenStatus === 'refreshing') {
         console.log('[Subscription] Waiting for token...', { tokenStatus });
         // Stay in PENDING state - do NOT resolve as free
         // Charts should show skeleton
@@ -326,9 +344,57 @@ export function SubscriptionProvider({ children }) {
     };
 
     fetchSubscription();
-  // Include tokenStatus in deps to re-trigger when token becomes ready
+  // Include tokenStatus + manualAttempt in deps to re-trigger when token becomes ready or manual retry
+  // Note: manualAttempt is ONLY bumped by retrySubscription(), not auto-retry
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialized, isAuthenticated, tokenStatus, user?.email, retryCount, startRequest, isStale, getSignal, refreshToken]);
+  }, [initialized, isAuthenticated, tokenStatus, user?.email, retryCount, manualAttempt, startRequest, isStale, getSignal, refreshToken]);
+
+  // Timeout: Prevent infinite pending state
+  // Resets on every new fetch attempt (auto-retry or manual)
+  useEffect(() => {
+    // Only run timeout when in PENDING or LOADING state AND authenticated
+    if (!isAuthenticated) return;
+    if (status !== SubscriptionStatus.PENDING && status !== SubscriptionStatus.LOADING) {
+      return;
+    }
+
+    // Capture current attempt ID for stale closure check
+    const currentAttemptId = attemptIdRef.current;
+
+    const timeoutId = setTimeout(() => {
+      // Only set ERROR if this is still the current attempt
+      if (currentAttemptId !== attemptIdRef.current) {
+        console.log('[Subscription] Timeout ignored (stale attempt)');
+        return;
+      }
+      console.error('[Subscription] Fetch timed out after 15s');
+      setStatus(SubscriptionStatus.ERROR);
+      setFetchError(new Error('Subscription fetch timed out'));
+      // NOTE: Do NOT setLoading(false) - loading derived from status
+      // DO NOT set tier to free - keep cached value or 'unknown'
+    }, SUBSCRIPTION_FETCH_TIMEOUT_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [status, isAuthenticated, retryCount, manualAttempt]); // Resets on any new fetch
+
+  // Manual retry for subscription (called by BootStuckBanner)
+  // Note: Bumps manualAttempt nonce + tracks count for cap. Does NOT touch tier.
+  const retrySubscription = useCallback(() => {
+    if (!isAuthenticated) {
+      console.warn('[Subscription] Cannot retry - not authenticated');
+      return;
+    }
+    if (manualRetryCount >= MAX_MANUAL_RETRIES) {
+      console.warn('[Subscription] Max manual retries reached');
+      return;
+    }
+    console.log('[Subscription] Manual retry triggered');
+    // Clear error and bump both nonce + count
+    setFetchError(null);
+    setManualRetryCount(prev => prev + 1);
+    setManualAttempt(prev => prev + 1); // Triggers fetch effect
+    // DO NOT set tier here - let the fetch effect handle it
+  }, [isAuthenticated, manualRetryCount]);
 
   // Derived state: is tier known (not in 'unknown' loading state)?
   // P0 CONSTRAINT: 'unknown' tier is a FIRST-CLASS LOADING STATE
@@ -432,7 +498,8 @@ export function SubscriptionProvider({ children }) {
 
   // Derived: is subscription status resolved? (boot synchronization)
   // Charts should wait for this before fetching
-  const isSubscriptionReady = status === SubscriptionStatus.RESOLVED;
+  // Note: ERROR also unblocks boot to allow retry, but isTierKnown remains false
+  const isSubscriptionReady = status === SubscriptionStatus.RESOLVED || status === SubscriptionStatus.ERROR;
 
   const value = useMemo(() => ({
     // State
@@ -454,6 +521,7 @@ export function SubscriptionProvider({ children }) {
 
     // Actions
     refreshSubscription,
+    retrySubscription, // Manual retry (for BootStuckBanner)
     setSubscription, // For use after Firebase sync
   }), [
     subscription,
@@ -470,6 +538,7 @@ export function SubscriptionProvider({ children }) {
     hidePaywall,
     upsellContext,
     refreshSubscription,
+    retrySubscription,
   ]);
 
   return (

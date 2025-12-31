@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useEffect, useRef } from 'react';
+import { createContext, useContext, useMemo, useEffect, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
 import { useFilterState } from './PowerBIFilter';
@@ -90,6 +90,9 @@ export function AppReadyProvider({ children }) {
   const hasLoggedCriticalRef = useRef(false);
   const prevAppReadyRef = useRef(appReady);
 
+  // Boot stuck state for UI banner (Fix 2)
+  const [isBootStuck, setIsBootStuck] = useState(false);
+
   // Detailed boot status for debugging
   const bootStatus = useMemo(() => ({
     authInitialized,
@@ -139,6 +142,7 @@ export function AppReadyProvider({ children }) {
       // Reset flags for potential page navigation
       hasLoggedWarningRef.current = false;
       hasLoggedCriticalRef.current = false;
+      setIsBootStuck(false); // Reset stuck state on boot completion
       return;
     }
 
@@ -160,6 +164,7 @@ export function AppReadyProvider({ children }) {
     const criticalTimeoutId = setTimeout(() => {
       if (!hasLoggedCriticalRef.current && !appReady) {
         hasLoggedCriticalRef.current = true;
+        setIsBootStuck(true); // Expose for BootStuckBanner UI
         const payload = buildTelemetryPayload();
         console.error(
           `[AppReady] 🚨 CRITICAL: Boot stuck for >${BOOT_CRITICAL_THRESHOLD_MS}ms`,
@@ -194,39 +199,46 @@ export function AppReadyProvider({ children }) {
   }, [bootStatus, appReady]);
 
   // Expose debug info on window for DevTools console access
+  // Gated: development mode OR ?__debug query param (for prod debugging)
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      window.__APP_READY_DEBUG__ = {
-        get status() {
-          return {
-            appReady,
-            authInitialized,
-            isSubscriptionReady,
-            isTierKnown,
-            tierResolved,
-            filtersReady,
-            bootElapsed: `${Date.now() - bootStartRef.current}ms`,
-          };
-        },
-      };
-    }
-    return () => {
-      if (process.env.NODE_ENV === 'development') {
-        delete window.__APP_READY_DEBUG__;
-      }
+    const isDev = process.env.NODE_ENV === 'development';
+    const hasDebugParam = typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('__debug');
+
+    if (!isDev && !hasDebugParam) return;
+
+    window.__APP_READY_DEBUG__ = {
+      get status() {
+        return {
+          appReady,
+          authInitialized,
+          isSubscriptionReady,
+          isTierKnown,
+          tierResolved,
+          filtersReady,
+          isBootStuck,
+          bootElapsed: `${Date.now() - bootStartRef.current}ms`,
+          // NOTE: Does NOT expose tokens or sensitive data
+        };
+      },
     };
-  }, [appReady, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady]);
+
+    return () => {
+      delete window.__APP_READY_DEBUG__;
+    };
+  }, [appReady, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady, isBootStuck]);
 
   const value = useMemo(() => ({
     appReady,
     bootStatus,
+    isBootStuck, // True when boot is stuck for >10s (for BootStuckBanner)
     // Individual flags for specific checks
     authInitialized,
     isSubscriptionReady,
     isTierKnown,
     tierResolved,
     filtersReady,
-  }), [appReady, bootStatus, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady]);
+  }), [appReady, bootStatus, isBootStuck, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady]);
 
   return (
     <AppReadyContext.Provider value={value}>

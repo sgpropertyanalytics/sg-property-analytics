@@ -16,6 +16,7 @@ import Pricing from './pages/Pricing';
 import { DashboardLayout } from './components/layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PageHeader } from './components/ui';
+import { BootStuckBanner } from './components/common/BootStuckBanner';
 
 // ===== Lazy Loading with Chunk Error Recovery =====
 // Auto-reloads once on chunk-load failure (common after deployments).
@@ -124,6 +125,8 @@ function App() {
             <PowerBIFilterProvider>
             {/* AppReadyProvider gates data fetching until boot is complete (auth + subscription + filters) */}
             <AppReadyProvider>
+            {/* BootStuckBanner - Recovery UI when boot is stuck >10s */}
+            <BootStuckBanner />
             <Routes>
               {/* ===== Public Routes (No Dashboard Layout) ===== */}
 
