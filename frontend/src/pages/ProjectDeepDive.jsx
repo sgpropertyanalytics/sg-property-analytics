@@ -9,8 +9,8 @@
  * - Upcoming new launches
  * - Remaining new launches with unsold inventory
  */
-import { useState, useEffect, useRef } from 'react';
-import { getFilterOptions } from '../api/client';
+import { useState, useRef } from 'react';
+import { useData } from '../context/DataContext';
 import { isDistrictInRegion, SALE_TYPE_OPTIONS, TENURE_OPTIONS, SaleType } from '../constants';
 import { HotProjectsTable } from '../components/powerbi/HotProjectsTable';
 import { UpcomingLaunchesTable } from '../components/powerbi/UpcomingLaunchesTable';
@@ -29,6 +29,9 @@ const ACTIVE_RANGE_MIN = 1500000;  // $1.5M
 const ACTIVE_RANGE_MAX = 3500000;  // $3.5M
 
 export function ProjectDeepDiveContent() {
+  // Get filter options from centralized DataContext (no duplicate API call)
+  const { filterOptions: contextFilterOptions } = useData();
+
   // Form state
   const [budget, setBudget] = useState(1500000);
   const [bedroom, setBedroom] = useState('');
@@ -38,12 +41,6 @@ export function ProjectDeepDiveContent() {
   const [saleType, setSaleType] = useState('');
   const [leaseAge, setLeaseAge] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
-
-  // Filter options from API
-  const [filterOptions, setFilterOptions] = useState({
-    districts: [],
-    loading: true,
-  });
 
   // Loading state for search
   const [loading, setLoading] = useState(false);
@@ -60,22 +57,11 @@ export function ProjectDeepDiveContent() {
   // Count active filters
   const activeFilterCount = [bedroom, region, district, tenure, saleType, leaseAge].filter(Boolean).length;
 
-  // Load filter options on mount
-  useEffect(() => {
-    const loadFilterOptions = async () => {
-      try {
-        const response = await getFilterOptions();
-        setFilterOptions({
-          districts: response.data.districts || [],
-          loading: false,
-        });
-      } catch (err) {
-        console.error('Error loading filter options:', err);
-        setFilterOptions(prev => ({ ...prev, loading: false }));
-      }
-    };
-    loadFilterOptions();
-  }, []);
+  // Derive filter options from context
+  const filterOptions = {
+    districts: contextFilterOptions?.districtsRaw || [],
+    loading: contextFilterOptions?.loading ?? true,
+  };
 
   // Handle search
   const handleSearch = (e) => {

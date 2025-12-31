@@ -1,20 +1,40 @@
 /**
  * DataContext - Centralized state management for static/shared data
- * 
+ *
  * This context provides:
- * - List of available districts (fetched once)
+ * - Full normalized filter options (fetched once, shared across app)
  * - Metadata about the API (health status, row counts, etc.)
  * - Shared configuration constants
- * 
+ *
  * Prevents redundant API calls by fetching static data once at the app level.
+ * All filter option consumers should use this context instead of fetching independently.
  */
 import { createContext, useContext, useState, useEffect } from 'react';
 import { getFilterOptions, getMetadata } from '../api/client';
+import { normalizeFilterOptions } from '../schemas/apiContract';
 
 const DataContext = createContext(null);
 
+// Initial filter options state (matches PowerBIFilter/constants.js)
+const INITIAL_FILTER_OPTIONS = {
+  districts: [],
+  regions: [],
+  bedrooms: [],
+  saleTypes: [],
+  tenures: [],
+  marketSegments: [],
+  propertyAgeBuckets: [],
+  dateRange: { min: null, max: null },
+  psfRange: { min: null, max: null },
+  sizeRange: { min: null, max: null },
+  districtsRaw: [],
+  regionsLegacy: null,
+  loading: true,
+  error: null,
+};
+
 export function DataProvider({ children }) {
-  const [availableDistricts, setAvailableDistricts] = useState([]);
+  const [filterOptions, setFilterOptions] = useState(INITIAL_FILTER_OPTIONS);
   const [apiMetadata, setApiMetadata] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,24 +46,36 @@ export function DataProvider({ children }) {
       setError(null);
 
       try {
-        // Fetch districts and metadata in parallel
+        // Fetch filter options and metadata in parallel
         const [filterOptionsRes, metadataRes] = await Promise.all([
-          getFilterOptions({ priority: 'high' }).catch(() => ({ data: { districts: [] } })),
+          getFilterOptions({ priority: 'high' }).catch(() => ({ data: {} })),
           getMetadata({ priority: 'high' }).catch(() => ({ data: null }))
         ]);
 
-        const districtOptions = filterOptionsRes.data.districts || [];
-        const districts = districtOptions.map((option) =>
-          typeof option === 'string' ? option : option?.value
-        ).filter(Boolean);
+        // Normalize filter options using shared adapter
+        const normalized = normalizeFilterOptions(filterOptionsRes.data);
 
-        setAvailableDistricts(districts);
+        setFilterOptions({
+          districts: normalized.districts,
+          regions: normalized.regions,
+          bedrooms: normalized.bedrooms,
+          saleTypes: normalized.saleTypes,
+          tenures: normalized.tenures,
+          marketSegments: normalized.marketSegments,
+          propertyAgeBuckets: normalized.propertyAgeBuckets || [],
+          dateRange: normalized.dateRange,
+          psfRange: normalized.psfRange,
+          sizeRange: normalized.sizeRange,
+          districtsRaw: normalized.districtsRaw,
+          regionsLegacy: normalized.regionsLegacy,
+          loading: false,
+          error: null,
+        });
         setApiMetadata(metadataRes.data);
       } catch (err) {
         console.error('Error fetching static data:', err);
         setError(err.message);
-        // Set empty defaults on error
-        setAvailableDistricts([]);
+        setFilterOptions(prev => ({ ...prev, loading: false, error: err.message }));
         setApiMetadata(null);
       } finally {
         setLoading(false);
@@ -53,15 +85,23 @@ export function DataProvider({ children }) {
     fetchStaticData();
   }, []); // Only fetch once on mount
 
+  // Derive availableDistricts from filterOptions for backward compatibility
+  const availableDistricts = filterOptions.districtsRaw || [];
+
   const value = {
-    // Data
+    // Full filter options (normalized)
+    filterOptions,
+
+    // Legacy: district list for backward compatibility
     availableDistricts,
+
+    // Metadata
     apiMetadata,
-    
+
     // State
     loading,
     error,
-    
+
     // Helpers
     isDataReady: !loading && availableDistricts.length > 0,
   };

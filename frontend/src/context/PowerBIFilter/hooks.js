@@ -6,8 +6,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getFilterOptions } from '../../api/client';
-import { normalizeFilterOptions } from '../../schemas/apiContract';
+import { useData } from '../DataContext';
 import {
   INITIAL_FILTER_OPTIONS,
   INITIAL_DRILL_PATH,
@@ -21,41 +20,29 @@ import {
 // =============================================================================
 
 /**
- * Hook to load filter options from API.
+ * Hook to get filter options from DataContext.
+ * No longer fetches independently - uses centralized data from DataProvider.
+ * This eliminates duplicate /api/filter-options calls.
+ *
  * @returns {[Object, Function]} [filterOptions, setFilterOptions]
  */
 export function useFilterOptions() {
-  const [filterOptions, setFilterOptions] = useState(INITIAL_FILTER_OPTIONS);
+  const { filterOptions: contextFilterOptions } = useData();
 
-  useEffect(() => {
-    const loadFilterOptions = async () => {
-      try {
-        const response = await getFilterOptions();
-        const normalized = normalizeFilterOptions(response.data);
+  // Local state for any component-level overrides (rare)
+  const [localOverrides, setLocalOverrides] = useState(null);
 
-        setFilterOptions({
-          districts: normalized.districts,
-          regions: normalized.regions,
-          bedrooms: normalized.bedrooms,
-          saleTypes: normalized.saleTypes,
-          tenures: normalized.tenures,
-          marketSegments: normalized.marketSegments,
-          propertyAgeBuckets: normalized.propertyAgeBuckets || [],
-          dateRange: normalized.dateRange,
-          psfRange: normalized.psfRange,
-          sizeRange: normalized.sizeRange,
-          districtsRaw: normalized.districtsRaw,
-          regionsLegacy: normalized.regionsLegacy,
-          loading: false,
-          error: null,
-        });
-      } catch (err) {
-        console.error('Error loading filter options:', err);
-        setFilterOptions((prev) => ({ ...prev, loading: false, error: err.message }));
-      }
-    };
-    loadFilterOptions();
-  }, []);
+  // Merge context data with local overrides if any
+  const filterOptions = localOverrides || contextFilterOptions || INITIAL_FILTER_OPTIONS;
+
+  // setFilterOptions allows local overrides but shouldn't be commonly used
+  const setFilterOptions = (updater) => {
+    if (typeof updater === 'function') {
+      setLocalOverrides(prev => updater(prev || filterOptions));
+    } else {
+      setLocalOverrides(updater);
+    }
+  };
 
   return [filterOptions, setFilterOptions];
 }
