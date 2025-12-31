@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery, useDebugOverlay } from '../../hooks';
-import { QueryState } from '../common/QueryState';
+import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Chart } from 'react-chartjs-2';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
@@ -24,7 +24,8 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300, saleType = null }) {
   // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
+  // filterKey updates immediately on filter change - used for instant overlay feedback
+  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
   const chartRef = useRef(null);
 
   // Debug overlay for API diagnostics (toggle with Ctrl+Shift+D)
@@ -32,7 +33,8 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
 
   // Fetch and transform data using adapter pattern
   // useAbortableQuery handles: abort controller, stale request protection, loading/error states
-  const { data, loading, error, refetch } = useAbortableQuery(
+  // isFetching = true during background refetch when keepPreviousData is enabled
+  const { data, loading, error, isFetching, refetch } = useAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       const params = buildApiParams({
@@ -230,7 +232,16 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
   const cardHeight = height + 120;
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="bar" height={height + 80}>
+    <ChartFrame
+      loading={loading}
+      isFetching={isFetching}
+      isFiltering={filterKey !== debouncedFilterKey}
+      error={error}
+      onRetry={refetch}
+      empty={!data || data.length === 0}
+      skeleton="bar"
+      height={height + 80}
+    >
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/30 overflow-hidden flex flex-col shadow-sm relative"
         style={{ height: cardHeight }}
@@ -256,7 +267,7 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
           </PreviewChartOverlay>
         </ChartSlot>
       </div>
-    </QueryState>
+    </ChartFrame>
   );
 });
 

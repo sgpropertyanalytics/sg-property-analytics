@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
-import { QueryState } from '../common/QueryState';
+import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
@@ -46,7 +46,8 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 export const PriceCompressionChart = React.memo(function PriceCompressionChart({ height = 380, saleType = null, sharedData = null, sharedLoading = false }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
+  // filterKey updates immediately on filter change - used for instant overlay feedback
+  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
 
   // UI state (not data state - that comes from useAbortableQuery)
@@ -86,7 +87,8 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
   // Skip if parent provides sharedData (W4 fix: eliminates duplicate API call with AbsolutePsfChart)
-  const { data: internalData, loading: internalLoading, error, refetch } = useAbortableQuery(
+  // isFetching = true during background refetch when keepPreviousData is enabled
+  const { data: internalData, loading: internalLoading, error, isFetching: internalIsFetching, refetch } = useAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison
@@ -121,6 +123,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
   // Use shared data from parent if provided, otherwise use internal fetch
   const data = useSharedData ? sharedData : internalData;
   const loading = useSharedData ? sharedLoading : internalLoading;
+  const isFetching = useSharedData ? false : internalIsFetching;
 
 
   // Computed values - use historical baseline for stable min/max
@@ -228,11 +231,20 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
   // Card layout: flex column with fixed height
   const cardHeight = height + 200;
 
-  // CRITICAL: containerRef must be OUTSIDE QueryState for IntersectionObserver to work
-  // QueryState only renders children when not loading, so ref would be null during load
+  // CRITICAL: containerRef must be OUTSIDE ChartFrame for IntersectionObserver to work
+  // ChartFrame only renders children when not in loading state, so ref would be null during load
   return (
     <div ref={containerRef}>
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={350}>
+    <ChartFrame
+      loading={loading}
+      isFetching={isFetching}
+      isFiltering={filterKey !== debouncedFilterKey}
+      error={error}
+      onRetry={refetch}
+      empty={!data || data.length === 0}
+      skeleton="line"
+      height={350}
+    >
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
@@ -320,7 +332,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
         <span className="truncate">{data.length} periods</span>
       </div>
       </div>
-    </QueryState>
+    </ChartFrame>
     </div>
   );
 });

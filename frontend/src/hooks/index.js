@@ -4,3 +4,4 @@ export { useStaleRequestGuard } from './useStaleRequestGuard';
 export { useDeferredFetch } from './useDeferredFetch';
 export { useAbortableQuery, isAbortError } from './useAbortableQuery';
 export { useDebugOverlay } from './useDebugOverlay';
+export { useChartLoadingState } from './useChartLoadingState';

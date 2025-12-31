@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery, useDebugOverlay } from '../../hooks';
-import { QueryState } from '../common/QueryState';
+import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bubble } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilter';
@@ -42,14 +42,16 @@ export const BeadsChart = React.memo(function BeadsChart({
   sharedData = null,
   sharedLoading = false,
 }) {
-  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
+  // filterKey updates immediately on filter change - used for instant overlay feedback
+  const { buildApiParams, debouncedFilterKey, filterKey } = usePowerBIFilters();
   const chartRef = useRef(null);
   const { wrapApiCall, DebugOverlay } = useDebugOverlay('BeadsChart');
 
   const useShared = sharedData != null;
 
   // Data fetching with useAbortableQuery
-  const { data: chartData, loading, error, refetch } = useAbortableQuery(
+  // isFetching = true during background refetch when keepPreviousData is enabled
+  const { data: chartData, loading, error, isFetching, refetch } = useAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // excludeOwnDimension: 'segment' - this chart shows all regions, so ignore segment filter
@@ -297,12 +299,13 @@ export const BeadsChart = React.memo(function BeadsChart({
   const cardHeight = height + 190;
 
   return (
-    <QueryState
+    <ChartFrame
       loading={resolvedLoading}
+      isFetching={isFetching}
+      isFiltering={filterKey !== debouncedFilterKey}
       error={error}
       onRetry={refetch}
       empty={!hasData && !resolvedLoading}
-      emptyMessage="No transaction data available for the selected filters"
       skeleton="bar"
       height={350}
     >
@@ -351,7 +354,7 @@ export const BeadsChart = React.memo(function BeadsChart({
           )}
         </div>
       </div>
-    </QueryState>
+    </ChartFrame>
   );
 });
 

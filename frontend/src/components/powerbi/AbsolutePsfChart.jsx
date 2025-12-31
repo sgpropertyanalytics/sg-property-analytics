@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
-import { QueryState } from '../common/QueryState';
+import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
@@ -40,7 +40,8 @@ const REGION_COLORS = {
  * @param {boolean} [props.sharedLoading=false] - Loading state from parent when using sharedData
  */
 export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 300, saleType = null, sharedData = null, sharedLoading = false }) {
-  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
+  // filterKey updates immediately on filter change - used for instant overlay feedback
+  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
   const chartRef = useRef(null);
 
@@ -58,7 +59,8 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
 
   // Data fetching - same as PriceCompressionChart for consistency
   // Skip if parent provides sharedData (W4 fix: eliminates duplicate API call with PriceCompressionChart)
-  const { data: internalData, loading: internalLoading, error, refetch } = useAbortableQuery(
+  // isFetching = true during background refetch when keepPreviousData is enabled
+  const { data: internalData, loading: internalLoading, error, isFetching: internalIsFetching, refetch } = useAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison
@@ -88,6 +90,7 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
   // Use shared data from parent if provided, otherwise use internal fetch
   const data = useSharedData ? sharedData : internalData;
   const loading = useSharedData ? sharedLoading : internalLoading;
+  const isFetching = useSharedData ? false : internalIsFetching;
 
   // Latest values for KPI display
   const latestData = data[data.length - 1] || {};
@@ -227,11 +230,20 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
     },
   };
 
-  // CRITICAL: containerRef must be OUTSIDE QueryState for IntersectionObserver to work
-  // QueryState only renders children when not loading, so ref would be null during load
+  // CRITICAL: containerRef must be OUTSIDE ChartFrame for IntersectionObserver to work
+  // ChartFrame only renders children when not in loading state, so ref would be null during load
   return (
     <div ref={containerRef}>
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={height}>
+    <ChartFrame
+      loading={loading}
+      isFetching={isFetching}
+      isFiltering={filterKey !== debouncedFilterKey}
+      error={error}
+      onRetry={refetch}
+      empty={!data || data.length === 0}
+      skeleton="line"
+      height={height}
+    >
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col h-full"
       >
@@ -305,7 +317,7 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
           </span>
         </div>
       </div>
-    </QueryState>
+    </ChartFrame>
     </div>
   );
 });

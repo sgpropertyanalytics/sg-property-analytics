@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
-import { QueryState } from '../common/QueryState';
+import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
@@ -37,7 +37,8 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  */
 export function MarketValueOscillator({ height = 420, saleType = null }) {
   // Get GLOBAL filters and timeGrouping from context
-  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
+  // filterKey updates immediately on filter change - used for instant overlay feedback
+  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
 
   const chartRef = useRef(null);
@@ -78,7 +79,8 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
   );
 
   // Main filtered data fetching - uses page-level saleType prop
-  const { data, loading, error, refetch } = useAbortableQuery(
+  // isFetching = true during background refetch when keepPreviousData is enabled
+  const { data, loading, error, isFetching, refetch } = useAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison
@@ -289,10 +291,19 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
   // Card owns its height explicitly (header ~100px + insight ~60px + footer ~44px = 204px overhead)
   const cardHeight = height + 204;
 
-  // CRITICAL: containerRef must be OUTSIDE QueryState
+  // CRITICAL: containerRef must be OUTSIDE ChartFrame for IntersectionObserver to work
   return (
     <div ref={containerRef}>
-      <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="line" height={height}>
+      <ChartFrame
+        loading={loading}
+        isFetching={isFetching}
+        isFiltering={filterKey !== debouncedFilterKey}
+        error={error}
+        onRetry={refetch}
+        empty={!data || data.length === 0}
+        skeleton="line"
+        height={height}
+      >
         <div
           className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
           style={{ height: cardHeight }}
@@ -384,7 +395,7 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
             <span className="truncate">{data.length} periods</span>
           </div>
         </div>
-      </QueryState>
+      </ChartFrame>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { useAbortableQuery } from '../../hooks';
-import { QueryState } from '../common/QueryState';
+import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
 import { usePowerBIFilters } from '../../context/PowerBIFilter';
@@ -36,14 +36,16 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
   sharedLoading = false,
 }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
+  // filterKey updates immediately on filter change - used for instant overlay feedback
+  const { buildApiParams, debouncedFilterKey, filterKey } = usePowerBIFilters();
   const [showFullRange, setShowFullRange] = useState(false);
   const chartRef = useRef(null);
 
   const useShared = sharedData != null && !showFullRange;
 
   // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data: histogramData, loading, error, refetch } = useAbortableQuery(
+  // isFetching = true during background refetch when keepPreviousData is enabled
+  const { data: histogramData, loading, error, isFetching, refetch } = useAbortableQuery(
     async (signal) => {
       // Use dashboard endpoint with price_histogram panel
       // excludeLocationDrill: true - Price Distribution should NOT be affected by
@@ -236,7 +238,16 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
   const cardHeight = height + 190; // height prop for chart + ~190px for header(with stats)/note/footer
 
   return (
-    <QueryState loading={resolvedLoading} error={error} onRetry={refetch} empty={!bins || bins.length === 0} skeleton="bar" height={350}>
+    <ChartFrame
+      loading={resolvedLoading}
+      isFetching={isFetching}
+      isFiltering={filterKey !== debouncedFilterKey}
+      error={error}
+      onRetry={refetch}
+      empty={!bins || bins.length === 0}
+      skeleton="bar"
+      height={350}
+    >
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
@@ -307,7 +318,7 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
         </span>
       </div>
       </div>
-    </QueryState>
+    </ChartFrame>
   );
 });
 

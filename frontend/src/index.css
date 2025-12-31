@@ -281,3 +281,41 @@ input[type="range"].slider-thumb::-moz-range-progress {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
+/* ====== Chart Updating State (Retain and Blur) ====== */
+
+/* Update pulse animation for the indicator */
+@keyframes update-pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Update indicator pill - centered overlay during data fetch */
+.update-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(33, 52, 72, 0.9);
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: update-pulse 1.5s ease-in-out infinite;
+}
+
+/* Spinner animation for update indicator */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.update-indicator-spin {
+  animation: spin 1s linear infinite;
+}
+
