@@ -1,31 +1,23 @@
 /**
  * API Client - Axios instance with JWT token interceptor
  *
- * Production (Vercel): Uses relative URL '/api' - Vercel proxy forwards to Render
- * Development (localhost): Uses 'http://localhost:5000/api'
+ * Canonical API base: '/api' for all environments.
  *
- * This eliminates CORS issues in production since all requests go through Vercel's proxy.
- * See frontend/vercel.json for the rewrite rule.
+ * - Vite dev server proxies /api to the backend (see frontend/vite.config.js)
+ * - Vercel rewrites /api to Render (see frontend/vercel.json)
+ *
+ * Override only if absolutely necessary via VITE_API_URL.
  */
 import axios from 'axios';
 
-// Determine API base URL
-// Production: Use relative URL (Vercel proxy handles CORS)
-// Development: Use localhost directly
+// Determine API base URL (no environment branching)
 const getApiBase = () => {
   // Allow override via environment variable
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
 
-  // Production (Vercel): Use relative URL - proxy handles forwarding to Render
-  // This eliminates CORS issues completely
-  if (import.meta.env.PROD || window.location.hostname !== 'localhost') {
-    return '/api';
-  }
-
-  // Development: Direct to local Flask server
-  return 'http://localhost:5000/api';
+  return '/api';
 };
 
 const API_BASE = getApiBase();
@@ -291,8 +283,6 @@ const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
 export const getHealth = () => apiClient.get('/health');
 
 export const getMetadata = () => apiClient.get('/metadata');
-
-export const getDistricts = () => apiClient.get('/districts');
 
 /**
  * Get New Sale vs Young Resale (4-9 years age) comparison
