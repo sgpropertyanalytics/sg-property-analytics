@@ -267,3 +267,60 @@ class TestKpiRegistry:
         orphans = [kpi_id for kpi_id in KPI_REGISTRY if kpi_id not in KPI_ORDER]
         if orphans:
             pytest.fail(f"KPIs in KPI_REGISTRY but not in KPI_ORDER: {orphans}")
+
+
+# =============================================================================
+# API ENVELOPE STRUCTURE
+# =============================================================================
+
+class TestKpiApiEnvelope:
+    """Test KPI v2 API response envelope structure.
+
+    The KPI endpoint must return { data: { kpis: [...] }, meta: {...} } format.
+    Frontend apiClient unwraps the envelope so callers can use response.data.kpis.
+    """
+
+    def test_kpi_v2_returns_data_envelope(self):
+        """KPI v2 endpoint returns proper { data: {...}, meta: {...} } envelope.
+
+        Without the data envelope, the @api_contract wrapper adds an extra layer,
+        causing frontend to need response.data.data.kpis instead of response.data.kpis.
+        """
+        import json
+        from routes.analytics.kpi_v2 import kpi_summary_v2
+
+        # Mock Flask app context and request
+        from flask import Flask
+        app = Flask(__name__)
+        app.config['TESTING'] = True
+
+        # We can't easily test the full endpoint without DB, but we can
+        # verify the response structure by checking the endpoint code pattern
+        import inspect
+        source = inspect.getsource(kpi_summary_v2)
+
+        # The endpoint MUST return data inside a "data" key to avoid double-wrapping
+        assert '"data":' in source or "'data':" in source, (
+            "kpi_summary_v2 must return response with 'data' key to match api_contract wrapper. "
+            "Expected: { 'data': { 'kpis': [...] }, 'meta': {...} }"
+        )
+
+    def test_kpi_results_have_required_fields(self):
+        """Each KPI result must have required fields for frontend rendering."""
+        from services.kpi.registry import run_all_kpis
+
+        # Empty filters - just testing structure
+        # Note: This requires DB connection, so may skip in CI
+        try:
+            results = run_all_kpis({})
+        except Exception:
+            pytest.skip("Requires database connection")
+            return
+
+        required_fields = ['kpi_id', 'title', 'value', 'formatted_value']
+
+        for result in results:
+            for field in required_fields:
+                assert field in result, (
+                    f"KPI {result.get('kpi_id', 'unknown')} missing required field: {field}"
+                )

@@ -128,10 +128,34 @@ apiClient.interceptors.request.use(
 let consecutive401Count = 0;
 const MAX_401_BEFORE_CLEAR = 2; // Only clear token after 2 consecutive 401s on auth endpoints
 
+/**
+ * Unwrap api_contract envelope from backend response.
+ *
+ * Backend always returns: { data: {...}, meta: {...} }
+ * This extracts the inner data so callers can use response.data.kpis
+ * instead of response.data.data.kpis.
+ *
+ * @param {Object} body - The response body (axios response.data)
+ * @returns {{ data: any, meta: any }} - Unwrapped data and meta
+ */
+export function unwrapEnvelope(body) {
+  if (body && typeof body === 'object' && 'data' in body && typeof body.data === 'object') {
+    return { data: body.data, meta: body.meta };
+  }
+  // No envelope, return as-is
+  return { data: body, meta: undefined };
+}
+
 apiClient.interceptors.response.use(
   (response) => {
     // Reset 401 counter on successful response
     consecutive401Count = 0;
+
+    // Unwrap api_contract envelope using helper
+    const unwrapped = unwrapEnvelope(response.data);
+    response.data = unwrapped.data;
+    response.meta = unwrapped.meta;
+
     return response;
   },
   (error) => {

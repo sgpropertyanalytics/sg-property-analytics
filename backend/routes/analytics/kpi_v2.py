@@ -98,8 +98,13 @@ def kpi_summary_v2():
         elapsed = time.time() - start
         print(f"GET /api/kpi-summary-v2 completed in {elapsed:.4f}s")
 
+        # Always use { data: {...}, meta: {...} } envelope
+        # This matches the @api_contract wrapper expectation
+        # Frontend apiClient unwraps the envelope, so callers just do result.kpis
         return jsonify({
-            "kpis": kpi_results,
+            "data": {
+                "kpis": kpi_results
+            },
             "meta": {
                 "elapsed_ms": round(elapsed * 1000, 2),
                 "filters_applied": filters
