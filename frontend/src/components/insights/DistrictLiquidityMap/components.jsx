@@ -375,8 +375,8 @@ export function RegionSummaryBar({ districtData, meta }) {
           {/* Mobile: horizontal layout, Desktop: vertical */}
           <div className="flex sm:flex-col items-center sm:items-stretch gap-2 sm:gap-0">
             {/* Region name and Z-score */}
-            <div className="flex items-center justify-between sm:mb-1 min-w-[80px] sm:min-w-0">
-              <span className="font-semibold text-[#213448] text-sm">{stat.region} Turnover</span>
+            <div className="flex items-center justify-between sm:mb-1 min-w-[100px] sm:min-w-0">
+              <span className="font-semibold text-[#213448] text-sm">{stat.region} Turnover %</span>
               {stat.avgZScore !== null && (
                 <span
                   className={`text-xs font-bold ml-2 sm:ml-0 ${stat.avgZScore >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}
@@ -390,17 +390,19 @@ export function RegionSummaryBar({ districtData, meta }) {
               {regionLabels[stat.region].desc}
             </p>
             {/* Stats */}
-            <div className="flex flex-col gap-0.5 flex-1 sm:flex-none">
+            <div className="flex flex-col gap-1 flex-1 sm:flex-none">
               <div className="flex items-baseline gap-2 sm:justify-between">
                 <span className="text-base sm:text-lg font-bold text-[#213448]">
-                  {stat.avgTurnover?.toFixed(1) ?? '-'}<span className="text-xs font-normal text-[#547792]">/100</span>
+                  {stat.avgTurnover?.toFixed(1) ?? '-'}%
                 </span>
                 <span className="text-[10px] sm:text-xs text-[#547792]">
                   {stat.txCount.toLocaleString()} tx
                 </span>
               </div>
-              <div className="flex items-baseline gap-2 sm:justify-between text-[10px] sm:text-xs text-[#547792]">
-                <span>{stat.resalesPerMonth !== null ? `${Math.round(stat.resalesPerMonth)} resales/mo` : '-'}</span>
+              <div className="flex items-baseline gap-2 sm:justify-between">
+                <span className="text-sm sm:text-base font-semibold text-[#213448]">
+                  {stat.resalesPerMonth !== null ? `${Math.round(stat.resalesPerMonth)} resales/month` : '-'}
+                </span>
               </div>
             </div>
           </div>
