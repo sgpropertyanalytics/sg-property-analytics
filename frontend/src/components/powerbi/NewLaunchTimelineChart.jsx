@@ -16,19 +16,16 @@ import { Chart } from 'react-chartjs-2';
 import { useAbortableQuery, useDeferredFetch } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
-import { getNewLaunchTimeline } from '../../api/client';
+import { getNewLaunchTimeline, getNewLaunchAbsorption } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot, KeyInsightBox } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { transformNewLaunchTimeline, assertKnownVersion, logFetchDebug } from '../../adapters';
+import { transformNewLaunchTimeline, transformNewLaunchAbsorption, is2020Period, assertKnownVersion, logFetchDebug } from '../../adapters';
 
 // Singleton Chart.js registration
 import '../../lib/chartjs-registry';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
-
-// 2020 had heavily skewed new launch data - exclude by default
-const is2020Period = (label) => label?.toString().includes('2020');
 
 /**
  * New Launch Timeline Chart Component
@@ -54,27 +51,44 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
     fetchOnMount: true,
   });
 
-  // Data fetching with useAbortableQuery
+  // Data fetching with useAbortableQuery - fetch both timeline and absorption data
   const { data, loading, error, isFetching, refetch } = useAbortableQuery(
     async (signal) => {
       const params = buildApiParams({
         time_grain: TIME_GROUP_BY[timeGrouping],
       });
 
-      const response = await getNewLaunchTimeline(params, { signal });
+      // Fetch both APIs in parallel
+      const [timelineRes, absorptionRes] = await Promise.all([
+        getNewLaunchTimeline(params, { signal }),
+        getNewLaunchAbsorption(params, { signal }),
+      ]);
 
-      // Validate API contract version (dev/test only)
-      assertKnownVersion(response.data, '/api/new-launch-timeline');
+      // Validate API contract versions (dev/test only)
+      assertKnownVersion(timelineRes.data, '/api/new-launch-timeline');
+      assertKnownVersion(absorptionRes.data, '/api/new-launch-absorption');
 
       // Debug logging (dev only)
       logFetchDebug('NewLaunchTimelineChart', {
-        endpoint: '/api/new-launch-timeline',
+        endpoint: '/api/new-launch-timeline + /api/new-launch-absorption',
         timeGrain: timeGrouping,
-        rowCount: response.data?.length || 0,
+        timelineRows: timelineRes.data?.length || 0,
+        absorptionRows: absorptionRes.data?.length || 0,
       });
 
-      // Use adapter for transformation
-      return transformNewLaunchTimeline(response.data || [], TIME_GROUP_BY[timeGrouping]);
+      // Transform each dataset
+      const timelineData = transformNewLaunchTimeline(timelineRes.data || [], TIME_GROUP_BY[timeGrouping]);
+      const absorptionData = transformNewLaunchAbsorption(absorptionRes.data || [], TIME_GROUP_BY[timeGrouping]);
+
+      // Merge by periodLabel (join on period)
+      return timelineData.map(t => {
+        const absorption = absorptionData.find(a => a.periodLabel === t.periodLabel);
+        return {
+          ...t,
+          avgAbsorption: absorption?.avgAbsorption ?? null,
+          projectsMissing: absorption?.projectsMissing ?? 0,
+        };
+      });
     },
     [debouncedFilterKey, timeGrouping],
     {
@@ -85,7 +99,8 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
   );
 
   // Filter out 2020 if needed (heavily skewed data from COVID-era rush launches)
-  const filteredData = include2020 ? data : data.filter(d => !is2020Period(d.periodLabel));
+  // Uses Date-based check from adapter (not label string)
+  const filteredData = include2020 ? data : data.filter(d => !is2020Period(d.periodStart));
 
   // Build filter summary for display
   const getFilterSummary = () => {
@@ -111,28 +126,31 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
   const labels = filteredData.map(d => d.periodLabel);
   const projectCounts = filteredData.map(d => d.projectCount);
   const totalUnits = filteredData.map(d => d.totalUnits);
+  const absorptionRates = filteredData.map(d => d.avgAbsorption);
 
   // Y-axis scaling - target 75% utilization (soft cap allows expansion if needed)
-  // Small counts (<=10): dataMax + 2 for clean integer ticks (e.g., 6 → 8 = 75%)
-  // Larger values: ceil(dataMax / 0.75) for 75% target utilization
   const TARGET_UTIL = 0.75;
-  const maxProjects = Math.max(...projectCounts, 1);
   const maxUnits = Math.max(...totalUnits, 1);
-  const ySuggestedMax = maxProjects <= 10 ? maxProjects + 2 : Math.ceil(maxProjects / TARGET_UTIL);
-  const y1SuggestedMax = Math.ceil(maxUnits / TARGET_UTIL);
+  const ySuggestedMax = Math.ceil(maxUnits / TARGET_UTIL);
 
   // Calculate summary stats
   const totalProjectCount = projectCounts.reduce((sum, v) => sum + v, 0);
   const totalUnitCount = totalUnits.reduce((sum, v) => sum + v, 0);
   const avgUnitsPerProject = totalProjectCount > 0 ? Math.round(totalUnitCount / totalProjectCount) : 0;
 
+  // Calculate average absorption (excluding null values)
+  const validAbsorptions = absorptionRates.filter(v => v != null);
+  const avgAbsorption = validAbsorptions.length > 0
+    ? (validAbsorptions.reduce((sum, v) => sum + v, 0) / validAbsorptions.length).toFixed(1)
+    : null;
+
   const chartData = {
     labels,
     datasets: [
       {
         type: 'bar',
-        label: 'Projects Launched',
-        data: projectCounts,
+        label: 'Total Units',
+        data: totalUnits,
         backgroundColor: 'rgba(148, 180, 193, 0.7)', // Sky #94B4C1
         borderColor: '#547792',
         borderWidth: 1,
@@ -142,8 +160,8 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
       },
       {
         type: 'line',
-        label: 'Total Units',
-        data: totalUnits,
+        label: 'Avg Absorption',
+        data: absorptionRates,
         borderColor: '#213448', // Navy
         backgroundColor: 'rgba(33, 52, 72, 0.05)',
         borderWidth: 2.5,
@@ -154,6 +172,7 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
         tension: 0.3,
         yAxisID: 'y1',
         order: 1, // Render on top
+        spanGaps: true, // Connect across null absorption values
       },
     ],
   };
