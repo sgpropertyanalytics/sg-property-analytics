@@ -76,8 +76,11 @@ const DEFAULT_SUBSCRIPTION = { tier: 'free', subscribed: false, ends_at: null };
  * Backend returns {data: {...}, meta: {...}} but axios wraps that in response.data.
  * So response.data = {data: {...}, meta: {...}}.
  * We need the inner data object.
+ *
+ * @param {Object} responseData - The axios response.data (which contains the API envelope)
+ * @returns {Object|null} The subscription data or null if unparseable
  */
-const unwrapSubscriptionResponse = (responseData) => {
+export const unwrapSubscriptionResponse = (responseData) => {
   // Handle enveloped response: {data: {tier, subscribed, ...}, meta: {...}}
   if (responseData?.data && typeof responseData.data === 'object' && 'tier' in responseData.data) {
     return responseData.data;
