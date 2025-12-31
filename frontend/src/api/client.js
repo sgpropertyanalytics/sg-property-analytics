@@ -25,7 +25,9 @@ const API_BASE = getApiBase();
 // ===== Concurrent Request Limiter =====
 // Limits the number of simultaneous API requests to prevent server overload
 // When charts refetch after filter change, this spreads out the load
-const MAX_CONCURRENT_REQUESTS = 4;
+// Tuned from 4→8 to reduce "dashboard loads in waves" perception
+// while still protecting 512MB backend memory constraint
+const MAX_CONCURRENT_REQUESTS = 8;
 let activeRequests = 0;
 const requestQueue = [];
 
@@ -129,6 +131,47 @@ let tokenClearTimeout = null;
 const TOKEN_CLEAR_DELAY = 500; // Wait 500ms of consecutive 401s before clearing
 
 /**
+ * Normalize error to include user-friendly message.
+ *
+ * This centralizes error message mapping at the API boundary,
+ * ensuring ALL errors have a `userMessage` property before
+ * reaching components. Components can then simply render
+ * `error.userMessage` without needing their own mapping logic.
+ *
+ * @param {Error} error - Axios error object
+ * @returns {Error} - Same error with `userMessage` property added
+ */
+const normalizeError = (error) => {
+  const status = error?.response?.status;
+
+  if (status === 400) {
+    // Use backend validation message if available, otherwise generic
+    error.userMessage = error?.response?.data?.error || 'Invalid request. Please adjust filters and try again.';
+  } else if (status === 401) {
+    error.userMessage = 'Session expired. Please sign in again.';
+  } else if (status === 403) {
+    error.userMessage = 'Access denied. You may need to upgrade your subscription.';
+  } else if (status === 404) {
+    error.userMessage = 'Resource not found. Please try again.';
+  } else if (status === 429) {
+    error.userMessage = 'Too many requests. Please wait a moment and try again.';
+  } else if (status >= 500) {
+    error.userMessage = 'Server error. Please try again in a moment.';
+  } else if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+    error.userMessage = 'Request timed out. Please retry.';
+  } else if (error?.code === 'ERR_NETWORK' || !error?.response) {
+    error.userMessage = 'Network error. Check your connection and retry.';
+  } else if (error?.name === 'CanceledError' || error?.name === 'AbortError') {
+    // Abort errors are expected control flow, not user-facing errors
+    error.userMessage = null;
+  } else {
+    error.userMessage = 'Something went wrong. Please try again.';
+  }
+
+  return error;
+};
+
+/**
  * Unwrap api_contract envelope from backend response.
  *
  * Backend always returns: { data: {...}, meta: {...} }
@@ -162,6 +205,9 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Normalize error FIRST - adds userMessage for UI consumption
+    normalizeError(error);
+
     if (error.response?.status === 401) {
       const requestUrl = error.config?.url || '';
       const isAuthEndpoint = requestUrl.includes('/auth/');
@@ -185,10 +231,6 @@ apiClient.interceptors.response.use(
         window.dispatchEvent(new CustomEvent('auth:token-expired', {
           detail: { url: requestUrl }
         }));
-      }
-
-      if (!error.message || error.message.includes('status code 401')) {
-        error.message = 'Session expired. Please sign in again.';
       }
     } else {
       // Non-401 error - cancel any pending token clear (network recovered)
