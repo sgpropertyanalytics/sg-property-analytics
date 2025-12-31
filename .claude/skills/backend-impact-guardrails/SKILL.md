@@ -6,7 +6,7 @@ description: Backend change impact analysis guardrails. MANDATORY before ANY bac
 # Backend Impact Guardrails
 
 > **Registry reference:** [BACKEND_CHART_DEPENDENCIES.md](../../../docs/BACKEND_CHART_DEPENDENCIES.md)
-> **Validation agent:** `chart-impact-validator` (MANDATORY before merge)
+> **Validation agent:** `fullstack-consistency-reviewer` (MANDATORY before merge)
 
 ---
 

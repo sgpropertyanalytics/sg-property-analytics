@@ -23,7 +23,7 @@
 | `data-integrity-validator` | "validate data", "check filters", "wrong counts" |
 | `ingestion-orchestrator` | "scrape", "ingest", "upload CSV", "data sources", "tier A/B/C" |
 | `etl-pipeline` | "upload CSV", "weekly update", "import transactions" |
-| `chart-impact-validator` | **MANDATORY before backend merge** |
+| `fullstack-consistency-reviewer` | **MANDATORY before merge**, "review", "consistency check", "PR review" |
 
 Docs: `docs/backend.md`, `docs/frontend.md`, `docs/architecture.md`, `INGESTION_ARCHITECTURE.md`, `docs/BACKEND_CHART_DEPENDENCIES.md`
 
@@ -840,7 +840,7 @@ frontend/src/
 
 > **Reference:** `docs/BACKEND_CHART_DEPENDENCIES.md`
 > **Skill:** `/backend-impact-guardrails` (MANDATORY)
-> **Agent:** `chart-impact-validator` (MANDATORY before merge)
+> **Agent:** `fullstack-consistency-reviewer` (MANDATORY before merge)
 
 ## The 4 Questions (Ask Before Every Backend Change)
 
