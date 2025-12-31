@@ -122,15 +122,25 @@ export function SubscriptionProvider({ children }) {
 
       // Ensure we have a token before fetching
       let token = localStorage.getItem('token');
+      console.log('[Subscription] Token check:', { hasToken: !!token, tokenLength: token?.length });
+
       if (!token) {
         // No token but user is authenticated (Firebase) - trigger token refresh
         // This ensures we get the JWT needed to fetch subscription status
         console.warn('[Subscription] No token available, triggering token refresh...');
         if (refreshToken) {
-          const refreshed = await refreshToken();
-          if (refreshed) {
-            token = localStorage.getItem('token');
+          try {
+            const refreshed = await refreshToken();
+            console.log('[Subscription] Token refresh result:', refreshed);
+            if (refreshed) {
+              token = localStorage.getItem('token');
+              console.log('[Subscription] Token after refresh:', { hasToken: !!token, tokenLength: token?.length });
+            }
+          } catch (refreshErr) {
+            console.error('[Subscription] Token refresh error:', refreshErr);
           }
+        } else {
+          console.warn('[Subscription] No refreshToken function available');
         }
         // If still no token after refresh, we can't fetch - keep current state
         if (!token) {
@@ -152,14 +162,22 @@ export function SubscriptionProvider({ children }) {
       try {
         let response;
         try {
+          console.log('[Subscription] Fetching /auth/subscription...');
           response = await fetchSub();
+          console.log('[Subscription] Fetch success, status:', response.status);
         } catch (fetchErr) {
+          console.error('[Subscription] Fetch error:', {
+            status: fetchErr.response?.status,
+            message: fetchErr.message,
+            data: fetchErr.response?.data,
+          });
           // On 401, try refreshing the token once and retry
           if (fetchErr.response?.status === 401 && refreshToken) {
             console.warn('[Subscription] Got 401, attempting token refresh...');
             const refreshed = await refreshToken();
             if (refreshed && !isStale(requestId)) {
               // Token refreshed successfully, retry the fetch
+              console.log('[Subscription] Retrying after token refresh...');
               response = await fetchSub();
             } else {
               throw fetchErr; // Re-throw if refresh failed
