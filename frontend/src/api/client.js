@@ -414,9 +414,18 @@ export const getAggregate = (params = {}, options = {}) => {
  * @param {string} params.segment - CCR, RCR, OCR
  * @param {Object} options - Request options
  * @param {AbortSignal} options.signal - Abort signal for cancellation
+ * @param {string} options.priority - 'high' bypasses queue, 'normal' queues when busy
  */
-export const getKpiSummaryV2 = (params = {}, { signal } = {}) =>
-  apiClient.get(`/kpi-summary-v2?${buildQueryString(params)}`, { signal });
+export const getKpiSummaryV2 = (params = {}, options = {}) => {
+  const queryString = buildQueryString(params);
+  const cacheKey = `kpi-summary-v2:${queryString}`;
+  const { signal, priority = 'high' } = options; // Default high priority - KPIs are above the fold
+  return cachedFetch(
+    cacheKey,
+    () => apiClient.get(`/kpi-summary-v2?${queryString}`, { signal }),
+    { signal, priority }
+  );
+};
 
 // Legacy alias (deprecated) - use getKpiSummaryV2 instead
 export const getKpiSummary = getKpiSummaryV2;
