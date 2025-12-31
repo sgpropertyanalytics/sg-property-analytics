@@ -40,10 +40,23 @@ export { useFilterOptions, useRouteReset, useDebouncedFilterKey } from './hooks'
 
 // Storage utilities for page-namespaced persistence
 export {
+  // Constants
+  STORAGE_VERSION,
+  FALLBACK_PAGE_ID,
+  STORAGE_KEYS,
+  // Page ID resolution
   getPageIdFromPathname,
+  validatePageId,
   getFilterStorageKey,
+  // Read/Write
   readFilterStorage,
   writeFilterStorage,
+  // Version management
+  checkStorageVersion,
+  // Hydration
+  markHydrated,
+  isHydrated,
+  // Clear operations
   clearFilterStorage,
-  STORAGE_KEYS,
+  clearPageNamespace,
 } from './storage';

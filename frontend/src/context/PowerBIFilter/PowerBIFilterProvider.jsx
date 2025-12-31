@@ -24,9 +24,14 @@ import { useLocation } from 'react-router-dom';
 // Storage utilities for page-namespaced persistence
 import {
   getPageIdFromPathname,
+  validatePageId,
   readFilterStorage,
   writeFilterStorage,
+  clearPageNamespace,
+  markHydrated,
+  isHydrated,
   STORAGE_KEYS,
+  FALLBACK_PAGE_ID,
 } from './storage';
 
 // Constants and initial state
@@ -63,9 +68,19 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
   // ===== Page Identification =====
   // Derive page ID from route for namespaced storage
   // Each page has isolated filter state - selections don't leak across routes
+  // GUARDRAIL: Always validate pageId to prevent undefined/empty keys
   const location = useLocation();
-  const pageId = explicitPageId || getPageIdFromPathname(location.pathname);
+  const rawPageId = explicitPageId || getPageIdFromPathname(location.pathname);
+  const pageId = validatePageId(rawPageId) || FALLBACK_PAGE_ID;
   const prevPageIdRef = useRef(pageId);
+
+  // ===== Hydration Guard =====
+  // Prevents double-fetch flicker by tracking if filters have been restored
+  // filtersReady = false until initial hydration completes
+  const [filtersReady, setFiltersReady] = useState(() => {
+    // If already hydrated this session, we're ready immediately
+    return isHydrated(pageId);
+  });
 
   // ===== Core State =====
   // Filters persist to page-namespaced sessionStorage
@@ -78,6 +93,14 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
     return INITIAL_FILTERS;
   });
 
+  // Mark hydration complete after initial render
+  useEffect(() => {
+    if (!filtersReady) {
+      markHydrated(pageId);
+      setFiltersReady(true);
+    }
+  }, [pageId, filtersReady]);
+
   // Reset filters when navigating to a different page
   // This ensures each page starts fresh with its own stored state
   useEffect(() => {
@@ -86,6 +109,12 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
       // Load filters for the new page (or reset to initial if none stored)
       const savedFilters = readFilterStorage(pageId, STORAGE_KEYS.FILTERS, null);
       setFilters(savedFilters ? { ...INITIAL_FILTERS, ...savedFilters } : INITIAL_FILTERS);
+      // Check if new page was already hydrated
+      setFiltersReady(isHydrated(pageId));
+      if (!isHydrated(pageId)) {
+        markHydrated(pageId);
+        setFiltersReady(true);
+      }
     }
   }, [pageId]);
 
@@ -229,10 +258,13 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
   }, []);
 
   const resetFilters = useCallback(() => {
+    // Clear all storage for this page namespace
+    clearPageNamespace(pageId);
+    // Reset in-memory state
     setFilters(INITIAL_FILTERS);
     setBreadcrumbs(INITIAL_BREADCRUMBS);
     // Note: useEffect will sync INITIAL_FILTERS to sessionStorage automatically
-  }, []);
+  }, [pageId]);
 
   // ===== Drill Navigation =====
   const drillDown = useCallback((type, value, label) => {
@@ -354,6 +386,7 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
   const stateValue = useMemo(
     () => ({
       pageId,
+      filtersReady,
       filters,
       factFilter,
       drillPath,
@@ -368,6 +401,7 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
     }),
     [
       pageId,
+      filtersReady,
       filters,
       factFilter,
       drillPath,
@@ -423,6 +457,7 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
     () => ({
       // State
       pageId,
+      filtersReady,
       filters,
       factFilter,
       drillPath,
@@ -463,6 +498,7 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
     }),
     [
       pageId,
+      filtersReady,
       filters,
       factFilter,
       drillPath,
