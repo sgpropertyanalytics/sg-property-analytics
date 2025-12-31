@@ -50,7 +50,8 @@ export function useQuery(queryFn, deps = [], options = {}) {
   const hasStartedRef = useRef(false);
   const lastKeyRef = useRef(null);
   const prevEnabledRef = useRef(enabled);
-  const retriedFor401Ref = useRef(null);
+  // Signature-based guard for 401 retry (error objects can be recreated by interceptors)
+  const retried401SigRef = useRef(null);
 
   // Stable ref for callbacks (avoid effect deps churn)
   const queryFnRef = useRef(queryFn);
@@ -137,7 +138,7 @@ export function useQuery(queryFn, deps = [], options = {}) {
         inFlight: true,
       }));
 
-      retriedFor401Ref.current = null;
+      retried401SigRef.current = null;
 
       try {
         if (signal?.aborted) return;
@@ -197,7 +198,7 @@ export function useQuery(queryFn, deps = [], options = {}) {
         inFlight: true,
       }));
 
-      retriedFor401Ref.current = null;
+      retried401SigRef.current = null;
 
       try {
         if (signal?.aborted) return;
@@ -252,11 +253,13 @@ export function useQuery(queryFn, deps = [], options = {}) {
       const is401 = currentError?.response?.status === 401;
       if (!is401) return;
 
-      if (retriedFor401Ref.current === currentError) {
+      // Use signature instead of object identity (error objects can be recreated by interceptors)
+      const sig = `${currentError?.response?.status}:${currentError?.config?.url}`;
+      if (retried401SigRef.current === sig) {
         return;
       }
 
-      retriedFor401Ref.current = currentError;
+      retried401SigRef.current = sig;
       refetch();
     };
 

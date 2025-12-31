@@ -307,7 +307,8 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401) {
       const requestUrl = error.config?.url || '';
-      const isAuthEndpoint = requestUrl.includes('/auth/');
+      // Use startsWith to avoid false positives (e.g., /analytics/auth/... would match includes)
+      const isAuthEndpoint = requestUrl.startsWith('/auth/');
 
       if (isAuthEndpoint) {
         // 401 on auth endpoint - schedule token clear with debounce
