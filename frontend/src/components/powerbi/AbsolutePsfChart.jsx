@@ -53,7 +53,7 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
   const { shouldFetch, containerRef } = useDeferredFetch({
     filterKey: `${debouncedFilterKey}:${timeGrouping}`,
     priority: 'low',
-    fetchOnMount: true,
+    fetchOnMount: false,
   });
 
   // Data fetching - same as PriceCompressionChart for consistency
@@ -68,7 +68,7 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
         ...(saleType && { sale_type: saleType }),
       }, { excludeOwnDimension: 'segment' });
 
-      const response = await getAggregate(params, { signal });
+      const response = await getAggregate(params, { signal, priority: 'low' });
       assertKnownVersion(response.data, '/api/aggregate');
 
       const rawData = response.data?.data || [];

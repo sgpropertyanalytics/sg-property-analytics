@@ -46,7 +46,7 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
   const { shouldFetch, containerRef } = useDeferredFetch({
     filterKey: `${debouncedFilterKey}:${timeGrouping}`,
     priority: 'low',
-    fetchOnMount: true,
+    fetchOnMount: false,
   });
 
   // HISTORICAL BASELINE: Fetch full historical data (no date filters)
@@ -64,7 +64,7 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
         sale_type: effectiveSaleType,
       };
 
-      const response = await getAggregate(params, { signal });
+      const response = await getAggregate(params, { signal, priority: 'low' });
       const rawData = response.data?.data || [];
       const compressionData = transformCompressionSeries(rawData, 'quarter');
       return calculateZScoreStats(compressionData);
@@ -88,7 +88,7 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
         ...(saleType && { sale_type: saleType }),
       }, { excludeOwnDimension: 'segment' });
 
-      const response = await getAggregate(params, { signal });
+      const response = await getAggregate(params, { signal, priority: 'low' });
 
       // Validate API contract version
       assertKnownVersion(response.data, '/api/aggregate');

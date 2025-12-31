@@ -38,7 +38,7 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
         ...(saleType && { sale_type: saleType }),
       });
 
-      const response = await getAggregate(params, { signal });
+      const response = await getAggregate(params, { signal, priority: 'high' });
 
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/aggregate');

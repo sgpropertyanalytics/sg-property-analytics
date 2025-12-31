@@ -58,7 +58,7 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
       }, { excludeLocationDrill: true });
 
       // Skip cache when toggling to ensure fresh data
-      const response = await getDashboard(params, { skipCache: showFullRange, signal });
+      const response = await getDashboard(params, { skipCache: showFullRange, signal, priority: 'medium' });
 
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/dashboard');
