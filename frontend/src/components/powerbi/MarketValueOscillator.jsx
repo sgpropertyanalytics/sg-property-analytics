@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
@@ -34,8 +34,12 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * - Between ±0.5σ (white): Fair value
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
+ *
+ * SHARED DATA OPTIMIZATION (P0 performance fix):
+ * - Accepts sharedRawData from parent (MacroOverview) to eliminate duplicate aggregate request
+ * - The same region/time aggregate data is used by compression charts and this oscillator
  */
-export function MarketValueOscillator({ height = 420, saleType = null }) {
+export function MarketValueOscillator({ height = 420, saleType = null, sharedRawData = null, sharedLoading = false }) {
   // Get GLOBAL filters and timeGrouping from context
   // filterKey updates immediately on filter change - used for instant overlay feedback
   const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
@@ -78,10 +82,15 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
     }
   );
 
+  // Determine if we should use shared data from parent (P0 performance fix)
+  // When sharedRawData is provided, we skip the internal fetch entirely
+  const useShared = sharedRawData !== null;
+
   // Main filtered data fetching - uses page-level saleType prop
+  // DISABLED when sharedRawData is provided (eliminates duplicate request)
   // isFetching = true during background refetch when keepPreviousData is enabled
   // isBootPending = true while waiting for app boot
-  const { data, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data: fetchedData, loading: fetchLoading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison
@@ -109,8 +118,18 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
       return transformOscillatorSeries(rawData, timeGrouping, baselineStats);
     },
     [debouncedFilterKey, timeGrouping, baselineStats, saleType],
-    { initialData: [], enabled: shouldFetch, keepPreviousData: true }
+    { initialData: [], enabled: shouldFetch && !useShared, keepPreviousData: true }
   );
+
+  // When using shared data, transform it with useMemo (same transform as internal fetch)
+  const sharedTransformedData = useMemo(() => {
+    if (!useShared || !sharedRawData || sharedRawData.length === 0) return [];
+    return transformOscillatorSeries(sharedRawData, timeGrouping, baselineStats);
+  }, [useShared, sharedRawData, timeGrouping, baselineStats]);
+
+  // Use shared data when available, otherwise use fetched data
+  const data = useShared ? sharedTransformedData : fetchedData;
+  const loading = useShared ? sharedLoading : fetchLoading;
 
   // Get latest values for KPI cards
   const latestData = data[data.length - 1] || {};

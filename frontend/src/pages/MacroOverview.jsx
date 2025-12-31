@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { PowerBIFilterProvider, usePowerBIFilters, TIME_GROUP_BY } from '../context/PowerBIFilter';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
@@ -121,10 +121,10 @@ export function MacroOverviewContent() {
     fetchOnMount: false,
   });
 
-  // SHARED DATA FETCH: Compression/Absolute PSF charts use identical API call
-  // Hoisted to parent to eliminate duplicate request (W4 performance fix)
-  // Both PriceCompressionChart and AbsolutePsfChart consume this data
-  const { data: compressionData, loading: compressionLoading, isBootPending: compressionBootPending } = useGatedAbortableQuery(
+  // SHARED DATA FETCH: Compression/Absolute PSF/Oscillator charts use identical API call
+  // Hoisted to parent to eliminate duplicate requests (W4 performance fix)
+  // PriceCompressionChart, AbsolutePsfChart, and MarketValueOscillator all consume this data
+  const { data: compressionRaw, loading: compressionLoading, isBootPending: compressionBootPending } = useGatedAbortableQuery(
     async (signal) => {
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
@@ -133,11 +133,16 @@ export function MacroOverviewContent() {
       }, { excludeOwnDimension: 'segment' });
 
       const response = await getAggregate(params, { signal, priority: 'low' });
-      const rawData = response.data || [];
-      return transformCompressionSeries(rawData, timeGrouping);
+      return response.data || [];
     },
     [debouncedFilterKey, timeGrouping],
     { initialData: [], keepPreviousData: true, enabled: shouldFetchCompression }
+  );
+
+  // Transform raw data for compression charts (memoized to avoid re-transform on every render)
+  const compressionData = useMemo(
+    () => transformCompressionSeries(compressionRaw, timeGrouping),
+    [compressionRaw, timeGrouping]
   );
 
   // Shared dashboard panels for histogram + beads (reduces request fanout)
@@ -353,11 +358,17 @@ export function MacroOverviewContent() {
 
                 {/* Market Value Oscillator - Full width, Z-score normalized spread analysis */}
                 {/* Lazy-loaded with Suspense for faster initial page load */}
+                {/* SHARED DATA: Receives compressionRaw to eliminate duplicate aggregate request (P0 fix) */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Market Value Oscillator" compact>
                     <ChartWatermark>
                       <Suspense fallback={<ChartLoadingFallback height={oscillatorHeight} />}>
-                        <MarketValueOscillator height={oscillatorHeight} saleType={SALE_TYPE} />
+                        <MarketValueOscillator
+                          height={oscillatorHeight}
+                          saleType={SALE_TYPE}
+                          sharedRawData={compressionRaw}
+                          sharedLoading={shouldFetchCompression ? compressionLoading : true}
+                        />
                       </Suspense>
                     </ChartWatermark>
                   </ErrorBoundary>
