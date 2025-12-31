@@ -60,7 +60,7 @@ export function DistrictDeepDiveContent() {
                   selectedPeriod={selectedPeriod}
                   selectedBed={selectedBed}
                   onFilterChange={handleFilterChange}
-                  mapMode={mapModehttps://github.com/dragonmaiden/sg-property-analyzer/pull/174/conflict?name=frontend%252Fsrc%252Fpages%252FDistrictDeepDive.jsx&ancestor_oid=403c4ca41da177b7eb9571084c73304e0d3c5aa2&base_oid=a1b678f48e8da794467d5268431e15f05ef6057f&head_oid=49b924dbd2588628fe6d83c8dc82d8dbdfb66ca9}
+                  mapMode={mapMode}
                   onModeChange={setMapMode}
                   enabled={mapMode === 'volume'}
                 />
