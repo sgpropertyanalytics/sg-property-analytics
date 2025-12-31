@@ -51,21 +51,20 @@ export function DistrictDeepDiveContent() {
 
         {/* Main Content */}
         <div className="space-y-6 animate-fade-in">
-          {/* Map - keep both mounted but disable fetching when hidden */}
+          {/* Map - render active mode only to avoid background data fetches */}
           <ChartWatermark>
             <Suspense fallback={<ChartSkeleton type="map" height={600} />}>
-              <div style={{ display: mapMode === 'volume' ? 'block' : 'none' }}>
+              {mapMode === 'volume' ? (
                 <DistrictLiquidityMap
                   saleType={SaleType.RESALE}
                   selectedPeriod={selectedPeriod}
                   selectedBed={selectedBed}
                   onFilterChange={handleFilterChange}
-                  mapMode={mapMode}
+                  mapMode={mapModehttps://github.com/dragonmaiden/sg-property-analyzer/pull/174/conflict?name=frontend%252Fsrc%252Fpages%252FDistrictDeepDive.jsx&ancestor_oid=403c4ca41da177b7eb9571084c73304e0d3c5aa2&base_oid=a1b678f48e8da794467d5268431e15f05ef6057f&head_oid=49b924dbd2588628fe6d83c8dc82d8dbdfb66ca9}
                   onModeChange={setMapMode}
                   enabled={mapMode === 'volume'}
                 />
-              </div>
-              <div style={{ display: mapMode === 'price' ? 'block' : 'none' }}>
+              ) : (
                 <MarketStrategyMap
                   selectedPeriod={selectedPeriod}
                   selectedBed={selectedBed}
@@ -75,7 +74,7 @@ export function DistrictDeepDiveContent() {
                   onModeChange={setMapMode}
                   enabled={mapMode === 'price'}
                 />
-              </div>
+              )}
             </Suspense>
           </ChartWatermark>
 
