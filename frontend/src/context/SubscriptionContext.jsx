@@ -121,15 +121,22 @@ export function SubscriptionProvider({ children }) {
       }
 
       // Ensure we have a token before fetching
-      const token = localStorage.getItem('token');
+      let token = localStorage.getItem('token');
       if (!token) {
-        // CRITICAL FIX: When token is missing but user is authenticated (Firebase),
-        // DON'T downgrade to free. Keep cached value and wait for token sync.
-        // The AuthContext will re-sync with backend and restore the token.
-        console.warn('[Subscription] No token available, keeping cached subscription');
-        // Don't overwrite cached subscription - this prevents premium→free flicker
-        // when token is temporarily missing during auth refresh
-        return;
+        // No token but user is authenticated (Firebase) - trigger token refresh
+        // This ensures we get the JWT needed to fetch subscription status
+        console.warn('[Subscription] No token available, triggering token refresh...');
+        if (refreshToken) {
+          const refreshed = await refreshToken();
+          if (refreshed) {
+            token = localStorage.getItem('token');
+          }
+        }
+        // If still no token after refresh, we can't fetch - keep current state
+        if (!token) {
+          console.warn('[Subscription] Token refresh failed, cannot fetch subscription');
+          return;
+        }
       }
 
       setLoading(true);
