@@ -1,5 +1,5 @@
 import React, { useRef, useMemo } from 'react';
-import { useAbortableQuery } from '../../hooks';
+import { useAbortableQuery, useDebugOverlay } from '../../hooks';
 import { QueryState } from '../common/QueryState';
 // Chart.js components registered globally in chartSetup.js
 import { Bubble } from 'react-chartjs-2';
@@ -44,6 +44,7 @@ export const BeadsChart = React.memo(function BeadsChart({
 }) {
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const chartRef = useRef(null);
+  const { wrapApiCall, DebugOverlay } = useDebugOverlay('BeadsChart');
 
   const useShared = sharedData != null;
 
@@ -57,18 +58,39 @@ export const BeadsChart = React.memo(function BeadsChart({
         { excludeLocationDrill: true, excludeOwnDimension: 'segment' }
       );
 
-      const response = await getDashboard(params, { signal, priority: 'medium' });
+      const response = await wrapApiCall(
+        '/api/dashboard?panels=beads_chart',
+        params,
+        () => getDashboard(params, { signal, priority: 'medium' })
+      );
       // apiClient interceptor unwraps envelope, so response.data IS the inner data
       const apiData = response.data || {};
       assertKnownVersion(apiData, '/api/dashboard');
 
+      // DEBUG: Log raw API data and transformed result
+      const rawBeadsData = apiData.beads_chart;
+      console.log('[BeadsChart] Raw API beads_chart data:', rawBeadsData);
+      console.log('[BeadsChart] Sample row:', rawBeadsData?.[0]);
+
+      const transformed = transformBeadsChartSeries(rawBeadsData);
+      console.log('[BeadsChart] Transformed data:', {
+        datasetCount: transformed.datasets?.length,
+        datasets: transformed.datasets?.map(ds => ({
+          label: ds.label,
+          pointCount: ds.data?.length,
+          samplePoint: ds.data?.[0],
+        })),
+        stats: transformed.stats,
+        stringRanges: transformed.stringRanges,
+      });
+
       logFetchDebug('BeadsChart', {
         endpoint: '/api/dashboard?panels=beads_chart',
         response: apiData,
-        rowCount: apiData.beads_chart?.length || 0,
+        rowCount: rawBeadsData?.length || 0,
       });
 
-      return transformBeadsChartSeries(apiData.beads_chart);
+      return transformed;
     },
     [debouncedFilterKey, saleType],
     {
@@ -285,9 +307,10 @@ export const BeadsChart = React.memo(function BeadsChart({
       height={350}
     >
       <div
-        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col relative"
         style={{ height: cardHeight }}
       >
+        <DebugOverlay />
         {/* Header - shrink-0 */}
         <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
           <h3 className="font-semibold text-[#213448]">
