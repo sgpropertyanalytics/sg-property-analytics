@@ -14,7 +14,7 @@
  */
 
 // KPI components (standalone cards for pages)
-export { KPICardV2, KPICardV2Skeleton, KPICardV2Group, KPIHeroContent, mapKpiV2ToCardProps } from './KPICardV2';
+export { KPICardV2, KPICardV2Group, KPIHeroContent } from './KPICardV2';
 export { HelpTooltip } from './HelpTooltip';
 
 // Inline cards (compact cards inside chart headers)
