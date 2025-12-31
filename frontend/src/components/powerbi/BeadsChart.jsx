@@ -58,14 +58,13 @@ export const BeadsChart = React.memo(function BeadsChart({
       );
 
       const response = await getDashboard(params, { signal, priority: 'medium' });
-      assertKnownVersion(response.data, '/api/dashboard');
-
-      const responseData = response.data || {};
-      const apiData = responseData.data || {};
+      // apiClient interceptor unwraps envelope, so response.data IS the inner data
+      const apiData = response.data || {};
+      assertKnownVersion(apiData, '/api/dashboard');
 
       logFetchDebug('BeadsChart', {
         endpoint: '/api/dashboard?panels=beads_chart',
-        response: responseData,
+        response: apiData,
         rowCount: apiData.beads_chart?.length || 0,
       });
 
@@ -313,7 +312,7 @@ export const BeadsChart = React.memo(function BeadsChart({
 
         {/* Chart */}
         <ChartSlot>
-          <Bubble ref={chartRef} data={chartData} options={options} />
+          <Bubble ref={chartRef} data={resolvedData} options={options} />
         </ChartSlot>
 
         {/* Footer - h-11 matches PriceDistributionChart */}
