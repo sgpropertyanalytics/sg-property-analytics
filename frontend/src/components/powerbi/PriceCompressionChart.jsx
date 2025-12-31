@@ -61,7 +61,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
   const { shouldFetch, containerRef } = useDeferredFetch({
     filterKey: `${debouncedFilterKey}:${timeGrouping}`,
     priority: 'low',
-    fetchOnMount: true,
+    fetchOnMount: false,
   });
 
   // HISTORICAL BASELINE: Fetch full historical data once (no date filters)
@@ -75,7 +75,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
         metrics: 'median_psf,count',
       };
 
-      const response = await getAggregate(params, { signal });
+      const response = await getAggregate(params, { signal, priority: 'low' });
       const rawData = response.data?.data || [];
       const transformed = transformCompressionSeries(rawData, 'quarter');
       return calculateHistoricalBaseline(transformed);
@@ -96,7 +96,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
         ...(saleType && { sale_type: saleType }),
       }, { excludeOwnDimension: 'segment' });
 
-      const response = await getAggregate(params, { signal });
+      const response = await getAggregate(params, { signal, priority: 'low' });
 
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/aggregate');

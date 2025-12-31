@@ -14,7 +14,7 @@ import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
 import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group, KPIHeroContent } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
-import { useChartHeight, MOBILE_CAPS, useAbortableQuery } from '../hooks';
+import { useChartHeight, MOBILE_CAPS, useAbortableQuery, useDeferredFetch } from '../hooks';
 // Unified filter bar component (handles desktop + mobile)
 import { FilterBar } from '../components/powerbi/FilterBar';
 
@@ -107,6 +107,19 @@ export function MacroOverviewContent() {
   // Helper to get KPI by ID from the array
   const getKpi = (kpiId) => kpis.items.find(k => getKpiField(k, KpiField.KPI_ID) === kpiId);
 
+  // Defer below-the-fold chart data to reduce initial load fanout
+  const { shouldFetch: shouldFetchCompression, containerRef: compressionRef } = useDeferredFetch({
+    filterKey: `${debouncedFilterKey}:${timeGrouping}`,
+    priority: 'low',
+    fetchOnMount: false,
+  });
+
+  const { shouldFetch: shouldFetchPanels, containerRef: panelsRef } = useDeferredFetch({
+    filterKey: debouncedFilterKey,
+    priority: 'medium',
+    fetchOnMount: false,
+  });
+
   // SHARED DATA FETCH: Compression/Absolute PSF charts use identical API call
   // Hoisted to parent to eliminate duplicate request (W4 performance fix)
   // Both PriceCompressionChart and AbsolutePsfChart consume this data
@@ -118,12 +131,12 @@ export function MacroOverviewContent() {
         sale_type: SALE_TYPE,
       }, { excludeOwnDimension: 'segment' });
 
-      const response = await getAggregate(params, { signal });
+      const response = await getAggregate(params, { signal, priority: 'low' });
       const rawData = response.data?.data || [];
       return transformCompressionSeries(rawData, timeGrouping);
     },
     [debouncedFilterKey, timeGrouping],
-    { initialData: [], keepPreviousData: true }
+    { initialData: [], keepPreviousData: true, enabled: shouldFetchCompression }
   );
 
   // Shared dashboard panels for histogram + beads (reduces request fanout)
@@ -139,11 +152,11 @@ export function MacroOverviewContent() {
         { excludeLocationDrill: true }
       );
 
-      const response = await getDashboard(params, { signal });
+      const response = await getDashboard(params, { signal, priority: 'medium' });
       return response.data?.data || {};
     },
     [debouncedFilterKey],
-    { initialData: {}, keepPreviousData: true }
+    { initialData: {}, keepPreviousData: true, enabled: shouldFetchPanels }
   );
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
@@ -307,7 +320,10 @@ export function MacroOverviewContent() {
                 {/* Desktop/Tablet: 50/50 grid | Mobile: Stacked */}
                 {/* Lazy-loaded with Suspense for faster initial page load */}
                 {/* SHARED DATA: Both charts receive pre-fetched compressionData (W4 fix) */}
-                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-stretch">
+                <div
+                  ref={compressionRef}
+                  className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-stretch"
+                >
                   <ErrorBoundary name="Price Compression" compact>
                     <ChartWatermark>
                       <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
@@ -315,7 +331,7 @@ export function MacroOverviewContent() {
                           height={compressionHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
-                          sharedLoading={compressionLoading}
+                          sharedLoading={shouldFetchCompression ? compressionLoading : true}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -327,7 +343,7 @@ export function MacroOverviewContent() {
                           height={compressionHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
-                          sharedLoading={compressionLoading}
+                          sharedLoading={shouldFetchCompression ? compressionLoading : true}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -347,31 +363,36 @@ export function MacroOverviewContent() {
                 </div>
 
                 {/* Price Distribution + Beads Chart - Side by side */}
-                <div>
-                  <ErrorBoundary name="Price Distribution" compact>
-                    <ChartWatermark>
-                      <PriceDistributionChart
-                        onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
-                        height={standardChartHeight}
-                        saleType={SALE_TYPE}
-                        sharedData={dashboardPanels?.price_histogram}
-                        sharedLoading={dashboardLoading}
-                      />
-                    </ChartWatermark>
-                  </ErrorBoundary>
-                </div>
+                <div
+                  ref={panelsRef}
+                  className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"
+                >
+                  <div>
+                    <ErrorBoundary name="Price Distribution" compact>
+                      <ChartWatermark>
+                        <PriceDistributionChart
+                          onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
+                          height={standardChartHeight}
+                          saleType={SALE_TYPE}
+                          sharedData={dashboardPanels?.price_histogram}
+                          sharedLoading={shouldFetchPanels ? dashboardLoading : true}
+                        />
+                      </ChartWatermark>
+                    </ErrorBoundary>
+                  </div>
 
-                <div>
-                  <ErrorBoundary name="Price by Region & Bedroom" compact>
-                    <ChartWatermark>
-                      <BeadsChart
-                        height={standardChartHeight}
-                        saleType={SALE_TYPE}
-                        sharedData={dashboardPanels?.beads_chart}
-                        sharedLoading={dashboardLoading}
-                      />
-                    </ChartWatermark>
-                  </ErrorBoundary>
+                  <div>
+                    <ErrorBoundary name="Price by Region & Bedroom" compact>
+                      <ChartWatermark>
+                        <BeadsChart
+                          height={standardChartHeight}
+                          saleType={SALE_TYPE}
+                          sharedData={dashboardPanels?.beads_chart}
+                          sharedLoading={shouldFetchPanels ? dashboardLoading : true}
+                        />
+                      </ChartWatermark>
+                    </ErrorBoundary>
+                  </div>
                 </div>
 
               </div>

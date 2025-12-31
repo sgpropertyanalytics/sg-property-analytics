@@ -57,7 +57,7 @@ export const BeadsChart = React.memo(function BeadsChart({
         { excludeLocationDrill: true, excludeOwnDimension: 'segment' }
       );
 
-      const response = await getDashboard(params, { signal });
+      const response = await getDashboard(params, { signal, priority: 'medium' });
       assertKnownVersion(response.data, '/api/dashboard');
 
       const responseData = response.data || {};

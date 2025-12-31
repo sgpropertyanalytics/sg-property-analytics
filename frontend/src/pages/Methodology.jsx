@@ -5,9 +5,8 @@
  * Helps users understand how metrics are calculated and data is categorized.
  */
 
-import { useState, useEffect } from 'react';
 import { PageHeader } from '../components/ui';
-import apiClient from '../api/client';
+import { useData } from '../context/DataContext';
 import { LocTrendChart } from '../components/LocTrendChart';
 
 // Classification data from constants
@@ -155,21 +154,7 @@ function DataTable({ headers, rows, className = '' }) {
 }
 
 export function MethodologyContent() {
-  const [metadata, setMetadata] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    apiClient.get('/metadata')
-      .then(response => {
-        setMetadata(response.data);
-      })
-      .catch(err => {
-        console.error('Failed to fetch metadata:', err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+  const { apiMetadata: metadata, loading } = useData();
 
   // Format date for display
   const formatDate = (isoString) => {
