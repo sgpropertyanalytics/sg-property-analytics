@@ -497,7 +497,7 @@ export const getNewLaunchTimeline = (params = {}, options = {}) =>
 
 /**
  * Get new launch absorption rates - projects launched per period with avg launch-month absorption
- * Used by AbsorptionChart on New Launch Market page
+ * Used by NewLaunchTimelineChart on New Launch Market page
  */
 export const getNewLaunchAbsorption = (params = {}, options = {}) =>
   apiClient.get(`/new-launch-absorption?${buildQueryString(params)}`, { signal: options.signal });

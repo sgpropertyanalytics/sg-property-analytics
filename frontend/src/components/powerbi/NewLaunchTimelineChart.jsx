@@ -1,11 +1,11 @@
 /**
  * New Launch Timeline Chart - Combo Chart (Bars + Line)
  *
- * Shows new launch activity over time:
- * - Bars (left Y-axis): Number of projects launched per period
- * - Line (right Y-axis): Total units launched per period
+ * Shows new launch activity and demand over time:
+ * - Bars (left Y-axis): Total units launched per period
+ * - Line (right Y-axis): Avg launch-month absorption % (0-100%)
  *
- * Tooltip shows: Project count, unit count, avg units/project
+ * Tooltip shows: Total units, absorption %, projects launched, avg units/project
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, segment, bedroom, date range).
  * Only the drill level (year/quarter/month) is visual-local.
@@ -197,17 +197,25 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
               const value = context.parsed.y;
               if (value === null || value === undefined) return `${label}: No data`;
               if (context.datasetIndex === 0) {
-                return `${label}: ${value} projects`;
+                // Bar: Total Units
+                return `${label}: ${value.toLocaleString()} units`;
               }
-              return `${label}: ${value.toLocaleString()} units`;
+              // Line: Absorption %
+              return `${label}: ${value.toFixed(1)}%`;
             },
             afterBody: (tooltipItems) => {
               const index = tooltipItems[0]?.dataIndex;
               if (index !== undefined && filteredData[index]) {
                 const d = filteredData[index];
+                const lines = [];
+                lines.push(`Projects Launched: ${d.projectCount}`);
                 if (d.avgUnitsPerProject > 0) {
-                  return [`Avg units/project: ${d.avgUnitsPerProject.toLocaleString()}`];
+                  lines.push(`Avg units/project: ${d.avgUnitsPerProject.toLocaleString()}`);
                 }
+                if (d.projectsMissing > 0) {
+                  lines.push(`(${d.projectsMissing} project${d.projectsMissing > 1 ? 's' : ''} missing unit data)`);
+                }
+                return lines;
               }
               return [];
             },
@@ -237,23 +245,6 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
           suggestedMax: ySuggestedMax,  // Soft cap - can expand if data exceeds
           title: {
             display: true,
-            text: 'Projects',
-            ...CHART_AXIS_DEFAULTS.title,
-          },
-          ticks: {
-            ...CHART_AXIS_DEFAULTS.ticks,
-            stepSize: maxProjects <= 10 ? 1 : Math.ceil(ySuggestedMax / 5),  // Integer ticks for small counts
-          },
-          grid: {
-            color: 'rgba(148, 180, 193, 0.2)',
-          },
-        },
-        y1: {
-          type: 'linear',
-          position: 'right',
-          suggestedMax: y1SuggestedMax,  // Soft cap - can expand if data exceeds
-          title: {
-            display: true,
             text: 'Units',
             ...CHART_AXIS_DEFAULTS.title,
           },
@@ -262,12 +253,30 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
             callback: (value) => value.toLocaleString(),
           },
           grid: {
+            color: 'rgba(148, 180, 193, 0.2)',
+          },
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          min: 0,
+          max: 100,
+          title: {
+            display: true,
+            text: 'Absorption %',
+            ...CHART_AXIS_DEFAULTS.title,
+          },
+          ticks: {
+            ...CHART_AXIS_DEFAULTS.ticks,
+            callback: (value) => `${value}%`,
+          },
+          grid: {
             drawOnChartArea: false, // Don't draw grid lines for secondary axis
           },
         },
       },
     }),
-    [ySuggestedMax, y1SuggestedMax, maxProjects, filteredData]
+    [ySuggestedMax, filteredData]
   );
 
   const hasData = filteredData.length > 0;
@@ -321,6 +330,11 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
                     ~{avgUnitsPerProject} units/project
                   </span>
                 )}
+                {avgAbsorption != null && (
+                  <span className="px-3 py-1.5 rounded-full bg-[#213448]/10 text-[#213448] text-xs md:text-sm">
+                    {avgAbsorption}% avg absorption
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -328,7 +342,8 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
           {/* How to Interpret */}
           <div className="shrink-0">
             <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-              Tracks new project launches over time. Bars show project count; the line shows total units launched.
+              Tracks new launch supply and demand. Bars show total units launched; the line shows avg % sold in launch month.
+              High bars + low line = oversupply. Low bars + high line = strong demand.
             </KeyInsightBox>
           </div>
 
@@ -354,13 +369,13 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
           <div className="flex justify-center gap-6 py-2 shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-4 h-3 rounded-sm bg-[#94B4C1]" />
-              <span className="text-xs text-[#374151]">Projects Launched</span>
+              <span className="text-xs text-[#374151]">Total Units</span>
             </div>
             <div className="flex items-center gap-2">
               <svg width="24" height="8">
                 <line x1="0" y1="4" x2="24" y2="4" stroke="#213448" strokeWidth={2.5} />
               </svg>
-              <span className="text-xs text-[#374151]">Total Units</span>
+              <span className="text-xs text-[#374151]">Avg Absorption %</span>
             </div>
           </div>
         </div>
