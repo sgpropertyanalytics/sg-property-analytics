@@ -243,6 +243,7 @@ AGGREGATE_RESPONSE_SCHEMA = ResponseSchema(
         "totalRecords": FieldSpec(name="totalRecords", type=int, required=False),
         "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
         "schemaVersion": FieldSpec(name="schemaVersion", type=str, required=False),
+        "warnings": FieldSpec(name="warnings", type=list, required=False, description="Diagnostic warnings about normalization or data quality"),
     },
     required_meta=["requestId", "elapsedMs", "filtersApplied", "apiVersion"],
     data_is_list=True,

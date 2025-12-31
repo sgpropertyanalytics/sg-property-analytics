@@ -206,31 +206,6 @@ def clamp_date_to_today(value: Optional[date]) -> Optional[date]:
     return min(value, today)
 
 
-def normalize_ura_date(value: Optional[date]) -> Optional[date]:
-    """
-    Normalize date to 1st of month for URA transaction data.
-
-    CRITICAL: URA transaction data is month-level only. All transactions within
-    a month are dated to the 1st of that month. Queries with day > 1 can
-    accidentally exclude entire months of data.
-
-    Example Bug:
-        - date_from='2024-10-02' excludes ALL of October (dated 2024-10-01)
-        - This function normalizes to 2024-10-01 to include the month
-
-    Args:
-        value: Date to normalize (can be None)
-
-    Returns:
-        Date with day set to 1, or None if input is None
-    """
-    if value is None:
-        return None
-    if value.day == 1:
-        return value
-    return value.replace(day=1)
-
-
 def to_datetime(
     value: Optional[str],
     *,
