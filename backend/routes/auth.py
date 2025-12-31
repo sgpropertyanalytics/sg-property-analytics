@@ -284,12 +284,20 @@ def get_subscription():
         token = auth_header.split(' ')[1]
         user_id = verify_token(token)
 
+        # Debug logging
+        print(f"[Auth] /subscription - token length: {len(token)}, user_id from token: {user_id}")
+
         if not user_id:
+            print(f"[Auth] /subscription - token verification failed")
             return jsonify({"error": "Invalid or expired token"}), 401
 
         user = User.query.get(user_id)
         if not user:
+            print(f"[Auth] /subscription - user_id {user_id} not found in database")
             return jsonify({"error": "User not found"}), 404
+
+        # Debug logging
+        print(f"[Auth] /subscription - user: {user.email}, tier: {user.tier}, is_subscribed: {user.is_subscribed()}")
 
         return jsonify({
             "tier": user.tier,
@@ -298,6 +306,7 @@ def get_subscription():
         }), 200
 
     except Exception as e:
+        print(f"[Auth] /subscription - error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
