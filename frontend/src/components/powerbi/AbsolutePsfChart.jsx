@@ -159,6 +159,9 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
     ],
   };
 
+  // Card layout: flex column with fixed height (must match PriceCompressionChart for grid alignment)
+  const cardHeight = height + 200;
+
   // Chart options
   const chartOptions = {
     ...baseChartJsOptions,
@@ -245,7 +248,8 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
       height={height}
     >
       <div
-        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col h-full"
+        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        style={{ height: cardHeight }}
       >
         {/* Header */}
         <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
