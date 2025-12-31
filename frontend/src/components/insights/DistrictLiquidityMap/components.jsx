@@ -305,7 +305,7 @@ export function HoverCard({ district, data }) {
 // REGION SUMMARY BAR
 // =============================================================================
 
-export function RegionSummaryBar({ districtData, meta: _meta }) {
+export function RegionSummaryBar({ districtData, meta }) {
   const regionStats = useMemo(() => {
     const regionDistricts = {
       CCR: CCR_DISTRICTS,
@@ -313,17 +313,23 @@ export function RegionSummaryBar({ districtData, meta: _meta }) {
       OCR: OCR_DISTRICTS,
     };
 
+    const monthsInPeriod = meta?.months_in_period || 12;
+
     return REGIONS.map((region) => {
       const districts = districtData.filter(
         (d) => regionDistricts[region].includes(d.district_id) && d.has_data
       );
 
       if (districts.length === 0) {
-        return { region, avgTurnover: null, txCount: 0, avgZScore: null, totalUnits: 0 };
+        return { region, avgTurnover: null, txCount: 0, avgZScore: null, totalUnits: 0, resalesPerMonth: null };
       }
 
       const totalTx = districts.reduce((sum, d) => sum + (d.liquidity_metrics?.tx_count || 0), 0);
+      const totalResales = districts.reduce((sum, d) => sum + (d.liquidity_metrics?.resale_count || 0), 0);
       const totalUnits = districts.reduce((sum, d) => sum + (d.liquidity_metrics?.total_units || 0), 0);
+
+      // Resales per month for the region
+      const resalesPerMonth = totalResales / monthsInPeriod;
 
       // Average turnover rate for region (weighted by units would be better, but simple average for now)
       const turnoverRates = districts
@@ -345,9 +351,10 @@ export function RegionSummaryBar({ districtData, meta: _meta }) {
         txCount: totalTx,
         totalUnits,
         avgZScore,
+        resalesPerMonth,
       };
     });
-  }, [districtData]);
+  }, [districtData, meta]);
 
   const regionLabels = {
     CCR: { name: 'Core Central', desc: 'Premium Districts' },
@@ -368,8 +375,8 @@ export function RegionSummaryBar({ districtData, meta: _meta }) {
           {/* Mobile: horizontal layout, Desktop: vertical */}
           <div className="flex sm:flex-col items-center sm:items-stretch gap-2 sm:gap-0">
             {/* Region name and Z-score */}
-            <div className="flex items-center justify-between sm:mb-1 min-w-[60px] sm:min-w-0">
-              <span className="font-semibold text-[#213448] text-sm">{stat.region}</span>
+            <div className="flex items-center justify-between sm:mb-1 min-w-[80px] sm:min-w-0">
+              <span className="font-semibold text-[#213448] text-sm">{stat.region} Turnover</span>
               {stat.avgZScore !== null && (
                 <span
                   className={`text-xs font-bold ml-2 sm:ml-0 ${stat.avgZScore >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}
@@ -383,13 +390,18 @@ export function RegionSummaryBar({ districtData, meta: _meta }) {
               {regionLabels[stat.region].desc}
             </p>
             {/* Stats */}
-            <div className="flex items-baseline gap-2 sm:justify-between flex-1 sm:flex-none">
-              <span className="text-base sm:text-lg font-bold text-[#213448]">
-                {stat.avgTurnover?.toFixed(1) ?? '-'}<span className="text-xs font-normal text-[#547792]">/100</span>
-              </span>
-              <span className="text-[10px] sm:text-xs text-[#547792]">
-                {stat.txCount.toLocaleString()} tx
-              </span>
+            <div className="flex flex-col gap-0.5 flex-1 sm:flex-none">
+              <div className="flex items-baseline gap-2 sm:justify-between">
+                <span className="text-base sm:text-lg font-bold text-[#213448]">
+                  {stat.avgTurnover?.toFixed(1) ?? '-'}<span className="text-xs font-normal text-[#547792]">/100</span>
+                </span>
+                <span className="text-[10px] sm:text-xs text-[#547792]">
+                  {stat.txCount.toLocaleString()} tx
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2 sm:justify-between text-[10px] sm:text-xs text-[#547792]">
+                <span>{stat.resalesPerMonth !== null ? `${Math.round(stat.resalesPerMonth)} resales/mo` : '-'}</span>
+              </div>
             </div>
           </div>
         </div>
