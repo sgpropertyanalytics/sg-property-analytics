@@ -445,6 +445,7 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
   onFilterChange,
   mapMode,
   onModeChange,
+  enabled = true,
 }) {
   const { isPremium } = useSubscription();
   const [districtData, setDistrictData] = useState([]);
@@ -539,9 +540,10 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
   }, [selectedBed, selectedPeriod, selectedSaleType, startRequest, getSignal, isStale]);
 
   useEffect(() => {
+    if (!enabled) return;
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
+  }, [filterKey, enabled]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create district data lookup
   const districtMap = useMemo(() => {

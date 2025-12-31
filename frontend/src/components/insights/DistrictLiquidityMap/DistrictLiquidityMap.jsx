@@ -48,6 +48,7 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
   onFilterChange,
   mapMode,
   onModeChange,
+  enabled = true,
 }) {
   const { isPremium } = useSubscription();
   const [districtData, setDistrictData] = useState([]);
@@ -148,9 +149,10 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
   }, [selectedBed, selectedPeriod, saleType, startRequest, getSignal, isStale]);
 
   useEffect(() => {
+    if (!enabled) return;
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
+  }, [filterKey, enabled]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create district data lookup
   const districtMap = useMemo(() => {
