@@ -308,7 +308,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               onClick={handleResetFilters}
               className="min-h-[38px] px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-white/50 bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm transition-colors flex-shrink-0 ml-auto xl:ml-0"
             >
-              Clear all
+              Reset
             </button>
           )}
         </div>
@@ -560,7 +560,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 onClick={handleResetFilters}
                 className="flex-1 min-h-[48px] px-4 py-3 rounded-lg border border-[#94B4C1] text-[#547792] font-medium hover:border-[#547792] active:bg-[#EAE0CF]/30 transition-colors"
               >
-                Clear all
+                Reset
               </button>
             )}
             <button
@@ -616,7 +616,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             onClick={(e) => { e.preventDefault(); handleResetFilters(); }}
             className="text-xs text-[#547792] hover:text-[#213448] px-2 py-1 rounded hover:bg-[#94B4C1]/30 transition-colors"
           >
-            Clear all
+            Reset
           </button>
         )}
       </div>
