@@ -10,10 +10,27 @@ const isMobile = () => {
 };
 
 /**
+ * Helper: Check if error is an abort/cancel (expected control flow, not a real error)
+ * Abort happens when: component unmounts, newer request starts, or user navigates away.
+ * This is EXPECTED behavior and should never block app readiness.
+ */
+export const isAbortError = (err) => {
+  return err?.name === 'CanceledError' || err?.name === 'AbortError';
+};
+
+/**
  * Authentication Context
  *
  * Provides authentication state and methods throughout the app.
  * Uses Firebase Authentication with Google OAuth.
+ *
+ * CRITICAL INVARIANT:
+ * `initialized` = "Firebase auth state is KNOWN" (user or null)
+ * `initialized` ≠ "Backend token sync complete"
+ *
+ * The `initialized` flag MUST become true as soon as Firebase tells us the auth state,
+ * regardless of whether backend sync succeeds, fails, or is aborted.
+ * This ensures app boot (appReady) is never blocked by backend availability.
  *
  * After Firebase sign-in, syncs with backend to:
  * - Create/find user in database
@@ -91,59 +108,94 @@ export function AuthProvider({ children }) {
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         // Start a new request for each auth state change - cancels any in-flight API calls
         const requestId = startRequest();
+        // Local flag to track if we've set initialized in this callback
+        let didSetInitialized = false;
 
-        setUser(firebaseUser);
+        // INVARIANT: Set user and initialized IMMEDIATELY when Firebase tells us auth state.
+        // This MUST happen before any async operations to guarantee boot completes.
+        // The try/finally ensures initialized is set even if subsequent code throws.
+        try {
+          setUser(firebaseUser);
 
-        // CRITICAL FIX: Set initialized=true immediately after we know auth state
-        // This prevents the boot from getting stuck if backend sync is slow/aborted.
-        // The `initialized` flag means "Firebase auth state is known", not "backend sync complete".
-        // Guard: Only set if this is still the current request
-        if (!isStale(requestId)) {
-          setLoading(false);
-          setInitialized(true);
-        }
+          // CRITICAL: Set initialized=true SYNCHRONOUSLY after we know auth state.
+          // This is the ONLY place initialized should be set for normal auth flow.
+          // Guard: Only set if this is still the current request (prevents race conditions)
+          if (!isStale(requestId)) {
+            setLoading(false);
+            setInitialized(true);
+            didSetInitialized = true;
+          }
 
-        // If user is signed in, ensure we have a valid JWT token
-        // This handles page refresh when Firebase session exists but JWT might be missing/expired
-        // This runs AFTER initialized is set, so charts can start loading while sync happens
-        if (firebaseUser) {
-          const existingToken = localStorage.getItem('token');
-          if (!existingToken) {
-            // No token - sync with backend to get one
-            try {
-              const idToken = await firebaseUser.getIdToken();
-              const response = await apiClient.post('/auth/firebase-sync', {
-                idToken,
-                email: firebaseUser.email,
-                displayName: firebaseUser.displayName,
-                photoURL: firebaseUser.photoURL,
-              }, {
-                signal: getSignal(),
-              });
-
-              // Guard: Don't update if auth state changed again
-              if (isStale(requestId)) return;
-
-              if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
-                // Clear stale subscription cache on page load sync
-                localStorage.removeItem('subscription_cache');
-              }
-            } catch (err) {
-              // CRITICAL: Never treat abort/cancel as a real error
-              // Since initialized is already set, we just log and continue
-              if (err.name === 'CanceledError' || err.name === 'AbortError') {
-                console.log('[Auth] Backend sync was cancelled (may be normal during boot)');
-                return;
-              }
-              // Guard: Check stale after error
-              if (isStale(requestId)) return;
-
-              console.error('[Auth] Backend sync failed on page load:', err);
+          // === OPTIONAL: Backend token sync (runs AFTER boot is unblocked) ===
+          // If user is signed in, ensure we have a valid JWT token.
+          // This handles page refresh when Firebase session exists but JWT might be missing/expired.
+          // IMPORTANT: This is async and may fail/abort - that's OK, boot already completed above.
+          if (firebaseUser) {
+            const existingToken = localStorage.getItem('token');
+            if (!existingToken) {
+              // No token - sync with backend to get one (best-effort, not blocking)
+              await syncTokenWithBackend(firebaseUser, requestId, getSignal, isStale);
             }
+          }
+        } catch (err) {
+          // Catch-all: Log unexpected errors but NEVER let them block boot.
+          // initialized was already set above, so this is just for logging.
+          if (!isAbortError(err)) {
+            console.error('[Auth] Unexpected error in auth state handler:', err);
+          }
+        } finally {
+          // SAFETY NET: Guarantee initialized is set even if everything above fails.
+          // This is defensive programming - the try block should always set it,
+          // but this ensures no code path can leave boot stuck.
+          if (!isStale(requestId) && !didSetInitialized) {
+            console.warn('[Auth] Safety net: setting initialized in finally block');
+            setLoading(false);
+            setInitialized(true);
           }
         }
       });
+
+      /**
+       * Sync JWT token with backend (best-effort, non-blocking)
+       * This is separated to make the main auth flow clearer.
+       * Abort/cancel is expected control flow and logged at debug level.
+       */
+      async function syncTokenWithBackend(firebaseUser, requestId, getSignal, isStale) {
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          const response = await apiClient.post('/auth/firebase-sync', {
+            idToken,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+          }, {
+            signal: getSignal(),
+          });
+
+          // Guard: Don't update if auth state changed again
+          if (isStale(requestId)) return;
+
+          if (response.data.token) {
+            localStorage.setItem('token', response.data.token);
+            // Clear stale subscription cache on page load sync
+            localStorage.removeItem('subscription_cache');
+          }
+        } catch (err) {
+          // Abort/cancel is EXPECTED control flow (not an error)
+          if (isAbortError(err)) {
+            // Debug level - this happens normally during boot/navigation
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[Auth] Token sync cancelled (expected during boot/navigation)');
+            }
+            return;
+          }
+          // Guard: Check stale after error
+          if (isStale(requestId)) return;
+
+          // Real error - log but don't throw (non-blocking)
+          console.error('[Auth] Backend token sync failed:', err);
+        }
+      }
 
       return () => unsubscribe();
     } catch (err) {
