@@ -44,7 +44,7 @@ export const BeadsChart = React.memo(function BeadsChart({
 }) {
   const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const chartRef = useRef(null);
-  const { wrapApiCall, DebugOverlay } = useDebugOverlay('BeadsChart');
+  const { wrapApiCall, DebugOverlay, debugInfo } = useDebugOverlay('BeadsChart');
 
   const useShared = sharedData != null;
 
@@ -302,9 +302,9 @@ export const BeadsChart = React.memo(function BeadsChart({
       error={error}
       onRetry={refetch}
       empty={!hasData && !resolvedLoading}
-      emptyMessage="No transaction data available for the selected filters"
       skeleton="bar"
       height={350}
+      debugInfo={debugInfo}
     >
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col relative"

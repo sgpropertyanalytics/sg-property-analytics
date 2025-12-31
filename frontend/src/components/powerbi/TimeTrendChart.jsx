@@ -28,7 +28,7 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
   const chartRef = useRef(null);
 
   // Debug overlay for API diagnostics (toggle with Ctrl+Shift+D)
-  const { captureRequest, captureResponse, captureError, DebugOverlay } = useDebugOverlay('TimeTrendChart');
+  const { captureRequest, captureResponse, captureError, DebugOverlay, debugInfo } = useDebugOverlay('TimeTrendChart');
 
   // Fetch and transform data using adapter pattern
   // useAbortableQuery handles: abort controller, stale request protection, loading/error states
@@ -230,7 +230,7 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
   const cardHeight = height + 120;
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="bar" height={height + 80}>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!data || data.length === 0} skeleton="bar" height={height + 80} debugInfo={debugInfo}>
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/30 overflow-hidden flex flex-col shadow-sm relative"
         style={{ height: cardHeight }}

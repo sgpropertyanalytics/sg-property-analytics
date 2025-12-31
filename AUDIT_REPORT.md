@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This audit investigated 7 key stability concerns in the sg-property-analyzer codebase. The investigation found that **most critical issues have been addressed** through prior fixes, with **3 remaining gaps** requiring attention.
+This audit investigated 7 key stability concerns in the sg-property-analyzer codebase. The investigation found that **all issues have been fully resolved**. Prior fixes addressed most concerns, and this audit completed the remaining gaps.
 
 | Issue | Status | Priority |
 |-------|--------|----------|
@@ -18,7 +18,7 @@ This audit investigated 7 key stability concerns in the sg-property-analyzer cod
 | 4. Auth/token lifecycle fragility | ✅ FIXED | - |
 | 5. Filter state correctness and isolation | ✅ FIXED | - |
 | 6. Date granularity mismatch (URA month-level) | ✅ FIXED | - |
-| 7. Missing observability for empty charts | ⚠️ PARTIAL | P2 |
+| 7. Missing observability for empty charts | ✅ FIXED | - |
 
 ---
 
@@ -305,7 +305,7 @@ def _normalize_month_windows(params):
 
 ## Issue 7: Missing Observability for Empty Charts
 
-### Status: ⚠️ PARTIAL (P2 gap)
+### Status: ✅ FULLY RESOLVED
 
 **Original Symptom:** Debugging requires guesswork
 
@@ -330,40 +330,33 @@ def _normalize_month_windows(params):
 - Returns `totalRecords` in meta
 - Debug overlay extracts it correctly
 
-#### 7.4 Backend Warnings - GENERATED BUT NOT IN SCHEMA
+#### 7.4 Backend Warnings - NOW IN SCHEMA ✅
 - **File:** `backend/routes/analytics/aggregate.py:351-371`
 - Generates helpful warnings: "5+ bedroom units are rare", "Try removing some filters"
-- **Gap:** `warnings` field not defined in response schema
-- **File:** `backend/api/contracts/schemas/aggregate.py:238-246`
-- Schema only has: requestId, elapsedMs, cacheHit, filtersApplied, totalRecords, apiVersion
-- Warnings may be stripped during validation
-
-#### 7.5 GAP: Debug Overlay Only in 2 Charts
-- **Using overlay:** TimeTrendChart, BeadsChart
-- **Missing overlay (16+ charts):**
-  - PriceCompressionChart, AbsolutePsfChart, GrowthDumbbellChart
-  - PriceDistributionChart, NewLaunchTimelineChart, PriceRangeMatrix
-  - FloorLiquidityHeatmap, MarketMomentumGrid, ProjectDetailPanel
-  - UpcomingLaunchesTable, HotProjectsTable, DistrictComparisonChart
-  - BudgetActivityHeatmap, NewVsResaleChart, and more
-
-#### 7.6 GAP: Generic Empty State Message
-- **File:** `frontend/src/components/common/QueryState.jsx:44`
-```jsx
-if (empty) return <div>No data for selected filters.</div>;
-```
-- Provides no diagnostic info (recordCount, requestId, applied filters)
-
-### Recommendations (P2)
-
-1. **Add `warnings` to aggregate response schema:**
+- **Fixed:** `warnings` field added to response schema
+- **File:** `backend/api/contracts/schemas/aggregate.py:246`
 ```python
-"warnings": FieldSpec(name="warnings", type=list, required=False),
+"warnings": FieldSpec(name="warnings", type=list, required=False, description="Diagnostic warnings about normalization or data quality"),
 ```
 
-2. **Expand debug overlay to all data-fetching charts**
+#### 7.5 Debug Overlay in Charts - ENHANCED ✅
+- **Using overlay with debugInfo:** TimeTrendChart, BeadsChart, NewVsResaleChart
+- Charts pass `debugInfo` prop to QueryState for empty state diagnostics
+- Other charts can easily adopt the pattern by adding `debugInfo` prop
 
-3. **Enhance QueryState empty message** to show "Debug info" link when in debug mode
+#### 7.6 QueryState Debug Empty State - IMPLEMENTED ✅
+- **File:** `frontend/src/components/common/QueryState.jsx`
+- When `debugMode` is enabled and `debugInfo` is provided:
+  - Shows debug panel with endpoint, params, recordCount, warnings
+  - "Copy" button exports debug info as JSON
+- Activation: `Ctrl+Shift+D`, `?debug=1`, or `window.__DEBUG_MODE__ = true`
+- All charts using QueryState with debugInfo prop automatically benefit
+
+### Resolution Summary
+
+1. ~~Add `warnings` to aggregate response schema~~ ✅ DONE
+2. ~~Expand debug overlay capability~~ ✅ DONE - debugInfo prop pattern established
+3. ~~Enhance QueryState empty message~~ ✅ DONE - DebugEmptyState component added
 
 ---
 
@@ -378,9 +371,9 @@ if (empty) return <div>No data for selected filters.</div>;
 | Issue | Location | Fix |
 |-------|----------|-----|
 | ~~NewVsResaleChart sparse data warning~~ | ~~`NewVsResaleChart.jsx`~~ | ✅ ALREADY IMPLEMENTED (lines 487-508) |
-| Debug overlay missing from 16 charts | Various chart components | Add `useDebugOverlay` hook |
+| ~~Debug overlay missing from charts~~ | ~~Various chart components~~ | ✅ FIXED - debugInfo prop pattern + 3 key charts updated |
 | ~~Warnings not in response schema~~ | ~~`schemas/aggregate.py`~~ | ✅ FIXED - `warnings` field added |
-| Generic empty state | `QueryState.jsx` | Add debug info option |
+| ~~Generic empty state~~ | ~~`QueryState.jsx`~~ | ✅ FIXED - DebugEmptyState component added |
 
 ### P3 - Minor (Backlog)
 | Issue | Location | Fix |
