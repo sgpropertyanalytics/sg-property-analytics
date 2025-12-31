@@ -15,7 +15,7 @@ This audit investigated 7 key stability concerns in the sg-property-analyzer cod
 | 1. Frontend ↔ Backend contract drift | ✅ FIXED | - |
 | 2. Response envelope inconsistency (.data.data) | ✅ FIXED | - |
 | 3. UI state bugs: Loading vs Empty vs Error | ✅ MOSTLY FIXED | P2 |
-| 4. Auth/token lifecycle fragility | ⚠️ PARTIAL | P1 |
+| 4. Auth/token lifecycle fragility | ✅ FIXED | - |
 | 5. Filter state correctness and isolation | ✅ FIXED | - |
 | 6. Date granularity mismatch (URA month-level) | ✅ MOSTLY FIXED | P3 |
 | 7. Missing observability for empty charts | ⚠️ PARTIAL | P2 |
@@ -160,7 +160,7 @@ Add visual badge to NewVsResaleChart when `resaleCompleteness < 0.75` showing "D
 
 ## Issue 4: Auth/Token Lifecycle Fragility
 
-### Status: ⚠️ PARTIAL (P1 gap)
+### Status: ✅ FIXED
 
 **Original Symptom:** User logged in but subscription shows "free"; random 401 cascades
 
@@ -186,18 +186,17 @@ Add visual badge to NewVsResaleChart when `resaleCompleteness < 0.75` showing "D
 - `refreshToken()` method returns structured result: `{ok, tokenStored, reason}`
 - Called by SubscriptionContext on 401 retry
 
-#### 4.5 CRITICAL GAP: Orphaned Token-Expired Event
-- **File:** `frontend/src/api/client.js:183-187`
-```javascript
-// 401 on non-auth endpoint - emit event for token refresh
-window.dispatchEvent(new CustomEvent('auth:token-expired', {
-  detail: { url: requestUrl }
-}));
-```
-- **Problem:** Event is dispatched but **NEVER listened to**
-- Search confirms: 1 match (the dispatch), 0 listeners
-- **Impact:** When token expires on chart API call, no retry occurs
-- User must manually refresh page
+#### 4.5 ~~CRITICAL GAP~~ FIXED: Token-Expired Event Handler
+- **File:** `frontend/src/api/client.js:183-187` dispatches event
+- **Fix:** `frontend/src/context/AuthContext.jsx:355-409` now listens for event
+- Event handler:
+  - Debounces parallel 401s (prevents multiple refresh attempts)
+  - Calls `refreshToken()` to get new JWT from Firebase
+  - Emits `auth:token-refreshed` event on success for component retry
+  - Emits `auth:token-refresh-failed` event on failure for UI prompt
+- **Additional Fix:** `frontend/src/hooks/useAbortableQuery.js:204-221`
+  - Added `retryOnTokenRefresh` option (opt-in)
+  - When enabled, components auto-retry failed 401 requests after token refresh
 
 #### 4.6 GAP: Request Queue Potential Desync
 - **File:** `frontend/src/api/client.js:28-50`
@@ -205,21 +204,11 @@ window.dispatchEvent(new CustomEvent('auth:token-expired', {
 - No bounds on `requestQueue` length
 - Low probability but could cause deadlock
 
-### Recommendations (P1)
+### Recommendations
 
-1. **Add listener for `auth:token-expired` event in AuthContext:**
-```javascript
-useEffect(() => {
-  const handler = async () => {
-    await refreshToken();
-    // Optionally trigger refetch
-  };
-  window.addEventListener('auth:token-expired', handler);
-  return () => window.removeEventListener('auth:token-expired', handler);
-}, [refreshToken]);
-```
-
-2. **Add try/finally to request queue to ensure counter decrement**
+1. ~~Add listener for `auth:token-expired` event in AuthContext~~ ✅ DONE
+2. ~~Add `retryOnTokenRefresh` option to useAbortableQuery~~ ✅ DONE
+3. **Minor:** Consider adding try/finally to request queue to ensure counter decrement (low priority)
 
 ---
 
@@ -383,7 +372,7 @@ if (empty) return <div>No data for selected filters.</div>;
 ### P1 - Critical (Fix Soon)
 | Issue | Location | Fix |
 |-------|----------|-----|
-| Orphaned `auth:token-expired` event | `frontend/src/api/client.js:183-187` | Add event listener in AuthContext |
+| ~~Orphaned `auth:token-expired` event~~ | ~~`frontend/src/api/client.js:183-187`~~ | ✅ FIXED - Added event listener in AuthContext |
 
 ### P2 - Important (Fix This Sprint)
 | Issue | Location | Fix |

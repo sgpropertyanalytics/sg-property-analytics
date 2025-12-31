@@ -71,6 +71,7 @@ const isRetryableError = (err) => {
  *     onError: (err) => {},    // Callback on error (excludes abort)
  *     retries: 1,              // Number of retries on network failure (default: 1)
  *     keepPreviousData: true,  // Keep showing previous data while fetching (no loading flash)
+ *     retryOnTokenRefresh: true, // Auto-retry on auth:token-refreshed event (after 401)
  *   }
  * );
  * ```
@@ -88,6 +89,7 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
     onError,
     retries = 1, // Default: 1 retry for cold start resilience
     keepPreviousData = false, // When true, keep showing previous data while fetching (no loading flash)
+    retryOnTokenRefresh = false, // When true, automatically retry on auth:token-refreshed event
   } = options;
 
   const [data, setData] = useState(initialData);
@@ -198,6 +200,26 @@ export function useAbortableQuery(queryFn, deps = [], options = {}) {
     executeQuery();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, enabled]);
+
+  // Listen for token refresh events and retry failed requests
+  // This handles the case where a 401 caused a failure, then AuthContext refreshed the token
+  useEffect(() => {
+    if (!retryOnTokenRefresh) return;
+
+    const handleTokenRefreshed = () => {
+      // Only retry if there was an auth error
+      if (error?.response?.status === 401 || error?.message?.includes('401')) {
+        console.log('[useAbortableQuery] Token refreshed, retrying failed request');
+        executeQuery();
+      }
+    };
+
+    window.addEventListener('auth:token-refreshed', handleTokenRefreshed);
+
+    return () => {
+      window.removeEventListener('auth:token-refreshed', handleTokenRefreshed);
+    };
+  }, [retryOnTokenRefresh, error, executeQuery]);
 
   return {
     data,

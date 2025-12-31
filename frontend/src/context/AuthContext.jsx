@@ -352,6 +352,62 @@ export function AuthProvider({ children }) {
     }
   }, [user, startRequest, isStale, getSignal]);
 
+  // Listen for auth:token-expired events from API client
+  // When a 401 occurs on non-auth endpoints, the client dispatches this event
+  // We handle it by refreshing the token and notifying listeners to retry
+  useEffect(() => {
+    // Track if we're currently refreshing to prevent parallel refresh attempts
+    let isRefreshing = false;
+
+    const handleTokenExpired = async (event) => {
+      const { url } = event.detail || {};
+      console.log('[Auth] Token expired event received for:', url);
+
+      // Skip if no user (not logged in)
+      if (!user) {
+        console.warn('[Auth] Token expired but no user - ignoring');
+        return;
+      }
+
+      // Skip if already refreshing (debounce parallel 401s)
+      if (isRefreshing) {
+        console.log('[Auth] Token refresh already in progress - skipping');
+        return;
+      }
+
+      isRefreshing = true;
+
+      try {
+        const result = await refreshToken();
+        console.log('[Auth] Token refresh result:', result);
+
+        if (result.ok) {
+          // Emit event so components can retry their failed requests
+          window.dispatchEvent(new CustomEvent('auth:token-refreshed', {
+            detail: { originalUrl: url }
+          }));
+        } else {
+          // Refresh failed - user may need to re-login
+          console.error('[Auth] Token refresh failed:', result.reason);
+          // Emit failure event so UI can show re-login prompt
+          window.dispatchEvent(new CustomEvent('auth:token-refresh-failed', {
+            detail: { reason: result.reason, originalUrl: url }
+          }));
+        }
+      } catch (err) {
+        console.error('[Auth] Token refresh threw error:', err);
+      } finally {
+        isRefreshing = false;
+      }
+    };
+
+    window.addEventListener('auth:token-expired', handleTokenExpired);
+
+    return () => {
+      window.removeEventListener('auth:token-expired', handleTokenExpired);
+    };
+  }, [user, refreshToken]);
+
   const value = useMemo(() => ({
     user,
     loading,
