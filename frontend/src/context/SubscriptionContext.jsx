@@ -71,6 +71,26 @@ const cacheSubscription = (sub) => {
 // Default subscription state (used when no cache or cache invalid)
 const DEFAULT_SUBSCRIPTION = { tier: 'free', subscribed: false, ends_at: null };
 
+/**
+ * Unwrap API response envelope.
+ * Backend returns {data: {...}, meta: {...}} but axios wraps that in response.data.
+ * So response.data = {data: {...}, meta: {...}}.
+ * We need the inner data object.
+ */
+const unwrapSubscriptionResponse = (responseData) => {
+  // Handle enveloped response: {data: {tier, subscribed, ...}, meta: {...}}
+  if (responseData?.data && typeof responseData.data === 'object' && 'tier' in responseData.data) {
+    return responseData.data;
+  }
+  // Handle flat response (legacy or direct): {tier, subscribed, ...}
+  if (responseData && 'tier' in responseData) {
+    return responseData;
+  }
+  // Unknown format - return null to trigger default
+  console.warn('[Subscription] Unknown response format:', responseData);
+  return null;
+};
+
 export function SubscriptionProvider({ children }) {
   const { user, isAuthenticated, initialized, refreshToken } = useAuth();
   // Initialize from cache to prevent flash of free→premium
@@ -194,20 +214,25 @@ export function SubscriptionProvider({ children }) {
         // Guard: Don't update state if stale
         if (isStale(requestId)) return;
 
-        if (response.data) {
+        // Unwrap enveloped response: {data: {tier, ...}, meta: {...}}
+        const subData = unwrapSubscriptionResponse(response.data);
+        if (subData) {
           const newSub = {
-            tier: response.data.tier || 'free',
-            subscribed: response.data.subscribed || false,
-            ends_at: response.data.ends_at || null,
+            tier: subData.tier || 'free',
+            subscribed: subData.subscribed || false,
+            ends_at: subData.ends_at || null,
           };
           // Log full response including debug fields
           console.log('[Subscription] API response received:', {
             ...newSub,
-            _debug_user_id: response.data._debug_user_id,
-            _debug_email: response.data._debug_email,
+            _debug_user_id: subData._debug_user_id,
+            _debug_email: subData._debug_email,
+            _raw_response_shape: response.data?.data ? 'enveloped' : 'flat',
           });
           setSubscription(newSub);
           cacheSubscription(newSub); // Cache for instant load next time
+        } else {
+          console.error('[Subscription] Failed to parse response:', response.data);
         }
       } catch (err) {
         // CRITICAL: Never treat abort/cancel as a real error
@@ -295,11 +320,13 @@ export function SubscriptionProvider({ children }) {
       // Guard: Don't update state if stale
       if (isStale(requestId)) return;
 
-      if (response.data) {
+      // Unwrap enveloped response: {data: {tier, ...}, meta: {...}}
+      const subData = unwrapSubscriptionResponse(response.data);
+      if (subData) {
         const newSub = {
-          tier: response.data.tier || 'free',
-          subscribed: response.data.subscribed || false,
-          ends_at: response.data.ends_at || null,
+          tier: subData.tier || 'free',
+          subscribed: subData.subscribed || false,
+          ends_at: subData.ends_at || null,
         };
         setSubscription(newSub);
         cacheSubscription(newSub);
