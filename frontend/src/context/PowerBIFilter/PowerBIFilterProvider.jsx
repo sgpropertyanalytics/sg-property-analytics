@@ -19,6 +19,15 @@
  */
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+
+// Storage utilities for page-namespaced persistence
+import {
+  getPageIdFromPathname,
+  readFilterStorage,
+  writeFilterStorage,
+  STORAGE_KEYS,
+} from './storage';
 
 // Constants and initial state
 import {
@@ -50,28 +59,35 @@ const FilterOptionsContext = createContext(null);
 // Legacy combined context for backward compatibility
 const PowerBIFilterContext = createContext(null);
 
-// Session storage key for filter persistence
-// Uses sessionStorage so filters reset when browser tab closes (not localStorage)
-const FILTERS_STORAGE_KEY = 'powerbi_filters';
+export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
+  // ===== Page Identification =====
+  // Derive page ID from route for namespaced storage
+  // Each page has isolated filter state - selections don't leak across routes
+  const location = useLocation();
+  const pageId = explicitPageId || getPageIdFromPathname(location.pathname);
+  const prevPageIdRef = useRef(pageId);
 
-export function PowerBIFilterProvider({ children }) {
   // ===== Core State =====
-  // Filters persist to sessionStorage (survives navigation, clears on tab close)
+  // Filters persist to page-namespaced sessionStorage
   const [filters, setFilters] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = sessionStorage.getItem(FILTERS_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          // Merge with INITIAL_FILTERS to handle any new fields added after save
-          return { ...INITIAL_FILTERS, ...parsed };
-        }
-      } catch {
-        // Ignore parse errors, use defaults
-      }
+    const saved = readFilterStorage(pageId, STORAGE_KEYS.FILTERS, null);
+    if (saved) {
+      // Merge with INITIAL_FILTERS to handle any new fields added after save
+      return { ...INITIAL_FILTERS, ...saved };
     }
     return INITIAL_FILTERS;
   });
+
+  // Reset filters when navigating to a different page
+  // This ensures each page starts fresh with its own stored state
+  useEffect(() => {
+    if (prevPageIdRef.current !== pageId) {
+      prevPageIdRef.current = pageId;
+      // Load filters for the new page (or reset to initial if none stored)
+      const savedFilters = readFilterStorage(pageId, STORAGE_KEYS.FILTERS, null);
+      setFilters(savedFilters ? { ...INITIAL_FILTERS, ...savedFilters } : INITIAL_FILTERS);
+    }
+  }, [pageId]);
 
   // These states do NOT persist - they reset on route change (handled by useRouteReset)
   const [factFilter, setFactFilter] = useState(INITIAL_FACT_FILTER);
@@ -80,33 +96,21 @@ export function PowerBIFilterProvider({ children }) {
   const [breadcrumbs, setBreadcrumbs] = useState(INITIAL_BREADCRUMBS);
 
   // ===== Time Grouping (View Context) =====
-  // Uses sessionStorage to reset on browser close (session-scoped)
+  // Uses page-namespaced sessionStorage
   const [timeGrouping, setTimeGroupingState] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('user_time_pref') || 'quarter';
-    }
-    return 'quarter';
+    return readFilterStorage(pageId, STORAGE_KEYS.TIME_GROUPING, 'quarter');
   });
 
   const setTimeGrouping = useCallback((val) => {
     setTimeGroupingState(val);
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('user_time_pref', val);
-    }
-  }, []);
+    writeFilterStorage(pageId, STORAGE_KEYS.TIME_GROUPING, val);
+  }, [pageId]);
 
   // ===== Filter Persistence (sessionStorage) =====
-  // Sync filters to sessionStorage whenever they change
-  // This enables persistence across page navigation within the same session
+  // Sync filters to page-namespaced sessionStorage whenever they change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
-      } catch {
-        // Ignore storage errors (quota exceeded, private browsing)
-      }
-    }
-  }, [filters]);
+    writeFilterStorage(pageId, STORAGE_KEYS.FILTERS, filters);
+  }, [pageId, filters]);
 
   // ===== Filter Options (from API) =====
   const [filterOptions] = useFilterOptions();
@@ -349,6 +353,7 @@ export function PowerBIFilterProvider({ children }) {
   // State context - changes frequently, triggers re-renders in state consumers
   const stateValue = useMemo(
     () => ({
+      pageId,
       filters,
       factFilter,
       drillPath,
@@ -362,6 +367,7 @@ export function PowerBIFilterProvider({ children }) {
       buildApiParams,
     }),
     [
+      pageId,
       filters,
       factFilter,
       drillPath,
@@ -416,6 +422,7 @@ export function PowerBIFilterProvider({ children }) {
   const legacyValue = useMemo(
     () => ({
       // State
+      pageId,
       filters,
       factFilter,
       drillPath,
@@ -455,6 +462,7 @@ export function PowerBIFilterProvider({ children }) {
       buildApiParams,
     }),
     [
+      pageId,
       filters,
       factFilter,
       drillPath,

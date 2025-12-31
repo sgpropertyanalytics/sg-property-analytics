@@ -1,5 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilter';
+import {
+  readFilterStorage,
+  writeFilterStorage,
+  STORAGE_KEYS,
+} from '../../context/PowerBIFilter/storage';
 import {
   REGIONS,
   DISTRICT_NAMES,
@@ -22,6 +27,7 @@ import { TimeGranularityToggle } from './TimeGranularityToggle';
  */
 export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, layout = 'sidebar', onClose }) {
   const {
+    pageId,
     filters,
     filterOptions,
     activeFilterCount,
@@ -65,11 +71,34 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     propertyDetails: true,
   });
 
-  // Date preset state: canonical ID ('M3', 'M6', 'Y1', 'Y3', 'Y5'), 'custom', or null (all data)
-  // Default to Y1 (last 12 months) for performance - matches backend default
-  const [datePreset, setDatePreset] = useState(DEFAULT_TIMEFRAME_ID);
+  // Date preset state: canonical ID ('M3', 'M6', 'Y1', 'Y3', 'Y5'), 'all', 'custom', or null
+  // Persisted to page-namespaced sessionStorage so "All" selection survives navigation
+  const [datePreset, setDatePresetState] = useState(() => {
+    return readFilterStorage(pageId, STORAGE_KEYS.DATE_PRESET, null);
+  });
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Track previous pageId to detect navigation
+  const prevPageIdRef = useRef(pageId);
+
+  // Reload datePreset when pageId changes (navigation to different page)
+  useEffect(() => {
+    if (prevPageIdRef.current !== pageId) {
+      prevPageIdRef.current = pageId;
+      const savedPreset = readFilterStorage(pageId, STORAGE_KEYS.DATE_PRESET, null);
+      setDatePresetState(savedPreset);
+      hasAppliedInitialDates.current = false; // Reset so new page gets initialized
+    }
+  }, [pageId]);
+
+  // Wrap setDatePreset to persist to page-namespaced sessionStorage
+  const setDatePreset = useCallback((preset) => {
+    setDatePresetState(preset);
+    writeFilterStorage(pageId, STORAGE_KEYS.DATE_PRESET, preset);
+  }, [pageId]);
+
+  // Track if we've applied the initial date filter (prevents re-application on every render)
+  const hasAppliedInitialDates = useRef(false);
 
   // Calculate date range for a preset relative to the latest data date
   // Uses canonical timeframe IDs (M3, M6, Y1, Y3, Y5)
@@ -118,18 +147,35 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     };
   }, []);
 
-  // Apply default Y1 filter when filter options load
-  // This ensures the visual state (Y1 highlighted) matches the actual filter
+  // Apply date filter when filter options load (runs once per mount)
+  // - Fresh session (datePreset === null): Apply Y1 default
+  // - Restored session: Respect stored preset (including 'all' for no date filter)
   useEffect(() => {
-    if (!hasInitialized && filterOptions.dateRange.max && !filterOptions.loading) {
-      // Apply Y1 date range by default
+    // Only run once when filter options are ready
+    if (hasAppliedInitialDates.current) return;
+    if (!filterOptions.dateRange.max || filterOptions.loading) return;
+
+    hasAppliedInitialDates.current = true;
+
+    if (datePreset === null || datePreset === '') {
+      // Fresh session - apply Y1 default
       const { start, end } = calculatePresetDateRange(DEFAULT_TIMEFRAME_ID, filterOptions.dateRange.max);
       if (start && end) {
         setDateRange(start, end);
+        setDatePreset(DEFAULT_TIMEFRAME_ID);
       }
-      setHasInitialized(true);
+    } else if (datePreset === 'all') {
+      // User previously selected "All" - ensure no date filter
+      setDateRange(null, null);
+    } else if (datePreset !== 'custom') {
+      // User previously selected a preset (M3, M6, Y1, etc.) - reapply it
+      const { start, end } = calculatePresetDateRange(datePreset, filterOptions.dateRange.max);
+      if (start && end) {
+        setDateRange(start, end);
+      }
     }
-  }, [filterOptions.dateRange.max, filterOptions.loading, hasInitialized, calculatePresetDateRange, setDateRange]);
+    // 'custom' preset: don't modify - user has manual dates in sessionStorage
+  }, [filterOptions.dateRange.max, filterOptions.loading, datePreset, calculatePresetDateRange, setDateRange, setDatePreset]);
 
   // Handle preset button click
   const handlePresetClick = useCallback((preset) => {
@@ -148,7 +194,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
         setDatePreset(preset);
       }
     }
-  }, [datePreset, filterOptions.dateRange.max, calculatePresetDateRange, setDateRange]);
+  }, [datePreset, filterOptions.dateRange.max, calculatePresetDateRange, setDateRange, setDatePreset]);
 
   // Detect custom date changes (when user manually edits)
   const handleCustomDateChange = useCallback((start, end) => {
@@ -157,9 +203,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     if (start || end) {
       setDatePreset('custom');
     } else {
-      setDatePreset(null);
+      setDatePreset('all');
     }
-  }, [setDateRange]);
+  }, [setDateRange, setDatePreset]);
 
   // Wrap resetFilters to also reset local datePreset state
   const handleResetFilters = useCallback(() => {
@@ -172,7 +218,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
       setDateRange(start, end);
     }
     setShowAdvanced(false);
-  }, [resetFilters, calculatePresetDateRange, filterOptions.dateRange.max, setDateRange]);
+  }, [resetFilters, calculatePresetDateRange, filterOptions.dateRange.max, setDateRange, setDatePreset]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -188,9 +234,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   if (layout === 'horizontal') {
     return (
       <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-[#EAE0CF]/70 backdrop-blur-md border-b border-[#94B4C1]/30 shadow-sm">
-        <div className="flex flex-wrap lg:flex-nowrap items-center gap-3">
+        <div className="flex flex-wrap lg:flex-nowrap items-center justify-start gap-3">
           {/* Property Filters - Region + District + Bedroom */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
             {/* Region Segmented Track */}
             <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200/80">
               {/* "All" button - dark blue when active (default state) */}
@@ -320,8 +366,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   if (layout === 'drawer') {
     return (
       <div className="flex flex-col h-full bg-card">
-        {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-[#94B4C1]/30">
+        {/* Header - with iOS safe area for notched devices */}
+        <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-[#94B4C1]/30" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -947,7 +993,7 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
 
   // Styles differ based on segmentedStyle prop
   const buttonClasses = segmentedStyle
-    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-1.5 min-h-[38px] text-sm font-medium border border-gray-300/80 rounded-lg bg-white/60 backdrop-blur-sm text-left flex items-center justify-between shadow-sm focus:outline-none focus:ring-2 focus:ring-[#213448]`
+    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2 min-h-[44px] text-sm font-medium border border-gray-300/80 rounded-lg bg-white/60 backdrop-blur-sm text-left flex items-center justify-between shadow-sm focus:outline-none focus:ring-2 focus:ring-[#213448]`
     : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500`;
 
   const dropdownClasses = segmentedStyle

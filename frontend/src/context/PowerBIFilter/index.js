@@ -37,3 +37,13 @@ export {
 
 // For advanced usage - hooks
 export { useFilterOptions, useRouteReset, useDebouncedFilterKey } from './hooks';
+
+// Storage utilities for page-namespaced persistence
+export {
+  getPageIdFromPathname,
+  getFilterStorageKey,
+  readFilterStorage,
+  writeFilterStorage,
+  clearFilterStorage,
+  STORAGE_KEYS,
+} from './storage';
