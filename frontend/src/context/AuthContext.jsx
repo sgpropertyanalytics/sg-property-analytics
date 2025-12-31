@@ -94,8 +94,18 @@ export function AuthProvider({ children }) {
 
         setUser(firebaseUser);
 
+        // CRITICAL FIX: Set initialized=true immediately after we know auth state
+        // This prevents the boot from getting stuck if backend sync is slow/aborted.
+        // The `initialized` flag means "Firebase auth state is known", not "backend sync complete".
+        // Guard: Only set if this is still the current request
+        if (!isStale(requestId)) {
+          setLoading(false);
+          setInitialized(true);
+        }
+
         // If user is signed in, ensure we have a valid JWT token
         // This handles page refresh when Firebase session exists but JWT might be missing/expired
+        // This runs AFTER initialized is set, so charts can start loading while sync happens
         if (firebaseUser) {
           const existingToken = localStorage.getItem('token');
           if (!existingToken) {
@@ -121,7 +131,9 @@ export function AuthProvider({ children }) {
               }
             } catch (err) {
               // CRITICAL: Never treat abort/cancel as a real error
+              // Since initialized is already set, we just log and continue
               if (err.name === 'CanceledError' || err.name === 'AbortError') {
+                console.log('[Auth] Backend sync was cancelled (may be normal during boot)');
                 return;
               }
               // Guard: Check stale after error
@@ -131,12 +143,6 @@ export function AuthProvider({ children }) {
             }
           }
         }
-
-        // Guard: Don't update loading/initialized if stale
-        if (isStale(requestId)) return;
-
-        setLoading(false);
-        setInitialized(true);
       });
 
       return () => unsubscribe();
