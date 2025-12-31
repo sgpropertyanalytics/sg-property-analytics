@@ -212,6 +212,15 @@ export function SubscriptionProvider({ children }) {
         return response;
       };
 
+      // BOOT EXCEPTION (DO NOT GENERALIZE):
+      // Inline refresh is allowed ONLY here because this runs before hooks mount.
+      // Rules:
+      // 1) refresh-at-most-once per boot fetch
+      // 2) retry-at-most-once for /auth/subscription
+      // 3) no generic retry loops here (retry lives in api client for GETs)
+      // 4) if refresh fails or 401 persists -> treat as unauthenticated
+      let didRefresh = false;
+
       try {
         let response;
         try {
@@ -224,15 +233,30 @@ export function SubscriptionProvider({ children }) {
             message: fetchErr.message,
             data: fetchErr.response?.data,
           });
-          // On 401, try refreshing the token once and retry
-          if (fetchErr.response?.status === 401 && refreshToken) {
-            console.warn('[Subscription] Got 401, attempting token refresh...');
+          // On 401, try refreshing the token once and retry (refresh-once + retry-once)
+          if (fetchErr.response?.status === 401 && refreshToken && !didRefresh) {
+            didRefresh = true;
+            console.warn('[Subscription] Got 401, attempting token refresh (once)...');
             const result = await refreshToken();
             console.log('[Subscription] Token refresh after 401:', result);
             if (result?.ok && result?.tokenStored && !isStale(requestId)) {
-              // Token refreshed successfully, retry the fetch
-              console.log('[Subscription] Retrying after token refresh...');
-              response = await fetchSub();
+              // Token refreshed successfully, retry the fetch (once)
+              console.log('[Subscription] Retrying after token refresh (once)...');
+              try {
+                response = await fetchSub();
+              } catch (retryErr) {
+                // Second 401 after refresh -> treat as unauthenticated
+                if (retryErr.response?.status === 401) {
+                  console.warn('[Subscription] 401 persists after refresh, treating as unauthenticated');
+                  if (!isStale(requestId)) {
+                    setSubscription({ tier: 'free', subscribed: false, ends_at: null });
+                    setStatus(SubscriptionStatus.RESOLVED);
+                    setLoading(false);
+                  }
+                  return;
+                }
+                throw retryErr;
+              }
             } else {
               console.error('[Subscription] Token refresh failed on 401 retry:', result?.reason);
               throw fetchErr; // Re-throw if refresh failed

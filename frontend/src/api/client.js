@@ -92,22 +92,119 @@ const apiClient = axios.create({
   },
 });
 
-/**
- * Retry wrapper for requests that may hit cold start timeouts
- * Retries once with increased timeout on timeout errors
- */
-const withRetry = async (requestFn, retries = 1) => {
-  try {
-    return await requestFn();
-  } catch (error) {
-    const isTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
-    if (isTimeout && retries > 0) {
-      console.warn('[API] Timeout, retrying... (cold start likely)');
-      return withRetry(requestFn, retries - 1);
-    }
-    throw error;
-  }
+// ===== Retry Configuration =====
+// Centralized retry logic for all retryable errors
+// PR2: Consolidates retry from useQuery into API client layer
+const RETRY_CONFIG = {
+  maxRetries: 1,
+  retryDelay: 1000, // 1 second base delay
+  retryableStatuses: [502, 503, 504], // Gateway errors only (not all 5xx)
 };
+
+/**
+ * Check if an error is retryable
+ * @param {Error} error - Axios error
+ * @param {Object} config - Axios request config
+ * @returns {boolean}
+ */
+const isRetryableError = (error, config) => {
+  // Never retry aborts
+  if (error?.name === 'CanceledError' || error?.name === 'AbortError') {
+    return false;
+  }
+
+  // Only retry idempotent methods (GET, HEAD) by default
+  // Non-idempotent methods (POST, PUT, DELETE) can cause duplicate writes
+  const method = (config?.method || 'get').toLowerCase();
+  const isIdempotent = method === 'get' || method === 'head';
+  if (!isIdempotent && !config?.__allowRetry) {
+    return false;
+  }
+
+  // Never retry client errors (4xx) - 401 handled separately via events
+  if (error?.response?.status >= 400 && error?.response?.status < 500) {
+    return false;
+  }
+
+  // Retry timeout errors (cold start scenario)
+  if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+    return true;
+  }
+
+  // Retry network errors
+  if (error?.code === 'ERR_NETWORK' || !error?.response) {
+    return true;
+  }
+
+  // Retry specific server errors (gateway issues)
+  if (RETRY_CONFIG.retryableStatuses.includes(error?.response?.status)) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Retry interceptor - retries failed requests with exponential backoff
+ *
+ * Only retries idempotent methods (GET, HEAD) by default.
+ * For non-idempotent methods, set config.__allowRetry = true to opt-in.
+ *
+ * Attaches retry state to config to track attempts across interceptor calls.
+ */
+const setupRetryInterceptor = (client) => {
+  client.interceptors.response.use(
+    (response) => response, // Pass through successful responses
+    async (error) => {
+      const config = error.config;
+
+      // No config = can't retry
+      if (!config) return Promise.reject(error);
+
+      // Initialize retry state on first failure
+      if (config.__retryCount === undefined) {
+        config.__retryCount = 0;
+      }
+
+      // Check if we should retry
+      if (isRetryableError(error, config) && config.__retryCount < RETRY_CONFIG.maxRetries) {
+        config.__retryCount += 1;
+
+        // Exponential backoff
+        const delay = RETRY_CONFIG.retryDelay * config.__retryCount;
+
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(
+            `[API] Retry ${config.__retryCount}/${RETRY_CONFIG.maxRetries} after ${delay}ms:`,
+            error.message
+          );
+        }
+
+        // Wait before retrying
+        await new Promise((resolve) => setTimeout(resolve, delay));
+
+        // Check if aborted during delay
+        if (config.signal?.aborted) {
+          const abortError = new Error('Request aborted');
+          abortError.name = 'AbortError';
+          return Promise.reject(abortError);
+        }
+
+        // Retry the request
+        return client.request(config);
+      }
+
+      // No more retries, reject with original error
+      return Promise.reject(error);
+    }
+  );
+};
+
+// Install retry interceptor (guard against double-install in hot reload)
+if (!apiClient.__retryInterceptorInstalled) {
+  setupRetryInterceptor(apiClient);
+  apiClient.__retryInterceptorInstalled = true;
+}
 
 // Request interceptor - attach JWT token
 apiClient.interceptors.request.use(
@@ -694,11 +791,12 @@ export const getProjectInventory = (projectName, options = {}) =>
 /**
  * Get project names for dropdown selection
  * Only returns geocoded projects
- * Uses retry logic for cold start scenarios
+ * Retry handled automatically by API client interceptor for GET requests
  * @returns {Promise<{projects: Array<{name, district, market_segment}>, count: number}>}
  */
-export const getProjectNames = (options = {}) =>
-  withRetry(() => apiClient.get('/projects/names', options));
+export const getProjectNames = (options = {}) => {
+  return apiClient.get('/projects/names', options);
+};
 
 /**
  * Get multi-scope comparison for deal checker

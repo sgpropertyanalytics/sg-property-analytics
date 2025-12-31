@@ -14,31 +14,10 @@ export const QueryStatus = {
 };
 
 /**
- * Check if an error is retryable (identical to useAbortableQuery)
- */
-const isRetryableError = (err) => {
-  if (err?.name === 'CanceledError' || err?.name === 'AbortError') {
-    return false;
-  }
-  if (err?.code === 'ECONNABORTED' || err?.code === 'ERR_NETWORK') {
-    return true;
-  }
-  if (err?.message?.includes('timeout')) {
-    return true;
-  }
-  if (err?.response?.status >= 500) {
-    return true;
-  }
-  if (err?.response?.status >= 400 && err?.response?.status < 500) {
-    return false;
-  }
-  return !err?.response;
-};
-
-/**
  * useQuery - Canonical data fetching hook with explicit state machine
  *
  * PR1 FIX: Introduces PENDING state derived SYNCHRONOUSLY during render.
+ * PR2 FIX: Retry logic consolidated into API client interceptor (client.js).
  *
  * INVARIANT: First render after enabled flips true or depsKey changes = pending
  *
@@ -53,7 +32,6 @@ export function useQuery(queryFn, deps = [], options = {}) {
     initialData = null,
     onSuccess,
     onError,
-    retries = 1,
     keepPreviousData = false,
     retryOnTokenRefresh = false,
   } = options;
@@ -145,6 +123,7 @@ export function useQuery(queryFn, deps = [], options = {}) {
     hasStartedRef.current = false;
 
     // === Execute query inline ===
+    // PR2: Retry logic moved to API client interceptor (client.js)
     const runQuery = async () => {
       hasStartedRef.current = true;
 
@@ -160,68 +139,49 @@ export function useQuery(queryFn, deps = [], options = {}) {
 
       retriedFor401Ref.current = null;
 
-      let lastError = null;
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        try {
-          if (attempt > 0) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-          }
+      try {
+        if (signal?.aborted) return;
 
-          if (signal?.aborted) return;
+        const result = await queryFnRef.current(signal);
 
-          const result = await queryFnRef.current(signal);
+        if (isStale(requestId)) return;
+        if (!mountedRef.current) return;
 
-          if (isStale(requestId)) return;
-          if (!mountedRef.current) return;
+        setInternalState({
+          data: result,
+          error: null,
+          inFlight: false,
+        });
 
-          setInternalState({
-            data: result,
-            error: null,
-            inFlight: false,
-          });
-
-          if (onSuccessRef.current) {
-            onSuccessRef.current(result);
-          }
-          return;
-        } catch (err) {
-          lastError = err;
-
-          if (err.name === 'CanceledError' || err.name === 'AbortError') {
-            return;
-          }
-
-          if (isStale(requestId)) return;
-          if (!mountedRef.current) return;
-
-          if (isRetryableError(err) && attempt < retries) {
-            if (process.env.NODE_ENV === 'development') {
-              console.warn(`[useQuery] Retry ${attempt + 1}/${retries}:`, err.message);
-            }
-            continue;
-          }
-
-          break;
+        if (onSuccessRef.current) {
+          onSuccessRef.current(result);
         }
-      }
+      } catch (err) {
+        // Silently ignore abort errors
+        if (err.name === 'CanceledError' || err.name === 'AbortError') {
+          return;
+        }
 
-      if (lastError && !isStale(requestId) && mountedRef.current) {
+        if (isStale(requestId)) return;
+        if (!mountedRef.current) return;
+
         setInternalState(prev => ({
           data: keepPreviousData ? prev.data : null,
-          error: lastError,
+          error: err,
           inFlight: false,
         }));
 
         if (onErrorRef.current) {
-          onErrorRef.current(lastError);
+          onErrorRef.current(err);
         }
       }
     };
 
     runQuery();
-  }, [depsKey, enabled, startRequest, getSignal, isStale, retries, keepPreviousData]);
+  }, [depsKey, enabled, startRequest, getSignal, isStale, keepPreviousData]);
 
   // Manual refetch function
+  // PR2: Retry logic moved to API client interceptor (client.js)
   const refetch = () => {
     if (!enabled) return;
 
@@ -239,57 +199,40 @@ export function useQuery(queryFn, deps = [], options = {}) {
 
       retriedFor401Ref.current = null;
 
-      let lastError = null;
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        try {
-          if (attempt > 0) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-          }
+      try {
+        if (signal?.aborted) return;
 
-          if (signal?.aborted) return;
+        const result = await queryFnRef.current(signal);
 
-          const result = await queryFnRef.current(signal);
+        if (isStale(requestId)) return;
+        if (!mountedRef.current) return;
 
-          if (isStale(requestId)) return;
-          if (!mountedRef.current) return;
+        setInternalState({
+          data: result,
+          error: null,
+          inFlight: false,
+        });
 
-          setInternalState({
-            data: result,
-            error: null,
-            inFlight: false,
-          });
-
-          if (onSuccessRef.current) {
-            onSuccessRef.current(result);
-          }
-          return;
-        } catch (err) {
-          lastError = err;
-
-          if (err.name === 'CanceledError' || err.name === 'AbortError') {
-            return;
-          }
-
-          if (isStale(requestId)) return;
-          if (!mountedRef.current) return;
-
-          if (isRetryableError(err) && attempt < retries) {
-            continue;
-          }
-
-          break;
+        if (onSuccessRef.current) {
+          onSuccessRef.current(result);
         }
-      }
+      } catch (err) {
+        // Silently ignore abort errors
+        if (err.name === 'CanceledError' || err.name === 'AbortError') {
+          return;
+        }
 
-      if (lastError && !isStale(requestId) && mountedRef.current) {
+        if (isStale(requestId)) return;
+        if (!mountedRef.current) return;
+
         setInternalState(prev => ({
           data: keepPreviousData ? prev.data : null,
-          error: lastError,
+          error: err,
           inFlight: false,
         }));
 
         if (onErrorRef.current) {
-          onErrorRef.current(lastError);
+          onErrorRef.current(err);
         }
       }
     };
