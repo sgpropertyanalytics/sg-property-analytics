@@ -39,7 +39,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * - Accepts sharedRawData from parent (MacroOverview) to eliminate duplicate aggregate request
  * - The same region/time aggregate data is used by compression charts and this oscillator
  */
-export function MarketValueOscillator({ height = 420, saleType = null, sharedRawData = null, sharedLoading = false }) {
+export function MarketValueOscillator({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle' }) {
   // Get GLOBAL filters and timeGrouping from context
   // filterKey updates immediately on filter change - used for instant overlay feedback
   const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
@@ -90,7 +90,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
   // DISABLED when sharedRawData is provided (eliminates duplicate request)
   // isFetching = true during background refetch when keepPreviousData is enabled
   // isBootPending = true while waiting for app boot
-  const { data: fetchedData, loading: fetchLoading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data: fetchedData, status: fetchStatus, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison
@@ -129,7 +129,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
 
   // Use shared data when available, otherwise use fetched data
   const data = useShared ? sharedTransformedData : fetchedData;
-  const loading = useShared ? sharedLoading : fetchLoading;
+  const status = useShared ? sharedStatus : fetchStatus;
 
   // Get latest values for KPI cards
   const latestData = data[data.length - 1] || {};
@@ -315,7 +315,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
   return (
     <div ref={containerRef}>
       <ChartFrame
-        loading={loading}
+        status={status}
         isFetching={isFetching}
         isFiltering={filterKey !== debouncedFilterKey}
         isBootPending={isBootPending}

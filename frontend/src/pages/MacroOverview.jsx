@@ -124,7 +124,7 @@ export function MacroOverviewContent() {
   // SHARED DATA FETCH: Compression/Absolute PSF/Oscillator charts use identical API call
   // Hoisted to parent to eliminate duplicate requests (W4 performance fix)
   // PriceCompressionChart, AbsolutePsfChart, and MarketValueOscillator all consume this data
-  const { data: compressionRaw, loading: compressionLoading, isBootPending: compressionBootPending } = useGatedAbortableQuery(
+  const { data: compressionRaw, status: compressionStatus, isBootPending: compressionBootPending } = useGatedAbortableQuery(
     async (signal) => {
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
@@ -337,7 +337,7 @@ export function MacroOverviewContent() {
                           height={compressionHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
-                          sharedLoading={shouldFetchCompression ? compressionLoading : true}
+                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -349,7 +349,7 @@ export function MacroOverviewContent() {
                           height={compressionHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
-                          sharedLoading={shouldFetchCompression ? compressionLoading : true}
+                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -367,7 +367,7 @@ export function MacroOverviewContent() {
                           height={oscillatorHeight}
                           saleType={SALE_TYPE}
                           sharedRawData={compressionRaw}
-                          sharedLoading={shouldFetchCompression ? compressionLoading : true}
+                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
                         />
                       </Suspense>
                     </ChartWatermark>

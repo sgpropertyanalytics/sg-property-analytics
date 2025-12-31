@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useGatedAbortableQuery, useDeferredFetch, QueryStatus } from '../../hooks';
+import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -37,9 +37,9 @@ const REGION_COLORS = {
  * @param {number} [props.height=300] - Chart height in pixels
  * @param {string} [props.saleType=null] - Sale type filter from page level
  * @param {Array} [props.sharedData=null] - Pre-fetched data from parent (skips internal fetch if provided)
- * @param {boolean} [props.sharedLoading=false] - Loading state from parent when using sharedData
+ * @param {string} [props.sharedStatus='idle'] - Query status from parent when using sharedData
  */
-export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 300, saleType = null, sharedData = null, sharedLoading = false }) {
+export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 300, saleType = null, sharedData = null, sharedStatus = 'idle' }) {
   const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
   const chartRef = useRef(null);
@@ -87,10 +87,8 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
 
   // Use shared data from parent if provided, otherwise use internal fetch
   const data = useSharedData ? sharedData : internalData;
-  // Derive status for shared data mode (sharedLoading=true means loading)
-  const resolvedStatus = useSharedData
-    ? (sharedLoading ? QueryStatus.LOADING : QueryStatus.SUCCESS)
-    : internalStatus;
+  // Use shared status directly when in shared mode
+  const resolvedStatus = useSharedData ? sharedStatus : internalStatus;
 
   // Latest values for KPI display
   const latestData = data[data.length - 1] || {};

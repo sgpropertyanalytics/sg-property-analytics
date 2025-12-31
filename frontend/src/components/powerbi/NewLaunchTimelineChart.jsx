@@ -55,7 +55,7 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // isFetching = true during background refetch when keepPreviousData is enabled
   // isBootPending = true while waiting for app boot
-  const { data, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data, status, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       const params = buildApiParams({
         time_grain: TIME_GROUP_BY[timeGrouping],
@@ -292,7 +292,7 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
   return (
     <div ref={containerRef}>
       <ChartFrame
-        loading={loading}
+        status={status}
         isFetching={isFetching}
         isFiltering={filterKey !== debouncedFilterKey}
         isBootPending={isBootPending}

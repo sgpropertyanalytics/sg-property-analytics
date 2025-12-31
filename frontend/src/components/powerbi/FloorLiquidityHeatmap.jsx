@@ -47,7 +47,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // isBootPending = true while waiting for app boot (auth/subscription/filters)
-  const { data: apiResponse, loading, error, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data: apiResponse, status, error, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // Build params from props directly (not PowerBIFilterContext)
       const params = { window_months: windowMonths };
@@ -195,7 +195,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
 
   return (
     <ChartFrame
-      loading={loading}
+      status={status}
       isBootPending={isBootPending}
       error={error}
       onRetry={refetch}

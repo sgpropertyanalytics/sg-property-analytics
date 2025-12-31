@@ -151,6 +151,7 @@ export function SubscriptionProvider({ children }) {
   const [manualAttempt, setManualAttempt] = useState(0); // Nonce to trigger fetch
   const [manualRetryCount, setManualRetryCount] = useState(0); // Count for retry cap
   const attemptIdRef = useRef(0); // Track current attempt for stale closure prevention
+  const hidePaywallTimeoutRef = useRef(null); // P3 FIX: Store hidePaywall timeout for cleanup
 
   // Analytics context for upsell tracking
   // Tracks which field/source triggered the paywall
@@ -430,11 +431,17 @@ export function SubscriptionProvider({ children }) {
   }, []);
 
   // Hide the pricing modal and reset context
+  // P3 FIX: Store timeout ID in ref for proper cleanup
   const hidePaywall = useCallback(() => {
     setShowPricingModal(false);
+    // Clear any pending timeout before setting new one
+    if (hidePaywallTimeoutRef.current) {
+      clearTimeout(hidePaywallTimeoutRef.current);
+    }
     // Reset context after a delay to allow exit animations
-    setTimeout(() => {
+    hidePaywallTimeoutRef.current = setTimeout(() => {
       setUpsellContext({ field: null, source: null, district: null });
+      hidePaywallTimeoutRef.current = null;
     }, 300);
   }, []);
 
@@ -486,6 +493,15 @@ export function SubscriptionProvider({ children }) {
   // Charts should wait for this before fetching
   // Note: ERROR also unblocks boot to allow retry, but isTierKnown remains false
   const isSubscriptionReady = status === SubscriptionStatus.RESOLVED || status === SubscriptionStatus.ERROR;
+
+  // P3 FIX: Cleanup hidePaywall timeout on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (hidePaywallTimeoutRef.current) {
+        clearTimeout(hidePaywallTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const value = useMemo(() => ({
     // State

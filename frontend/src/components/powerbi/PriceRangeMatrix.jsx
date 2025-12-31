@@ -77,7 +77,7 @@ export function PriceRangeMatrix({
 
   // Fetch data with abort handling - gates on appReady
   // isBootPending = true while waiting for app boot
-  const { data, loading, error, isBootPending, isFetching, refetch } = useGatedAbortableQuery(
+  const { data, status, error, isBootPending, isFetching, refetch } = useGatedAbortableQuery(
     async (signal) => {
       const response = await getAggregate(apiParams, { signal });
       return transformPriceRangeMatrix(response.data, { budget });
@@ -90,7 +90,7 @@ export function PriceRangeMatrix({
 
   return (
     <ChartFrame
-      loading={loading}
+      status={status}
       isFetching={isFetching}
       isFiltering={isFiltering}
       isBootPending={isBootPending}

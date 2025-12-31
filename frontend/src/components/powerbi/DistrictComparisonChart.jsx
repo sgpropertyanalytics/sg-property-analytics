@@ -56,7 +56,7 @@ export const DistrictComparisonChart = React.memo(function DistrictComparisonCha
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // isBootPending = true while waiting for app boot
-  const { data: transformedData, loading, error, isBootPending } = useGatedAbortableQuery(
+  const { data: transformedData, status, error, isBootPending } = useGatedAbortableQuery(
     async (signal) => {
       if (!district) {
         return { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } };
@@ -250,7 +250,7 @@ export const DistrictComparisonChart = React.memo(function DistrictComparisonCha
       {/* Chart with dual-column labels */}
       <div className="p-4">
         <ChartFrame
-          loading={loading}
+          status={status}
           isBootPending={isBootPending}
           error={error}
           empty={!groups || groups.length === 0}

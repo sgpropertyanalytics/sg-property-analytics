@@ -107,7 +107,7 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
   // and smoothly transitions to new data via Chart.js animations
   // isFetching = true during background refetch when keepPreviousData is enabled
   // isBootPending = true while waiting for app boot
-  const { data, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data, status, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // Use buildApiParams to include GLOBAL filters from sidebar
       // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
@@ -446,7 +446,7 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
   return (
     <div ref={containerRef}>
     <ChartFrame
-      loading={loading}
+      status={status}
       isFetching={isFetching}
       isFiltering={filterKey !== debouncedFilterKey}
       isBootPending={isBootPending}
