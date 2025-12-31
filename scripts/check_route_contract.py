@@ -3,9 +3,10 @@
 Route Contract Checker - Detects when frontend expects endpoints that backend doesn't define.
 
 This script:
-1. Extracts all routes from backend Python files
-2. Extracts all endpoints from frontend/src/api/endpoints.js
-3. Reports any frontend endpoints that have no matching backend route
+1. Parses blueprint registrations to understand URL prefixes
+2. Extracts all routes from backend Python files with their full paths
+3. Extracts all endpoints from frontend/src/api/endpoints.js
+4. Reports any frontend endpoints that have no matching backend route
 
 Run: python scripts/check_route_contract.py
 Exit code: 0 if OK, 1 if drift detected
@@ -20,7 +21,29 @@ from pathlib import Path
 # Paths relative to repo root
 REPO_ROOT = Path(__file__).parent.parent
 BACKEND_DIR = REPO_ROOT / "backend"
+APP_FILE = BACKEND_DIR / "app.py"
 FRONTEND_ENDPOINTS = REPO_ROOT / "frontend" / "src" / "api" / "endpoints.js"
+
+
+def load_blueprint_prefixes():
+    """Parse app.py to build mapping of blueprint variable names to their URL prefixes."""
+    prefixes = {}
+
+    if not APP_FILE.exists():
+        print(f"Warning: {APP_FILE} not found")
+        return prefixes
+
+    txt = APP_FILE.read_text(encoding="utf-8")
+
+    # Match: app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    for match in re.findall(r"register_blueprint\(\s*(\w+)\s*,\s*url_prefix\s*=\s*['\"]([^'\"]+)['\"]", txt):
+        bp_name, prefix = match
+        # Remove /api prefix since frontend paths are relative to /api
+        if prefix.startswith("/api"):
+            prefix = prefix[4:]  # Remove '/api'
+        prefixes[bp_name] = prefix
+
+    return prefixes
 
 
 def load_frontend_paths():
@@ -43,23 +66,35 @@ def load_frontend_paths():
 
 
 def load_backend_paths():
-    """Extract route paths from backend Python files."""
+    """Extract route paths from backend Python files with full prefixes."""
+    prefixes = load_blueprint_prefixes()
     paths = set()
 
     for py_file in BACKEND_DIR.rglob("*.py"):
+        # Skip test files
+        if "test" in py_file.name.lower():
+            continue
+
         try:
             txt = py_file.read_text(encoding="utf-8", errors="ignore")
         except Exception:
             continue
 
-        # Flask route patterns: @bp.route("/path"), @app.route("/path")
-        for match in re.findall(r'@\w+\.route\(\s*["\']([^"\']+)["\']', txt):
-            # Normalize: routes are relative to /api in production
-            if match.startswith("/"):
-                paths.add(match)
+        # Find which blueprint this file defines routes for
+        # Look for patterns like: @auth_bp.route("/login")
+        for bp_match in re.findall(r'@(\w+)\.route\(\s*["\']([^"\']+)["\']', txt):
+            bp_name, route_path = bp_match
 
-        # Also catch Blueprint registrations to map prefixes
-        # e.g., app.register_blueprint(auth_bp, url_prefix='/api/auth')
+            if not route_path.startswith("/"):
+                route_path = "/" + route_path
+
+            # Get the prefix for this blueprint
+            prefix = prefixes.get(bp_name, "")
+
+            # Build full path (relative to /api)
+            full_path = prefix + route_path
+            if full_path:
+                paths.add(full_path)
 
     return paths
 
