@@ -146,11 +146,8 @@ export function SubscriptionProvider({ children }) {
   // Abort/stale request protection
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
-  // Retry counter for auto-retry on abort
-  const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 3;
-
-  // Manual retry state (separate from auto-retry, for BootStuckBanner)
+  // P1 FIX: Removed retryCount auto-retry. API client interceptor handles transient failures.
+  // Manual retry state (for BootStuckBanner user-initiated recovery only)
   const [manualAttempt, setManualAttempt] = useState(0); // Nonce to trigger fetch
   const [manualRetryCount, setManualRetryCount] = useState(0); // Count for retry cap
   const attemptIdRef = useRef(0); // Track current attempt for stale closure prevention
@@ -181,7 +178,6 @@ export function SubscriptionProvider({ children }) {
         hasToken: !!localStorage.getItem('token'),
         cachedSub: getCachedSubscription(),
         status,
-        retryCount,
         manualAttempt,
         attemptId,
       });
@@ -316,17 +312,10 @@ export function SubscriptionProvider({ children }) {
           setLoading(false);
         }
       } catch (err) {
-        // P0 FIX: Abort is TRANSIENT - stay in current state, allow retry
+        // Abort is intentional (filter change, unmount) - just return silently
+        // P1 FIX: Removed auto-retry on abort. API client interceptor handles transient failures.
         if (err.name === 'CanceledError' || err.name === 'AbortError') {
-          console.log('[Subscription] Fetch aborted (transient), current retryCount:', retryCount);
-          // Do NOT set RESOLVED or ERROR
-          // Do NOT set subscription to free
-          // Stay in PENDING/LOADING state
-          // Increment retry count and schedule retry if under limit
-          if (retryCount < MAX_RETRIES) {
-            setRetryCount(prev => prev + 1);
-            console.log('[Subscription] Will retry on next effect run');
-          }
+          console.log('[Subscription] Fetch aborted (intentional)');
           return;
         }
 
@@ -345,9 +334,9 @@ export function SubscriptionProvider({ children }) {
 
     fetchSubscription();
   // Include tokenStatus + manualAttempt in deps to re-trigger when token becomes ready or manual retry
-  // Note: manualAttempt is ONLY bumped by retrySubscription(), not auto-retry
+  // P1 FIX: Removed retryCount - API client interceptor handles transient failures
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialized, isAuthenticated, tokenStatus, user?.email, retryCount, manualAttempt, startRequest, isStale, getSignal, refreshToken]);
+  }, [initialized, isAuthenticated, tokenStatus, user?.email, manualAttempt, startRequest, isStale, getSignal, refreshToken]);
 
   // Timeout: Prevent infinite pending state
   // Resets on every new fetch attempt (auto-retry or manual)
@@ -375,7 +364,7 @@ export function SubscriptionProvider({ children }) {
     }, SUBSCRIPTION_FETCH_TIMEOUT_MS);
 
     return () => clearTimeout(timeoutId);
-  }, [status, isAuthenticated, retryCount, manualAttempt]); // Resets on any new fetch
+  }, [status, isAuthenticated, manualAttempt]); // Resets on manual retry
 
   // Manual retry for subscription (called by BootStuckBanner)
   // Note: Bumps manualAttempt nonce + tracks count for cap. Does NOT touch tier.
