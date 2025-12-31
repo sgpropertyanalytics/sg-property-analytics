@@ -282,7 +282,15 @@ const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
 
 export const getHealth = () => apiClient.get('/health');
 
-export const getMetadata = () => apiClient.get('/metadata');
+export const getMetadata = (options = {}) => {
+  const cacheKey = 'metadata';
+  const { skipCache, signal, priority } = options;
+  return cachedFetch(
+    cacheKey,
+    () => apiClient.get('/metadata', { signal }),
+    { forceRefresh: skipCache, signal, priority }
+  );
+};
 
 /**
  * Get New Sale vs Young Resale (4-9 years age) comparison
@@ -357,11 +365,11 @@ export const getNewVsResale = (params = {}, options = {}) =>
 export const getDashboard = (params = {}, options = {}) => {
   const queryString = buildQueryString(params);
   const cacheKey = `dashboard:${queryString}`;
-  const { skipCache, signal } = options;
+  const { skipCache, signal, priority } = options;
   return cachedFetch(
     cacheKey,
     () => apiClient.get(`/dashboard?${queryString}`, { signal }),
-    { forceRefresh: skipCache, signal }
+    { forceRefresh: skipCache, signal, priority }
   );
 };
 
@@ -389,11 +397,11 @@ export const getDashboard = (params = {}, options = {}) => {
 export const getAggregate = (params = {}, options = {}) => {
   const queryString = buildQueryString(params);
   const cacheKey = `aggregate:${queryString}`;
-  const { skipCache, signal } = options;
+  const { skipCache, signal, priority } = options;
   return cachedFetch(
     cacheKey,
     () => apiClient.get(`/aggregate?${queryString}`, { signal }),
-    { forceRefresh: skipCache, signal }
+    { forceRefresh: skipCache, signal, priority }
   );
 };
 
@@ -416,8 +424,15 @@ export const getKpiSummary = getKpiSummaryV2;
 /**
  * Get available filter options based on current data
  */
-export const getFilterOptions = () =>
-  apiClient.get('/filter-options');
+export const getFilterOptions = (options = {}) => {
+  const cacheKey = 'filter-options';
+  const { skipCache, signal, priority } = options;
+  return cachedFetch(
+    cacheKey,
+    () => apiClient.get('/filter-options', { signal }),
+    { forceRefresh: skipCache, signal, priority }
+  );
+};
 
 /**
  * Get new launch timeline - projects launched per period with unit counts

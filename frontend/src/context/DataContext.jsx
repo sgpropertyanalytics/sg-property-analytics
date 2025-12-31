@@ -28,8 +28,8 @@ export function DataProvider({ children }) {
       try {
         // Fetch districts and metadata in parallel
         const [filterOptionsRes, metadataRes] = await Promise.all([
-          getFilterOptions().catch(() => ({ data: { districts: [] } })),
-          getMetadata().catch(() => ({ data: null }))
+          getFilterOptions({ priority: 'high' }).catch(() => ({ data: { districts: [] } })),
+          getMetadata({ priority: 'high' }).catch(() => ({ data: null }))
         ]);
 
         const districtOptions = filterOptionsRes.data.districts || [];
