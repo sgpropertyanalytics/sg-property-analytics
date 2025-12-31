@@ -22,7 +22,7 @@ import { SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 import { DISTRICT_CENTROIDS } from '../../data/districtCentroids';
 import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { useStaleRequestGuard } from '../../hooks';
+import { useGatedAbortableQuery, QueryStatus } from '../../hooks';
 import { SaleType } from '../../schemas/apiContract';
 import { getPercentile } from '../../utils/statistics';
 import { assertKnownVersion } from '../../adapters';
@@ -449,9 +449,6 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
   enabled = true,
 }) {
   const { isPremium } = useSubscription();
-  const [districtData, setDistrictData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
   // Lazy-load GeoJSON to reduce initial bundle size (~100KB savings)
@@ -488,14 +485,26 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
     }
   };
 
-  // Abort/stale request protection
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
-
-  // Stable filter key for dependency tracking (avoids object reference issues)
-  const filterKey = useMemo(
-    () => `${selectedPeriod}:${selectedBed}:${selectedSaleType}`,
-    [selectedPeriod, selectedBed, selectedSaleType]
+  // Fetch data with canonical hook (handles abort, stale, boot gating)
+  const { data: districtData = [], status, error, refetch } = useGatedAbortableQuery(
+    async (signal) => {
+      const response = await apiClient.get('/insights/district-psf', {
+        params: { period: selectedPeriod, bed: selectedBed, sale_type: selectedSaleType },
+        signal,
+      });
+      // Contract validation - detect shape changes early
+      assertKnownVersion(response.data, '/api/insights/district-psf');
+      return response.data.districts || [];
+    },
+    [selectedPeriod, selectedBed, selectedSaleType],
+    { enabled, initialData: [] }
   );
+
+  // Derive loading from status
+  const loading =
+    status === QueryStatus.PENDING ||
+    status === QueryStatus.LOADING ||
+    status === QueryStatus.REFRESHING;
 
   const [viewState, setViewState] = useState({
     longitude: MAP_CONFIG.center.longitude,
@@ -504,50 +513,6 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
     pitch: 0,
     bearing: 0,
   });
-
-  // Fetch data with abort/stale protection
-  const fetchData = useCallback(async () => {
-    const requestId = startRequest();
-    const signal = getSignal();
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await apiClient.get('/insights/district-psf', {
-        params: { period: selectedPeriod, bed: selectedBed, sale_type: selectedSaleType },
-        signal,  // Pass abort signal to cancel on filter change
-      });
-
-      // Contract validation - detect shape changes early
-      assertKnownVersion(response.data, '/api/insights/district-psf');
-
-      // Guard: Don't update state if a newer request started
-      if (isStale(requestId)) return;
-
-      setDistrictData(response.data.districts || []);
-      setLoading(false);
-    } catch (err) {
-      // CRITICAL: Never treat abort/cancel as a real error
-      // This prevents "Failed to load" flash when switching filters rapidly
-      if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        return;
-      }
-
-      // Guard: Check stale after error too
-      if (isStale(requestId)) return;
-
-      console.error('Failed to fetch district PSF data:', err);
-      setError('Failed to load data');
-      setLoading(false);
-    }
-  }, [selectedBed, selectedPeriod, selectedSaleType, startRequest, getSignal, isStale]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterKey, enabled]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create district data lookup
   const districtMap = useMemo(() => {
@@ -715,9 +680,9 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
         {error && !loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white z-30">
             <div className="text-center">
-              <p className="text-[#547792] mb-3">{error}</p>
+              <p className="text-[#547792] mb-3">Failed to load data</p>
               <button
-                onClick={fetchData}
+                onClick={refetch}
                 className="px-4 py-2 bg-[#547792] text-white text-sm font-medium rounded-lg hover:bg-[#213448] transition-colors"
               >
                 Try again

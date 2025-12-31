@@ -25,18 +25,16 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
   // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
   const chartRef = useRef(null);
 
   // Debug overlay for API diagnostics (toggle with Ctrl+Shift+D)
-  const { captureRequest, captureResponse, captureError, DebugOverlay, debugInfo } = useDebugOverlay('TimeTrendChart');
+  const { captureRequest, captureResponse, captureError, DebugOverlay } = useDebugOverlay('TimeTrendChart');
 
   // Fetch and transform data using adapter pattern
-  // useGatedAbortableQuery handles: abort controller, stale request protection, loading/error states
+  // useGatedAbortableQuery handles: abort controller, stale request protection, status states
   // PLUS: gates fetching on appReady (auth + subscription + filters ready)
-  // isFetching = true during background refetch when keepPreviousData is enabled
-  // isBootPending = true while waiting for app boot (prevents "No data" flash)
-  const { data, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data, status, error, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       const params = buildApiParams({
@@ -235,10 +233,7 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
 
   return (
     <ChartFrame
-      loading={loading}
-      isFetching={isFetching}
-      isFiltering={filterKey !== debouncedFilterKey}
-      isBootPending={isBootPending}
+      status={status}
       error={error}
       onRetry={refetch}
       empty={!data || data.length === 0}

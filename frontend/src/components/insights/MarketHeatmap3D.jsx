@@ -11,13 +11,13 @@
  * - Strict Singapore bounds and pitch limits
  */
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Map, { Source, Layer, Popup } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
-import { useStaleRequestGuard } from '../../hooks';
+import { useGatedAbortableQuery, QueryStatus } from '../../hooks';
 import { getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 
 // Theme colors (Warm Precision palette)
@@ -156,9 +156,6 @@ for (let i = 1; i <= 28; i++) {
 }
 
 export default function MarketHeatmap3D() {
-  const [districtData, setDistrictData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('Y1');
   const [hoveredDistrictId, setHoveredDistrictId] = useState(null);
@@ -166,14 +163,27 @@ export default function MarketHeatmap3D() {
   const mapRef = useRef(null);
   const hoveredStateRef = useRef(null);
 
-  // Abort/stale request protection
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
-
-  // Stable filter key for dependency tracking (avoids object reference issues)
-  const filterKey = useMemo(
-    () => `${selectedPeriod}:${selectedBed}`,
-    [selectedPeriod, selectedBed]
+  // Fetch district PSF data with canonical hook (handles abort, stale, boot gating)
+  const { data: districtData = [], status, error, refetch } = useGatedAbortableQuery(
+    async (signal) => {
+      const response = await apiClient.get('/insights/district-psf', {
+        params: {
+          period: selectedPeriod,
+          bed: selectedBed,
+        },
+        signal,
+      });
+      return response.data.districts || [];
+    },
+    [selectedPeriod, selectedBed],
+    { initialData: [] }
   );
+
+  // Derive loading from status
+  const loading =
+    status === QueryStatus.PENDING ||
+    status === QueryStatus.LOADING ||
+    status === QueryStatus.REFRESHING;
 
   // Initial view state
   const [viewState, setViewState] = useState({
@@ -183,49 +193,6 @@ export default function MarketHeatmap3D() {
     pitch: 40,
     bearing: -15,
   });
-
-  // Fetch district PSF data with abort/stale protection
-  const fetchData = useCallback(async () => {
-    const requestId = startRequest();
-    const signal = getSignal();
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await apiClient.get('/insights/district-psf', {
-        params: {
-          period: selectedPeriod,
-          bed: selectedBed,
-        },
-        signal,  // Pass abort signal to cancel on filter change
-      });
-
-      // Guard: Don't update state if a newer request started
-      if (isStale(requestId)) return;
-
-      setDistrictData(response.data.districts || []);
-      setLoading(false);
-    } catch (err) {
-      // CRITICAL: Never treat abort/cancel as a real error
-      // This prevents "Failed to load" flash when switching filters rapidly
-      if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        return;
-      }
-
-      // Guard: Check stale after error too
-      if (isStale(requestId)) return;
-
-      console.error('Failed to fetch district PSF data:', err);
-      setError('Failed to load data');
-      setLoading(false);
-    }
-  }, [selectedBed, selectedPeriod, startRequest, getSignal, isStale]);
-
-  useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create district lookup map
   const districtMap = useMemo(() => {
@@ -446,9 +413,9 @@ export default function MarketHeatmap3D() {
         {error && !loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#1a1a2e] z-20">
             <div className="text-center">
-              <p className="text-[#547792]">{error}</p>
+              <p className="text-[#547792]">Failed to load data</p>
               <button
-                onClick={fetchData}
+                onClick={refetch}
                 className="mt-2 text-sm text-[#547792] hover:underline"
               >
                 Try again

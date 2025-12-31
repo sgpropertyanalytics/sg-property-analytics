@@ -70,7 +70,15 @@ export function useStaleRequestGuard() {
     return abortControllerRef.current?.signal;
   }, []);
 
-  return { startRequest, isStale, getSignal };
+  // Abort current in-flight request and null the controller
+  const abort = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, []);
+
+  return { startRequest, isStale, getSignal, abort };
 }
 
 export default useStaleRequestGuard;

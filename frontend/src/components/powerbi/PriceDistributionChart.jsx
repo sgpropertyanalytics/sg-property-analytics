@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { useGatedAbortableQuery } from '../../hooks';
+import { useGatedAbortableQuery, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
@@ -37,7 +37,7 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
 }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const [showFullRange, setShowFullRange] = useState(false);
   const chartRef = useRef(null);
 
@@ -45,9 +45,7 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
 
   // Data fetching with useGatedAbortableQuery - automatic abort/stale handling
   // Gates fetching on appReady (auth + subscription + filters)
-  // isFetching = true during background refetch when keepPreviousData is enabled
-  // isBootPending = true while waiting for app boot
-  const { data: histogramData, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data: histogramData, status, error, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // Use dashboard endpoint with price_histogram panel
       // excludeLocationDrill: true - Price Distribution should NOT be affected by
@@ -86,7 +84,10 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
   );
 
   const resolvedData = useShared ? transformDistributionSeries(sharedData) : histogramData;
-  const resolvedLoading = useShared ? sharedLoading : loading;
+  // Derive status for shared data mode (sharedLoading=true means loading)
+  const resolvedStatus = useShared
+    ? (sharedLoading ? QueryStatus.LOADING : QueryStatus.SUCCESS)
+    : status;
 
   // Extract transformed data
   const { bins, stats, tail, totalCount } = resolvedData;
@@ -241,10 +242,7 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
 
   return (
     <ChartFrame
-      loading={resolvedLoading}
-      isFetching={isFetching}
-      isFiltering={filterKey !== debouncedFilterKey}
-      isBootPending={isBootPending}
+      status={resolvedStatus}
       error={error}
       onRetry={refetch}
       empty={!bins || bins.length === 0}

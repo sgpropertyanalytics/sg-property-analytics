@@ -10,7 +10,7 @@
  * - Responsive design for all device sizes
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiClient from '../../api/client';
 import {
@@ -18,7 +18,7 @@ import {
   DISTRICT_CENTROIDS,
   ALL_DISTRICTS,
 } from '../../data/singaporeDistricts';
-import { useStaleRequestGuard } from '../../hooks';
+import { useGatedAbortableQuery, QueryStatus } from '../../hooks';
 import { getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 
 // Color scale for PSF values (using project theme)
@@ -60,65 +60,32 @@ const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
 const PERIOD_OPTIONS = PERIOD_FILTER_OPTIONS;
 
 export default function MarketHeatmap() {
-  const [districtData, setDistrictData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedBed, setSelectedBed] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('Y1');
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
-  // Abort/stale request protection
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
-
-  // Stable filter key for dependency tracking (avoids object reference issues)
-  const filterKey = useMemo(
-    () => `${selectedPeriod}:${selectedBed}`,
-    [selectedPeriod, selectedBed]
-  );
-
-  // Fetch district PSF data with abort/stale protection
-  const fetchData = useCallback(async () => {
-    const requestId = startRequest();
-    const signal = getSignal();
-
-    setLoading(true);
-    setError(null);
-
-    try {
+  // Fetch district PSF data with canonical hook (handles abort, stale, boot gating)
+  const { data: districtData = [], status, error, refetch } = useGatedAbortableQuery(
+    async (signal) => {
       const response = await apiClient.get('/insights/district-psf', {
         params: {
           period: selectedPeriod,
           bed: selectedBed,
         },
-        signal,  // Pass abort signal to cancel on filter change
+        signal,
       });
+      return response.data.districts || [];
+    },
+    [selectedPeriod, selectedBed],
+    { initialData: [] }
+  );
 
-      // Guard: Don't update state if a newer request started
-      if (isStale(requestId)) return;
-
-      setDistrictData(response.data.districts || []);
-      setLoading(false);
-    } catch (err) {
-      // CRITICAL: Never treat abort/cancel as a real error
-      // This prevents "Failed to load" flash when switching filters rapidly
-      if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        return;
-      }
-
-      // Guard: Check stale after error too
-      if (isStale(requestId)) return;
-
-      console.error('Failed to fetch district PSF data:', err);
-      setError('Failed to load data');
-      setLoading(false);
-    }
-  }, [selectedBed, selectedPeriod, startRequest, getSignal, isStale]);
-
-  useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterKey]); // Use stable filterKey instead of fetchData to avoid stale closure issues
+  // Derive loading from status (PENDING/LOADING/REFRESHING all show loading UI)
+  const loading =
+    status === QueryStatus.PENDING ||
+    status === QueryStatus.LOADING ||
+    status === QueryStatus.REFRESHING;
 
   // Create a map for quick district lookup
   const districtMap = useMemo(() => {
@@ -216,9 +183,9 @@ export default function MarketHeatmap() {
         {error && !loading && (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <p className="text-[#547792]">{error}</p>
+              <p className="text-[#547792]">Failed to load data</p>
               <button
-                onClick={fetchData}
+                onClick={refetch}
                 className="mt-2 text-sm text-[#213448] hover:underline"
               >
                 Try again

@@ -43,7 +43,7 @@ export function useQuery(queryFn, deps = [], options = {}) {
     inFlight: false,
   });
 
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+  const { startRequest, isStale, getSignal, abort } = useStaleRequestGuard();
   const mountedRef = useRef(true);
 
   // === REFS FOR SYNCHRONOUS PENDING DERIVATION ===
@@ -92,13 +92,14 @@ export function useQuery(queryFn, deps = [], options = {}) {
     return QueryStatus.SUCCESS;
   }, [enabled, isNewKey, internalState.inFlight, internalState.data, internalState.error]);
 
-  // Track mounted state
+  // Track mounted state and abort on unmount
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      abort();
     };
-  }, []);
+  }, [abort]);
 
   // === SINGLE COMBINED EFFECT with proper guards ===
   useEffect(() => {

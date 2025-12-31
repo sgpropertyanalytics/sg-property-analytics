@@ -1,5 +1,5 @@
 import React, { useRef, useMemo } from 'react';
-import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
+import { useGatedAbortableQuery, useDeferredFetch, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -47,7 +47,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
 
   // UI state (not data state - that comes from useAbortableQuery)
@@ -87,9 +87,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // Skip if parent provides sharedData (W4 fix: eliminates duplicate API call with AbsolutePsfChart)
-  // isFetching = true during background refetch when keepPreviousData is enabled
-  // isBootPending = true while waiting for app boot
-  const { data: internalData, loading: internalLoading, error, isFetching: internalIsFetching, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data: internalData, status: internalStatus, error, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison
@@ -123,8 +121,10 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
 
   // Use shared data from parent if provided, otherwise use internal fetch
   const data = useSharedData ? sharedData : internalData;
-  const loading = useSharedData ? sharedLoading : internalLoading;
-  const isFetching = useSharedData ? false : internalIsFetching;
+  // Derive status for shared data mode (sharedLoading=true means loading)
+  const resolvedStatus = useSharedData
+    ? (sharedLoading ? QueryStatus.LOADING : QueryStatus.SUCCESS)
+    : internalStatus;
 
 
   // Computed values - use historical baseline for stable min/max
@@ -237,10 +237,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
   return (
     <div ref={containerRef}>
     <ChartFrame
-      loading={loading}
-      isFetching={isFetching}
-      isFiltering={filterKey !== debouncedFilterKey}
-      isBootPending={isBootPending}
+      status={resolvedStatus}
       error={error}
       onRetry={refetch}
       empty={!data || data.length === 0}

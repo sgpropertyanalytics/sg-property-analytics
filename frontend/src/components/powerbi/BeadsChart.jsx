@@ -1,5 +1,5 @@
 import React, { useRef, useMemo } from 'react';
-import { useGatedAbortableQuery, useDebugOverlay } from '../../hooks';
+import { useGatedAbortableQuery, useDebugOverlay, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bubble } from 'react-chartjs-2';
@@ -42,17 +42,14 @@ export const BeadsChart = React.memo(function BeadsChart({
   sharedData = null,
   sharedLoading = false,
 }) {
-  // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
   const chartRef = useRef(null);
   const { wrapApiCall, DebugOverlay, debugInfo } = useDebugOverlay('BeadsChart');
 
   const useShared = sharedData != null;
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
-  // isFetching = true during background refetch when keepPreviousData is enabled
-  // isBootPending = true while waiting for app boot
-  const { data: chartData, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data: chartData, status, error, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // excludeOwnDimension: 'segment' - this chart shows all regions, so ignore segment filter
@@ -108,7 +105,10 @@ export const BeadsChart = React.memo(function BeadsChart({
   );
 
   const resolvedData = useShared ? transformBeadsChartSeries(sharedData) : chartData;
-  const resolvedLoading = useShared ? sharedLoading : loading;
+  // Derive status for shared data mode (sharedLoading=true means loading)
+  const resolvedStatus = useShared
+    ? (sharedLoading ? QueryStatus.LOADING : QueryStatus.SUCCESS)
+    : status;
 
   const hasData = resolvedData?.datasets?.length > 0;
   const { stats, stringRanges } = resolvedData;
@@ -301,13 +301,10 @@ export const BeadsChart = React.memo(function BeadsChart({
 
   return (
     <ChartFrame
-      loading={resolvedLoading}
-      isFetching={isFetching}
-      isFiltering={filterKey !== debouncedFilterKey}
-      isBootPending={isBootPending}
+      status={resolvedStatus}
       error={error}
       onRetry={refetch}
-      empty={!hasData && !resolvedLoading}
+      empty={!hasData}
       skeleton="bar"
       height={350}
       debugInfo={debugInfo}

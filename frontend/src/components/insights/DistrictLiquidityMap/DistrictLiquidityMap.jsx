@@ -18,7 +18,7 @@ import apiClient from '../../../api/client';
 // GeoJSON is lazy-loaded to reduce initial bundle size (~100KB savings)
 import { DISTRICT_CENTROIDS } from '../../../data/districtCentroids';
 import { useSubscription } from '../../../context/SubscriptionContext';
-import { useStaleRequestGuard } from '../../../hooks';
+import { useGatedAbortableQuery, QueryStatus } from '../../../hooks';
 import { SaleType } from '../../../schemas/apiContract';
 import { assertKnownVersion } from '../../../adapters';
 
@@ -52,10 +52,6 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
   enabled = true,
 }) {
   const { isPremium } = useSubscription();
-  const [districtData, setDistrictData] = useState([]);
-  const [meta, setMeta] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
   // Lazy-load GeoJSON to reduce initial bundle size (~100KB savings)
@@ -92,14 +88,36 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
     }
   };
 
-  // Abort/stale request protection
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
-
-  // Stable filter key for dependency tracking (avoids object reference issues)
-  const filterKey = useMemo(
-    () => `${selectedPeriod}:${selectedBed}:${saleType}`,
-    [selectedPeriod, selectedBed, saleType]
+  // Fetch data with canonical hook (handles abort, stale, boot gating)
+  const { data, status, error, refetch } = useGatedAbortableQuery(
+    async (signal) => {
+      const response = await apiClient.get('/insights/district-liquidity', {
+        params: {
+          period: selectedPeriod,
+          bed: selectedBed,
+          saleType, // Use prop value (page-level enforcement)
+        },
+        signal,
+      });
+      // Contract validation - detect shape changes early
+      assertKnownVersion(response.data, '/api/insights/district-liquidity');
+      return {
+        districts: response.data.districts || [],
+        meta: response.data.meta || {},
+      };
+    },
+    [selectedPeriod, selectedBed, saleType],
+    { enabled, initialData: { districts: [], meta: {} } }
   );
+
+  const districtData = data?.districts || [];
+  const meta = data?.meta || {};
+
+  // Derive loading from status
+  const loading =
+    status === QueryStatus.PENDING ||
+    status === QueryStatus.LOADING ||
+    status === QueryStatus.REFRESHING;
 
   const [viewState, setViewState] = useState({
     longitude: MAP_CONFIG.center.longitude,
@@ -108,55 +126,6 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
     pitch: 0,
     bearing: 0,
   });
-
-  // Fetch data with abort/stale protection
-  const fetchData = useCallback(async () => {
-    const requestId = startRequest();
-    const signal = getSignal();
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await apiClient.get('/insights/district-liquidity', {
-        params: {
-          period: selectedPeriod,
-          bed: selectedBed,
-          saleType, // Use prop value (page-level enforcement)
-        },
-        signal, // Pass abort signal to cancel on filter change
-      });
-
-      // Contract validation - detect shape changes early
-      assertKnownVersion(response.data, '/api/insights/district-liquidity');
-
-      // Guard: Don't update state if a newer request started
-      if (isStale(requestId)) return;
-
-      setDistrictData(response.data.districts || []);
-      setMeta(response.data.meta || {});
-      setLoading(false);
-    } catch (err) {
-      // CRITICAL: Never treat abort/cancel as a real error
-      // This prevents "Failed to load" flash when switching filters rapidly
-      if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        return;
-      }
-
-      // Guard: Check stale after error too
-      if (isStale(requestId)) return;
-
-      console.error('Failed to fetch district liquidity data:', err);
-      setError('Failed to load data');
-      setLoading(false);
-    }
-  }, [selectedBed, selectedPeriod, saleType, startRequest, getSignal, isStale]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterKey, enabled]); // Use stable filterKey instead of fetchData to avoid stale closure issues
 
   // Create district data lookup
   const districtMap = useMemo(() => {
@@ -320,9 +289,9 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
         {error && !loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white z-30">
             <div className="text-center">
-              <p className="text-[#547792] mb-3">{error}</p>
+              <p className="text-[#547792] mb-3">Failed to load data</p>
               <button
-                onClick={fetchData}
+                onClick={refetch}
                 className="px-4 py-2 bg-[#547792] text-white text-sm font-medium rounded-lg hover:bg-[#213448] transition-colors"
               >
                 Try again

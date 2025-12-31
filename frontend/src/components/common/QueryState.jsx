@@ -6,39 +6,15 @@ import { useDebugMode } from '../../context/DebugContext';
 /**
  * Get user-friendly error message from an error object.
  *
- * PREFERRED: Use error.userMessage which is set by api/client.js normalizeError().
- * This ensures all API errors are normalized at the boundary.
- *
- * FALLBACK: If error.userMessage is not set (e.g., non-API errors),
- * falls back to status-based mapping.
+ * P0-2: Error normalization is the ONLY UI error source.
+ * api/client.js normalizeError() attaches error.userMessage for all API errors.
+ * This function returns that message or a generic fallback - never raw Axios strings.
  *
  * @param {Error} error - Error object (typically from API call)
  * @returns {string} User-friendly error message
  */
 export const getQueryErrorMessage = (error) => {
-  // Prefer centralized userMessage from api/client.js normalizeError()
-  if (error?.userMessage) {
-    return error.userMessage;
-  }
-
-  // Fallback for errors not normalized by api/client.js
-  const status = error?.response?.status;
-  if (status === 400) {
-    return error?.response?.data?.error || 'Invalid request. Please adjust filters and try again.';
-  }
-  if (status === 401) {
-    return 'Session expired. Please sign in again.';
-  }
-  if (status >= 500) {
-    return 'Server error. Please try again in a moment.';
-  }
-  if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
-    return 'Request timed out. Please retry.';
-  }
-  if (error?.code === 'ERR_NETWORK' || !error?.response) {
-    return 'Network error. Check your connection and retry.';
-  }
-  return error?.message || String(error);
+  return error?.userMessage || 'Something went wrong. Please try again.';
 };
 
 /**
