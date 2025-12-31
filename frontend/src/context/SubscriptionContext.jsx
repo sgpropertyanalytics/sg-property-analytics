@@ -30,12 +30,21 @@ export function useSubscription() {
 // Cache key for localStorage
 const SUBSCRIPTION_CACHE_KEY = 'subscription_cache';
 
+// Cache version - bump this to invalidate all existing caches on deploy
+// This ensures stale 'free' caches are cleared for all users automatically
+const CACHE_VERSION = 2;
+
 // Get cached subscription from localStorage (instant, no flicker)
 const getCachedSubscription = () => {
   try {
     const cached = localStorage.getItem(SUBSCRIPTION_CACHE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
+      // Version check - invalidate stale caches from older versions
+      if (parsed.version !== CACHE_VERSION) {
+        localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
+        return null; // Force fresh fetch
+      }
       // Basic validation
       if (parsed.tier && typeof parsed.subscribed === 'boolean') {
         return parsed;
@@ -44,22 +53,29 @@ const getCachedSubscription = () => {
   } catch {
     // Ignore parse errors
   }
-  return { tier: 'free', subscribed: false, ends_at: null };
+  return null; // Return null to indicate no valid cache (will fetch fresh)
 };
 
-// Save subscription to localStorage
+// Save subscription to localStorage with version
 const cacheSubscription = (sub) => {
   try {
-    localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(sub));
+    localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify({
+      ...sub,
+      version: CACHE_VERSION,
+    }));
   } catch {
     // Ignore storage errors
   }
 };
 
+// Default subscription state (used when no cache or cache invalid)
+const DEFAULT_SUBSCRIPTION = { tier: 'free', subscribed: false, ends_at: null };
+
 export function SubscriptionProvider({ children }) {
   const { user, isAuthenticated, initialized, refreshToken } = useAuth();
   // Initialize from cache to prevent flash of free→premium
-  const [subscription, setSubscription] = useState(getCachedSubscription);
+  // If no valid cache, start with null to show loading state until API responds
+  const [subscription, setSubscription] = useState(() => getCachedSubscription() || DEFAULT_SUBSCRIPTION);
   const [loading, setLoading] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
 
@@ -97,8 +113,7 @@ export function SubscriptionProvider({ children }) {
       if (!isAuthenticated) {
         // Guard: Don't update state if stale
         if (isStale(requestId)) return;
-        const freeSub = { tier: 'free', subscribed: false, ends_at: null };
-        setSubscription(freeSub);
+        setSubscription(DEFAULT_SUBSCRIPTION);
         // DON'T cache 'free' on logout - prevents stale cache persisting across sessions
         // Next login will fetch fresh subscription status from backend
         // cacheSubscription(freeSub);  // REMOVED: Was causing stale 'free' cache bug
