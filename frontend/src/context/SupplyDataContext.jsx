@@ -14,7 +14,7 @@
  * - SupplyBreakdownTable
  */
 
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import { useGatedAbortableQuery } from '../hooks';
 import { getSupplySummary } from '../api/client';
 
@@ -42,9 +42,17 @@ export function SupplyDataProvider({
     [includeGls, launchYear]
   );
 
+  // Track if filters are changing (for blur effect)
+  const [debouncedFilterKey, setDebouncedFilterKey] = useState(filterKey);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedFilterKey(filterKey), 300);
+    return () => clearTimeout(timer);
+  }, [filterKey]);
+  const isFiltering = filterKey !== debouncedFilterKey;
+
   // Single shared fetch for all supply data - gated on appReady
   // isBootPending = true while waiting for app boot (auth/subscription/filters)
-  const { data, loading, error, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data, loading, error, isBootPending, isFetching, refetch } = useGatedAbortableQuery(
     async (signal) => {
       const response = await getSupplySummary(
         { includeGls, launchYear },
@@ -63,12 +71,14 @@ export function SupplyDataProvider({
       loading,
       error,
       isBootPending,
+      isFetching,
+      isFiltering,
       refetch,
       // Pass through filter values so components know the current state
       includeGls,
       launchYear,
     }),
-    [data, loading, error, isBootPending, refetch, includeGls, launchYear]
+    [data, loading, error, isBootPending, isFetching, isFiltering, refetch, includeGls, launchYear]
   );
 
   return (

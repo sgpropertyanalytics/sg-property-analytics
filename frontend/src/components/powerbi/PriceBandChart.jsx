@@ -13,7 +13,7 @@
  */
 
 import React, { useMemo, useRef } from 'react';
-import { ChartSkeleton } from '../common/ChartSkeleton';
+import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
 import { isFloorDirection, FloorDirectionLabels } from '../../schemas/apiContract';
@@ -43,7 +43,10 @@ export const PriceBandChart = React.memo(function PriceBandChart({
   dataQuality,
   totalResaleTransactions,
   loading = false,
+  isFetching = false,
+  isBootPending = false,
   error = null,
+  onRetry,
   projectName = '',
   height = 400
 }) {
@@ -248,66 +251,21 @@ export const PriceBandChart = React.memo(function PriceBandChart({
     };
   }, [bands, unitPsf]);
 
-  // Loading state
-  if (loading) {
-    return <ChartSkeleton type="line" height={height} />;
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div
-        className="bg-card rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
-        style={{ height }}
-      >
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-          <h3 className="font-semibold text-[#213448]">Historical Price Bands</h3>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-center">
-            <div className="text-red-500 mb-2">Error loading data</div>
-            <div className="text-sm text-[#547792]">{error}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Empty state
-  if (!chartData || bands.length === 0) {
-    return (
-      <div
-        className="bg-card rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
-        style={{ height }}
-      >
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-          <h3 className="font-semibold text-[#213448]">Historical Price Bands</h3>
-          <p className="text-xs text-[#547792] mt-1">P25 / Median / P75 percentiles</p>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-center">
-            <div className="text-4xl mb-3 opacity-50">📊</div>
-            <div className="text-[#547792]">
-              {projectName
-                ? 'Insufficient resale data for this project'
-                : 'Select a project to view price bands'}
-            </div>
-            {dataQuality?.fallback_reason && (
-              <div className="text-sm text-[#94B4C1] mt-2">
-                {dataQuality.fallback_reason}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Card owns its height explicitly (header ~80px + chart area + footer ~44px)
   const cardHeight = height + 124;
 
   // Main chart view
   return (
+    <ChartFrame
+      loading={loading}
+      isFetching={isFetching}
+      isBootPending={isBootPending}
+      error={error}
+      onRetry={onRetry}
+      empty={!chartData || bands.length === 0}
+      skeleton="line"
+      height={height}
+    >
     <div
       className="bg-card rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
       style={{ height: cardHeight }}
@@ -418,6 +376,7 @@ export const PriceBandChart = React.memo(function PriceBandChart({
         </div>
       )}
     </div>
+    </ChartFrame>
   );
 });
 

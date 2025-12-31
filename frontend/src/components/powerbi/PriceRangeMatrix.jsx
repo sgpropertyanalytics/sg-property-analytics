@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useGatedAbortableQuery } from '../../hooks';
 import { getAggregate } from '../../api/client';
 import { transformPriceRangeMatrix } from '../../adapters/aggregate';
@@ -7,7 +7,7 @@ import {
   AGE_BAND_LABELS_SHORT,
 } from '../../constants';
 import { PriceCorridorCell, PriceCorridorLegend } from './PriceCorridorCell';
-import { ChartSkeleton } from '../common/ChartSkeleton';
+import { ChartFrame } from '../common/ChartFrame';
 
 /**
  * PriceRangeMatrix - Fair Price Range by Bedroom x Property Age
@@ -67,50 +67,39 @@ export function PriceRangeMatrix({
   // Build stable filter key for query dependency
   const filterKey = useMemo(() => JSON.stringify(apiParams), [apiParams]);
 
+  // Track if filters are changing (for blur effect)
+  const [debouncedFilterKey, setDebouncedFilterKey] = useState(filterKey);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedFilterKey(filterKey), 300);
+    return () => clearTimeout(timer);
+  }, [filterKey]);
+  const isFiltering = filterKey !== debouncedFilterKey;
+
   // Fetch data with abort handling - gates on appReady
   // isBootPending = true while waiting for app boot
-  const { data, loading, error, isBootPending } = useGatedAbortableQuery(
+  const { data, loading, error, isBootPending, isFetching, refetch } = useGatedAbortableQuery(
     async (signal) => {
       const response = await getAggregate(apiParams, { signal });
       return transformPriceRangeMatrix(response.data, { budget });
     },
-    [filterKey]
+    [filterKey],
+    { keepPreviousData: true }
   );
 
-  // Loading state (show during boot or data fetch)
-  if (loading || isBootPending) {
-    return (
-      <div className="bg-card rounded-lg shadow-sm border border-[#94B4C1]/50 p-4">
-        <ChartSkeleton height={300} />
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="bg-card rounded-lg shadow-sm border border-[#94B4C1]/50 p-4">
-        <div className="text-red-600 text-sm">
-          Failed to load price range data
-        </div>
-      </div>
-    );
-  }
-
-  // Empty state
-  if (!data || data.totalCount === 0) {
-    return (
-      <div className="bg-card rounded-lg shadow-sm border border-[#94B4C1]/50 p-4">
-        <div className="text-gray-500 text-sm text-center py-8">
-          No transactions found for the selected criteria
-        </div>
-      </div>
-    );
-  }
-
-  const { matrix, ageBands, bedrooms } = data;
+  const { matrix, ageBands, bedrooms } = data || {};
 
   return (
+    <ChartFrame
+      loading={loading}
+      isFetching={isFetching}
+      isFiltering={isFiltering}
+      isBootPending={isBootPending}
+      error={error}
+      onRetry={refetch}
+      empty={!data || data.totalCount === 0}
+      skeleton="grid"
+      height={300}
+    >
     <div className="bg-card rounded-lg shadow-sm border border-[#94B4C1]/50">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-200">
@@ -171,11 +160,12 @@ export function PriceRangeMatrix({
       {/* Footer */}
       <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
         <p className="text-xs text-gray-500">
-          Based on {data.totalCount.toLocaleString()} transactions in the past{' '}
+          Based on {data?.totalCount?.toLocaleString() || 0} transactions in the past{' '}
           {monthsLookback} months within your budget range.
         </p>
       </div>
     </div>
+    </ChartFrame>
   );
 }
 

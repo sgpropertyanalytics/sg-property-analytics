@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useGatedAbortableQuery } from '../../hooks';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { DistrictMicroChart } from './DistrictMicroChart';
 import { isSaleType, getAggField, AggField } from '../../schemas/apiContract';
 import { assertKnownVersion } from '../../adapters';
-import { ChartSkeleton } from '../common/ChartSkeleton';
+import { ChartFrame } from '../common/ChartFrame';
 
 // All districts ordered by region: CCR → RCR → OCR
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
@@ -50,9 +50,17 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
   // Create a stable filter key for dependency tracking
   const filterKey = useMemo(() => `${period}:${bedroom}:${saleType}`, [period, bedroom, saleType]);
 
+  // Track if filters are changing (for blur effect)
+  const [debouncedFilterKey, setDebouncedFilterKey] = useState(filterKey);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedFilterKey(filterKey), 300);
+    return () => clearTimeout(timer);
+  }, [filterKey]);
+  const isFiltering = filterKey !== debouncedFilterKey;
+
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // isBootPending = true while waiting for app boot
-  const { data, loading, error, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data, loading, error, isBootPending, isFetching, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // Build API params from props (not PowerBIFilterContext)
       const params = {
@@ -111,7 +119,7 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
       return districtData;
     },
     [filterKey],
-    { initialData: {} }
+    { initialData: {}, keepPreviousData: true }
   );
 
   // Handle district click - no cross-filter since we're not using PowerBIFilterContext
@@ -121,33 +129,18 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
     // The heatmap controls the filters, not individual chart interactions
   };
 
-  // Loading skeleton (show during boot or data fetch)
-  if (loading || isBootPending) {
-    return <ChartSkeleton type="grid" height={400} />;
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-          <h3 className="text-sm font-semibold text-[#213448]">Market Momentum Grid</h3>
-        </div>
-        <div className="p-8 text-center">
-          <p className="text-sm text-[#547792]">Unable to load market data</p>
-          <p className="text-xs text-[#94B4C1] mt-1">{error?.message || error}</p>
-          <button
-            onClick={refetch}
-            className="mt-3 px-3 py-1.5 text-xs bg-[#547792] text-white rounded hover:bg-[#213448] transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
+    <ChartFrame
+      loading={loading}
+      isFetching={isFetching}
+      isFiltering={isFiltering}
+      isBootPending={isBootPending}
+      error={error}
+      onRetry={refetch}
+      empty={!data || Object.keys(data).length === 0}
+      skeleton="grid"
+      height={400}
+    >
     <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-3 md:px-4 py-3 border-b border-[#94B4C1]/30">
@@ -218,6 +211,7 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
         </div>
       </div>
     </div>
+    </ChartFrame>
   );
 }
 

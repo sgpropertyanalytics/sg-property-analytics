@@ -9,7 +9,7 @@ import {
   getBudgetHeatmapField,
   getBudgetHeatmapRowField,
 } from '../../schemas/apiContract';
-import { ChartSkeleton } from '../common/ChartSkeleton';
+import { ChartFrame } from '../common/ChartFrame';
 
 // Time window presets: label → months
 const TIME_PRESETS = {
@@ -102,9 +102,12 @@ export function BudgetActivityHeatmap({
     months_lookback: timeWindow,
   }), [budget, bedroom, region, district, tenure, timeWindow]);
 
+  // Build stable filter key for dependency tracking
+  const filterKey = useMemo(() => JSON.stringify(apiParams), [apiParams]);
+
   // Fetch data with abort handling - gates on appReady
   // isBootPending = true while waiting for app boot
-  const { data, loading, error, isBootPending } = useGatedAbortableQuery(
+  const { data, loading, error, isBootPending, isFetching, refetch } = useGatedAbortableQuery(
     async (signal) => {
       const response = await getBudgetHeatmap(apiParams, { signal });
 
@@ -113,12 +116,21 @@ export function BudgetActivityHeatmap({
 
       return response.data;
     },
-    [JSON.stringify(apiParams)],
+    [filterKey],
     {
       enabled: budget >= 500000,
       initialData: null,
+      keepPreviousData: true,
     }
   );
+
+  // Track if filters are changing (for blur effect)
+  const [debouncedFilterKey, setDebouncedFilterKey] = useState(filterKey);
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedFilterKey(filterKey), 300);
+    return () => clearTimeout(timer);
+  }, [filterKey]);
+  const isFiltering = filterKey !== debouncedFilterKey;
 
   // Age bands and bedroom types from response
   const ageBands = getBudgetHeatmapField(data, BudgetHeatmapField.AGE_BANDS) || [];
@@ -126,38 +138,21 @@ export function BudgetActivityHeatmap({
   const totalCount = getBudgetHeatmapField(data, BudgetHeatmapField.TOTAL_COUNT) || 0;
   const matrix = getBudgetHeatmapField(data, BudgetHeatmapField.MATRIX) || {};
 
-  // Loading state (show during boot or data fetch)
-  if (loading || isBootPending) {
-    return <ChartSkeleton type="grid" height={280} />;
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-6">
-        <p className="text-sm text-red-600">Failed to load market activity data</p>
-      </div>
-    );
-  }
-
-  // No data or empty state
-  if (!data || totalCount === 0) {
-    return (
-      <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-6">
-        <h4 className="font-semibold text-[#213448] mb-2">
-          Bedroom Mix by Property Age
-        </h4>
-        <p className="text-sm text-[#547792]">
-          No transactions found within this budget range. Try adjusting your budget or filters.
-        </p>
-      </div>
-    );
-  }
-
   // Show warning for long time windows (48+ months)
   const showMarketShiftWarning = timeWindow >= 48;
 
   return (
+    <ChartFrame
+      loading={loading}
+      isFetching={isFetching}
+      isFiltering={isFiltering}
+      isBootPending={isBootPending}
+      error={error}
+      onRetry={refetch}
+      empty={!data || totalCount === 0}
+      skeleton="grid"
+      height={280}
+    >
     <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
@@ -363,6 +358,7 @@ export function BudgetActivityHeatmap({
         }
       `}</style>
     </div>
+    </ChartFrame>
   );
 }
 

@@ -15,7 +15,7 @@ import React, { useMemo, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { ChartSkeleton } from '../common/ChartSkeleton';
+import { ChartFrame } from '../common/ChartFrame';
 import { getTxnField, TxnField } from '../../schemas/apiContract';
 
 // Colors
@@ -86,7 +86,10 @@ export const PriceGrowthChart = React.memo(function PriceGrowthChart({
   data = null,
   districtAverage = [],
   loading = false,
+  isFetching = false,
+  isBootPending = false,
   error = null,
+  onRetry,
   projectName = '',
   district = '',
   height = 400,
@@ -290,58 +293,18 @@ export const PriceGrowthChart = React.memo(function PriceGrowthChart({
     };
   }, [data]);
 
-  // Loading state
-  if (loading) {
-    return <ChartSkeleton type="line" height={height} />;
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div
-        className="bg-card rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
-        style={{ height }}
-      >
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-          <h3 className="font-semibold text-[#213448]">Price Growth</h3>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-center">
-            <div className="text-red-500 mb-2">Error loading data</div>
-            <div className="text-sm text-[#547792]">{error}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Empty state
-  if (!chartData || aggregatedData.length === 0) {
-    return (
-      <div
-        className="bg-card rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
-        style={{ height }}
-      >
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
-          <h3 className="font-semibold text-[#213448]">Price Growth</h3>
-          <p className="text-xs text-[#547792] mt-1">Historical PSF trend and growth</p>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-center">
-            <div className="text-4xl mb-3 opacity-50">📈</div>
-            <div className="text-[#547792]">
-              {projectName
-                ? 'Insufficient transaction data for this project'
-                : 'Select a project to view price growth'}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Main chart view
   return (
+    <ChartFrame
+      loading={loading}
+      isFetching={isFetching}
+      isBootPending={isBootPending}
+      error={error}
+      onRetry={onRetry}
+      empty={!chartData || aggregatedData.length === 0}
+      skeleton="line"
+      height={height}
+    >
     <div
       className="bg-card rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
       style={{ height }}
@@ -399,6 +362,7 @@ export const PriceGrowthChart = React.memo(function PriceGrowthChart({
         )}
       </div>
     </div>
+    </ChartFrame>
   );
 });
 

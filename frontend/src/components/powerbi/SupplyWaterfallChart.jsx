@@ -22,7 +22,7 @@ import React, { useRef, useMemo } from 'react';
 import { registerPlugin } from '../../chartSetup';
 import { Bar } from 'react-chartjs-2';
 import { useSupplyData } from '../../context/SupplyDataContext';
-import { QueryState } from '../common/QueryState';
+import { ChartFrame } from '../common/ChartFrame';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions } from '../../constants/chartOptions';
 import {
@@ -57,7 +57,7 @@ export const SupplyWaterfallChart = React.memo(function SupplyWaterfallChart({
   const chartRef = useRef(null);
 
   // Consume shared data from context (single fetch for all supply components)
-  const { data: apiResponse, loading, error, refetch, includeGls } = useSupplyData();
+  const { data: apiResponse, loading, error, refetch, includeGls, isBootPending, isFetching, isFiltering } = useSupplyData();
 
   // Transform data based on view mode
   // For TRUE waterfall: X-axis is supply stages, region is a filter
@@ -104,8 +104,11 @@ export const SupplyWaterfallChart = React.memo(function SupplyWaterfallChart({
       : 'Total Supply Accumulator';
 
   return (
-    <QueryState
+    <ChartFrame
       loading={loading}
+      isFetching={isFetching}
+      isFiltering={isFiltering}
+      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={!chartData || !chartData.labels?.length}
@@ -187,7 +190,7 @@ export const SupplyWaterfallChart = React.memo(function SupplyWaterfallChart({
           </span>
         </div>
       </div>
-    </QueryState>
+    </ChartFrame>
   );
 });
 
