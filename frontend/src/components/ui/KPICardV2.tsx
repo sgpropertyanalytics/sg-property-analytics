@@ -200,20 +200,6 @@ export function KPICardV2({
 }
 
 /**
- * KPICardV2Skeleton - Loading placeholder
- */
-export function KPICardV2Skeleton({ className = '' }: { className?: string }) {
-  return (
-    <KPICardV2
-      title="Loading..."
-      value=""
-      loading={true}
-      className={className}
-    />
-  );
-}
-
-/**
  * KPICardV2Group - Grid wrapper for KPI cards
  */
 export function KPICardV2Group({
@@ -236,26 +222,6 @@ export function KPICardV2Group({
       {children}
     </div>
   );
-}
-
-/**
- * Helper to map v2 API response to KPICardV2 props
- */
-export function mapKpiV2ToCardProps(kpi: {
-  kpi_id: string;
-  title: string;
-  value: number | null;
-  formatted_value: string;
-  trend?: { value: number; direction: 'up' | 'down' | 'neutral'; label?: string };
-  insight?: string;
-  meta?: Record<string, unknown>;
-}): KPICardV2Props {
-  return {
-    title: getKpiField(kpi, KpiField.TITLE),
-    value: getKpiField(kpi, KpiField.FORMATTED_VALUE),
-    trend: getKpiField(kpi, KpiField.TREND),
-    footnote: getKpiField(kpi, KpiField.INSIGHT),
-  };
 }
 
 export default KPICardV2;

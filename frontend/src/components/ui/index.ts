@@ -18,7 +18,7 @@ export { KPICardV2, KPICardV2Skeleton, KPICardV2Group, KPIHeroContent, mapKpiV2T
 export { HelpTooltip } from './HelpTooltip';
 
 // Inline cards (compact cards inside chart headers)
-export { InlineCard, InlineCardGroup, InlineCardRow } from './InlineCard';
+export { InlineCard, InlineCardRow } from './InlineCard';
 
 // Insight components
 export { KeyInsightBox } from './KeyInsightBox';

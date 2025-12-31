@@ -177,47 +177,9 @@ export function InlineCard({
 }
 
 /**
- * InlineCardGroup - True auto-grid wrapper for InlineCards
- *
- * Bloomberg Layout Rules:
- * ✅ Uses auto-fit (auto packs items horizontally)
- * ✅ Uses minmax(280px, 1fr) (prevents cards from getting too narrow)
- * ✅ No fixed column count (layout adapts automatically)
- * ✅ No media queries (responsive by design)
- *
- * This is the ONLY layout that behaves like Bloomberg dashboards.
- */
-interface InlineCardGroupProps {
-  children: React.ReactNode;
-  /** Blur for non-premium users */
-  blur?: boolean;
-  /** Additional className */
-  className?: string;
-}
-
-export function InlineCardGroup({
-  children,
-  blur = false,
-  className = '',
-}: InlineCardGroupProps) {
-  return (
-    <div
-      className={`
-        grid gap-4 mt-3
-        [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]
-        ${blur ? 'blur-sm grayscale-[40%]' : ''}
-        ${className}
-      `.trim()}
-    >
-      {children}
-    </div>
-  );
-}
-
-/**
  * InlineCardRow - Compact auto-grid for tighter layouts
  *
- * Same as InlineCardGroup but with smaller minmax (200px) for compact cards.
+ * Uses auto-fit with minmax for responsive card layouts.
  * Use for charts with many small stats (e.g., PriceDistributionChart).
  */
 interface InlineCardRowProps {

@@ -152,11 +152,6 @@ export const REGIONS = ['CCR', 'RCR', 'OCR'];
 // =============================================================================
 
 /**
- * Bedroom order for display/sorting (short labels)
- */
-export const BEDROOM_ORDER = ['1BR', '2BR', '3BR', '4BR', '5BR'];
-
-/**
  * Bedroom order as numeric values
  */
 export const BEDROOM_ORDER_NUMERIC = [1, 2, 3, 4, 5];
@@ -315,34 +310,6 @@ export const classifyBedroomThreeTier = (areaSqft, saleType = null, transactionD
 };
 
 /**
- * Get classification tier name (for debugging/display)
- *
- * @param {string|null} saleType - 'new_sale' or 'resale'
- * @param {Date|string|null} transactionDate - Transaction date
- * @returns {string} Tier name
- */
-export const getBedroomClassificationTier = (saleType, transactionDate) => {
-  const saleTypeStr = (saleType || '').toString().trim() || 'resale';
-
-  let saleDate = null;
-  if (transactionDate) {
-    saleDate = transactionDate instanceof Date
-      ? transactionDate
-      : new Date(transactionDate);
-    if (isNaN(saleDate.getTime())) saleDate = null;
-  }
-
-  // Use isSaleType helper to handle canonical enum values
-  if (isSaleType.newSale(saleTypeStr) && saleDate !== null) {
-    if (saleDate >= HARMONIZATION_DATE) {
-      return 'Tier 1: New Sale Post-Harmonization (Ultra Compact)';
-    }
-    return 'Tier 2: New Sale Pre-Harmonization (Modern Compact)';
-  }
-  return 'Tier 3: Resale (Legacy Sizes)';
-};
-
-/**
  * Get short bedroom label for display (e.g., "2BR", "5BR+")
  * @param {number|string} bedroom - Bedroom count (1-5)
  * @returns {string} Short label like "2BR"
@@ -351,17 +318,6 @@ export const getBedroomLabelShort = (bedroom) => {
   const num = parseInt(bedroom, 10);
   if (num >= 5) return '5BR';
   return BEDROOM_LABELS_SHORT[num] || `${num}BR`;
-};
-
-/**
- * Get full bedroom label for display (e.g., "2-Bedroom", "5-Bedroom+")
- * @param {number|string} bedroom - Bedroom count (1-5)
- * @returns {string} Full label like "2-Bedroom"
- */
-export const getBedroomLabelFull = (bedroom) => {
-  const num = parseInt(bedroom, 10);
-  if (num >= 5) return '5-Bedroom+';
-  return BEDROOM_LABELS[`${num}b`] || `${num}-Bedroom`;
 };
 
 /**
@@ -419,17 +375,6 @@ export const PERIOD_FILTER_OPTIONS = [
   { value: 'Y3', label: '3Y', fullLabel: '3 Years' },
   { value: 'Y5', label: '5Y', fullLabel: '5 Years' },
   { value: 'all', label: 'All', fullLabel: 'All Time' },
-];
-
-/**
- * Market segment (region) filter options.
- * Uses empty string for "All Segments" default.
- */
-export const SEGMENT_FILTER_OPTIONS = [
-  { value: '', label: 'All Segments', fullLabel: 'All Segments' },
-  { value: 'CCR', label: 'CCR', fullLabel: 'CCR (Core Central)' },
-  { value: 'RCR', label: 'RCR', fullLabel: 'RCR (Rest of Central)' },
-  { value: 'OCR', label: 'OCR', fullLabel: 'OCR (Outside Central)' },
 ];
 
 /**
