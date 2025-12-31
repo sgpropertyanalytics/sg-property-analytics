@@ -45,7 +45,7 @@ export const BeadsChart = React.memo(function BeadsChart({
   // filterKey updates immediately on filter change - used for instant overlay feedback
   const { buildApiParams, debouncedFilterKey, filterKey } = usePowerBIFilters();
   const chartRef = useRef(null);
-  const { wrapApiCall, DebugOverlay } = useDebugOverlay('BeadsChart');
+  const { wrapApiCall, DebugOverlay, debugInfo } = useDebugOverlay('BeadsChart');
 
   const useShared = sharedData != null;
 
@@ -310,6 +310,7 @@ export const BeadsChart = React.memo(function BeadsChart({
       empty={!hasData && !resolvedLoading}
       skeleton="bar"
       height={350}
+      debugInfo={debugInfo}
     >
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col relative"

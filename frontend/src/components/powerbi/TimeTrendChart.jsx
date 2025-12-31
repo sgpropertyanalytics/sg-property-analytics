@@ -29,7 +29,7 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
   const chartRef = useRef(null);
 
   // Debug overlay for API diagnostics (toggle with Ctrl+Shift+D)
-  const { captureRequest, captureResponse, captureError, DebugOverlay } = useDebugOverlay('TimeTrendChart');
+  const { captureRequest, captureResponse, captureError, DebugOverlay, debugInfo } = useDebugOverlay('TimeTrendChart');
 
   // Fetch and transform data using adapter pattern
   // useGatedAbortableQuery handles: abort controller, stale request protection, loading/error states

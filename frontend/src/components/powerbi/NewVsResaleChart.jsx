@@ -423,11 +423,26 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
     willShowChart: !loading && !error && hasData && chartData.length > 0,
   });
 
+  // Debug info for QueryState empty state (visible via Ctrl+Shift+D)
+  const debugInfo = useMemo(() => ({
+    endpoint: '/api/new-vs-resale',
+    params: {
+      timeGrain: TIME_GROUP_BY[timeGrouping],
+      districts: filters?.districts?.join(',') || null,
+      segments: filters?.segments?.join(',') || null,
+      bedroomTypes: filters?.bedroomTypes?.join(',') || null,
+      dateFrom: filters?.dateRange?.start || null,
+      dateTo: filters?.dateRange?.end || null,
+    },
+    recordCount: chartData?.length || 0,
+    warnings: isSeverelySparse ? ['Sparse resale data - some periods may be missing'] : [],
+  }), [timeGrouping, filters, chartData?.length, isSeverelySparse]);
+
   // CRITICAL: containerRef must be OUTSIDE QueryState for IntersectionObserver to work
   // QueryState only renders children when not loading, so ref would be null during load
   return (
     <div ref={containerRef}>
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!hasData} skeleton="bar" height={350}>
+    <QueryState loading={loading} error={error} onRetry={refetch} empty={!hasData} skeleton="bar" height={350} debugInfo={debugInfo}>
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}

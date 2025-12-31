@@ -187,6 +187,9 @@ def aggregate():
 
     params = getattr(g, "normalized_params", {}) or {}
 
+    # Track if date normalization occurred (for user transparency)
+    date_was_normalized = params.pop('_date_normalized', False)
+
     # Schema version: v2 only (v1 deprecated fields removed)
     schema_version = params.get('schema', 'v2').lower()
     if schema_version != 'v2':
@@ -361,6 +364,9 @@ def aggregate():
                 warnings.append("5+ bedroom units are rare in many areas.")
             if "date_from" in filters_applied:
                 warnings.append("Note: URA data is month-level (all transactions dated 1st of month).")
+        # Add date normalization notice if dates were auto-aligned
+        if date_was_normalized:
+            warnings.append("Date range was auto-aligned to month boundaries (URA data is month-level).")
         empty_meta = {
             "totalRecords": 0,
             "filtersApplied": filters_applied,
@@ -598,6 +604,10 @@ def aggregate():
     print(f"GET /api/aggregate took: {elapsed:.4f} seconds (returned {len(data)} groups from {total_records} records)")
 
     # Build meta for response
+    warnings = []
+    if date_was_normalized:
+        warnings.append("Date range was auto-aligned to month boundaries (URA data is month-level).")
+
     meta = {
         "totalRecords": total_records,
         "filtersApplied": filters_applied,
@@ -611,6 +621,9 @@ def aggregate():
             "time_restricted": False  # All data available, blur paywall instead of time restriction
         }
     }
+    # Only add warnings key if there are warnings
+    if warnings:
+        meta["warnings"] = warnings
 
     # Wrap with API contract serializer (transforms field names + enum values)
     result = serialize_aggregate_response(data, meta)

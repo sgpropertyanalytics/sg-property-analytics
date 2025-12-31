@@ -268,7 +268,11 @@ def _normalize_month_windows(params: Dict[str, Any]) -> Dict[str, Any]:
     This prevents edge cases where:
     - "Last 90 days" from Dec 27 creates Oct 2 boundary
     - Which excludes ALL October data (dated Oct 1)
+
+    Adds metadata key '_date_normalized' if any alignment occurred.
     """
+    date_normalized = False
+
     if 'date_from' in params and params['date_from']:
         dt = params['date_from']
         if isinstance(dt, date):
@@ -276,6 +280,7 @@ def _normalize_month_windows(params: Dict[str, Any]) -> Dict[str, Any]:
             aligned = date(dt.year, dt.month, 1)
             if aligned != dt:
                 _log_normalization('date_from', 'date_from', aligned, "month_align")
+                date_normalized = True
             params['date_from'] = aligned
 
     if 'date_to_exclusive' in params and params['date_to_exclusive']:
@@ -288,7 +293,12 @@ def _normalize_month_windows(params: Dict[str, Any]) -> Dict[str, Any]:
                 else:
                     aligned = date(dt.year, dt.month + 1, 1)
                 _log_normalization('date_to_exclusive', 'date_to_exclusive', aligned, "month_align")
+                date_normalized = True
                 params['date_to_exclusive'] = aligned
+
+    # Add metadata for routes to include in response warnings
+    if date_normalized:
+        params['_date_normalized'] = True
 
     return params
 
