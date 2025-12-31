@@ -3,24 +3,36 @@ import { ChartSkeleton } from './ChartSkeleton';
 import { ErrorState } from './ErrorState';
 import { UpdateIndicator } from './UpdateIndicator';
 import { getQueryErrorMessage } from './QueryState';
+import { useAppReadyOptional } from '../../context/AppReadyContext';
 
 /**
  * ChartFrame - Unified wrapper for chart loading states with "Retain and Blur" pattern
  *
  * Handles all chart states:
+ * - Boot pending: Shows skeleton (waiting for auth/subscription/filters)
  * - Initial loading: Shows skeleton (fixed height, no layout jump)
  * - Error: Shows error state with retry
  * - Empty: Shows empty state message (only after load completes)
  * - Updating (isFetching/isFiltering): Blurs content + shows indicator
  * - Success: Shows chart content
  *
+ * CENTRAL BOOT GATING: ChartFrame automatically checks appReady from context.
+ * This means ANY chart wrapped in ChartFrame will show skeleton during boot,
+ * regardless of whether it uses useGatedAbortableQuery or useAbortableQuery.
+ *
  * Key behavior: When filters change, the chart stays visible but dimmed with
  * an "Updating..." overlay. This provides immediate visual feedback (within 50ms)
  * that the user's action was registered.
  *
+ * IMPORTANT: Boot pending is determined by:
+ * 1. Explicit isBootPending prop (from useGatedAbortableQuery)
+ * 2. OR automatic detection via appReady context (fallback)
+ * This ensures no "No data" flash during app initialization.
+ *
  * @param {boolean} loading - True on initial data load (no data yet)
  * @param {boolean} isFetching - True during background refetch (from useAbortableQuery)
  * @param {boolean} isFiltering - True when filters changed but not debounced yet
+ * @param {boolean} isBootPending - True when app is still booting (from useGatedAbortableQuery)
  * @param {Error} error - Error object if request failed
  * @param {Function} onRetry - Callback for retry button
  * @param {boolean} empty - True if data is empty after successful load
@@ -32,6 +44,7 @@ export const ChartFrame = React.memo(function ChartFrame({
   loading,
   isFetching = false,
   isFiltering = false,
+  isBootPending: isBootPendingProp = false,
   error,
   onRetry,
   empty,
@@ -39,8 +52,28 @@ export const ChartFrame = React.memo(function ChartFrame({
   height = 300,
   children,
 }) {
+  // CENTRAL BOOT GATING: Automatically check appReady from context
+  // This ensures ALL charts show skeleton during boot, even if they don't
+  // explicitly use useGatedAbortableQuery
+  const appReadyContext = useAppReadyOptional();
+  const appReady = appReadyContext?.appReady ?? true;
+
+  // Boot pending if:
+  // 1. Explicit prop says so (from useGatedAbortableQuery), OR
+  // 2. AppReady context says boot isn't complete yet
+  const isBootPending = isBootPendingProp || !appReady;
+
   // Calculate updating state - true if either fetching or filters just changed
   const isUpdating = isFetching || isFiltering;
+
+  // Boot pending - show skeleton (waiting for auth/subscription/filters to be ready)
+  // This prevents "No data" flash on first load
+  if (isBootPending) {
+    if (skeleton) {
+      return <ChartSkeleton type={skeleton} height={height} />;
+    }
+    return <div className="p-3 text-sm text-[#547792]">Loading...</div>;
+  }
 
   // Initial load - show skeleton (only when we have no data at all)
   // If isUpdating is true, we have previous data to show, so skip skeleton
@@ -56,8 +89,12 @@ export const ChartFrame = React.memo(function ChartFrame({
     return <ErrorState message={getQueryErrorMessage(error)} onRetry={onRetry} />;
   }
 
-  // Empty state - only show if we have finished loading and data is empty
-  // Critical: Don't show empty state while updating (user might think filters failed)
+  // Empty state - only show if:
+  // 1. Boot is complete (not isBootPending)
+  // 2. Loading is done
+  // 3. Not currently updating
+  // 4. Data is actually empty
+  // This prevents "No data" flash during app initialization
   if (empty && !loading && !isUpdating) {
     return (
       <div

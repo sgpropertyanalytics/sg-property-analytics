@@ -8,6 +8,7 @@ import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { PowerBIFilterProvider } from './context/PowerBIFilter';
+import { AppReadyProvider } from './context/AppReadyContext';
 import { DebugProvider } from './context/DebugContext';
 import LandingPage from './pages/Landing';
 import Login from './pages/Login';
@@ -121,6 +122,8 @@ function App() {
           <BrowserRouter>
             {/* PowerBIFilterProvider wraps all routes to prevent context recreation on navigation */}
             <PowerBIFilterProvider>
+            {/* AppReadyProvider gates data fetching until boot is complete (auth + subscription + filters) */}
+            <AppReadyProvider>
             <Routes>
               {/* ===== Public Routes (No Dashboard Layout) ===== */}
 
@@ -197,6 +200,7 @@ function App() {
               {/* Catch-all -> Landing Page */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </AppReadyProvider>
             </PowerBIFilterProvider>
           </BrowserRouter>
           </DebugProvider>

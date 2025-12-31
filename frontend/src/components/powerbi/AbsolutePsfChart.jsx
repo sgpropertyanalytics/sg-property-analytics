@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useAbortableQuery, useDeferredFetch } from '../../hooks';
+import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -59,8 +59,10 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
 
   // Data fetching - same as PriceCompressionChart for consistency
   // Skip if parent provides sharedData (W4 fix: eliminates duplicate API call with PriceCompressionChart)
+  // useGatedAbortableQuery gates fetching on appReady (auth + subscription + filters)
   // isFetching = true during background refetch when keepPreviousData is enabled
-  const { data: internalData, loading: internalLoading, error, isFetching: internalIsFetching, refetch } = useAbortableQuery(
+  // isBootPending = true while waiting for app boot
+  const { data: internalData, loading: internalLoading, error, isFetching: internalIsFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison
@@ -241,6 +243,7 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
       loading={loading}
       isFetching={isFetching}
       isFiltering={filterKey !== debouncedFilterKey}
+      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={!data || data.length === 0}

@@ -396,12 +396,7 @@ export function RegionSummaryBar({ districtData, meta }) {
                   {stat.avgTurnover?.toFixed(1) ?? '-'}%
                 </span>
                 <span className="text-[10px] sm:text-xs text-[#547792]">
-                  {stat.txCount.toLocaleString()} tx
-                </span>
-              </div>
-              <div className="flex items-baseline gap-2 sm:justify-between">
-                <span className="text-sm sm:text-base font-semibold text-[#213448]">
-                  {stat.resalesPerMonth !== null ? `${Math.round(stat.resalesPerMonth)} resales/month` : '-'}
+                  {stat.resalesPerMonth !== null ? `${Math.round(stat.resalesPerMonth)} resale txs/month` : '-'}
                 </span>
               </div>
             </div>

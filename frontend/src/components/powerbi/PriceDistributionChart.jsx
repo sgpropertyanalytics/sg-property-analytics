@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { useAbortableQuery } from '../../hooks';
+import { useGatedAbortableQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
@@ -43,9 +43,11 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
 
   const useShared = sharedData != null && !showFullRange;
 
-  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  // Data fetching with useGatedAbortableQuery - automatic abort/stale handling
+  // Gates fetching on appReady (auth + subscription + filters)
   // isFetching = true during background refetch when keepPreviousData is enabled
-  const { data: histogramData, loading, error, isFetching, refetch } = useAbortableQuery(
+  // isBootPending = true while waiting for app boot
+  const { data: histogramData, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // Use dashboard endpoint with price_histogram panel
       // excludeLocationDrill: true - Price Distribution should NOT be affected by
@@ -242,6 +244,7 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
       loading={resolvedLoading}
       isFetching={isFetching}
       isFiltering={filterKey !== debouncedFilterKey}
+      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={!bins || bins.length === 0}

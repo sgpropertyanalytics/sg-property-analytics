@@ -355,13 +355,21 @@ export function AuthProvider({ children }) {
   // Listen for auth:token-expired events from API client
   // When a 401 occurs on non-auth endpoints, the client dispatches this event
   // We handle it by refreshing the token and notifying listeners to retry
+  // Includes time-based debounce to prevent rapid-fire refresh attempts
   useEffect(() => {
-    // Track if we're currently refreshing to prevent parallel refresh attempts
     let isRefreshing = false;
+    let lastRefreshTime = 0;
+    const REFRESH_DEBOUNCE_MS = 2000; // Prevent more than one refresh per 2s
 
     const handleTokenExpired = async (event) => {
       const { url } = event.detail || {};
-      console.log('[Auth] Token expired event received for:', url);
+      const now = Date.now();
+
+      // Debounce: Skip if refresh was done recently
+      if (now - lastRefreshTime < REFRESH_DEBOUNCE_MS) {
+        console.log('[Auth] Token refresh skipped (debounced)', { url });
+        return;
+      }
 
       // Skip if no user (not logged in)
       if (!user) {
@@ -375,10 +383,12 @@ export function AuthProvider({ children }) {
         return;
       }
 
+      console.log('[Auth] Token expired event received, refreshing...', { url });
       isRefreshing = true;
 
       try {
         const result = await refreshToken();
+        lastRefreshTime = Date.now();
         console.log('[Auth] Token refresh result:', result);
 
         if (result.ok) {
@@ -416,7 +426,7 @@ export function AuthProvider({ children }) {
     signInWithGoogle,
     logout,
     syncWithBackend,
-    refreshToken, // NEW: Expose token refresh for components that need it
+    refreshToken, // Exposed for explicit token refresh
     isAuthenticated: !!user,
     isConfigured: isFirebaseConfigured(),
   }), [

@@ -4,6 +4,7 @@ import { useStaleRequestGuard } from './useStaleRequestGuard';
 /**
  * Check if an error is a network/timeout error that should be retried.
  * Does NOT retry: abort errors, 4xx client errors, or non-network errors.
+ * Note: 401s are handled separately via auth:token-expired flow.
  */
 const isRetryableError = (err) => {
   // Never retry abort errors - they're intentional
@@ -26,7 +27,7 @@ const isRetryableError = (err) => {
     return true;
   }
 
-  // Don't retry on 4xx client errors
+  // Don't retry on 4xx client errors (401s handled via token refresh flow)
   if (err?.response?.status >= 400 && err?.response?.status < 500) {
     return false;
   }

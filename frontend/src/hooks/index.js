@@ -3,5 +3,6 @@ export { useDebouncedFilterKey } from './useDebouncedFilterKey';
 export { useStaleRequestGuard } from './useStaleRequestGuard';
 export { useDeferredFetch } from './useDeferredFetch';
 export { useAbortableQuery, isAbortError } from './useAbortableQuery';
+export { useGatedAbortableQuery } from './useGatedAbortableQuery';
 export { useDebugOverlay } from './useDebugOverlay';
 export { useChartLoadingState } from './useChartLoadingState';

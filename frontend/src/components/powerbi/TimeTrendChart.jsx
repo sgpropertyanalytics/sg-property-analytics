@@ -1,5 +1,5 @@
 import React, { useRef, useMemo } from 'react';
-import { useAbortableQuery, useDebugOverlay } from '../../hooks';
+import { useGatedAbortableQuery, useDebugOverlay } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Chart } from 'react-chartjs-2';
@@ -32,9 +32,11 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
   const { captureRequest, captureResponse, captureError, DebugOverlay } = useDebugOverlay('TimeTrendChart');
 
   // Fetch and transform data using adapter pattern
-  // useAbortableQuery handles: abort controller, stale request protection, loading/error states
+  // useGatedAbortableQuery handles: abort controller, stale request protection, loading/error states
+  // PLUS: gates fetching on appReady (auth + subscription + filters ready)
   // isFetching = true during background refetch when keepPreviousData is enabled
-  const { data, loading, error, isFetching, refetch } = useAbortableQuery(
+  // isBootPending = true while waiting for app boot (prevents "No data" flash)
+  const { data, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       const params = buildApiParams({
@@ -236,6 +238,7 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
       loading={loading}
       isFetching={isFetching}
       isFiltering={filterKey !== debouncedFilterKey}
+      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={!data || data.length === 0}

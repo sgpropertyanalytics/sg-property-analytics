@@ -1,5 +1,5 @@
 import React, { useRef, useMemo } from 'react';
-import { useAbortableQuery, useDebugOverlay } from '../../hooks';
+import { useGatedAbortableQuery, useDebugOverlay } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bubble } from 'react-chartjs-2';
@@ -49,9 +49,10 @@ export const BeadsChart = React.memo(function BeadsChart({
 
   const useShared = sharedData != null;
 
-  // Data fetching with useAbortableQuery
+  // Data fetching with useGatedAbortableQuery - gates on appReady
   // isFetching = true during background refetch when keepPreviousData is enabled
-  const { data: chartData, loading, error, isFetching, refetch } = useAbortableQuery(
+  // isBootPending = true while waiting for app boot
+  const { data: chartData, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // excludeOwnDimension: 'segment' - this chart shows all regions, so ignore segment filter
@@ -303,6 +304,7 @@ export const BeadsChart = React.memo(function BeadsChart({
       loading={resolvedLoading}
       isFetching={isFetching}
       isFiltering={filterKey !== debouncedFilterKey}
+      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={!hasData && !resolvedLoading}

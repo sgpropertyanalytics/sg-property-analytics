@@ -14,7 +14,7 @@ import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
 import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group, KPIHeroContent } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
-import { useChartHeight, MOBILE_CAPS, useAbortableQuery, useDeferredFetch } from '../hooks';
+import { useChartHeight, MOBILE_CAPS, useGatedAbortableQuery, useDeferredFetch } from '../hooks';
 // Unified filter bar component (handles desktop + mobile)
 import { FilterBar } from '../components/powerbi/FilterBar';
 
@@ -76,10 +76,11 @@ export function MacroOverviewContent() {
   const oscillatorHeight = useChartHeight(420, MOBILE_CAPS.tall);         // 420px desktop, max 320px mobile (full-width chart)
 
   // Summary KPIs - Deal detection metrics with trend indicators
-  // Uses v2 standardized API format with useAbortableQuery for stale request protection
+  // Uses v2 standardized API format with useGatedAbortableQuery for stale request protection
+  // Gates on appReady to prevent fetch before auth/subscription/filters ready
   // Reacts to: Location filters (district, bedroom, segment)
   // Ignores: Date range filters (always shows "current market" status)
-  const { data: kpiData, loading: kpisLoading } = useAbortableQuery(
+  const { data: kpiData, loading: kpisLoading, isBootPending: kpiBootPending } = useGatedAbortableQuery(
     async (signal) => {
       // Build location/property filters (react to sidebar, but NOT date range)
       const params = {};
@@ -123,7 +124,7 @@ export function MacroOverviewContent() {
   // SHARED DATA FETCH: Compression/Absolute PSF charts use identical API call
   // Hoisted to parent to eliminate duplicate request (W4 performance fix)
   // Both PriceCompressionChart and AbsolutePsfChart consume this data
-  const { data: compressionData, loading: compressionLoading } = useAbortableQuery(
+  const { data: compressionData, loading: compressionLoading, isBootPending: compressionBootPending } = useGatedAbortableQuery(
     async (signal) => {
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
@@ -142,7 +143,7 @@ export function MacroOverviewContent() {
   // Shared dashboard panels for histogram + beads (reduces request fanout)
   // These panels share the same filter behavior: exclude location drill,
   // but respect global sidebar filters (incl. segment).
-  const { data: dashboardPanels, loading: dashboardLoading } = useAbortableQuery(
+  const { data: dashboardPanels, loading: dashboardLoading, isBootPending: dashboardBootPending } = useGatedAbortableQuery(
     async (signal) => {
       const params = buildApiParams(
         {

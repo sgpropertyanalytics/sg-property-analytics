@@ -72,6 +72,21 @@ const cacheSubscription = (sub) => {
 const DEFAULT_SUBSCRIPTION = { tier: 'free', subscribed: false, ends_at: null };
 
 /**
+ * Subscription status tri-state:
+ * - 'pending': Not yet determined (boot phase, waiting for auth)
+ * - 'loading': API call in flight
+ * - 'resolved': Subscription status known (either from API or because user is not authenticated)
+ *
+ * This prevents race conditions where charts fetch before we know if user is premium.
+ * Charts should NOT fetch until status !== 'pending' && status !== 'loading'.
+ */
+const SubscriptionStatus = {
+  PENDING: 'pending',   // Initial boot - don't know anything yet
+  LOADING: 'loading',   // API call in flight
+  RESOLVED: 'resolved', // Status known (premium or free or error)
+};
+
+/**
  * Unwrap API response envelope.
  * Backend returns {data: {...}, meta: {...}} but axios wraps that in response.data.
  * So response.data = {data: {...}, meta: {...}}.
@@ -102,6 +117,10 @@ export function SubscriptionProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
 
+  // Tri-state status for boot synchronization
+  // Start as PENDING - we don't know anything until auth is initialized
+  const [status, setStatus] = useState(SubscriptionStatus.PENDING);
+
   // Abort/stale request protection
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
@@ -125,11 +144,13 @@ export function SubscriptionProvider({ children }) {
         isAuthenticated,
         hasToken: !!localStorage.getItem('token'),
         cachedSub: getCachedSubscription(),
+        status,
       });
 
       // Don't fetch until auth is fully initialized (token sync complete)
       if (!initialized) {
         console.log('[Subscription] Waiting for auth initialization...');
+        // Stay in PENDING state - can't determine anything yet
         return;
       }
 
@@ -137,6 +158,9 @@ export function SubscriptionProvider({ children }) {
         // Guard: Don't update state if stale
         if (isStale(requestId)) return;
         setSubscription(DEFAULT_SUBSCRIPTION);
+        // User is not authenticated - we know they're free
+        setStatus(SubscriptionStatus.RESOLVED);
+        console.log('[Subscription] Not authenticated, resolved as free');
         // DON'T cache 'free' on logout - prevents stale cache persisting across sessions
         // Next login will fetch fresh subscription status from backend
         // cacheSubscription(freeSub);  // REMOVED: Was causing stale 'free' cache bug
@@ -167,14 +191,18 @@ export function SubscriptionProvider({ children }) {
         } else {
           console.warn('[Subscription] No refreshToken function available');
         }
-        // If still no token after refresh, we can't fetch - keep current state
+        // If still no token after refresh, we can't fetch - but we're authenticated
+        // Resolve as free with cached value (don't leave charts waiting forever)
         if (!token) {
           console.warn('[Subscription] Cannot fetch subscription - no token after refresh attempt');
+          if (isStale(requestId)) return;
+          setStatus(SubscriptionStatus.RESOLVED);
           return;
         }
       }
 
       setLoading(true);
+      setStatus(SubscriptionStatus.LOADING);
 
       // Helper to fetch subscription
       const fetchSub = async () => {
@@ -255,11 +283,16 @@ export function SubscriptionProvider({ children }) {
         // Only clear loading if not stale
         if (!isStale(requestId)) {
           setLoading(false);
+          // Mark as resolved - we now know the subscription status
+          // (either from successful API call, or keeping cached value on error)
+          setStatus(SubscriptionStatus.RESOLVED);
+          console.log('[Subscription] Status resolved');
         }
       }
     };
 
     fetchSubscription();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialized, isAuthenticated, user?.email, startRequest, isStale, getSignal, refreshToken]);
 
   // Derived state: is user a premium subscriber?
@@ -351,6 +384,10 @@ export function SubscriptionProvider({ children }) {
     }
   }, [isAuthenticated, startRequest, isStale, getSignal]);
 
+  // Derived: is subscription status resolved? (boot synchronization)
+  // Charts should wait for this before fetching
+  const isSubscriptionReady = status === SubscriptionStatus.RESOLVED;
+
   const value = useMemo(() => ({
     // State
     subscription,
@@ -358,6 +395,8 @@ export function SubscriptionProvider({ children }) {
     loading,
     daysUntilExpiry,
     isExpiringSoon,
+    status, // Tri-state: 'pending' | 'loading' | 'resolved'
+    isSubscriptionReady, // True when subscription status is known
 
     // Paywall modal
     showPricingModal,
@@ -374,6 +413,8 @@ export function SubscriptionProvider({ children }) {
     loading,
     daysUntilExpiry,
     isExpiringSoon,
+    status,
+    isSubscriptionReady,
     showPricingModal,
     showPaywall,
     hidePaywall,
