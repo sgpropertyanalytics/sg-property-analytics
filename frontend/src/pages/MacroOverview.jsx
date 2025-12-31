@@ -322,7 +322,7 @@ export function MacroOverviewContent() {
                 {/* SHARED DATA: Both charts receive pre-fetched compressionData (W4 fix) */}
                 <div
                   ref={compressionRef}
-                  className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-stretch"
+                  className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-stretch"
                 >
                   <ErrorBoundary name="Price Compression" compact>
                     <ChartWatermark>

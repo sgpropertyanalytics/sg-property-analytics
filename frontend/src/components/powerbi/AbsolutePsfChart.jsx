@@ -293,18 +293,11 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
         </div>
 
         {/* Chart Area */}
+        {/* ChartFrame handles empty state, so we always render the chart here */}
         <ChartSlot>
-          {data.length > 0 ? (
-            <PreviewChartOverlay chartRef={chartRef}>
-              <Line ref={chartRef} data={chartData} options={chartOptions} />
-            </PreviewChartOverlay>
-          ) : (
-            <div className="flex items-center justify-center h-full text-[#547792]">
-              <div className="text-center">
-                <p className="text-sm">No data available for selected filters</p>
-              </div>
-            </div>
-          )}
+          <PreviewChartOverlay chartRef={chartRef}>
+            <Line ref={chartRef} data={chartData} options={chartOptions} />
+          </PreviewChartOverlay>
         </ChartSlot>
 
         {/* Footer */}

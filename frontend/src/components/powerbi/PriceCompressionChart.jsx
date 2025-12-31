@@ -297,18 +297,11 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
       </div>
 
       {/* Main Spread Chart - Chart.js handles data updates efficiently without key remount */}
+      {/* ChartFrame handles empty state, so we always render the chart here */}
       <ChartSlot>
-        {data.length > 0 ? (
-          <PreviewChartOverlay chartRef={chartRef}>
-            <Line ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
-          </PreviewChartOverlay>
-        ) : (
-          <div className="flex items-center justify-center h-full text-[#547792]">
-            <div className="text-center">
-              <p className="text-sm">No data available for selected filters</p>
-            </div>
-          </div>
-        )}
+        <PreviewChartOverlay chartRef={chartRef}>
+          <Line ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
+        </PreviewChartOverlay>
       </ChartSlot>
 
       {/* Custom SVG Legend */}
