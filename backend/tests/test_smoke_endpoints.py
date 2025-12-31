@@ -38,12 +38,19 @@ def test_smoke_filter_options(client):
 
 
 @pytest.mark.smoke
-def test_smoke_districts(client):
-    """Districts endpoint - used by DataContext and maps."""
+def test_smoke_districts_deprecated(client):
+    """
+    Districts endpoint - DEPRECATED but kept for backwards compatibility.
+
+    Frontend should use /filter-options instead.
+    See test_districts_superset.py for equivalence tests.
+    """
     r = client.get("/api/districts")
     assert r.status_code == 200
     data = r.get_json()
     assert "districts" in data and isinstance(data["districts"], list)
+    # Verify deprecation notice is included
+    assert data.get("_deprecated") is True, "Missing deprecation flag"
 
 
 @pytest.mark.smoke

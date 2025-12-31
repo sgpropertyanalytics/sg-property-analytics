@@ -149,6 +149,29 @@ jobs:
 
           echo "✓ Import paths valid"
 
+      - name: Check deprecated endpoint usage
+        run: |
+          echo "Checking for deprecated /districts endpoint usage..."
+
+          # Search for direct /districts usage in frontend (excluding comments, endpoints.js)
+          # This catches: '/districts', "/districts", API.districts, getDistricts
+          DEPRECATED_USAGE=$(grep -rn "'/districts\|/api/districts\|API\.districts\|getDistricts(" frontend/src \
+            --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" \
+            2>/dev/null | grep -v "endpoints.js" | grep -v "// DEPRECATED" | grep -v "\.test\." || true)
+
+          if [ -n "$DEPRECATED_USAGE" ]; then
+            echo "::error::Frontend uses deprecated /districts endpoint!"
+            echo ""
+            echo "Found deprecated usage:"
+            echo "$DEPRECATED_USAGE"
+            echo ""
+            echo "Fix: Use /filter-options instead. Districts are available via:"
+            echo "  getFilterOptions() -> response.data.districts"
+            exit 1
+          fi
+
+          echo "✓ No deprecated endpoint usage"
+
   # ============================================================
   # SQL Safety Guard - Only when SQL/routes change
   # ============================================================

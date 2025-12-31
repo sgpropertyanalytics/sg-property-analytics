@@ -17,8 +17,8 @@ export const API = {
   ping: '/ping',
   health: '/health',
   metadata: '/metadata',
-  districts: '/districts',
   filterOptions: '/filter-options',
+  // districts: '/districts', // DEPRECATED - use filterOptions.districts instead
 
   // Analytics
   aggregate: '/aggregate',

@@ -5,6 +5,7 @@ Returns available filter values based on current data.
 
 Endpoints:
 - /filter-options - Available filter values for all dimensions
+- /districts - DEPRECATED: Use /filter-options instead (returns same data)
 """
 
 from datetime import date
@@ -13,20 +14,36 @@ from routes.analytics import analytics_bp
 from api.contracts import api_contract
 
 
-@analytics_bp.route("/districts", methods=["GET"])
-def get_districts():
+def _get_districts_list():
     """
-    Get list of all districts.
-    Simple endpoint for DataContext initialization.
+    Single source of truth for district list.
+
+    Called by both /districts and /filter-options to ensure consistency.
+    Returns list of district codes (D01, D02, ...) excluding outliers.
     """
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import distinct
 
+    outlier_filter = Transaction.outlier_filter()
+    return [d[0] for d in db.session.query(distinct(Transaction.district)).filter(outlier_filter).order_by(Transaction.district).all()]
+
+
+@analytics_bp.route("/districts", methods=["GET"])
+def get_districts():
+    """
+    DEPRECATED: Use /filter-options instead.
+
+    Get list of all districts.
+    Returns same data as filter-options.districts for backwards compatibility.
+    """
     try:
-        outlier_filter = Transaction.outlier_filter()
-        districts = [d[0] for d in db.session.query(distinct(Transaction.district)).filter(outlier_filter).order_by(Transaction.district).all()]
-        return jsonify({"districts": districts})
+        districts = _get_districts_list()
+        return jsonify({
+            "districts": districts,
+            "_deprecated": True,
+            "_message": "Use /filter-options instead. This endpoint will be removed in a future version."
+        })
     except Exception as e:
         print(f"GET /api/districts ERROR: {e}")
         return jsonify({"error": str(e), "districts": []}), 500
@@ -54,7 +71,8 @@ def filter_options():
         outlier_filter = Transaction.outlier_filter()
 
         # Get distinct values for each dimension (excluding outliers)
-        districts = [d[0] for d in db.session.query(distinct(Transaction.district)).filter(outlier_filter).order_by(Transaction.district).all()]
+        # Use shared source function for districts
+        districts = _get_districts_list()
         bedrooms = [b[0] for b in db.session.query(distinct(Transaction.bedroom_count)).filter(outlier_filter).order_by(Transaction.bedroom_count).all() if b[0]]
         sale_types = [s[0] for s in db.session.query(distinct(Transaction.sale_type)).filter(outlier_filter).all() if s[0]]
         projects = [p[0] for p in db.session.query(distinct(Transaction.project_name)).filter(outlier_filter).order_by(Transaction.project_name).limit(500).all() if p[0]]
