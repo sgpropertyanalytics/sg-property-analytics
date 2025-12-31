@@ -720,12 +720,14 @@ export function transformData(response) {
 
 ### Request Queue Limiting
 
-API client limits concurrent requests:
+API client limits concurrent requests to balance UX responsiveness with backend memory constraints (512MB):
 
 ```javascript
 // api/client.js
-const MAX_CONCURRENT_REQUESTS = 4;
+const MAX_CONCURRENT_REQUESTS = 8;  // Tuned from 4 to reduce "loads in waves" perception
 ```
+
+High-priority requests (e.g., KPIs) bypass the queue entirely.
 
 ### Debounced Filter Changes
 
