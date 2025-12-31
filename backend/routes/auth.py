@@ -297,12 +297,15 @@ def get_subscription():
             return jsonify({"error": "User not found"}), 404
 
         # Debug logging
-        print(f"[Auth] /subscription - user: {user.email}, tier: {user.tier}, is_subscribed: {user.is_subscribed()}")
+        print(f"[Auth] /subscription - user_id: {user.id}, email: {user.email}, tier: {user.tier}, is_subscribed: {user.is_subscribed()}")
 
         return jsonify({
             "tier": user.tier,
             "subscribed": user.is_subscribed(),
-            "ends_at": user.subscription_ends_at.isoformat() if user.subscription_ends_at else None
+            "ends_at": user.subscription_ends_at.isoformat() if user.subscription_ends_at else None,
+            # Debug fields - remove after fixing
+            "_debug_user_id": user.id,
+            "_debug_email": user.email,
         }), 200
 
     except Exception as e:

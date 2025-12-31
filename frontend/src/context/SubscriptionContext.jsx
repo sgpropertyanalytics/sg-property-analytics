@@ -200,7 +200,12 @@ export function SubscriptionProvider({ children }) {
             subscribed: response.data.subscribed || false,
             ends_at: response.data.ends_at || null,
           };
-          console.log('[Subscription] API response received:', newSub);
+          // Log full response including debug fields
+          console.log('[Subscription] API response received:', {
+            ...newSub,
+            _debug_user_id: response.data._debug_user_id,
+            _debug_email: response.data._debug_email,
+          });
           setSubscription(newSub);
           cacheSubscription(newSub); // Cache for instant load next time
         }
