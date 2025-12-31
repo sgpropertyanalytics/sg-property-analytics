@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useAbortableQuery } from '../../hooks';
+import { useGatedAbortableQuery } from '../../hooks';
 import { getHotProjects } from '../../api/client';
 import { BlurredProject, BlurredCurrency } from '../BlurredCell';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -52,8 +52,9 @@ export function HotProjectsTable({
   // Stable key for filters to prevent unnecessary refetches
   const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
 
-  // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data, loading, error, refetch } = useAbortableQuery(
+  // Data fetching with useGatedAbortableQuery - gates on appReady
+  // isBootPending = true while waiting for app boot (auth/subscription/filters)
+  const { data, loading, error, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       const params = { limit: 200 };
 
@@ -89,6 +90,9 @@ export function HotProjectsTable({
       }
     }
   );
+
+  // Combined loading state: true during initial boot OR data fetch
+  const isLoading = loading || isBootPending;
 
   // Handle sort
   const handleSort = (column) => {
@@ -201,7 +205,7 @@ export function HotProjectsTable({
           <div>
             <h3 className="font-semibold text-[#213448]">Active New Sales</h3>
             <p className="text-xs text-[#547792]">
-              {loading ? 'Loading...' : `${data.length} launched projects with sales activity`}
+              {isLoading ? 'Loading...' : `${data.length} launched projects with sales activity`}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -210,9 +214,9 @@ export function HotProjectsTable({
               onClick={(e) => { e.preventDefault(); handleRefresh(); }}
               className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
               title="Refresh data"
-              disabled={loading}
+              disabled={isLoading}
             >
-              <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
@@ -224,7 +228,7 @@ export function HotProjectsTable({
       <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: height }}>
         {error ? (
           <ErrorState message={getQueryErrorMessage(error)} onRetry={refetch} />
-        ) : loading ? (
+        ) : isLoading ? (
           [...Array(5)].map((_, i) => (
             <div key={i} className="p-3 bg-card rounded-lg border border-[#94B4C1]/30 animate-pulse">
               <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
@@ -324,7 +328,7 @@ export function HotProjectsTable({
               </tr>
             </thead>
             <tbody className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
-              {loading ? (
+              {isLoading ? (
                 // Loading skeleton
                 [...Array(10)].map((_, i) => (
                   <tr key={i} className="animate-pulse">

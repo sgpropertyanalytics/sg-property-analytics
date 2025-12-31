@@ -13,8 +13,8 @@
 
 import React, { useRef, useMemo, useState } from 'react';
 import { Chart } from 'react-chartjs-2';
-import { useAbortableQuery, useDeferredFetch } from '../../hooks';
-import { QueryState } from '../common/QueryState';
+import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
+import { ChartFrame } from '../common/ChartFrame';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { getNewLaunchTimeline, getNewLaunchAbsorption } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot, KeyInsightBox } from '../ui';
@@ -37,7 +37,8 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
   height = 300,
 }) {
   // Get GLOBAL filters and timeGrouping from context
-  const { buildApiParams, debouncedFilterKey, filters, timeGrouping } = usePowerBIFilters();
+  // filterKey updates immediately on filter change - used for instant overlay feedback
+  const { buildApiParams, debouncedFilterKey, filterKey, filters, timeGrouping } = usePowerBIFilters();
 
   // 2020 had heavily skewed new launch data - exclude by default
   const [include2020, setInclude2020] = useState(false);
@@ -51,8 +52,10 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
     fetchOnMount: true,
   });
 
-  // Data fetching with useAbortableQuery - fetch both timeline and absorption data
-  const { data, loading, error, isFetching, refetch } = useAbortableQuery(
+  // Data fetching with useGatedAbortableQuery - gates on appReady
+  // isFetching = true during background refetch when keepPreviousData is enabled
+  // isBootPending = true while waiting for app boot
+  const { data, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       const params = buildApiParams({
         time_grain: TIME_GROUP_BY[timeGrouping],
@@ -288,7 +291,17 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
 
   return (
     <div ref={containerRef}>
-      <QueryState loading={loading} error={error} onRetry={refetch} empty={!hasData} skeleton="bar" height={height}>
+      <ChartFrame
+        loading={loading}
+        isFetching={isFetching}
+        isFiltering={filterKey !== debouncedFilterKey}
+        isBootPending={isBootPending}
+        error={error}
+        onRetry={refetch}
+        empty={!hasData}
+        skeleton="bar"
+        height={height}
+      >
         <div
           className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
           style={{ height: cardHeight }}
@@ -383,7 +396,7 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
             </div>
           </div>
         </div>
-      </QueryState>
+      </ChartFrame>
     </div>
   );
 });

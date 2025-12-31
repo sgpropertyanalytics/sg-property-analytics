@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useAbortableQuery } from '../../hooks';
+import { useGatedAbortableQuery } from '../../hooks';
 import { getAggregate } from '../../api/client';
 import { transformPriceRangeMatrix } from '../../adapters/aggregate';
 import {
@@ -67,8 +67,9 @@ export function PriceRangeMatrix({
   // Build stable filter key for query dependency
   const filterKey = useMemo(() => JSON.stringify(apiParams), [apiParams]);
 
-  // Fetch data with abort handling
-  const { data, loading, error } = useAbortableQuery(
+  // Fetch data with abort handling - gates on appReady
+  // isBootPending = true while waiting for app boot
+  const { data, loading, error, isBootPending } = useGatedAbortableQuery(
     async (signal) => {
       const response = await getAggregate(apiParams, { signal });
       return transformPriceRangeMatrix(response.data, { budget });
@@ -76,8 +77,8 @@ export function PriceRangeMatrix({
     [filterKey]
   );
 
-  // Loading state
-  if (loading) {
+  // Loading state (show during boot or data fetch)
+  if (loading || isBootPending) {
     return (
       <div className="bg-card rounded-lg shadow-sm border border-[#94B4C1]/50 p-4">
         <ChartSkeleton height={300} />

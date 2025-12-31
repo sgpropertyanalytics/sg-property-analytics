@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useAbortableQuery, useDeferredFetch } from '../../hooks';
+import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
 import { getGLSAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { getRegionBadgeClass } from '../../constants';
@@ -50,9 +50,10 @@ export function GLSDataTable({ height = 400 }) {
   // Handle manual refresh
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
-  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  // Data fetching with useGatedAbortableQuery - gates on appReady
   // enabled: shouldFetch ensures we only fetch when visible (deferred fetch)
-  const { data, loading, error, refetch } = useAbortableQuery(
+  // isBootPending = true while waiting for app boot
+  const { data, loading, error, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       const params = {
         limit: 100,
@@ -135,6 +136,9 @@ export function GLSDataTable({ height = 400 }) {
     return `$${range.low.toLocaleString()} – $${range.high.toLocaleString()}`;
   };
 
+  // Combined loading state: true during initial boot OR data fetch
+  const isLoading = loading || isBootPending;
+
   // Sort indicator
   const SortIcon = ({ column }) => {
     if (sortConfig.column !== column) {
@@ -186,8 +190,8 @@ export function GLSDataTable({ height = 400 }) {
           <div>
             <h3 className="font-semibold text-[#213448]">Government Land Sales (GLS)</h3>
             <p className="text-xs text-[#547792]">
-              {loading ? 'Loading...' : `${data.length} tenders`}
-              {!loading && data.length > 0 && (
+              {isLoading ? 'Loading...' : `${data.length} tenders`}
+              {!isLoading && data.length > 0 && (
                 <span className="ml-2">
                   (<span className="text-amber-600">{launchedCount} open</span>
                   {' / '}
@@ -202,9 +206,9 @@ export function GLSDataTable({ height = 400 }) {
               onClick={(e) => { e.preventDefault(); handleRefresh(); }}
               className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
               title="Refresh data"
-              disabled={loading}
+              disabled={isLoading}
             >
-              <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
@@ -257,7 +261,7 @@ export function GLSDataTable({ height = 400 }) {
       <div className="md:hidden overflow-auto p-3 space-y-2" style={{ maxHeight: height }}>
         {error ? (
           <ErrorState message={getQueryErrorMessage(error)} onRetry={refetch} />
-        ) : loading ? (
+        ) : isLoading ? (
           [...Array(5)].map((_, i) => (
             <div key={i} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30 animate-pulse">
               <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
@@ -358,7 +362,7 @@ export function GLSDataTable({ height = 400 }) {
               </tr>
             </thead>
             <tbody className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
-              {loading ? (
+              {isLoading ? (
                 // Loading skeleton
                 [...Array(10)].map((_, i) => (
                   <tr key={i} className="animate-pulse">

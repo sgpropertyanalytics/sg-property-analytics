@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
-import { useAbortableQuery } from '../../hooks';
-import { QueryState } from '../common/QueryState';
+import { useGatedAbortableQuery } from '../../hooks';
+import { ChartFrame } from '../common/ChartFrame';
 import { getAggregate } from '../../api/client';
 import {
   assertKnownVersion,
@@ -54,8 +54,9 @@ export const DistrictComparisonChart = React.memo(function DistrictComparisonCha
     [district, selectedProject]
   );
 
-  // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data: transformedData, loading, error } = useAbortableQuery(
+  // Data fetching with useGatedAbortableQuery - gates on appReady
+  // isBootPending = true while waiting for app boot
+  const { data: transformedData, loading, error, isBootPending } = useGatedAbortableQuery(
     async (signal) => {
       if (!district) {
         return { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } };
@@ -248,12 +249,12 @@ export const DistrictComparisonChart = React.memo(function DistrictComparisonCha
 
       {/* Chart with dual-column labels */}
       <div className="p-4">
-        <QueryState
+        <ChartFrame
           loading={loading}
+          isBootPending={isBootPending}
           error={error}
-          isEmpty={!groups || groups.length === 0}
-          emptyMessage={`No projects with ${minUnits}+ units found in ${district}`}
-          loadingHeight={chartHeight}
+          empty={!groups || groups.length === 0}
+          height={chartHeight}
         >
           {/* Column headers */}
           <div className="flex mb-1 text-xs font-medium text-gray-500 border-b border-gray-100 pb-1">
@@ -302,7 +303,7 @@ export const DistrictComparisonChart = React.memo(function DistrictComparisonCha
               <Bar data={barChartData} options={chartOptions} />
             </div>
           </div>
-        </QueryState>
+        </ChartFrame>
       </div>
 
       {/* Legend */}

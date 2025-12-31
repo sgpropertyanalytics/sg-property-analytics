@@ -13,7 +13,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSupplyData } from '../../context/SupplyDataContext';
-import { QueryState } from '../common/QueryState';
+import { ChartFrame } from '../common/ChartFrame';
 import { DISTRICT_NAMES, getRegionForDistrict, getRegionBadgeClass } from '../../constants';
 import { SupplyField, getSupplyField } from '../../schemas/apiContract';
 
@@ -40,7 +40,8 @@ export function SupplyBreakdownTable({
   const [sortConfig, setSortConfig] = useState({ column: 'district', order: 'asc' });
 
   // Consume shared data from context (single fetch for all supply components)
-  const { data: apiResponse, loading, error, refetch, includeGls } = useSupplyData();
+  // isBootPending = true while waiting for app boot (auth/subscription/filters)
+  const { data: apiResponse, loading, error, isBootPending, refetch, includeGls } = useSupplyData();
 
   // Process data into table format
   const tableData = useMemo(() => {
@@ -158,8 +159,9 @@ export function SupplyBreakdownTable({
   };
 
   return (
-    <QueryState
+    <ChartFrame
       loading={loading}
+      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={tableData.districts.length === 0}
@@ -445,7 +447,7 @@ export function SupplyBreakdownTable({
           </table>
         </div>
       </div>
-    </QueryState>
+    </ChartFrame>
   );
 }
 

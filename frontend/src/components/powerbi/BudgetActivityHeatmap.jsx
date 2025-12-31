@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useAbortableQuery } from '../../hooks';
+import { useGatedAbortableQuery } from '../../hooks';
 import { getBudgetHeatmap } from '../../api/client';
 import { getBedroomLabelShort } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
@@ -102,8 +102,9 @@ export function BudgetActivityHeatmap({
     months_lookback: timeWindow,
   }), [budget, bedroom, region, district, tenure, timeWindow]);
 
-  // Fetch data with abort handling
-  const { data, loading, error } = useAbortableQuery(
+  // Fetch data with abort handling - gates on appReady
+  // isBootPending = true while waiting for app boot
+  const { data, loading, error, isBootPending } = useGatedAbortableQuery(
     async (signal) => {
       const response = await getBudgetHeatmap(apiParams, { signal });
 
@@ -125,8 +126,8 @@ export function BudgetActivityHeatmap({
   const totalCount = getBudgetHeatmapField(data, BudgetHeatmapField.TOTAL_COUNT) || 0;
   const matrix = getBudgetHeatmapField(data, BudgetHeatmapField.MATRIX) || {};
 
-  // Loading state
-  if (loading) {
+  // Loading state (show during boot or data fetch)
+  if (loading || isBootPending) {
     return <ChartSkeleton type="grid" height={280} />;
   }
 

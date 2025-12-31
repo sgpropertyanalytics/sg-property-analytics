@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useAbortableQuery } from '../../hooks';
-import { QueryState } from '../common/QueryState';
+import { useGatedAbortableQuery } from '../../hooks';
+import { ChartFrame } from '../common/ChartFrame';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
 import { transformGrowthDumbbellSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
@@ -58,9 +58,10 @@ export const GrowthDumbbellChart = React.memo(function GrowthDumbbellChart({ bed
   const filterKey = useMemo(() => `fixed:${bedroom}:${saleType}`, [bedroom, saleType]);
   const [sortConfig, setSortConfig] = useState({ column: 'growth', order: 'desc' });
 
-  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  // Data fetching with useGatedAbortableQuery - gates on appReady
   // enabled prop prevents fetching when component is hidden (e.g., in volume mode)
-  const { data, loading, error, refetch } = useAbortableQuery(
+  // isBootPending = true while waiting for app boot
+  const { data, loading, error, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // Build API params - NO date filters, uses full database range
       const params = {
@@ -190,7 +191,15 @@ export const GrowthDumbbellChart = React.memo(function GrowthDumbbellChart({ bed
   };
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!sortedData || sortedData.length === 0} skeleton="bar" height={400}>
+    <ChartFrame
+      loading={loading}
+      isBootPending={isBootPending}
+      error={error}
+      onRetry={refetch}
+      empty={!sortedData || sortedData.length === 0}
+      skeleton="bar"
+      height={400}
+    >
     <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
       {/* Header with title */}
       <div className="px-4 py-3 border-b border-[#94B4C1]/30">
@@ -411,7 +420,7 @@ export const GrowthDumbbellChart = React.memo(function GrowthDumbbellChart({ bed
         </div>
       </div>
     </div>
-    </QueryState>
+    </ChartFrame>
   );
 });
 

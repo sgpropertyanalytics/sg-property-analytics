@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useAbortableQuery } from '../../hooks';
+import { useGatedAbortableQuery } from '../../hooks';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { DistrictMicroChart } from './DistrictMicroChart';
@@ -50,8 +50,9 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
   // Create a stable filter key for dependency tracking
   const filterKey = useMemo(() => `${period}:${bedroom}:${saleType}`, [period, bedroom, saleType]);
 
-  // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data, loading, error, refetch } = useAbortableQuery(
+  // Data fetching with useGatedAbortableQuery - gates on appReady
+  // isBootPending = true while waiting for app boot
+  const { data, loading, error, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // Build API params from props (not PowerBIFilterContext)
       const params = {
@@ -120,8 +121,8 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
     // The heatmap controls the filters, not individual chart interactions
   };
 
-  // Loading skeleton
-  if (loading) {
+  // Loading skeleton (show during boot or data fetch)
+  if (loading || isBootPending) {
     return <ChartSkeleton type="grid" height={400} />;
   }
 

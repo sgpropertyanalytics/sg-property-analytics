@@ -15,7 +15,7 @@
  */
 
 import React, { createContext, useContext, useMemo } from 'react';
-import { useAbortableQuery } from '../hooks';
+import { useGatedAbortableQuery } from '../hooks';
 import { getSupplySummary } from '../api/client';
 
 // Context for supply data
@@ -42,8 +42,9 @@ export function SupplyDataProvider({
     [includeGls, launchYear]
   );
 
-  // Single shared fetch for all supply data
-  const { data, loading, error, refetch } = useAbortableQuery(
+  // Single shared fetch for all supply data - gated on appReady
+  // isBootPending = true while waiting for app boot (auth/subscription/filters)
+  const { data, loading, error, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       const response = await getSupplySummary(
         { includeGls, launchYear },
@@ -61,12 +62,13 @@ export function SupplyDataProvider({
       data,
       loading,
       error,
+      isBootPending,
       refetch,
       // Pass through filter values so components know the current state
       includeGls,
       launchYear,
     }),
-    [data, loading, error, refetch, includeGls, launchYear]
+    [data, loading, error, isBootPending, refetch, includeGls, launchYear]
   );
 
   return (

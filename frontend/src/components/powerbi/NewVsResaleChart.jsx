@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
-import { useAbortableQuery, useDeferredFetch } from '../../hooks';
-import { QueryState } from '../common/QueryState';
+import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
+import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
 import { getNewVsResale } from '../../api/client';
@@ -75,7 +75,8 @@ if (typeof window !== 'undefined') {
 export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 350 }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  const { buildApiParams, debouncedFilterKey, filters, timeGrouping } = usePowerBIFilters();
+  // filterKey updates immediately on filter change - used for instant overlay feedback
+  const { buildApiParams, debouncedFilterKey, filterKey, filters, timeGrouping } = usePowerBIFilters();
 
   // DEBUG: Log on mount
   React.useEffect(() => {
@@ -101,10 +102,12 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
     fetchOnMount: true,
   });
 
-  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  // Data fetching with useGatedAbortableQuery - gates on appReady
   // keepPreviousData: true prevents loading flash when filters change - chart stays visible
   // and smoothly transitions to new data via Chart.js animations
-  const { data, loading, error, isFetching, refetch } = useAbortableQuery(
+  // isFetching = true during background refetch when keepPreviousData is enabled
+  // isBootPending = true while waiting for app boot
+  const { data, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // Use buildApiParams to include GLOBAL filters from sidebar
       // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
@@ -438,11 +441,22 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
     warnings: isSeverelySparse ? ['Sparse resale data - some periods may be missing'] : [],
   }), [timeGrouping, filters, chartData?.length, isSeverelySparse]);
 
-  // CRITICAL: containerRef must be OUTSIDE QueryState for IntersectionObserver to work
-  // QueryState only renders children when not loading, so ref would be null during load
+  // CRITICAL: containerRef must be OUTSIDE ChartFrame for IntersectionObserver to work
+  // ChartFrame only renders children when not loading, so ref would be null during load
   return (
     <div ref={containerRef}>
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={!hasData} skeleton="bar" height={350} debugInfo={debugInfo}>
+    <ChartFrame
+      loading={loading}
+      isFetching={isFetching}
+      isFiltering={filterKey !== debouncedFilterKey}
+      isBootPending={isBootPending}
+      error={error}
+      onRetry={refetch}
+      empty={!hasData}
+      skeleton="bar"
+      height={350}
+      debugInfo={debugInfo}
+    >
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
@@ -556,7 +570,7 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
         </div>
       </div>
       </div>
-    </QueryState>
+    </ChartFrame>
     </div>
   );
 });

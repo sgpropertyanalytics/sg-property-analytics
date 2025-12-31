@@ -1,5 +1,5 @@
 import React, { useRef, useMemo } from 'react';
-import { useAbortableQuery, useDeferredFetch } from '../../hooks';
+import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -54,7 +54,7 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
   // This provides stable mean/stdDev for Z-score calculation
   // Uses page-level saleType prop for consistency with current data
   // Defaults to RESALE if not provided (new sales can be artificially priced)
-  const { data: baselineStats } = useAbortableQuery(
+  const { data: baselineStats } = useGatedAbortableQuery(
     async (signal) => {
       // Use page prop or fallback to canonical RESALE enum
       // See CLAUDE.md "Business Logic Enforcement" - charts receive saleType from page
@@ -80,7 +80,8 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
 
   // Main filtered data fetching - uses page-level saleType prop
   // isFetching = true during background refetch when keepPreviousData is enabled
-  const { data, loading, error, isFetching, refetch } = useAbortableQuery(
+  // isBootPending = true while waiting for app boot
+  const { data, loading, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison
@@ -298,6 +299,7 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
         loading={loading}
         isFetching={isFetching}
         isFiltering={filterKey !== debouncedFilterKey}
+        isBootPending={isBootPending}
         error={error}
         onRetry={refetch}
         empty={!data || data.length === 0}

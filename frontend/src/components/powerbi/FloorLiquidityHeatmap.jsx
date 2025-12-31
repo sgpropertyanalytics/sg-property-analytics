@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAbortableQuery } from '../../hooks';
-import { QueryState } from '../common/QueryState';
+import { useGatedAbortableQuery } from '../../hooks';
+import { ChartFrame } from '../common/ChartFrame';
 import { getFloorLiquidityHeatmap } from '../../api/client';
 import {
   FLOOR_LEVELS,
@@ -45,8 +45,9 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
   const [hoveredCell, setHoveredCell] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
-  // Data fetching with useAbortableQuery - automatic abort/stale handling
-  const { data: apiResponse, loading, error, refetch } = useAbortableQuery(
+  // Data fetching with useGatedAbortableQuery - gates on appReady
+  // isBootPending = true while waiting for app boot (auth/subscription/filters)
+  const { data: apiResponse, loading, error, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // Build params from props directly (not PowerBIFilterContext)
       const params = { window_months: windowMonths };
@@ -193,7 +194,15 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
   };
 
   return (
-    <QueryState loading={loading} error={error} onRetry={refetch} empty={data.projects.length === 0} skeleton="grid" height={400}>
+    <ChartFrame
+      loading={loading}
+      isBootPending={isBootPending}
+      error={error}
+      onRetry={refetch}
+      empty={data.projects.length === 0}
+      skeleton="grid"
+      height={400}
+    >
     {/* Card owns its height explicitly - 400px fixed */}
     <div className="bg-card rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: 400 }}>
       {/* Header */}
@@ -638,7 +647,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
         </div>
       </div>
     </div>
-    </QueryState>
+    </ChartFrame>
   );
 }
 

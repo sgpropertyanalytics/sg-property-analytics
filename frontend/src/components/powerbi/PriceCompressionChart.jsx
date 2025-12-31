@@ -1,5 +1,5 @@
 import React, { useRef, useMemo } from 'react';
-import { useAbortableQuery, useDeferredFetch } from '../../hooks';
+import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -68,7 +68,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
   // HISTORICAL BASELINE: Fetch full historical data once (no date filters)
   // This provides stable min/max for compression score calculation
   // Uses quarterly grain for efficiency - baseline doesn't need fine-grained time
-  const { data: baselineData } = useAbortableQuery(
+  const { data: baselineData } = useGatedAbortableQuery(
     async (signal) => {
       // No date filters, no highlights - full historical data
       const params = {
@@ -85,10 +85,11 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
     { initialData: { min: 0, max: 1000 }, enabled: shouldFetch && !useSharedData, keepPreviousData: true }
   );
 
-  // Data fetching with useAbortableQuery - automatic abort/stale handling
+  // Data fetching with useGatedAbortableQuery - gates on appReady
   // Skip if parent provides sharedData (W4 fix: eliminates duplicate API call with AbsolutePsfChart)
   // isFetching = true during background refetch when keepPreviousData is enabled
-  const { data: internalData, loading: internalLoading, error, isFetching: internalIsFetching, refetch } = useAbortableQuery(
+  // isBootPending = true while waiting for app boot
+  const { data: internalData, loading: internalLoading, error, isFetching: internalIsFetching, isBootPending, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison
@@ -239,6 +240,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
       loading={loading}
       isFetching={isFetching}
       isFiltering={filterKey !== debouncedFilterKey}
+      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={!data || data.length === 0}
