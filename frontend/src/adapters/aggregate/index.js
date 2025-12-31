@@ -15,7 +15,8 @@
  *
  * const { data, loading, error } = useAbortableQuery(async (signal) => {
  *   const response = await getAggregate(params, { signal });
- *   return transformTimeSeries(response.data.data, 'quarter');
+ *   // Note: apiClient interceptor unwraps envelope, so response.data is the inner data
+ *   return transformTimeSeries(response.data, 'quarter');
  * }, [filterKey]);
  * ```
  *

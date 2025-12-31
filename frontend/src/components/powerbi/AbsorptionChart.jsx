@@ -60,10 +60,10 @@ export const AbsorptionChart = React.memo(function AbsorptionChart({
       logFetchDebug('AbsorptionChart', {
         endpoint: '/api/new-launch-absorption',
         timeGrain: timeGrouping,
-        rowCount: response.data?.data?.length || 0,
+        rowCount: response.data?.length || 0,
       });
 
-      return transformNewLaunchAbsorption(response.data?.data || [], TIME_GROUP_BY[timeGrouping]);
+      return transformNewLaunchAbsorption(response.data || [], TIME_GROUP_BY[timeGrouping]);
     },
     [debouncedFilterKey, timeGrouping],
     {

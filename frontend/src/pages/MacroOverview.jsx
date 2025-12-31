@@ -132,7 +132,7 @@ export function MacroOverviewContent() {
       }, { excludeOwnDimension: 'segment' });
 
       const response = await getAggregate(params, { signal, priority: 'low' });
-      const rawData = response.data?.data || [];
+      const rawData = response.data || [];
       return transformCompressionSeries(rawData, timeGrouping);
     },
     [debouncedFilterKey, timeGrouping],
@@ -153,7 +153,7 @@ export function MacroOverviewContent() {
       );
 
       const response = await getDashboard(params, { signal, priority: 'medium' });
-      return response.data?.data || {};
+      return response.data || {};
     },
     [debouncedFilterKey],
     { initialData: {}, keepPreviousData: true, enabled: shouldFetchPanels }

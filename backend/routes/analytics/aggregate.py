@@ -348,6 +348,19 @@ def aggregate():
 
     if total_records == 0:
         elapsed = time.time() - start
+        # Build diagnostic warnings for empty results
+        warnings = ["No records matched the applied filters."]
+        if filters_applied:
+            active_filters = list(filters_applied.keys())
+            warnings.append(f"Active filters: {', '.join(active_filters)}")
+            # Check for potentially restrictive combinations
+            if len(active_filters) >= 3:
+                warnings.append("Try removing some filters to broaden the search.")
+            # Specific hints for common issues
+            if "bedroom" in filters_applied and any(b >= 5 for b in (filters_applied.get("bedroom") or [])):
+                warnings.append("5+ bedroom units are rare in many areas.")
+            if "date_from" in filters_applied:
+                warnings.append("Note: URA data is month-level (all transactions dated 1st of month).")
         empty_meta = {
             "totalRecords": 0,
             "filtersApplied": filters_applied,
@@ -355,6 +368,7 @@ def aggregate():
             "metrics": metrics,
             "elapsedMs": int(elapsed * 1000),
             "schemaVersion": schema_version,
+            "warnings": warnings,
         }
         return jsonify(serialize_aggregate_response([], empty_meta))
 

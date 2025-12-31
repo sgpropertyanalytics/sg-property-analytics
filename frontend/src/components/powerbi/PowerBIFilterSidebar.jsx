@@ -184,20 +184,20 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   // ==================== HORIZONTAL LAYOUT ====================
   // iOS-style segmented controls with pill-shaped tracks
   // Frosted glass - sticky handled by parent FilterBar wrapper
-  // Row 1: Region + District + Bedroom | Row 2: Period + Granularity
+  // Single row layout: Property filters | Time Duration | Granularity | Reset
   if (layout === 'horizontal') {
     return (
       <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-[#EAE0CF]/70 backdrop-blur-md border-b border-[#94B4C1]/30 shadow-sm">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-          {/* ROW 1: Primary Filters - Region + District + Bedroom */}
+        <div className="flex flex-wrap lg:flex-nowrap items-center gap-3">
+          {/* Property Filters - Region + District + Bedroom */}
           <div className="flex items-center gap-3 flex-shrink-0">
             {/* Region Segmented Track */}
-            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200/80">
+            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200/80">
               {/* "All" button - dark blue when active (default state) */}
               <button
                 type="button"
                 onClick={() => setSegments([])}
-                className={`px-4 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
+                className={`px-4 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
                   filters.segments.length === 0
                     ? 'bg-[#213448] text-white shadow-inner'
                     : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
@@ -210,7 +210,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={seg}
                   onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                  className={`px-4 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
+                  className={`px-4 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
                     filters.segments.includes(seg)
                       ? 'bg-[#213448] text-white shadow-inner'
                       : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
@@ -241,12 +241,12 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             />
 
             {/* Bedroom Segmented Track */}
-            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200/80">
+            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200/80">
               {/* "All" button - dark blue when active */}
               <button
                 type="button"
                 onClick={() => setBedroomTypes([])}
-                className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
+                className={`px-3 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
                   filters.bedroomTypes.length === 0
                     ? 'bg-[#213448] text-white shadow-inner'
                     : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
@@ -259,7 +259,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={br}
                   onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                  className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
+                  className={`px-3 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
                     filters.bedroomTypes.includes(br)
                       ? 'bg-[#213448] text-white shadow-inner'
                       : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
@@ -272,41 +272,41 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             </div>
           </div>
 
-          {/* ROW 2: Time Controls - Period + Granularity */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            {/* Period Preset Segmented Track */}
-            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200/80">
-              {TIMEFRAME_OPTIONS.map(opt => (
-                <button
-                  type="button"
-                  key={opt.id}
-                  onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
-                  disabled={filterOptions.loading}
-                  className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
-                    filterOptions.loading
-                      ? 'bg-gray-100/80 text-gray-400 cursor-wait'
-                      : datePreset === opt.id
-                        ? 'bg-[#213448] text-white shadow-inner'
-                        : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+          {/* Divider - visible on large screens */}
+          <div className="hidden lg:block w-px h-7 bg-[#94B4C1]/50 flex-shrink-0" />
 
-            {/* Time Granularity Toggle */}
-            <TimeGranularityToggle layout="horizontal" />
+          {/* Time Controls - Period Presets */}
+          <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200/80 flex-shrink-0">
+            {TIMEFRAME_OPTIONS.map(opt => (
+              <button
+                type="button"
+                key={opt.id}
+                onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
+                disabled={filterOptions.loading}
+                className={`px-3 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
+                  filterOptions.loading
+                    ? 'bg-gray-100/80 text-gray-400 cursor-wait'
+                    : datePreset === opt.id
+                      ? 'bg-[#213448] text-white shadow-inner'
+                      : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
 
-          {/* Spacer - only effective when not wrapped */}
-          <div className="hidden xl:block flex-1" />
+          {/* Divider - visible on large screens */}
+          <div className="hidden lg:block w-px h-7 bg-[#94B4C1]/50 flex-shrink-0" />
 
-          {/* ACTIONS GROUP: Clear button (right-aligned on large screens, inline on wrap) */}
+          {/* Time Granularity Toggle */}
+          <TimeGranularityToggle layout="horizontal" />
+
+          {/* Reset button - text link style, always at end */}
           {activeFilterCount > 0 && (
             <button
               onClick={handleResetFilters}
-              className="min-h-[38px] px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-white/50 bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm transition-colors flex-shrink-0 ml-auto xl:ml-0"
+              className="min-h-[44px] px-3 py-2 text-sm font-medium text-[#547792] hover:text-[#213448] hover:underline transition-colors flex-shrink-0 ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-offset-2 rounded"
             >
               Reset
             </button>

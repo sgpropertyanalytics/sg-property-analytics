@@ -74,3 +74,60 @@ describe('unwrapEnvelope', () => {
     expect(unwrapEnvelope(42)).toEqual({ data: 42, meta: undefined });
   });
 });
+
+describe('envelope unwrap regression', () => {
+  /**
+   * REGRESSION TEST: Ensure no .data.data patterns sneak into the codebase
+   *
+   * The apiClient interceptor unwraps the API envelope automatically.
+   * After unwrapping: response.data = the inner data (not the envelope)
+   *
+   * CORRECT: response.data (the inner data)
+   * WRONG:   response.data.data (would be undefined)
+   *
+   * This test scans source files to catch accidental double-unwrap patterns.
+   */
+  it('should not have response.data.data patterns in components (apiClient unwraps automatically)', async () => {
+    const { execSync } = await import('child_process');
+    const path = await import('path');
+
+    const srcDir = path.resolve(__dirname, '..');
+
+    // Grep for .data?.data or .data.data patterns
+    // Exclude: test files, comments, Chart.js patterns (chart.data.datasets)
+    let grepResult = '';
+    try {
+      grepResult = execSync(
+        `grep -rn "\\.data\\?\\.data\\|response\\.data\\.data" "${srcDir}" ` +
+        `--include="*.jsx" --include="*.js" ` +
+        `| grep -v "\\.test\\." ` +
+        `| grep -v "chart\\.data\\.datasets" ` +
+        `| grep -v "// " ` +
+        `| grep -v "\\* " ` +
+        `| grep -v "JSDoc" || true`,
+        { encoding: 'utf-8' }
+      );
+    } catch {
+      // grep returns non-zero if no matches, which is what we want
+      grepResult = '';
+    }
+
+    // Filter out false positives
+    const violations = grepResult
+      .split('\n')
+      .filter(line => line.trim())
+      // Exclude documentation examples
+      .filter(line => !line.includes('adapters/aggregate/index.js'))
+      // Exclude the test file itself
+      .filter(line => !line.includes('client.test.js'))
+      // Exclude Chart.js data access (chart.data.datasets)
+      .filter(line => !line.includes('chart.data.'));
+
+    if (violations.length > 0) {
+      console.error('Found .data.data patterns that should use .data instead:');
+      violations.forEach(v => console.error(`  ${v}`));
+    }
+
+    expect(violations).toHaveLength(0);
+  });
+});

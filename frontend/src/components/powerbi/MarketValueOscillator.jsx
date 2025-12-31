@@ -65,7 +65,7 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
       };
 
       const response = await getAggregate(params, { signal, priority: 'low' });
-      const rawData = response.data?.data || [];
+      const rawData = response.data || [];
       const compressionData = transformCompressionSeries(rawData, 'quarter');
       return calculateZScoreStats(compressionData);
     },
@@ -93,7 +93,7 @@ export function MarketValueOscillator({ height = 420, saleType = null }) {
       // Validate API contract version
       assertKnownVersion(response.data, '/api/aggregate');
 
-      const rawData = response.data?.data || [];
+      const rawData = response.data || [];
 
       logFetchDebug('MarketValueOscillator', {
         endpoint: '/api/aggregate',

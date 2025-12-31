@@ -76,7 +76,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
       };
 
       const response = await getAggregate(params, { signal, priority: 'low' });
-      const rawData = response.data?.data || [];
+      const rawData = response.data || [];
       const transformed = transformCompressionSeries(rawData, 'quarter');
       return calculateHistoricalBaseline(transformed);
     },
@@ -101,7 +101,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/aggregate');
 
-      const rawData = response.data?.data || [];
+      const rawData = response.data || [];
 
       // Debug logging (dev only)
       logFetchDebug('PriceCompressionChart', {

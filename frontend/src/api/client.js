@@ -124,9 +124,9 @@ apiClient.interceptors.request.use(
 );
 
 // Response interceptor - handle errors
-// Track consecutive 401 errors to detect genuine auth failure vs transient issues
-let consecutive401Count = 0;
-const MAX_401_BEFORE_CLEAR = 2; // Only clear token after 2 consecutive 401s on auth endpoints
+// Use debounced token clear to prevent race conditions when multiple requests fail with 401
+let tokenClearTimeout = null;
+const TOKEN_CLEAR_DELAY = 500; // Wait 500ms of consecutive 401s before clearing
 
 /**
  * Unwrap api_contract envelope from backend response.
@@ -148,8 +148,11 @@ export function unwrapEnvelope(body) {
 
 apiClient.interceptors.response.use(
   (response) => {
-    // Reset 401 counter on successful response
-    consecutive401Count = 0;
+    // Success - cancel any pending token clear (valid token exists)
+    if (tokenClearTimeout) {
+      clearTimeout(tokenClearTimeout);
+      tokenClearTimeout = null;
+    }
 
     // Unwrap api_contract envelope using helper
     const unwrapped = unwrapEnvelope(response.data);
@@ -164,30 +167,35 @@ apiClient.interceptors.response.use(
       const isAuthEndpoint = requestUrl.includes('/auth/');
 
       if (isAuthEndpoint) {
-        // 401 on auth endpoint - likely genuine token expiry
-        consecutive401Count++;
-
-        if (consecutive401Count >= MAX_401_BEFORE_CLEAR) {
-          // Only clear token after multiple consecutive auth failures
-          // This prevents clearing on transient network issues
-          console.warn('[API] Multiple auth failures, clearing token');
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          // Note: Do NOT clear subscription_cache here - let SubscriptionContext handle it
-          // based on isAuthenticated state change
-          consecutive401Count = 0;
+        // 401 on auth endpoint - schedule token clear with debounce
+        // This prevents race conditions when multiple requests fail simultaneously
+        if (!tokenClearTimeout) {
+          tokenClearTimeout = setTimeout(() => {
+            console.warn('[API] Auth failure, clearing token after debounce');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            // Note: Do NOT clear subscription_cache here - let SubscriptionContext handle it
+            // based on isAuthenticated state change
+            tokenClearTimeout = null;
+          }, TOKEN_CLEAR_DELAY);
         }
+      } else {
+        // 401 on non-auth endpoint - emit event for token refresh
+        // This allows components to retry after token refresh
+        window.dispatchEvent(new CustomEvent('auth:token-expired', {
+          detail: { url: requestUrl }
+        }));
       }
-      // For non-auth endpoints, DON'T clear token
-      // The request may have raced with a token refresh, or be a transient issue
-      // Let the specific component/context handle retry logic
 
       if (!error.message || error.message.includes('status code 401')) {
         error.message = 'Session expired. Please sign in again.';
       }
     } else {
-      // Non-401 error - reset counter
-      consecutive401Count = 0;
+      // Non-401 error - cancel any pending token clear (network recovered)
+      if (tokenClearTimeout) {
+        clearTimeout(tokenClearTimeout);
+        tokenClearTimeout = null;
+      }
     }
     return Promise.reject(error);
   }
@@ -544,6 +552,34 @@ export const getFloorLiquidityHeatmap = (params = {}, options = {}) => {
   );
 };
 
+// ===== Insights API Functions =====
+
+/**
+ * Get district PSF data for choropleth map visualization
+ * @param {Object} params - Query parameters
+ * @param {string} params.period - Time period (e.g., '12m', 'all')
+ * @param {number} params.bed - Bedroom count (1-5, or null for all)
+ * @param {string} params.sale_type - 'resale' or 'new_sale'
+ * @param {Object} options - Request options
+ * @param {AbortSignal} options.signal - AbortController signal
+ * @returns {Promise<{districts: Array, meta: Object}>}
+ */
+export const getDistrictPsf = (params = {}, options = {}) =>
+  apiClient.get(`/insights/district-psf?${buildQueryString(params)}`, { signal: options.signal });
+
+/**
+ * Get district liquidity data for choropleth map visualization
+ * @param {Object} params - Query parameters
+ * @param {string} params.period - Time period (e.g., '12m', 'all')
+ * @param {number} params.bed - Bedroom count (1-5, or null for all)
+ * @param {string} params.saleType - 'resale' or 'new_sale'
+ * @param {Object} options - Request options
+ * @param {AbortSignal} options.signal - AbortController signal
+ * @returns {Promise<{districts: Array, meta: Object}>}
+ */
+export const getDistrictLiquidity = (params = {}, options = {}) =>
+  apiClient.get(`/insights/district-liquidity?${buildQueryString(params)}`, { signal: options.signal });
+
 // ===== GLS (Government Land Sales) API Functions =====
 
 /**
@@ -645,8 +681,8 @@ export const getProjectNames = (options = {}) =>
  *   }
  * }>}
  */
-export const getDealCheckerMultiScope = (params = {}) =>
-  apiClient.get(`/deal-checker/multi-scope?${buildQueryString(params)}`);
+export const getDealCheckerMultiScope = (params = {}, options = {}) =>
+  apiClient.get(`/deal-checker/multi-scope?${buildQueryString(params)}`, { signal: options.signal });
 
 // ===== Auth API Functions =====
 

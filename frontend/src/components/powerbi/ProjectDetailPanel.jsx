@@ -158,17 +158,17 @@ function ProjectDetailPanelInner({
         if (requestId !== requestIdRef.current) return;
 
         // Sort trend data by month (use getAggField for contract-safe access)
-        const sortedTrend = (trendResponse.data.data || [])
+        const sortedTrend = (trendResponse.data || [])
           .filter(d => getAggField(d, AggField.COUNT) > 0)
           .sort((a, b) => (a.month || '').localeCompare(b.month || ''));
 
         // Sort price data by bedroom (use getAggField for contract-safe access)
-        const sortedPrice = (priceResponse.data.data || [])
+        const sortedPrice = (priceResponse.data || [])
           .filter(d => getAggField(d, AggField.COUNT) > 0)
           .sort((a, b) => (getAggField(a, AggField.BEDROOM_COUNT) || 0) - (getAggField(b, AggField.BEDROOM_COUNT) || 0));
 
         // Extract inventory data (includes cumulative sales from backend)
-        const inventory = inventoryResponse.data?.data || {};
+        const inventory = inventoryResponse.data || {};
         setSalesByType({
           newSale: getProjectInventoryField(inventory, ProjectInventoryField.CUMULATIVE_NEW_SALES) || 0,
           resale: getProjectInventoryField(inventory, ProjectInventoryField.CUMULATIVE_RESALES) || 0
@@ -176,7 +176,7 @@ function ProjectDetailPanelInner({
         setInventoryData(inventory);
 
         // Extract histogram data
-        const histData = histogramResponse.data?.data?.price_histogram || [];
+        const histData = histogramResponse.data?.price_histogram || [];
         setHistogramData(histData);
 
         setTrendData(sortedTrend);

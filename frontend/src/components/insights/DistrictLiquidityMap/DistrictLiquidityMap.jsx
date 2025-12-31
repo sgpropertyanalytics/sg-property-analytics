@@ -20,6 +20,7 @@ import { DISTRICT_CENTROIDS } from '../../../data/districtCentroids';
 import { useSubscription } from '../../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../../hooks';
 import { SaleType } from '../../../schemas/apiContract';
+import { assertKnownVersion } from '../../../adapters';
 
 // Local imports
 import {
@@ -125,6 +126,9 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
         },
         signal, // Pass abort signal to cancel on filter change
       });
+
+      // Contract validation - detect shape changes early
+      assertKnownVersion(response.data, '/api/insights/district-liquidity');
 
       // Guard: Don't update state if a newer request started
       if (isStale(requestId)) return;

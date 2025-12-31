@@ -54,13 +54,13 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
   // Horizontal layout: Pro-style segmented control (glass effect with dividers)
   if (layout === 'horizontal') {
     return (
-      <div className={`relative inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-sm overflow-hidden divide-x divide-gray-200/80 ${className}`}>
+      <div className={`relative inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200/80 flex-shrink-0 ${className}`}>
         {options.map(opt => (
           <button
             key={opt.value}
             type="button"
             onClick={() => handleChange(opt.value)}
-            className={`px-3 py-1.5 text-sm font-medium transition-all min-h-[38px] ${
+            className={`px-3 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
               timeGrouping === opt.value
                 ? 'bg-[#213448] text-white shadow-inner'
                 : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'

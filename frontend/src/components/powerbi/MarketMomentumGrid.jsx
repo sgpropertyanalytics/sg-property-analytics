@@ -80,7 +80,7 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/aggregate');
 
-      const rawData = response.data?.data || [];
+      const rawData = response.data || [];
 
       // Group by district, preserving quarter order
       const districtData = {};

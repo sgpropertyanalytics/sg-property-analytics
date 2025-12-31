@@ -70,11 +70,11 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
       logFetchDebug('NewLaunchTimelineChart', {
         endpoint: '/api/new-launch-timeline',
         timeGrain: timeGrouping,
-        rowCount: response.data?.data?.length || 0,
+        rowCount: response.data?.length || 0,
       });
 
       // Use adapter for transformation
-      return transformNewLaunchTimeline(response.data?.data || [], TIME_GROUP_BY[timeGrouping]);
+      return transformNewLaunchTimeline(response.data || [], TIME_GROUP_BY[timeGrouping]);
     },
     [debouncedFilterKey, timeGrouping],
     {

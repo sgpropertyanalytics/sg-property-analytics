@@ -147,7 +147,7 @@ export function ExitRiskContent() {
       setProjectOptionsLoading(true);
       try {
         const response = await getProjectNames({ signal: controller.signal });
-        const responseData = response.data?.data || {};
+        const responseData = response.data || {};
         const projects = asArray(getProjectNamesField(responseData, ProjectNamesField.PROJECTS));
         setProjectOptions(projects);
 
@@ -208,7 +208,7 @@ export function ExitRiskContent() {
         if (controller.signal.aborted) return;
 
         if (exitQueueRes.status === 'fulfilled') {
-          setExitQueueData(exitQueueRes.value.data?.data);
+          setExitQueueData(exitQueueRes.value.data);
         } else {
           const err = exitQueueRes.reason;
           if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
@@ -280,7 +280,7 @@ export function ExitRiskContent() {
         }
         const response = await getProjectPriceBands(selectedProject.name, params, { signal: controller.signal });
         if (!controller.signal.aborted) {
-          setPriceBandsData(response.data?.data);
+          setPriceBandsData(response.data);
         }
       } catch (err) {
         if (err.name === 'AbortError' || err.name === 'CanceledError') return;

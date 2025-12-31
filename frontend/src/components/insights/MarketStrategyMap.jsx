@@ -25,6 +25,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { useStaleRequestGuard } from '../../hooks';
 import { SaleType } from '../../schemas/apiContract';
 import { getPercentile } from '../../utils/statistics';
+import { assertKnownVersion } from '../../adapters';
 
 // =============================================================================
 // CONFIGURATION
@@ -517,6 +518,9 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
         params: { period: selectedPeriod, bed: selectedBed, sale_type: selectedSaleType },
         signal,  // Pass abort signal to cancel on filter change
       });
+
+      // Contract validation - detect shape changes early
+      assertKnownVersion(response.data, '/api/insights/district-psf');
 
       // Guard: Don't update state if a newer request started
       if (isStale(requestId)) return;

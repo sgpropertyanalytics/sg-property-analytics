@@ -20,6 +20,7 @@ import {
   getProjectNamesField,
 } from '../../schemas/apiContract';
 import { getPercentile } from '../../utils/statistics';
+import { useStaleRequestGuard } from '../../hooks';
 
 // K-anonymity threshold for project-level data (min 15 for privacy)
 const K_PROJECT_THRESHOLD = 15;
@@ -127,6 +128,9 @@ export default function DealCheckerContent() {
   // Scope selection state
   const [activeScope, setActiveScope] = useState('radius_1km');
 
+  // Stale request protection - prevents old responses from overwriting new ones
+  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
+
   // Sort config for nearby projects table
   const [projectsSortConfig, setProjectsSortConfig] = useState({
     column: 'distance_km',
@@ -138,7 +142,8 @@ export default function DealCheckerContent() {
     const loadProjects = async () => {
       try {
         const response = await getProjectNames();
-        const responseData = response.data?.data || {};
+        // Envelope already unwrapped by interceptor - use response.data directly
+        const responseData = response.data || {};
         const projects = getProjectNamesField(responseData, ProjectNamesField.PROJECTS) || [];
         setProjectOptions(projects);
       } catch (err) {
@@ -199,6 +204,10 @@ export default function DealCheckerContent() {
       return;
     }
 
+    // Start new request and get ID for stale check
+    const requestId = startRequest();
+    const signal = getSignal();
+
     setLoading(true);
     setError(null);
 
@@ -214,8 +223,12 @@ export default function DealCheckerContent() {
         params.sqft = sqftNum;
       }
 
-      const response = await getDealCheckerMultiScope(params);
-      const responseData = response.data?.data || {};
+      const response = await getDealCheckerMultiScope(params, { signal });
+
+      // Guard: Don't update state if a newer request started
+      if (isStale(requestId)) return;
+
+      const responseData = response.data || {};
       const project = getDealCheckerField(responseData, DealCheckerField.PROJECT) || {};
       const filters = getDealCheckerField(responseData, DealCheckerField.FILTERS) || {};
       const scopes = getDealCheckerField(responseData, DealCheckerField.SCOPES) || {};
@@ -236,10 +249,20 @@ export default function DealCheckerContent() {
         setActiveScope('radius_1km');
       }
     } catch (err) {
+      // Ignore abort errors (intentional cancellation)
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return;
+      }
+      // Guard: Check stale after error too
+      if (isStale(requestId)) return;
+
       setError(err.response?.data?.error || 'Failed to check deal');
       setResult(null);
     } finally {
-      setLoading(false);
+      // Only clear loading if not stale
+      if (!isStale(requestId)) {
+        setLoading(false);
+      }
     }
   };
 

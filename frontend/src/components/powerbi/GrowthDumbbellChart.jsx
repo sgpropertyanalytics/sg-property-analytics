@@ -83,7 +83,7 @@ export const GrowthDumbbellChart = React.memo(function GrowthDumbbellChart({ bed
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/aggregate');
 
-      const rawData = response.data?.data || [];
+      const rawData = response.data || [];
 
       // Debug logging (dev only)
       logFetchDebug('GrowthDumbbellChart', {

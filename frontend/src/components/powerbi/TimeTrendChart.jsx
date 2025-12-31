@@ -43,7 +43,7 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/aggregate');
 
-      const rawData = response.data?.data || [];
+      const rawData = response.data || [];
 
       // Debug logging (dev only)
       logFetchDebug('TimeTrendChart', {

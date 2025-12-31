@@ -230,7 +230,6 @@ export function SubscriptionProvider({ children }) {
             ...newSub,
             _debug_user_id: subData._debug_user_id,
             _debug_email: subData._debug_email,
-            _raw_response_shape: response.data?.data ? 'enveloped' : 'flat',
           });
           setSubscription(newSub);
           cacheSubscription(newSub); // Cache for instant load next time

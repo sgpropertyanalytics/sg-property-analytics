@@ -71,7 +71,7 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
       const response = await getAggregate(params, { signal, priority: 'low' });
       assertKnownVersion(response.data, '/api/aggregate');
 
-      const rawData = response.data?.data || [];
+      const rawData = response.data || [];
       logFetchDebug('AbsolutePsfChart', {
         endpoint: '/api/aggregate',
         timeGrain: timeGrouping,
