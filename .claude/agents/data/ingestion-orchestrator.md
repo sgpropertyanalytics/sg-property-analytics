@@ -13,7 +13,7 @@ description: >
 
   SHOULD NOT be used for:
   - UI/frontend issues (use ui-layout-validator)
-  - SQL query optimization (use query-performance-auditor)
+  - SQL query optimization (use speed-agent)
   - Chart display issues (use dashboard-guardrails)
   - URA REALIS CSV upload (use etl-pipeline)
 tools: Read, Grep, Glob, Bash
@@ -55,7 +55,7 @@ You are an **Ingestion Orchestrator Guardian** for the Singapore Property Analyz
 | Out of Scope | Use Instead |
 |--------------|-------------|
 | UI/Layout issues | ui-layout-validator |
-| SQL performance | query-performance-auditor |
+| SQL performance | speed-agent |
 | Data integrity queries | data-integrity-validator |
 | URA REALIS CSV upload | etl-pipeline |
 

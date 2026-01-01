@@ -1,5 +1,6 @@
-import { useState, useCallback, useId } from 'react';
+import { useState, useCallback, useId, useRef } from 'react';
 import { useDebugMode } from '../context/DebugContext';
+import { exceedsBudget } from '../constants/performanceBudgets';
 
 /**
  * Check if an error is an abort/cancel error (not a real failure)
@@ -46,6 +47,12 @@ export function useDebugOverlay(componentName) {
   const id = useId();
   const { debugMode, registerDebugInfo } = useDebugMode();
 
+  // Timing refs for measuring durations
+  const timingRef = useRef({
+    fetchStart: null,
+    responseTime: null,
+  });
+
   const [debugInfo, setDebugInfo] = useState({
     componentName,
     endpoint: null,
@@ -57,10 +64,22 @@ export function useDebugOverlay(componentName) {
     status: 'idle', // idle | loading | success | error | canceled
     error: null,
     timestamp: null,
+    // Timing metrics (frontend-measured)
+    timing: {
+      fetchStartMs: null,
+      apiMs: null,
+      transformMs: null,
+      totalMs: null,
+      exceedsBudget: false,
+    },
   });
 
   // Capture request info before API call
   const captureRequest = useCallback((endpoint, params) => {
+    // Record fetch start time for timing
+    timingRef.current.fetchStart = performance.now();
+    timingRef.current.responseTime = null;
+
     const info = {
       componentName,
       endpoint,
@@ -72,6 +91,13 @@ export function useDebugOverlay(componentName) {
       status: 'loading',
       error: null,
       timestamp: Date.now(),
+      timing: {
+        fetchStartMs: null,
+        apiMs: null,
+        transformMs: null,
+        totalMs: null,
+        exceedsBudget: false,
+      },
     };
     setDebugInfo(info);
     registerDebugInfo(id, info);
@@ -79,6 +105,15 @@ export function useDebugOverlay(componentName) {
 
   // Capture response info after API call
   const captureResponse = useCallback((response, dataLength = null) => {
+    // Record response time for timing
+    const now = performance.now();
+    timingRef.current.responseTime = now;
+
+    // Calculate timing metrics
+    const fetchStart = timingRef.current.fetchStart;
+    const apiMs = fetchStart ? Math.round(now - fetchStart) : null;
+    const budgetExceeded = exceedsBudget('timeToData', apiMs);
+
     setDebugInfo(prev => {
       // Extract meta from response (apiClient adds response.meta)
       const meta = response?.meta || {};
@@ -106,6 +141,13 @@ export function useDebugOverlay(componentName) {
         status: 'success',
         error: null,
         timestamp: Date.now(),
+        timing: {
+          fetchStartMs: fetchStart ? Math.round(fetchStart) : null,
+          apiMs,
+          transformMs: null, // Will be set by captureTransformEnd if called
+          totalMs: apiMs, // For now, same as apiMs until transform is tracked
+          exceedsBudget: budgetExceeded,
+        },
       };
       registerDebugInfo(id, info);
       return info;
@@ -131,7 +173,7 @@ export function useDebugOverlay(componentName) {
 
   // Copy debug info to clipboard as JSON
   const copyDebugInfo = useCallback(() => {
-    const { endpoint, params, recordCount, warnings, requestId, elapsedMs, status, error } = debugInfo;
+    const { endpoint, params, recordCount, warnings, requestId, elapsedMs, status, error, timing } = debugInfo;
     const debugJson = {
       component: componentName,
       endpoint,
@@ -142,6 +184,11 @@ export function useDebugOverlay(componentName) {
       elapsedMs,
       status,
       error,
+      timing: timing?.apiMs != null ? {
+        feApiMs: timing.apiMs,
+        beElapsedMs: elapsedMs,
+        exceedsBudget: timing.exceedsBudget,
+      } : null,
       timestamp: new Date(debugInfo.timestamp).toISOString(),
     };
     navigator.clipboard.writeText(JSON.stringify(debugJson, null, 2));
@@ -151,7 +198,7 @@ export function useDebugOverlay(componentName) {
   const DebugOverlay = useCallback(() => {
     if (!debugMode) return null;
 
-    const { endpoint, params, recordCount, warnings, requestId, elapsedMs, status, error } = debugInfo;
+    const { endpoint, params, recordCount, warnings, requestId, elapsedMs, status, error, timing } = debugInfo;
 
     // Status indicator colors
     const statusColors = {
@@ -250,10 +297,21 @@ export function useDebugOverlay(componentName) {
             </div>
           )}
 
-          {/* Footer: requestId + timing */}
+          {/* Timing metrics */}
+          {timing?.apiMs != null && (
+            <div className={`flex justify-between text-[10px] pt-1 border-t border-green-500/20 ${
+              timing.exceedsBudget ? 'text-red-400' : 'text-cyan-400'
+            }`}>
+              <span>FE: {timing.apiMs}ms</span>
+              <span>BE: {elapsedMs || '-'}ms</span>
+              {timing.exceedsBudget && <span className="text-red-400 font-bold">SLOW</span>}
+            </div>
+          )}
+
+          {/* Footer: requestId */}
           <div className="flex justify-between text-[10px] text-green-600 pt-1 border-t border-green-500/20">
             <span>{requestId ? `req: ${requestId.slice(0, 12)}...` : 'req: -'}</span>
-            <span>{elapsedMs ? `${elapsedMs}ms` : '-'}</span>
+            <span>{timing?.apiMs == null && elapsedMs ? `${elapsedMs}ms` : ''}</span>
           </div>
         </div>
       </div>

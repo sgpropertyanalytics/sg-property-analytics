@@ -7,3 +7,4 @@ export { useAbortableQuery } from './useAbortableQuery';
 export { useGatedAbortableQuery } from './useGatedAbortableQuery';
 export { useDebugOverlay } from './useDebugOverlay';
 export { useChartLoadingState } from './useChartLoadingState';
+export { useChartTiming, useChartTimingSubscription } from './useChartTiming';

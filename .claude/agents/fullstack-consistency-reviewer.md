@@ -852,7 +852,7 @@ Action required before merge: [specific actions]
 | Data correctness issues (wrong values) | `data-correctness-auditor` |
 | Layout/CSS issues | `responsive-layout-guard` |
 | Design system violations | `design-system-enforcer` |
-| SQL performance issues | `query-performance-auditor` |
+| SQL performance issues | `speed-agent` |
 | Regression snapshot failures | `regression-snapshot-guard` |
 
 ---

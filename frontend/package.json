@@ -8,6 +8,15 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ci": "vitest run",
+    "test:e2e": "playwright test",
+    "test:perf": "playwright test e2e/performance/",
+    "test:perf:headed": "playwright test e2e/performance/ --headed",
+    "test:perf:filters": "playwright test e2e/performance/all-filters.spec.js",
+    "test:perf:nav": "playwright test e2e/performance/navigation.spec.js e2e/performance/cross-page.spec.js",
+    "test:perf:stress": "playwright test e2e/performance/stress-test.spec.js e2e/performance/filter-combinations.spec.js",
+    "test:perf:quick": "playwright test e2e/performance/page-load.spec.js",
+    "test:perf:report": "playwright test e2e/performance/ --reporter=html && open playwright-report/index.html",
+    "test:perf:diagnose": "playwright test e2e/performance/bottleneck-diagnostic.spec.js",
     "lint": "eslint \"src/**/*.{js,jsx}\"",
     "lint:ci": "eslint \"src/**/*.{js,jsx}\"",
     "lint:strict": "eslint \"src/**/*.{js,jsx}\" --max-warnings=0",
@@ -32,6 +41,7 @@
     "react-router-dom": "^6.20.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "@eslint/js": "^9.39.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",

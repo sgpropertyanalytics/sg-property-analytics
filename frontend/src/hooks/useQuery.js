@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useStaleRequestGuard } from './useStaleRequestGuard';
 
+const isDev = import.meta.env.DEV;
+
 /**
  * Query Status Enum - The Gap Killer
  */
@@ -50,6 +52,9 @@ export function useQuery(queryFn, deps = [], options = {}) {
     onError,
     keepPreviousData = false,
     retryOnTokenRefresh = false,
+    // Timing callbacks (dev-only, for chart instrumentation)
+    onFetchStart,
+    onStateUpdate,
   } = options;
 
   // Internal state
@@ -78,6 +83,10 @@ export function useQuery(queryFn, deps = [], options = {}) {
   onSuccessRef.current = onSuccess;
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
+  const onFetchStartRef = useRef(onFetchStart);
+  onFetchStartRef.current = onFetchStart;
+  const onStateUpdateRef = useRef(onStateUpdate);
+  onStateUpdateRef.current = onStateUpdate;
 
   // Generate stable key from deps
   const depsKey = useMemo(() => JSON.stringify(deps), [deps]);
@@ -153,6 +162,15 @@ export function useQuery(queryFn, deps = [], options = {}) {
       activeRequestIdRef.current = requestId; // Track active request
       const signal = getSignal();
 
+      // DEV: Call timing callback before fetch
+      if (isDev && onFetchStartRef.current) {
+        try {
+          onFetchStartRef.current(depsKey);
+        } catch {
+          // Timing callbacks should never break the query
+        }
+      }
+
       // Set in-flight state
       setInternalState(prev => ({
         data: keepPreviousData ? prev.data : null,
@@ -175,6 +193,15 @@ export function useQuery(queryFn, deps = [], options = {}) {
           error: null,
           inFlight: false,
         });
+
+        // DEV: Call timing callback after state update
+        if (isDev && onStateUpdateRef.current) {
+          try {
+            onStateUpdateRef.current();
+          } catch {
+            // Timing callbacks should never break the query
+          }
+        }
 
         if (onSuccessRef.current) {
           onSuccessRef.current(result);
@@ -229,6 +256,15 @@ export function useQuery(queryFn, deps = [], options = {}) {
       activeRequestIdRef.current = requestId; // Track active request
       const signal = getSignal();
 
+      // DEV: Call timing callback before fetch (isFilterChange=true for refetch)
+      if (isDev && onFetchStartRef.current) {
+        try {
+          onFetchStartRef.current(depsKey, true);
+        } catch {
+          // Timing callbacks should never break the query
+        }
+      }
+
       setInternalState(prev => ({
         data: keepPreviousData ? prev.data : null,
         error: null,
@@ -250,6 +286,15 @@ export function useQuery(queryFn, deps = [], options = {}) {
           error: null,
           inFlight: false,
         });
+
+        // DEV: Call timing callback after state update
+        if (isDev && onStateUpdateRef.current) {
+          try {
+            onStateUpdateRef.current();
+          } catch {
+            // Timing callbacks should never break the query
+          }
+        }
 
         if (onSuccessRef.current) {
           onSuccessRef.current(result);

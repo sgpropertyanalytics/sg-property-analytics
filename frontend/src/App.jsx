@@ -10,6 +10,7 @@ import { SubscriptionProvider } from './context/SubscriptionContext';
 import { PowerBIFilterProvider } from './context/PowerBIFilter';
 import { AppReadyProvider } from './context/AppReadyContext';
 import { DebugProvider } from './context/DebugContext';
+import { ChartTimingProvider } from './context/ChartTimingContext';
 import LandingPage from './pages/Landing';
 import Login from './pages/Login';
 import Pricing from './pages/Pricing';
@@ -91,6 +92,11 @@ const ExitRiskContent = lazyWithRetry(() =>
   import('./pages/ExitRisk').then(m => ({ default: m.ExitRiskContent }))
 );
 
+// DEV-ONLY: Performance Dashboard for chart timing instrumentation
+const PerformanceDashboard = lazyWithRetry(() =>
+  import('./pages/PerformanceDashboard').then(m => ({ default: m.PerformanceDashboard }))
+);
+
 // Note: Loading fallback moved to DashboardLayout to keep nav rail persistent
 
 /**
@@ -120,6 +126,7 @@ function App() {
       <SubscriptionProvider>
         <DataProvider>
           <DebugProvider>
+          <ChartTimingProvider>
           <BrowserRouter>
             {/* PowerBIFilterProvider wraps all routes to prevent context recreation on navigation */}
             <PowerBIFilterProvider>
@@ -200,12 +207,18 @@ function App() {
           <Route path="/market-pulse" element={<Navigate to="/market-overview" replace />} />
           <Route path="/supply-insights" element={<Navigate to="/supply-inventory" replace />} />
 
+              {/* DEV-ONLY: Performance Dashboard for chart timing instrumentation */}
+              {import.meta.env.DEV && (
+                <Route path="/perf" element={<PerformanceDashboard />} />
+              )}
+
               {/* Catch-all -> Landing Page */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             </AppReadyProvider>
             </PowerBIFilterProvider>
           </BrowserRouter>
+          </ChartTimingProvider>
           </DebugProvider>
         </DataProvider>
       </SubscriptionProvider>
