@@ -8,7 +8,7 @@ def test_admin_override_entitlement_grants_access():
     user = User(
         plan_tier="premium",
         access_override=True,
-        entitlement_source="admin_override",
+        entitlement_source="admin",
         override_until=None,
     )
 
@@ -16,7 +16,7 @@ def test_admin_override_entitlement_grants_access():
 
     assert user.normalized_tier() == "premium"
     assert entitlement["has_access"] is True
-    assert entitlement["entitlement_source"] == "admin_override"
+    assert entitlement["entitlement_source"] == "admin"
     assert entitlement["access_expires_at"] is None
 
 

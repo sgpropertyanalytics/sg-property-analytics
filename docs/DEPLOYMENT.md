@@ -29,6 +29,7 @@ psycopg2.errors.UndefinedColumn: column transactions.street_name does not exist
 ```bash
 # Option 1: Direct SQL migration (recommended for quick fixes)
 psql "$DATABASE_URL" -f backend/migrations/001_add_all_missing_columns.sql
+psql "$DATABASE_URL" -f backend/migrations/015_add_user_entitlements.sql
 
 # Option 2: Verify via schema check
 python -c "
@@ -45,6 +46,7 @@ with app.app_context():
 | File | Description |
 |------|-------------|
 | `001_add_all_missing_columns.sql` | Adds all columns for transactions, new_launches, gls_tenders, project_locations |
+| `015_add_user_entitlements.sql` | Adds user entitlement columns and backfills legacy enterprise users |
 
 All migrations are **idempotent** - safe to run multiple times.
 
@@ -77,6 +79,7 @@ set -e
 
 echo "Running database migrations..."
 psql "$DATABASE_URL" -f backend/migrations/001_add_all_missing_columns.sql
+psql "$DATABASE_URL" -f backend/migrations/015_add_user_entitlements.sql
 
 echo "Starting application..."
 cd backend && gunicorn app:app --bind 0.0.0.0:$PORT
@@ -88,8 +91,35 @@ Set Start Command in Render: `bash scripts/start.sh`
 
 If you prefer not to create a script:
 ```bash
-psql "$DATABASE_URL" -f backend/migrations/001_add_all_missing_columns.sql && cd backend && gunicorn app:app --bind 0.0.0.0:$PORT
+psql "$DATABASE_URL" -f backend/migrations/001_add_all_missing_columns.sql \
+  && psql "$DATABASE_URL" -f backend/migrations/015_add_user_entitlements.sql \
+  && cd backend && gunicorn app:app --bind 0.0.0.0:$PORT
 ```
+
+### Render One-off Migration Job (Preferred)
+
+Create a one-off job or deploy hook in Render that runs:
+
+```bash
+psql "$DATABASE_URL" -f backend/migrations/015_add_user_entitlements.sql
+```
+
+This is the safest way to migrate production before deploying new backend code.
+
+## Rollout Sequence (Render + Vercel)
+
+1. **Run database migration** against Render Postgres:
+   ```bash
+   psql "$DATABASE_URL" -f backend/migrations/015_add_user_entitlements.sql
+   ```
+2. **Deploy backend** (Render) with the new code.
+3. **Deploy frontend** (Vercel) if the UI depends on updated entitlement metadata.
+
+## Verification Checklist
+
+- ✅ `GET /api/auth/subscription` returns 200 with entitlement fields.
+- ✅ App boot is not stuck on `tier_unknown`.
+- ✅ Render logs show no `UndefinedColumn` errors.
 
 ## Schema Check on Startup
 
