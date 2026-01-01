@@ -151,6 +151,37 @@ Default: date_to=today       ↔       Must match backend
 - [ ] Response keys handled by adapter (no direct `response.data.x` access)
 - [ ] Optional vs required params aligned
 - [ ] Defaults are explicit and consistent across layers
+- [ ] Filter-to-API-param mapping tests pass
+
+#### Filter-to-API-Param Tests
+
+**Location:** `frontend/src/context/PowerBIFilter/__tests__/filterParams.test.js`
+
+**Run before merge:**
+```bash
+cd frontend && npm test -- filterParams --run
+```
+
+**Must verify these mappings:**
+
+| Filter | API Param | Test Case |
+|--------|-----------|-----------|
+| `districts: ['D01', 'D02']` | `district=D01,D02` | Comma-join |
+| `bedroomTypes: ['1BR', '2BR']` | `bedroom=1BR,2BR` | Comma-join |
+| `segments: ['CCR', 'RCR']` | `segment=CCR,RCR` | Comma-join |
+| `saleType: 'resale'` | `saleType=resale` | Direct pass |
+| `psfRange: {min: 1000, max: 2000}` | `psfMin=1000&psfMax=2000` | Split to two params |
+| `sizeRange: {min: 500, max: 1000}` | `sizeMin=500&sizeMax=1000` | Split to two params |
+| `tenure: 'freehold'` | `tenure=freehold` | Direct pass |
+| `propertyAge: {min: 0, max: 10}` | `propertyAgeMin=0&propertyAgeMax=10` | Split to two params |
+| `propertyAgeBucket: 'new'` | `propertyAgeBucket=new` | Direct pass |
+| `project: 'Some Project'` | `project=Some%20Project` | URL encoded |
+| `timeFilter: {type:'preset',value:'Y1'}` | `timeframe=Y1` | Preset mode |
+| `timeFilter: {type:'custom',start:'2024-01-01'}` | `dateFrom=2024-01-01` | Custom mode |
+| `excludeOwnDimension: 'district'` | district NOT sent | Exclusion works |
+| `includeFactFilter: true` | `priceMin/priceMax` included | Fact filter toggle |
+
+**If tests missing:** Create `filterParams.test.js` with above cases.
 
 #### Key Files to Check
 
