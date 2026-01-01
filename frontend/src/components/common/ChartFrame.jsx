@@ -89,6 +89,14 @@ export const ChartFrame = React.memo(function ChartFrame({
         return <ErrorState message={getQueryErrorMessage(error)} onRetry={onRetry} />;
 
       case 'refreshing':
+        // Safety check: If somehow refreshing with no data, show skeleton instead of blur
+        // This prevents "Updating..." with "0 periods" state
+        if (empty) {
+          if (skeleton) {
+            return <ChartSkeleton type={skeleton} height={height} />;
+          }
+          return <div className="p-3 text-sm text-[#547792]">Loading...</div>;
+        }
         // Has prior data, fetching update - show blur overlay
         return (
           <div className="relative" style={{ minHeight: height }}>

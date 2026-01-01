@@ -84,7 +84,8 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
 
   // Determine if we should use shared data from parent (P0 performance fix)
   // When sharedRawData is provided, we skip the internal fetch entirely
-  const useShared = sharedRawData !== null;
+  // Use loose equality to catch both null AND undefined (common when data hasn't arrived)
+  const useShared = sharedRawData != null;
 
   // Main filtered data fetching - uses page-level saleType prop
   // DISABLED when sharedRawData is provided (eliminates duplicate request)
@@ -137,8 +138,9 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
   const latestZRcrOcr = latestData.zRcrOcr;
 
   // Calculate divergence between the two Z-scores
+  // FIX: Use == null to catch both null AND undefined (prevents NaN/"NaNo" display)
   const divergence = useMemo(() => {
-    if (latestZCcrRcr === null || latestZRcrOcr === null) return null;
+    if (latestZCcrRcr == null || latestZRcrOcr == null) return null;
     return latestZCcrRcr - latestZRcrOcr;
   }, [latestZCcrRcr, latestZRcrOcr]);
 

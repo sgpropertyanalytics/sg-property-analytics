@@ -84,6 +84,9 @@ export function AuthProvider({ children }) {
     return localStorage.getItem('token') ? TokenStatus.PRESENT : TokenStatus.MISSING;
   });
 
+  // Track previous status for safe abort recovery (restore on abort, don't downgrade)
+  const prevTokenStatusRef = useRef(tokenStatus);
+
   // SEPARATE stale guards to prevent cross-abort between operations
   // P0 FIX: refreshToken() must NOT abort syncTokenWithBackend()
   const authStateGuard = useStaleRequestGuard();  // For onAuthStateChanged sync
@@ -187,6 +190,7 @@ export function AuthProvider({ children }) {
             setTokenStatus(TokenStatus.PRESENT);
           } else {
             // User exists, no token → need sync
+            prevTokenStatusRef.current = tokenStatus; // Store for abort recovery
             setTokenStatus(TokenStatus.REFRESHING);
 
             // Sync with backend to get token
@@ -201,9 +205,10 @@ export function AuthProvider({ children }) {
             // Guard: Only update if this is still the current request
             if (!authStateGuard.isStale(requestId)) {
               if (result.aborted) {
-                // Abort is transient → stay in REFRESHING (effect can retry)
-                // DO NOT set to ERROR or MISSING
-                console.log('[Auth] Token sync aborted, staying in REFRESHING');
+                // Abort is transient - restore previous status (never stay in REFRESHING)
+                // This avoids accidentally downgrading PRESENT→MISSING on abort
+                console.log('[Auth] Token sync aborted, restoring prev status:', prevTokenStatusRef.current);
+                setTokenStatus(prevTokenStatusRef.current);
               } else if (result.ok) {
                 setTokenStatus(TokenStatus.PRESENT);
               } else {
@@ -436,6 +441,7 @@ export function AuthProvider({ children }) {
     const requestId = tokenRefreshGuard.startRequest();
 
     // Update token status to refreshing
+    prevTokenStatusRef.current = tokenStatus; // Store for abort recovery
     setTokenStatus(TokenStatus.REFRESHING);
 
     try {
@@ -481,10 +487,12 @@ export function AuthProvider({ children }) {
       setTokenStatus(TokenStatus.ERROR);
       return { ok: false, tokenStored: false, reason: 'no_token_in_response' };
     } catch (err) {
-      // Ignore abort/cancel errors
+      // Handle abort/cancel errors - restore previous status
       if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        // Abort is transient - stay in REFRESHING, caller can retry
-        // DO NOT set to ERROR
+        // Abort is transient - restore prev status (never stay in REFRESHING)
+        if (!tokenRefreshGuard.isStale(requestId)) {
+          setTokenStatus(prevTokenStatusRef.current);
+        }
         return { ok: false, tokenStored: false, reason: 'aborted' };
       }
 
@@ -509,12 +517,12 @@ export function AuthProvider({ children }) {
       setTokenStatus(TokenStatus.ERROR);
       return { ok: false, tokenStored: false, reason };
     }
-  }, [user, tokenRefreshGuard]);
+  }, [user, tokenRefreshGuard, tokenStatus]);
 
   // Manual retry for token sync (called by BootStuckBanner)
   // P0 FIX: Uses tokenRefreshGuard (not authStateGuard) to avoid cross-abort
   // P0 FIX: On missing token, set MISSING (not ERROR) to avoid re-entering deadlock
-  // P0 FIX: On abort, set MISSING (not stay REFRESHING) to avoid stuck state
+  // P0 FIX: On abort, restore prev status (not stay REFRESHING) to avoid stuck state
   const retryTokenSync = useCallback(async () => {
     if (!user) {
       console.warn('[Auth] Cannot retry token sync - no user');
@@ -522,6 +530,7 @@ export function AuthProvider({ children }) {
     }
 
     console.log('[Auth] Manual token sync retry triggered');
+    prevTokenStatusRef.current = tokenStatus; // Store for abort recovery
     setTokenStatus(TokenStatus.REFRESHING);
 
     // Use tokenRefreshGuard - separate from authStateGuard
@@ -556,10 +565,12 @@ export function AuthProvider({ children }) {
       setTokenStatus(TokenStatus.MISSING);
       return { ok: false, reason: 'no_token_in_response' };
     } catch (err) {
-      // Abort is transient - set MISSING (safe fallback, not stuck REFRESHING)
+      // Abort is transient - restore prev status (never stay in REFRESHING)
       if (isAbortError(err)) {
-        console.log('[Auth] Token sync retry aborted');
-        setTokenStatus(TokenStatus.MISSING);
+        console.log('[Auth] Token sync retry aborted, restoring prev status:', prevTokenStatusRef.current);
+        if (!tokenRefreshGuard.isStale(requestId)) {
+          setTokenStatus(prevTokenStatusRef.current);
+        }
         return { ok: false, reason: 'aborted' };
       }
 
@@ -572,7 +583,7 @@ export function AuthProvider({ children }) {
       setTokenStatus(TokenStatus.ERROR);
       return { ok: false, reason: 'error' };
     }
-  }, [user, tokenRefreshGuard]);
+  }, [user, tokenRefreshGuard, tokenStatus]);
 
   // Listen for auth:token-expired events from API client
   // When a 401 occurs on non-auth endpoints, the client dispatches this event

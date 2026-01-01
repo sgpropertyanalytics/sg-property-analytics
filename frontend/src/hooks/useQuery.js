@@ -14,6 +14,22 @@ export const QueryStatus = {
 };
 
 /**
+ * Check if data is "real" (not just initialData: [] or {})
+ * Used for status derivation - empty arrays/objects should show LOADING, not REFRESHING
+ * This prevents "Updating..." with "0 periods" state
+ */
+const hasRealData = (data) => {
+  if (data == null) return false;
+  if (Array.isArray(data)) return data.length > 0;
+  if (typeof data === 'object') {
+    // Only check keys for plain objects; treat class instances as "has data"
+    const isPlainObject = data.constructor === Object;
+    return isPlainObject ? Object.keys(data).length > 0 : true;
+  }
+  return true;
+};
+
+/**
  * useQuery - Canonical data fetching hook with explicit state machine
  *
  * PR1 FIX: Introduces PENDING state derived SYNCHRONOUSLY during render.
@@ -52,6 +68,8 @@ export function useQuery(queryFn, deps = [], options = {}) {
   const prevEnabledRef = useRef(enabled);
   // Signature-based guard for 401 retry (error objects can be recreated by interceptors)
   const retried401SigRef = useRef(null);
+  // Belt-and-suspenders: track active requestId for setState guards
+  const activeRequestIdRef = useRef(null);
 
   // Stable ref for callbacks (avoid effect deps churn)
   const queryFnRef = useRef(queryFn);
@@ -79,7 +97,9 @@ export function useQuery(queryFn, deps = [], options = {}) {
     }
 
     if (internalState.inFlight) {
-      if (internalState.data != null) {
+      // FIX: Empty arrays/objects = "no real data" = show LOADING (skeleton), not REFRESHING (blur)
+      // This prevents "Updating..." with "0 periods" when initialData: [] was used
+      if (hasRealData(internalState.data)) {
         return QueryStatus.REFRESHING;
       }
       return QueryStatus.LOADING;
@@ -130,6 +150,7 @@ export function useQuery(queryFn, deps = [], options = {}) {
       hasStartedRef.current = true;
 
       const requestId = startRequest();
+      activeRequestIdRef.current = requestId; // Track active request
       const signal = getSignal();
 
       // Set in-flight state
@@ -159,19 +180,33 @@ export function useQuery(queryFn, deps = [], options = {}) {
           onSuccessRef.current(result);
         }
       } catch (err) {
-        // Silently ignore abort errors
+        // Handle abort errors - CRITICAL: must reset inFlight to prevent stuck 'refreshing' state
         if (err.name === 'CanceledError' || err.name === 'AbortError') {
+          // If stale, a newer request is handling state - safe to skip
+          if (isStale(requestId)) return;
+          // If unmounted, don't update state (would cause React warning)
+          if (!mountedRef.current) return;
+          // Reset inFlight on abort, keep previous data intact
+          // Belt-and-suspenders: compare inside setState in case isStale() is buggy
+          setInternalState(prev =>
+            activeRequestIdRef.current !== requestId ? prev : { ...prev, inFlight: false }
+          );
           return;
         }
 
         if (isStale(requestId)) return;
         if (!mountedRef.current) return;
 
-        setInternalState(prev => ({
-          data: keepPreviousData ? prev.data : null,
-          error: err,
-          inFlight: false,
-        }));
+        // Belt-and-suspenders: compare inside setState for error case too
+        setInternalState(prev =>
+          activeRequestIdRef.current !== requestId
+            ? prev
+            : {
+                data: keepPreviousData ? prev.data : null,
+                error: err,
+                inFlight: false,
+              }
+        );
 
         if (onErrorRef.current) {
           onErrorRef.current(err);
@@ -191,6 +226,7 @@ export function useQuery(queryFn, deps = [], options = {}) {
 
     const runQuery = async () => {
       const requestId = startRequest();
+      activeRequestIdRef.current = requestId; // Track active request
       const signal = getSignal();
 
       setInternalState(prev => ({
@@ -219,19 +255,33 @@ export function useQuery(queryFn, deps = [], options = {}) {
           onSuccessRef.current(result);
         }
       } catch (err) {
-        // Silently ignore abort errors
+        // Handle abort errors - CRITICAL: must reset inFlight to prevent stuck 'refreshing' state
         if (err.name === 'CanceledError' || err.name === 'AbortError') {
+          // If stale, a newer request is handling state - safe to skip
+          if (isStale(requestId)) return;
+          // If unmounted, don't update state (would cause React warning)
+          if (!mountedRef.current) return;
+          // Reset inFlight on abort, keep previous data intact
+          // Belt-and-suspenders: compare inside setState in case isStale() is buggy
+          setInternalState(prev =>
+            activeRequestIdRef.current !== requestId ? prev : { ...prev, inFlight: false }
+          );
           return;
         }
 
         if (isStale(requestId)) return;
         if (!mountedRef.current) return;
 
-        setInternalState(prev => ({
-          data: keepPreviousData ? prev.data : null,
-          error: err,
-          inFlight: false,
-        }));
+        // Belt-and-suspenders: compare inside setState for error case too
+        setInternalState(prev =>
+          activeRequestIdRef.current !== requestId
+            ? prev
+            : {
+                data: keepPreviousData ? prev.data : null,
+                error: err,
+                inFlight: false,
+              }
+        );
 
         if (onErrorRef.current) {
           onErrorRef.current(err);
