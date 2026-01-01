@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import { useGatedAbortableQuery, useDeferredFetch, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
@@ -79,7 +79,7 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
   const { buildApiParams, debouncedFilterKey, filterKey, filters, timeGrouping } = usePowerBIFilters();
 
   // DEBUG: Log on mount
-  React.useEffect(() => {
+  useEffect(() => {
     debugLog('MOUNT', {
       initialFilters: {
         dateRange: filters?.dateRange,
