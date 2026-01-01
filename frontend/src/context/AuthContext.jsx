@@ -3,6 +3,7 @@ import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuth
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import apiClient from '../api/client';
 import { useStaleRequestGuard } from '../hooks';
+import { useSubscription } from './SubscriptionContext';
 
 // Detect mobile browser
 const isMobile = () => {
@@ -92,6 +93,9 @@ export function AuthProvider({ children }) {
   const authStateGuard = useStaleRequestGuard();  // For onAuthStateChanged sync
   const tokenRefreshGuard = useStaleRequestGuard(); // For refreshToken() calls
 
+  // Subscription context methods (SubscriptionProvider wraps AuthProvider)
+  const { bootstrapSubscription, fetchSubscription, clearSubscription } = useSubscription();
+
   // 5s safety net for authUiLoading - enables Google button even if Firebase is slow
   useEffect(() => {
     if (!authUiLoading) return; // Already cleared
@@ -144,8 +148,10 @@ export function AuthProvider({ children }) {
 
               if (!isStale(requestId) && response.data.token) {
                 localStorage.setItem('token', response.data.token);
-                // Clear stale subscription cache on redirect login
-                localStorage.removeItem('subscription_cache');
+                // Bootstrap subscription from firebase-sync response
+                if (response.data.subscription) {
+                  bootstrapSubscription(response.data.subscription);
+                }
               }
             } catch (err) {
               if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
@@ -186,8 +192,10 @@ export function AuthProvider({ children }) {
             // No user → token not needed (treat as 'present' for gating purposes)
             setTokenStatus(TokenStatus.PRESENT);
           } else if (localStorage.getItem('token')) {
-            // User exists, token exists
+            // User exists, token exists (page refresh)
             setTokenStatus(TokenStatus.PRESENT);
+            // Fetch subscription from backend (no firebase-sync on refresh)
+            fetchSubscription();
           } else {
             // User exists, no token → need sync
             prevTokenStatusRef.current = tokenStatus; // Store for abort recovery
@@ -262,8 +270,10 @@ export function AuthProvider({ children }) {
 
           if (response.data.token) {
             localStorage.setItem('token', response.data.token);
-            // Clear stale subscription cache on page load sync
-            localStorage.removeItem('subscription_cache');
+            // Bootstrap subscription from firebase-sync response
+            if (response.data.subscription) {
+              bootstrapSubscription(response.data.subscription);
+            }
             return { ok: true, aborted: false };
           }
 
@@ -325,9 +335,10 @@ export function AuthProvider({ children }) {
       // Store JWT for subsequent API calls
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
-        // Clear stale subscription cache on new login - forces fresh fetch
-        // Prevents stale 'free' cache from overriding actual premium status
-        localStorage.removeItem('subscription_cache');
+        // Bootstrap subscription from firebase-sync response
+        if (response.data.subscription) {
+          bootstrapSubscription(response.data.subscription);
+        }
       }
 
       return response.data;
@@ -389,6 +400,8 @@ export function AuthProvider({ children }) {
 
     // Clear JWT token
     localStorage.removeItem('token');
+    // Clear subscription state
+    clearSubscription();
 
     if (!isFirebaseConfigured()) {
       setUser(null);
@@ -475,6 +488,10 @@ export function AuthProvider({ children }) {
       // Store new JWT
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
+        // Bootstrap subscription from firebase-sync response
+        if (response.data.subscription) {
+          bootstrapSubscription(response.data.subscription);
+        }
         const storedToken = localStorage.getItem('token');
         const tokenStored = storedToken === response.data.token;
         console.log('[Auth] Token stored successfully:', tokenStored);
@@ -554,7 +571,10 @@ export function AuthProvider({ children }) {
 
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
-        localStorage.removeItem('subscription_cache'); // Clear stale cache
+        // Bootstrap subscription from firebase-sync response
+        if (response.data.subscription) {
+          bootstrapSubscription(response.data.subscription);
+        }
         setTokenStatus(TokenStatus.PRESENT);
         console.log('[Auth] Token sync retry succeeded');
         return { ok: true, reason: null };

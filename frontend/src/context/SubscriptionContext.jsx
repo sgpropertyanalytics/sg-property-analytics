@@ -1,20 +1,34 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useAuth } from './AuthContext';
+import { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import apiClient from '../api/client';
 import { useStaleRequestGuard } from '../hooks';
 
 /**
- * Subscription Context
+ * Subscription Context (Entitlement-Only)
  *
- * Manages subscription state for the freemium model.
+ * Manages subscription/entitlement state for the freemium model.
  * Provides isPremium flag and showPaywall() method for triggering the pricing modal.
  *
- * Usage:
- * const { isPremium, showPaywall } = useSubscription();
+ * ARCHITECTURE:
+ * - This context is ENTITLEMENT-ONLY - it does not manage auth state
+ * - AuthContext owns auth state and PUSHES subscription data here
+ * - SubscriptionProvider wraps AuthProvider (so AuthContext can call useSubscription)
+ * - 401/logout handling is driven by AuthContext (calls clearSubscription)
  *
- * if (!isPremium) {
- *   return <BlurredData onClick={showPaywall} />;
- * }
+ * TIER MODEL:
+ * - tier: 'free' | 'premium' (binary, no 'unknown')
+ * - status: 'pending' | 'loading' | 'resolved' | 'error'
+ * - Default tier is 'free', but UI MUST check isResolved before gating
+ *
+ * UI GATING RULES (CRITICAL):
+ * - isPending: Show loading/skeleton (NEVER paywall/blur)
+ * - isFreeResolved: Show paywall/blur
+ * - isPremiumResolved: Show premium content
+ * - NEVER use !isPremium to show paywall (would paywall during pending)
+ *
+ * AuthContext Integration:
+ * - bootstrapSubscription(sub) - after firebase-sync returns subscription
+ * - fetchSubscription() - on page refresh when token is ready
+ * - clearSubscription() - on logout or 401 token failure
  */
 
 const SubscriptionContext = createContext(null);
@@ -31,29 +45,26 @@ export function useSubscription() {
 const SUBSCRIPTION_CACHE_KEY = 'subscription_cache';
 
 // Cache version - bump this to invalidate all existing caches on deploy
-// This ensures stale 'free' caches are cleared for all users automatically
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 4;
 
-// Get cached subscription from localStorage (instant, no flicker)
+// Get cached subscription from localStorage
 const getCachedSubscription = () => {
   try {
     const cached = localStorage.getItem(SUBSCRIPTION_CACHE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
-      // Version check - invalidate stale caches from older versions
       if (parsed.version !== CACHE_VERSION) {
         localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
-        return null; // Force fresh fetch
+        return null;
       }
-      // Basic validation
-      if (parsed.tier && typeof parsed.subscribed === 'boolean') {
+      if ((parsed.tier === 'free' || parsed.tier === 'premium') && typeof parsed.subscribed === 'boolean') {
         return parsed;
       }
     }
   } catch {
     // Ignore parse errors
   }
-  return null; // Return null to indicate no valid cache (will fetch fresh)
+  return null;
 };
 
 // Save subscription to localStorage with version
@@ -68,364 +79,251 @@ const cacheSubscription = (sub) => {
   }
 };
 
-/**
- * Default subscription state
- *
- * P0 CONSTRAINT: tier='unknown' is a FIRST-CLASS LOADING STATE
- * - 'unknown' means "we don't know yet" (NOT free, NOT premium)
- * - UI must show skeleton when tier='unknown' (NOT blur/paywall)
- * - NEVER resolve to 'free' as a default/fallback
- * - Only set to 'free' when backend EXPLICITLY returns free
- */
-const DEFAULT_SUBSCRIPTION = { tier: 'unknown', subscribed: false, ends_at: null };
+// Default subscription: tier='free', but status='pending' means not resolved yet
+const DEFAULT_SUBSCRIPTION = { tier: 'free', subscribed: false, ends_at: null };
 
 /**
  * Subscription status quad-state:
- * - 'pending': Not yet determined (boot phase, waiting for auth/token)
+ * - 'pending': Not yet resolved (UI shows loading, NOT paywall)
  * - 'loading': API call in flight
  * - 'resolved': Subscription status EXPLICITLY known from backend
- * - 'error': Fetch failed (non-abort)
- *
- * P0 CONSTRAINTS:
- * - Abort is transient → stay in current state (pending/loading), NOT error
- * - Non-abort error → set 'error' status, NOT 'free' tier
- * - NEVER resolve to 'free' unless backend explicitly returns free
+ * - 'error': Fetch/parse failed
  */
-const SubscriptionStatus = {
-  PENDING: 'pending',   // Initial boot - don't know anything yet
-  LOADING: 'loading',   // API call in flight
-  RESOLVED: 'resolved', // Status EXPLICITLY known from backend (free or premium)
-  ERROR: 'error',       // Fetch failed (non-abort) - show error state, NOT free
+export const SubscriptionStatus = {
+  PENDING: 'pending',
+  LOADING: 'loading',
+  RESOLVED: 'resolved',
+  ERROR: 'error',
 };
-
-// Max manual retries to prevent 401 spam loops
-const MAX_MANUAL_RETRIES = 2;
-
-// Timeout for subscription fetch (prevents infinite pending)
-const SUBSCRIPTION_FETCH_TIMEOUT_MS = 15000;
 
 /**
  * Unwrap API response envelope.
- * Backend returns {data: {...}, meta: {...}} but axios wraps that in response.data.
- * So response.data = {data: {...}, meta: {...}}.
- * We need the inner data object.
- *
- * @param {Object} responseData - The axios response.data (which contains the API envelope)
- * @returns {Object|null} The subscription data or null if unparseable
+ * Returns { tier, subscribed, ends_at } or null on error.
+ * Does NOT fallback to 'free' - caller must set ERROR status on null.
  */
 export const unwrapSubscriptionResponse = (responseData) => {
   // Handle enveloped response: {data: {tier, subscribed, ...}, meta: {...}}
   if (responseData?.data && typeof responseData.data === 'object' && 'tier' in responseData.data) {
-    return responseData.data;
+    const { tier, subscribed, ends_at } = responseData.data;
+    if (tier === 'free' || tier === 'premium') {
+      return { tier, subscribed: subscribed || false, ends_at: ends_at || null };
+    }
+    return null;
   }
-  // Handle flat response (legacy or direct): {tier, subscribed, ...}
+  // Handle flat response (legacy): {tier, subscribed, ...}
   if (responseData && 'tier' in responseData) {
-    return responseData;
+    const { tier, subscribed, ends_at } = responseData;
+    if (tier === 'free' || tier === 'premium') {
+      return { tier, subscribed: subscribed || false, ends_at: ends_at || null };
+    }
+    return null;
   }
-  // Unknown format - return null to trigger default
   console.warn('[Subscription] Unknown response format:', responseData);
   return null;
 };
 
 export function SubscriptionProvider({ children }) {
-  // P0 FIX: Use tokenStatus from AuthContext to wait for token availability
-  const { user, isAuthenticated, initialized, refreshToken, tokenStatus, tokenReady } = useAuth();
-  // Initialize from cache to prevent flash of unknown→premium
-  // If no valid cache, start with 'unknown' tier (loading state)
-  const [subscription, setSubscription] = useState(() => getCachedSubscription() || DEFAULT_SUBSCRIPTION);
+  // Initialize from cache OR default (tier='free' but status='pending')
+  const cachedSub = getCachedSubscription();
+  const [subscription, setSubscription] = useState(cachedSub || DEFAULT_SUBSCRIPTION);
+  // If cached, start as RESOLVED; otherwise PENDING
+  const [status, setStatus] = useState(cachedSub ? SubscriptionStatus.RESOLVED : SubscriptionStatus.PENDING);
   const [loading, setLoading] = useState(false);
-  const [showPricingModal, setShowPricingModal] = useState(false);
-
-  // Quad-state status for boot synchronization
-  // Start as PENDING - we don't know anything until auth AND token are ready
-  const [status, setStatus] = useState(SubscriptionStatus.PENDING);
-
-  // Track fetch errors for UI display
   const [fetchError, setFetchError] = useState(null);
+  const [showPricingModal, setShowPricingModal] = useState(false);
 
   // Abort/stale request protection
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
-  // P1 FIX: Removed retryCount auto-retry. API client interceptor handles transient failures.
-  // Manual retry state (for BootStuckBanner user-initiated recovery only)
-  const [manualAttempt, setManualAttempt] = useState(0); // Nonce to trigger fetch
-  const [manualRetryCount, setManualRetryCount] = useState(0); // Count for retry cap
-  const attemptIdRef = useRef(0); // Track current attempt for stale closure prevention
-  const hidePaywallTimeoutRef = useRef(null); // P3 FIX: Store hidePaywall timeout for cleanup
+  // Ref for hidePaywall timeout cleanup
+  const hidePaywallTimeoutRef = useRef(null);
 
   // Analytics context for upsell tracking
-  // Tracks which field/source triggered the paywall
   const [upsellContext, setUpsellContext] = useState({
-    field: null,    // e.g., "project name", "price", "PSF"
-    source: null,   // e.g., "table", "modal", "chart"
-    district: null, // e.g., "D09" for contextual copy
+    field: null,
+    source: null,
+    district: null,
   });
 
-  // Fetch subscription status from backend when user/token changes
-  // P0 FIX: Wait for BOTH initialized AND tokenReady before fetching
-  useEffect(() => {
-    const requestId = startRequest();
-    // Bump attempt ID to detect stale closures in timeout
-    attemptIdRef.current += 1;
-    const attemptId = attemptIdRef.current;
+  /**
+   * Bootstrap subscription from AuthContext (primary path - no API call)
+   * Called after firebase-sync returns subscription data.
+   */
+  const bootstrapSubscription = useCallback((sub) => {
+    if (!sub || (sub.tier !== 'free' && sub.tier !== 'premium')) {
+      console.error('[Subscription] Bootstrap called with invalid tier:', sub?.tier);
+      setFetchError(new Error(`Invalid tier value: ${sub?.tier}`));
+      setStatus(SubscriptionStatus.ERROR);
+      return;
+    }
+    console.log('[Subscription] Bootstrapping:', sub);
+    const newSub = {
+      tier: sub.tier,
+      subscribed: sub.subscribed || false,
+      ends_at: sub.ends_at || null,
+    };
+    setSubscription(newSub);
+    cacheSubscription(newSub);
+    setStatus(SubscriptionStatus.RESOLVED);
+    setLoading(false);
+    setFetchError(null);
+  }, []);
 
-    const fetchSubscription = async () => {
-      // Debug logging for subscription state tracking
-      console.log('[Subscription] Fetch triggered:', {
-        initialized,
-        isAuthenticated,
-        tokenStatus,
-        tokenReady,
-        hasToken: !!localStorage.getItem('token'),
-        cachedSub: getCachedSubscription(),
-        status,
-        manualAttempt,
-        attemptId,
+  /**
+   * Fetch subscription from backend
+   * Called by AuthContext on page refresh when no firebase-sync occurs.
+   * No early-exit check - AuthContext decides when to call.
+   *
+   * RACE GUARD: Checks token at start AND after fetch to prevent overwriting
+   * clearSubscription() state if logout happened during the request.
+   */
+  const fetchSubscription = useCallback(async () => {
+    // Race guard: If no token, user logged out - don't fetch
+    if (!localStorage.getItem('token')) {
+      console.log('[Subscription] No token, skipping fetch');
+      return;
+    }
+
+    const requestId = startRequest();
+    console.log('[Subscription] Fetching /auth/subscription...');
+    setLoading(true);
+    setStatus(SubscriptionStatus.LOADING);
+    setFetchError(null);
+
+    try {
+      const response = await apiClient.get('/auth/subscription', {
+        signal: getSignal(),
       });
 
-      // P0 FIX: Don't fetch until auth is fully initialized
-      if (!initialized) {
-        console.log('[Subscription] Waiting for auth initialization...');
-        // Stay in PENDING state - can't determine anything yet
+      if (isStale(requestId)) return;
+
+      // Race guard: Re-check token after fetch (logout may have occurred during request)
+      if (!localStorage.getItem('token')) {
+        console.log('[Subscription] Token removed during fetch, discarding result');
         return;
       }
 
-      // Not authenticated → explicitly resolve as free (this IS explicit, not default)
-      if (!isAuthenticated) {
-        // Guard: Don't update state if stale
-        if (isStale(requestId)) return;
-        // Set to free EXPLICITLY (user is logged out)
-        setSubscription({ tier: 'free', subscribed: false, ends_at: null });
+      const subData = unwrapSubscriptionResponse(response.data);
+      if (subData) {
+        console.log('[Subscription] Fetch success:', subData);
+        setSubscription(subData);
+        cacheSubscription(subData);
         setStatus(SubscriptionStatus.RESOLVED);
-        setFetchError(null);
-        console.log('[Subscription] Not authenticated, EXPLICITLY resolved as free');
-        // DON'T cache 'free' on logout - prevents stale cache persisting across sessions
-        return;
-      }
-
-      // P0 FIX: Wait for token to be ready, but allow ERROR to proceed (for manual retry)
-      // tokenStatus: 'present' | 'missing' | 'refreshing' | 'error'
-      // Wait on: MISSING, REFRESHING (token not yet available)
-      // Proceed on: PRESENT (normal), ERROR (allows manual retry to break deadlock)
-      if (tokenStatus === 'missing' || tokenStatus === 'refreshing') {
-        console.log('[Subscription] Waiting for token...', { tokenStatus });
-        // Stay in PENDING state - do NOT resolve as free
-        // Charts should show skeleton
-        return;
-      }
-
-      // Token is ready - proceed with fetch
-      setLoading(true);
-      setStatus(SubscriptionStatus.LOADING);
-      setFetchError(null);
-
-      // Helper to fetch subscription
-      const fetchSub = async () => {
-        const response = await apiClient.get('/auth/subscription', {
-          signal: getSignal(),
-        });
-        return response;
-      };
-
-      // BOOT EXCEPTION (DO NOT GENERALIZE):
-      // Inline refresh is allowed ONLY here because this runs before hooks mount.
-      // Rules:
-      // 1) refresh-at-most-once per boot fetch
-      // 2) retry-at-most-once for /auth/subscription
-      // 3) no generic retry loops here (retry lives in api client for GETs)
-      // 4) if refresh fails or 401 persists -> treat as unauthenticated
-      let didRefresh = false;
-
-      try {
-        let response;
-        try {
-          console.log('[Subscription] Fetching /auth/subscription...');
-          response = await fetchSub();
-          console.log('[Subscription] Fetch success, status:', response.status);
-        } catch (fetchErr) {
-          // Abort is intentional (filter change, re-render) - silently return
-          if (fetchErr.name === 'CanceledError' || fetchErr.name === 'AbortError') {
-            console.log('[Subscription] Fetch aborted (intentional)');
-            return;
-          }
-          console.error('[Subscription] Fetch error:', {
-            status: fetchErr.response?.status,
-            message: fetchErr.message,
-            data: fetchErr.response?.data,
-          });
-          // On 401, try refreshing the token once and retry (refresh-once + retry-once)
-          if (fetchErr.response?.status === 401 && refreshToken && !didRefresh) {
-            didRefresh = true;
-            console.warn('[Subscription] Got 401, attempting token refresh (once)...');
-            const result = await refreshToken();
-            console.log('[Subscription] Token refresh after 401:', result);
-            if (result?.ok && result?.tokenStored && !isStale(requestId)) {
-              // Token refreshed successfully, retry the fetch (once)
-              console.log('[Subscription] Retrying after token refresh (once)...');
-              try {
-                response = await fetchSub();
-              } catch (retryErr) {
-                // Second 401 after refresh -> treat as unauthenticated
-                if (retryErr.response?.status === 401) {
-                  console.warn('[Subscription] 401 persists after refresh, treating as unauthenticated');
-                  if (!isStale(requestId)) {
-                    setSubscription({ tier: 'free', subscribed: false, ends_at: null });
-                    setStatus(SubscriptionStatus.RESOLVED);
-                    setLoading(false);
-                  }
-                  return;
-                }
-                throw retryErr;
-              }
-            } else {
-              console.error('[Subscription] Token refresh failed on 401 retry:', result?.reason);
-              throw fetchErr; // Re-throw if refresh failed
-            }
-          } else {
-            throw fetchErr;
-          }
-        }
-
-        // Guard: Don't update state if stale
-        if (isStale(requestId)) return;
-
-        // Unwrap enveloped response: {data: {tier, ...}, meta: {...}}
-        const subData = unwrapSubscriptionResponse(response.data);
-        if (subData) {
-          const newSub = {
-            tier: subData.tier || 'free',
-            subscribed: subData.subscribed || false,
-            ends_at: subData.ends_at || null,
-          };
-          // Log full response including debug fields
-          console.log('[Subscription] API response received:', {
-            ...newSub,
-            _debug_user_id: subData._debug_user_id,
-            _debug_email: subData._debug_email,
-          });
-          setSubscription(newSub);
-          cacheSubscription(newSub); // Cache for instant load next time
-          setStatus(SubscriptionStatus.RESOLVED);
-          setLoading(false);
-        } else {
-          console.error('[Subscription] Failed to parse response:', response.data);
-          // Parse failure → set error status (not free)
-          setFetchError(new Error('Failed to parse subscription response'));
-          setStatus(SubscriptionStatus.ERROR);
-          setLoading(false);
-        }
-      } catch (err) {
-        // Abort is intentional (filter change, unmount) - just return silently
-        // P1 FIX: Removed auto-retry on abort. API client interceptor handles transient failures.
-        if (err.name === 'CanceledError' || err.name === 'AbortError') {
-          console.log('[Subscription] Fetch aborted (intentional)');
-          return;
-        }
-
-        // Guard: Check stale after error
-        if (isStale(requestId)) return;
-
-        // P0 FIX: Non-abort error → set ERROR status, NOT free
-        // Keep the existing cached value (if any) but mark status as error
-        console.warn('[Subscription] Fetch failed (non-abort), setting ERROR status:', err.message);
-        setFetchError(err);
+        setLoading(false);
+      } else {
+        console.error('[Subscription] Failed to parse response:', response.data);
+        setFetchError(new Error('Failed to parse subscription response'));
         setStatus(SubscriptionStatus.ERROR);
         setLoading(false);
-        // DO NOT: setSubscription({ tier: 'free' }) - keep cached value if any
       }
-    };
-
-    fetchSubscription();
-  // Include tokenStatus + manualAttempt in deps to re-trigger when token becomes ready or manual retry
-  // P1 FIX: Removed retryCount - API client interceptor handles transient failures
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialized, isAuthenticated, tokenStatus, user?.email, manualAttempt, startRequest, isStale, getSignal, refreshToken]);
-
-  // Timeout: Prevent infinite pending state
-  // Resets on every new fetch attempt (auto-retry or manual)
-  useEffect(() => {
-    // Only run timeout when in PENDING or LOADING state AND authenticated
-    if (!isAuthenticated) return;
-    if (status !== SubscriptionStatus.PENDING && status !== SubscriptionStatus.LOADING) {
-      return;
-    }
-
-    // Capture current attempt ID for stale closure check
-    const currentAttemptId = attemptIdRef.current;
-
-    const timeoutId = setTimeout(() => {
-      // Only set ERROR if this is still the current attempt
-      if (currentAttemptId !== attemptIdRef.current) {
-        console.log('[Subscription] Timeout ignored (stale attempt)');
+    } catch (err) {
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        console.log('[Subscription] Fetch aborted');
         return;
       }
-      console.error('[Subscription] Fetch timed out after 15s');
+      if (isStale(requestId)) return;
+
+      console.error('[Subscription] Fetch error:', err.message);
+      setFetchError(err);
       setStatus(SubscriptionStatus.ERROR);
-      setFetchError(new Error('Subscription fetch timed out'));
-      // NOTE: Do NOT setLoading(false) - loading derived from status
-      // DO NOT set tier to free - keep cached value or 'unknown'
-    }, SUBSCRIPTION_FETCH_TIMEOUT_MS);
-
-    return () => clearTimeout(timeoutId);
-  }, [status, isAuthenticated, manualAttempt]); // Resets on manual retry
-
-  // Manual retry for subscription (called by BootStuckBanner)
-  // Note: Bumps manualAttempt nonce + tracks count for cap. Does NOT touch tier.
-  const retrySubscription = useCallback(() => {
-    if (!isAuthenticated) {
-      console.warn('[Subscription] Cannot retry - not authenticated');
-      return;
+      setLoading(false);
     }
-    if (manualRetryCount >= MAX_MANUAL_RETRIES) {
-      console.warn('[Subscription] Max manual retries reached');
-      return;
-    }
-    console.log('[Subscription] Manual retry triggered');
-    // Clear error and bump both nonce + count
+  }, [startRequest, isStale, getSignal]);
+
+  /**
+   * Clear subscription (called on logout or 401)
+   * Sets to free tier with RESOLVED status (explicit logout = explicit free)
+   */
+  const clearSubscription = useCallback(() => {
+    console.log('[Subscription] Clearing (logout)');
+    setSubscription({ tier: 'free', subscribed: false, ends_at: null });
+    setStatus(SubscriptionStatus.RESOLVED);
+    setLoading(false);
     setFetchError(null);
-    setManualRetryCount(prev => prev + 1);
-    setManualAttempt(prev => prev + 1); // Triggers fetch effect
-    // DO NOT set tier here - let the fetch effect handle it
-  }, [isAuthenticated, manualRetryCount]);
+    // Don't cache on logout - prevents stale cache persisting
+  }, []);
 
-  // Derived state: is tier known (not in 'unknown' loading state)?
-  // P0 CONSTRAINT: 'unknown' tier is a FIRST-CLASS LOADING STATE
-  // - 'unknown' means "we don't know yet" (NOT free, NOT premium)
-  // - UI must show skeleton when tier='unknown' (NOT blur/paywall)
-  const isTierKnown = useMemo(() => subscription.tier !== 'unknown', [subscription.tier]);
+  /**
+   * Refresh subscription from backend (after payment)
+   * Forces a fresh fetch.
+   */
+  const refreshSubscription = useCallback(async () => {
+    const requestId = startRequest();
+    console.log('[Subscription] Refreshing...');
+    setLoading(true);
+    setStatus(SubscriptionStatus.LOADING);
+    setFetchError(null);
 
-  // Derived state: is user a premium subscriber?
-  // P0 CONSTRAINT: isPremium MUST be false when tier is 'unknown'
-  // This prevents premium gating logic from treating 'unknown' as non-premium (would show blur)
-  const isPremium = useMemo(() => {
-    // CRITICAL: If tier is unknown, return false but UI should NOT show blur/paywall
-    // The isTierKnown flag tells UI to show skeleton instead
-    if (!isTierKnown) return false;
-    if (subscription.tier === 'free') return false;
+    try {
+      const response = await apiClient.get('/auth/subscription', {
+        signal: getSignal(),
+      });
+
+      if (isStale(requestId)) return;
+
+      const subData = unwrapSubscriptionResponse(response.data);
+      if (subData) {
+        console.log('[Subscription] Refresh success:', subData);
+        setSubscription(subData);
+        cacheSubscription(subData);
+        setStatus(SubscriptionStatus.RESOLVED);
+      } else {
+        setFetchError(new Error('Failed to parse refresh response'));
+        setStatus(SubscriptionStatus.ERROR);
+      }
+    } catch (err) {
+      if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+      if (isStale(requestId)) return;
+      console.error('[Subscription] Refresh error:', err.message);
+      setFetchError(err);
+      setStatus(SubscriptionStatus.ERROR);
+    } finally {
+      if (!isStale(requestId)) {
+        setLoading(false);
+      }
+    }
+  }, [startRequest, isStale, getSignal]);
+
+  // ===== DERIVED STATE =====
+
+  // Status checks
+  const isResolved = status === SubscriptionStatus.RESOLVED;
+  const isPending = status === SubscriptionStatus.PENDING || status === SubscriptionStatus.LOADING;
+  const isError = status === SubscriptionStatus.ERROR;
+
+  // Premium check with expiry validation
+  const isPremiumActive = useMemo(() => {
+    if (subscription.tier !== 'premium') return false;
     if (!subscription.subscribed) return false;
-
-    // Check if subscription has expired
     if (subscription.ends_at) {
       const endsAt = new Date(subscription.ends_at);
       if (endsAt < new Date()) return false;
     }
-
     return true;
-  }, [isTierKnown, subscription]);
+  }, [subscription]);
 
-  // Days until subscription expires (null if not premium or no end date)
+  // GATE CONDITIONS: Use these for paywall/blur/content gating
+  // isFreeResolved: Show paywall/blur (ONLY when we KNOW user is free)
+  const isFreeResolved = isResolved && !isPremiumActive;
+  // isPremiumResolved: Show premium content (ONLY when we KNOW user is premium)
+  const isPremiumResolved = isResolved && isPremiumActive;
+  // isPremium: Alias for isPremiumResolved
+  const isPremium = isPremiumResolved;
+
+  // DEPRECATED - use isResolved
+  const isTierKnown = isResolved;
+  const isSubscriptionReady = isResolved || isError;
+
   const daysUntilExpiry = useMemo(() => {
-    if (!isPremium || !subscription.ends_at) return null;
+    if (!isPremiumActive || !subscription.ends_at) return null;
     const endsAt = new Date(subscription.ends_at);
     const diff = endsAt - new Date();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  }, [isPremium, subscription.ends_at]);
+  }, [isPremiumActive, subscription.ends_at]);
 
-  // Is subscription expiring soon (within 7 days)?
   const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 7;
 
-  // Show the pricing modal/paywall with optional analytics context
-  // Usage: showPaywall() or showPaywall({ field: 'price', source: 'table', district: 'D09' })
+  // Paywall actions
   const showPaywall = useCallback((context = {}) => {
     setUpsellContext({
       field: context.field || null,
@@ -435,71 +333,18 @@ export function SubscriptionProvider({ children }) {
     setShowPricingModal(true);
   }, []);
 
-  // Hide the pricing modal and reset context
-  // P3 FIX: Store timeout ID in ref for proper cleanup
   const hidePaywall = useCallback(() => {
     setShowPricingModal(false);
-    // Clear any pending timeout before setting new one
     if (hidePaywallTimeoutRef.current) {
       clearTimeout(hidePaywallTimeoutRef.current);
     }
-    // Reset context after a delay to allow exit animations
     hidePaywallTimeoutRef.current = setTimeout(() => {
       setUpsellContext({ field: null, source: null, district: null });
       hidePaywallTimeoutRef.current = null;
     }, 300);
   }, []);
 
-  // Refresh subscription status (call after successful payment)
-  const refreshSubscription = useCallback(async () => {
-    if (!isAuthenticated) return;
-
-    const requestId = startRequest();
-    setLoading(true);
-
-    try {
-      const response = await apiClient.get('/auth/subscription', {
-        signal: getSignal(),
-      });
-
-      // Guard: Don't update state if stale
-      if (isStale(requestId)) return;
-
-      // Unwrap enveloped response: {data: {tier, ...}, meta: {...}}
-      const subData = unwrapSubscriptionResponse(response.data);
-      if (subData) {
-        const newSub = {
-          tier: subData.tier || 'free',
-          subscribed: subData.subscribed || false,
-          ends_at: subData.ends_at || null,
-        };
-        setSubscription(newSub);
-        cacheSubscription(newSub);
-      }
-    } catch (err) {
-      // CRITICAL: Never treat abort/cancel as a real error
-      if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        return;
-      }
-
-      // Guard: Check stale after error
-      if (isStale(requestId)) return;
-
-      console.error('Failed to refresh subscription:', err);
-    } finally {
-      // Only clear loading if not stale
-      if (!isStale(requestId)) {
-        setLoading(false);
-      }
-    }
-  }, [isAuthenticated, startRequest, isStale, getSignal]);
-
-  // Derived: is subscription status resolved? (boot synchronization)
-  // Charts should wait for this before fetching
-  // Note: ERROR also unblocks boot to allow retry, but isTierKnown remains false
-  const isSubscriptionReady = status === SubscriptionStatus.RESOLVED || status === SubscriptionStatus.ERROR;
-
-  // P3 FIX: Cleanup hidePaywall timeout on unmount to prevent memory leak
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (hidePaywallTimeoutRef.current) {
@@ -509,43 +354,64 @@ export function SubscriptionProvider({ children }) {
   }, []);
 
   const value = useMemo(() => ({
-    // State
+    // Raw state
     subscription,
-    isPremium,
-    isTierKnown, // P0: true when tier is NOT 'unknown' (loading state)
+    tier: subscription.tier,
+    status,
     loading,
+    fetchError,
+
+    // GATE CONDITIONS (use these for paywall/blur/content gating)
+    isResolved,       // True when status==='resolved' (safe to gate on tier)
+    isPending,        // True when pending/loading (show skeleton, NOT paywall)
+    isError,          // True when status==='error'
+    isFreeResolved,   // True when resolved AND free (show paywall/blur)
+    isPremiumResolved,// True when resolved AND premium (show premium content)
+    isPremium,        // Alias for isPremiumResolved
+
+    // DEPRECATED - use isResolved
+    isTierKnown,
+    isSubscriptionReady,
+
+    // Expiry
     daysUntilExpiry,
     isExpiringSoon,
-    status, // Quad-state: 'pending' | 'loading' | 'resolved' | 'error'
-    isSubscriptionReady, // True when subscription status is RESOLVED from backend
-    fetchError, // Non-null if fetch failed (non-abort)
 
     // Paywall modal
     showPricingModal,
     showPaywall,
     hidePaywall,
-    upsellContext, // Analytics context for pricing modal
+    upsellContext,
 
-    // Actions
+    // Actions for AuthContext
+    bootstrapSubscription,
+    fetchSubscription,
+    clearSubscription,
     refreshSubscription,
-    retrySubscription, // Manual retry (for BootStuckBanner)
-    setSubscription, // For use after Firebase sync
+    setSubscription,
   }), [
     subscription,
+    status,
+    loading,
+    fetchError,
+    isResolved,
+    isPending,
+    isError,
+    isFreeResolved,
+    isPremiumResolved,
     isPremium,
     isTierKnown,
-    loading,
+    isSubscriptionReady,
     daysUntilExpiry,
     isExpiringSoon,
-    status,
-    isSubscriptionReady,
-    fetchError,
     showPricingModal,
     showPaywall,
     hidePaywall,
     upsellContext,
+    bootstrapSubscription,
+    fetchSubscription,
+    clearSubscription,
     refreshSubscription,
-    retrySubscription,
   ]);
 
   return (

@@ -122,8 +122,8 @@ const PerformanceDashboard = lazyWithRetry(() =>
  */
 function App() {
   return (
-    <AuthProvider>
-      <SubscriptionProvider>
+    <SubscriptionProvider>
+      <AuthProvider>
         <DataProvider>
           <DebugProvider>
           <ChartTimingProvider>
@@ -221,8 +221,8 @@ function App() {
           </ChartTimingProvider>
           </DebugProvider>
         </DataProvider>
-      </SubscriptionProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </SubscriptionProvider>
   );
 }
 
