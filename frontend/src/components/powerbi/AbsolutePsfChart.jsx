@@ -41,7 +41,7 @@ const REGION_COLORS = {
  * @param {string} [props.sharedStatus='idle'] - Query status from parent when using sharedData
  */
 export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 300, saleType = null, sharedData = null, sharedStatus = 'idle' }) {
-  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
   const chartRef = useRef(null);
 
@@ -243,6 +243,7 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
     <div ref={containerRef}>
     <ChartFrame
       status={resolvedStatus}
+      isFiltering={filterKey !== debouncedFilterKey}
       error={error}
       onRetry={refetch}
       empty={!data || data.length === 0}

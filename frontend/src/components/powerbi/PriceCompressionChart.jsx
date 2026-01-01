@@ -48,7 +48,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium } = useSubscription();
 
   // UI state (not data state - that comes from useAbortableQuery)
@@ -243,6 +243,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
     <div ref={containerRef}>
     <ChartFrame
       status={resolvedStatus}
+      isFiltering={filterKey !== debouncedFilterKey}
       error={error}
       onRetry={refetch}
       empty={!data || data.length === 0}

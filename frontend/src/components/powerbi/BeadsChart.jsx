@@ -42,7 +42,7 @@ export const BeadsChart = React.memo(function BeadsChart({
   sharedData = null,
   sharedStatus = 'idle',
 }) {
-  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, filterKey } = usePowerBIFilters();
   const chartRef = useRef(null);
   const { wrapApiCall, DebugOverlay, debugInfo } = useDebugOverlay('BeadsChart');
 
@@ -300,6 +300,7 @@ export const BeadsChart = React.memo(function BeadsChart({
   return (
     <ChartFrame
       status={resolvedStatus}
+      isFiltering={filterKey !== debouncedFilterKey}
       error={error}
       onRetry={refetch}
       empty={!hasData}

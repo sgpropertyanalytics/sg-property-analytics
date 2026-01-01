@@ -37,7 +37,7 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
 }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, filterKey } = usePowerBIFilters();
   const [showFullRange, setShowFullRange] = useState(false);
   const chartRef = useRef(null);
 
@@ -241,6 +241,7 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
   return (
     <ChartFrame
       status={resolvedStatus}
+      isFiltering={filterKey !== debouncedFilterKey}
       error={error}
       onRetry={refetch}
       empty={!bins || bins.length === 0}

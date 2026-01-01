@@ -25,7 +25,7 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
   // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
   const chartRef = useRef(null);
 
   // Debug overlay for API diagnostics (toggle with Ctrl+Shift+D)
@@ -238,6 +238,7 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
   return (
     <ChartFrame
       status={status}
+      isFiltering={filterKey !== debouncedFilterKey}
       error={error}
       onRetry={refetch}
       empty={!data || data.length === 0}

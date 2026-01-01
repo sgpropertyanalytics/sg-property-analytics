@@ -91,9 +91,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
 
   // Main filtered data fetching - uses page-level saleType prop
   // DISABLED when sharedRawData is provided (eliminates duplicate request)
-  // isFetching = true during background refetch when keepPreviousData is enabled
-  // isBootPending = true while waiting for app boot
-  const { data: fetchedData, status: fetchStatus, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data: fetchedData, status: fetchStatus, error, refetch } = useGatedAbortableQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison
@@ -325,9 +323,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
     <div ref={containerRef}>
       <ChartFrame
         status={status}
-        isFetching={isFetching}
         isFiltering={filterKey !== debouncedFilterKey}
-        isBootPending={isBootPending}
         error={error}
         onRetry={refetch}
         empty={!data || data.length === 0}
