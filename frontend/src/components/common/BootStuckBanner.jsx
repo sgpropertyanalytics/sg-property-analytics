@@ -25,8 +25,8 @@ export function BootStuckBanner() {
 
   const handleRetry = () => {
     // Retry BOTH to break potential deadlock
-    retryTokenSync?.();
-    retrySubscription?.();
+    retryTokenSync();
+    retrySubscription();
   };
 
   // Build list of what's blocking boot
