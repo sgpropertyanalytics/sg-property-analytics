@@ -10,7 +10,7 @@
  * - Hydration state tracking (filtersReady flag)
  *
  * Key format: powerbi:<pageId>:<key>
- * Example: powerbi:market_overview:filters, powerbi:district_overview:datePreset
+ * Example: powerbi:market_overview:filters, powerbi:market_overview:timeGrouping
  *
  * /projects/:name Behavior:
  * All project detail pages share a single namespace `project_detail`.
@@ -39,11 +39,13 @@ export const FALLBACK_PAGE_ID = 'default';
 /**
  * Storage keys used by the filter system.
  * Centralized here to avoid magic strings.
+ *
+ * NOTE: datePreset is now stored INSIDE the filters object,
+ * not as a separate key. This simplifies persistence.
  */
 export const STORAGE_KEYS = {
   VERSION: '_version',
-  FILTERS: 'filters',
-  DATE_PRESET: 'datePreset',
+  FILTERS: 'filters',        // Includes datePreset as a field
   TIME_GROUPING: 'timeGrouping',
   HYDRATED: '_hydrated',
 };

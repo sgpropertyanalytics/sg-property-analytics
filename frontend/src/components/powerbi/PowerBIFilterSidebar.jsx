@@ -1,10 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilter';
-import {
-  readFilterStorage,
-  writeFilterStorage,
-  STORAGE_KEYS,
-} from '../../context/PowerBIFilter/storage';
 import {
   REGIONS,
   DISTRICT_NAMES,
@@ -27,11 +22,11 @@ import { TimeGranularityToggle } from './TimeGranularityToggle';
  */
 export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, layout = 'sidebar', onClose }) {
   const {
-    pageId,
     filters,
     filterOptions,
     activeFilterCount,
     setDateRange,
+    setDatePreset,
     setDistricts,
     setBedroomTypes,
     toggleBedroomType,
@@ -39,6 +34,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     toggleSegment,
     resetFilters,
   } = usePowerBIFilters();
+
+  // Get datePreset from central filter state
+  const datePreset = filters.datePreset;
 
   /**
    * Handle filter button click with switch/multi-select behavior
@@ -70,136 +68,26 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     roomSize: true,
     propertyDetails: true,
   });
-
-  // Date preset state: canonical ID ('M3', 'M6', 'Y1', 'Y3', 'Y5'), 'all', 'custom', or null
-  // Persisted to page-namespaced sessionStorage so "All" selection survives navigation
-  const [datePreset, setDatePresetState] = useState(() => {
-    return readFilterStorage(pageId, STORAGE_KEYS.DATE_PRESET, null);
-  });
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Track previous pageId to detect navigation
-  const prevPageIdRef = useRef(pageId);
-
-  // Reload datePreset when pageId changes (navigation to different page)
-  useEffect(() => {
-    if (prevPageIdRef.current !== pageId) {
-      prevPageIdRef.current = pageId;
-      const savedPreset = readFilterStorage(pageId, STORAGE_KEYS.DATE_PRESET, null);
-      setDatePresetState(savedPreset);
-      hasAppliedInitialDates.current = false; // Reset so new page gets initialized
-    }
-  }, [pageId]);
-
-  // Wrap setDatePreset to persist to page-namespaced sessionStorage
-  const setDatePreset = useCallback((preset) => {
-    setDatePresetState(preset);
-    writeFilterStorage(pageId, STORAGE_KEYS.DATE_PRESET, preset);
-  }, [pageId]);
-
-  // Track if we've applied the initial date filter (prevents re-application on every render)
-  const hasAppliedInitialDates = useRef(false);
-
-  // Calculate date range for a preset relative to the latest data date
-  // Uses canonical timeframe IDs (M3, M6, Y1, Y3, Y5)
-  // Fix: Fallback to today if maxDate not loaded yet (prevents silent no-op)
-  // Fix: Snap to 1st of month because URA data is month-level only
-  const calculatePresetDateRange = useCallback((preset, maxDateStr) => {
-    // Fallback to today if filter options haven't loaded yet
-    const effectiveMaxDate = maxDateStr || new Date().toISOString().split('T')[0];
-    const maxDate = new Date(effectiveMaxDate);
-
-    // Map canonical IDs to months (matches backend constants.py)
-    // NOTE: Frontend date calc is for UI display only. Backend is source of truth.
-    const monthsMap = {
-      'M3': 3,
-      'M6': 6,
-      'Y1': 12,
-      'Y3': 36,
-      'Y5': 60,
-    };
-
-    const months = monthsMap[preset];
-    if (!months) {
-      return { start: null, end: null };
-    }
-
-    const startDate = new Date(maxDate);
-    startDate.setMonth(startDate.getMonth() - months);
-
-    // CRITICAL: Snap to 1st of month for URA data compatibility
-    // URA transaction data is month-level only - all transactions within a month
-    // are dated to the 1st of that month. Without this, a date like "2024-12-28"
-    // would exclude December 2024 transactions (dated 2024-12-01).
-    startDate.setDate(1);
-
-    // Format as YYYY-MM-DD
-    const formatDate = (d) => {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-
-    return {
-      start: formatDate(startDate),
-      end: effectiveMaxDate
-    };
-  }, []);
-
-  // Apply date filter when filter options load (runs once per mount)
-  // - Fresh session (datePreset === null): Apply Y1 default
-  // - Restored session: Respect stored preset (including 'all' for no date filter)
-  useEffect(() => {
-    // Only run once when filter options are ready
-    if (hasAppliedInitialDates.current) return;
-    if (!filterOptions.dateRange.max || filterOptions.loading) return;
-
-    hasAppliedInitialDates.current = true;
-
-    if (datePreset === null || datePreset === '') {
-      // Fresh session - apply Y1 default
-      const { start, end } = calculatePresetDateRange(DEFAULT_TIMEFRAME_ID, filterOptions.dateRange.max);
-      if (start && end) {
-        setDateRange(start, end);
-        setDatePreset(DEFAULT_TIMEFRAME_ID);
-      }
-    } else if (datePreset === 'all') {
-      // User previously selected "All" - ensure no date filter
-      setDateRange(null, null);
-    } else if (datePreset !== 'custom') {
-      // User previously selected a preset (M3, M6, Y1, etc.) - reapply it
-      const { start, end } = calculatePresetDateRange(datePreset, filterOptions.dateRange.max);
-      if (start && end) {
-        setDateRange(start, end);
-      }
-    }
-    // 'custom' preset: don't modify - user has manual dates in sessionStorage
-  }, [filterOptions.dateRange.max, filterOptions.loading, datePreset, calculatePresetDateRange, setDateRange, setDatePreset]);
-
   // Handle preset button click
+  // CLEAN SEMANTIC: Preset mode sends timeframe ID to backend, not dates
+  // Backend resolves the actual date bounds. See timeframes.js.
+  // Note: setDatePreset() in provider automatically clears dateRange for presets
   const handlePresetClick = useCallback((preset) => {
     if (preset === datePreset) {
       // Clicking same preset clears it (show all data)
-      setDateRange(null, null);
-      setDatePreset('all');
-    } else if (preset === 'all') {
-      // "All" = no date filter
-      setDateRange(null, null);
       setDatePreset('all');
     } else {
-      const { start, end } = calculatePresetDateRange(preset, filterOptions.dateRange.max);
-      if (start && end) {
-        setDateRange(start, end);
-        setDatePreset(preset);
-      }
+      // Just set the preset - provider clears dateRange automatically
+      setDatePreset(preset);
     }
-  }, [datePreset, filterOptions.dateRange.max, calculatePresetDateRange, setDateRange, setDatePreset]);
+  }, [datePreset, setDatePreset]);
 
-  // Detect custom date changes (when user manually edits)
+  // Handle custom date changes (when user manually picks dates)
   const handleCustomDateChange = useCallback((start, end) => {
     setDateRange(start, end);
-    // If either date is set, mark as custom (unless it matches a preset)
+    // If either date is set, mark as custom
     if (start || end) {
       setDatePreset('custom');
     } else {
@@ -207,18 +95,12 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     }
   }, [setDateRange, setDatePreset]);
 
-  // Wrap resetFilters to also reset local datePreset state
+  // Reset filters handler
   const handleResetFilters = useCallback(() => {
     resetFilters();
-    // Reset to Y1 (default for performance)
-    setDatePreset(DEFAULT_TIMEFRAME_ID);
-    // Re-apply Y1 date range
-    const { start, end } = calculatePresetDateRange(DEFAULT_TIMEFRAME_ID, filterOptions.dateRange.max);
-    if (start && end) {
-      setDateRange(start, end);
-    }
     setShowAdvanced(false);
-  }, [resetFilters, calculatePresetDateRange, filterOptions.dateRange.max, setDateRange, setDatePreset]);
+    // resetFilters() resets to INITIAL_FILTERS which has datePreset: 'Y1'
+  }, [resetFilters]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({

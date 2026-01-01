@@ -159,9 +159,20 @@ export function buildApiParamsFromState(
     excludeOwnDimension = null,
   } = options;
 
-  // Apply date range
-  if (activeFilters.dateRange.start) params.dateFrom = activeFilters.dateRange.start;
-  if (activeFilters.dateRange.end) params.dateTo = activeFilters.dateRange.end;
+  // CLEAN SEMANTIC: Presets send timeframe ID, custom sends explicit dates
+  // No mixed semantics - one or the other, never both
+  // See timeframes.js: "Frontend passes timeframe ID → Backend resolves to dates"
+  const preset = activeFilters.datePreset;
+
+  if (preset && preset !== 'custom') {
+    // Preset mode: send timeframe param, NOT dates
+    // Backend resolves 'Y1' → last 12 months, 'all' → no filter, etc.
+    params.timeframe = preset;
+  } else {
+    // Custom mode: send explicit dates
+    if (activeFilters.dateRange.start) params.dateFrom = activeFilters.dateRange.start;
+    if (activeFilters.dateRange.end) params.dateTo = activeFilters.dateRange.end;
+  }
 
   // Districts
   if (excludeOwnDimension !== 'district') {

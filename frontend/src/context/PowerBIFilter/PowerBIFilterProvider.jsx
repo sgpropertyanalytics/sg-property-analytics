@@ -257,6 +257,18 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
     setFilters((prev) => ({ ...prev, project }));
   }, []);
 
+  // INVARIANT: When switching to a preset (not 'custom'), clear dateRange
+  // This ensures clean semantics - preset mode uses timeframe ID, custom mode uses dates
+  const setDatePreset = useCallback((preset) => {
+    setFilters((prev) => ({
+      ...prev,
+      datePreset: preset,
+      // Clear dateRange when switching to preset mode (not custom)
+      // This prevents stale dates from being sent alongside timeframe
+      dateRange: preset !== 'custom' ? { start: null, end: null } : prev.dateRange,
+    }));
+  }, []);
+
   const resetFilters = useCallback(() => {
     // Clear all storage for this page namespace
     clearPageNamespace(pageId);
@@ -433,6 +445,7 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
       setPropertyAge,
       setPropertyAgeBucket,
       setProject,
+      setDatePreset,
       resetFilters,
       drillDown,
       drillUp,
@@ -486,6 +499,7 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
       setPropertyAge,
       setPropertyAgeBucket,
       setProject,
+      setDatePreset,
       resetFilters,
       drillDown,
       drillUp,

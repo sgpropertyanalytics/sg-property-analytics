@@ -20,7 +20,8 @@ export const TIME_GROUP_BY = {
  * These are user-applied filters from the filter sidebar.
  */
 export const INITIAL_FILTERS = {
-  dateRange: { start: null, end: null },  // null = all
+  dateRange: { start: null, end: null },  // null = all (only used for 'custom' mode)
+  datePreset: 'Y1',                        // 'M3' | 'M6' | 'Y1' | 'Y3' | 'Y5' | 'all' | 'custom'
   districts: [],                           // empty = all
   bedroomTypes: [],                        // empty = all (supports 1,2,3,4,5)
   segments: [],                            // empty = all, can contain 'CCR', 'RCR', 'OCR'
