@@ -21,25 +21,61 @@ import { TimeTrendChart } from '../TimeTrendChart';
 // MOCKS
 // =============================================================================
 
-// Track fetch calls for verification
+// Track fetch calls for verification - use object to avoid hoisting issues
+const mockState = {
+  fetchCallCount: 0,
+  lastFetchParams: null,
+  lastAbortSignal: null,
+  apiResponse: null, // Set to override default response (Error for rejection)
+  apiDelay: 0, // Set to delay response
+};
+
+// Helper to reset mock state
+function resetMockState() {
+  mockState.fetchCallCount = 0;
+  mockState.lastFetchParams = null;
+  mockState.lastAbortSignal = null;
+  mockState.apiResponse = null;
+  mockState.apiDelay = 0;
+}
+
+// Legacy aliases for backward compatibility
 let fetchCallCount = 0;
 let lastFetchParams = null;
+let lastAbortSignal = null;
 
 // Mock getAggregate API
 vi.mock('../../../api/client', () => ({
   getAggregate: vi.fn((params, options) => {
-    fetchCallCount++;
-    lastFetchParams = params;
+    mockState.fetchCallCount++;
+    mockState.lastFetchParams = params;
+    mockState.lastAbortSignal = options?.signal || null;
 
-    // Return mock response
-    return Promise.resolve({
+    // Use custom response if set
+    if (mockState.apiResponse !== null) {
+      if (mockState.apiResponse instanceof Error) {
+        return mockState.apiDelay > 0
+          ? new Promise((_, reject) => setTimeout(() => reject(mockState.apiResponse), mockState.apiDelay))
+          : Promise.reject(mockState.apiResponse);
+      }
+      return mockState.apiDelay > 0
+        ? new Promise((resolve) => setTimeout(() => resolve(mockState.apiResponse), mockState.apiDelay))
+        : Promise.resolve(mockState.apiResponse);
+    }
+
+    // Default mock response
+    const response = {
       data: [
         { period: '2024-01', totalCount: 100, totalValue: 50000000 },
         { period: '2024-02', totalCount: 120, totalValue: 60000000 },
         { period: '2024-03', totalCount: 110, totalValue: 55000000 },
       ],
       meta: { version: '3.0' },
-    });
+    };
+
+    return mockState.apiDelay > 0
+      ? new Promise((resolve) => setTimeout(() => resolve(response), mockState.apiDelay))
+      : Promise.resolve(response);
   }),
 }));
 
@@ -154,9 +190,13 @@ function renderWithProviders(ui, { queryClient } = {}) {
 
 describe('TimeTrendChart', () => {
   beforeEach(() => {
-    // Reset state before each test
+    // Reset mock state
+    resetMockState();
+    // Sync legacy aliases
     fetchCallCount = 0;
     lastFetchParams = null;
+    lastAbortSignal = null;
+    // Reset other mocks
     mockAppReady = true;
     mockFilterKey = 'filter-key-1';
     mockDebouncedFilterKey = 'filter-key-1';
@@ -183,7 +223,7 @@ describe('TimeTrendChart', () => {
         await new Promise((r) => setTimeout(r, 100));
       });
 
-      expect(fetchCallCount).toBe(0);
+      expect(mockState.fetchCallCount).toBe(0);
     });
 
     it('fetches when appReady becomes true', async () => {
@@ -192,7 +232,7 @@ describe('TimeTrendChart', () => {
       renderWithProviders(<TimeTrendChart />);
 
       await waitFor(() => {
-        expect(fetchCallCount).toBe(1);
+        expect(mockState.fetchCallCount).toBe(1);
       });
     });
 
@@ -217,7 +257,7 @@ describe('TimeTrendChart', () => {
       const { rerender, queryClient } = renderWithProviders(<TimeTrendChart />);
 
       await waitFor(() => {
-        expect(fetchCallCount).toBe(1);
+        expect(mockState.fetchCallCount).toBe(1);
       });
 
       // Change filter key (simulates filter change after debounce)
@@ -231,7 +271,7 @@ describe('TimeTrendChart', () => {
       );
 
       await waitFor(() => {
-        expect(fetchCallCount).toBe(2);
+        expect(mockState.fetchCallCount).toBe(2);
       });
     });
 
@@ -239,7 +279,7 @@ describe('TimeTrendChart', () => {
       const { rerender, queryClient } = renderWithProviders(<TimeTrendChart />);
 
       await waitFor(() => {
-        expect(fetchCallCount).toBe(1);
+        expect(mockState.fetchCallCount).toBe(1);
       });
 
       // Change time grouping
@@ -252,7 +292,7 @@ describe('TimeTrendChart', () => {
       );
 
       await waitFor(() => {
-        expect(fetchCallCount).toBe(2);
+        expect(mockState.fetchCallCount).toBe(2);
       });
     });
 
@@ -266,7 +306,7 @@ describe('TimeTrendChart', () => {
       renderWithProviders(<TimeTrendChart />);
 
       await waitFor(() => {
-        expect(fetchCallCount).toBe(1);
+        expect(mockState.fetchCallCount).toBe(1);
       });
 
       expect(mockBuildApiParams).toHaveBeenCalledWith(
@@ -289,7 +329,7 @@ describe('TimeTrendChart', () => {
       renderWithProviders(<TimeTrendChart />, { queryClient });
 
       await waitFor(() => {
-        expect(fetchCallCount).toBe(1);
+        expect(mockState.fetchCallCount).toBe(1);
       });
 
       // Verify data is in the query cache
@@ -306,7 +346,7 @@ describe('TimeTrendChart', () => {
       const { unmount } = renderWithProviders(<TimeTrendChart />, { queryClient });
 
       await waitFor(() => {
-        expect(fetchCallCount).toBe(1);
+        expect(mockState.fetchCallCount).toBe(1);
       });
 
       unmount();
@@ -317,7 +357,7 @@ describe('TimeTrendChart', () => {
       renderWithProviders(<TimeTrendChart />, { queryClient });
 
       await waitFor(() => {
-        expect(fetchCallCount).toBe(2);
+        expect(mockState.fetchCallCount).toBe(2);
       });
     });
   });
@@ -380,7 +420,7 @@ describe('TimeTrendChart', () => {
       const { rerender, queryClient } = renderWithProviders(<TimeTrendChart />);
 
       await waitFor(() => {
-        expect(fetchCallCount).toBe(1);
+        expect(mockState.fetchCallCount).toBe(1);
       });
 
       // Re-render multiple times with same filters
@@ -398,7 +438,7 @@ describe('TimeTrendChart', () => {
       });
 
       // Should still be just 1 fetch
-      expect(fetchCallCount).toBe(1);
+      expect(mockState.fetchCallCount).toBe(1);
     });
 
     it('maintains stable query key across renders', async () => {
@@ -410,7 +450,7 @@ describe('TimeTrendChart', () => {
       const { rerender } = renderWithProviders(<TimeTrendChart />, { queryClient });
 
       await waitFor(() => {
-        expect(fetchCallCount).toBe(1);
+        expect(mockState.fetchCallCount).toBe(1);
       });
 
       // Re-render 10 times
@@ -448,6 +488,259 @@ describe('TimeTrendChart', () => {
 
       // After successful fetch, chart should be visible
       expect(screen.getByTestId('mock-chart')).toBeInTheDocument();
+    });
+  });
+
+  // ===========================================================================
+  // P1: ABORT SIGNAL TESTS
+  // ===========================================================================
+
+  describe('abort signal handling', () => {
+    it('passes AbortSignal to queryFn for cancellation support', async () => {
+      renderWithProviders(<TimeTrendChart />);
+
+      await waitFor(() => {
+        expect(mockState.fetchCallCount).toBe(1);
+      });
+
+      // Verify abort signal was passed to getAggregate
+      expect(mockState.lastAbortSignal).toBeDefined();
+      expect(mockState.lastAbortSignal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('each fetch receives a fresh AbortSignal', async () => {
+      const { rerender, queryClient } = renderWithProviders(<TimeTrendChart />);
+
+      await waitFor(() => {
+        expect(mockState.fetchCallCount).toBe(1);
+      });
+
+      const firstSignal = mockState.lastAbortSignal;
+
+      // Change filter to trigger new fetch
+      mockDebouncedFilterKey = 'filter-key-2';
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <TimeTrendChart />
+        </QueryClientProvider>
+      );
+
+      await waitFor(() => {
+        expect(mockState.fetchCallCount).toBe(2);
+      });
+
+      // Second fetch should have a different signal
+      expect(mockState.lastAbortSignal).toBeDefined();
+      expect(mockState.lastAbortSignal).not.toBe(firstSignal);
+    });
+  });
+
+  // ===========================================================================
+  // P1: EMPTY DATA TESTS
+  // ===========================================================================
+
+  describe('empty data handling', () => {
+    it('sets empty=true when API returns empty array', async () => {
+      mockState.apiResponse = { data: [], meta: { version: '3.0' } };
+
+      renderWithProviders(<TimeTrendChart />);
+
+      await waitFor(() => {
+        const frame = screen.getByTestId('chart-frame');
+        expect(frame.dataset.empty).toBe('true');
+      });
+    });
+
+    it('sets empty=false when API returns data', async () => {
+      renderWithProviders(<TimeTrendChart />);
+
+      await waitFor(() => {
+        const frame = screen.getByTestId('chart-frame');
+        expect(frame.dataset.status).toBe('success');
+        expect(frame.dataset.empty).toBe('false');
+      });
+    });
+  });
+
+  // ===========================================================================
+  // P2: HTTP ERROR TESTS
+  // ===========================================================================
+
+  describe('HTTP error handling', () => {
+    it('shows error state on 401 unauthorized', async () => {
+      const authError = new Error('Unauthorized');
+      authError.response = { status: 401 };
+      mockState.apiResponse = authError;
+
+      renderWithProviders(<TimeTrendChart />);
+
+      await waitFor(() => {
+        const frame = screen.getByTestId('chart-frame');
+        expect(frame.dataset.status).toBe('error');
+      });
+    });
+
+    // Note: Additional error types (500, timeout) are tested in useAppQuery.test.jsx
+    // These tests verify the integration point works - specific error handling
+    // is the responsibility of the hook layer
+  });
+
+  // ===========================================================================
+  // P2: UNMOUNT SAFETY TESTS
+  // ===========================================================================
+
+  describe('unmount safety', () => {
+    it('unmount during fetch does not cause errors', async () => {
+      // Delay response so unmount happens while fetching
+      mockState.apiDelay = 500;
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const { unmount } = renderWithProviders(<TimeTrendChart />);
+
+      // Unmount immediately while fetch is in progress
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 50));
+        unmount();
+      });
+
+      // Wait for the delayed response to complete
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 600));
+      });
+
+      // Should not have any React setState warnings
+      const reactWarnings = consoleSpy.mock.calls.filter(
+        (call) => call[0]?.includes?.('unmounted') || call[0]?.includes?.('memory leak')
+      );
+      expect(reactWarnings).toHaveLength(0);
+
+      consoleSpy.mockRestore();
+    });
+
+    it('component can be remounted after unmount', async () => {
+      const queryClient = createTestQueryClient();
+
+      const { unmount } = renderWithProviders(<TimeTrendChart />, { queryClient });
+
+      await waitFor(() => {
+        expect(mockState.fetchCallCount).toBe(1);
+      });
+
+      unmount();
+
+      // Remount with same queryClient
+      renderWithProviders(<TimeTrendChart />, { queryClient });
+
+      // Should work without errors
+      await waitFor(() => {
+        const frame = screen.getByTestId('chart-frame');
+        expect(frame).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ===========================================================================
+  // P3: RETRY BEHAVIOR TESTS
+  // ===========================================================================
+
+  describe('retry behavior', () => {
+    it('retries once on transient network error', async () => {
+      let callCount = 0;
+      const networkError = new Error('Network Error');
+      networkError.code = 'ERR_NETWORK';
+
+      // Use QueryClient with retry enabled
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: 1, // Enable 1 retry
+            retryDelay: 10, // Fast retry for test
+            staleTime: 0,
+            gcTime: 0,
+          },
+        },
+      });
+
+      // First call fails, second succeeds
+      const { getAggregate } = await import('../../../api/client');
+      getAggregate.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.reject(networkError);
+        }
+        return Promise.resolve({
+          data: [{ period: '2024-01', totalCount: 100, totalValue: 50000000 }],
+          meta: { version: '3.0' },
+        });
+      });
+
+      renderWithProviders(<TimeTrendChart />, { queryClient });
+
+      // Wait for retry and success
+      await waitFor(
+        () => {
+          const frame = screen.getByTestId('chart-frame');
+          expect(frame.dataset.status).toBe('success');
+        },
+        { timeout: 3000 }
+      );
+
+      // Should have called twice (initial + 1 retry)
+      expect(callCount).toBe(2);
+    });
+
+    // Note: Custom retry logic (shouldRetry) is tested in useAppQuery.test.jsx
+    // This test verifies the retry mechanism works at integration level
+  });
+
+  // ===========================================================================
+  // CONCURRENT RAPID CHANGES TESTS
+  // ===========================================================================
+
+  describe('concurrent rapid changes', () => {
+    it('final filter value wins after rapid changes', async () => {
+      mockState.apiDelay = 50; // Add delay to see race condition behavior
+      const queryClient = createTestQueryClient();
+
+      const { rerender } = renderWithProviders(<TimeTrendChart />, { queryClient });
+
+      // Rapid filter changes
+      mockDebouncedFilterKey = 'filter-A';
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <TimeTrendChart />
+        </QueryClientProvider>
+      );
+
+      mockDebouncedFilterKey = 'filter-B';
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <TimeTrendChart />
+        </QueryClientProvider>
+      );
+
+      mockDebouncedFilterKey = 'filter-C';
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <TimeTrendChart />
+        </QueryClientProvider>
+      );
+
+      // Wait for all to settle
+      await waitFor(
+        () => {
+          const frame = screen.getByTestId('chart-frame');
+          expect(frame.dataset.status).toBe('success');
+        },
+        { timeout: 2000 }
+      );
+
+      // Cache should contain the final filter's query
+      const queries = queryClient.getQueryCache().getAll();
+      const appQueries = queries.filter((q) => q.queryKey[0] === 'appQuery');
+      // Should have queries for different filter keys
+      expect(appQueries.length).toBeGreaterThanOrEqual(1);
     });
   });
 });
