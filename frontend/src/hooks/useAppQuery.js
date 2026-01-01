@@ -33,17 +33,26 @@
  * KEY DIFFERENCES FROM useGatedAbortableQuery:
  * - Uses TanStack Query for caching, deduplication, and stale-while-revalidate
  * - Query key is auto-generated from deps (no manual filterKey needed)
- * - staleTime replaces debouncing (cache hits are instant)
- * - Better DevTools support
+ * - Better DevTools support for debugging cache state
+ *
+ * IMPORTANT - DEBOUNCING:
+ * staleTime is NOT a debounce mechanism. It controls cache freshness (how long
+ * cached data is considered valid before a background refetch).
+ *
+ * Charts should STILL pass debouncedFilterKey in deps to prevent rapid-fire
+ * API calls during active filter adjustments (e.g., slider dragging).
+ * Example: [debouncedFilterKey, timeGrouping, saleType]
  *
  * @param {Function} queryFn - Async function that receives AbortSignal and returns data
  * @param {Array} deps - Dependencies that become part of the query key
  * @param {Object} options - Configuration options:
  *   - chartName: string - Name for timing tracking (dev-only)
  *   - enabled: boolean - ANDed with appReady
- *   - keepPreviousData: boolean - Show old data while fetching
+ *   - keepPreviousData: boolean - Show old data while fetching (uses placeholderData)
  *   - initialData: any - Initial data before first fetch
- *   - staleTime: number - Override default staleTime (30s)
+ *   - staleTime: number - Override default staleTime (30s) - controls cache freshness
+ *   - onSuccess: function - DEPRECATED compatibility layer (prefer useEffect)
+ *   - onError: function - DEPRECATED compatibility layer (prefer useEffect)
  * @returns {Object} Query state with status compatible with ChartFrame
  */
 
@@ -75,12 +84,18 @@ export function useAppQuery(queryFn, deps = [], options = {}) {
   const timing = useChartTiming(chartName || '');
   const hasTimingEnabled = isDev && chartName;
 
-  // Gate enabled on appReady
+  // Gate enabled on appReady - query won't execute until boot completes
   const effectiveEnabled = userEnabled && appReady;
 
   // Stable query key from deps
-  // Include appReady to force refetch when boot completes
-  const queryKey = useMemo(() => ['appQuery', ...deps, appReady], [deps, appReady]);
+  // CRITICAL: Serialize deps to ensure stable reference comparison.
+  // Without this, passing [...deps] as array argument creates new reference
+  // every render, causing infinite query loops.
+  // Note: appReady is NOT included in queryKey - enabled handles boot gating.
+  // Including appReady would cause duplicate fetches (one when enabled becomes
+  // true, another when queryKey changes).
+  const depsKey = JSON.stringify(deps);
+  const queryKey = useMemo(() => ['appQuery', ...deps], [depsKey]);
 
   // Stable ref for queryFn (avoid recreating query on every render)
   const queryFnRef = useRef(queryFn);

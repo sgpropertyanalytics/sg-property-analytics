@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
+import { queryClient } from '../lib/queryClient';
 import apiClient from '../api/client';
 import { useStaleRequestGuard } from '../hooks';
 import { useSubscription } from './SubscriptionContext';
@@ -425,6 +426,8 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     // Clear subscription state
     clearSubscription();
+    // Clear TanStack Query cache to prevent stale data from previous user
+    queryClient.clear();
 
     if (!isFirebaseConfigured()) {
       setUser(null);
