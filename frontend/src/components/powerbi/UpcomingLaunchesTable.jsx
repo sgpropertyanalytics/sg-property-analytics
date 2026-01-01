@@ -31,8 +31,7 @@ export function UpcomingLaunchesTable({
   compact = false,   // Compact mode for embedding (no border)
   showHeader = true, // Show/hide header
 }) {
-  const subscriptionContext = useSubscription();
-  const isPremium = subscriptionContext?.isPremium ?? true;
+  const { isPremium, isFreeResolved } = useSubscription();
   const [sortConfig, setSortConfig] = useState({
     column: 'project_name',
     order: 'asc',
@@ -267,7 +266,7 @@ export function UpcomingLaunchesTable({
                 ))}
               </tr>
             </thead>
-            <tbody className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
+            <tbody className={isFreeResolved ? 'blur-sm grayscale-[40%]' : ''}>
               {isLoading ? (
                 // Loading skeleton
                 [...Array(10)].map((_, i) => (

@@ -44,7 +44,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
   // Get GLOBAL filters and timeGrouping from context
   // filterKey updates immediately on filter change - used for instant overlay feedback
   const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
-  const { isPremium } = useSubscription();
+  const { isPremium, isFreeResolved } = useSubscription();
 
   const chartRef = useRef(null);
 
@@ -347,7 +347,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
             </div>
 
             {/* KPI Row */}
-            <InlineCardRow blur={!isPremium}>
+            <InlineCardRow blur={isFreeResolved}>
               <ZScoreSignalCard
                 label="CCR-RCR"
                 zScore={latestZCcrRcr}

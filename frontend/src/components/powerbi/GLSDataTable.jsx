@@ -24,8 +24,7 @@ import { getQueryErrorMessage } from '../common/QueryState';
  * - FACT (awarded): Capital committed, confirmed supply
  */
 export function GLSDataTable({ height = 400 }) {
-  const subscriptionContext = useSubscription();
-  const isPremium = subscriptionContext?.isPremium ?? true;
+  const { isPremium, isFreeResolved } = useSubscription();
   const [filter, setFilter] = useState('all'); // 'all', 'launched', 'awarded'
   const [segmentFilter, setSegmentFilter] = useState(''); // '', 'CCR', 'RCR', 'OCR'
   const [sortConfig, setSortConfig] = useState({
@@ -275,7 +274,7 @@ export function GLSDataTable({ height = 400 }) {
             <p className="text-xs text-slate-400 mt-1">Data will be available once synchronized from URA.</p>
           </div>
         ) : (
-          <div className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
+          <div className={isFreeResolved ? 'blur-sm grayscale-[40%]' : ''}>
             {data.map((tender, idx) => (
               <div key={tender.id || idx} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30">
                 {/* Header: Location + Status */}
@@ -362,7 +361,7 @@ export function GLSDataTable({ height = 400 }) {
                 ))}
               </tr>
             </thead>
-            <tbody className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
+            <tbody className={isFreeResolved ? 'blur-sm grayscale-[40%]' : ''}>
               {isLoading ? (
                 // Loading skeleton
                 [...Array(10)].map((_, i) => (

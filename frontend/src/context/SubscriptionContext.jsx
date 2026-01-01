@@ -41,20 +41,36 @@ export function useSubscription() {
   return context;
 }
 
-// Cache key for localStorage
-const SUBSCRIPTION_CACHE_KEY = 'subscription_cache';
+// Cache key prefix for localStorage (per-user keying)
+const SUBSCRIPTION_CACHE_PREFIX = 'subscription:';
 
 // Cache version - bump this to invalidate all existing caches on deploy
-const CACHE_VERSION = 4;
+const CACHE_VERSION = 5; // Bumped for per-user cache migration
 
-// Get cached subscription from localStorage
-const getCachedSubscription = () => {
+/**
+ * Normalize email for cache key (lowercase, trimmed)
+ * Returns null if email is falsy or not a string
+ */
+const normalizeEmail = (email) => {
+  if (!email || typeof email !== 'string') return null;
+  return email.toLowerCase().trim();
+};
+
+/**
+ * Get cached subscription for a specific user
+ * @param {string} email - User email (cache key identifier)
+ * @returns {Object|null} Cached subscription or null
+ */
+const getCachedSubscription = (email) => {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return null;
   try {
-    const cached = localStorage.getItem(SUBSCRIPTION_CACHE_KEY);
+    const cacheKey = `${SUBSCRIPTION_CACHE_PREFIX}${normalizedEmail}`;
+    const cached = localStorage.getItem(cacheKey);
     if (cached) {
       const parsed = JSON.parse(cached);
       if (parsed.version !== CACHE_VERSION) {
-        localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
+        localStorage.removeItem(cacheKey);
         return null;
       }
       if ((parsed.tier === 'free' || parsed.tier === 'premium') && typeof parsed.subscribed === 'boolean') {
@@ -67,15 +83,48 @@ const getCachedSubscription = () => {
   return null;
 };
 
-// Save subscription to localStorage with version
-const cacheSubscription = (sub) => {
+/**
+ * Save subscription to localStorage for a specific user
+ * @param {Object} sub - Subscription data {tier, subscribed, ends_at}
+ * @param {string} email - User email (cache key identifier)
+ */
+const cacheSubscription = (sub, email) => {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return;
   try {
-    localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify({
+    const cacheKey = `${SUBSCRIPTION_CACHE_PREFIX}${normalizedEmail}`;
+    localStorage.setItem(cacheKey, JSON.stringify({
       ...sub,
       version: CACHE_VERSION,
     }));
   } catch {
     // Ignore storage errors
+  }
+};
+
+/**
+ * Clear cached subscription for a specific user
+ * @param {string} email - User email (cache key identifier)
+ */
+const clearCachedSubscription = (email) => {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return;
+  try {
+    const cacheKey = `${SUBSCRIPTION_CACHE_PREFIX}${normalizedEmail}`;
+    localStorage.removeItem(cacheKey);
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+/**
+ * Clear old global cache key (migration cleanup)
+ */
+const clearLegacyCache = () => {
+  try {
+    localStorage.removeItem('subscription_cache');
+  } catch {
+    // Ignore
   }
 };
 
@@ -123,11 +172,15 @@ export const unwrapSubscriptionResponse = (responseData) => {
 };
 
 export function SubscriptionProvider({ children }) {
-  // Initialize from cache OR default (tier='free' but status='pending')
-  const cachedSub = getCachedSubscription();
-  const [subscription, setSubscription] = useState(cachedSub || DEFAULT_SUBSCRIPTION);
-  // If cached, start as RESOLVED; otherwise PENDING
-  const [status, setStatus] = useState(cachedSub ? SubscriptionStatus.RESOLVED : SubscriptionStatus.PENDING);
+  // Clear legacy global cache on mount (one-time migration)
+  useEffect(() => {
+    clearLegacyCache();
+  }, []);
+
+  // DON'T load cache on mount - we don't know who the user is yet
+  // Cache is loaded per-user when AuthContext calls fetchSubscription(email)
+  const [subscription, setSubscription] = useState(DEFAULT_SUBSCRIPTION);
+  const [status, setStatus] = useState(SubscriptionStatus.PENDING);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [showPricingModal, setShowPricingModal] = useState(false);
@@ -137,6 +190,14 @@ export function SubscriptionProvider({ children }) {
 
   // Ref for hidePaywall timeout cleanup
   const hidePaywallTimeoutRef = useRef(null);
+
+  // Track current user email for per-user cache operations
+  const currentUserEmailRef = useRef(null);
+
+  // Deterministic guard: Set true when bootstrapSubscription is called (from firebase-sync),
+  // cleared after first fetchSubscription skip. Prevents duplicate fetch after sign-in
+  // without relying on timing assumptions.
+  const bootstrappedInSessionRef = useRef(false);
 
   // Analytics context for upsell tracking
   const [upsellContext, setUpsellContext] = useState({
@@ -148,46 +209,100 @@ export function SubscriptionProvider({ children }) {
   /**
    * Bootstrap subscription from AuthContext (primary path - no API call)
    * Called after firebase-sync returns subscription data.
+   * @param {Object} sub - Subscription data {tier, subscribed, ends_at}
+   * @param {string} email - User email for per-user cache
    */
-  const bootstrapSubscription = useCallback((sub) => {
+  const bootstrapSubscription = useCallback((sub, email) => {
     if (!sub || (sub.tier !== 'free' && sub.tier !== 'premium')) {
       console.error('[Subscription] Bootstrap called with invalid tier:', sub?.tier);
       setFetchError(new Error(`Invalid tier value: ${sub?.tier}`));
       setStatus(SubscriptionStatus.ERROR);
       return;
     }
-    console.log('[Subscription] Bootstrapping:', sub);
+
+    // Normalize email for cache key
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      console.warn('[Subscription] Bootstrap called without valid email - skipping cache');
+    }
+
+    console.log('[Subscription] Bootstrapping:', sub, 'for user:', normalizedEmail);
     const newSub = {
       tier: sub.tier,
       subscribed: sub.subscribed || false,
       ends_at: sub.ends_at || null,
     };
     setSubscription(newSub);
-    cacheSubscription(newSub);
+
+    // Cache per-user (only if email is valid)
+    if (normalizedEmail) {
+      currentUserEmailRef.current = normalizedEmail;
+      cacheSubscription(newSub, normalizedEmail);
+    }
+
     setStatus(SubscriptionStatus.RESOLVED);
     setLoading(false);
     setFetchError(null);
+    // Mark as bootstrapped to prevent duplicate fetch from onAuthStateChanged
+    bootstrappedInSessionRef.current = true;
   }, []);
 
   /**
    * Fetch subscription from backend
    * Called by AuthContext on page refresh when no firebase-sync occurs.
-   * No early-exit check - AuthContext decides when to call.
+   *
+   * @param {string} email - User email for per-user cache
+   *
+   * FLOW:
+   * 1. Load per-user cache first (fast display)
+   * 2. Fetch from API to verify/update
    *
    * RACE GUARD: Checks token at start AND after fetch to prevent overwriting
    * clearSubscription() state if logout happened during the request.
    */
-  const fetchSubscription = useCallback(async () => {
+  const fetchSubscription = useCallback(async (email) => {
     // Race guard: If no token, user logged out - don't fetch
     if (!localStorage.getItem('token')) {
       console.log('[Subscription] No token, skipping fetch');
       return;
     }
 
+    // Duplicate guard: If bootstrapSubscription was called in this session, skip ONCE
+    // This prevents the onAuthStateChanged → fetchSubscription duplicate after sign-in
+    // Deterministic: no timing assumptions, just "was bootstrap called before this fetch?"
+    if (bootstrappedInSessionRef.current) {
+      console.log('[Subscription] Skipping fetch - already bootstrapped in this session');
+      bootstrappedInSessionRef.current = false; // Clear flag so future fetches work
+      return;
+    }
+
+    // Normalize email for cache key
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      console.warn('[Subscription] Fetch called without valid email - skipping cache operations');
+    }
+
+    // Track current user (only if email is valid)
+    if (normalizedEmail) {
+      currentUserEmailRef.current = normalizedEmail;
+    }
+
+    // Step 1: Load per-user cache first (fast display while verifying)
+    const cachedSub = normalizedEmail ? getCachedSubscription(normalizedEmail) : null;
+    if (cachedSub) {
+      console.log('[Subscription] Loaded from cache for:', normalizedEmail, cachedSub);
+      setSubscription(cachedSub);
+      setStatus(SubscriptionStatus.RESOLVED);
+      // Continue to verify from backend...
+    }
+
     const requestId = startRequest();
-    console.log('[Subscription] Fetching /auth/subscription...');
+    console.log('[Subscription] Fetching /auth/subscription for:', normalizedEmail || email);
     setLoading(true);
-    setStatus(SubscriptionStatus.LOADING);
+    // Only set LOADING if we didn't have cache (avoid flash)
+    if (!cachedSub) {
+      setStatus(SubscriptionStatus.LOADING);
+    }
     setFetchError(null);
 
     try {
@@ -203,11 +318,21 @@ export function SubscriptionProvider({ children }) {
         return;
       }
 
+      // Race guard: User switched accounts mid-flight (email changed)
+      if (normalizedEmail && currentUserEmailRef.current !== normalizedEmail) {
+        console.log('[Subscription] Email changed during fetch, discarding result:',
+          { requested: normalizedEmail, current: currentUserEmailRef.current });
+        return;
+      }
+
       const subData = unwrapSubscriptionResponse(response.data);
       if (subData) {
         console.log('[Subscription] Fetch success:', subData);
         setSubscription(subData);
-        cacheSubscription(subData);
+        // Cache only if we have a valid normalized email
+        if (normalizedEmail) {
+          cacheSubscription(subData, normalizedEmail);
+        }
         setStatus(SubscriptionStatus.RESOLVED);
         setLoading(false);
       } else {
@@ -235,21 +360,27 @@ export function SubscriptionProvider({ children }) {
    * Sets to free tier with RESOLVED status (explicit logout = explicit free)
    */
   const clearSubscription = useCallback(() => {
-    console.log('[Subscription] Clearing (logout)');
+    const email = currentUserEmailRef.current;
+    console.log('[Subscription] Clearing (logout) for:', email);
     setSubscription({ tier: 'free', subscribed: false, ends_at: null });
     setStatus(SubscriptionStatus.RESOLVED);
     setLoading(false);
     setFetchError(null);
-    // Don't cache on logout - prevents stale cache persisting
+    // Reset bootstrap flag for clean state on next sign-in
+    bootstrappedInSessionRef.current = false;
+    // Clear per-user cache
+    clearCachedSubscription(email);
+    currentUserEmailRef.current = null;
   }, []);
 
   /**
    * Refresh subscription from backend (after payment)
-   * Forces a fresh fetch.
+   * Forces a fresh fetch. Uses currentUserEmailRef for cache.
    */
   const refreshSubscription = useCallback(async () => {
+    const email = currentUserEmailRef.current;
     const requestId = startRequest();
-    console.log('[Subscription] Refreshing...');
+    console.log('[Subscription] Refreshing for:', email);
     setLoading(true);
     setStatus(SubscriptionStatus.LOADING);
     setFetchError(null);
@@ -265,7 +396,7 @@ export function SubscriptionProvider({ children }) {
       if (subData) {
         console.log('[Subscription] Refresh success:', subData);
         setSubscription(subData);
-        cacheSubscription(subData);
+        cacheSubscription(subData, email);
         setStatus(SubscriptionStatus.RESOLVED);
       } else {
         setFetchError(new Error('Failed to parse refresh response'));

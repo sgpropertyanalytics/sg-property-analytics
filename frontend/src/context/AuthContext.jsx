@@ -150,7 +150,7 @@ export function AuthProvider({ children }) {
                 localStorage.setItem('token', response.data.token);
                 // Bootstrap subscription from firebase-sync response
                 if (response.data.subscription) {
-                  bootstrapSubscription(response.data.subscription);
+                  bootstrapSubscription(response.data.subscription, result.user.email);
                 }
               }
             } catch (err) {
@@ -195,7 +195,7 @@ export function AuthProvider({ children }) {
             // User exists, token exists (page refresh)
             setTokenStatus(TokenStatus.PRESENT);
             // Fetch subscription from backend (no firebase-sync on refresh)
-            fetchSubscription();
+            fetchSubscription(firebaseUser.email);
           } else {
             // User exists, no token → need sync
             prevTokenStatusRef.current = tokenStatus; // Store for abort recovery
@@ -272,7 +272,7 @@ export function AuthProvider({ children }) {
             localStorage.setItem('token', response.data.token);
             // Bootstrap subscription from firebase-sync response
             if (response.data.subscription) {
-              bootstrapSubscription(response.data.subscription);
+              bootstrapSubscription(response.data.subscription, firebaseUser.email);
             }
             return { ok: true, aborted: false };
           }
@@ -337,7 +337,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('token', response.data.token);
         // Bootstrap subscription from firebase-sync response
         if (response.data.subscription) {
-          bootstrapSubscription(response.data.subscription);
+          bootstrapSubscription(response.data.subscription, firebaseUser.email);
         }
       }
 
@@ -490,7 +490,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('token', response.data.token);
         // Bootstrap subscription from firebase-sync response
         if (response.data.subscription) {
-          bootstrapSubscription(response.data.subscription);
+          bootstrapSubscription(response.data.subscription, user.email);
         }
         const storedToken = localStorage.getItem('token');
         const tokenStored = storedToken === response.data.token;
@@ -573,7 +573,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('token', response.data.token);
         // Bootstrap subscription from firebase-sync response
         if (response.data.subscription) {
-          bootstrapSubscription(response.data.subscription);
+          bootstrapSubscription(response.data.subscription, user.email);
         }
         setTokenStatus(TokenStatus.PRESENT);
         console.log('[Auth] Token sync retry succeeded');

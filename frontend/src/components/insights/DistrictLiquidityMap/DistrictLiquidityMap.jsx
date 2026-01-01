@@ -51,7 +51,7 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
   onModeChange,
   enabled = true,
 }) {
-  const { isPremium } = useSubscription();
+  const { isPremium, isFreeResolved } = useSubscription();
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
   // Lazy-load GeoJSON to reduce initial bundle size (~100KB savings)
@@ -268,7 +268,7 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
       {/* Map container */}
       <div className="relative h-[50vh] min-h-[400px] md:h-[60vh] md:min-h-[500px] lg:h-[65vh] lg:min-h-[550px]">
         {/* Blur overlay for free users */}
-        {!isPremium && !loading && (
+        {isFreeResolved && !loading && (
           <div
             className="absolute inset-0 z-20 pointer-events-none"
             style={{
@@ -516,14 +516,14 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
 
       {/* Region summary bar */}
       {!loading && !error && districtData.length > 0 && (
-        <div className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
+        <div className={isFreeResolved ? 'blur-sm grayscale-[40%]' : ''}>
           <RegionSummaryBar districtData={districtData} meta={meta} />
         </div>
       )}
 
       {/* District Ranking Table */}
       {!loading && !error && districtData.length > 0 && (
-        <div className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
+        <div className={isFreeResolved ? 'blur-sm grayscale-[40%]' : ''}>
           <LiquidityRankingTable
             districtData={districtData}
             selectedBed={selectedBed}

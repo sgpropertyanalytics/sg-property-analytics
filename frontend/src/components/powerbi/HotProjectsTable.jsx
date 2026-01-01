@@ -38,8 +38,7 @@ export function HotProjectsTable({
   onDataLoad = null, // Callback with data count after loading
   excludeSoldOut = false, // When true, exclude projects with 0 unsold units
 }) {
-  const subscriptionContext = useSubscription();
-  const isPremium = subscriptionContext?.isPremium ?? true;
+  const { isPremium, isFreeResolved } = useSubscription();
   const [sortConfig, setSortConfig] = useState({
     column: 'first_new_sale',  // Default: sort by latest launch date
     order: 'desc',
@@ -328,7 +327,7 @@ export function HotProjectsTable({
                 ))}
               </tr>
             </thead>
-            <tbody className={!isPremium ? 'blur-sm grayscale-[40%]' : ''}>
+            <tbody className={isFreeResolved ? 'blur-sm grayscale-[40%]' : ''}>
               {isLoading ? (
                 // Loading skeleton
                 [...Array(10)].map((_, i) => (

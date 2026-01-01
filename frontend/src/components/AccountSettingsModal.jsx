@@ -22,7 +22,7 @@ import { getInitials } from '../utils/formatters';
  */
 export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
   const { user, logout } = useAuth();
-  const { subscription, isPremium, isTierKnown, daysUntilExpiry } = useSubscription();
+  const { subscription, isPremium, isTierKnown, isFreeResolved, daysUntilExpiry } = useSubscription();
 
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -234,7 +234,7 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
                 )}
 
                 {/* Upgrade CTA for free users */}
-                {!isPremium && (
+                {isFreeResolved && (
                   <button
                     onClick={handleUpgrade}
                     className="w-full mt-4 px-4 py-3 bg-[#213448] text-white rounded-lg font-medium hover:bg-[#547792] transition-colors flex items-center justify-center gap-2"

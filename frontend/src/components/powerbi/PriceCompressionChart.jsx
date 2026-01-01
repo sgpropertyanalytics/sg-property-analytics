@@ -49,7 +49,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
   const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
-  const { isPremium } = useSubscription();
+  const { isPremium, isFreeResolved } = useSubscription();
 
   // UI state (not data state - that comes from useAbortableQuery)
   const chartRef = useRef(null);
@@ -268,7 +268,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
         </div>
 
         {/* KPI Row - Using standardized InlineCard components */}
-        <InlineCardRow blur={!isPremium}>
+        <InlineCardRow blur={isFreeResolved}>
           {/* Compression Score */}
           <InlineCard
             label="Compression Score"

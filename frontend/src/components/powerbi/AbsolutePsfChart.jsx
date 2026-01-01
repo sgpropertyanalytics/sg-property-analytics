@@ -42,7 +42,7 @@ const REGION_COLORS = {
  */
 export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 300, saleType = null, sharedData = null, sharedStatus = 'idle' }) {
   const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
-  const { isPremium } = useSubscription();
+  const { isPremium, isFreeResolved } = useSubscription();
   const chartRef = useRef(null);
 
   // Skip internal fetch if parent provides sharedData (eliminates duplicate API call)
@@ -268,7 +268,7 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
           </div>
 
           {/* KPI Row - Using standardized InlineCard components */}
-          <InlineCardRow blur={!isPremium}>
+          <InlineCardRow blur={isFreeResolved}>
             {latestData.ccr != null && (
               <InlineCard
                 label="CCR"
