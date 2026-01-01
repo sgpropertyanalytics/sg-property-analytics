@@ -6,16 +6,17 @@
  */
 
 import { getContract } from '../../generated/apiContract';
+import { IS_DEV, IS_TEST } from '../../config/env';
 
 const priceBandsContract = getContract('projects/price-bands');
 const priceBandsFields = priceBandsContract?.response_schema?.data_fields || {};
 
 const resolveField = (fieldName) => {
   if (!priceBandsFields[fieldName]) {
-    if (import.meta.env.MODE === 'test') {
+    if (IS_TEST) {
       throw new Error(`[API CONTRACT] Missing price bands field: ${fieldName}`);
     }
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       // eslint-disable-next-line no-console
       console.warn(`[API CONTRACT] Missing price bands field: ${fieldName}`);
     }

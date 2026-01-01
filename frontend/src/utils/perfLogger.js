@@ -6,14 +6,15 @@
  */
 
 import { PERFORMANCE_BUDGETS, getBudgetStatus } from '../constants/performanceBudgets';
+import { ENABLE_PERF_LOGGER } from '../config/env';
 
-const isDev = import.meta.env.DEV;
+const isPerfLoggingEnabled = ENABLE_PERF_LOGGER;
 
 /**
  * Log a timing entry to console with budget comparison
  */
 export function logChartTiming(entry) {
-  if (!isDev) return;
+  if (!isPerfLoggingEnabled) return;
 
   const {
     chartName,
@@ -50,7 +51,7 @@ export function logChartTiming(entry) {
  * Log a summary of all chart timings
  */
 export function logTimingSummary(summary) {
-  if (!isDev) return;
+  if (!isPerfLoggingEnabled) return;
 
   const { chartCount, avgTimeToData, p95TimeToData, budgetViolations } = summary;
 
@@ -72,7 +73,7 @@ export function logTimingSummary(summary) {
  * Log a slow chart warning
  */
 export function logSlowChart(chartName, timeToData, budget) {
-  if (!isDev) return;
+  if (!isPerfLoggingEnabled) return;
 
   console.warn(
     `\u{1F534} [SLOW CHART] ${chartName}: ${timeToData}ms (budget: ${budget}ms, exceeded by ${timeToData - budget}ms)`
@@ -83,7 +84,7 @@ export function logSlowChart(chartName, timeToData, budget) {
  * Log timing for a specific phase
  */
 export function logTimingPhase(chartName, phase, durationMs) {
-  if (!isDev) return;
+  if (!isPerfLoggingEnabled) return;
 
   const budgetMap = {
     api: 'apiLatency',
@@ -111,7 +112,7 @@ export function logTimingPhase(chartName, phase, durationMs) {
  * ```
  */
 export function createTimer(label) {
-  if (!isDev) {
+  if (!isPerfLoggingEnabled) {
     return {
       mark: () => {},
       log: () => {},

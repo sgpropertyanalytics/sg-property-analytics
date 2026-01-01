@@ -6,16 +6,17 @@
  */
 
 import { getContract } from '../../generated/apiContract';
+import { IS_DEV, IS_TEST } from '../../config/env';
 
 const hotProjectsContract = getContract('projects/hot');
 const hotProjectsFields = hotProjectsContract?.response_schema?.data_fields || {};
 
 const resolveField = (fieldName) => {
   if (!hotProjectsFields[fieldName]) {
-    if (import.meta.env.MODE === 'test') {
+    if (IS_TEST) {
       throw new Error(`[API CONTRACT] Missing hot projects field: ${fieldName}`);
     }
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       // eslint-disable-next-line no-console
       console.warn(`[API CONTRACT] Missing hot projects field: ${fieldName}`);
     }

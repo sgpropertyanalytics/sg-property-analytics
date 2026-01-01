@@ -5,6 +5,8 @@
  * Must match backend/api/contracts/contract_schema.py
  */
 
+import { IS_DEV, IS_TEST } from '../../config/env';
+
 // =============================================================================
 // VERSION CONSTANTS
 // =============================================================================
@@ -52,7 +54,7 @@ export function assertKnownVersion(meta) {
 
   if (!SUPPORTED_API_CONTRACT_VERSIONS.has(version)) {
     // In test mode, fail hard to catch contract drift in CI
-    if (import.meta.env.MODE === 'test') {
+    if (IS_TEST) {
       throw new Error(
         `[API CONTRACT] Unknown apiContractVersion: ${version}. ` +
         `Supported versions: ${Array.from(SUPPORTED_API_CONTRACT_VERSIONS).join(', ')}. ` +
@@ -61,7 +63,7 @@ export function assertKnownVersion(meta) {
     }
 
     // In dev mode, warn but don't throw (developer visibility)
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       console.warn(
         `[API CONTRACT] Unknown apiContractVersion: ${version}`,
         meta

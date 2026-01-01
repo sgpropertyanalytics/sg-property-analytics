@@ -6,16 +6,17 @@
  */
 
 import { getContract } from '../../generated/apiContract';
+import { IS_DEV, IS_TEST } from '../../config/env';
 
 const projectInventoryContract = getContract('projects/inventory');
 const projectInventoryFields = projectInventoryContract?.response_schema?.data_fields || {};
 
 const resolveField = (fieldName) => {
   if (!projectInventoryFields[fieldName]) {
-    if (import.meta.env.MODE === 'test') {
+    if (IS_TEST) {
       throw new Error(`[API CONTRACT] Missing project inventory field: ${fieldName}`);
     }
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       // eslint-disable-next-line no-console
       console.warn(`[API CONTRACT] Missing project inventory field: ${fieldName}`);
     }

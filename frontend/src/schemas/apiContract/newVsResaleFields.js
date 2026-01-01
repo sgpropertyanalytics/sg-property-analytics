@@ -6,16 +6,17 @@
  */
 
 import { getContract } from '../../generated/apiContract';
+import { IS_DEV, IS_TEST } from '../../config/env';
 
 const newVsResaleContract = getContract('trends/new-vs-resale');
 const newVsResaleFields = newVsResaleContract?.response_schema?.data_fields || {};
 
 const resolveDataField = (fieldName) => {
   if (!newVsResaleFields[fieldName]) {
-    if (import.meta.env.MODE === 'test') {
+    if (IS_TEST) {
       throw new Error(`[API CONTRACT] Missing new vs resale field: ${fieldName}`);
     }
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       // eslint-disable-next-line no-console
       console.warn(`[API CONTRACT] Missing new vs resale field: ${fieldName}`);
     }

@@ -6,6 +6,7 @@
  */
 
 import { getContract } from '../../generated/apiContract';
+import { IS_DEV, IS_TEST } from '../../config/env';
 
 const supplyContract = getContract('supply/summary');
 const supplyFields = supplyContract?.response_schema?.data_fields || {};
@@ -13,10 +14,10 @@ const supplyMetaFields = supplyContract?.response_schema?.meta_fields || {};
 
 const resolveDataField = (fieldName) => {
   if (!supplyFields[fieldName]) {
-    if (import.meta.env.MODE === 'test') {
+    if (IS_TEST) {
       throw new Error(`[API CONTRACT] Missing supply field: ${fieldName}`);
     }
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       // eslint-disable-next-line no-console
       console.warn(`[API CONTRACT] Missing supply field: ${fieldName}`);
     }
@@ -26,10 +27,10 @@ const resolveDataField = (fieldName) => {
 
 const resolveMetaField = (fieldName) => {
   if (!supplyMetaFields[fieldName]) {
-    if (import.meta.env.MODE === 'test') {
+    if (IS_TEST) {
       throw new Error(`[API CONTRACT] Missing supply meta field: ${fieldName}`);
     }
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       // eslint-disable-next-line no-console
       console.warn(`[API CONTRACT] Missing supply meta field: ${fieldName}`);
     }
