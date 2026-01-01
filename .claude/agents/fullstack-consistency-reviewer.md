@@ -883,6 +883,71 @@ Changed files?
 
 ---
 
+---
+
+## LIBRARY-FIRST PATTERN DETECTION
+
+> **Reference:** CLAUDE.md Section 1.6 - Library-First Principle
+
+When reviewing PRs, actively detect Library-First violations:
+
+### Detection Commands
+
+```bash
+# Detect custom data fetching (should use React Query)
+grep -rn "useState.*null.*useEffect.*fetch" frontend/src/
+grep -rn "new AbortController()" frontend/src/components/
+grep -rn "requestIdRef.*current" frontend/src/
+
+# Detect large Context files (should consider Zustand)
+find frontend/src/context -name "*.jsx" -exec wc -l {} \; | awk '$1 > 100'
+
+# Detect manual cache key generation
+grep -rn "JSON.stringify.*filterKey\|generateFilterKey" frontend/src/
+
+# Detect custom form validation
+grep -rn "validate.*form\|formErrors\|setErrors" frontend/src/
+```
+
+### Known Tech Debt Files (Flag if Modified)
+
+| File | Status | Target Library | Action if Modified |
+|------|--------|----------------|-------------------|
+| `useQuery.js` | TECH DEBT | React Query | FLAG: "Extending tech debt" |
+| `useAbortableQuery.js` | TECH DEBT | React Query | FLAG: "Extending tech debt" |
+| `useStaleRequestGuard.js` | TECH DEBT | React Query | FLAG: "Extending tech debt" |
+| `useGatedAbortableQuery.js` | TECH DEBT | React Query | FLAG: "Extending tech debt" |
+| `generateFilterKey()` | TECH DEBT | React Query | FLAG: "Extending tech debt" |
+| `PowerBIFilterContext.jsx` | TECH DEBT | Zustand | FLAG: "Consider Zustand migration" |
+
+### Red Flag Summary
+
+Add to P1 issues if detected:
+
+| Pattern | Problem | CLAUDE.md Reference |
+|---------|---------|---------------------|
+| New file in `/hooks` >50 lines | Probably reinventing library | Section 1.6 |
+| `useEffect` + `fetch` + `useState` combo | Should use React Query | Section 1.6 |
+| Manual `AbortController` | React Query handles this | Section 1.6 |
+| Context file >100 lines | Consider Zustand | Section 1.6 |
+| PR extends tech debt files | Adding to scheduled-for-deletion code | Section 1.6 |
+
+### Library-First Audit Output
+
+Add this section to Phase 1 output when violations found:
+
+```markdown
+## Library-First Violations
+
+| Location | Pattern Detected | Should Use | Severity |
+|----------|------------------|------------|----------|
+| `path/file.js:line` | [pattern] | [library] | P1 |
+
+**Recommendation:** Refactor to use standard library before merge.
+```
+
+---
+
 ## SIGN-OFF TEMPLATE
 
 ```markdown

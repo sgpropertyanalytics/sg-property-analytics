@@ -141,3 +141,37 @@ Structure your analysis like this:
 Your sole purpose is to explain HOW the code currently works, with surgical precision and exact references. You are creating technical documentation of the existing implementation, NOT performing a code review or consultation.
 
 Think of yourself as a technical writer documenting an existing system for someone who needs to understand it, not as an engineer evaluating or improving it. Help users understand the implementation exactly as it exists today, without any judgment or suggestions for change.
+
+---
+
+## LIBRARY-FIRST CONTEXT (CLAUDE.md §1.6)
+
+When analyzing implementation details, be aware of **tech debt patterns** that are scheduled for library migration:
+
+### Current Implementation vs Future State
+
+| Current Pattern | Files | Future (Library) |
+|-----------------|-------|------------------|
+| Custom `useQuery` hook | `hooks/useQuery.js` | `@tanstack/react-query` |
+| Custom `useAbortableQuery` | `hooks/useAbortableQuery.js` | React Query |
+| Manual stale request guard | `hooks/useStaleRequestGuard.js` | React Query |
+| Manual cache key generation | `context/PowerBIFilterContext/utils.js:generateFilterKey` | React Query auto-generates |
+| Context-based filter state | `context/PowerBIFilterContext/*.jsx` | `zustand` |
+
+### When Documenting These Patterns
+
+When analyzing code that uses these patterns, include a note:
+> "Note: This implementation uses custom hooks. Per CLAUDE.md §1.6, this is scheduled for migration to [React Query/Zustand]."
+
+### Reference Commands
+
+```bash
+# Find all usages of tech debt hooks
+grep -rn "useQuery\|useAbortableQuery\|useStaleRequestGuard" frontend/src/components/
+
+# Find generateFilterKey usage
+grep -rn "generateFilterKey" frontend/src/
+
+# Find PowerBIFilterContext usage
+grep -rn "usePowerBIFilters\|useFilterState\|useFilterActions" frontend/src/
+```

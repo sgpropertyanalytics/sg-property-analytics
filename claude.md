@@ -14,6 +14,7 @@
 | `/frontend-design` | Building UI components/pages |
 | `/backend-impact-guardrails` | **Backend changes (MANDATORY)** |
 | `/git-context-guardrails` | **ANY implementation (MANDATORY)** |
+| `/library-check` | **New infrastructure code (MANDATORY)** |
 
 ### Agents
 | Agent | Trigger |
@@ -36,7 +37,7 @@
 | `/exit-risk` | Exit Risk Analysis |
 | `/methodology` | Methodology |
 
-**Docs:** `docs/architecture.md`, `docs/frontend.md`, `docs/backend.md`, `docs/BACKEND_CHART_DEPENDENCIES.md`
+**Docs:** `docs/architecture.md`, `docs/frontend.md`, `docs/backend.md`, `docs/BACKEND_CHART_DEPENDENCIES.md`, `docs/LIBRARY_FIRST_REFERENCE.md`
 
 ---
 
@@ -116,6 +117,73 @@ Every solution MUST be:
 | Duplicating code "to be safe" | Reuse existing |
 | `// TODO: fix later` | Fix now or don't merge |
 
+## 1.6 Library-First Principle
+
+> **Origin:** On Dec 25, 2025, we built 400+ lines of custom query hooks when React Query solves this in 5 lines. The `datePreset` cache key bug was a direct result. Never again.
+
+**BEFORE writing ANY infrastructure code (>50 lines), you MUST:**
+
+1. **Check for existing library** - Search npm/PyPI for battle-tested solutions
+2. **Justify custom code** - Document why library doesn't work
+3. **Get explicit approval** - User must approve custom infrastructure
+
+### Frontend Libraries (MANDATORY)
+
+| Category | Use This | NOT Custom Code |
+|----------|----------|-----------------|
+| Data fetching | `@tanstack/react-query` | `useEffect` + `fetch` + `useState` |
+| State management | `zustand` | Large Context files (>100 lines) |
+| Forms | `react-hook-form` | Manual form state |
+| Validation | `zod` | Custom validation functions |
+| Date/time | `date-fns` | Custom date utils |
+| Charts | `chart.js` (already used) | Custom canvas rendering |
+| HTTP client | `axios` (already used) | Raw `fetch` wrappers |
+
+### Backend Libraries (MANDATORY)
+
+| Category | Use This | NOT Custom Code |
+|----------|----------|-----------------|
+| Validation | `pydantic` or `marshmallow` | Custom validation decorators |
+| Date handling | `python-dateutil` | Custom date parsing |
+| Background jobs | `celery` or `rq` | Custom queue implementations |
+| Caching | `flask-caching` | Custom cache wrappers |
+| Rate limiting | `flask-limiter` | Custom rate limit logic |
+
+### Known Tech Debt (Scheduled for Migration)
+
+These files exist but violate Library-First. They are scheduled for replacement:
+
+| File | Lines | Problem | Target Library |
+|------|-------|---------|----------------|
+| `useQuery.js` | ~100 | Custom data fetching | React Query |
+| `useAbortableQuery.js` | ~100 | Manual abort handling | React Query |
+| `useStaleRequestGuard.js` | ~100 | Manual stale detection | React Query |
+| `useGatedAbortableQuery.js` | ~100 | Combined patterns | React Query |
+| `generateFilterKey()` | ~20 | Manual cache keys | React Query auto-generates |
+| `PowerBIFilterContext.jsx` | ~300 | Large state context | Zustand |
+
+**Rule:** Do NOT extend these files. New features must use target libraries.
+
+### Exceptions (Custom Code Allowed)
+
+Custom code is acceptable ONLY for:
+1. **Domain-specific logic** - Business rules unique to SG property (bedroom classification, district mapping)
+2. **Thin adapters** - API response transformers (<30 lines each)
+3. **UI components** - React components (not state/data infrastructure)
+4. **Configuration** - Constants, enums, config files
+
+### Red Flags (Auto-Reject)
+
+| Pattern | Problem |
+|---------|---------|
+| New file in `/hooks` >50 lines | Probably reinventing a library |
+| `useEffect` + `fetch` + `useState` combo | Use React Query |
+| Manual `AbortController` | Use React Query |
+| Manual `requestIdRef` for stale detection | Use React Query |
+| `JSON.stringify` for cache keys | Use React Query |
+| Context file >100 lines | Consider Zustand |
+| Custom form validation | Use react-hook-form + zod |
+
 ## 1.5 Data Correctness Invariants
 
 **Two-Phase Computation:**
@@ -189,10 +257,21 @@ current_min = date(max_date.year, max_date.month - 2, 1)  # 3 months back
 
 ## 3.2 Frontend Async
 
-- Use `useAbortableQuery` or `useStaleRequestGuard`
+> **Note:** Current patterns (`useAbortableQuery`, `useStaleRequestGuard`) are tech debt scheduled for React Query migration. See Section 1.6.
+
+- Use `useAbortableQuery` or `useStaleRequestGuard` (until React Query migration)
 - Pass `signal` to ALL API calls
 - Check `isStale(requestId)` before setState
 - Response through adapter (never `response.data` directly)
+
+**Proactive Pattern Detection:**
+When you see these patterns in existing code, flag for migration:
+```bash
+# Detect custom async patterns (scheduled for React Query)
+grep -rn "useState.*null.*useEffect.*fetch" frontend/src/
+grep -rn "new AbortController()" frontend/src/components/
+grep -rn "requestIdRef.*current" frontend/src/
+```
 
 **Query Keys:** Include ALL data-affecting state.
 ```js
@@ -414,6 +493,13 @@ Run these before committing. If any box fails, stop and fix.
 4. Assume messier data in future
 5. If unsure → ask
 
+## Infrastructure Code (Library-First)
+- [ ] Checked npm/PyPI for existing library solution
+- [ ] Custom code is <50 lines (or has documented justification)
+- [ ] Not recreating: data fetching, state management, forms, validation
+- [ ] User explicitly approved custom infrastructure (if >50 lines)
+- [ ] Added to tech debt tracker if temporary
+
 ---
 
 # 9. DEBUGGING & TESTING
@@ -454,6 +540,29 @@ ChartJS.register(LineController, CategoryScale, LinearScale, PointElement, LineE
 - Register: Controller + Elements + Scales
 - Spread `baseChartJsOptions`
 - Use `ChartSlot` wrapper
+
+## Quarterly Infrastructure Audit
+
+Run every quarter to detect Library-First violations:
+
+```bash
+# Find custom data fetching patterns
+grep -rn "useState.*null.*useEffect.*fetch" frontend/src/
+
+# Find manual AbortController (React Query handles this)
+grep -rn "new AbortController()" frontend/src/components/
+
+# Find manual stale request tracking
+grep -rn "requestIdRef.*current" frontend/src/
+
+# Find large Context files (>100 lines, consider Zustand)
+find frontend/src/context -name "*.jsx" -exec wc -l {} \; | awk '$1 > 100'
+
+# Find custom form validation
+grep -rn "validate.*form\|formErrors\|setErrors" frontend/src/
+```
+
+**Action:** Any findings should be added to tech debt tracker with migration plan.
 
 ---
 

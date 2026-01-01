@@ -520,3 +520,85 @@ Activate this agent when user says:
 - "what's going on here"
 - "I don't understand this"
 - "this is confusing"
+
+---
+
+## 14. LIBRARY-FIRST OVER-ENGINEERING DETECTION
+
+> **Reference:** CLAUDE.md Section 1.6 - Library-First Principle
+> **Origin:** On Dec 25, 2025, we built 400+ lines of custom query hooks when React Query solves this in 5 lines.
+
+### The Ultimate Over-Engineering: Reinventing Libraries
+
+When analyzing complexity, the WORST form of over-engineering is **reinventing solved problems**.
+
+### Red Flag Patterns
+
+| Pattern | Lines Wasted | Library Solution |
+|---------|--------------|------------------|
+| `useEffect` + `fetch` + `useState` + `AbortController` | 50-100 | React Query (5 lines) |
+| Manual stale request guards | 50-100 | React Query handles automatically |
+| Manual cache key generation | 20-50 | React Query auto-generates |
+| Large Context for global state | 100-300 | Zustand (20 lines) |
+| Custom form validation | 50-100 | react-hook-form + zod |
+| Custom date formatting utils | 20-50 | date-fns |
+
+### ELI5 for Library-First
+
+**The Pencil Factory Analogy (Extended):**
+
+Imagine you need a pencil to write something...
+
+**Over-engineered way (what we did):**
+1. Build a Pencil Factory with Wood Department, Lead Department, Eraser Department
+2. Hire a factory manager, quality control team
+3. Write operating manuals for each department
+4. Build maintenance systems for machines
+5. Create inventory tracking...
+6. ...400 employees later, you get ONE pencil (but it has bugs)
+
+**Simple way:**
+1. Go to store
+2. Buy pencil (tested by millions of users)
+3. Write
+
+**What happened in our code:**
+We built a custom Pencil Factory (`useAbortableQuery`, `useStaleRequestGuard`, `generateFilterKey`) when the store already sells perfect pencils (React Query).
+
+### Detection Commands
+
+```bash
+# Find pencil factories (custom infrastructure that should be libraries)
+grep -rn "useState.*null.*useEffect.*fetch" frontend/src/
+grep -rn "new AbortController()" frontend/src/components/
+grep -rn "requestIdRef.*current" frontend/src/
+
+# Count lines of custom infrastructure
+wc -l frontend/src/hooks/useQuery.js frontend/src/hooks/useAbortableQuery.js frontend/src/hooks/useStaleRequestGuard.js
+```
+
+### When Explaining Custom Infrastructure
+
+If asked to explain any of these files, include this warning:
+
+```markdown
+## ELI5 Guardian Warning: Library-First Violation
+
+**This code is scheduled for deletion.** (CLAUDE.md Section 1.6)
+
+This is a custom Pencil Factory when React Query exists:
+- [File] does [X] in [Y] lines
+- React Query does the same in [5] lines
+- Custom code = custom bugs (like the datePreset cache key bug)
+
+**Recommendation:** Do not extend. Migrate to React Query.
+```
+
+### Complexity Score Modifier
+
+When calculating Complexity Score, add +2 if the code reinvents a standard library:
+
+| Base Complexity | Library Reinvention | Final Score |
+|-----------------|---------------------|-------------|
+| 2 (moderate) | +2 (reinvents React Query) | 4 (WARN) |
+| 3 (complex) | +2 (reinvents Zustand) | 5 (FAIL) |

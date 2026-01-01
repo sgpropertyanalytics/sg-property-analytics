@@ -706,3 +706,54 @@ jobs:
 | Layout shift / overflow | ui-layout-validator |
 | API contract mismatch | contract-async-guardrails |
 | Design system issues | design-system-enforcer |
+
+---
+
+## 20. LIBRARY-FIRST PERFORMANCE CONSIDERATIONS (CLAUDE.md §1.6)
+
+### React Query Performance Benefits
+
+When evaluating performance improvements, consider that **React Query** (planned migration per CLAUDE.md §1.6) provides built-in performance features:
+
+| Feature | Current Custom Code | React Query |
+|---------|---------------------|-------------|
+| Request deduplication | None (duplicate fetches possible) | Automatic |
+| Stale-while-revalidate | Manual implementation | Built-in |
+| Background refetch | None | Automatic |
+| Query invalidation | Manual cache key management | Declarative |
+| Request cancellation | Manual AbortController | Automatic |
+
+### Performance-Related Tech Debt
+
+These custom hooks add performance overhead that React Query eliminates:
+
+| File | Performance Issue | React Query Solution |
+|------|-------------------|---------------------|
+| `useQuery.js` | Status machine overhead | Built-in status |
+| `useStaleRequestGuard.js` | Request ID tracking | Automatic |
+| `generateFilterKey()` | Manual JSON.stringify on every render | Auto cache keys |
+| Multiple useEffects for abort | Cleanup overhead | Single query lifecycle |
+
+### When Recommending Performance Fixes
+
+If performance issue is in data fetching layer:
+1. Check if it's in `useQuery.js`, `useAbortableQuery.js`, `useStaleRequestGuard.js`
+2. Note: "This custom code is scheduled for React Query migration (CLAUDE.md §1.6)"
+3. Consider whether the performance fix will be obsolete after migration
+4. If quick fix is needed, proceed; if major refactor, consider migrating to React Query instead
+
+### React Query Performance Patterns (Future State)
+
+```jsx
+// Built-in stale-while-revalidate
+const { data } = useQuery({
+  queryKey: ['aggregate', params],
+  queryFn: () => getAggregate(params),
+  staleTime: 30_000,          // Cache for 30s (no refetch if fresh)
+  gcTime: 5 * 60 * 1000,      // Keep in memory 5 min
+  refetchOnWindowFocus: false, // Don't spam API
+});
+
+// Built-in request deduplication
+// If 3 components call the same query, only 1 network request
+```
