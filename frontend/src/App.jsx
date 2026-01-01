@@ -1,9 +1,12 @@
 import { lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 // Register Chart.js components globally (MUST be before any chart imports)
 import './chartSetup';
 
+import { queryClient } from './lib/queryClient';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
@@ -122,6 +125,7 @@ const PerformanceDashboard = lazyWithRetry(() =>
  */
 function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <SubscriptionProvider>
       <AuthProvider>
         <DataProvider>
@@ -223,6 +227,9 @@ function App() {
         </DataProvider>
       </AuthProvider>
     </SubscriptionProvider>
+    {/* TanStack Query DevTools - only in development */}
+    <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+    </QueryClientProvider>
   );
 }
 
