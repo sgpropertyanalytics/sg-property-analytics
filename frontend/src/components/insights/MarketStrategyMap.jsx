@@ -497,7 +497,7 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
       return response.data.districts || [];
     },
     [selectedPeriod, selectedBed, selectedSaleType],
-    { enabled, initialData: [] }
+    { chartName: 'MarketStrategyMap', enabled, initialData: [] }
   );
 
   // Guard against null during in-flight state (same pattern as DistrictLiquidityMap)

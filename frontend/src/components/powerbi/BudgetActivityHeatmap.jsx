@@ -118,6 +118,7 @@ export function BudgetActivityHeatmap({
     },
     [filterKey],
     {
+      chartName: 'BudgetActivityHeatmap',
       enabled: budget >= 500000,
       initialData: null,
       keepPreviousData: true,

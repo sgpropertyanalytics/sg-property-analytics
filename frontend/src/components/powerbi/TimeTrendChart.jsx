@@ -77,7 +77,7 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
       }
     },
     [debouncedFilterKey, timeGrouping, saleType],
-    { initialData: [], keepPreviousData: true }
+    { chartName: 'TimeTrendChart', initialData: [], keepPreviousData: true }
   );
 
   // Market Core is Resale-only - single transaction count bar + total value line

@@ -99,6 +99,7 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
     },
     [debouncedFilterKey, timeGrouping],
     {
+      chartName: 'NewLaunchTimelineChart',
       initialData: [],
       enabled: shouldFetch,
       keepPreviousData: true,

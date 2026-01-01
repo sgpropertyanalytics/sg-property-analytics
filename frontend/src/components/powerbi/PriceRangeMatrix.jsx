@@ -83,7 +83,7 @@ export function PriceRangeMatrix({
       return transformPriceRangeMatrix(response.data, { budget });
     },
     [filterKey],
-    { keepPreviousData: true }
+    { chartName: 'PriceRangeMatrix', keepPreviousData: true }
   );
 
   const { matrix, ageBands, bedrooms } = data || {};

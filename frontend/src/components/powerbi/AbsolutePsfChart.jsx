@@ -88,7 +88,7 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
       return transformCompressionSeries(rawData);
     },
     [debouncedFilterKey, timeGrouping, saleType],
-    { initialData: [], enabled: shouldFetch && !useSharedData, keepPreviousData: true }
+    { chartName: 'AbsolutePsfChart', initialData: [], enabled: shouldFetch && !useSharedData, keepPreviousData: true }
   );
 
   // Use shared data from parent if provided, otherwise use internal fetch

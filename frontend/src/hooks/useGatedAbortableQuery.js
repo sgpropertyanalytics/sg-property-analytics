@@ -1,5 +1,8 @@
 import { useQuery, QueryStatus } from './useQuery';
 import { useAppReadyOptional } from '../context/AppReadyContext';
+import { useChartTiming } from './useChartTiming';
+
+const isDev = import.meta.env.DEV;
 
 /**
  * useGatedAbortableQuery - Query that waits for app boot to complete
@@ -10,17 +13,22 @@ import { useAppReadyOptional } from '../context/AppReadyContext';
  * - Subscription status is known
  * - Filters are hydrated from storage
  *
- * PR1 CHANGES:
- * - Now uses useQuery with explicit status enum
- * - `isBootPending` = !appReady (for ChartFrame skeleton)
- * - Query returns `status` for status-based rendering
+ * TIMING INSTRUMENTATION (dev-only):
+ * Pass `chartName` in options to enable automatic per-chart timing tracking.
+ * Timing data is available via:
+ * - /perf dashboard
+ * - Debug overlay (Ctrl+Shift+D)
+ * - window.__CHART_TIMINGS__.getTimings()
  *
  * Usage:
  * ```jsx
  * const { data, status, isBootPending } = useGatedAbortableQuery(
  *   async (signal) => getAggregate(params, { signal }),
  *   [debouncedFilterKey, timeGrouping],
- *   { keepPreviousData: true }
+ *   {
+ *     chartName: 'TimeTrendChart',  // ← Enables timing
+ *     keepPreviousData: true
+ *   }
  * );
  *
  * <ChartFrame status={status} isBootPending={isBootPending}>
@@ -30,28 +38,53 @@ import { useAppReadyOptional } from '../context/AppReadyContext';
  *
  * @param {Function} queryFn - Async function that receives AbortSignal and returns data
  * @param {Array} deps - Dependencies that trigger refetch
- * @param {Object} options - Same options as useQuery (enabled will be ANDed with appReady)
+ * @param {Object} options - Same options as useQuery plus:
+ *   - chartName: string - Name for timing tracking (dev-only)
+ *   - enabled: boolean - ANDed with appReady
  * @returns {Object} Query state with isBootPending flag
  */
 export function useGatedAbortableQuery(queryFn, deps = [], options = {}) {
   const appReadyContext = useAppReadyOptional();
   const appReady = appReadyContext?.appReady ?? true;
 
+  // Extract chartName for timing (dev-only)
+  const { chartName, ...restOptions } = options;
+
+  // Use chart timing if chartName provided (dev-only, no-ops in prod)
+  const timing = useChartTiming(chartName || '');
+  const hasTimingEnabled = isDev && chartName;
+
   // Gate enabled on appReady
-  const userEnabled = options.enabled ?? true;
+  const userEnabled = restOptions.enabled ?? true;
   const effectiveEnabled = userEnabled && appReady;
 
   // Only enable token refresh retry when appReady
-  const shouldRetryOnTokenRefresh = appReady && (options.retryOnTokenRefresh ?? true);
+  const shouldRetryOnTokenRefresh = appReady && (restOptions.retryOnTokenRefresh ?? true);
 
   // Include appReady in deps to force re-trigger when boot completes
   const queryDeps = [...deps, appReady];
 
-  const result = useQuery(queryFn, queryDeps, {
-    ...options,
+  // Build enhanced options with timing callbacks
+  const enhancedOptions = {
+    ...restOptions,
     enabled: effectiveEnabled,
     retryOnTokenRefresh: shouldRetryOnTokenRefresh,
-  });
+    // Auto-wire timing callbacks when chartName is provided
+    onFetchStart: hasTimingEnabled
+      ? (depsKey) => {
+          timing.recordFetchStart(depsKey);
+          restOptions.onFetchStart?.(depsKey);
+        }
+      : restOptions.onFetchStart,
+    onStateUpdate: hasTimingEnabled
+      ? () => {
+          timing.recordStateUpdate();
+          restOptions.onStateUpdate?.();
+        }
+      : restOptions.onStateUpdate,
+  };
+
+  const result = useQuery(queryFn, queryDeps, enhancedOptions);
 
   // isBootPending = !appReady (for ChartFrame to show skeleton during boot)
   const isBootPending = !appReady;
@@ -59,6 +92,8 @@ export function useGatedAbortableQuery(queryFn, deps = [], options = {}) {
   return {
     ...result,
     isBootPending,
+    // Expose timing for charts that want to record additional events
+    timing: hasTimingEnabled ? timing : null,
   };
 }
 

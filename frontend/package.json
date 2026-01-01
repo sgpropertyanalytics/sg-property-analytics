@@ -17,6 +17,7 @@
     "test:perf:quick": "playwright test e2e/performance/page-load.spec.js",
     "test:perf:report": "playwright test e2e/performance/ --reporter=html && open playwright-report/index.html",
     "test:perf:diagnose": "playwright test e2e/performance/bottleneck-diagnostic.spec.js",
+    "test:perf:charts": "playwright test e2e/performance/per-chart-timing.spec.js",
     "lint": "eslint \"src/**/*.{js,jsx}\"",
     "lint:ci": "eslint \"src/**/*.{js,jsx}\"",
     "lint:strict": "eslint \"src/**/*.{js,jsx}\" --max-warnings=0",

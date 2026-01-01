@@ -80,7 +80,7 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
       return transformDistributionSeries(apiData.price_histogram);
     },
     [debouncedFilterKey, numBins, showFullRange, saleType],
-    { initialData: { bins: [], stats: {}, tail: {}, totalCount: 0 }, enabled: !useShared, keepPreviousData: true }
+    { chartName: 'PriceDistributionChart', initialData: { bins: [], stats: {}, tail: {}, totalCount: 0 }, enabled: !useShared, keepPreviousData: true }
   );
 
   const resolvedData = useShared ? transformDistributionSeries(sharedData) : histogramData;

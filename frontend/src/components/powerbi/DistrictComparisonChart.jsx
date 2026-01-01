@@ -78,7 +78,7 @@ export const DistrictComparisonChart = React.memo(function DistrictComparisonCha
       return transformDistrictComparison(response.data, selectedProject, minUnits);
     },
     [filterKey, minUnits],
-    { initialData: { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } }, keepPreviousData: true }
+    { chartName: 'DistrictComparisonChart', initialData: { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } }, keepPreviousData: true }
   );
 
   const { groups, stats } = transformedData || { groups: [], stats: {} };
@@ -303,35 +303,33 @@ export const DistrictComparisonChart = React.memo(function DistrictComparisonCha
               <Bar data={barChartData} options={chartOptions} />
             </div>
           </div>
+
+          {/* Legend - inside ChartFrame so it's hidden during loading/empty states */}
+          <div className="px-4 pb-3 flex flex-wrap items-center gap-4 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5">
+              <div
+                className="w-3 h-3 rounded-sm"
+                style={{ backgroundColor: COLORS.selected }}
+              />
+              <span>Selected Project</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div
+                className="w-3 h-3 rounded-sm"
+                style={{ backgroundColor: COLORS.sameAgeBand }}
+              />
+              <span>Same Age Cohort</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div
+                className="w-3 h-3 rounded-sm"
+                style={{ backgroundColor: COLORS.otherBand }}
+              />
+              <span>Other Age Cohorts</span>
+            </div>
+          </div>
         </ChartFrame>
       </div>
-
-      {/* Legend */}
-      {groups.length > 0 && !loading && (
-        <div className="px-4 pb-3 flex flex-wrap items-center gap-4 text-xs text-gray-500">
-          <div className="flex items-center gap-1.5">
-            <div
-              className="w-3 h-3 rounded-sm"
-              style={{ backgroundColor: COLORS.selected }}
-            />
-            <span>Selected Project</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div
-              className="w-3 h-3 rounded-sm"
-              style={{ backgroundColor: COLORS.sameAgeBand }}
-            />
-            <span>Same Age Cohort</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div
-              className="w-3 h-3 rounded-sm"
-              style={{ backgroundColor: COLORS.otherBand }}
-            />
-            <span>Other Age Cohorts</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 });

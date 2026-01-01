@@ -119,7 +119,7 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
       return districtData;
     },
     [filterKey],
-    { initialData: {}, keepPreviousData: true }
+    { chartName: 'MarketMomentumGrid', initialData: {}, keepPreviousData: true }
   );
 
   // Handle district click - no cross-filter since we're not using PowerBIFilterContext

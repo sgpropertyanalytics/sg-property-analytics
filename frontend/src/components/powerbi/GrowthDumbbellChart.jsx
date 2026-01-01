@@ -98,7 +98,7 @@ export const GrowthDumbbellChart = React.memo(function GrowthDumbbellChart({ bed
       return transformGrowthDumbbellSeries(rawData, { districts: ALL_DISTRICTS });
     },
     [filterKey],
-    { initialData: { chartData: [], startQuarter: '', endQuarter: '', excludedDistricts: [] }, enabled }
+    { chartName: 'GrowthDumbbellChart', initialData: { chartData: [], startQuarter: '', endQuarter: '', excludedDistricts: [] }, enabled }
   );
 
   // Extract transformed data and add display metadata

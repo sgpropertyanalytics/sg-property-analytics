@@ -71,7 +71,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       };
     },
     [filterKey, windowMonths],
-    { initialData: { data: { projects: [], floor_zone_order: [] }, meta: { exclusions: {} } }, keepPreviousData: true }
+    { chartName: 'FloorLiquidityHeatmap', initialData: { data: { projects: [], floor_zone_order: [] }, meta: { exclusions: {} } }, keepPreviousData: true }
   );
 
   // Extract data and meta from response

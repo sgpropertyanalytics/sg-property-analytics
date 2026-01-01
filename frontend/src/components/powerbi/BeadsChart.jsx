@@ -94,6 +94,7 @@ export const BeadsChart = React.memo(function BeadsChart({
     },
     [debouncedFilterKey, saleType],
     {
+      chartName: 'BeadsChart',
       initialData: {
         datasets: [],
         stats: { priceRange: { min: 0, max: 0 }, volumeRange: { min: 0, max: 0 }, totalTransactions: 0 },

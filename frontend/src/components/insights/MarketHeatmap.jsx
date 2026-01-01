@@ -78,7 +78,7 @@ export default function MarketHeatmap() {
       return response.data.districts || [];
     },
     [selectedPeriod, selectedBed],
-    { initialData: [] }
+    { chartName: 'MarketHeatmap', initialData: [] }
   );
 
   // Derive loading from status (PENDING/LOADING/REFRESHING all show loading UI)

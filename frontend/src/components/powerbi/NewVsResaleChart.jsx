@@ -1,5 +1,5 @@
 import React, { useRef, useMemo } from 'react';
-import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
+import { useGatedAbortableQuery, useDeferredFetch, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -180,6 +180,7 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
     },
     [debouncedFilterKey, timeGrouping],
     {
+      chartName: 'NewVsResaleChart',
       initialData: { chartData: [], summary: {}, hasData: false },
       enabled: shouldFetch,
       keepPreviousData: true, // Instant filter updates - no loading flash
@@ -416,14 +417,14 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
 
   // DEBUG: Log render decision
   debugLog('RENDER', {
-    loading,
+    status,
     error: error?.message || null,
     hasData,
     chartDataLength: chartData.length,
     isFetching,
     shouldFetch,
-    willShowEmptyState: !loading && !error && !hasData,
-    willShowChart: !loading && !error && hasData && chartData.length > 0,
+    willShowEmptyState: status === QueryStatus.SUCCESS && !hasData,
+    willShowChart: status === QueryStatus.SUCCESS && hasData && chartData.length > 0,
   });
 
   // Debug info for QueryState empty state (visible via Ctrl+Shift+D)

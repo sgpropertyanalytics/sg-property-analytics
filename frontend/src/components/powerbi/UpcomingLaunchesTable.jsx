@@ -76,6 +76,7 @@ export function UpcomingLaunchesTable({
     },
     [sortConfig.column, sortConfig.order, refreshTrigger],
     {
+      chartName: 'UpcomingLaunchesTable',
       enabled: shouldFetch,
       initialData: [],
     }

@@ -99,7 +99,7 @@ export function MacroOverviewContent() {
       return response.data.kpis || [];
     },
     [filters.districts, filters.bedroomTypes, filters.segment],
-    { initialData: [], keepPreviousData: true }
+    { chartName: 'MacroOverview-KPI', initialData: [], keepPreviousData: true }
   );
 
   // Backwards-compatible kpis object for getKpi helper
@@ -136,7 +136,7 @@ export function MacroOverviewContent() {
       return response.data || [];
     },
     [debouncedFilterKey, timeGrouping],
-    { initialData: [], keepPreviousData: true, enabled: shouldFetchCompression }
+    { chartName: 'MacroOverview-Compression', initialData: [], keepPreviousData: true, enabled: shouldFetchCompression }
   );
 
   // Transform raw data for compression charts (memoized to avoid re-transform on every render)
@@ -163,7 +163,7 @@ export function MacroOverviewContent() {
       return response.data || {};
     },
     [debouncedFilterKey],
-    { initialData: {}, keepPreviousData: true, enabled: shouldFetchPanels }
+    { chartName: 'MacroOverview-Dashboard', initialData: {}, keepPreviousData: true, enabled: shouldFetchPanels }
   );
 
   const handleDrillThrough = (title, additionalFilters = {}) => {

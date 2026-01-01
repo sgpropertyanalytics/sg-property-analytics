@@ -107,7 +107,7 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
       };
     },
     [selectedPeriod, selectedBed, saleType],
-    { enabled, initialData: { districts: [], meta: {} } }
+    { chartName: 'DistrictLiquidityMap', enabled, initialData: { districts: [], meta: {} } }
   );
 
   const districtData = data?.districts || [];

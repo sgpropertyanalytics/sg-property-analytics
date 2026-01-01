@@ -78,6 +78,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
     },
     [saleType], // Refetch if saleType changes (rare - usually constant from page)
     {
+      chartName: 'MarketValueOscillator-baseline',
       initialData: { ccrRcr: { mean: 400, stdDev: 200 }, rcrOcr: { mean: 200, stdDev: 100 } },
       enabled: shouldFetch,
       keepPreviousData: true,
@@ -123,7 +124,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
       return transformOscillatorSeries(rawData, baselineStats);
     },
     [debouncedFilterKey, timeGrouping, baselineStats, saleType],
-    { initialData: [], enabled: shouldFetch && !useShared, keepPreviousData: true }
+    { chartName: 'MarketValueOscillator', initialData: [], enabled: shouldFetch && !useShared, keepPreviousData: true }
   );
 
   // When using shared data, transform it with useMemo (same transform as internal fetch)

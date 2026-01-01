@@ -85,7 +85,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
       return calculateHistoricalBaseline(transformed);
     },
     [], // Empty deps = fetch once on mount
-    { initialData: { min: 0, max: 1000 }, enabled: shouldFetch && !useSharedData, keepPreviousData: true }
+    { chartName: 'PriceCompressionChart-baseline', initialData: { min: 0, max: 1000 }, enabled: shouldFetch && !useSharedData, keepPreviousData: true }
   );
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
@@ -123,7 +123,7 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
       return transformCompressionSeries(rawData);
     },
     [debouncedFilterKey, timeGrouping, saleType],
-    { initialData: [], enabled: shouldFetch && !useSharedData, keepPreviousData: true }
+    { chartName: 'PriceCompressionChart', initialData: [], enabled: shouldFetch && !useSharedData, keepPreviousData: true }
   );
 
   // Use shared data from parent if provided, otherwise use internal fetch
